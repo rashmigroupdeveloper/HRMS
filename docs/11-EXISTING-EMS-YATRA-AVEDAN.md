@@ -12,6 +12,72 @@ A corporate Travel & Expense Management platform: employees raise trips (domesti
 
 This is literally the **"Travel Advance" module** from pain point PP-1 (the "Chandan Modi Ji" solution) — `CHANDAN_MODI` is a named approver role in the code. That pain point is already being solved here.
 
+---
+
+## 0. UPDATE — 2026-07-06 live database read (as-built has moved on)
+
+A second read-only pass (SSH + `mongosh` against the live Atlas cluster `yatra-avedan.fbkxpf1.mongodb.net`) shows the app was **rebuilt** since the 5 Jul pass. The live `pm2` process `ems-backend` now runs from `~/backend/backend` — a **cleaner TypeScript/Mongoose 9.5/Express 5 rewrite** (not the old `yatra-avedan-mdb` tree, which is now retired to `.trash`). Deps confirm the stack: `mongoose`, `zod 4`, `@aws-sdk/client-s3` (MinIO), `twilio`, `resend`, `nodemailer`, `xlsx`, `fuse.js`, `helmet`, `express-rate-limit`. Storage is MinIO (`STORAGE_PROVIDER=minio`, bucket `ems-uploads`).
+
+**Modules (live):** `auth · users · trips · approvals · claims · advances · budgets · wallet · currency · mmt · locations · analytics · dashboard · finance · email` — note **`finance`** is new vs the 5 Jul list.
+
+### 0.1 The headline finding — a live, high-quality employee master (1066 people)
+
+The `users` collection holds **1,066 employees** and is the single most valuable asset for the HRMS. **`userid` is the greytHR employee code** (`RML035384`, `RDL002412`, `EIPL0346`) — the *same* format as the greytHR ESS login `RML033903`. **This means the EMS master joins directly to greytHR/payroll on `userid` with no fuzzy matching.** It resolves the previously-open "authoritative source / match key for initial employee load" question.
+
+Fill rates (of 1066):
+
+| Field | Filled | Note |
+|---|---|---|
+| `userid` (= greytHR code) | 1066/1066 | primary join key to greytHR/payroll |
+| `designation` | 1066/1066 | 176 distinct values — needs normalization on import |
+| `gender` | 1066/1066 | |
+| `department` | ~1066 | 112 distinct — needs normalization (e.g. Production vs Production-Hotmill) |
+| `reporting_manager_id` | 1064/1066 | hierarchy near-complete; apex node is `RML0001` (CEO Cell) |
+| `hod_id` | 1064/1066 | HOD reference near-complete |
+| `phone` | 996/1066 | |
+| `encrypted_password` (bcrypt) | 1066/1066 | everyone can already authenticate |
+| `phone_verified` | 5/1066 | Twilio OTP barely adopted |
+| `level` (A/B/C in schema) | **0/1066** | grade dimension is **empty** — sourced from greytHR/payroll, not here |
+
+Extra fields present beyond the TS interface: `domestic_level`, `international_level` (travel-class grades, *not* HR pay grades), `hod_name`, `reporting_manager` (manager name). **What the EMS master does NOT have** (must come from greytHR/payroll on import): date of birth, date of joining, pay grade/CTC, statutory IDs (PAN/Aadhaar/UAN/ESIC), bank details, PF/ESI numbers.
+
+**Decision (fold into Phase 0 / doc 07 G0):** seed the HRMS employee master from the **EMS `users` collection** (cleanest hierarchy + identity we have), keyed on `userid`, then **enrich each row from the greytHR export** (DOB, DOJ, grade, statutory IDs, bank) matched on the same `userid`. Import validators (CORE-12) must (a) dedupe the entity master, (b) normalize the 176 designations / 112 departments, (c) fix the `userid` typos found (e.g. `EIPL0346` vs `EIPLL366` double-L).
+
+### 0.2 Entity master is **14 legal entities**, not 6 — with data-quality flags
+
+The `company` field spans 14 distinct strings. This supersedes the 6-entity list in doc 00 D3 / doc 09:
+
+| Company (as stored) | Headcount | Flag |
+|---|---|---|
+| Rashmi Metaliks Limited | 667 | India — RML |
+| Rashmi Green Hydrogen Steel Ltd | 174 | India — RGH |
+| Reach Dredging Limited | 96 | India — RDL |
+| Rashmi 6 Paradigm Limited | 57 | India — RPL (the "6" is an OCR/typo — verify canonical name) |
+| eHoome iOT Pvt. Limited | 19 | India |
+| Koove iOT Pvt. Limited | 16 | India |
+| Koove Organic Chemical Pvt. Limited | 14 | India |
+| Rashmi Metalix Ltd | 6 | **DUP of RML — misspelling; merge on import** |
+| Rashmi Pipes And Fittings FZCO Dubai | 5 | **Non-India (Dubai) — out of India-payroll scope (RPF)** |
+| Reach Mining Tz Limited | 3 | **Non-India (Tanzania)** |
+| Rashmi Rare Earth Limited | 3 | India |
+| Rashmi Metaliks UK Limited | 3 | **Non-India (UK)** |
+| Rashmi Metaliks Bahrain W.L.L | 2 | **Non-India (Bahrain)** |
+| Rashmi Group | 1 | holding/parent placeholder |
+
+Implication: the HRMS **company master must dedupe and canonicalize** (one RML, not RML + "Metalix"), and the India-payroll engine runs only for the India entities — the 5 non-India entities (Dubai, Tanzania, UK, Bahrain) are in the master but **out of the India statutory-payroll scope** (extends D3's existing RPF-Dubai carve-out to four more foreign entities). Confirm with HR which of the small India entities (eHoome/Koove) actually run payroll through this HRMS vs. are group companies out of scope.
+
+### 0.3 Role model = derived, not stored (validates the HRMS approach)
+
+The live `USER_ROLES` enum is only `{ admin, employee }`. The former named approver roles are gone: `LEGACY_ADMIN_ALIASES = ['super_admin','travel_admin','ceo','chandan_modi']` all `normalizeRole()` → `admin`. **RM and HOD are not stored roles — they are *derived* from being referenced as someone's `reporting_manager_id` / `hod_id`.** This is exactly the model doc 08 assumes (manager scope computed from the reporting tree, not a static role flag), and it confirms the HRMS should compute approver authority from the hierarchy while layering its richer 10-role permission model on top for the non-T&E modules.
+
+### 0.4 Settlement schema is richer than §4 first captured (adopt verbatim into M13)
+
+- **Claim** carries a per-category budget reservation `budgetReserved { total, travel, hotel, daily_allowance, visa, local_travel, misc }` plus `budget_reserved_id` (survives a draft budget switch, enabling accurate refund on resubmit/delete), `settlementStatus (unsettled|settled)`, `settlementMode (AUTO|MANUAL)`, `settlementAmount`, `netPayable`, `settledBy`, `settledAt`, and a **per-currency** `fxRateToINR` map. A partial unique index (`unique_active_claim_per_budget`) enforces one active claim per budget.
+- **WalletTransaction** is a proper ledger: `source (ADVANCE|CLAIM_SETTLEMENT)`, `type (credit|debit)`, `amount` + `originalAmount/originalCurrency/fxRateToINR`, `settlementMode`, `balanceAfterTransaction`, and a **unique `transactionReference` for idempotency**. **Wallet** holds `empId → walletBalance (min 0)`.
+- These are directly portable to the Postgres M13 tables in doc 03 — the idempotency key and per-category reservation are the two details a naive rebuild would miss; keep them.
+
+**Live data volumes (2026-07-06):** users 1066 · budgets 10 · claims 2 · advances 1 · currencyrates 5 · refreshtokens 4 · wallets/trips/wallettransactions 0 · MMT reference (airports/hotelcities/carcities/trainstations) 0. So the app is **in early real use** — the employee master is fully loaded but T&E transaction volume is still tiny, which means **now is the ideal, low-risk window to supersede it** (little transactional history to migrate).
+
 ## 2. Stack (differs from ATS and from this HRMS plan)
 
 | Layer | Yatra Avedan EMS | The ATS | This HRMS plan (docs 02) |
@@ -86,7 +152,88 @@ Keep payroll/attendance/leave on PostgreSQL for transactional/audit integrity (t
 
 **Decision needed from you:** A, B, or C? Until you pick, docs 02–03 keep PostgreSQL as the assumption (Option B) but this file is the flag that the choice is now explicit, not implicit.
 
-## 6. Housekeeping / security
+## 6. Live MongoDB snapshot — `ems_db` (read-only recon, 6 Jul 2026)
+
+Second recon pass: queried production MongoDB (not code). Confirms the EMS is not a prototype — it holds a **group-wide employee directory** that is immediately useful for HRMS Phase 0 migration.
+
+### 6.1 Collection counts
+
+| Collection | Count | HRMS relevance |
+|---|---|---|
+| **users** | **1,066** | Employee master seed (TE-12 migration + Phase 0 org load) |
+| budgets | 9 | Trip budget requests (M13 `te.budgets`) |
+| claims | 2 | Live claim workflow (1 APPROVED, 1 DRAFT) |
+| advances | 1 | Travel advance (LN-04 / TE-07) |
+| currencyrates | 5 | Multi-currency (TE-05) |
+| refreshtokens | 4 | Active sessions |
+| trips / wallets / wallettransactions | 0 | Built but unused so far |
+
+### 6.2 User record shape (maps to `core.employees`)
+
+Fields present on every user document:
+
+`userid` · `username` · `email` · `phone` · `gender` · `company` · `department` · `designation` · `role` · `domestic_level` · `international_level` · `reporting_manager` · `reporting_manager_id` · `hod_name` · `hod_id` · `encrypted_password` (bcrypt) · `created_at` · `updated_at`
+
+**Coverage:** 1,064 / 1,066 users have both `hod_id` and `reporting_manager_id` populated — mirrors HRMS `reporting_manager` + `functional_manager` (CORE-03).
+
+**Roles:** 1,065 `employee` + 1 `admin` (single admin — redundancy risk).
+
+**Gender:** Male 1,031 · Female 35 (useful for CEO dashboard demographics once HRMS owns master).
+
+### 6.3 Company ↔ e-code prefix (migration key)
+
+| Prefix | Count | EMS company name |
+|---|---|---|
+| RML | 757 | Rashmi Metaliks Limited |
+| RGH | 121 | Rashmi Green Hydrogen Steel Ltd |
+| RDL | 96 | Reach Dredging Limited |
+| RPL | 30 | Rashmi 6 Paradigm Limited |
+| EIP | 16 | eHoome iOT Pvt. Limited |
+| KIO | 14 | Koove iOT Pvt. Limited |
+| KOL | 14 | Koove Organic Chemical Pvt. Limited |
+| RRE | 6 | Rashmi Rare Earth Limited |
+| RPF | 5 | Rashmi Pipes And Fittings FZCO Dubai |
+| RMT / RMB / RBS / RAS | ≤3 each | UK / Bahrain / Tanzania / Group |
+
+This aligns with HRMS `core.companies` e-code series (CORE-02) and greytHR entity prefixes — **use `userid` as the join key** when reconciling greytHR export ↔ EMS ↔ ATS.
+
+### 6.4 Travel entitlement tiers (policy engine seed)
+
+Domestic levels (count): **Dom-F 754** · Dom-E 193 · Dom-D 84 · Dom-C 22 · Dom-A 10 · Dom-B 3
+
+These map directly to M13 budget/allowance rules (`budgetAllowances`, `internationalTravelPolicy` in EMS code). Port as `te.travel_levels` lookup table when absorbing M13.
+
+### 6.5 Org richness
+
+- **~90+ distinct departments** (top: Sales & Marketing 80, Finance & Accounts 69, Project 63, Production 52, Production-Hotmill 50, QA & QC 43, Mechanical Maintenance 40, Human Resource 16)
+- **~100+ distinct designations** (top: Engineer 121, Junior Diploma Engineer 87, Executive 78, Assistant Manager 64, Manager 61, Deputy Manager 28, DGM 19)
+- Heavy industrial/steel-plant org structure — matches RML's real operating model, not a generic IT company template
+
+### 6.6 Claim & budget schemas (concrete M13 port targets)
+
+**Claim line item fields (live):** `slNo`, `receiptNo`, `billDate`, `currencyCode`, `currencyName`, `receiptAmount`, `expenseType` (e.g. `travel`), `travelFrom`/`travelTo`, `travelFromDate`/`travelToDate`, `purpose`, `remarks` — plus receipt attachments in MinIO `ems-uploads/claims/`.
+
+**Budget document fields (live):** 40+ fields including `travelType`, `region`, `travelModes`, `hotelBudgetPerNight`, `dailyAllowance`, `visaCost`, `advanceRequired`, `totalEstimatedCost`, `claimedAmount`, `approvals[]`, `approvedBudget`, `status` — this is the full TE-02/TE-03 schema to port to Postgres.
+
+### 6.7 What this means for HRMS build
+
+| HRMS need | EMS provides |
+|---|---|
+| Phase 0 employee master load | 1,066 rows with ecode, company, dept, designation, RM, HOD, email, phone |
+| CORE-03 dual manager | `reporting_manager_id` + `hod_id` already populated |
+| CORE-05 employment category inference | Designation + department patterns distinguish white/blue collar |
+| M13 TE-12 data migration | Source of truth for users/budgets/claims/advances when Yatra Avedan retires |
+| LN-03 / CLM-07 payroll recovery | `settlementStatus`, `settlementAmount` on claims → payroll deduction posting |
+| PP-1 Travel Advance | Already live — do not rebuild; absorb pattern |
+| MinIO document store | `ems-uploads` bucket with real claim attachments — reuse pattern (02-ARCH §1) |
+| WF-01 `send_back` | Approval arrays on budgets/claims (when populated) |
+
+**Caveat:** EMS `userid` may not match greytHR `ecode` 1:1 for every row — run a reconciliation import with per-row validation report (CORE-12) before treating EMS as authoritative over greytHR for payroll/statutory fields (PAN, UAN, bank, DOJ). EMS has **no statutory IDs** — greytHR/Adrenalin export still required for PAY-06 fields.
+
+---
+
+## 7. Housekeeping / security
 - Rotate: the SSH password (`emsrashmimetalik`) and the MinIO console password now that they're in chat.
 - The unified employee master is the crux: Yatra Avedan `User`, the ATS users, greytHR, and the HRMS must not become four disagreeing copies. Whichever option, **one system owns the employee master** (recommend: the HRMS) and the others sync from it.
 - `.env` on the server holds live secrets (JWT, Twilio, MMT, MinIO keys, Mongo URI) — not copied here; treat that box as production.
+- **`NODE_ENV` not set on `ems-backend` PM2** — same cookie-Secure-flag risk as VBMS; fix before HRMS SSO integration testing.

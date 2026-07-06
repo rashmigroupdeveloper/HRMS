@@ -9,7 +9,8 @@ Workstream assumptions: 1 senior full-stack developer + AI agents, HR SME availa
 - `packages/tokens` + `packages/ui`: port Card/DarkCard/Pill/StatusBadge/KpiNumber/DataTable/Drawer/Timeline/EmptyState from ATS.
 - Auth (JWT issuer + refresh + lockout), RBAC tables, audit-log plumbing, settings store, notification queue + SMTP.
 - Org structure + **employee master** (all CORE-01..08 validations), e-code generator, Excel bulk import with per-row validation report.
-- Migration dry-run: load current employee master from greytHR export.
+- **Employee-master seed (confirmed source, doc 11 §0):** import the **1,066-row EMS `users` collection** (cleanest hierarchy + identity we hold) keyed on **`userid` = greytHR employee code**, then **enrich each row from the greytHR export** on the same `userid` for the HR fields the EMS lacks (DOB, DOJ, grade, PAN/Aadhaar/UAN/ESIC, bank). Import validators must dedupe the 14-entity company master (merge the "Rashmi Metalix" misspelling into RML), normalize the 176 designations / 112 departments, and fix `userid` typos (e.g. `EIPLL366`).
+- Migration dry-run: reconcile EMS-seeded master ↔ greytHR export row counts per entity before load.
 - **Week-1 external dependencies (chase immediately, blocks Phase 1):** Kent access method (DB/API/CSV) from IT; bank bulk-file format from Finance; current leave policy matrix, shift definitions & grace rules from HR; payslip template sign-off; headcount confirmation (NFR-02).
 
 **Gate G0:** employee master loaded and validated; SSO works against ATS; deploy pipeline proven.
