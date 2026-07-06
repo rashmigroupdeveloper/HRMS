@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens are ported verbatim from the ATS in Stage 0.3 (docs/05 §1)
+ * into packages/tokens. Until then: only the font family and canvas color,
+ * so the placeholder page isn't unstyled.
+ */
+:root {
+  --canvas: #ecebe6;
+  --ink: #1c1c1e;
+}
+
+body {
+  font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+}

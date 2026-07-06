@@ -3,7 +3,7 @@
 **Target:** 4–6 weeks · **Gate:** G3.5 · **Spec:** docs/13 §6, docs/01 §8b (TE-01..12), docs/11
 **Purpose:** the permanent, better version of the team's live T&E system — ported to Postgres, wired into payroll, rebuilt in Warm Editorial, then Yatra Avedan is retired.
 
-> **Design firewall (docs/05 §0.1):** we port Yatra Avedan's *backend logic and data* — never its MUI screens. Every T&E screen is rebuilt from `packages/ui`. A ported MUI component is a defect.
+> **Design firewall (docs/05 §0.1):** we port Yatra Avedan's *backend logic and data* — never its MUI screens. Every T&E screen is rebuilt from the frontend design system (`frontend/src/ui`). A ported MUI component is a defect.
 
 ---
 
@@ -34,7 +34,7 @@
 **Depends on:** T1; T2 for approval surfaces.
 **Tasks:**
 - [ ] TE-03 — Pluggable booking connector: port the MMT Corporate integration (push requisition, receive booking id/url, capture cost); "own arrangement" with reason + budget; provider swappable behind the interface
-- [ ] UI rebuild from `packages/ui`: trip request wizard, budget preview, advance flow, claim form with line items + receipt uploads, settlement view, T&E admin queues — **zero MUI**, signature-moment + accessibility bars apply *(05 §0.1/§6/§7)*
+- [ ] UI rebuild from `frontend/src/ui`: trip request wizard, budget preview, advance flow, claim form with line items + receipt uploads, settlement view, T&E admin queues — **zero MUI**, signature-moment + accessibility bars apply *(05 §0.1/§6/§7)*
 **Tests required:** connector contract tests against recorded MMT responses; component states ×7; axe checks both themes.
 **Exit criteria:** a booking round-trips through the connector on staging · design review confirms no foreign UI language.
 

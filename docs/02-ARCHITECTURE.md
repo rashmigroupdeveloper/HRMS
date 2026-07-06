@@ -19,23 +19,24 @@
 
 > **⚠ Amended by 14-TECH-STACK-AND-RELIABILITY.md (6 Jul 2026, research-verified):** pin **Node 24 LTS**; add **Kysely** as the query layer (no string-built SQL); add **typed RPC contracts (oRPC/tRPC) with zod input+output schemas** (REST envelope kept only for external endpoints); add integer-paise **Money module** + single rounding-policy file; **max-strict tsconfig** + knip + dependency-cruiser (machine-enforced module boundaries); **SeaweedFS** replaces MinIO; fast-check property tests + Stryker mutation testing on payroll-core; hash-chained audit log (MCA edit-log rule). Doc 14 is the decision record — where it conflicts with this table, doc 14 wins.
 
-**Monorepo layout** (new repo `rashmi-hrms`; ATS remains in its repo until Phase 4):
+**Repo layout** (this repo = `rashmi-hrms`; ATS remains in its repo until Phase 4; *structure re-amended 6 Jul 2026 — sponsor decision: frontend and backend are **fully independent projects** because separate teams will own them; the former shared `packages/` is dissolved*):
 
 ```
 rashmi-hrms/
-├── apps/
-│   ├── web/            # React app (Vite)
-│   └── api/            # Express app
-│       ├── src/routes | controllers | services | models | validators | middleware | jobs
-│       └── migrations/ # numbered SQL migrations (node-pg-migrate)
-├── packages/
-│   ├── ui/             # Warm Editorial primitives: Card, DarkCard, Pill, StatusBadge,
-│   │                   # KpiNumber, DataTable, FilterPanel, Drawer, EmptyState, Timeline
-│   ├── tokens/         # design tokens (single source; ATS consumes in Phase 4)
-│   └── shared/         # zod schemas shared by web+api (validation at both boundaries)
+├── frontend/           # React app (Vite) — OWN package.json/node_modules/configs
+│   └── src/tokens, src/ui   # Warm Editorial tokens + component kit live HERE
+│                            # (Card, DarkCard, Pill, StatusBadge, KpiNumber, DataTable,
+│                            #  FilterPanel, Drawer, EmptyState, Timeline, …)
+├── backend/            # Express app — OWN package.json/node_modules/configs
+│   ├── src/core        # config, db (Kysely), logger, money/ (integer-paise Money module)
+│   ├── src/modules/<x> # feature modules: controller | service | repository | routes
+│   └── migrations/     # numbered migrations (node-pg-migrate)
 ├── docs/               # this documentation set travels with the code
+├── plans/              # live execution tracker (stages + gates)
 └── ecosystem.config.js # PM2: hrms-api (cluster), hrms-worker (jobs), hrms-scheduler (cron)
 ```
+
+**Team-boundary consequence:** the frontend↔backend contract is **API-first** — the typed RPC layer (doc 14 §3) emits an **OpenAPI spec**; the frontend consumes a generated typed client from it. Validation happens independently at both boundaries (frontend forms with its own zod; backend procedures with zod input+output). Money math exists ONLY in the backend; the frontend renders formatted amounts served by the API.
 
 Rules: files ≤ 400 lines typical; feature-folder organization (`attendance/`, `payroll/`…), not type folders at app level; every API response uses the envelope `{ success, data, error, meta }` (matches user's global patterns rule and the ATS convention).
 
@@ -45,7 +46,7 @@ Rules: files ≤ 400 lines typical; feature-folder organization (`attendance/`, 
                     ┌──────────────────────── WHM/cPanel server ───────────────────────┐
  users ── HTTPS ──▶ │ Apache/LiteSpeed vhosts (AutoSSL)                                 │
                     │   hrms.rashmigroup.com  ──proxy──▶ 127.0.0.1:5100 (hrms-api PM2)  │
-                    │   (web static from apps/web/dist served by vhost)                 │
+                    │   (web static from frontend/dist served by vhost)                 │
                     │   ats.<domain>          ──proxy──▶ 127.0.0.1:5000 (existing ATS)  │
                     │ PostgreSQL 16 (localhost only)  ── databases: hrms, ats           │
                     │ PM2: hrms-api ×2 · hrms-worker ×1 · hrms-scheduler ×1 · ats ×1    │

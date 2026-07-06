@@ -15,7 +15,7 @@
 - [ ] P1-T02 — Device health: `att.devices` last_seen + expected-hourly baseline; **offline alert to IT** at 10–15 min silence in working hours; device-health dashboard tile *(ATT-02)*
 - [ ] P1-T03 — Unmatched-swipe exception queue (employee_id NULL → HR queue, never dropped) *(04 §1.1)*
 - [ ] doc14-§8.4 — Clock-drift quarantine: punches outside plausibility window → exception queue; daily device time-sync where protocol allows
-**Modules/files:** `apps/api/src/modules/attendance/ingestion/`, `jobs/kent-sync.ts`
+**Modules/files:** `backend/src/modules/attendance/ingestion/`, `jobs/kent-sync.ts`
 **Tests required:** idempotency (same batch twice → zero new rows); out-of-order arrival; reconnect-flood (10k punches one burst); gap-detection alert fires; quarantine boundaries.
 **Exit criteria:** 3 consecutive days of live ingestion ≤5-min lag · re-run of any window creates zero dupes · a silenced test device pages within threshold.
 
@@ -26,7 +26,7 @@
 - [ ] P1-T04 — Shifts (grace, half/full-day thresholds, crosses-midnight), manager-maintained rosters + monthly-5th reminder, holiday calendars per location; **two-session day model + Saturday GCS scheme** *(ATT-04/05/13, 09 §4)*
 - [ ] P1-T05 — Day-status processor per 04 §1.1: FILO basis (ATT-18), cross-plant swipes valid + reconciliation flag (ATT-16), idempotent recompute on dirty-flag; manual override HR-only + reason + audit (ATT-17)
 - [ ] P1-T06 — Week-off eligibility at week close (zero worked days → unpaid WO; whole-month rule) + Penalty Days policy hook *(ATT-09)*
-**Modules/files:** `apps/api/src/modules/attendance/{shifts,rosters,processor}/`
+**Modules/files:** `backend/src/modules/attendance/{shifts,rosters,processor}/`
 **Tests required:** processor golden cases (each day-status branch of 04 §1.1); two-session dual-status; night-shift date attribution; week-off eligibility (PI-PAY-1/2 exact scenarios); recompute idempotence (property test).
 **Exit criteria:** processor output matches hand-computed fixtures for every status branch · recompute of a locked month is rejected · manager cannot reach any status-edit endpoint (authz test).
 
@@ -38,7 +38,7 @@
 - [ ] P1-T11 — Seed the authoritative catalog (08 §4 / 09 §10.2): Leave, Leave Cancel, Leave Encashment, Comp Off, Restricted Holiday, Regularization & Permission, OD, Overtime, Claim, Loan, Confirmation, Resignation, Transfer, Letter Signature
 - [ ] P1-T12 — Approvals inbox: one cross-type queue, ≤2-click decisions, SLA countdown pills, keyboard `a`/`r`, batch approve, "all caught up" state *(05 §3/§6)*
 - [ ] P1-T13 — SLA escalation job (hourly): escalate / auto-reject / lapse per definition *(WF-03)*
-**Modules/files:** `apps/api/src/modules/workflows/`, `apps/web/src/pages/approvals/`
+**Modules/files:** `backend/src/modules/workflows/`, `frontend/src/pages/approvals/`
 **Tests required:** chain resolution incl. cross-entity manager; send_back round-trip; escalation on breach; delegation window; notified_at recorded on every step (integration).
 **Exit criteria:** a seeded request walks every action path with a visible timeline · "approver never notified" is impossible: assertion test that a step cannot advance without notified_at.
 

@@ -14,7 +14,7 @@
 - [ ] P2-T01 — Components seed from live recon (09 §2): BASIC, HRA=`BASIC×0.5`, MEDICAL 1250, SPECIAL (balancing), EDUCATION 200, STATUTORY_BONUS=`BASIC×0.0833`; deductions PF_EE (base per signed policy flag), PT, TDS, recovery class (GUEST_HOUSE); employer-side PF_ER/ESI_ER/GRATUITY_ACCRUAL/EDLI/PF_ADMIN; flags (`part_of_gross`, `part_of_pf_wages`, `prorate_on_lop`, rounding, display_order) *(PAY-01)*
 - [ ] P2-T02 — Structures per grade/category/location; effective-dated `pay.employee_salaries` with **`EXCLUDE USING gist` overlap constraint** (doc 14 §6.2); **probation % auto-apply + auto-switch on confirmation date**; CTC-vs-breakup validation; new-joiner salary from LOI CTC on conversion *(PAY-01/02/07)*
 - [ ] Salary-structure admin UI + ESS "Salary Revision" history view (09 §5)
-**Modules/files:** `apps/api/src/modules/payroll-core/{components,structures,salaries}/`
+**Modules/files:** `backend/src/modules/payroll-core/{components,structures,salaries}/`
 **Tests required:** formula evaluation vs G1 fixture (Basic 32,286 → the exact live payslip); overlap-insert rejected by DB; probation 80% (G6); CTC≠breakup rejected.
 **Exit criteria:** G1 fixture employee's monthly components compute to-the-rupee vs the May-2026 live payslip · overlapping salary row physically un-insertable.
 
@@ -27,7 +27,7 @@
 - [ ] Retro model: **recompute-and-delta** — closed periods recomputed as a new result version, delta paid in current month; `earliest_retro_date` bound *(doc 14 §7.2)*
 - [ ] `pay.inputs` (monthly variables), `pay.salary_holds` (payment/process per SOW-5.7) *(PAY-08)*
 - [ ] doc14-§7.7 — Independent reconciliation: register totals recomputed via a second code path; must match to the paisa before finalize enables
-**Modules/files:** `apps/api/src/modules/payroll-core/{runs,engine,retro}/`
+**Modules/files:** `backend/src/modules/payroll-core/{runs,engine,retro}/`
 **Tests required:** state-machine illegal transitions rejected; **property tests** (net = gross − deductions exactly; component sum = gross; paise conservation across register; recompute idempotence — byte-identical); mid-month join G7; hold scenarios.
 **Exit criteria:** synthetic 100-employee run computes deterministically twice → identical output hash · run cannot reach `computed` without a locked attendance month · reconciliation path agrees to the paisa.
 
@@ -42,7 +42,7 @@
 - [ ] P2-T05e — **TDS**: old+new regime, A→R IT-statement layout (09 §3), HRA min-of-three (old), 87A + marginal relief, surcharge+cess, declarations→proof-window→verify flow, monthly projection, 24Q data, Form 16 Part B *(PAY-13; golden G5)*
 - [ ] P2-T05f — **Apprentice/trainee**: Apprentices Act contracts excluded from PF/ESIC/bonus; stipend processing *(PAY-14; golden G9)*
 - [ ] `pay.statutory_rates` + `pay.pt_slabs` + `pay.it_slabs` seeded from doc 10 §12 (effective-dated, source-noted)
-**Modules/files:** `apps/api/src/modules/payroll-core/statutory/{pf,esic,pt,lwf,tds}/`, `tests/fixtures/payroll/golden/`
+**Modules/files:** `backend/src/modules/payroll-core/statutory/{pf,esic,pt,lwf,tds}/`, `tests/fixtures/payroll/golden/`
 **Tests required:** goldens G1–G5, G9 written FIRST from doc 10 §13 (hand-computed); rounding-policy table tests; **nightly Stryker mutation run scoped to payroll-core with score threshold**.
 **Exit criteria:** all golden fixtures green · mutation score above threshold · a rate change is provably a data row + new golden, not a code change.
 

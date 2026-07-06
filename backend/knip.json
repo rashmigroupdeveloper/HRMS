@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["src/core/db/database.ts"],
+  "project": ["src/**/*.ts", "tests/**/*.ts"],
+  "ignoreDependencies": ["ts-node"]
+}

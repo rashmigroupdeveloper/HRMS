@@ -5,7 +5,7 @@
 ## Known scope (from docs 00 D4, 01 §11, 07 Phase 4)
 
 ### 4A — ATS absorption
-- ATS frontend mounts under the HRMS shell (`/recruitment`), consuming `packages/ui` + `packages/tokens`
+- ATS frontend mounts under the HRMS shell (`/recruitment`), consuming the frontend design system (`frontend/src/ui` + `frontend/src/tokens`)
 - `recruit` schema migration: candidates/vacancies/offers move into the `hrms` database
 - Offer/LOI approval chain live on the workflow engine (Initiator → Plant Head/GM → HR Head → CEO → issue) *(PP-20, LOI flowchart)*
 - R21 Offer report + R22 Recruitment report become fully internal (no cross-DB read)

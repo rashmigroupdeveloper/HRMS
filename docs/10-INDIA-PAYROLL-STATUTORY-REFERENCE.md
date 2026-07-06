@@ -448,7 +448,7 @@ All three share PAY-06 header block (PAN, UAN, PF No, bank, work days).
 
 ## 13. Golden-test fixtures (04-MODULE-SPECS §6.9)
 
-Every fixture asserts **to-the-rupee** outputs. Store as JSON under `apps/api/tests/fixtures/payroll/golden/`.
+Every fixture asserts **to-the-rupee** outputs. Store as JSON under `backend/tests/fixtures/payroll/golden/`.
 
 ### G1 — RML staff baseline (live greytHR parity)
 

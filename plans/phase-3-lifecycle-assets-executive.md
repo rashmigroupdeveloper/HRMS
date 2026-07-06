@@ -12,7 +12,7 @@
 - [ ] LC-01 — ATS "Joined List" → `core.onboarding_candidates` (nightly sync, full LOI payload); pre-join link on personal email with delivery tracking + resend; HR "Convert" wizard (e-code preview, salary from LOI CTC + probation %) *(SOW-3.2a)*
 - [ ] LC-02 — Onboarding task fan-out to IT/Admin/HR with due dates + escalation at +2 days; `biometric_registered` telemetry
 - [ ] LC-04 — Probation board: reminders at due−30/−14/−7; review form → confirmation chain (RM → HR Head); outcomes confirm (sets date, **creates confirmed-phase salary row — PAY-02 e2e** + letter), extend, separate *(PI-ESS-8/10)*
-**Modules/files:** `apps/api/src/modules/lifecycle/{onboarding,probation}/`
+**Modules/files:** `backend/src/modules/lifecycle/{onboarding,probation}/`
 **Tests required:** conversion round-trip (candidate → employee → salary row); link-delivery tracking states; confirmation triggers salary switch on test clock.
 **Exit criteria:** a test candidate goes LOI → pre-join → convert → tasks fanned out, zero manual steps · a confirmation flips the salary phase and issues the letter.
 

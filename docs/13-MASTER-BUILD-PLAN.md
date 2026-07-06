@@ -90,7 +90,7 @@ At 3k, swipe volume is ~**12k–36k/day**; the 10k ceiling would be ~40k–120k/
 
 Per 02-ARCH (as amended by **doc 14 — TECH STACK & RELIABILITY**, the research-verified decision record): React 19 + Vite + Tailwind v4 (Warm Editorial tokens from ATS) · **Node 24 LTS** + Express 5 + **TypeScript (max-strict)** (Yatra Avedan module pattern: `modules/<x>/x.{controller,service,routes,repository}.ts`) · PostgreSQL 16 · **Kysely** query layer (no string-built SQL, ever) · **typed RPC contracts (oRPC/tRPC) with zod input *and* output schemas** · integer-paise **Money module** with one rounding-policy file · JWT (15 min access + 7 d refresh) + bcrypt · **pg-boss + node-cron** jobs · **S3-compatible object store — SeaweedFS** (MinIO is EOL for new builds; the running EMS MinIO becomes a Phase-3.5 migration source — doc 14 §4) · PM2 · Vitest + fast-check + supertest + golden payroll fixtures + Stryker mutation testing on payroll-core. **Added for scale: PgBouncer (≥1.21) and monthly range partitioning now; replica-ready reporting reads (the replica itself is deferred to the §0.1 trigger).**
 
-Monorepo `rashmi-hrms`: `apps/web`, `apps/api`, `packages/{ui,tokens,shared}`, `apps/api/migrations` (node-pg-migrate). Response envelope `{ success, data, error, meta }` everywhere. Files ≤ ~400 lines, feature-folders.
+Monorepo `rashmi-hrms`: `frontend`, `backend`, `packages/{ui,tokens,shared}`, `backend/migrations` (node-pg-migrate). Response envelope `{ success, data, error, meta }` everywhere. Files ≤ ~400 lines, feature-folders.
 
 ---
 
@@ -108,7 +108,7 @@ Monorepo `rashmi-hrms`: `apps/web`, `apps/api`, `packages/{ui,tokens,shared}`, `
 - `P0-T07` Rotate the leaked credentials flagged in docs 09/11 (greytHR password, EMS SSH, MinIO console). *(security)*
 
 ### 3.2 Repo & pipeline
-- `P0-T10` Scaffold monorepo (apps/web, apps/api, packages). CI: lint + typecheck + test on PR.
+- `P0-T10` Scaffold monorepo (frontend, backend, packages). CI: lint + typecheck + test on PR.
 - `P0-T11` Deploy script (build → migrate → `pm2 reload`); staging vhost + DB; **PgBouncer in front of Postgres from the start**; deploy-freeze flag for payroll days.
 - `P0-T12` `packages/tokens` + `packages/ui`: port Card, DarkCard, Pill/StatusBadge, KpiNumber, DataTable (virtualized), FilterPanel, Drawer, Timeline, EmptyState, ConfirmModal, MonthCalendar from the ATS; **build the Crextio-signature set**: KpiPillRow, HatchFill, SegmentedProgress, IconButton, DotMatrix, plus RosterGrid and ApprovalInbox. *(05 §5, 12 §7)*
 - `P0-T13` Observability baseline: structured logs, error tracking, PM2 monit, disk/CPU/queue-depth/biometric-gap alert cron. *(02 §2.6)*

@@ -1,4 +1,29 @@
+# OS / editor
 .DS_Store
 **/.DS_Store
 ~$*
+Thumbs.db
+.idea/
 .claude/
+
+# dependencies
+node_modules/
+
+# builds
+dist/
+build/
+*.tsbuildinfo
+
+# env & secrets — never commit (docs/02 §2 rule 2)
+.env
+.env.*
+!.env.example
+
+# test & coverage
+coverage/
+
+# logs
+*.log
+
+# local data volumes
+.pgdata/
