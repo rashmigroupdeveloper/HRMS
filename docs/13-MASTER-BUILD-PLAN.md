@@ -4,6 +4,8 @@
 **Purpose:** This is the *execution* layer on top of docs 00–12. Those docs say **what** to build and **why**; this file says **in what order, as concrete checkable steps, with what "done" means, and how to survive 10,000+ users**. Read 00 → 07 first; this plan assumes that context and does not repeat it.
 
 > How to use: work top-to-bottom within a phase. Each task has an ID (`P1-T03`), the requirement IDs it satisfies, and an acceptance check. Do not start a phase until the previous **Gate** is signed off. This file is expected to change over the next 1–2 days of analysis and throughout the build — edit it, don't append silently.
+>
+> **Live execution tracker:** the phase-by-phase, stage-by-stage checklists live in **[`plans/`](../plans/README.md)** (one file per phase, committed with the code). This doc stays the spec; tick progress there.
 
 ---
 
