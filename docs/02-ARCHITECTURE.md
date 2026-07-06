@@ -10,12 +10,14 @@
 | Database | PostgreSQL 16 | Same as ATS; one instance serves both apps (separate databases: `ats`, `hrms`) |
 | Auth | JWT access (15 min) + refresh (7 d, httpOnly cookie), bcrypt | Extends the ATS auth model into an SSO issuer |
 | Jobs | `pg-boss` (Postgres-backed job queue) + `node-cron` | No Redis needed on the WHM box; queue state survives restarts; retries built in |
-| Files | **MinIO (S3 API)** — reuse the running instance (bucket pattern from Yatra Avedan's `storage.service.ts`); receipts, documents, letters, payslip PDFs | Already deployed and in production use (doc 11); swap the local-disk plan for it |
+| Files | **S3-compatible object store via a storage adapter — SeaweedFS** (bucket pattern from Yatra Avedan's `storage.service.ts`); receipts, documents, letters, payslip PDFs | **Amended by doc 14 §4:** MinIO OSS entered maintenance mode (Dec 2025) — dead for new builds. The running EMS MinIO becomes a Phase-3.5 migration source, not the HRMS store |
 | Booking | Pluggable travel-booking connector — **MakeMyTrip Corporate** (port from Yatra Avedan `mmt` module) behind an interface | T&E module (M13); provider swappable |
 | SMS/OTP | Twilio (phone verification) + Resend/nodemailer email | Yatra Avedan already uses these; reuse |
 | Documents | `docx` templating (letters/LOI — already used in ATS), ExcelJS (exports), `pdf-lib`/headless Chrome for payslip PDFs | Reuse ATS letter-generation code |
 | Process manager | PM2 (cluster mode for API, fork for workers) | Standard on WHM/cPanel Node hosting |
 | Testing | Vitest + Testing Library (frontend), Vitest + supertest (API), pgTAP-style SQL fixtures for payroll math | Payroll engine requires golden-file tests (see 04-MODULE-SPECS §6.9) |
+
+> **⚠ Amended by 14-TECH-STACK-AND-RELIABILITY.md (6 Jul 2026, research-verified):** pin **Node 24 LTS**; add **Kysely** as the query layer (no string-built SQL); add **typed RPC contracts (oRPC/tRPC) with zod input+output schemas** (REST envelope kept only for external endpoints); add integer-paise **Money module** + single rounding-policy file; **max-strict tsconfig** + knip + dependency-cruiser (machine-enforced module boundaries); **SeaweedFS** replaces MinIO; fast-check property tests + Stryker mutation testing on payroll-core; hash-chained audit log (MCA edit-log rule). Doc 14 is the decision record — where it conflicts with this table, doc 14 wins.
 
 **Monorepo layout** (new repo `rashmi-hrms`; ATS remains in its repo until Phase 4):
 
@@ -47,9 +49,10 @@ Rules: files ≤ 400 lines typical; feature-folder organization (`attendance/`, 
                     │   ats.<domain>          ──proxy──▶ 127.0.0.1:5000 (existing ATS)  │
                     │ PostgreSQL 16 (localhost only)  ── databases: hrms, ats           │
                     │ PM2: hrms-api ×2 · hrms-worker ×1 · hrms-scheduler ×1 · ats ×1    │
-                    │ MinIO (S3) object store — receipts, letters, payslip PDFs (DB holds keys)│
+                    │ S3-compatible object store (SeaweedFS — doc 14 §4) — receipts, letters,   │
+                    │   payslip PDFs (DB holds keys)                                    │
                     └───────────────────────────────────────────────────────────────────┘
-        nightly: pg_dump (hrms, ats) + MinIO bucket mirror → encrypted → OFF-BOX destination
+        nightly: pg_dump (hrms, ats) + object-store bucket mirror → encrypted → OFF-BOX destination
         continuous: WAL archiving to off-box for point-in-time recovery of payroll months
 ```
 
