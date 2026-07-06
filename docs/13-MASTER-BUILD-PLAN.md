@@ -103,7 +103,9 @@ Monorepo `rashmi-hrms`: `frontend`, `backend`, `packages/{ui,tokens,shared}`, `b
 - `P0-T02` Dedicated **read-only greytHR admin login** to capture: salary structures per grade, one month's Final Pay Register + Bank file + JV, statutory file formats (ECR/ESIC/PT/24Q), workflow configs, attendance policy (grace/half-day/penalty/GCS Saturday/OT rates), full employee master export incl. inactive, leave policy config, loan register, holiday calendars. *(09 §8)*
 - `P0-T03` Bank bulk-upload file format from Finance. *(02 §5)*
 - `P0-T04` Payslip template sign-off (the RML fixed template — 09 §2 is the reference). *(PAY-06)*
-- `P0-T05` **Confirm true headcount** and 5-yr swipe volume → final capacity sign-off. *(NFR-02, §0)*
+- `P0-T05` **Confirm true headcount** and 5-yr swipe volume → final capacity sign-off. *(NFR-02, §0; part-answered: live EMS master holds 1,066 — reconcile vs the ~3k assumption, doc 11 §0.1)*
+- `P0-T08` **Entity-scope confirmations** (doc 11 §0.2): which small India entities payroll here (eHoome/Koove ×2/Rashmi Rare Earth); canonical RPL name; 5 foreign entities stay master-only.
+- `P0-T09` **Sanctioned EMS Mongo export** of the `users` collection (1,066 rows) + snapshot date freeze — the employee-master seed (doc 11 §0.1).
 - `P0-T06` Resolve the 9 statutory policy decisions in 10 §15 (PF base, bonus true-up, LOP divisor, OT base, DA/VDA, penalty→pay, gratuity 5y/4y240d, grade structures, sample formats). **Do not code payroll until signed.** Plus: **verify the 2026 Labour Codes status** (F&F TAT ~2 working days vs 3? "wages" ≥ 50% of CTC widening the PF/gratuity base?) per 10 §8 — owner: payroll admin; re-checked at the Phase-3 F&F gate.
 - `P0-T07` Rotate the leaked credentials flagged in docs 09/11 (greytHR password, EMS SSH, MinIO console). *(security)*
 
@@ -121,9 +123,9 @@ Monorepo `rashmi-hrms`: `frontend`, `backend`, `packages/{ui,tokens,shared}`, `b
 - `P0-T24` Notification service skeleton: `wf.notifications` queue (in-app + SMTP via nodemailer), templated, retry + dead-letter, `wf.event_subscriptions` matrix.
 
 ### 3.4 Organization + employee master (the spine)
-- `P0-T30` Org tables: `companies` (seed all six: RML, RGH, EIPL, RPF, RPL, RDL — 09 §10.1), locations, cost_centers, departments, org_units, designations, grades. E-code generator as a DB function with `FOR UPDATE` on `ecode_next_seq` (CORE-02, 03 §10.5).
+- `P0-T30` Org tables: `companies` = **canonical 14-entity master with dedupe** (doc 11 §0.2 supersedes the six-entity list: merge "Rashmi Metalix Ltd"→RML; e-code prefixes per doc 11 §6.3; `is_india_payroll=false` for the 5 foreign entities — Dubai/Tanzania/UK/Bahrain/holding), locations, cost_centers, departments, org_units, designations, grades. E-code generator as a DB function with `FOR UPDATE` on `ecode_next_seq` (CORE-02, 03 §10.5).
 - `P0-T31` `core.employees` with **all CORE-01..08 validations** (PAN/Aadhaar/IFSC/bank-length/DOB-minor/duplicate ESI-UAN-ecode/CTC-vs-breakup/special-char strip); statutory-ID masking by permission; `reporting_tree` trigger; `employee_history`, `employee_family`, `documents` (object-store keys via the storage adapter).
-- `P0-T32` **Bulk Excel import** with per-row validation report (CORE-12); dry-run load of the current greytHR master export; reconciliation counts vs source.
+- `P0-T32` **Two-source import** (CORE-12; strategy per doc 11 §0.1): **step 1 seed from the live EMS `users` collection** (1,066 employees; `userid` = greytHR e-code = the join key; hierarchy via `reporting_manager_id`/`hod_id`; bcrypt hashes carried over so everyone can log in day one; normalize 176 designations/112 departments; flag userid typos), **step 2 enrich from the greytHR export** matched on the same `userid` (DOB, DOJ, grade, statutory IDs, bank — fields EMS lacks). Per-row validation reports + reconciliation counts vs both sources.
 - `P0-T33` Employee directory + profile UI shell (05 §4.2), compensation tab permission-gated/masked.
 
 ### 3.5 The two de-risking spikes (do these early, in parallel with 3.4)

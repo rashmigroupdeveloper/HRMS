@@ -1,17 +1,45 @@
 @import 'tailwindcss';
+@import './tokens/tokens.css';
 
 /*
- * Design tokens are ported verbatim from the ATS in Stage 0.3 (docs/05 §1)
- * into packages/tokens. Until then: only the font family and canvas color,
- * so the placeholder page isn't unstyled.
+ * Map Warm Editorial tokens into Tailwind v4 theme so utilities like
+ * bg-canvas / text-ink / rounded-card work everywhere (docs/05 §1).
  */
-:root {
-  --canvas: #ecebe6;
-  --ink: #1c1c1e;
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-hero: var(--hero);
+  --color-hero-ink: var(--hero-ink);
+  --color-hero-muted: var(--hero-muted);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+
+  --radius-card: 24px;
+  --radius-tile: 18px;
+  --radius-row: 14px;
+
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
-  font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
   background: var(--canvas);
   color: var(--ink);
+}
+
+/* Numbers that align or animate are always tabular (docs/05 §1 rule 5). */
+.tabular-nums,
+[data-numeric] {
+  font-variant-numeric: tabular-nums;
 }

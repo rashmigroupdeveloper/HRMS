@@ -24,6 +24,8 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'error',
       // Money/domain code must never rely on implicit coercion.
       eqeqeq: ['error', 'always'],
+      // Numbers in template strings are unambiguous; everything else stays banned.
+      '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
     },
   },
   {

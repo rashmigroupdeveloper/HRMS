@@ -511,8 +511,10 @@ Calendar LOP: payable_days = 17/31; all `prorate_on_lop` components scaled.
 Basic ₹32,286, DA ₹0, service 8y 7m → years = 9 (≥6mo fraction rounds up):
 
 ```
-gratuity = 32,286 × 15/26 × 9 = ₹1,67,007.69 → ₹1,67,008
+gratuity = 32,286 × 15/26 × 9 = ₹1,67,638.85 → ₹1,67,639
 ```
+
+> *Corrected 6 Jul 2026: this fixture originally printed ₹1,67,007.69 — an arithmetic slip (32,286 × 15 × 9 = 43,58,610; ÷ 26 = 1,67,638.846). Caught by the Money-module golden test (backend/tests/money.test.ts) — the test-first discipline working as designed.*
 
 Plus EL encashment, notice recovery, partial-month pay.
 
@@ -579,5 +581,6 @@ From 09-RECON §8 + this research. **Do not code statutory logic until signed of
 | Date | Change |
 |---|---|
 | 3 Jul 2026 | Initial document from statutory research + greytHR recon cross-check |
+| 6 Jul 2026 | **G8 gratuity fixture corrected** (₹1,67,007.69 → ₹1,67,638.85/₹1,67,639) — arithmetic slip caught by the Money-module test suite |
 
 **Review trigger:** Union Budget each February; EPFO/ESIC notifications; WB PT/LWF amendments; RML policy sign-off on §15 items.

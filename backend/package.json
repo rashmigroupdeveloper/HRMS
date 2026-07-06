@@ -22,6 +22,9 @@
     "migrate:create": "node-pg-migrate --tsconfig tsconfig.json -j ts --ignore-pattern \".*\\.md\" create"
   },
   "dependencies": {
+    "@orpc/openapi": "^1.14.7",
+    "@orpc/server": "^1.14.7",
+    "@orpc/zod": "^1.14.7",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "kysely": "^0.28.2",

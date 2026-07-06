@@ -1,0 +1,69 @@
+/**
+ * Warm Editorial design tokens — ported VERBATIM from docs/05 §1 (the ATS set,
+ * Crextio-inspired) + motion tokens from docs/05 §2.2.
+ *
+ * THE LAW (docs/05 §1 rules, code-review enforced):
+ *  - Never hardcode a hex in a component — semantic variables only.
+ *  - One gold accent per view. At most one charcoal hero card per screen.
+ *  - Warm greys only; near-black #1c1c1e, never #000.
+ *  - Dark mode is first-class: `.dark` flips the semantic variables.
+ */
+
+:root {
+  /* ---- Light ---- */
+  --canvas: #ecebe6;
+  --surface: #fbf9f3;
+  --surface-2: #f1eee5;
+  --ink: #1c1c1e;
+  --ink-muted: #6f6b62;
+  --ink-faint: #a8a399;
+  --line: #e7e2d6;
+  --line-strong: #dcd5c4;
+  --accent: #f4cb45;
+  --accent-ink: #1c1c1e;
+  --accent-soft: #fbeec0;
+  --hero: #1c1c1e;
+  --hero-ink: #fbf9f3;
+  --hero-muted: #9b978d;
+  --positive: #2f9e6f;
+  --negative: #d4574e;
+  --warning: #c98b3a;
+  --info: #5b7fa8;
+
+  /* ---- Radii ---- */
+  --radius-card: 24px;
+  --radius-tile: 18px;
+  --radius-row: 14px;
+
+  /* ---- Motion (docs/05 §2.2 — custom curves, never stock ease-in) ---- */
+  --motion-press: 140ms;
+  --motion-micro: 150ms;
+  --motion-short: 200ms;
+  --motion-medium: 300ms; /* UI ceiling — never exceed for UI */
+  --motion-counter: 800ms; /* KPI count-up, rare surfaces only */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-inout-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-std: ease;
+}
+
+.dark {
+  --canvas: #141416;
+  --surface: #1f1f22;
+  --surface-2: #27272b;
+  --ink: #f4f1e9;
+  --ink-muted: #a8a29a;
+  --ink-faint: #6d6a64;
+  --line: #34343a;
+  --line-strong: #3f3f46;
+  --accent: #f4cb45;
+  --accent-ink: #1c1c1e;
+  --accent-soft: #3a3318;
+  --hero: #0f0f11;
+  --hero-ink: #f4f1e9;
+  --hero-muted: #8a867d;
+  --positive: #43c98c;
+  --negative: #e87a72;
+  --warning: #e0a960;
+  --info: #7593b8;
+}

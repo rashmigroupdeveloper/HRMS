@@ -37,7 +37,7 @@
 
 ## 3. End-to-end typed contracts (§5 of the API design)
 
-- Adopt a **typed RPC layer — oRPC (preferred: tRPC-style DX + standards-compliant OpenAPI output for future bank/compliance consumers) or tRPC v11** — mounted inside the Express 5 app.
+- **DECIDED (sponsor, 6 Jul 2026): oRPC.** tRPC was ruled out because its type-sharing model (frontend imports backend router types) violates the independent-teams boundary (02-ARCH team-boundary consequence); oRPC gives tRPC-style DX on the backend **plus standards-compliant OpenAPI output** — the neutral contract the frontend team generates its typed client from. Risk contained: it's a thin swappable layer, and the OpenAPI artifact outlives any library. Mounted inside the Express 5 app.
 - Every procedure declares **zod input AND output schemas**. The output schema is the runtime firewall against an endpoint silently returning a malformed number. This kills contract drift — the highest-volume bug class in two-tier apps.
 - The `{ success, data, error, meta }` REST envelope survives only on the few externally-consumed endpoints (ATS integration, pre-join links, webhooks).
 - ts-rest / zodios rejected: maintenance concerns flagged by their own communities — wrong bet for a decade-horizon system.
