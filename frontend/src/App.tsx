@@ -7,7 +7,7 @@
  * (no figure here is a policy value — CLAUDE.md §1). Nothing developer-facing
  * (widget names, spec refs, "demo" copy) may render as UI text.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   ArrowUpRight,
@@ -19,7 +19,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { LoginPage } from './pages/auth/LoginPage';
-import { findDevUser, firstName } from './dev/devUsers';
+import { logout, restoreSession, type SessionUser } from './lib/session';
 import { todayLongIST } from './lib/date';
 import {
   Button,
@@ -236,30 +236,53 @@ function SectionHead({
 
 // --- Screen -------------------------------------------------------------------
 
+/** "Hello Admin" from admin@rashmigroup.com; the employee master will supply real names in Phase 1. */
+function greetingFromEmail(email: string): string {
+  const local = email.split('@')[0] ?? email;
+  const first = local.split(/[._-]/)[0] ?? local;
+  return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
 export function App() {
-  const [userid, setUserid] = useState<string | null>(null);
+  // 'checking' = redeeming the httpOnly refresh cookie on page load — this is
+  // what keeps a browser refresh from logging the user out (docs/02 §1).
+  const [session, setSession] = useState<SessionUser | 'checking' | null>('checking');
   const [selected, setSelected] = useState<Employee | null>(null);
   const [approvalsCleared, setApprovalsCleared] = useState(false);
   const [finalizeOpen, setFinalizeOpen] = useState(false);
   const [finalized, setFinalized] = useState(false);
 
-  if (userid === null) {
+  useEffect(() => {
+    void restoreSession().then(setSession);
+  }, []);
+
+  if (session === 'checking') {
+    // Quiet brand splash — prevents a login-page flash for signed-in users.
     return (
-      <LoginPage
-        onSuccess={(id) => {
-          setUserid(id);
-        }}
-      />
+      <div className="grid min-h-screen place-items-center">
+        <div className="flex items-center gap-2.5 opacity-70">
+          <span className="grid size-9 animate-pulse place-items-center rounded-full bg-hero text-sm font-bold text-hero-ink">
+            R
+          </span>
+          <span className="text-sm font-semibold text-ink">Rashmi HRMS</span>
+        </div>
+      </div>
     );
   }
 
-  const greetingName = firstName(findDevUser(userid), userid);
+  if (session === null) {
+    return <LoginPage onSuccess={setSession} />;
+  }
+
+  const greetingName = greetingFromEmail(session.email);
 
   return (
     <div className="min-h-screen">
       <Masthead
         onSignOut={() => {
-          setUserid(null);
+          void logout().finally(() => {
+            setSession(null);
+          });
         }}
       />
 

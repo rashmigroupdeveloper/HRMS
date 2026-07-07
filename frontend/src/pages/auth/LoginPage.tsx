@@ -16,10 +16,11 @@ import { useRef, useState } from 'react';
 import type { SyntheticEvent } from 'react';
 import { IdCard, Lock, ShieldCheck } from 'lucide-react';
 import { Button, StatusBadge, TextField, ThemeToggle } from '../../ui';
+import { setAccessToken, type SessionUser } from '../../lib/session';
 
 interface LoginPageProps {
-  /** Called with the entered userid once credentials validate. */
-  onSuccess?: (userid: string) => void;
+  /** Called with the authenticated user once the server accepts the login. */
+  onSuccess?: (user: SessionUser) => void;
 }
 
 interface FieldErrors {
@@ -117,9 +118,9 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
         return;
       }
 
-      const body = (await res.json()) as { accessToken: string; user: { id: number; email: string } };
-      sessionStorage.setItem('hrms.accessToken', body.accessToken);
-      onSuccess?.(employeeId);
+      const body = (await res.json()) as { accessToken: string; user: SessionUser };
+      setAccessToken(body.accessToken);
+      onSuccess?.(body.user);
     } catch {
       setFormError('Can’t reach the server. Check your connection and try again.');
     } finally {
