@@ -122,8 +122,22 @@ run('employee master + two-source import (live Postgres)', () => {
   it('an EMS-carried bcrypt hash logs in on day one (doc 11 §0.1)', async () => {
     const res = await request(app)
       .post('/api/auth/login')
-      .send({ email: 'amit.singh@rashmi.test', password: loginPassword });
+      .send({ identifier: 'amit.singh@rashmi.test', password: loginPassword });
     expect(res.status).toBe(200);
+  });
+
+  it('login also works with the EMPLOYEE E-CODE as the identifier (the login-page field)', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ identifier: 'RML035384', password: loginPassword });
+    expect(res.status).toBe(200);
+    expect((res.body as { user: { email: string } }).user.email).toBe('amit.singh@rashmi.test');
+
+    // lowercase e-code works too (normalized server-side)
+    const lower = await request(app)
+      .post('/api/auth/login')
+      .send({ identifier: 'rml035384', password: loginPassword });
+    expect(lower.status).toBe(200);
   });
 
   it('reporting-tree closure answers "everyone under RML000001" incl. cross-entity + depth 2 (KQ)', async () => {

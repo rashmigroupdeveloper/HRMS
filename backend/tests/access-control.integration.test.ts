@@ -67,7 +67,7 @@ run('central access control (live Postgres)', () => {
   }
 
   async function loginToken(email: string): Promise<string> {
-    const res = await request(app).post('/api/auth/login').send({ email, password });
+    const res = await request(app).post('/api/auth/login').send({ identifier: email, password });
     expect(res.status).toBe(200);
     return (res.body as { accessToken: string }).accessToken;
   }

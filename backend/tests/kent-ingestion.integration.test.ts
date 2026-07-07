@@ -19,7 +19,11 @@ const SOURCE = 'mock-kent-test';
 run('mock Kent ingestion spike (live Postgres)', () => {
   let db: Kysely<Database>;
   let employeeNos: string[];
-  const day = new Date('2026-07-06T00:00:00+05:30');
+  // Raw swipes are immutable (can't be cleaned up between runs), so each run
+  // simulates a UNIQUE day — idempotency is still proven by re-ingesting the
+  // same connector within the run. Partition auto-creation covers any month.
+  // Anchored AFTER the ingestion epoch (2020) so the watermark never filters it.
+  const day = new Date(Date.UTC(2030, 0, 1) + (Date.now() % 20_000) * 86_400_000);
 
   beforeAll(async () => {
     db = createDatabase(DB_URL ?? '');

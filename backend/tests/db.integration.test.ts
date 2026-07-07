@@ -125,15 +125,15 @@ run('database integration (live Postgres)', () => {
   // ------------------------------------------------------------------- auth
   it('rejects a wrong password, locks after 5 failures, then correct password stays locked', async () => {
     for (let i = 1; i <= 4; i++) {
-      const res = await request(app).post('/api/auth/login').send({ email, password: 'wrong!' });
+      const res = await request(app).post('/api/auth/login').send({ identifier: email, password: 'wrong!' });
       expect(res.status).toBe(401);
     }
-    const fifth = await request(app).post('/api/auth/login').send({ email, password: 'wrong!' });
+    const fifth = await request(app).post('/api/auth/login').send({ identifier: email, password: 'wrong!' });
     expect(fifth.status).toBe(401);
     expect((fifth.body as { message?: string }).message).toMatch(/locked/i);
 
     // Even the CORRECT password is refused while locked.
-    const locked = await request(app).post('/api/auth/login').send({ email, password });
+    const locked = await request(app).post('/api/auth/login').send({ identifier: email, password });
     expect(locked.status).toBe(401);
 
     // Backoff state is in the DB.
@@ -156,7 +156,7 @@ run('database integration (live Postgres)', () => {
   it('full happy path: login → me → refresh rotation → logout', async () => {
     const agent = request.agent(app); // persists the httpOnly refresh cookie
 
-    const login = await agent.post('/api/auth/login').send({ email, password });
+    const login = await agent.post('/api/auth/login').send({ identifier: email, password });
     expect(login.status).toBe(200);
     const { accessToken, user } = login.body as { accessToken: string; user: { id: number; email: string } };
     expect(user.email).toBe(email);
@@ -210,7 +210,7 @@ run('database integration (live Postgres)', () => {
     expect(audit).toHaveLength(1);
     expect(audit[0]?.new_value).toBe('42');
 
-    const login = await request(app).post('/api/auth/login').send({ email, password });
+    const login = await request(app).post('/api/auth/login').send({ identifier: email, password });
     const token = (login.body as { accessToken: string }).accessToken;
     const res = await request(app).get(`/api/settings/${key}`).set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);

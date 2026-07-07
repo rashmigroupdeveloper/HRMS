@@ -1,12 +1,12 @@
 /**
  * LoginPage — the product's front door (docs/05 Warm Editorial). The login
  * identifier is the **employee ID / e-code** (docs/11 §0.1: `userid` = the
- * greytHR e-code, e.g. `RML035384`, the same format as the greytHR ESS login).
+ * greytHR e-code, e.g. `RML035384`) — admins may use their EMAIL instead;
+ * the backend accepts either in the same field.
  * Composed entirely from `frontend/src/ui` (§0.1 firewall) — no new primitives.
  *
- * This screen is UI-only for now: it validates input and shows the loading /
- * error states the real Stage-0.4 auth flow (JWT issuer + lockout, P0-T20) will
- * drive. The submit handler is a stub the auth service replaces later.
+ * Wired to the real API (7 Jul 2026): POST /api/auth/login → stores the access
+ * token; the refresh token rides an httpOnly cookie the browser manages.
  *
  * Form doctrine enforced (docs/05 §241): labels above, validation on blur,
  * error below naming the fix, focus jumps to the first invalid field on submit,
@@ -38,12 +38,14 @@ interface Touched {
 // 2 digits for 5 records — so the check stays DELIBERATELY loose: the server is
 // the source of truth, and blocking a real ID is far worse than missing a typo.
 const ECODE_RE = /^[A-Z]{2,6}\d{2,}$/;
+// Admin/service accounts sign in with their email in the same field.
+const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
 function validateEmployeeId(value: string): string | undefined {
   const trimmed = value.trim();
-  if (!trimmed) return 'Enter your employee ID to sign in.';
-  if (!ECODE_RE.test(trimmed))
-    return 'That doesn’t look like a valid employee ID — e.g. RML035384.';
+  if (!trimmed) return 'Enter your employee ID (or email) to sign in.';
+  if (!ECODE_RE.test(trimmed) && !EMAIL_RE.test(trimmed))
+    return 'Enter a valid employee ID (e.g. RML035384) or your email address.';
   return undefined;
 }
 
@@ -101,11 +103,25 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
 
     setSubmitting(true);
     try {
-      // Stub: the Stage-0.4 auth service (JWT issuer, P0-T20) replaces this.
-      await new Promise((resolve) => setTimeout(resolve, 900));
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // receive the httpOnly refresh cookie
+        body: JSON.stringify({ identifier: employeeId.trim(), password }),
+      });
+
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { message?: string } | null;
+        // Server messages are user-safe (e.g. lockout with retry time).
+        setFormError(body?.message ?? 'We couldn’t sign you in. Check your details and try again.');
+        return;
+      }
+
+      const body = (await res.json()) as { accessToken: string; user: { id: number; email: string } };
+      sessionStorage.setItem('hrms.accessToken', body.accessToken);
       onSuccess?.();
     } catch {
-      setFormError('We couldn’t sign you in. Check your details and try again.');
+      setFormError('Can’t reach the server. Check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -179,18 +195,18 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
 
             <TextField
               ref={idRef}
-              label="Employee ID"
+              label="Employee ID or email"
               type="text"
               name="employeeId"
               autoComplete="username"
-              autoCapitalize="characters"
               spellCheck={false}
               placeholder="e.g. RML035384"
               leadingIcon={<IdCard />}
               value={employeeId}
               onChange={(e) => {
-                // E-codes are uppercase; normalise as the user types.
-                setEmployeeId(e.target.value.toUpperCase());
+                // E-codes are uppercase; emails must stay as typed.
+                const v = e.target.value;
+                setEmployeeId(v.includes('@') ? v : v.toUpperCase());
               }}
               onBlur={() => {
                 handleBlur('employeeId');

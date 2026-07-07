@@ -34,13 +34,17 @@ const userOutput = z.object({
 });
 
 const loginProcedure = base
-  .route({ method: 'POST', path: '/auth/login', summary: 'Password login' })
-  .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
+  .route({
+    method: 'POST',
+    path: '/auth/login',
+    summary: 'Password login — identifier is an employee e-code (RML035384) or an email',
+  })
+  .input(z.object({ identifier: z.string().min(4), password: z.string().min(1) }))
   .output(z.object({ accessToken: z.string(), user: userOutput }))
   .handler(async ({ input, context }) => {
     if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
 
-    const result = await login(context.db, context.jwtSecret, input.email, input.password, context.req.ip ?? null);
+    const result = await login(context.db, context.jwtSecret, input.identifier, input.password, context.req.ip ?? null);
 
     if (!result.ok) {
       if (result.reason === 'locked') {

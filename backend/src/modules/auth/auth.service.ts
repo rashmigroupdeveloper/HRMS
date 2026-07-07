@@ -9,7 +9,7 @@ import type { Database } from '../../core/db/types.js';
 import { signAccessToken, signRefreshToken, verifyToken } from '../../core/auth/jwt.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import {
-  findUserByEmail,
+  findUserByIdentifier,
   findUserById,
   recordLoginFailure,
   recordLoginSuccess,
@@ -23,16 +23,16 @@ export type LoginResult =
 export async function login(
   db: Kysely<Database>,
   jwtSecret: string,
-  email: string,
+  identifier: string, // email OR employee e-code
   password: string,
   ip: string | null,
 ): Promise<LoginResult> {
-  const user = await findUserByEmail(db, email);
+  const user = await findUserByIdentifier(db, identifier);
 
   // Uniform failure path: same audit + same response whether the account
   // exists or not (no user-enumeration oracle).
   if (!user) {
-    await writeAudit(db, { action: 'login_failed', entity: 'core.users', ip, newValue: 'unknown email' });
+    await writeAudit(db, { action: 'login_failed', entity: 'core.users', ip, newValue: 'unknown identifier' });
     return { ok: false, reason: 'invalid_credentials' };
   }
 

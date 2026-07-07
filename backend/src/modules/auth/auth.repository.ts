@@ -4,8 +4,20 @@ import type { Database, UsersTable } from '../../core/db/types.js';
 
 export type UserRow = Selectable<UsersTable>;
 
-export function findUserByEmail(db: Kysely<Database>, email: string): Promise<UserRow | undefined> {
-  return db.selectFrom('core.users').selectAll().where('email', '=', email).executeTakeFirst();
+/**
+ * Login identifier = email OR employee e-code (doc 11 §0.1: everyone knows
+ * their greytHR-style code `RML035384`; admins/service accounts use email).
+ */
+export function findUserByIdentifier(db: Kysely<Database>, identifier: string): Promise<UserRow | undefined> {
+  if (identifier.includes('@')) {
+    return db.selectFrom('core.users').selectAll().where('email', '=', identifier).executeTakeFirst();
+  }
+  return db
+    .selectFrom('core.users as u')
+    .innerJoin('core.employees as e', 'e.id', 'u.employee_id')
+    .selectAll('u')
+    .where('e.ecode', '=', identifier.toUpperCase())
+    .executeTakeFirst();
 }
 
 export function findUserById(db: Kysely<Database>, id: number): Promise<UserRow | undefined> {
