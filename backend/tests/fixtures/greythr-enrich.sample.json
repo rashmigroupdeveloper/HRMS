@@ -1,0 +1,27 @@
+[
+  {
+    "userid": "RML035384",
+    "dob": "1990-04-12",
+    "doj": "2021-08-01",
+    "category": "white_collar",
+    "pan": "ABCDE1234F",
+    "aadhaar": "234567890123",
+    "uan": "100234567890",
+    "pf_number": "WB/KOL/1234567/000/0012345",
+    "bank_name": "State Bank of India",
+    "bank_account": "32456789012",
+    "bank_ifsc": "SBIN0001234"
+  },
+  {
+    "userid": "RGH033256",
+    "dob": "1994-11-03",
+    "doj": "2023-02-15",
+    "category": "white_collar",
+    "pan": "FGHIJ5678K"
+  },
+  {
+    "userid": "RML999999",
+    "dob": "1985-01-01",
+    "doj": "2020-01-01"
+  }
+]

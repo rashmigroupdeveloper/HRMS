@@ -48,6 +48,7 @@ The docs are the *spec*; tick progress in `plans/`. Update `plans/` as you compl
 
 ## 1. Non-negotiable working rules (from `docs/13 §1` + `docs/14`)
 
+0. **One plan-stage at a time (sponsor preference).** Announce "Working on Phase X, Stage X.Y — <name>" BEFORE building; finish that stage, report, stop. Never silently roll into the next stage. Never delete `.md` files.
 1. **Traceability** — every PR/commit references a requirement ID (`feat: ATT-08 …`). No feature exists that isn't in docs 01/04/06/08.
 2. **Config over code** — every policy number (grace minutes, rates, thresholds, divisors) lives in `core.settings`. **Zero hardcoded policy values.**
 3. **Ledgers, not counters** — leave balance, wallet, loan outstanding, PF/tax YTD are `SUM()` of immutable rows.
@@ -78,6 +79,20 @@ plans/      the execution tracker (one file per phase)
 - Object storage via an **S3-compatible adapter → SeaweedFS** (not MinIO — EOL). Kent access via the `KentConnector` interface.
 - Files ≤ ~400 lines, feature-folders. Response envelope `{ success, data, error, meta }` only on externally-consumed endpoints.
 
+### 2b. The API pattern — every endpoint, no exceptions (CORE-10, sponsor rule)
+
+Every API is an **oRPC procedure** with zod `.input()` AND `.output()`, registered in `backend/src/api/router.ts` (the OpenAPI contract regenerates itself). Three access tiers, all defined centrally in `backend/src/api/orpc.ts`:
+
+```ts
+base                              // public — login/health ONLY
+authed                            // any logged-in user
+withPermission('admin.settings')  // ← THE RULE for every business procedure:
+```
+
+- **Every business procedure declares exactly ONE permission code.** Which ROLES hold that permission lives in the DATABASE (`core.role_permissions`) — editable at runtime via the `/api/rbac/*` admin API (grant/revoke role↔permission, assign/remove user↔role), taking effect on the **next request**, fully audited. **Never hardcode a role check inside a handler.**
+- New permission codes are added to `core/rbac/seed-data.ts` (the docs/08 §2 grid) + `npm run seed:rbac` (idempotent).
+- Centralization pattern everywhere: policy numbers → `core.settings` (`getTypedSetting`/audited `setSetting`) · notification recipients → `wf.event_subscriptions` data (`enqueueEvent`) · sensitive mutations → `writeAudit()` (hash-chained; caller masks sensitive values) · DB access → Kysely only (raw SQL only inside the `sql` tag); new tables update `core/db/types.ts` in the same commit as the migration.
+
 ---
 
 ## 3. Definition of done (every change)
@@ -100,3 +115,13 @@ plans/      the execution tracker (one file per phase)
 ## 5. Security
 
 Never commit secrets or policy values. Statutory-ID columns (PAN/Aadhaar/UAN/ESIC/bank) are permission-masked and never logged. Credentials shared in chat history (greytHR, EMS SSH, MinIO/Atlas) must be **rotated** — flag this, don't reuse casually. All recon access is read-only.
+
+## 6. Commands + this-machine gotchas (learned the hard way — do not relearn)
+
+**Commands** — backend (`cd backend`): `npm run dev` (:5100) · `verify` · `migrate` · `seed:rbac` · `test`. Frontend (`cd frontend`): `npm run dev` (:5173, proxies `/api`) · `verify`.
+
+- **npm, NOT pnpm** (corepack blocked — Node installed under another Windows user via nvm). **Native PostgreSQL on 5432, no Docker** (sponsor decision). Node 22 local; prod target Node 24.
+- Migrations run via **tsx**, not ts-node (`npm run migrate` — ts-node can't `require()` .ts in an ESM package). Every DDL starts `SET lock_timeout = '5s'`; big time-series tables monthly-partitioned from day one (`att.ensure_swipe_partition` pattern); append-only tables get UPDATE/DELETE-rejecting triggers.
+- **oRPC middleware mounts WITHOUT a path arg** (`app.use(orpcMiddleware(deps))`) — Express `use(path)` strips `req.url` and breaks prefix matching.
+- Integration tests: live `.env` DB, `describe.skipIf(!DB_URL)`, **`fileParallelism: false`** (shared audit chain). **Users with audit history can never be hard-deleted** (FK from the append-only log — by design, CORE-06): tests deactivate + detach, never delete.
+- knip: module public APIs (`src/modules/*/index.ts`) are `entry`; runtime-only deps → `ignoreDependencies`; `"exclude": ["types"]`. supertest `res.body` is `any` → cast to a typed interface. External systems live behind an interface with a mock (`MockKentConnector` → real Kent swaps in with zero pipeline changes).

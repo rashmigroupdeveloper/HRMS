@@ -61,47 +61,52 @@
 **Tests required:** Testing Library component tests (all 7 interactive states per component — 05 §7b); axe accessibility checks in both themes.
 **Exit criteria:** Storybook-style demo page renders every component in light+dark ✅ (gallery, live toggle) · contrast checks pass 4.5:1 ⏳ (needs axe run) · zero hardcoded hexes ✅ (lint-clean, tokens only) · component tests ⏳.
 
-## Stage 0.4 — Auth, RBAC, audit, settings, notifications   `[ ◐ in progress ]`
+## Stage 0.4 — Auth, RBAC, audit, settings, notifications   `[ ☑ done 7 Jul 2026 ]`
 **Goal:** the security + configuration spine every module hangs on.
-**Depends on:** 0.2. **Local blocker: needs the `hrms` database created on the native Postgres (creds are the user's) before migrations can run.**
+**Depends on:** 0.2. ~~Local blocker~~ **resolved 7 Jul 2026: DATABASE_URL provided; migration 0001 applied to the live Postgres.**
 **Tasks:**
-- [ ] P0-T20 — Auth: JWT issuer (15 min access + 7 d refresh httpOnly) + bcrypt + lockout/backoff; SSO tokens the ATS can validate *(NFR-03)*
-- [~] P0-T21 — RBAC: **migration 0001 written** (`core.{users,roles,permissions,role_permissions,user_roles}`) + **seed data encoded verbatim from 08 §1–2** (`src/core/rbac/seed-data.ts`, 10 roles × 38 permissions × scope semantics) with a consistency test suite asserting the §2 hard rules (it_admin never sees compensation; managers never override attendance; reopen = super_admin only; two-person finalize). Remaining: run migration, seed loader, `core.reporting_tree` closure, per-role nav shells *(CORE-10)*
-- [~] P0-T22 — **`core.audit_log` migration written**: append-only (UPDATE/DELETE-rejecting trigger) + **hash-chained** rows (sha256 per row, advisory-lock serialized) + `core.verify_audit_chain()` tamper-detection function *(CORE-11, doc 14 §7.4)*. Remaining: run migration + integration test proving tamper detection
-- [~] P0-T23 — **`core.settings` migration written** (typed JSONB key-value + description + updated_by). Remaining: settings service + zod validation per value_type
-- [ ] P0-T24 — Notification skeleton: `wf.notifications` queue (in-app + SMTP), templates, retry + dead-letter, `wf.event_subscriptions` matrix *(WF-02)*
-**Modules/files:** `backend/src/modules/{auth,rbac,audit,settings,notifications}/`
-**Tests required:** integration tests asserting: lockout, refresh rotation, permission denial, audit-chain verification fn detects a tampered row, notification retry→dead-letter.
-**Exit criteria:** login against ATS with one token works on staging · permission grid export matches 08 §2 · tamper-detection test green.
+- [x] P0-T20 — Auth **built + integration-tested live (7 Jul 2026)**: oRPC procedures `login/refresh/logout/me`; JWT HS256, 15 min access + 7 d refresh in httpOnly cookie (path-scoped `/api/auth`, rotated on every use); bcrypt; **lockout after 5 failures with exponential backoff** (15→30→60→120 min, DB-backed — proven in test incl. "correct password stays refused while locked"); uniform failure responses (no user-enumeration oracle); every auth event audited with IP. *SSO-against-ATS validation = pending ATS-side change.* *(NFR-03)*
+- [x] P0-T21 — RBAC **live**: migration 0001 applied; **seeded 10 roles / 38 permissions / 155 grants** from 08 §1–2 (idempotent `npm run seed:rbac`); §2 hard-rule proven in integration test (it_admin ∌ compensation.read). *Remaining elsewhere: `core.reporting_tree` closure → Stage 0.5 (needs employees); per-role nav shells → frontend team.* *(CORE-10)*
+- [x] P0-T22 — `core.audit_log` **live and proven**: UPDATE/DELETE rejected by the DB itself (tested); **hash chain** (sha256 per row, advisory-lock serialized); `core.verify_audit_chain()` **caught a deliberately forged row in the integration test, then confirmed the restored chain** *(CORE-11, doc 14 §7.4, MCA rule)*
+- [x] P0-T23 — `core.settings` **live**: typed reads (`getTypedSetting` with zod per value_type), **audited writes** (old→new lands in the hash chain — tested), authed read procedures `GET /api/settings[/{key}]`. *Write endpoint arrives with the permission-enforcement layer.*
+- [x] P0-T24 — Notification skeleton **live (7 Jul 2026)**: `wf.notifications` queue (claim via FOR UPDATE SKIP LOCKED) + `wf.event_subscriptions` recipient matrix (role/user/email fan-out) + pluggable transport (dev-log now, SMTP when server creds exist) + **retry → dead-letter proven in test** (5 attempts → status 'dead', never silently dropped) *(WF-02)*
+- [x] *(added — sponsor requirement 7 Jul 2026)* **Central runtime access control on EVERY API**: `withPermission(code)` gate in `api/orpc.ts` (every business procedure declares one permission) + **RBAC admin API** (`/api/rbac/matrix`, grant/revoke permission↔role, assign/remove user↔role — all audited) — **integration-proven: revoke → 403 on the very next request, grant back → 200, no restart** *(CORE-10, PI-ESS-2 access matrix)*
+**Modules/files:** `backend/src/modules/{auth,settings}/`, `backend/src/core/{audit,auth,rbac}/`, `backend/migrations/0001…`
+**Tests:** 47 total green (verify exit 0), incl. 8 live-DB integration tests: seed sanity, hard rule, append-only, tamper detection, lockout/backoff, full login→me→refresh-rotation→logout, garbage-token 401s, audited settings round-trip.
+**Exit criteria:** ~~tamper-detection test green~~ ✅ · permission grid matches 08 §2 ✅ (seed + hard-rule test) · login against ATS on staging ⏳ (ATS-side + server task).
 
-## Stage 0.5 — Org structure + employee master + two-source import   `[ ☐ ]`
+## Stage 0.5 — Org structure + employee master + two-source import   `[ ☑ done 7 Jul 2026 — pipeline proven on mock fixtures; real EMS/greytHR snapshots swap in via P0-T09/T02 ]`
 **Goal:** the single most important table populated with real, validated data — **seeded from the live EMS master (1,066 employees), enriched from greytHR** (doc 11 §0.1 decision).
 **Depends on:** 0.4 (audit/RBAC), Stage 0.1 P0-T02 (greytHR export), P0-T08/T09 (entity answers + EMS snapshot).
 **Tasks:**
-- [ ] P0-T30 — Org tables: companies = **canonical 14-entity master with dedupe rules** (doc 11 §0.2): merge "Rashmi Metalix Ltd"→RML; e-code prefixes per doc 11 §6.3 (RML/RGH/RDL/RPL/EIP/KIO/KOL/RRE/RPF/RMT/RMB/RBS/RAS); `is_india_payroll` flag (5 foreign entities = false); locations, cost_centers, departments, org_units, designations, grades; e-code generator as DB fn with `FOR UPDATE` *(CORE-02)*
-- [ ] P0-T31 — `core.employees` + all CORE-01..08 validations (PAN/Aadhaar/IFSC/bank/DOB-minor/duplicates/CTC-vs-breakup); statutory-ID masking by permission; `employee_history`, `employee_family`, `documents` (object-store keys via **storage adapter → SeaweedFS**, doc 14 §4)
-- [ ] P0-T32a — **Import step 1 (EMS seed):** load the EMS `users` snapshot keyed on `userid` (= greytHR e-code): identity, gender, phone, company (canonicalized), department/designation (normalized — 112/176 distinct values need mapping tables), `reporting_manager_id`→RM, `hod_id`→functional manager, bcrypt hashes (users can log in day one); flag `userid` typos (e.g. EIPL0346 vs EIPLL366) into an exception report *(CORE-12, doc 11 §0.1)*
-- [ ] P0-T32b — **Import step 2 (greytHR enrich):** match on the same `userid`, fill what EMS lacks: DOB, DOJ, grade, CTC/statutory IDs (PAN/Aadhaar/UAN/ESIC), bank, PF/ESI numbers; per-row validation report; reconciliation counts vs both sources; unmatched-in-either list for HR review
-- [ ] P0-T33 — Directory + profile UI shell (05 §4.2), compensation tab masked
+- [x] P0-T30 — Org tables **live** (migration 0003): companies = **canonical entity master seeded (13 canonical of 14 raw — "Rashmi Metalix Ltd" is the dup that merges into RML)** with e-code prefixes + `is_india_payroll` flags; locations, cost_centers, departments, org_units, designations, grades; **e-code generator as atomic DB fn — 20 concurrent calls → 20 unique codes proven** *(CORE-02)*
+- [x] P0-T31 — `core.employees` **live** (full docs/03 §3 column set; enrich-fed columns NULLable until the Phase-2 tightening gate — documented in the migration header); `employee_history`, `employee_family`, `documents`; exited-requires-DOL CHECK (PP-17); **reporting-tree closure table + statement-level rebuild trigger — cross-entity depth-2 subtree proven (KQ)**
+- [x] P0-T32a — **Import step 1 (EMS seed) built + proven on mock fixtures**: company canonicalization ("Rashmi Metalix Ltd"→RML, "Rashmi 6 Paradigm"→RPL ✓ tested), strict e-code series check (**catches EIPLL366-style typos** ✓), department/designation normalization (case/whitespace variants merge ✓), RM/HOD two-pass linking, **EMS bcrypt hashes → login works day one** ✓, exception report (nothing silent) *(CORE-12)*
+- [x] P0-T32b — **Import step 2 (greytHR enrich) built + proven**: matches on `userid`, fills DOB/DOJ/category/PAN/Aadhaar/UAN/PF/bank; unmatched userids reported ✓
+- [ ] P0-T33 — Directory + profile UI shell (05 §4.2) — **frontend team** (design system components exist in `frontend/src/ui`)
+- [ ] *(data swap)* Re-run both imports with the REAL EMS snapshot (P0-T09) + greytHR export (P0-T02) once secured — the pipeline is ready
 **Modules/files:** `backend/src/modules/{org,employees,documents,import}/`, `frontend/src/pages/people/`
 **Tests required:** validator unit tests per CORE-08 rule; company-dedupe + designation/department-normalization fixtures; e-code concurrency test; two-source merge test (EMS row + greytHR row → one employee); import round-trip integration test.
 **Exit criteria:** 1,066 EMS rows loaded + enriched, reconciliation counts match both sources, exception report (typos/unmatched) reviewed by HR ops · concurrent e-code test green · SeaweedFS up with nightly mirror configured.
 
-## Stage 0.6 — De-risk spikes   `[ ☐ ]`
+## Stage 0.6 — De-risk spikes   `[ ☑ done 7 Jul 2026 — with the MOCK connector (sponsor decision: no Kent access yet); real Kent = swap one class ]`
 **Goal:** kill the two unknowns that could sink later phases — with measurements, not opinions.
-**Depends on:** 0.2; P0-T01 for the Kent spike.
+**Depends on:** 0.2; ~~P0-T01 for the Kent spike~~ → **mocked per sponsor (7 Jul 2026)**; P0-T01 still owed by IT for the real swap.
 **Tasks:**
-- [ ] P0-T40 — **Kent spike:** KentConnector behind the interface for the confirmed access method; pull one real day of swipes end-to-end into `att.swipe_events` (idempotent upsert, watermark + 30-min overlap, gap detection). Confirm push-vs-pull; if push (webhook/iclock-style), the ACK-after-commit rule (doc 14 §8.2)
-- [ ] P0-T41 — **Scale spike:** synthetic 3k AND 10k × 60 days of swipes; measure partition strategy, muster MV refresh, dashboard snapshot build; freeze partitioning + the documented scale-up trigger on measured numbers
-**Exit criteria:** one real day of Kent data visible in staging with zero dupes on re-run · scale numbers recorded in `docs/recon/scale-spike.md` · partitioning plan frozen.
+- [x] P0-T40 — **Ingestion spike (mock)**: migration 0004 live — `att.swipe_events` **monthly-partitioned from day one** (auto `ensure_swipe_partition`), **append-only by trigger**, idempotency key `(employee_no, swipe_ts, door_code)`; `att.devices` last-seen heartbeat + `findSilentDevices` (the PP-9 pager); `att.ingest_watermarks` advanced only in-transaction. **`MockKentConnector`** (deterministic, realistic: IN/OUT jitter, lunch pairs, cross-plant punches, received-at lag, offline-door simulation) behind the **`KentConnector` interface — real Kent (DB/REST/CSV per P0-T01) swaps in with zero pipeline changes.** Proven in tests: full-day ingest, re-ingest = 0 dupes, full replay = 0 dupes, unknown e-code → NULL-employee exception queue, silent-door detection, FILO aggregate ✓
+- [x] P0-T41 — **Scale spike run**: 3,000 employees × 14 days = **96,642 swipes ingested in 2.2 s (43,529 rows/s)** through the real pipeline; full-duplicate replay → **0 inserts in 0.11 s**; FILO aggregate over 42,000 employee-days in **0.15 s**. Results + conclusions in `docs/recon/scale-spike.md`; **partitioning strategy frozen**. Re-run on the production box before G0 (same script: `npx tsx scripts/scale-spike.ts`)
+**Exit criteria:** ~~scale numbers recorded~~ ✅ · ~~partitioning frozen~~ ✅ · one real day of REAL Kent data ⏳ (blocked on P0-T01 — the only remaining piece).
 
 ---
 
 ## Gate G0 — Phase 0 sign-off
-- [ ] Employee master loaded + validated: EMS seed (1,066) + greytHR enrichment, reconciled to both sources; entity master canonicalized (14 → deduped, India-payroll flags set per P0-T08 answers)
-- [ ] SSO works against the ATS
-- [ ] Deploy pipeline + PgBouncer proven on staging
-- [ ] One real day of Kent swipes ingested idempotently
-- [ ] Scale-spike numbers acceptable; partitioning + trigger frozen
+
+**Status 7 Jul 2026: all locally-executable work DONE (backend verify 0, 66 tests incl. 27 live-DB integration; frontend verify 0). Remaining gate items are EXTERNAL — data, server, and IT dependencies:**
+
+- [ ] Employee master loaded with REAL data: EMS seed (1,066) + greytHR enrichment — *pipeline built + proven on fixtures; needs the P0-T09 snapshot + P0-T02 export*
+- [ ] SSO works against the ATS — *needs ATS-side JWT validation change*
+- [ ] Deploy pipeline + PgBouncer proven on staging — *needs server access (P0-T11/T13)*
+- [ ] One REAL day of Kent swipes ingested — *pipeline proven with mock; needs P0-T01 access method from IT*
+- [x] Scale-spike numbers acceptable; partitioning frozen *(docs/recon/scale-spike.md — re-run on prod box at sign-off)*
 - [ ] Stage 0.1 external dependencies resolved (or escalated with dates)
 - [ ] Sponsor + IT sign-off recorded

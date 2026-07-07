@@ -6,8 +6,10 @@
     "src/core/rbac/seed-data.ts",
     "src/api/orpc.ts",
     "src/api/router.ts",
-    "migrations/*.ts"
+    "src/modules/*/index.ts",
+    "migrations/*.ts",
+    "scripts/*.ts"
   ],
   "project": ["src/**/*.ts", "tests/**/*.ts"],
-  "ignoreDependencies": ["ts-node"]
+  "exclude": ["types"]
 }

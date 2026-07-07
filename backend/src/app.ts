@@ -1,24 +1,30 @@
 import express, { type Express } from 'express';
-import { getOpenApiSpec, orpcMiddleware } from './api/handler.js';
+import cookieParser from 'cookie-parser';
+import { getOpenApiSpec, orpcMiddleware, type AppDeps } from './api/handler.js';
 
 /**
- * Express app factory — pure, no I/O at import time, so tests can build it
- * without a database or environment.
+ * Express app factory — pure, no I/O at import time; tests inject their own
+ * deps (or none, for DB-less surface tests).
  *
  * Routing model (docs/14 §3):
  *  - /api/*            → oRPC procedures (zod input+output; the internal API)
  *  - /api/openapi.json → the generated contract the frontend team consumes
  *  - /health           → plain envelope endpoint for load-balancer checks
- *    (the `{success,data,error,meta}` envelope survives only on such
- *     external/plain endpoints — docs/02 §1)
  */
-export function createApp(): Express {
+export function createApp(deps?: Partial<AppDeps>): Express {
+  const resolved: AppDeps = {
+    db: deps?.db ?? null,
+    jwtSecret: deps?.jwtSecret ?? 'insecure-test-only-secret-never-in-production!',
+    secureCookies: deps?.secureCookies ?? false,
+  };
+
   const app = express();
 
   app.use(express.json());
+  app.use(cookieParser());
 
   // oRPC serves everything under /api; unmatched paths fall through.
-  app.use(orpcMiddleware());
+  app.use(orpcMiddleware(resolved));
 
   app.get('/api/openapi.json', (_req, res, next) => {
     getOpenApiSpec()

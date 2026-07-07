@@ -24,6 +24,7 @@ describe('setup smoke', () => {
       NODE_ENV: 'test',
       PORT: '5100',
       DATABASE_URL: 'postgres://hrms:pw@localhost:5432/hrms',
+      JWT_SECRET: 'a-test-secret-that-is-at-least-32-characters!',
     });
     expect(env.PORT).toBe(5100);
     expect(env.NODE_ENV).toBe('test');
