@@ -30,6 +30,9 @@
   --warning: #c98b3a;
   --info: #5b7fa8;
 
+  /* Warm bottom-right canvas gradient corner (docs/05 §5 — "~#F7E9B0"). */
+  --canvas-glow: #f7e9b0;
+
   /* ---- Radii ---- */
   --radius-card: 24px;
   --radius-tile: 18px;
@@ -66,4 +69,7 @@
   --negative: #e87a72;
   --warning: #e0a960;
   --info: #7593b8;
+
+  /* Dark canvas glow — a warm ember, far more restrained than the light corner. */
+  --canvas-glow: #2a2410;
 }

@@ -24,6 +24,7 @@
   --color-negative: var(--negative);
   --color-warning: var(--warning);
   --color-info: var(--info);
+  --color-canvas-glow: var(--canvas-glow);
 
   --radius-card: 24px;
   --radius-tile: 18px;
@@ -34,12 +35,111 @@
 
 body {
   font-family: var(--font-sans);
-  background: var(--canvas);
+  /* Crextio signature: warm bottom-right gradient corner, not a flat cream fill
+     (docs/05 §5). The glow is a token so it flips light↔dark. */
+  background:
+    radial-gradient(
+      120% 120% at 100% 100%,
+      var(--canvas-glow) 0%,
+      transparent 42%
+    ),
+    var(--canvas);
+  background-attachment: fixed;
   color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* Numbers that align or animate are always tabular (docs/05 §1 rule 5). */
 .tabular-nums,
 [data-numeric] {
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+ * Warm Editorial pattern utilities (docs/05 §5) — kept as CSS, not per-element
+ * hexes, so the "no hardcoded hex in a component" rule holds. All colors here
+ * derive from semantic tokens via color-mix so they flip with the theme.
+ * ------------------------------------------------------------------------- */
+
+/* Soft, borderless card shadow — separation by shadow + surface, never a 1px line. */
+.u-shadow-card {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent),
+    0 8px 24px -12px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+.u-shadow-float {
+  box-shadow:
+    0 2px 6px color-mix(in srgb, var(--ink) 8%, transparent),
+    0 16px 40px -16px color-mix(in srgb, var(--ink) 24%, transparent);
+}
+
+/* Charcoal hero grain — a faint fibrous texture over the dark feature card
+ * (docs/12 §7, the ATS recipe). feTurbulence baked into a data-URI so it costs
+ * nothing at runtime. Sits under content via a ::before layer. */
+.u-grain {
+  position: relative;
+  isolation: isolate;
+}
+.u-grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0.5;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+}
+
+/* Diagonal-hatch texture — in-progress / remaining / weekend / inactive states.
+ * Used by HatchFill and progress remainders (docs/05 §5). */
+.u-hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--ink) 12%, transparent) 0,
+    color-mix(in srgb, var(--ink) 12%, transparent) 1.5px,
+    transparent 1.5px,
+    transparent 7px
+  );
+}
+.u-hatch-strong {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--ink) 22%, transparent) 0,
+    color-mix(in srgb, var(--ink) 22%, transparent) 2px,
+    transparent 2px,
+    transparent 8px
+  );
+}
+
+/* Press feedback — every pressable element scales to 0.97 on :active with the
+ * exact motion tokens (docs/05 §2.3). Applied via class so the easing is uniform. */
+.u-press {
+  transition: transform var(--motion-press) var(--ease-out-strong);
+}
+.u-press:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Reduced motion = gentler, not zero: kill positional/scale movement,
+     keep color/opacity that aids comprehension (docs/05 §2.3). */
+  .u-press,
+  .u-press:active {
+    transform: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Visible focus ring in both themes — never remove focus, refine it (§7). */
+:where(a, button, [role='button'], [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
 }

@@ -1,0 +1,55 @@
+---
+description: Read the docs/ folder before any HRMS work — specs, order, and execution workflow
+alwaysApply: true
+---
+
+# Read docs/ before working on this project
+
+**Do not write or change code until you have read the relevant documentation.** This repo is designed to be executable without tribal knowledge. The `docs/` folder is the source of truth for what to build, why, and how.
+
+## Mandatory first step
+
+1. List `docs/` and skim `docs/00-EXECUTIVE-SUMMARY.md` §7 (documentation index) and §3 (locked decisions).
+2. Read the docs that apply to your task (see table below). For new features or unfamiliar areas, read **all** of `docs/` in order before coding.
+3. Check `plans/` for the current phase, stage, and open checkboxes — tick progress in the same PR that completes the work.
+
+## Reading order (full pass)
+
+| Doc | When you need it |
+|---|---|
+| `00-EXECUTIVE-SUMMARY.md` | Always — context, locked decisions, risks |
+| `01-REQUIREMENTS-PRD.md` | Requirements, personas, traceability matrix |
+| `02-ARCHITECTURE.md` | Stack, deployment, integrations, repo layout |
+| `03-DATABASE-SCHEMA.md` | Any schema, migration, or query work |
+| `04-MODULE-SPECS.md` | Business logic (attendance, leave, payroll, workflows) |
+| `05-UIUX-SPEC.md` | Frontend, design tokens, Warm Editorial UI |
+| `06-REPORTS-AND-DASHBOARDS.md` | Reports, exports, CEO dashboard KPIs |
+| `07-ROADMAP.md` | Phasing, sequencing, cut-over, risks |
+| `08-ROLES-AND-PERMISSIONS.md` | RBAC, roles, approval chains, navigation |
+| `09-GREYTHR-RECON-FINDINGS.md` | Parity targets from live greytHR recon |
+| `10-INDIA-PAYROLL-STATUTORY-REFERENCE.md` | Statutory rates, formulas, golden tests |
+| `11-EXISTING-EMS-YATRA-AVEDAN.md` | T&E absorption (Phase 3.5) |
+| `12-VISUAL-REFERENCE-CREXTIO.md` | Design feel and visual direction |
+| `13-MASTER-BUILD-PLAN.md` | Executable steps, gates, scale posture |
+| `14-TECH-STACK-AND-RELIABILITY.md` | Stack decisions, reliability program, testing |
+
+**Conflict rule:** where `14-TECH-STACK-AND-RELIABILITY.md` conflicts with `02-ARCHITECTURE.md`, **doc 14 wins**.
+
+## Execution workflow
+
+- **Specs:** `docs/` — what and why
+- **Tracker:** `plans/` — current phase, stages, gates, checkboxes (`plans/README.md` for how to use)
+- **PRs:** cite requirement IDs (`feat: ATT-08 …`); no orphan features
+- **Policy values:** never hardcode — read from `core.settings` (doc 04 §8)
+- **Money/payroll:** test-first with golden fixtures (docs 04 §6.9, 10 §13); human review mandatory on payroll-core changes
+
+## Repo layout (from doc 02)
+
+```
+frontend/   # React — tokens + ui kit live here
+backend/    # Express + TypeScript modules
+docs/       # specifications (read first)
+plans/      # live execution tracker
+```
+
+Frontend and backend are **independent projects** with an API-first contract (typed RPC + OpenAPI). Money math exists **only** in the backend.
