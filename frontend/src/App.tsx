@@ -1,26 +1,26 @@
 /**
- * Stage 0.3 gallery shell (docs/05 §3, §5) — renders the Warm Editorial
- * component kit in a masthead + canvas layout with a live theme toggle, so the
- * kit is verifiable in light AND dark (Stage 0.3 exit criterion, plans/phase-0).
+ * Dashboard (super-admin home). Warm Editorial (docs/05). Composition only —
+ * no primitives invented here (docs/05 §0.1 firewall).
  *
- * This is a demo surface, NOT a real screen — real per-role screens land in
- * Phase 1+. Sample figures are drawn from the live EMS read (docs/11 §0:
- * 1,066 employees, real entities/departments) so the composition feels grounded.
+ * Data below is PLACEHOLDER, shaped to the live EMS master (docs/11 §0) so the
+ * layout is real; every block is wired to swap onto an oRPC query in Phase 1
+ * (no figure here is a policy value — CLAUDE.md §1). Nothing developer-facing
+ * (widget names, spec refs, "demo" copy) may render as UI text.
  */
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   ArrowUpRight,
   Bell,
-  Plus,
   Search,
   SlidersHorizontal,
-  Phone,
   Inbox,
   Lock,
   LogOut,
 } from 'lucide-react';
 import { LoginPage } from './pages/auth/LoginPage';
+import { findDevUser, firstName } from './dev/devUsers';
+import { todayLongIST } from './lib/date';
 import {
   Button,
   Card,
@@ -31,7 +31,6 @@ import {
   DotMatrix,
   Drawer,
   EmptyState,
-  HatchFill,
   IconButton,
   KpiNumber,
   KpiPillRow,
@@ -43,14 +42,7 @@ import {
 } from './ui';
 import type { Column, Dot, StatusTone, TimelineStep } from './ui';
 
-const NAV = [
-  'Dashboard',
-  'People',
-  'Attendance',
-  'Leave',
-  'Payroll',
-  'Reports',
-];
+const NAV = ['Dashboard', 'People', 'Attendance', 'Leave', 'Payroll', 'Reports'];
 
 interface Employee {
   ecode: string;
@@ -61,7 +53,8 @@ interface Employee {
   status: { tone: StatusTone; label: string };
 }
 
-// Sample rows — shape/format mirrors the live EMS master (docs/11 §0).
+// --- Placeholder data (Phase 1: replace with oRPC queries) --------------------
+
 const EMPLOYEES: Employee[] = [
   {
     ecode: 'RML035384',
@@ -99,7 +92,7 @@ const EMPLOYEES: Employee[] = [
     ecode: 'RGH001188',
     name: 'Priya Nair',
     designation: 'Process Engineer',
-    dept: 'Production-Hotmill',
+    dept: 'Production — Hot Mill',
     entity: 'RGH',
     status: { tone: 'positive', label: 'Confirmed' },
   },
@@ -134,9 +127,7 @@ const EMP_COLUMNS: Column<Employee>[] = [
     key: 'status',
     header: 'Status',
     width: '130px',
-    render: (r) => (
-      <StatusBadge tone={r.status.tone}>{r.status.label}</StatusBadge>
-    ),
+    render: (r) => <StatusBadge tone={r.status.tone}>{r.status.label}</StatusBadge>,
   },
 ];
 
@@ -151,7 +142,7 @@ const APPROVAL_CHAIN: TimelineStep[] = [
     title: 'Reporting Manager approved',
     timestamp: '02 Jul 11:40',
     state: 'done',
-    description: 'A. Saraf · "Approved"',
+    description: 'A. Saraf · “Approved”',
   },
   {
     title: 'HOD review',
@@ -162,7 +153,6 @@ const APPROVAL_CHAIN: TimelineStep[] = [
   { title: 'HR posting', state: 'pending' },
 ];
 
-// Sample month of attendance for the mini-viz.
 const ATT_DOTS: Dot[] = Array.from({ length: 28 }, (_, i): Dot => {
   const day = i + 1;
   const weekend = day % 7 === 0 || day % 7 === 6;
@@ -173,12 +163,19 @@ const ATT_DOTS: Dot[] = Array.from({ length: 28 }, (_, i): Dot => {
       : day === 19
         ? 'leave'
         : 'present';
-  return {
-    key: `d${String(day)}`,
-    state,
-    title: `Jun ${String(day)} · ${state}`,
-  };
+  return { key: `d${String(day)}`, state, title: `Jun ${String(day)} · ${state}` };
 });
+
+const ENTITIES = [
+  { code: 'RML', count: 667 },
+  { code: 'RGH', count: 174 },
+  { code: 'Reach Dredging', count: 96 },
+  { code: 'RPL', count: 57 },
+  { code: 'Koove', count: 30 },
+  { code: 'eHoome IoT', count: 19 },
+];
+
+// --- Chrome -------------------------------------------------------------------
 
 function Masthead({ onSignOut }: { onSignOut: () => void }) {
   return (
@@ -198,9 +195,7 @@ function Masthead({ onSignOut }: { onSignOut: () => void }) {
               type="button"
               className={
                 'u-press rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-(--motion-micro) ' +
-                (i === 0
-                  ? 'bg-hero text-hero-ink'
-                  : 'text-ink-muted hover:text-ink')
+                (i === 0 ? 'bg-hero text-hero-ink' : 'text-ink-muted hover:text-ink')
               }
             >
               {item}
@@ -219,130 +214,135 @@ function Masthead({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
-function Section({
+function SectionHead({
   title,
-  children,
+  meta,
+  action,
 }: {
   title: string;
-  children: ReactNode;
+  meta?: string;
+  action?: ReactNode;
 }) {
   return (
-    <section className="space-y-4">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-faint">
-        {title}
-      </h2>
-      {children}
-    </section>
+    <div className="flex items-baseline justify-between gap-4">
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-base font-semibold text-ink">{title}</h2>
+        {meta !== undefined && <span className="text-xs text-ink-faint">{meta}</span>}
+      </div>
+      {action}
+    </div>
   );
 }
 
+// --- Screen -------------------------------------------------------------------
+
 export function App() {
-  const [authed, setAuthed] = useState(false);
+  const [userid, setUserid] = useState<string | null>(null);
   const [selected, setSelected] = useState<Employee | null>(null);
-  const [showInbox, setShowInbox] = useState(true);
+  const [approvalsCleared, setApprovalsCleared] = useState(false);
   const [finalizeOpen, setFinalizeOpen] = useState(false);
   const [finalized, setFinalized] = useState(false);
 
-  if (!authed) {
+  if (userid === null) {
     return (
       <LoginPage
-        onSuccess={() => {
-          setAuthed(true);
+        onSuccess={(id) => {
+          setUserid(id);
         }}
       />
     );
   }
 
+  const greetingName = firstName(findDevUser(userid), userid);
+
   return (
     <div className="min-h-screen">
       <Masthead
         onSignOut={() => {
-          setAuthed(false);
+          setUserid(null);
         }}
       />
 
       <main className="mx-auto max-w-6xl space-y-10 px-6 py-8">
-        {/* Greeting — the ESS signature moment (§6) */}
+        {/* Greeting */}
         <div>
-          <p className="text-sm text-ink-muted">Tuesday, 6 July</p>
+          <p className="text-sm text-ink-muted">{todayLongIST()}</p>
           <h1 className="mt-0.5 text-3xl font-light tracking-tight text-ink">
-            Hello Rachna
+            Hello {greetingName}
           </h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            Here’s the pulse across the group today.
+          </p>
         </div>
 
-        {/* KPI pill row — the 4-state signature header */}
-        <Section title="KPI pill row · 4 states">
-          <KpiPillRow
-            pills={[
-              { label: 'Headcount', value: 1066, state: 'filled' },
-              { label: 'Absent today', value: 38, state: 'accent' },
-              { label: 'Pending approvals', value: 12, state: 'hatched' },
-              { label: 'Joiners MTD', value: 24, state: 'outline' },
-            ]}
-          />
-        </Section>
+        {/* Headline metrics */}
+        <KpiPillRow
+          pills={[
+            { label: 'Headcount', value: 1066, state: 'filled' },
+            { label: 'Absent today', value: 38, state: 'accent' },
+            { label: 'Pending approvals', value: 12, state: 'hatched' },
+            { label: 'Joiners this month', value: 24, state: 'outline' },
+          ]}
+        />
 
-        {/* Hero + supporting cards */}
-        <Section title="Hero card · content cards">
-          <div className="grid gap-4 lg:grid-cols-3">
-            <DarkCard className="lg:col-span-1">
-              <p className="text-sm text-hero-muted">Attendance today</p>
-              <div className="mt-2 flex items-end gap-2">
-                <span className="text-4xl font-semibold leading-none">
-                  <KpiNumber value={94.8} precision={1} suffix="%" />
-                </span>
-                <StatusBadge tone="positive">On track</StatusBadge>
-              </div>
-              <p className="mt-3 text-sm text-hero-muted">
-                1,012 present · 38 absent · 16 on leave. All Kent doors
-                reporting.
-              </p>
-              <div className="mt-5">
-                <Button variant="primary" trailingIcon={<ArrowUpRight />}>
-                  Open muster
-                </Button>
-              </div>
-            </DarkCard>
+        {/* Attendance + travel spend */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <DarkCard className="lg:col-span-1">
+            <p className="text-sm text-hero-muted">Attendance today</p>
+            <div className="mt-2 flex items-end gap-2">
+              <span className="text-4xl font-semibold leading-none">
+                <KpiNumber value={94.8} precision={1} suffix="%" />
+              </span>
+              <StatusBadge tone="positive">On track</StatusBadge>
+            </div>
+            <p className="mt-3 text-sm text-hero-muted">
+              1,012 present · 38 absent · 16 on leave, live across all sites.
+            </p>
+            <div className="mt-5">
+              <Button variant="primary" trailingIcon={<ArrowUpRight />}>
+                Open muster
+              </Button>
+            </div>
+          </DarkCard>
 
-            <Card className="lg:col-span-2">
-              <CardHeader
-                title="Claim vs budget"
-                subtitle="Yatra Avedan settlement — Q2 travel"
-                action={
-                  <IconButton
-                    label="Filter"
-                    icon={<SlidersHorizontal />}
-                    size="sm"
-                  />
-                }
+          <Card className="lg:col-span-2">
+            <CardHeader
+              title="Travel claims vs budget"
+              subtitle="Yatra Avedan · Q2 FY26"
+              action={
+                <IconButton label="Filter" icon={<SlidersHorizontal />} size="sm" />
+              }
+            />
+            <div className="space-y-4">
+              <SegmentedProgress
+                label="Airfare"
+                primary={82000}
+                secondary={18000}
+                total={140000}
+                prefix="₹"
               />
-              <div className="space-y-4">
-                <SegmentedProgress
-                  label="Airfare"
-                  primary={82000}
-                  secondary={18000}
-                  total={140000}
-                  prefix="₹"
-                />
-                <SegmentedProgress
-                  label="Hotel"
-                  primary={64000}
-                  total={90000}
-                  prefix="₹"
-                />
-                <SegmentedProgress
-                  label="Daily allowance"
-                  primary={21000}
-                  total={30000}
-                  prefix="₹"
-                />
-              </div>
-            </Card>
-          </div>
-        </Section>
+              <SegmentedProgress label="Hotel" primary={64000} total={90000} prefix="₹" />
+              <SegmentedProgress
+                label="Daily allowance"
+                primary={21000}
+                total={30000}
+                prefix="₹"
+              />
+            </div>
+          </Card>
+        </div>
 
-        {/* People table → drawer (row click). Selected row = solid gold (§7.4) */}
-        <Section title="Data table → drawer · row click opens detail">
+        {/* People directory */}
+        <section className="space-y-4">
+          <SectionHead
+            title="People"
+            meta={`${String(EMPLOYEES.length)} of 1,066`}
+            action={
+              <Button variant="ghost" trailingIcon={<ArrowUpRight />}>
+                View all
+              </Button>
+            }
+          />
           <DataTable
             columns={EMP_COLUMNS}
             rows={EMPLOYEES}
@@ -350,136 +350,95 @@ export function App() {
             onRowClick={setSelected}
             selectedKey={selected?.ecode}
           />
-        </Section>
+        </section>
 
-        {/* Attendance mini-viz + entity chips */}
-        <Section title="Dot matrix · pills · status badges">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader
-                title="My attendance"
-                subtitle="June 2026 · gold = present"
-              />
-              <DotMatrix dots={ATT_DOTS} columns={7} />
-            </Card>
-            <Card>
-              <CardHeader title="Group entities" subtitle="14 in scope" />
-              <div className="flex flex-wrap gap-2">
-                <Pill accent>RML · 667</Pill>
-                <Pill>RGH · 174</Pill>
-                <Pill>Reach Dredging · 96</Pill>
-                <Pill>RPL · 57</Pill>
-                <Pill>eHoome iOT · 19</Pill>
-                <Pill>Koove · 30</Pill>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <StatusBadge tone="positive">Confirmed</StatusBadge>
-                <StatusBadge tone="warning">Pending RM</StatusBadge>
-                <StatusBadge tone="negative">Rejected</StatusBadge>
-                <StatusBadge tone="info">On leave</StatusBadge>
-                <StatusBadge tone="neutral">Draft</StatusBadge>
-              </div>
-            </Card>
-          </div>
-        </Section>
-
-        {/* Empty state + typed-confirm modal */}
-        <Section title="Empty state · timeline · typed-confirm modal">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card padded={false}>
-              {showInbox ? (
-                <div className="p-6">
-                  <CardHeader title="Approvals" subtitle="1 pending" />
-                  <Timeline steps={APPROVAL_CHAIN} />
-                  <div className="mt-4">
-                    <Button
-                      variant="primary"
-                      onClick={() => { setShowInbox(false); }}
-                    >
-                      Approve & clear
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <EmptyState
-                  icon={<Inbox />}
-                  title="All caught up"
-                  description="No approvals waiting. New requests land here the moment they’re raised."
-                  action={
-                    <Button
-                      variant="secondary"
-                      onClick={() => { setShowInbox(true); }}
-                    >
-                      Restore demo
-                    </Button>
-                  }
-                />
-              )}
-            </Card>
-
-            <Card>
-              <CardHeader
-                title="Payroll — June 2026"
-                subtitle="The one place a heavy confirmation is right (§4.5)"
-              />
-              <div className="flex items-center gap-3">
-                {finalized ? (
-                  <StatusBadge tone="positive">Finalized</StatusBadge>
-                ) : (
-                  <StatusBadge tone="warning">Review</StatusBadge>
-                )}
-                <Button
-                  variant="hero"
-                  leadingIcon={<Lock />}
-                  disabled={finalized}
-                  onClick={() => { setFinalizeOpen(true); }}
-                >
-                  Finalize run
-                </Button>
-              </div>
-            </Card>
-          </div>
-        </Section>
-
-        {/* Buttons — all variants + states */}
-        <Section title="Buttons · icon buttons · hatch">
+        {/* Attendance record + workforce spread */}
+        <div className="grid gap-4 md:grid-cols-2">
           <Card>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button variant="primary">Primary</Button>
-              <Button variant="hero">Hero</Button>
-              <Button variant="secondary">Secondary</Button>
-              <Button variant="ghost">Ghost</Button>
-              <Button variant="danger">Danger</Button>
-              <Button variant="secondary" loading>
-                Saving
-              </Button>
-              <Button variant="primary" disabled>
-                Disabled
-              </Button>
-              <div className="mx-2 h-8 w-px bg-line" />
-              <IconButton label="Add" icon={<Plus />} tone="accent" />
-              <IconButton label="Call" icon={<Phone />} />
-              <IconButton label="Open" icon={<ArrowUpRight />} tone="hero" />
-              <HatchFill rounded className="h-10 w-28" />
+            <CardHeader title="My attendance" subtitle="June 2026" />
+            <DotMatrix dots={ATT_DOTS} columns={7} />
+          </Card>
+          <Card>
+            <CardHeader title="Workforce by entity" subtitle="14 legal entities" />
+            <div className="flex flex-wrap gap-2">
+              {ENTITIES.map((e, i) => (
+                <Pill key={e.code} accent={i === 0}>
+                  {e.code} · {e.count}
+                </Pill>
+              ))}
             </div>
           </Card>
-        </Section>
+        </div>
 
-        <footer className="pt-2 text-xs text-ink-faint">
-          Stage 0.3 · Warm Editorial kit · tokens verbatim from docs/05 §1 ·
-          zero hardcoded hex in components
-        </footer>
+        {/* Approvals + payroll */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card padded={false}>
+            {approvalsCleared ? (
+              <EmptyState
+                icon={<Inbox />}
+                title="All caught up"
+                description="No approvals waiting. New requests appear here the moment they’re raised."
+              />
+            ) : (
+              <div className="p-6">
+                <CardHeader title="Approvals" subtitle="1 pending" />
+                <Timeline steps={APPROVAL_CHAIN} />
+                <div className="mt-4">
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      setApprovalsCleared(true);
+                    }}
+                  >
+                    Approve &amp; clear
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="Payroll — June 2026"
+              subtitle="Locks the run and issues payslips."
+            />
+            <div className="flex items-center gap-3">
+              {finalized ? (
+                <StatusBadge tone="positive">Finalized</StatusBadge>
+              ) : (
+                <StatusBadge tone="warning">Review</StatusBadge>
+              )}
+              <Button
+                variant="hero"
+                leadingIcon={<Lock />}
+                disabled={finalized}
+                onClick={() => {
+                  setFinalizeOpen(true);
+                }}
+              >
+                Finalize run
+              </Button>
+            </div>
+          </Card>
+        </div>
       </main>
 
-      {/* Detail drawer (row → right drawer, container-transform, §3) */}
+      {/* Row → detail drawer */}
       <Drawer
         open={selected !== null}
-        onClose={() => { setSelected(null); }}
+        onClose={() => {
+          setSelected(null);
+        }}
         title={selected?.name}
         subtitle={selected ? `${selected.designation} · ${selected.dept}` : ''}
         footer={
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => { setSelected(null); }}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSelected(null);
+              }}
+            >
               Close
             </Button>
             <Button variant="primary" trailingIcon={<ArrowUpRight />}>
@@ -498,20 +457,22 @@ export function App() {
               </StatusBadge>
             </div>
             <div>
-              <h3 className="mb-3 text-sm font-semibold text-ink">
-                Request timeline
-              </h3>
+              <h3 className="mb-3 text-sm font-semibold text-ink">Request timeline</h3>
               <Timeline steps={APPROVAL_CHAIN} />
             </div>
           </div>
         )}
       </Drawer>
 
-      {/* Typed-confirm for the irreversible action (§4.5, §8) */}
+      {/* Irreversible action → typed confirm */}
       <ConfirmModal
         open={finalizeOpen}
-        onClose={() => { setFinalizeOpen(false); }}
-        onConfirm={() => { setFinalized(true); }}
+        onClose={() => {
+          setFinalizeOpen(false);
+        }}
+        onConfirm={() => {
+          setFinalized(true);
+        }}
         title="Finalize June 2026 payroll?"
         description="This locks the run and issues payslips. It cannot be undone without a super-admin reopen."
         confirmLabel="Finalize"

@@ -18,8 +18,8 @@ import { IdCard, Lock, ShieldCheck } from 'lucide-react';
 import { Button, StatusBadge, TextField, ThemeToggle } from '../../ui';
 
 interface LoginPageProps {
-  /** Called with validated credentials once the real auth service is wired. */
-  onSuccess?: () => void;
+  /** Called with the entered userid once credentials validate. */
+  onSuccess?: (userid: string) => void;
 }
 
 interface FieldErrors {
@@ -119,7 +119,7 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
 
       const body = (await res.json()) as { accessToken: string; user: { id: number; email: string } };
       sessionStorage.setItem('hrms.accessToken', body.accessToken);
-      onSuccess?.();
+      onSuccess?.(employeeId);
     } catch {
       setFormError('Can’t reach the server. Check your connection and try again.');
     } finally {
