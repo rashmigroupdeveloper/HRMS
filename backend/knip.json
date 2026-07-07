@@ -5,8 +5,7 @@
     "src/core/money/index.ts",
     "src/core/rbac/seed-data.ts",
     "src/api/orpc.ts",
-    "src/api/router.ts",
-    "migrations/*.ts"
+    "src/api/router.ts"
   ],
   "project": ["src/**/*.ts", "tests/**/*.ts"],
   "ignoreDependencies": ["ts-node"]

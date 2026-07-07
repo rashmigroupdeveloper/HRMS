@@ -20,14 +20,17 @@ Full decision record: [`docs/14`](docs/14-TECH-STACK-AND-RELIABILITY.md). Design
 
 ## Getting started
 
+**One-shot local setup** (Postgres must be running on `:5432`):
+```bash
+bash scripts/setup-local-env.sh
+```
+Creates the `hrms` database user/db, writes `backend/.env`, installs deps, and runs migrations.
+
 **Backend**
 ```bash
 cd backend
 npm install
-# Database (one-time, in psql as superuser):
-#   CREATE USER hrms WITH PASSWORD 'change_me';
-#   CREATE DATABASE hrms OWNER hrms;
-cp .env.example .env      # set DATABASE_URL
+# Or: cp .env.example .env and set DATABASE_URL manually
 npm run dev               # http://localhost:5100/health
 ```
 

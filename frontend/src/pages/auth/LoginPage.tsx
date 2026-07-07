@@ -18,8 +18,8 @@ import { IdCard, Lock, ShieldCheck } from 'lucide-react';
 import { Button, StatusBadge, TextField, ThemeToggle } from '../../ui';
 
 interface LoginPageProps {
-  /** Called with validated credentials once the real auth service is wired. */
-  onSuccess?: () => void;
+  /** Called with the entered userid once credentials validate. */
+  onSuccess?: (userid: string) => void;
 }
 
 interface FieldErrors {
@@ -103,7 +103,7 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
     try {
       // Stub: the Stage-0.4 auth service (JWT issuer, P0-T20) replaces this.
       await new Promise((resolve) => setTimeout(resolve, 900));
-      onSuccess?.();
+      onSuccess?.(employeeId);
     } catch {
       setFormError('We couldn’t sign you in. Check your details and try again.');
     } finally {

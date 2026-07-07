@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS core.settings;
+DROP TABLE IF EXISTS core.audit_log;
+DROP FUNCTION IF EXISTS core.verify_audit_chain();
+DROP FUNCTION IF EXISTS core.audit_log_immutable();
+DROP FUNCTION IF EXISTS core.audit_log_chain();
+DROP TABLE IF EXISTS core.user_roles;
+DROP TABLE IF EXISTS core.role_permissions;
+DROP TABLE IF EXISTS core.permissions;
+DROP TABLE IF EXISTS core.roles;
+DROP TABLE IF EXISTS core.users;
+DROP FUNCTION IF EXISTS core.set_updated_at();
+DROP SCHEMA IF EXISTS core;
