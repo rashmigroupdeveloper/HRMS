@@ -2,6 +2,10 @@ import { Kysely, PostgresDialect } from 'kysely';
 import pg from 'pg';
 import type { Database } from './types.js';
 
+// BIGINT (int8) comes back as string by default; our identity ids stay far
+// below 2^53, so plain JS numbers are safe and far more ergonomic.
+pg.types.setTypeParser(pg.types.builtins.INT8, (v) => Number(v));
+
 /**
  * Database factory — connections are created explicitly by the entrypoint,
  * never as an import side effect (tests must be able to import anything
