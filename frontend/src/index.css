@@ -113,6 +113,47 @@ body {
   );
 }
 
+/* Skeleton shimmer — a soft ink-tinted sweep for loading shapes (docs/05 §6
+ * kill-list #3). Token-derived; the reduced-motion block below freezes it. */
+.u-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.u-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--ink) 5%, transparent),
+    transparent
+  );
+  animation: u-shimmer 1.6s var(--ease-std) infinite;
+}
+@keyframes u-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Tooltip/popover pop-in: from 0.95 + fade, never from scale(0) (docs/05 §2.3).
+ * Scale-only transform — Tailwind v4 positions via the separate `translate`
+ * property, which composes with this without being overwritten. */
+@keyframes u-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Press feedback — every pressable element scales to 0.97 on :active with the
  * exact motion tokens (docs/05 §2.3). Applied via class so the easing is uniform. */
 .u-press {

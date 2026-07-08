@@ -12,6 +12,7 @@ import type { ReactNode } from 'react';
 import {
   ArrowUpRight,
   Bell,
+  CalendarPlus,
   Search,
   SlidersHorizontal,
   Inbox,
@@ -19,6 +20,12 @@ import {
   LogOut,
 } from 'lucide-react';
 import { LoginPage } from './pages/auth/LoginPage';
+import { LeaveApplyDrawer } from './pages/leave/LeaveApplyDrawer';
+import {
+  EMPTY_PEOPLE_FILTERS,
+  PeopleFilterDrawer,
+} from './pages/people/PeopleFilterDrawer';
+import type { PeopleFilters } from './pages/people/PeopleFilterDrawer';
 import { logout, restoreSession, type SessionUser } from './lib/session';
 import { todayLongIST } from './lib/date';
 import {
@@ -34,13 +41,24 @@ import {
   IconButton,
   KpiNumber,
   KpiPillRow,
+  MonthCalendar,
   Pill,
   SegmentedProgress,
+  Skeleton,
   StatusBadge,
   ThemeToggle,
   Timeline,
+  Toaster,
+  Tooltip,
+  toast,
 } from './ui';
-import type { Column, Dot, StatusTone, TimelineStep } from './ui';
+import type {
+  AttendanceDay,
+  Column,
+  Dot,
+  StatusTone,
+  TimelineStep,
+} from './ui';
 
 const NAV = ['Dashboard', 'People', 'Attendance', 'Leave', 'Payroll', 'Reports'];
 
@@ -153,6 +171,22 @@ const APPROVAL_CHAIN: TimelineStep[] = [
   { title: 'HR posting', state: 'pending' },
 ];
 
+// July 2026 attendance for the signed-in user. Notes surface as day tooltips —
+// first-in/last-out answered on hover (docs/05 §6 team month-grid signature).
+const MY_JULY: Partial<Record<number, AttendanceDay>> = {
+  1: { state: 'present', note: 'In 08:58 · Out 18:04 · Gate 3' },
+  2: { state: 'present', note: 'In 09:06 · Out 18:22 · Gate 3' },
+  3: { state: 'absent', note: 'No swipe recorded' },
+  4: { state: 'halfday', note: 'In 09:01 · Out 13:30 · GCS Saturday' },
+  5: { state: 'weekoff' },
+  6: { state: 'leave', note: 'Casual leave · approved' },
+  7: { state: 'present', note: 'In 08:52 · Out 18:41 · Gate 1' },
+  8: { state: 'present', note: 'In 09:00 · still in' },
+  12: { state: 'weekoff' },
+  19: { state: 'weekoff' },
+  26: { state: 'weekoff' },
+};
+
 const ATT_DOTS: Dot[] = Array.from({ length: 28 }, (_, i): Dot => {
   const day = i + 1;
   const weekend = day % 7 === 0 || day % 7 === 6;
@@ -204,10 +238,16 @@ function Masthead({ onSignOut }: { onSignOut: () => void }) {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <IconButton label="Search (⌘K)" icon={<Search />} />
-          <IconButton label="Notifications" icon={<Bell />} />
+          <Tooltip label="Search · ⌘K" side="bottom">
+            <IconButton label="Search (⌘K)" icon={<Search />} />
+          </Tooltip>
+          <Tooltip label="Notifications" side="bottom">
+            <IconButton label="Notifications" icon={<Bell />} />
+          </Tooltip>
           <ThemeToggle />
-          <IconButton label="Sign out" icon={<LogOut />} onClick={onSignOut} />
+          <Tooltip label="Sign out" side="bottom">
+            <IconButton label="Sign out" icon={<LogOut />} onClick={onSignOut} />
+          </Tooltip>
         </div>
       </div>
     </header>
@@ -251,6 +291,24 @@ export function App() {
   const [approvalsCleared, setApprovalsCleared] = useState(false);
   const [finalizeOpen, setFinalizeOpen] = useState(false);
   const [finalized, setFinalized] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [peopleFilters, setPeopleFilters] =
+    useState<PeopleFilters>(EMPTY_PEOPLE_FILTERS);
+
+  // Simulated async facet (Phase 1: oRPC query) — the card renders a
+  // layout-matching skeleton until data lands (docs/05 §6 kill-list #3).
+  const [entitiesLoading, setEntitiesLoading] = useState(true);
+  useEffect(() => {
+    if (session === 'checking' || session === null) return;
+    setEntitiesLoading(true);
+    const t = setTimeout(() => {
+      setEntitiesLoading(false);
+    }, 900);
+    return () => {
+      clearTimeout(t);
+    };
+  }, [session]);
 
   useEffect(() => {
     void restoreSession().then(setSession);
@@ -288,14 +346,25 @@ export function App() {
 
       <main className="mx-auto max-w-6xl space-y-10 px-6 py-8">
         {/* Greeting */}
-        <div>
-          <p className="text-sm text-ink-muted">{todayLongIST()}</p>
-          <h1 className="mt-0.5 text-3xl font-light tracking-tight text-ink">
-            Hello {greetingName}
-          </h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Here’s the pulse across the group today.
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm text-ink-muted">{todayLongIST()}</p>
+            <h1 className="mt-0.5 text-3xl font-light tracking-tight text-ink">
+              Hello {greetingName}
+            </h1>
+            <p className="mt-1 text-sm text-ink-muted">
+              Here’s the pulse across the group today.
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            leadingIcon={<CalendarPlus />}
+            onClick={() => {
+              setLeaveOpen(true);
+            }}
+          >
+            Apply leave
+          </Button>
         </div>
 
         {/* Headline metrics */}
@@ -361,9 +430,21 @@ export function App() {
             title="People"
             meta={`${String(EMPLOYEES.length)} of 1,066`}
             action={
-              <Button variant="ghost" trailingIcon={<ArrowUpRight />}>
-                View all
-              </Button>
+              <div className="flex items-center gap-1">
+                <Tooltip label="Filter people">
+                  <IconButton
+                    label="Filter people"
+                    icon={<SlidersHorizontal />}
+                    size="sm"
+                    onClick={() => {
+                      setFiltersOpen(true);
+                    }}
+                  />
+                </Tooltip>
+                <Button variant="ghost" trailingIcon={<ArrowUpRight />}>
+                  View all
+                </Button>
+              </div>
             }
           />
           <DataTable
@@ -378,18 +459,26 @@ export function App() {
         {/* Attendance record + workforce spread */}
         <div className="grid gap-4 md:grid-cols-2">
           <Card>
-            <CardHeader title="My attendance" subtitle="June 2026" />
-            <DotMatrix dots={ATT_DOTS} columns={7} />
+            <CardHeader title="My attendance" subtitle="July 2026" />
+            <MonthCalendar year={2026} month={7} days={MY_JULY} />
           </Card>
           <Card>
             <CardHeader title="Workforce by entity" subtitle="14 legal entities" />
-            <div className="flex flex-wrap gap-2">
-              {ENTITIES.map((e, i) => (
-                <Pill key={e.code} accent={i === 0}>
-                  {e.code} · {e.count}
-                </Pill>
-              ))}
-            </div>
+            {entitiesLoading ? (
+              <div aria-busy className="flex flex-wrap gap-2">
+                {ENTITIES.map((e) => (
+                  <Skeleton key={e.code} className="h-7 w-24 rounded-full" />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {ENTITIES.map((e, i) => (
+                  <Pill key={e.code} accent={i === 0}>
+                    {e.code} · {e.count}
+                  </Pill>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
 
@@ -411,6 +500,15 @@ export function App() {
                     variant="primary"
                     onClick={() => {
                       setApprovalsCleared(true);
+                      toast.success('Leave request approved', {
+                        description: 'The employee and HR have been notified.',
+                        action: {
+                          label: 'Undo',
+                          onClick: () => {
+                            setApprovalsCleared(false);
+                          },
+                        },
+                      });
                     }}
                   >
                     Approve &amp; clear
@@ -480,12 +578,42 @@ export function App() {
               </StatusBadge>
             </div>
             <div>
+              <h3 className="mb-3 text-sm font-semibold text-ink">
+                June attendance
+              </h3>
+              <DotMatrix dots={ATT_DOTS} columns={7} />
+            </div>
+            <div>
               <h3 className="mb-3 text-sm font-semibold text-ink">Request timeline</h3>
               <Timeline steps={APPROVAL_CHAIN} />
             </div>
           </div>
         )}
       </Drawer>
+
+      {/* Apply-leave form — draft survives close/reopen (kill-list #4) */}
+      <LeaveApplyDrawer
+        open={leaveOpen}
+        onClose={() => {
+          setLeaveOpen(false);
+        }}
+      />
+
+      {/* People filters — selections persist across open/close (kill-list #2) */}
+      <PeopleFilterDrawer
+        open={filtersOpen}
+        onClose={() => {
+          setFiltersOpen(false);
+        }}
+        filters={peopleFilters}
+        onChange={setPeopleFilters}
+        onApply={() => {
+          setFiltersOpen(false);
+          toast.info('Filters applied', {
+            description: 'The directory query wires up in Phase 1.',
+          });
+        }}
+      />
 
       {/* Irreversible action → typed confirm */}
       <ConfirmModal
@@ -495,12 +623,18 @@ export function App() {
         }}
         onConfirm={() => {
           setFinalized(true);
+          toast.success('June 2026 payroll finalized', {
+            description: 'Run locked · payslips issued to 1,066 employees.',
+          });
         }}
         title="Finalize June 2026 payroll?"
         description="This locks the run and issues payslips. It cannot be undone without a super-admin reopen."
         confirmLabel="Finalize"
         typedConfirmation="FINALIZE JUNE 2026"
       />
+
+      {/* Action feedback — never steals focus (docs/05 §6 kill-list #10) */}
+      <Toaster />
     </div>
   );
 }

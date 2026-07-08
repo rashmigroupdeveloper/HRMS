@@ -4,9 +4,10 @@
  * composes from here; screens never invent primitives.
  *
  * Stage 0.3 status: core primitives + Crextio-signature set + theme +
- * DataTable / Drawer / ConfirmModal / EmptyState / Timeline / TextField shipped.
- * Still to port (follow-up): FilterPanel, MonthCalendar, RosterGrid,
- * ApprovalInbox, Toast (sonner).
+ * data/detail surfaces + form vocabulary (TextField/Textarea/Select/DatePicker/
+ * Checkbox/Switch) + feedback layer (Toast/Skeleton/Tooltip) + FilterPanel +
+ * MonthCalendar shipped. Module-phase composites (RosterGrid, ApprovalInbox,
+ * Stepper, ⌘K palette) land with their phases (1–2).
  */
 
 export { cn } from './cn';
@@ -16,7 +17,6 @@ export { ThemeToggle } from './ThemeToggle';
 
 export { Button } from './Button';
 export { IconButton } from './IconButton';
-export { TextField } from './TextField';
 export { Card, CardHeader } from './Card';
 export { DarkCard } from './DarkCard';
 export { StatusBadge, Pill } from './StatusBadge';
@@ -30,6 +30,20 @@ export { SegmentedProgress } from './SegmentedProgress';
 export { DotMatrix } from './DotMatrix';
 export type { Dot, DotState } from './DotMatrix';
 
+// Form vocabulary — same doctrine on every screen (docs/05 §7b).
+export { TextField } from './TextField';
+export { Textarea } from './Textarea';
+export { Select } from './Select';
+export type { SelectOption } from './Select';
+export { DatePicker } from './DatePicker';
+export { Checkbox } from './Checkbox';
+export { Switch } from './Switch';
+
+// Feedback layer — how the product acknowledges action (docs/05 §6).
+export { Toaster, toast } from './Toast';
+export { Skeleton } from './Skeleton';
+export { Tooltip } from './Tooltip';
+
 export { DataTable } from './DataTable';
 export type { Column } from './DataTable';
 export { Drawer } from './Drawer';
@@ -37,3 +51,9 @@ export { ConfirmModal } from './ConfirmModal';
 export { EmptyState } from './EmptyState';
 export { Timeline } from './Timeline';
 export type { TimelineStep, TimelineState } from './Timeline';
+
+export { FilterPanel, FilterSection } from './FilterPanel';
+export { MonthCalendar } from './MonthCalendar';
+export type { AttendanceDay, AttendanceDayState } from './MonthCalendar';
+export { formatDateIN, todayISOIST } from './calendar';
+export type { CalendarDay } from './calendar';
