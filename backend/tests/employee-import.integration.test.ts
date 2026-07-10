@@ -37,17 +37,26 @@ run('employee master + two-source import (live Postgres)', () => {
     db = createDatabase(DB_URL ?? '');
     app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false });
 
-    // Clean slate for employee data (idempotent re-runs). Users with audit
-    // history can never be hard-deleted (append-only FK — by design), so:
-    // detach every user from employees, delete audit-free ones, then clear
-    // employees. Surviving users get relinked by the import's upsert.
+    // Clean slate for THE FIXTURE employees only (other suites own their own
+    // employees — e.g. Stage 1.2 keeps a permanently locked day record).
+    // Users with audit history can never be hard-deleted (append-only FK — by
+    // design); detach + delete audit-free ones; survivors relink via upsert.
+    const fixtureEcodes = (loadFixture('ems-users.sample.json') as { userid: string }[]).map((r) => r.userid);
     await db.updateTable('core.users').set({ employee_id: null }).where('employee_id', 'is not', null).execute();
     await sql`
       DELETE FROM core.users u
       WHERE u.email LIKE '%@rashmi.test'
         AND NOT EXISTS (SELECT 1 FROM core.audit_log a WHERE a.actor_user_id = u.id)
     `.execute(db);
-    await db.deleteFrom('core.employees').execute();
+    const existing = await db.selectFrom('core.employees').select('id').where('ecode', 'in', fixtureEcodes).execute();
+    const ids = existing.map((e) => e.id);
+    if (ids.length > 0) {
+      await db.deleteFrom('att.recompute_queue').where('employee_id', 'in', ids).execute();
+      await db.deleteFrom('att.day_records').where('employee_id', 'in', ids).where('is_locked', '=', false).execute();
+      await db.deleteFrom('att.employee_shifts').where('employee_id', 'in', ids).execute();
+      await db.deleteFrom('att.rosters').where('employee_id', 'in', ids).execute();
+      await db.deleteFrom('core.employees').where('id', 'in', ids).execute();
+    }
 
     const rows = loadFixture('ems-users.sample.json') as Record<string, unknown>[];
     const withRealHash = await Promise.all(

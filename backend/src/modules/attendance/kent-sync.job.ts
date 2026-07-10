@@ -12,6 +12,7 @@ import type { Database } from '../../core/db/types.js';
 import { logger } from '../../core/logger.js';
 import { MockKentConnector, type KentConnector } from './kent-connector.js';
 import { alertSilentDevices, ingestOnce, type IngestSummary } from './ingest.service.js';
+import { drainRecomputeQueue } from './day-status.service.js';
 
 export const KENT_SOURCE = 'kent';
 
@@ -35,12 +36,16 @@ async function connectorFor(db: Kysely<Database>): Promise<KentConnector> {
 
 export interface KentSyncResult extends IngestSummary {
   silentDoorsAlerted: string[];
+  daysRecomputed: number;
 }
 
 export async function runKentSync(db: Kysely<Database>): Promise<KentSyncResult> {
   const connector = await connectorFor(db);
   const summary = await ingestOnce(db, connector, KENT_SOURCE);
   const silentDoorsAlerted = await alertSilentDevices(db);
+  // Fresh swipes dirty their days (DB trigger); recompute right away so
+  // processed attendance stays ≤5 min behind raw truth (ATT-03).
+  const daysRecomputed = await drainRecomputeQueue(db);
 
   logger.info(
     {
@@ -49,8 +54,9 @@ export async function runKentSync(db: Kysely<Database>): Promise<KentSyncResult>
       quarantined: summary.quarantined,
       unmatched: summary.unmatchedEmployeeNos.length,
       silentDoorsAlerted,
+      daysRecomputed,
     },
     'kent-sync cycle complete',
   );
-  return { ...summary, silentDoorsAlerted };
+  return { ...summary, silentDoorsAlerted, daysRecomputed };
 }

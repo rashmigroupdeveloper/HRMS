@@ -311,6 +311,89 @@ export interface AttIngestWatermarksTable {
   updated_at: Generated<Timestamp>;
 }
 
+/** att.shifts — shift catalog; every time/threshold is a row, never code (ATT-04). */
+export interface AttShiftsTable {
+  id: Generated<number>;
+  code: string;
+  name: string;
+  start_time: string; // 'HH:MM:SS'
+  end_time: string;
+  crosses_midnight: Generated<boolean>;
+  session_split: string | null;
+  grace_in_minutes: Generated<number>;
+  grace_out_minutes: Generated<number>;
+  min_half_day_hours: string; // NUMERIC comes back as string
+  min_full_day_hours: string;
+  break_minutes: Generated<number>;
+  is_active: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+/** att.employee_shifts — weekday vs Saturday scheme per employee (09 §4). */
+export interface AttEmployeeShiftsTable {
+  employee_id: number;
+  weekday_shift_id: number;
+  saturday_shift_id: number | null;
+  updated_by: number | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface AttRostersTable {
+  id: Generated<number>;
+  employee_id: number;
+  work_date: Timestamp;
+  shift_id: number | null;
+  is_week_off: Generated<boolean>;
+  set_by: number | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface AttHolidaysTable {
+  id: Generated<number>;
+  location_id: number | null;
+  holiday_date: Timestamp;
+  name: string;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+export type DayStatus = 'P' | 'A' | 'HD' | 'WO' | 'H' | 'L' | 'OD' | 'CO' | 'UAB';
+
+/** att.day_records — PROCESSED attendance; recomputable until locked (ATT-03/05/15). */
+export interface AttDayRecordsTable {
+  id: Generated<number>;
+  employee_id: number;
+  work_date: Timestamp;
+  shift_id: number | null;
+  status: DayStatus;
+  leave_type_id: number | null;
+  first_in: Timestamp | null;
+  last_out: Timestamp | null;
+  worked_minutes: number | null;
+  late_minutes: Generated<number>;
+  early_exit_minutes: Generated<number>;
+  ot_minutes: Generated<number>;
+  weekoff_paid: boolean | null;
+  session_statuses: unknown;
+  scheme_code: string | null;
+  penalty_flag: Generated<boolean>;
+  source: Generated<'auto' | 'regularized' | 'manual'>;
+  override_reason: string | null;
+  is_locked: Generated<boolean>;
+  computed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface AttRecomputeQueueTable {
+  employee_id: number;
+  work_date: Timestamp;
+  queued_at: Generated<Timestamp>;
+}
+
 /** att.quarantined_swipes — implausible timestamps parked for review (doc 14 §8.4). */
 export interface AttQuarantinedSwipesTable {
   id: Generated<number>;
@@ -376,4 +459,10 @@ export interface Database {
   'att.ingest_watermarks': AttIngestWatermarksTable;
   'att.swipe_events': AttSwipeEventsTable;
   'att.quarantined_swipes': AttQuarantinedSwipesTable;
+  'att.shifts': AttShiftsTable;
+  'att.employee_shifts': AttEmployeeShiftsTable;
+  'att.rosters': AttRostersTable;
+  'att.holidays': AttHolidaysTable;
+  'att.day_records': AttDayRecordsTable;
+  'att.recompute_queue': AttRecomputeQueueTable;
 }

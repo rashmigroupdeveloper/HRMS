@@ -19,16 +19,16 @@
 **Tests:** 71 total green (verify 0) incl. quarantine boundaries, alert-once + re-arm, 401→403→200 permission walk on all four endpoints, same-day job idempotency. *(Reconnect-flood 10k-burst covered by the 0.6 scale spike.)*
 **Exit criteria:** re-run of any window creates zero dupes ✅ · silenced device alerts within threshold, once ✅ · 3 consecutive days of live ≤5-min-lag ingestion ⏳ (needs the worker left running — start `npm run worker` alongside `npm run dev`).
 
-## Stage 1.2 — Shifts, rosters, day-status processor   `[ ☐ ]`
+## Stage 1.2 — Shifts, rosters, day-status processor   `[ ☑ done 9 Jul 2026 ]`
 **Goal:** raw swipes become correct day statuses — session-aware, recomputable, never manager-editable.
 **Depends on:** 1.1.
 **Tasks:**
-- [ ] P1-T04 — Shifts (grace, half/full-day thresholds, crosses-midnight), manager-maintained rosters + monthly-5th reminder, holiday calendars per location; **two-session day model + Saturday GCS scheme** *(ATT-04/05/13, 09 §4)*
-- [ ] P1-T05 — Day-status processor per 04 §1.1: FILO basis (ATT-18), cross-plant swipes valid + reconciliation flag (ATT-16), idempotent recompute on dirty-flag; manual override HR-only + reason + audit (ATT-17)
-- [ ] P1-T06 — Week-off eligibility at week close (zero worked days → unpaid WO; whole-month rule) + Penalty Days policy hook *(ATT-09)*
-**Modules/files:** `backend/src/modules/attendance/{shifts,rosters,processor}/`
-**Tests required:** processor golden cases (each day-status branch of 04 §1.1); two-session dual-status; night-shift date attribution; week-off eligibility (PI-PAY-1/2 exact scenarios); recompute idempotence (property test).
-**Exit criteria:** processor output matches hand-computed fixtures for every status branch · recompute of a locked month is rejected · manager cannot reach any status-edit endpoint (authz test).
+- [x] P1-T04 — **All calendar config is runtime DATA (sponsor centralization rule):** shift catalog seeded with the live RML shapes (GEN, **G5 two-session split 13:30**, **GCS Saturday half-day**, NIGHT cross-midnight) — every time/grace/threshold a row, editable via `PUT /attendance/config/shifts/{code}` (admin.settings, audited); per-employee **weekday/Saturday scheme** (`PUT /attendance/config/schemes/{id}`); manager **rosters** incl. week-offs (`PUT /attendance/roster` bulk, attendance.roster.write — roster edits auto-dirty the days); **holiday calendar** per location (`PUT /attendance/config/holidays`); **monthly-5th roster reminder job** (recipients = `attendance.roster_deadline` subscription data) *(ATT-04/05/13, 09 §4)*
+- [x] P1-T05 — Day-status processor **live**: FILO (ATT-18); resolution roster → scheme(Sat/weekday) → `att.default_shift_code` setting; grace-aware late/early minutes; break-net worked minutes; **two-session dual statuses** (G5 → HD with `[P,A]`, the live "A:P" shape); **night-shift date attribution** (21:55→06:04 → shift date, P); holiday-wins; Sunday-default WO; **idempotent recompute** on the dirty queue (swipe-insert DB trigger enqueues D and D−1); **manual override = HR-only via API (mandatory reason, audited) and recompute NEVER touches manual or locked rows**; locked rows immutable by DB trigger *(ATT-03/15/17)*
+- [x] P1-T06 — Week-off eligibility at week close: worked < `att.weekoff_min_worked_days` (setting, default 1) → **unpaid WO** (PI-PAY-1/2 exact scenarios proven); weekly job Mon 02:00 + on-demand `POST /attendance/week-close`; penalty-days hook reserved (`penalty_flag` column + disabled-by-default policy) *(ATT-09)*
+**Modules/files:** `backend/src/modules/attendance/{day-status.service,attendance-config.router}.ts`, migration 0006, worker queues `attendance-recompute` (1-min safety drain) / `attendance-week-close` / `roster-reminder`; kent-sync now drains recompute after every cycle (processed attendance ≤5 min behind raw)
+**Tests:** **13 golden fixtures, all hand-computed** (full/late/HD-sessions/short/absent/no-swipes/GCS-Saturday/Sunday-WO/holiday/night/manual-override-survives/locked-untouchable/idempotence/week-off-paid-vs-unpaid) — 84 total green, verify exit 0.
+**Exit criteria:** every status branch matches hand-computed fixtures ✅ · locked-row recompute skipped AND direct UPDATE rejected by the DB ✅ · managers have NO status-edit surface — the only write is `attendance.manual_override`-gated (HR), reason mandatory, audited ✅.
 
 ## Stage 1.3 — Workflow engine + approvals inbox   `[ ☐ ]`
 **Goal:** the generic approval spine (approve / reject / **send_back**) with provable notifications.
