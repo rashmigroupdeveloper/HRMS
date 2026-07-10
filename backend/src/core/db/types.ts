@@ -300,6 +300,7 @@ export interface AttDevicesTable {
   last_seen_at: Timestamp | null;
   expected_hourly_swipes: string | null;
   is_active: Generated<boolean>;
+  alerted_silent_at: Timestamp | null;
   created_at: Generated<Timestamp>;
   updated_at: Generated<Timestamp>;
 }
@@ -308,6 +309,21 @@ export interface AttIngestWatermarksTable {
   source: string;
   watermark_ts: Timestamp;
   updated_at: Generated<Timestamp>;
+}
+
+/** att.quarantined_swipes — implausible timestamps parked for review (doc 14 §8.4). */
+export interface AttQuarantinedSwipesTable {
+  id: Generated<number>;
+  employee_no: string;
+  swipe_ts: Timestamp;
+  door_code: string | null;
+  direction: string | null;
+  swipe_type: string | null;
+  received_at: Timestamp;
+  source: string;
+  reason: string;
+  reviewed: Generated<boolean>;
+  created_at: Generated<Timestamp>;
 }
 
 /** att.swipe_events — RAW immutable swipes, monthly-partitioned (ATT-01). */
@@ -359,4 +375,5 @@ export interface Database {
   'att.devices': AttDevicesTable;
   'att.ingest_watermarks': AttIngestWatermarksTable;
   'att.swipe_events': AttSwipeEventsTable;
+  'att.quarantined_swipes': AttQuarantinedSwipesTable;
 }

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "worker": "tsx watch src/jobs/worker.ts",
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
@@ -33,6 +34,7 @@
     "jose": "^6.2.3",
     "kysely": "^0.28.2",
     "pg": "^8.16.0",
+    "pg-boss": "^12.25.1",
     "pino": "^9.7.0",
     "zod": "^3.25.0"
   },

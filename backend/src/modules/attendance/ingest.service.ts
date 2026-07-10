@@ -1,13 +1,21 @@
 /**
- * Swipe ingestion pipeline (ATT-01/02, docs/02 §4):
- *   watermark − overlap → fetch → ensure partitions → idempotent bulk upsert
- *   → device last_seen → advance watermark (only after commit).
- * Re-running any window NEVER duplicates a swipe (DB unique key), and swipes
- * from unknown employee_nos are kept with employee_id NULL — the exception
- * queue, never silently dropped (the PP-9 lesson).
+ * Swipe ingestion pipeline (ATT-01/02, docs/02 §4, doc 14 §8):
+ *   watermark − overlap → fetch → PLAUSIBILITY QUARANTINE → ensure partitions
+ *   → idempotent bulk upsert → device heartbeat → advance watermark (in-txn).
+ *
+ * Guarantees:
+ *  - Re-running any window NEVER duplicates a swipe (DB unique key).
+ *  - Unknown employee_nos are kept with employee_id NULL — the exception
+ *    queue, never silently dropped (the PP-9 lesson).
+ *  - Implausible timestamps (device clock drift/reset — doc 14 §8.4) go to
+ *    att.quarantined_swipes for review; they never poison FILO attendance.
+ *    Plausibility is judged against received_at (not wall clock), so backfills
+ *    and simulations behave identically to live feeds.
  */
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
+import { getTypedSetting } from '../settings/index.js';
+import { enqueueEvent } from '../notifications/index.js';
 import type { KentConnector, RawSwipe } from './kent-connector.js';
 
 const OVERLAP_MINUTES = 30;
@@ -17,6 +25,7 @@ const CHUNK = 1000;
 export interface IngestSummary {
   fetched: number;
   inserted: number;
+  quarantined: number;
   unmatchedEmployeeNos: string[];
   watermark: Date | null;
 }
@@ -33,25 +42,61 @@ export async function ingestOnce(
     .executeTakeFirst();
   const since = new Date((wmRow?.watermark_ts ?? EPOCH).getTime() - OVERLAP_MINUTES * 60_000);
 
-  const swipes = await connector.fetchSince(since);
-  if (swipes.length === 0) {
-    return { fetched: 0, inserted: 0, unmatchedEmployeeNos: [], watermark: wmRow?.watermark_ts ?? null };
+  const fetched = await connector.fetchSince(since);
+  if (fetched.length === 0) {
+    return { fetched: 0, inserted: 0, quarantined: 0, unmatchedEmployeeNos: [], watermark: wmRow?.watermark_ts ?? null };
+  }
+
+  // Plausibility window (policy values — docs/04 §8; admin-tunable via settings).
+  const futureMinutes = await getTypedSetting(db, 'att.quarantine_future_minutes', 'number', 10);
+  const pastDays = await getTypedSetting(db, 'att.quarantine_past_days', 'number', 45);
+
+  const swipes: RawSwipe[] = [];
+  const quarantine: { swipe: RawSwipe; reason: string }[] = [];
+  for (const s of fetched) {
+    const driftMs = s.swipeTs.getTime() - s.receivedAt.getTime();
+    if (driftMs > futureMinutes * 60_000) {
+      quarantine.push({ swipe: s, reason: 'future_timestamp' }); // swiped "after" it was received — clock ahead
+    } else if (-driftMs > pastDays * 86_400_000) {
+      quarantine.push({ swipe: s, reason: 'too_old' }); // e.g. device reset to epoch
+    } else {
+      swipes.push(s);
+    }
   }
 
   // Resolve employee ids in one pass (unknowns stay NULL → exception queue).
   const ecodes = [...new Set(swipes.map((s) => s.employeeNo))];
-  const employees = await db
-    .selectFrom('core.employees')
-    .select(['id', 'ecode'])
-    .where('ecode', 'in', ecodes)
-    .execute();
+  const employees =
+    ecodes.length > 0
+      ? await db.selectFrom('core.employees').select(['id', 'ecode']).where('ecode', 'in', ecodes).execute()
+      : [];
   const idByEcode = new Map(employees.map((e) => [e.ecode, e.id]));
   const unmatched = [...new Set(ecodes.filter((e) => !idByEcode.has(e)))];
 
   let inserted = 0;
   let maxReceived = wmRow?.watermark_ts ?? EPOCH;
+  for (const s of fetched) if (s.receivedAt > maxReceived) maxReceived = s.receivedAt;
 
   await db.transaction().execute(async (trx) => {
+    if (quarantine.length > 0) {
+      await trx
+        .insertInto('att.quarantined_swipes')
+        .values(
+          quarantine.map(({ swipe, reason }) => ({
+            employee_no: swipe.employeeNo,
+            swipe_ts: swipe.swipeTs,
+            door_code: swipe.doorCode,
+            direction: swipe.direction ?? null,
+            swipe_type: swipe.swipeType ?? null,
+            received_at: swipe.receivedAt,
+            source,
+            reason,
+          })),
+        )
+        .onConflict((oc) => oc.columns(['employee_no', 'swipe_ts', 'door_code', 'source']).doNothing())
+        .execute();
+    }
+
     // Partitions for every month present in the batch (device backfills cross months).
     const months = [...new Set(swipes.map((s) => s.swipeTs.toISOString().slice(0, 7)))];
     for (const month of months) {
@@ -85,7 +130,6 @@ export async function ingestOnce(
     for (const s of swipes) {
       const prev = byDoor.get(s.doorCode);
       if (!prev || s.receivedAt > prev) byDoor.set(s.doorCode, s.receivedAt);
-      if (s.receivedAt > maxReceived) maxReceived = s.receivedAt;
     }
     for (const [doorCode, lastSeen] of byDoor) {
       await trx
@@ -114,15 +158,20 @@ export async function ingestOnce(
       .execute();
   });
 
-  return { fetched: swipes.length, inserted, unmatchedEmployeeNos: unmatched, watermark: maxReceived };
+  return { fetched: fetched.length, inserted, quarantined: quarantine.length, unmatchedEmployeeNos: unmatched, watermark: maxReceived };
 }
 
-/** Doors silent longer than the threshold during working hours — the PP-9 pager (ATT-02). */
+export interface SilentDevice {
+  doorCode: string;
+  lastSeenAt: Date | null;
+}
+
+/** Doors silent longer than the threshold — the PP-9 pager input (ATT-02). */
 export async function findSilentDevices(
   db: Kysely<Database>,
   asOf: Date,
   thresholdMinutes: number,
-): Promise<{ doorCode: string; lastSeenAt: Date | null }[]> {
+): Promise<SilentDevice[]> {
   const cutoff = new Date(asOf.getTime() - thresholdMinutes * 60_000);
   const rows = await db
     .selectFrom('att.devices')
@@ -131,4 +180,41 @@ export async function findSilentDevices(
     .where((eb) => eb.or([eb('last_seen_at', 'is', null), eb('last_seen_at', '<', cutoff)]))
     .execute();
   return rows.map((r) => ({ doorCode: r.door_code, lastSeenAt: r.last_seen_at }));
+}
+
+/**
+ * TRANSITION-based silent-door alerting (ATT-02): notify once when a door goes
+ * quiet — not every 5-minute cycle — and re-arm automatically once it's seen
+ * again (alerted_silent_at < last_seen_at). Recipients come from the
+ * wf.event_subscriptions matrix ('attendance.device_silent' → it_admin per
+ * PP-9: "must page someone, not silently under-count").
+ */
+export async function alertSilentDevices(db: Kysely<Database>, asOf = new Date()): Promise<string[]> {
+  const thresholdMinutes = await getTypedSetting(db, 'att.device_silent_minutes', 'number', 15);
+  const cutoff = new Date(asOf.getTime() - thresholdMinutes * 60_000);
+
+  const toAlert = await db
+    .selectFrom('att.devices')
+    .select(['id', 'door_code', 'last_seen_at'])
+    .where('is_active', '=', true)
+    .where((eb) => eb.or([eb('last_seen_at', 'is', null), eb('last_seen_at', '<', cutoff)]))
+    .where((eb) =>
+      eb.or([
+        eb('alerted_silent_at', 'is', null),
+        eb('alerted_silent_at', '<', eb.ref('last_seen_at')), // seen since last alert → re-armed
+      ]),
+    )
+    .execute();
+
+  const alerted: string[] = [];
+  for (const device of toAlert) {
+    await enqueueEvent(db, 'attendance.device_silent', 'device_silent', {
+      doorCode: device.door_code,
+      lastSeenAt: device.last_seen_at?.toISOString() ?? null,
+      thresholdMinutes,
+    });
+    await db.updateTable('att.devices').set({ alerted_silent_at: asOf }).where('id', '=', device.id).execute();
+    alerted.push(device.door_code);
+  }
+  return alerted;
 }

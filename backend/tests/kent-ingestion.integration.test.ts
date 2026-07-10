@@ -80,11 +80,18 @@ run('mock Kent ingestion spike (live Postgres)', () => {
   });
 
   it('detects a silent door (the PP-9 drill): offline device shows up on the health board', async () => {
-    // The mock had no swipes for a door only if offlineDoor was set — instead,
-    // assert directly: any device not seen in the last minute vs a device seen now.
-    const silent = await findSilentDevices(db, new Date(day.getTime() + 24 * 3600_000), 60);
-    // All mock doors last-seen on `day` are silent 24h later — detection works.
-    expect(silent.length).toBeGreaterThan(0);
+    // Dedicated door for this run (the four shared mock doors are touched by
+    // other suites whose last_seen only moves forward — order-independent this way).
+    const drillDoor = `PP9-Drill-${Date.now()}`;
+    await db
+      .insertInto('att.devices')
+      .values({ door_code: drillDoor, source: SOURCE, last_seen_at: new Date(day.getTime() + 18 * 3600_000) })
+      .execute();
+
+    const silent = await findSilentDevices(db, new Date(day.getTime() + 42 * 3600_000), 60);
+    expect(silent.some((d) => d.doorCode === drillDoor)).toBe(true);
+
+    await db.deleteFrom('att.devices').where('door_code', '=', drillDoor).execute();
   });
 
   it('FILO first-in/last-out aggregates cleanly from raw swipes (Phase-1 processor input)', async () => {

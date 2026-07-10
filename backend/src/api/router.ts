@@ -6,12 +6,14 @@ import { systemRouter } from '../modules/system/index.js';
 import { authRouter } from '../modules/auth/index.js';
 import { settingsRouter } from '../modules/settings/index.js';
 import { rbacRouter } from '../modules/rbac/index.js';
+import { attendanceRouter } from '../modules/attendance/index.js';
 
 export const appRouter = {
   system: systemRouter,
   auth: authRouter,
   settings: settingsRouter,
   rbac: rbacRouter,
+  attendance: attendanceRouter,
 };
 
 export type AppRouter = typeof appRouter;

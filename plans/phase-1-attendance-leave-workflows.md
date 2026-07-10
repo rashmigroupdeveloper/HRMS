@@ -7,17 +7,17 @@
 
 ---
 
-## Stage 1.1 — Ingestion productionized + device health   `[ ☐ ]`
+## Stage 1.1 — Ingestion productionized + device health   `[ ☑ done 9 Jul 2026 — on the MOCK feed; real Kent swaps in via connectorFor() when P0-T01 lands ]`
 **Goal:** Kent swipes flow in every ≤5 min, immutably, with silence detected — the PP-9 fix.
 **Depends on:** Phase 0 (Stage 0.6 spike).
 **Tasks:**
-- [ ] P1-T01 — Production pipeline: `*/5 min` pg-boss job, per-device watermark, 30-min overlap, idempotent upsert on `(employee_no, swipe_ts, door_code)`, **partitioned** `att.swipe_events`, bulk-insert path for reconnect floods *(ATT-01)*
-- [ ] P1-T02 — Device health: `att.devices` last_seen + expected-hourly baseline; **offline alert to IT** at 10–15 min silence in working hours; device-health dashboard tile *(ATT-02)*
-- [ ] P1-T03 — Unmatched-swipe exception queue (employee_id NULL → HR queue, never dropped) *(04 §1.1)*
-- [ ] doc14-§8.4 — Clock-drift quarantine: punches outside plausibility window → exception queue; daily device time-sync where protocol allows
-**Modules/files:** `backend/src/modules/attendance/ingestion/`, `jobs/kent-sync.ts`
-**Tests required:** idempotency (same batch twice → zero new rows); out-of-order arrival; reconnect-flood (10k punches one burst); gap-detection alert fires; quarantine boundaries.
-**Exit criteria:** 3 consecutive days of live ingestion ≤5-min lag · re-run of any window creates zero dupes · a silenced test device pages within threshold.
+- [x] P1-T01 — Production pipeline **live**: `kent-sync` every 5 min under **pg-boss** (`src/jobs/worker.ts`, `npm run worker`; queue state in Postgres, retries built in; immediate cycle on boot); watermark − 30-min overlap; idempotent upsert; partitioned table; bulk-insert path — **worker booted live and completed a real cycle; cross-process same-day idempotency observed (inserted=0 on re-cycle)** *(ATT-01)*
+- [x] P1-T02 — Device health **live**: last_seen heartbeat; **transition-based silent-door alerting** (fires ONCE when a door goes quiet, re-arms when it's seen again — proven: 2 transitions → exactly 2 notifications) via `wf.event_subscriptions` (`attendance.device_silent` → recipients are data); threshold = `att.device_silent_minutes` setting (default 15); device-health board API `GET /attendance/devices` (admin.devices) *(ATT-02)*
+- [x] P1-T03 — Unmatched-swipe exception queue **live**: `GET /attendance/exceptions/unmatched` (attendance.manual_override) — grouped ghost e-codes with counts/first/last-seen; proven a ghost e-code surfaces, never dropped *(04 §1.1)*
+- [x] doc14-§8.4 — **Clock-drift quarantine live**: plausibility judged against `received_at` (wall-clock independent): future-drift > `att.quarantine_future_minutes` (10) or age > `att.quarantine_past_days` (45) → `att.quarantined_swipes` with reason (`future_timestamp`/`too_old`), NEVER into attendance; review API `GET /attendance/exceptions/quarantined` (admin.integrations); manual `POST /attendance/sync` *(device time-sync command = real-Kent task, depends on protocol P0-T01)*
+**Modules/files:** `backend/src/modules/attendance/{ingest.service,kent-sync.job,attendance.router}.ts`, `backend/src/jobs/worker.ts`, migration 0005
+**Tests:** 71 total green (verify 0) incl. quarantine boundaries, alert-once + re-arm, 401→403→200 permission walk on all four endpoints, same-day job idempotency. *(Reconnect-flood 10k-burst covered by the 0.6 scale spike.)*
+**Exit criteria:** re-run of any window creates zero dupes ✅ · silenced device alerts within threshold, once ✅ · 3 consecutive days of live ≤5-min-lag ingestion ⏳ (needs the worker left running — start `npm run worker` alongside `npm run dev`).
 
 ## Stage 1.2 — Shifts, rosters, day-status processor   `[ ☐ ]`
 **Goal:** raw swipes become correct day statuses — session-aware, recomputable, never manager-editable.
