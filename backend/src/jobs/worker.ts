@@ -16,21 +16,13 @@ import { logger } from '../core/logger.js';
 import { closeWeek, drainRecomputeQueue, runKentSync } from '../modules/attendance/index.js';
 import { enqueueEvent } from '../modules/notifications/index.js';
 import { runEscalations } from '../modules/workflows/index.js';
+import { previousWeekStartIso } from '../core/dates.js';
 
 const KENT_SYNC_QUEUE = 'kent-sync';
 const RECOMPUTE_QUEUE = 'attendance-recompute';
 const WEEK_CLOSE_QUEUE = 'attendance-week-close';
 const ROSTER_REMINDER_QUEUE = 'roster-reminder';
 const WF_ESCALATION_QUEUE = 'workflow-escalation';
-
-/** Monday of the week BEFORE the one containing `d` (the week being closed). */
-function previousWeekStartIso(d: Date): string {
-  const day = new Date(d);
-  day.setHours(0, 0, 0, 0);
-  const dow = (day.getDay() + 6) % 7; // Mon=0
-  day.setDate(day.getDate() - dow - 7);
-  return day.toISOString().slice(0, 10);
-}
 
 async function main(): Promise<void> {
   const env = loadEnv();

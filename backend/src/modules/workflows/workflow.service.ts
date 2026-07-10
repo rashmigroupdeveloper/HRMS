@@ -4,20 +4,35 @@
  *   out-of-office delegation) → NOTIFY (receipt is structural: the step row
  *   cannot exist without notified_at) → act (approve / reject / send_back)
  *   → advance or complete. Vacant approvers are auto-skipped WITH an audit
- *   trail. SLA breaches escalate / auto-reject / lapse / auto-approve per the
- *   definition — all of which is runtime-editable DATA.
+ *   trail. SLA breaches escalate / auto-reject / lapse / auto-approve.
+ *
+ * Correctness guarantees (Phase-1 review):
+ *  - Every mutating flow (create / act / resubmit / escalate) runs in ONE
+ *    transaction, so a mid-sequence failure never strands a request (F5).
+ *  - act() locks the open step FOR UPDATE and the DB enforces at most one open
+ *    step per request, so concurrent approvals cannot fork the chain (F4).
+ *  - A `role:` step is a QUEUE: any active holder of the role may act, and it
+ *    appears in every holder's inbox — not just the lowest-id user (F8).
  */
 import { z } from 'zod';
-import type { Kysely, Selectable } from 'kysely';
+import type { Kysely, Selectable, Transaction } from 'kysely';
 import type { Database, WfRequestsTable, WfRequestStepsTable } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { enqueue } from '../notifications/index.js';
+import { getUserRoleCodes } from '../../core/rbac/permissions.service.js';
+import { istDateString } from '../../core/dates.js';
+
+type Db = Kysely<Database> | Transaction<Database>;
+
+/** Schema-level default when a chain omits slaHours; the real SLA is per-step
+ *  chain DATA (editable via the definitions API). */
+const DEFAULT_STEP_SLA_HOURS = 48;
 
 export const stepSpecSchema = z.object({
   step: z.number().int().positive(),
   /** 'reporting_manager' | 'functional_manager' | 'role:<code>' | 'user:<id>' */
   approver: z.string().min(1),
-  slaHours: z.number().positive().default(48),
+  slaHours: z.number().positive().default(DEFAULT_STEP_SLA_HOURS),
   onBreach: z.enum(['escalate', 'auto_reject', 'lapse', 'auto_approve']).default('escalate'),
   /** approver spec for escalation target; default = approver's own manager. */
   escalateTo: z.string().min(1).optional(),
@@ -33,21 +48,15 @@ interface ResolvedApprover {
   delegatedFrom: number | null;
 }
 
-/** Spec → concrete ACTIVE user, with delegation applied. Null = vacant. */
-async function resolveApprover(
-  db: Kysely<Database>,
-  spec: string,
-  subjectEmployeeId: number,
-): Promise<ResolvedApprover | null> {
+/** Spec → the canonical ACTIVE recipient, with delegation applied. Null = vacant.
+ *  For `role:` this is the deterministic first holder who is NOTIFIED; any
+ *  holder may still act (see canActOnStep / inbox). */
+async function resolveApprover(db: Db, spec: string, subjectEmployeeId: number): Promise<ResolvedApprover | null> {
   let userId: number | null = null;
 
   if (spec === 'reporting_manager' || spec === 'functional_manager') {
     const col = spec === 'reporting_manager' ? 'reporting_manager_id' : 'functional_manager_id';
-    const subject = await db
-      .selectFrom('core.employees')
-      .select([col])
-      .where('id', '=', subjectEmployeeId)
-      .executeTakeFirst();
+    const subject = await db.selectFrom('core.employees').select([col]).where('id', '=', subjectEmployeeId).executeTakeFirst();
     const managerEmployeeId = subject?.[col] ?? null;
     if (managerEmployeeId !== null) {
       const user = await db
@@ -68,7 +77,7 @@ async function resolveApprover(
       .where('u.is_active', '=', true)
       .select('u.id')
       .orderBy('u.id')
-      .executeTakeFirst(); // deterministic first holder; role queues arrive with scoping
+      .executeTakeFirst();
     userId = user?.id ?? null;
   } else if (spec.startsWith('user:')) {
     const explicit = Number(spec.slice('user:'.length));
@@ -83,8 +92,8 @@ async function resolveApprover(
 
   if (userId === null) return null;
 
-  // Out-of-office delegation (WF-01): active window today.
-  const today = new Date().toISOString().slice(0, 10);
+  // Out-of-office delegation (WF-01): active IST-calendar window today.
+  const today = istDateString();
   const delegation = await db
     .selectFrom('wf.delegations')
     .select('to_user_id')
@@ -106,65 +115,68 @@ async function resolveApprover(
   return { userId, delegatedFrom: null };
 }
 
-async function getSteps(db: Kysely<Database>, definitionCode: string): Promise<StepSpec[]> {
-  const def = await db
-    .selectFrom('wf.definitions')
-    .select(['steps', 'is_active'])
-    .where('code', '=', definitionCode)
-    .executeTakeFirst();
+/** May this actor act on this step? The named approver, or (role queue) any
+ *  active holder of the step's role. */
+async function canActOnStep(db: Db, step: Pick<StepRow, 'approver_user_id' | 'approver_spec'>, actorUserId: number): Promise<boolean> {
+  if (step.approver_user_id === actorUserId) return true;
+  if (step.approver_spec?.startsWith('role:')) {
+    const roleCode = step.approver_spec.slice('role:'.length);
+    const roles = await getUserRoleCodes(db, actorUserId);
+    return roles.has(roleCode);
+  }
+  return false;
+}
+
+async function getSteps(db: Db, definitionCode: string): Promise<StepSpec[]> {
+  const def = await db.selectFrom('wf.definitions').select(['steps', 'is_active']).where('code', '=', definitionCode).executeTakeFirst();
   if (def?.is_active !== true) throw new Error(`Unknown or inactive workflow: ${definitionCode}`);
   return stepsSchema.parse(def.steps);
 }
 
-/** Create the step row + its notification — atomically the SAME moment (PP-14). */
+/** Insert the open step, THEN notify (both inside the caller's transaction, so
+ *  they commit or roll back together — the PP-14 receipt is atomic). */
 async function openStep(
-  db: Kysely<Database>,
+  db: Db,
   requestId: number,
   stepNo: number,
+  spec: string,
   approver: ResolvedApprover,
   slaHours: number,
   definitionCode: string,
 ): Promise<void> {
   const now = new Date();
-  await enqueue(db, {
-    recipientUserId: approver.userId,
-    channel: 'in_app',
-    templateCode: 'approval_pending',
-    payload: { requestId, definitionCode, stepNo },
-  });
   await db
     .insertInto('wf.request_steps')
     .values({
       request_id: requestId,
       step_no: stepNo,
       approver_user_id: approver.userId,
+      approver_spec: spec,
       delegated_from: approver.delegatedFrom,
-      notified_at: now, // receipt — column is NOT NULL by design
+      notified_at: now,
       sla_due_at: new Date(now.getTime() + slaHours * 3600_000),
     })
     .execute();
+  await enqueue(db, {
+    recipientUserId: approver.userId,
+    channel: 'in_app',
+    templateCode: 'approval_pending',
+    payload: { requestId, definitionCode, stepNo },
+  });
 }
 
-/**
- * Advance from `fromStepNo` (exclusive): opens the next resolvable step;
- * vacant approvers are skipped with an audited 'skipped' row; running out of
- * steps completes the request as approved.
- */
-async function advance(
-  db: Kysely<Database>,
-  request: Pick<RequestRow, 'id' | 'definition_code' | 'subject_employee_id'>,
-  fromStepNo: number,
-): Promise<void> {
+/** Open the next resolvable step after `fromStepNo`; vacant approvers auto-skip
+ *  with audit; running out of steps completes the request as approved. */
+async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definition_code' | 'subject_employee_id'>, fromStepNo: number): Promise<void> {
   const steps = await getSteps(db, request.definition_code);
 
   for (const spec of steps.filter((s) => s.step > fromStepNo).sort((a, b) => a.step - b.step)) {
     const approver = await resolveApprover(db, spec.approver, request.subject_employee_id);
     if (approver) {
       await db.updateTable('wf.requests').set({ current_step: spec.step }).where('id', '=', request.id).execute();
-      await openStep(db, request.id, spec.step, approver, spec.slaHours, request.definition_code);
+      await openStep(db, request.id, spec.step, spec.approver, approver, spec.slaHours, request.definition_code);
       return;
     }
-    // Vacant (no RM, empty role, inactive user): auto-skip, audited (WF-01).
     await writeAudit(db, {
       action: 'update',
       entity: 'wf.requests',
@@ -174,37 +186,29 @@ async function advance(
     });
   }
 
-  await db
-    .updateTable('wf.requests')
-    .set({ status: 'approved', decided_at: new Date() })
-    .where('id', '=', request.id)
-    .execute();
+  await db.updateTable('wf.requests').set({ status: 'approved', decided_at: new Date() }).where('id', '=', request.id).execute();
 }
 
 export async function createRequest(
   db: Kysely<Database>,
-  params: {
-    definitionCode: string;
-    subjectEmployeeId: number;
-    requestedByUserId: number;
-    payload: Record<string, unknown>;
-  },
+  params: { definitionCode: string; subjectEmployeeId: number; requestedByUserId: number; payload: Record<string, unknown> },
 ): Promise<number> {
-  await getSteps(db, params.definitionCode); // validates existence + shape
+  await getSteps(db, params.definitionCode); // validate existence + shape before opening a tx
 
-  const request = await db
-    .insertInto('wf.requests')
-    .values({
-      definition_code: params.definitionCode,
-      subject_employee_id: params.subjectEmployeeId,
-      requested_by: params.requestedByUserId,
-      payload: JSON.stringify(params.payload),
-    })
-    .returning(['id', 'definition_code', 'subject_employee_id'])
-    .executeTakeFirstOrThrow();
-
-  await advance(db, request, 0);
-  return request.id;
+  return db.transaction().execute(async (trx) => {
+    const request = await trx
+      .insertInto('wf.requests')
+      .values({
+        definition_code: params.definitionCode,
+        subject_employee_id: params.subjectEmployeeId,
+        requested_by: params.requestedByUserId,
+        payload: JSON.stringify(params.payload),
+      })
+      .returning(['id', 'definition_code', 'subject_employee_id'])
+      .executeTakeFirstOrThrow();
+    await advance(trx, request, 0);
+    return request.id;
+  });
 }
 
 export type ActOutcome = 'advanced' | 'approved' | 'rejected' | 'sent_back';
@@ -213,64 +217,61 @@ export async function act(
   db: Kysely<Database>,
   params: { requestId: number; actorUserId: number; action: 'approve' | 'reject' | 'send_back'; comment?: string | undefined },
 ): Promise<ActOutcome> {
-  const request = await db
-    .selectFrom('wf.requests')
-    .selectAll()
-    .where('id', '=', params.requestId)
-    .executeTakeFirstOrThrow();
-  if (request.status !== 'pending') throw new Error(`Request is ${request.status}, not actionable`);
+  return db.transaction().execute(async (trx) => {
+    const request = await trx.selectFrom('wf.requests').selectAll().where('id', '=', params.requestId).executeTakeFirstOrThrow();
+    if (request.status !== 'pending') throw new Error(`Request is ${request.status}, not actionable`);
 
-  const step = await db
-    .selectFrom('wf.request_steps')
-    .selectAll()
-    .where('request_id', '=', params.requestId)
-    .where('action', 'is', null)
-    .orderBy('id', 'desc')
-    .executeTakeFirst();
-  if (!step) throw new Error('No pending step');
-  if (step.approver_user_id !== params.actorUserId) {
-    throw new Error('Not the current approver'); // routers map this to FORBIDDEN
-  }
+    // Lock the open step; a concurrent act() blocks here and then finds no open
+    // step (action set) → clean serialization, no forked chain (review F4).
+    const step = await trx
+      .selectFrom('wf.request_steps')
+      .selectAll()
+      .where('request_id', '=', params.requestId)
+      .where('action', 'is', null)
+      .orderBy('id', 'desc')
+      .forUpdate()
+      .executeTakeFirst();
+    if (!step) throw new Error('No pending step');
+    if (!(await canActOnStep(trx, step, params.actorUserId))) {
+      throw new Error('Not the current approver'); // routers map this to FORBIDDEN
+    }
 
-  const actionMap = { approve: 'approved', reject: 'rejected', send_back: 'sent_back' } as const;
-  await db
-    .updateTable('wf.request_steps')
-    .set({ action: actionMap[params.action], comment: params.comment ?? null, acted_at: new Date() })
-    .where('id', '=', step.id)
-    .execute();
-  await writeAudit(db, {
-    actorUserId: params.actorUserId,
-    action: params.action,
-    entity: 'wf.requests',
-    entityId: params.requestId,
-    field: `step_${step.step_no}`,
-    newValue: params.comment ?? null,
-  });
+    const actionMap = { approve: 'approved', reject: 'rejected', send_back: 'sent_back' } as const;
+    await trx
+      .updateTable('wf.request_steps')
+      .set({ action: actionMap[params.action], comment: params.comment ?? null, acted_at: new Date(), approver_user_id: params.actorUserId })
+      .where('id', '=', step.id)
+      .where('action', 'is', null)
+      .execute();
+    await writeAudit(trx, {
+      actorUserId: params.actorUserId,
+      action: params.action,
+      entity: 'wf.requests',
+      entityId: params.requestId,
+      field: `step_${step.step_no}`,
+      newValue: params.comment ?? null,
+    });
 
-  if (params.action === 'approve') {
-    await advance(db, request, step.step_no);
-    const after = await db
-      .selectFrom('wf.requests')
-      .select('status')
+    if (params.action === 'approve') {
+      await advance(trx, request, step.step_no);
+      const after = await trx.selectFrom('wf.requests').select('status').where('id', '=', params.requestId).executeTakeFirstOrThrow();
+      return after.status === 'approved' ? 'approved' : 'advanced';
+    }
+
+    const status = params.action === 'reject' ? 'rejected' : 'sent_back';
+    await trx
+      .updateTable('wf.requests')
+      .set({ status, decided_at: params.action === 'reject' ? new Date() : null })
       .where('id', '=', params.requestId)
-      .executeTakeFirstOrThrow();
-    return after.status === 'approved' ? 'approved' : 'advanced';
-  }
-
-  const status = params.action === 'reject' ? 'rejected' : 'sent_back';
-  await db
-    .updateTable('wf.requests')
-    .set({ status, decided_at: params.action === 'reject' ? new Date() : null })
-    .where('id', '=', params.requestId)
-    .execute();
-  // Tell the requester their request came back / was rejected.
-  await enqueue(db, {
-    recipientUserId: request.requested_by,
-    channel: 'in_app',
-    templateCode: params.action === 'reject' ? 'request_rejected' : 'request_sent_back',
-    payload: { requestId: params.requestId, comment: params.comment ?? null },
+      .execute();
+    await enqueue(trx, {
+      recipientUserId: request.requested_by,
+      channel: 'in_app',
+      templateCode: params.action === 'reject' ? 'request_rejected' : 'request_sent_back',
+      payload: { requestId: params.requestId, comment: params.comment ?? null },
+    });
+    return status === 'rejected' ? 'rejected' : 'sent_back';
   });
-  return status === 'rejected' ? 'rejected' : 'sent_back';
 }
 
 /** After send_back: requester edits and the chain restarts from step 1 (doc 11 §4b). */
@@ -278,23 +279,22 @@ export async function resubmit(
   db: Kysely<Database>,
   params: { requestId: number; requesterUserId: number; payload: Record<string, unknown> },
 ): Promise<void> {
-  const request = await db
-    .selectFrom('wf.requests')
-    .selectAll()
-    .where('id', '=', params.requestId)
-    .executeTakeFirstOrThrow();
-  if (request.status !== 'sent_back') throw new Error('Only sent-back requests can be resubmitted');
-  if (request.requested_by !== params.requesterUserId) throw new Error('Only the requester can resubmit');
+  await db.transaction().execute(async (trx) => {
+    const request = await trx.selectFrom('wf.requests').selectAll().where('id', '=', params.requestId).forUpdate().executeTakeFirstOrThrow();
+    if (request.status !== 'sent_back') throw new Error('Only sent-back requests can be resubmitted');
+    if (request.requested_by !== params.requesterUserId) throw new Error('Only the requester can resubmit');
 
-  await db
-    .updateTable('wf.requests')
-    .set({ payload: JSON.stringify(params.payload), status: 'pending', current_step: 1 })
-    .where('id', '=', params.requestId)
-    .execute();
-  await advance(db, request, 0);
+    await trx
+      .updateTable('wf.requests')
+      .set({ payload: JSON.stringify(params.payload), status: 'pending', current_step: 1 })
+      .where('id', '=', params.requestId)
+      .execute();
+    await advance(trx, request, 0);
+  });
 }
 
-/** SLA sweep (hourly job — WF-03). Returns how many steps were acted on. */
+/** SLA sweep (hourly job — WF-03). Each overdue step handled in its own
+ *  transaction so one failure doesn't abort the whole sweep. */
 export async function runEscalations(db: Kysely<Database>, asOf = new Date()): Promise<number> {
   const overdue = await db
     .selectFrom('wf.request_steps as s')
@@ -305,86 +305,97 @@ export async function runEscalations(db: Kysely<Database>, asOf = new Date()): P
     .select(['s.id as step_id', 's.step_no', 's.approver_user_id', 'r.id as request_id', 'r.definition_code', 'r.subject_employee_id', 'r.requested_by'])
     .execute();
 
+  const definitionCache = new Map<string, StepSpec[]>();
+  async function specsFor(code: string): Promise<StepSpec[]> {
+    const hit = definitionCache.get(code);
+    if (hit) return hit;
+    const s = await getSteps(db, code);
+    definitionCache.set(code, s);
+    return s;
+  }
+
   let handled = 0;
   for (const row of overdue) {
-    const steps = await getSteps(db, row.definition_code);
+    const steps = await specsFor(row.definition_code);
     const spec = steps.find((s) => s.step === row.step_no);
     const onBreach = spec?.onBreach ?? 'escalate';
 
-    await db
-      .updateTable('wf.request_steps')
-      .set({ action: 'escalated', acted_at: asOf, comment: `SLA breached → ${onBreach}` })
-      .where('id', '=', row.step_id)
-      .execute();
-    await writeAudit(db, {
-      action: 'update',
-      entity: 'wf.requests',
-      entityId: row.request_id,
-      field: `step_${row.step_no}`,
-      newValue: `SLA breach → ${onBreach}`,
-    });
+    await db.transaction().execute(async (trx) => {
+      // Re-check the step is still open under the row lock (it may have been
+      // acted on between the scan and now).
+      const still = await trx
+        .selectFrom('wf.request_steps')
+        .select('id')
+        .where('id', '=', row.step_id)
+        .where('action', 'is', null)
+        .forUpdate()
+        .executeTakeFirst();
+      if (!still) return;
 
-    if (onBreach === 'auto_reject' || onBreach === 'lapse') {
-      const status = onBreach === 'auto_reject' ? 'rejected' : 'lapsed';
-      await db.updateTable('wf.requests').set({ status, decided_at: asOf }).where('id', '=', row.request_id).execute();
-      await enqueue(db, {
-        recipientUserId: row.requested_by,
-        channel: 'in_app',
-        templateCode: `request_${status}`,
-        payload: { requestId: row.request_id },
+      await trx
+        .updateTable('wf.request_steps')
+        .set({ action: 'escalated', acted_at: asOf, comment: `SLA breached → ${onBreach}` })
+        .where('id', '=', row.step_id)
+        .execute();
+      await writeAudit(trx, {
+        action: 'update',
+        entity: 'wf.requests',
+        entityId: row.request_id,
+        field: `step_${row.step_no}`,
+        newValue: `SLA breach → ${onBreach}`,
       });
-    } else if (onBreach === 'auto_approve') {
-      await advance(db, { id: row.request_id, definition_code: row.definition_code, subject_employee_id: row.subject_employee_id }, row.step_no);
-    } else {
-      // escalate: same step number, new approver (spec'd target, else the
-      // overdue approver's own manager); falls back to skipping forward.
+
+      if (onBreach === 'auto_reject' || onBreach === 'lapse') {
+        const status = onBreach === 'auto_reject' ? 'rejected' : 'lapsed';
+        await trx.updateTable('wf.requests').set({ status, decided_at: asOf }).where('id', '=', row.request_id).execute();
+        await enqueue(trx, { recipientUserId: row.requested_by, channel: 'in_app', templateCode: `request_${status}`, payload: { requestId: row.request_id } });
+        return;
+      }
+      if (onBreach === 'auto_approve') {
+        await advance(trx, { id: row.request_id, definition_code: row.definition_code, subject_employee_id: row.subject_employee_id }, row.step_no);
+        return;
+      }
+
+      // escalate: spec'd target, else the overdue approver's own reporting
+      // manager — resolved through resolveApprover so DELEGATION still applies.
       let target: ResolvedApprover | null = null;
       if (spec?.escalateTo) {
-        target = await resolveApprover(db, spec.escalateTo, row.subject_employee_id);
+        target = await resolveApprover(trx, spec.escalateTo, row.subject_employee_id);
       } else {
-        const approverEmployee = await db
-          .selectFrom('core.users')
-          .select('employee_id')
-          .where('id', '=', row.approver_user_id)
-          .executeTakeFirst();
-        if (approverEmployee?.employee_id !== null && approverEmployee?.employee_id !== undefined) {
-          const manager = await db
-            .selectFrom('core.employees')
-            .select('reporting_manager_id')
-            .where('id', '=', approverEmployee.employee_id)
-            .executeTakeFirst();
-          if (manager?.reporting_manager_id !== null && manager?.reporting_manager_id !== undefined) {
-            const managerUser = await db
-              .selectFrom('core.users')
-              .select('id')
-              .where('employee_id', '=', manager.reporting_manager_id)
-              .where('is_active', '=', true)
-              .executeTakeFirst();
-            if (managerUser) target = { userId: managerUser.id, delegatedFrom: null };
-          }
+        const approver = await trx.selectFrom('core.users').select('employee_id').where('id', '=', row.approver_user_id).executeTakeFirst();
+        if (approver && approver.employee_id !== null) {
+          target = await resolveApprover(trx, 'reporting_manager', approver.employee_id);
         }
       }
+      const escalateSpec = spec?.escalateTo ?? 'reporting_manager';
       if (target) {
-        await openStep(db, row.request_id, row.step_no, target, spec?.slaHours ?? 48, row.definition_code);
+        await openStep(trx, row.request_id, row.step_no, escalateSpec, target, spec?.slaHours ?? DEFAULT_STEP_SLA_HOURS, row.definition_code);
       } else {
-        await advance(db, { id: row.request_id, definition_code: row.definition_code, subject_employee_id: row.subject_employee_id }, row.step_no);
+        await advance(trx, { id: row.request_id, definition_code: row.definition_code, subject_employee_id: row.subject_employee_id }, row.step_no);
       }
-    }
+    });
     handled += 1;
   }
   return handled;
 }
 
-/** Everything waiting on ME — the approvals inbox (05 §3). */
+/** Everything waiting on ME — the approvals inbox (05 §3). Includes role-queue
+ *  steps for every role I hold, not just steps addressed to me by name. */
 export async function inbox(db: Kysely<Database>, userId: number) {
+  const roleSpecs = [...(await getUserRoleCodes(db, userId))].map((code) => `role:${code}`);
+
   return db
     .selectFrom('wf.request_steps as s')
     .innerJoin('wf.requests as r', 'r.id', 's.request_id')
     .innerJoin('wf.definitions as d', 'd.code', 'r.definition_code')
     .innerJoin('core.employees as e', 'e.id', 'r.subject_employee_id')
-    .where('s.approver_user_id', '=', userId)
     .where('s.action', 'is', null)
     .where('r.status', '=', 'pending')
+    .where((eb) =>
+      roleSpecs.length > 0
+        ? eb.or([eb('s.approver_user_id', '=', userId), eb('s.approver_spec', 'in', roleSpecs)])
+        : eb('s.approver_user_id', '=', userId),
+    )
     .select([
       'r.id as request_id',
       'd.code as definition_code',
@@ -404,10 +415,5 @@ export async function inbox(db: Kysely<Database>, userId: number) {
 
 /** The request timeline (WF-04) — every touch with its receipts. */
 export async function timeline(db: Kysely<Database>, requestId: number) {
-  return db
-    .selectFrom('wf.request_steps')
-    .selectAll()
-    .where('request_id', '=', requestId)
-    .orderBy('id')
-    .execute();
+  return db.selectFrom('wf.request_steps').selectAll().where('request_id', '=', requestId).orderBy('id').execute();
 }

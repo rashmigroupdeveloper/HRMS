@@ -13,6 +13,7 @@ import { sql } from 'kysely';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
+import { formatDbDate } from '../../core/dates.js';
 import {
   closeWeek,
   drainRecomputeQueue,
@@ -41,7 +42,6 @@ const listShifts = withPermission('admin.settings')
   .route({ method: 'GET', path: '/attendance/config/shifts', summary: 'Shift catalog' })
   .output(z.array(shiftShape.extend({ id: z.number() })))
   .handler(async ({ context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     const rows = await context.db.selectFrom('att.shifts').selectAll().orderBy('code').execute();
     return rows.map((r) => ({
       id: r.id,
@@ -65,7 +65,6 @@ const upsertShift = withPermission('admin.settings')
   .input(shiftShape)
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     const values = {
       code: input.code,
       name: input.name,
@@ -101,7 +100,6 @@ const listHolidays = withPermission('admin.settings')
   .input(z.object({ year: z.number().int() }).optional())
   .output(z.array(z.object({ date: z.string(), name: z.string(), locationId: z.number().nullable() })))
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     let q = context.db.selectFrom('att.holidays').selectAll().orderBy('holiday_date');
     if (input?.year) {
       q = q
@@ -110,7 +108,7 @@ const listHolidays = withPermission('admin.settings')
     }
     const rows = await q.execute();
     return rows.map((r) => ({
-      date: r.holiday_date.toISOString().slice(0, 10),
+      date: formatDbDate(r.holiday_date),
       name: r.name,
       locationId: r.location_id,
     }));
@@ -121,7 +119,6 @@ const upsertHoliday = withPermission('admin.settings')
   .input(z.object({ date: isoDate, name: z.string().min(1), locationId: z.number().int().nullish() }))
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     await context.db
       .insertInto('att.holidays')
       .values({
@@ -153,7 +150,6 @@ const setScheme = withPermission('attendance.roster.write')
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     const weekday = await context.db.selectFrom('att.shifts').select('id').where('code', '=', input.weekdayShiftCode).executeTakeFirst();
     if (!weekday) throw new ORPCError('NOT_FOUND', { message: `Unknown shift: ${input.weekdayShiftCode}` });
     let saturdayId: number | null = null;
@@ -191,7 +187,6 @@ const setRoster = withPermission('attendance.roster.write')
   )
   .output(z.object({ upserted: z.number() }))
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     const db = context.db;
     const shiftIds = new Map<string, number>();
     let upserted = 0;
@@ -252,7 +247,6 @@ const dayRecords = withPermission('attendance.team.read')
     ),
   )
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     const rows = await context.db
       .selectFrom('att.day_records')
       .selectAll()
@@ -262,7 +256,7 @@ const dayRecords = withPermission('attendance.team.read')
       .orderBy('work_date')
       .execute();
     return rows.map((r) => ({
-      date: r.work_date.toISOString().slice(0, 10),
+      date: formatDbDate(r.work_date),
       status: r.status,
       scheme: r.scheme_code,
       firstIn: r.first_in?.toISOString() ?? null,
@@ -288,7 +282,6 @@ const overrideDay = withPermission('attendance.manual_override')
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     await setManualStatus(context.db, {
       employeeId: input.employeeId,
       isoDate: input.date,
@@ -304,7 +297,6 @@ const recompute = withPermission('admin.integrations')
   .input(z.object({ employeeId: z.number().int().positive(), date: isoDate }).optional())
   .output(z.object({ processed: z.number() }))
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     if (input) {
       await recomputeDay(context.db, input.employeeId, input.date);
       return { processed: 1 };
@@ -317,7 +309,6 @@ const weekClose = withPermission('admin.integrations')
   .input(z.object({ weekStart: isoDate }))
   .output(z.object({ updated: z.number() }))
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     return { updated: await closeWeek(context.db, input.weekStart) };
   });
 

@@ -60,7 +60,9 @@ export const authed = base.use(async ({ context, next }) => {
     throw new ORPCError('UNAUTHORIZED', { message: 'Account not found or deactivated' });
   }
 
-  return next({ context: { user } });
+  // Inject the now-verified user AND a NON-NULL db, so downstream handlers use
+  // context.db directly without re-checking (kills the ~27 duplicated guards).
+  return next({ context: { user, db: context.db } });
 });
 
 /**
@@ -77,15 +79,10 @@ export const authed = base.use(async ({ context, next }) => {
  */
 export function withPermission(permission: PermissionCode) {
   return authed.use(async ({ context, next }) => {
-    // db is guaranteed by `authed`, but the type allows null — re-narrow.
-    if (!context.db) {
-      throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
-    }
+    // context.db is already the non-null instance injected by `authed`.
     const permissions = await getUserPermissions(context.db, context.user.id);
     if (!permissions.has(permission)) {
-      throw new ORPCError('FORBIDDEN', {
-        message: `Missing permission: ${permission}`,
-      });
+      throw new ORPCError('FORBIDDEN', { message: `Missing permission: ${permission}` });
     }
     return next({ context: { permissions } });
   });

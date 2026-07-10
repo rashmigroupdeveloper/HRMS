@@ -191,11 +191,15 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
 
   it('delegation reroutes new steps to the delegate, recording delegated_from (WF-01)', async () => {
     const mt = await token(`s13-manager-${stamp}@hrms.test`);
-    const today = new Date().toISOString().slice(0, 10);
+    // Wide window (yesterday..tomorrow) so the assertion is robust across the
+    // UTC/IST date boundary — the engine judges the window in IST (tz3 fix).
+    const dayMs = 86_400_000;
+    const yesterday = new Date(Date.now() - dayMs).toISOString().slice(0, 10);
+    const tomorrow = new Date(Date.now() + dayMs).toISOString().slice(0, 10);
     const setDelegation = await request(app)
       .put('/api/workflows/delegations')
       .set('Authorization', `Bearer ${mt}`)
-      .send({ toUserId: delegateUser, fromDate: today, toDate: today });
+      .send({ toUserId: delegateUser, fromDate: yesterday, toDate: tomorrow });
     expect(setDelegation.status).toBe(200);
 
     const requestId = await createRequest(db, {

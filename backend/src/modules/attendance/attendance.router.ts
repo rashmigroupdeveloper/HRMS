@@ -5,11 +5,11 @@
  * Permissions per docs/08 §2: devices/integrations = it_admin domain;
  * the unmatched queue = HR ops (attendance.manual_override holders fix mappings).
  */
-import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { getTypedSetting } from '../settings/index.js';
 import { runKentSync } from './kent-sync.job.js';
+import { reingestQuarantined } from './ingest.service.js';
 
 const devicesProcedure = withPermission('admin.devices')
   .route({ method: 'GET', path: '/attendance/devices', summary: 'Device health board (last-seen, silent flags)' })
@@ -25,7 +25,6 @@ const devicesProcedure = withPermission('admin.devices')
     ),
   )
   .handler(async ({ context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     const thresholdMinutes = await getTypedSetting(context.db, 'att.device_silent_minutes', 'number', 15);
     const cutoff = Date.now() - thresholdMinutes * 60_000;
 
@@ -61,7 +60,6 @@ const unmatchedProcedure = withPermission('attendance.manual_override')
     ),
   )
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     const rows = await context.db
       .selectFrom('att.swipe_events')
       .select((eb) => [
@@ -104,7 +102,6 @@ const quarantineProcedure = withPermission('admin.integrations')
     ),
   )
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     const rows = await context.db
       .selectFrom('att.quarantined_swipes')
       .selectAll()
@@ -135,7 +132,6 @@ const syncNowProcedure = withPermission('admin.integrations')
     }),
   )
   .handler(async ({ context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     const result = await runKentSync(context.db);
     return {
       fetched: result.fetched,
@@ -146,9 +142,22 @@ const syncNowProcedure = withPermission('admin.integrations')
     };
   });
 
+const reingestProcedure = withPermission('admin.integrations')
+  .route({
+    method: 'POST',
+    path: '/attendance/exceptions/quarantined/reingest',
+    summary: 'Promote reviewed quarantined swipes into attendance after the device clock is fixed',
+  })
+  .input(z.object({ ids: z.array(z.number().int().positive()).optional() }).optional())
+  .output(z.object({ promoted: z.number(), reviewed: z.number() }))
+  .handler(async ({ input, context }) => {
+    return reingestQuarantined(context.db, input?.ids);
+  });
+
 export const attendanceRouter = {
   devices: devicesProcedure,
   unmatched: unmatchedProcedure,
   quarantined: quarantineProcedure,
   syncNow: syncNowProcedure,
+  reingest: reingestProcedure,
 };

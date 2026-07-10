@@ -26,3 +26,16 @@ export async function getUserPermissions(
   return new Set(rows.map((r) => r.code));
 }
 
+/** Every role CODE the user currently holds — for workflow role-queues (WF-01):
+ *  any holder of a `role:<code>` step may act, not just one designated user. */
+export async function getUserRoleCodes(db: Kysely<Database>, userId: number): Promise<ReadonlySet<string>> {
+  const rows = await db
+    .selectFrom('core.user_roles as ur')
+    .innerJoin('core.roles as r', 'r.id', 'ur.role_id')
+    .where('ur.user_id', '=', userId)
+    .select('r.code')
+    .distinct()
+    .execute();
+  return new Set(rows.map((r) => r.code));
+}
+

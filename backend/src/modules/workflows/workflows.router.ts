@@ -17,10 +17,6 @@ import {
   timeline,
 } from './workflow.service.js';
 
-function requireDb(context: { db: unknown }) {
-  if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
-}
-
 const createProcedure = authed
   .route({ method: 'POST', path: '/workflows/requests', summary: 'Raise a request (subject defaults to yourself)' })
   .input(
@@ -32,9 +28,7 @@ const createProcedure = authed
   )
   .output(z.object({ requestId: z.number() }))
   .handler(async ({ input, context }) => {
-    requireDb(context);
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR');
     const subjectEmployeeId = input.subjectEmployeeId ?? context.user.employee_id;
     if (subjectEmployeeId === null) {
       throw new ORPCError('BAD_REQUEST', { message: 'No employee record linked to your account — pass subjectEmployeeId' });
@@ -70,9 +64,7 @@ const inboxProcedure = authed
     ),
   )
   .handler(async ({ context }) => {
-    requireDb(context);
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR');
     const rows = await inbox(db, context.user.id);
     return rows.map((r) => ({
       requestId: r.request_id,
@@ -98,9 +90,7 @@ const actProcedure = authed
   )
   .output(z.object({ outcome: z.enum(['advanced', 'approved', 'rejected', 'sent_back']) }))
   .handler(async ({ input, context }) => {
-    requireDb(context);
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR');
     try {
       const outcome = await act(db, {
         requestId: input.requestId,
@@ -121,9 +111,7 @@ const resubmitProcedure = authed
   .input(z.object({ requestId: z.coerce.number().int().positive(), payload: z.record(z.unknown()) }))
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    requireDb(context);
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR');
     try {
       await resubmit(db, { requestId: input.requestId, requesterUserId: context.user.id, payload: input.payload });
       return { ok: true as const };
@@ -155,9 +143,7 @@ const timelineProcedure = authed
     }),
   )
   .handler(async ({ input, context }) => {
-    requireDb(context);
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR');
     const request = await db.selectFrom('wf.requests').selectAll().where('id', '=', input.requestId).executeTakeFirst();
     if (!request) throw new ORPCError('NOT_FOUND', { message: 'Request not found' });
 
@@ -201,9 +187,7 @@ const setDelegation = authed
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    requireDb(context);
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR');
     if (input.toUserId === context.user.id) throw new ORPCError('BAD_REQUEST', { message: 'Cannot delegate to yourself' });
     await db
       .insertInto('wf.delegations')
@@ -227,9 +211,7 @@ const listDefinitions = withPermission('admin.settings')
   .route({ method: 'GET', path: '/workflows/definitions', summary: 'The approval-chain catalog (runtime data)' })
   .output(z.array(z.object({ code: z.string(), name: z.string(), steps: z.unknown(), isActive: z.boolean() })))
   .handler(async ({ context }) => {
-    requireDb(context);
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR');
     const rows = await db.selectFrom('wf.definitions').selectAll().orderBy('code').execute();
     return rows.map((r) => ({ code: r.code, name: r.name, steps: r.steps, isActive: r.is_active }));
   });
@@ -246,9 +228,7 @@ const upsertDefinition = withPermission('admin.settings')
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    requireDb(context);
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR');
     const previous = await db.selectFrom('wf.definitions').select('steps').where('code', '=', input.code).executeTakeFirst();
     await db
       .insertInto('wf.definitions')
@@ -273,9 +253,7 @@ const escalateNow = withPermission('admin.integrations')
   .route({ method: 'POST', path: '/workflows/escalate', summary: 'Run the SLA escalation sweep now' })
   .output(z.object({ handled: z.number() }))
   .handler(async ({ context }) => {
-    requireDb(context);
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR');
     return { handled: await runEscalations(db) };
   });
 

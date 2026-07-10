@@ -117,6 +117,7 @@ export interface WfRequestStepsTable {
   request_id: number;
   step_no: number;
   approver_user_id: number;
+  approver_spec: string | null;
   delegated_from: number | null;
   action: WfStepAction | null;
   comment: string | null;

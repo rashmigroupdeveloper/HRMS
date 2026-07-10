@@ -21,7 +21,6 @@ const getProcedure = authed
   .input(z.object({ key: z.string().min(1) }))
   .output(settingOutput)
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     const row = await getSetting(context.db, input.key);
     if (!row) throw new ORPCError('NOT_FOUND', { message: `Setting ${input.key} not found` });
     return { key: row.key, value: row.value, valueType: row.value_type, description: row.description };
@@ -31,7 +30,6 @@ const listProcedure = authed
   .route({ method: 'GET', path: '/settings', summary: 'List all settings' })
   .output(z.array(settingOutput))
   .handler(async ({ context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     const rows = await listSettings(context.db);
     return rows.map((row) => ({
       key: row.key,
@@ -53,7 +51,6 @@ const setProcedure = withPermission('admin.settings')
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     await setSetting(context.db, {
       key: input.key,
       value: input.value,

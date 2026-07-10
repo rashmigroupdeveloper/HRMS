@@ -36,7 +36,6 @@ const matrixProcedure = guard()
   )
   .handler(async ({ context }) => {
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     const [roles, permissions, grants] = await Promise.all([
       listRoles(db),
       listPermissions(db),
@@ -57,7 +56,6 @@ const grantProcedure = guard()
   .output(z.object({ changed: z.boolean() }))
   .handler(async ({ input, context }) => {
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
 
     const role = await findRoleByCode(db, input.role);
     const permission = await findPermissionByCode(db, input.permission);
@@ -84,7 +82,6 @@ const revokeProcedure = guard()
   .output(z.object({ changed: z.boolean() }))
   .handler(async ({ input, context }) => {
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
 
     const role = await findRoleByCode(db, input.role);
     const permission = await findPermissionByCode(db, input.permission);
@@ -118,7 +115,6 @@ const assignRoleProcedure = guard()
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
 
     const role = await findRoleByCode(db, input.role);
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
@@ -142,7 +138,6 @@ const removeRoleProcedure = guard()
   .output(z.object({ changed: z.boolean() }))
   .handler(async ({ input, context }) => {
     const db = context.db;
-    if (!db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
 
     const role = await findRoleByCode(db, input.role);
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });

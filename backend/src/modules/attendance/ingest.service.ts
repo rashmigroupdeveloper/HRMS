@@ -125,9 +125,13 @@ export async function ingestOnce(
       inserted += Number(result.numInsertedOrUpdatedRows ?? 0n);
     }
 
-    // Device heartbeat: upsert doors + stamp last_seen (gap detection input, ATT-02).
+    // Device heartbeat: upsert doors + stamp last_seen (gap detection input,
+    // ATT-02). Built from ALL fetched swipes — including quarantined ones —
+    // because a door with a drifted clock is still actively delivering data;
+    // otherwise it would false-alarm as silent (review att6). received_at is
+    // the trustworthy receipt time regardless of the swipe timestamp's drift.
     const byDoor = new Map<string, Date>();
-    for (const s of swipes) {
+    for (const s of fetched) {
       const prev = byDoor.get(s.doorCode);
       if (!prev || s.receivedAt > prev) byDoor.set(s.doorCode, s.receivedAt);
     }
@@ -159,6 +163,65 @@ export async function ingestOnce(
   });
 
   return { fetched: fetched.length, inserted, quarantined: quarantine.length, unmatchedEmployeeNos: unmatched, watermark: maxReceived };
+}
+
+/**
+ * Recovery path for quarantined swipes (review F7): after the device clock is
+ * fixed (or an over-tight plausibility window is corrected), promote the parked
+ * rows into att.swipe_events and mark them reviewed. Idempotent — the swipe
+ * unique key ignores anything already ingested. Without this the migration's
+ * "review… and re-ingest" promise had no implementation and quarantined rows
+ * were a dead-end once the watermark passed them.
+ */
+export async function reingestQuarantined(
+  db: Kysely<Database>,
+  ids?: number[],
+): Promise<{ promoted: number; reviewed: number }> {
+  let promoted = 0;
+  let reviewed = 0;
+
+  await db.transaction().execute(async (trx) => {
+    let q = trx.selectFrom('att.quarantined_swipes').selectAll().where('reviewed', '=', false);
+    if (ids && ids.length > 0) q = q.where('id', 'in', ids);
+    const rows = await q.execute();
+    if (rows.length === 0) return;
+
+    const ecodes = [...new Set(rows.map((r) => r.employee_no))];
+    const employees = await trx.selectFrom('core.employees').select(['id', 'ecode']).where('ecode', 'in', ecodes).execute();
+    const idByEcode = new Map(employees.map((e) => [e.ecode, e.id]));
+
+    const months = [...new Set(rows.map((r) => r.swipe_ts.toISOString().slice(0, 7)))];
+    for (const month of months) {
+      await sql`SELECT att.ensure_swipe_partition(${`${month}-01`}::date)`.execute(trx);
+    }
+
+    const result = await trx
+      .insertInto('att.swipe_events')
+      .values(
+        rows.map((r) => ({
+          employee_id: idByEcode.get(r.employee_no) ?? null,
+          employee_no: r.employee_no,
+          swipe_ts: r.swipe_ts,
+          door_code: r.door_code,
+          direction: r.direction,
+          swipe_type: r.swipe_type,
+          received_at: r.received_at,
+          source: r.source,
+        })),
+      )
+      .onConflict((oc) => oc.columns(['employee_no', 'swipe_ts', 'door_code']).doNothing())
+      .executeTakeFirst();
+    promoted = Number(result.numInsertedOrUpdatedRows ?? 0n);
+
+    const marked = await trx
+      .updateTable('att.quarantined_swipes')
+      .set({ reviewed: true })
+      .where('id', 'in', rows.map((r) => r.id))
+      .executeTakeFirst();
+    reviewed = Number(marked.numUpdatedRows);
+  });
+
+  return { promoted, reviewed };
 }
 
 export interface SilentDevice {
