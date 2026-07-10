@@ -67,10 +67,10 @@ run('mock Kent ingestion spike (live Postgres)', () => {
   });
 
   it('unknown employee_no is kept with employee_id NULL — the exception queue, never dropped', async () => {
-    // Own source → own watermark (sharing SOURCE made this pass/fail on the
-    // random received-at lag draw vs the main test's advanced watermark).
+    // PER-RUN source → fresh watermark every time. (A persistent ghost
+    // watermark + non-monotonic random days filtered everything on some runs.)
     const ghost = new MockKentConnector({ employeeNos: ['ZZZ999999'], day, seed: 8 });
-    const result = await ingestOnce(db, ghost, `${SOURCE}-ghost`);
+    const result = await ingestOnce(db, ghost, `ghost-${Date.now()}`);
     expect(result.unmatchedEmployeeNos).toContain('ZZZ999999');
 
     const row = await db

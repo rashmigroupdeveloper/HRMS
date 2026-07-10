@@ -19,6 +19,7 @@
     "verify": "npm run typecheck && npm run lint && npm run knip && npm run depcruise && npm run test && npm run build",
     "format": "prettier --write .",
     "seed:rbac": "tsx src/core/rbac/seed.ts",
+    "seed:workflows": "tsx src/modules/workflows/seed.ts",
     "migrate": "tsx -r dotenv/config node_modules/node-pg-migrate/bin/node-pg-migrate -j ts --ignore-pattern \".*\\.md\" up",
     "migrate:down": "tsx -r dotenv/config node_modules/node-pg-migrate/bin/node-pg-migrate -j ts --ignore-pattern \".*\\.md\" down",
     "migrate:create": "tsx -r dotenv/config node_modules/node-pg-migrate/bin/node-pg-migrate -j ts --ignore-pattern \".*\\.md\" create"

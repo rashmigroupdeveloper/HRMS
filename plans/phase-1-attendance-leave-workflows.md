@@ -30,17 +30,17 @@
 **Tests:** **13 golden fixtures, all hand-computed** (full/late/HD-sessions/short/absent/no-swipes/GCS-Saturday/Sunday-WO/holiday/night/manual-override-survives/locked-untouchable/idempotence/week-off-paid-vs-unpaid) — 84 total green, verify exit 0.
 **Exit criteria:** every status branch matches hand-computed fixtures ✅ · locked-row recompute skipped AND direct UPDATE rejected by the DB ✅ · managers have NO status-edit surface — the only write is `attendance.manual_override`-gated (HR), reason mandatory, audited ✅.
 
-## Stage 1.3 — Workflow engine + approvals inbox   `[ ☐ ]`
+## Stage 1.3 — Workflow engine + approvals inbox   `[ ☑ done 9 Jul 2026 — backend; inbox UI = frontend team on the /workflows APIs ]`
 **Goal:** the generic approval spine (approve / reject / **send_back**) with provable notifications.
 **Depends on:** Phase 0 (0.4 notifications).
 **Tasks:**
-- [ ] P1-T10 — Engine: `wf.{definitions,requests,request_steps,delegations}`; steps resolve RM/functional-mgr/role/user; vacant-approver auto-skip + audit; **every step writes `notified_at`** (the anti-PP-14 receipt) *(WF-01..04)*
-- [ ] P1-T11 — Seed the authoritative catalog (08 §4 / 09 §10.2): Leave, Leave Cancel, Leave Encashment, Comp Off, Restricted Holiday, Regularization & Permission, OD, Overtime, Claim, Loan, Confirmation, Resignation, Transfer, Letter Signature
-- [ ] P1-T12 — Approvals inbox: one cross-type queue, ≤2-click decisions, SLA countdown pills, keyboard `a`/`r`, batch approve, "all caught up" state *(05 §3/§6)*
-- [ ] P1-T13 — SLA escalation job (hourly): escalate / auto-reject / lapse per definition *(WF-03)*
-**Modules/files:** `backend/src/modules/workflows/`, `frontend/src/pages/approvals/`
-**Tests required:** chain resolution incl. cross-entity manager; send_back round-trip; escalation on breach; delegation window; notified_at recorded on every step (integration).
-**Exit criteria:** a seeded request walks every action path with a visible timeline · "approver never notified" is impossible: assertion test that a step cannot advance without notified_at.
+- [x] P1-T10 — Engine **live** (migration 0007): approver specs `reporting_manager | functional_manager | role:<code> | user:<id>` with **out-of-office delegation** applied at resolution (delegated_from trail ✓ tested); **vacant approvers auto-skip with audit** (chain exhausted → auto-approved ✓); **`notified_at` is NOT NULL — a step row physically cannot exist without its notification receipt** (the PP-14 guarantee, structural not procedural); send_back → requester **resubmit** restarts the chain (timeline keeps round 1) *(WF-01..04, doc 11 §4b)*
+- [x] P1-T11 — **15 chains seeded** from 08 §4 / live 09 §10.2 (leave, leave_cancel, leave_encashment, comp_off, restricted_holiday, regularization, od, overtime, claim, loan, travel_advance_domestic, confirmation, resignation, transfer, letter_signature) — `npm run seed:workflows`, idempotent, **runtime edits never clobbered**; chains editable via `PUT /workflows/definitions/{code}` (admin.settings, audited old→new) — **edit takes effect on the very next request ✓ tested**
+- [x] P1-T12 — Inbox **API** live: `GET /workflows/inbox` (SLA-sorted, subject + payload + receipts + delegation flag), `POST /workflows/requests/{id}/act`, timeline `GET /workflows/requests/{id}` (visibility: requester/subject/step-holders/audit.read). *Inbox UI (keyboard a/r, batch, countdown pills) = frontend team per 05 §3.*
+- [x] P1-T13 — SLA escalation **hourly job** (`workflow-escalation`) + on-demand endpoint: breach → **escalate** (spec'd target or approver's own manager, else skip-forward) / **auto_reject** / **lapse** (OT's hard 48h ✓ tested) / **auto_approve** (Restricted Holiday ✓ tested); every breach audited + requester notified *(WF-03)*
+**Modules/files:** `backend/src/modules/workflows/{workflow.service,definitions.seed,workflows.router,seed}.ts`, migration 0007, worker queue `workflow-escalation`
+**Tests:** 6 integration (90 total green, verify 0): receipt + inbox + stranger-403 + RM approve; send_back→resubmit round-trip; delegation reroute with trail; vacant-skip→auto-approve with audit; OT lapse + RH auto-approve + leave escalate; runtime chain edit takes effect immediately.
+**Exit criteria:** every action path walked with a visible timeline ✅ · a step cannot exist un-notified (NOT NULL receipt) ✅ · non-approver acting → 403 ✅.
 
 ## Stage 1.4 — AR / OD / Permission + Overtime 48h   `[ ☐ ]`
 **Goal:** the attendance-exception requests, and the OT module greytHR never delivered.

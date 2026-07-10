@@ -15,11 +15,13 @@ import { createDatabase } from '../core/db/database.js';
 import { logger } from '../core/logger.js';
 import { closeWeek, drainRecomputeQueue, runKentSync } from '../modules/attendance/index.js';
 import { enqueueEvent } from '../modules/notifications/index.js';
+import { runEscalations } from '../modules/workflows/index.js';
 
 const KENT_SYNC_QUEUE = 'kent-sync';
 const RECOMPUTE_QUEUE = 'attendance-recompute';
 const WEEK_CLOSE_QUEUE = 'attendance-week-close';
 const ROSTER_REMINDER_QUEUE = 'roster-reminder';
+const WF_ESCALATION_QUEUE = 'workflow-escalation';
 
 /** Monday of the week BEFORE the one containing `d` (the week being closed). */
 function previousWeekStartIso(d: Date): string {
@@ -40,9 +42,15 @@ async function main(): Promise<void> {
   });
 
   await boss.start();
-  for (const q of [KENT_SYNC_QUEUE, RECOMPUTE_QUEUE, WEEK_CLOSE_QUEUE, ROSTER_REMINDER_QUEUE]) {
+  for (const q of [KENT_SYNC_QUEUE, RECOMPUTE_QUEUE, WEEK_CLOSE_QUEUE, ROSTER_REMINDER_QUEUE, WF_ESCALATION_QUEUE]) {
     await boss.createQueue(q);
   }
+
+  // Approval SLA sweep, hourly (WF-03): breach → escalate/auto-reject/lapse/auto-approve.
+  await boss.schedule(WF_ESCALATION_QUEUE, '0 * * * *');
+  await boss.work(WF_ESCALATION_QUEUE, async () => {
+    await runEscalations(db);
+  });
 
   // Every 5 minutes (ATT-01: ≤5 min lag). One pending run at a time.
   await boss.schedule(KENT_SYNC_QUEUE, '*/5 * * * *');

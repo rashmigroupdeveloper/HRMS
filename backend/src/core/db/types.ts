@@ -84,6 +84,58 @@ export interface SettingsTable {
   updated_at: Generated<Timestamp>;
 }
 
+/** wf.definitions — approval chains as runtime-editable data (WF-01). */
+export interface WfDefinitionsTable {
+  code: string;
+  name: string;
+  steps: unknown; // WorkflowStepSpec[] — validated by the workflows module
+  is_active: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+export type WfRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'lapsed' | 'sent_back';
+
+export interface WfRequestsTable {
+  id: Generated<number>;
+  definition_code: string;
+  subject_employee_id: number;
+  requested_by: number;
+  payload: unknown;
+  current_step: Generated<number>;
+  status: Generated<WfRequestStatus>;
+  decided_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+export type WfStepAction = 'approved' | 'rejected' | 'sent_back' | 'escalated' | 'skipped';
+
+/** wf.request_steps — the timeline; notified_at NOT NULL is the PP-14 receipt. */
+export interface WfRequestStepsTable {
+  id: Generated<number>;
+  request_id: number;
+  step_no: number;
+  approver_user_id: number;
+  delegated_from: number | null;
+  action: WfStepAction | null;
+  comment: string | null;
+  notified_at: Timestamp;
+  acted_at: Timestamp | null;
+  sla_due_at: Timestamp;
+  created_at: Generated<Timestamp>;
+}
+
+export interface WfDelegationsTable {
+  id: Generated<number>;
+  from_user_id: number;
+  to_user_id: number;
+  from_date: Timestamp;
+  to_date: Timestamp;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
 /** wf.notifications — queue with retry + dead-letter (WF-02, docs/03 §8). */
 export interface NotificationsTable {
   id: Generated<number>;
@@ -453,6 +505,10 @@ export interface Database {
   'core.employee_history': EmployeeHistoryTable;
   'core.employee_family': EmployeeFamilyTable;
   'core.documents': DocumentsTable;
+  'wf.definitions': WfDefinitionsTable;
+  'wf.requests': WfRequestsTable;
+  'wf.request_steps': WfRequestStepsTable;
+  'wf.delegations': WfDelegationsTable;
   'wf.notifications': NotificationsTable;
   'wf.event_subscriptions': EventSubscriptionsTable;
   'att.devices': AttDevicesTable;

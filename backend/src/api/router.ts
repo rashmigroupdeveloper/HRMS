@@ -7,6 +7,7 @@ import { authRouter } from '../modules/auth/index.js';
 import { settingsRouter } from '../modules/settings/index.js';
 import { rbacRouter } from '../modules/rbac/index.js';
 import { attendanceRouter, attendanceConfigRouter } from '../modules/attendance/index.js';
+import { workflowsRouter } from '../modules/workflows/index.js';
 
 export const appRouter = {
   system: systemRouter,
@@ -14,6 +15,7 @@ export const appRouter = {
   settings: settingsRouter,
   rbac: rbacRouter,
   attendance: { ...attendanceRouter, ...attendanceConfigRouter },
+  workflows: workflowsRouter,
 };
 
 export type AppRouter = typeof appRouter;
