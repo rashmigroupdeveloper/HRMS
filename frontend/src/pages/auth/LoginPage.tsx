@@ -16,11 +16,13 @@ import { useRef, useState } from 'react';
 import type { SyntheticEvent } from 'react';
 import { IdCard, Lock, ShieldCheck } from 'lucide-react';
 import { Button, StatusBadge, TextField, ThemeToggle } from '../../ui';
-import { setAccessToken, type SessionUser } from '../../lib/session';
+import { type SessionUser } from '../../lib/session';
 
 interface LoginPageProps {
   /** Called with the authenticated user once the server accepts the login. */
   onSuccess?: (user: SessionUser) => void;
+  /** Load roles/permissions via /auth/me after the access token is issued. */
+  loadSession: (accessToken: string) => Promise<SessionUser>;
 }
 
 interface FieldErrors {
@@ -55,7 +57,7 @@ function validatePassword(value: string): string | undefined {
   return undefined;
 }
 
-export function LoginPage({ onSuccess }: LoginPageProps) {
+export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
   const [employeeId, setEmployeeId] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -118,9 +120,9 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
         return;
       }
 
-      const body = (await res.json()) as { accessToken: string; user: SessionUser };
-      setAccessToken(body.accessToken);
-      onSuccess?.(body.user);
+      const body = (await res.json()) as { accessToken: string };
+      const user = await loadSession(body.accessToken);
+      onSuccess?.(user);
     } catch {
       setFormError('Can’t reach the server. Check your connection and try again.');
     } finally {

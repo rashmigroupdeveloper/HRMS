@@ -11,17 +11,33 @@
 export interface SessionUser {
   id: number;
   email: string;
+  employeeId: number | null;
+  roles: string[];
+  permissions: string[];
 }
 
 const TOKEN_KEY = 'hrms.accessToken';
 
-// getAccessToken() lands with the Phase-1 API client (first authed data fetch).
+export function getAccessToken(): string | null {
+  return sessionStorage.getItem(TOKEN_KEY);
+}
+
 export function setAccessToken(token: string): void {
   sessionStorage.setItem(TOKEN_KEY, token);
 }
 
-function clearAccessToken(): void {
+export function clearAccessToken(): void {
   sessionStorage.removeItem(TOKEN_KEY);
+}
+
+async function fetchMe(accessToken: string): Promise<SessionUser> {
+  const me = await fetch('/api/auth/me', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!me.ok) {
+    throw new Error('me failed');
+  }
+  return (await me.json()) as SessionUser;
 }
 
 /**
@@ -40,21 +56,17 @@ export async function restoreSession(): Promise<SessionUser | null> {
     }
     const { accessToken } = (await refreshed.json()) as { accessToken: string };
     setAccessToken(accessToken);
-
-    const me = await fetch('/api/auth/me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!me.ok) {
-      clearAccessToken();
-      return null;
-    }
-    return (await me.json()) as SessionUser;
+    return await fetchMe(accessToken);
   } catch {
-    // Network failure ≠ logged out; but with no token we can't render data —
-    // treat as anonymous and let the user sign in when connectivity returns.
     clearAccessToken();
     return null;
   }
+}
+
+/** After password login — load roles/permissions via /auth/me. */
+export async function loadSession(accessToken: string): Promise<SessionUser> {
+  setAccessToken(accessToken);
+  return fetchMe(accessToken);
 }
 
 /** Clears the refresh cookie server-side and the local access token. */
@@ -65,4 +77,16 @@ export async function logout(): Promise<void> {
     // Best effort — local state clears regardless.
   }
   clearAccessToken();
+}
+
+export function hasPermission(user: SessionUser, code: string): boolean {
+  return user.permissions.includes(code);
+}
+
+export function hasAnyPermission(user: SessionUser, codes: readonly string[]): boolean {
+  return codes.some((c) => user.permissions.includes(c));
+}
+
+export function hasRole(user: SessionUser, code: string): boolean {
+  return user.roles.includes(code);
 }

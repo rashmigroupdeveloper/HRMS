@@ -46,3 +46,20 @@ This folder is the **live execution tracker** for the Rashmi HRMS build. The spe
 - `docs/14-TECH-STACK-AND-RELIABILITY.md` — stack decision record + reliability program (wins over doc 02 on conflict)
 - `docs/03-DATABASE-SCHEMA.md` — every table/column · `docs/04-MODULE-SPECS.md` — exact behavior
 - `docs/08-ROLES-AND-PERMISSIONS.md` — RBAC seed + per-role shells · `docs/10-INDIA-PAYROLL-STATUTORY-REFERENCE.md` — rates + golden fixtures
+
+## Frontend route map (locked 11 Jul 2026 — P0-T33 shell)
+
+Product routes live in `frontend/src/app/router.tsx`. Surfaces not yet built render `PlaceholderPage` so deep links and per-role nav work.
+
+| Path | Status | Phase |
+|---|---|---|
+| `/login`, `/` (role home) | live | 0 |
+| `/people`, `/people/:ecode` | live (P0-T33) | 0 |
+| `/approvals`, `/my/*`, `/attendance/*`, `/leave` | placeholder | 1 |
+| `/payroll/*`, `/loans`, `/claims`, `/my/pay`, `/my/claims` | placeholder | 2 |
+| `/lifecycle/*`, `/assets`, `/helpdesk`, `/engagement`, `/executive` | placeholder | 3 |
+| `/travel/*` | placeholder | 3.5 |
+| `/recruitment/*` | placeholder | 4 |
+| `/dev/gallery` | live (super_admin) | 0 |
+
+**Next UI stage after P0-T33:** Approvals inbox (P1-T12 UI) — do not start until sponsor announces Stage 1.x.

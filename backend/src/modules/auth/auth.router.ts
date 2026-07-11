@@ -7,6 +7,10 @@ import { ORPCError } from '@orpc/server';
 import type { Response } from 'express';
 import { z } from 'zod';
 import { authed, base } from '../../api/orpc.js';
+import {
+  getUserPermissions,
+  getUserRoleCodes,
+} from '../../core/rbac/permissions.service.js';
 import { login, refresh } from './auth.service.js';
 
 const REFRESH_COOKIE = 'hrms_refresh';
@@ -87,13 +91,34 @@ const logoutProcedure = base
     return { ok: true as const };
   });
 
+const meOutput = z.object({
+  id: z.number().int(),
+  email: z.string(),
+  employeeId: z.number().int().nullable(),
+  roles: z.array(z.string()),
+  permissions: z.array(z.string()),
+});
+
 const meProcedure = authed
-  .route({ method: 'GET', path: '/auth/me', summary: 'The authenticated user' })
-  .output(userOutput)
-  .handler(({ context }) => ({
-    id: context.user.id,
-    email: context.user.email,
-  }));
+  .route({
+    method: 'GET',
+    path: '/auth/me',
+    summary: 'The authenticated user plus live roles/permissions (for nav)',
+  })
+  .output(meOutput)
+  .handler(async ({ context }) => {
+    const [roles, permissions] = await Promise.all([
+      getUserRoleCodes(context.db, context.user.id),
+      getUserPermissions(context.db, context.user.id),
+    ]);
+    return {
+      id: context.user.id,
+      email: context.user.email,
+      employeeId: context.user.employee_id,
+      roles: [...roles].sort(),
+      permissions: [...permissions].sort(),
+    };
+  });
 
 export const authRouter = {
   login: loginProcedure,
