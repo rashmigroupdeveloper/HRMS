@@ -43,6 +43,37 @@ export const stepsSchema = z.array(stepSpecSchema).min(1);
 export type RequestRow = Selectable<WfRequestsTable>;
 export type StepRow = Selectable<WfRequestStepsTable>;
 
+/**
+ * COMPLETION HOOKS — how domain modules react to a request reaching a final
+ * state WITHOUT the workflows module importing them (no dependency cycle):
+ * the domain registers `onWorkflowFinal('regularization', handler)` at app
+ * wiring time; the engine fires the handler inside the SAME transaction that
+ * finalized the request, so domain side-effects are atomic with the decision.
+ */
+export type WorkflowFinalStatus = 'approved' | 'rejected' | 'lapsed';
+export type WorkflowFinalHook = (db: Db, request: RequestRow, status: WorkflowFinalStatus) => Promise<void>;
+
+const finalHooks = new Map<string, WorkflowFinalHook[]>();
+
+export function onWorkflowFinal(definitionCode: string, hook: WorkflowFinalHook): void {
+  const list = finalHooks.get(definitionCode) ?? [];
+  list.push(hook);
+  finalHooks.set(definitionCode, list);
+}
+
+/** Test/bootstrap helper: clears registered hooks (idempotent re-registration). */
+export function clearWorkflowFinalHooks(): void {
+  finalHooks.clear();
+}
+
+async function fireFinalHooks(db: Db, requestId: number, status: WorkflowFinalStatus): Promise<void> {
+  const request = await db.selectFrom('wf.requests').selectAll().where('id', '=', requestId).executeTakeFirst();
+  if (!request) return;
+  for (const hook of finalHooks.get(request.definition_code) ?? []) {
+    await hook(db, request, status);
+  }
+}
+
 interface ResolvedApprover {
   userId: number;
   delegatedFrom: number | null;
@@ -187,11 +218,23 @@ async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definition_code
   }
 
   await db.updateTable('wf.requests').set({ status: 'approved', decided_at: new Date() }).where('id', '=', request.id).execute();
+  const requester = await db.selectFrom('wf.requests').select('requested_by').where('id', '=', request.id).executeTakeFirstOrThrow();
+  await enqueue(db, {
+    recipientUserId: requester.requested_by,
+    channel: 'in_app',
+    templateCode: 'request_approved',
+    payload: { requestId: request.id },
+  });
+  await fireFinalHooks(db, request.id, 'approved');
 }
 
 export async function createRequest(
   db: Kysely<Database>,
   params: { definitionCode: string; subjectEmployeeId: number; requestedByUserId: number; payload: Record<string, unknown> },
+  /** Runs inside the same transaction AFTER the request row exists but BEFORE
+   *  the chain advances — the place to insert the domain row (regularization,
+   *  OT entry) so a vacant-chain auto-approval's completion hook can see it. */
+  attach?: (trx: Db, requestId: number) => Promise<void>,
 ): Promise<number> {
   await getSteps(db, params.definitionCode); // validate existence + shape before opening a tx
 
@@ -206,6 +249,7 @@ export async function createRequest(
       })
       .returning(['id', 'definition_code', 'subject_employee_id'])
       .executeTakeFirstOrThrow();
+    if (attach) await attach(trx, request.id);
     await advance(trx, request, 0);
     return request.id;
   });
@@ -270,6 +314,7 @@ export async function act(
       templateCode: params.action === 'reject' ? 'request_rejected' : 'request_sent_back',
       payload: { requestId: params.requestId, comment: params.comment ?? null },
     });
+    if (status === 'rejected') await fireFinalHooks(trx, params.requestId, 'rejected');
     return status === 'rejected' ? 'rejected' : 'sent_back';
   });
 }
@@ -349,6 +394,7 @@ export async function runEscalations(db: Kysely<Database>, asOf = new Date()): P
         const status = onBreach === 'auto_reject' ? 'rejected' : 'lapsed';
         await trx.updateTable('wf.requests').set({ status, decided_at: asOf }).where('id', '=', row.request_id).execute();
         await enqueue(trx, { recipientUserId: row.requested_by, channel: 'in_app', templateCode: `request_${status}`, payload: { requestId: row.request_id } });
+        await fireFinalHooks(trx, row.request_id, status);
         return;
       }
       if (onBreach === 'auto_approve') {

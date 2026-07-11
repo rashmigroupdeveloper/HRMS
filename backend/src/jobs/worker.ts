@@ -13,7 +13,14 @@ import { PgBoss } from 'pg-boss';
 import { loadEnv } from '../core/config/env.js';
 import { createDatabase } from '../core/db/database.js';
 import { logger } from '../core/logger.js';
-import { closeWeek, drainRecomputeQueue, runKentSync } from '../modules/attendance/index.js';
+import {
+  closeWeek,
+  drainRecomputeQueue,
+  lapseExpiredOvertime,
+  registerAttendanceWorkflowHooks,
+  runKentSync,
+  sendOvertimeSummaries,
+} from '../modules/attendance/index.js';
 import { enqueueEvent } from '../modules/notifications/index.js';
 import { runEscalations } from '../modules/workflows/index.js';
 import { previousWeekStartIso } from '../core/dates.js';
@@ -23,10 +30,15 @@ const RECOMPUTE_QUEUE = 'attendance-recompute';
 const WEEK_CLOSE_QUEUE = 'attendance-week-close';
 const ROSTER_REMINDER_QUEUE = 'roster-reminder';
 const WF_ESCALATION_QUEUE = 'workflow-escalation';
+const OT_SUMMARY_QUEUE = 'ot-daily-summary';
 
 async function main(): Promise<void> {
   const env = loadEnv();
   const db = createDatabase(env.DATABASE_URL);
+
+  // The escalation sweep can LAPSE an overtime request (ATT-08) — the hook that
+  // mirrors that onto att.overtime_entries must be registered in this process.
+  registerAttendanceWorkflowHooks();
 
   const boss = new PgBoss({ connectionString: env.DATABASE_URL });
   boss.on('error', (err: Error) => {
@@ -34,14 +46,22 @@ async function main(): Promise<void> {
   });
 
   await boss.start();
-  for (const q of [KENT_SYNC_QUEUE, RECOMPUTE_QUEUE, WEEK_CLOSE_QUEUE, ROSTER_REMINDER_QUEUE, WF_ESCALATION_QUEUE]) {
+  for (const q of [KENT_SYNC_QUEUE, RECOMPUTE_QUEUE, WEEK_CLOSE_QUEUE, ROSTER_REMINDER_QUEUE, WF_ESCALATION_QUEUE, OT_SUMMARY_QUEUE]) {
     await boss.createQueue(q);
   }
 
-  // Approval SLA sweep, hourly (WF-03): breach → escalate/auto-reject/lapse/auto-approve.
+  // Approval SLA sweep, hourly (WF-03): breach → escalate/auto-reject/lapse/
+  // auto-approve. The companion sweep lapses workflow-less OT entries (ATT-08).
   await boss.schedule(WF_ESCALATION_QUEUE, '0 * * * *');
   await boss.work(WF_ESCALATION_QUEUE, async () => {
     await runEscalations(db);
+    await lapseExpiredOvertime(db);
+  });
+
+  // Manager OT digest at 18:00 IST = 12:30 UTC (PP-19: decide before it lapses).
+  await boss.schedule(OT_SUMMARY_QUEUE, '30 12 * * *');
+  await boss.work(OT_SUMMARY_QUEUE, async () => {
+    await sendOvertimeSummaries(db);
   });
 
   // Every 5 minutes (ATT-01: ≤5 min lag). One pending run at a time.

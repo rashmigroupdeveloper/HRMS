@@ -4,6 +4,17 @@ export { MockKentConnector, type KentConnector, type RawSwipe } from './kent-con
 export { runKentSync, KENT_SOURCE } from './kent-sync.job.js';
 export { attendanceRouter } from './attendance.router.js';
 export { attendanceConfigRouter } from './attendance-config.router.js';
+export { attendanceRequestsRouter } from './attendance-requests.router.js';
+export { registerAttendanceWorkflowHooks } from './workflow-hooks.js';
+export { createRegularization, listRegularizations } from './regularization.service.js';
+export {
+  recordDetectedOvertime,
+  decideOvertime,
+  lapseExpiredOvertime,
+  sendOvertimeSummaries,
+  listPendingOvertime,
+  listMyOvertime,
+} from './overtime.service.js';
 export {
   computeDayStatus,
   recomputeDay,

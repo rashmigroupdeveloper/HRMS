@@ -447,6 +447,42 @@ export interface AttRecomputeQueueTable {
   queued_at: Generated<Timestamp>;
 }
 
+/** att.regularizations — AR (past-only) / OD (future ok) / PERMISSION (time-bound) (ATT-06/07). */
+export interface AttRegularizationsTable {
+  id: Generated<number>;
+  employee_id: number;
+  kind: 'AR' | 'OD' | 'PERMISSION';
+  from_date: Timestamp;
+  to_date: Timestamp;
+  from_time: string | null;
+  to_time: string | null;
+  reason: string;
+  requested_status: DayStatus;
+  workflow_request_id: number;
+  applied: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+/** att.overtime_entries — the 48-hour rule (ATT-08). */
+export interface AttOvertimeEntriesTable {
+  id: Generated<number>;
+  employee_id: number;
+  work_date: Timestamp;
+  detected_minutes: number;
+  claimed_minutes: number;
+  approved_minutes: number | null;
+  status: Generated<'pending' | 'approved' | 'rejected' | 'lapsed' | 'converted_comp_off'>;
+  manager_id: number | null;
+  decided_at: Timestamp | null;
+  deadline_at: Timestamp;
+  workflow_request_id: number | null;
+  comp_off_credit_id: number | null;
+  payroll_item_id: number | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
 /** att.quarantined_swipes — implausible timestamps parked for review (doc 14 §8.4). */
 export interface AttQuarantinedSwipesTable {
   id: Generated<number>;
@@ -522,4 +558,6 @@ export interface Database {
   'att.holidays': AttHolidaysTable;
   'att.day_records': AttDayRecordsTable;
   'att.recompute_queue': AttRecomputeQueueTable;
+  'att.regularizations': AttRegularizationsTable;
+  'att.overtime_entries': AttOvertimeEntriesTable;
 }

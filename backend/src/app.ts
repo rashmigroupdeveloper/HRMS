@@ -1,6 +1,7 @@
 import express, { type Express } from 'express';
 import cookieParser from 'cookie-parser';
 import { getOpenApiSpec, orpcMiddleware, type AppDeps } from './api/handler.js';
+import { registerAttendanceWorkflowHooks } from './modules/attendance/index.js';
 
 /**
  * Express app factory — pure, no I/O at import time; tests inject their own
@@ -17,6 +18,10 @@ export function createApp(deps?: Partial<AppDeps>): Express {
     jwtSecret: deps?.jwtSecret ?? 'insecure-test-only-secret-never-in-production!',
     secureCookies: deps?.secureCookies ?? false,
   };
+
+  // Domain reactions to workflow finals (approve → write-back) must be live
+  // in every process that can finalize a request.
+  registerAttendanceWorkflowHooks();
 
   const app = express();
 

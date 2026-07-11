@@ -42,14 +42,17 @@
 **Tests:** 6 integration (90 total green, verify 0): receipt + inbox + stranger-403 + RM approve; send_back→resubmit round-trip; delegation reroute with trail; vacant-skip→auto-approve with audit; OT lapse + RH auto-approve + leave escalate; runtime chain edit takes effect immediately.
 **Exit criteria:** every action path walked with a visible timeline ✅ · a step cannot exist un-notified (NOT NULL receipt) ✅ · non-approver acting → 403 ✅.
 
-## Stage 1.4 — AR / OD / Permission + Overtime 48h   `[ ☐ ]`
+## Stage 1.4 — AR / OD / Permission + Overtime 48h   `[ ☑ done 11 Jul 2026 — backend; ESS/inbox UI = frontend team on the new APIs; Excel exports land with the R3/R5 reports in 1.7 ]`
 **Goal:** the attendance-exception requests, and the OT module greytHR never delivered.
 **Depends on:** 1.2, 1.3.
 **Tasks:**
-- [ ] P1-T14 — AR (past-only, window-capped) + **Permission** (time-bounded hours) + OD (**future-dated allowed**, partial-day); approval → day recompute; Excel-exportable *(ATT-06/07, PP-16, KQ)*
-- [ ] P1-T15 — OT: detection from swipes beyond shift / WO-H work; daily 18:00 manager summary; **48-hour deadline → lapse job**; approve full/partial or convert to comp-off (one only — DB CHECK); rate from settings *(ATT-08, 04 §1.4)*
-**Tests required:** validator rules (AR past-only, OD future OK); OT lifecycle incl. lapse at exactly deadline; paid-XOR-compoff constraint test; conversion creates ledger credit.
-**Exit criteria:** e2e: employee applies AR → RM approves → day recomputed with `source='regularized'` · OT older than 48h auto-lapses in test clock · exports match on-screen filters.
+- [x] P1-T14 — AR (**past-only**, capped by `att.ar_max_past_days` setting) + **Permission** (single day, time-bounded ≤ `att.permission_max_hours`) + OD (**future-dated allowed** — the KQ ask); locked-period + overlapping-open-request guards; rides the runtime-editable `regularization`/`od` chains; **approval writes the day INSIDE the approving transaction** via the new workflow completion-hook registry (`source='regularized'`) and `recomputeDay` now only touches `source='auto'` rows, so an approval can never be silently reverted; HR manual override still outranks it *(ATT-06/07, PP-16, KQ)*
+- [x] P1-T15 — OT **detected on every recompute**: minutes beyond shift end, or ALL worked minutes on a WO/holiday (day-status now computes WO/H FILO minutes; `day_records.ot_minutes` populated); ≥ `att.ot_min_minutes` → idempotent one-entry-per-day + `overtime` workflow intimation to the RM (onBreach=**lapse**, `att.ot_decision_hours`); employees without ESS accounts get a workflow-less entry lapsed by the hourly sweep; decisions: approve **full/partial**, reject, **convert to comp-off** — paid-XOR-comp-off is a DB CHECK; daily **18:00 IST manager digest** job *(ATT-08, 04 §1.4, PP-19)*
+- Engine upgrades (workflows): `onWorkflowFinal(code, hook)` registry fired in-transaction at all three final states; `createRequest` gained an atomic `attach` callback (domain row + request commit together); requesters are now notified on final approval too.
+- APIs (central gates): `POST /attendance/requests` + `GET /attendance/requests/mine` + `GET /attendance/ot/mine` (**attendance.own**) · `GET /attendance/ot/pending` + `POST /attendance/ot/decide` (**ot.approve**) · `POST /attendance/ot/lapse-sweep` (**admin.integrations**). Worker: `ot-daily-summary` (12:30 UTC = 18:00 IST) + OT lapse sweep piggybacks the hourly escalation job; hooks registered in both api + worker processes.
+- Deferred by design: comp-off **ledger credit** on conversion → Stage 1.5 (needs `lv` schema; `comp_off_credit_id` FK attaches then) · OT payout `payroll_item_id` → Phase 2 · R3/R5 Excel exports → Stage 1.7.
+**Tests:** migration 0009 constraints + 6 new integration tests (validators; AR e2e apply-on-approve + recompute-skip; future OD; OT detect→partial approve→double-decide blocked; SLA lapse→entry lapsed; WO work by user-less employee→sweep lapse) — **106 total green, verify exit 0**.
+**Exit criteria:** e2e: employee applies AR → RM approves → day recomputed with `source='regularized'` ✅ · OT older than 48h auto-lapses (both the workflow SLA path and the workflow-less sweep, on test clock) ✅ · exports match on-screen filters → moved to 1.7 with the reports themselves.
 
 ## Stage 1.5 — Leave module   `[ ☐ ]`
 **Goal:** ledger-true leave with the six live RML types and automatic monthly accrual.

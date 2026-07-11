@@ -6,7 +6,7 @@ import { systemRouter } from '../modules/system/index.js';
 import { authRouter } from '../modules/auth/index.js';
 import { settingsRouter } from '../modules/settings/index.js';
 import { rbacRouter } from '../modules/rbac/index.js';
-import { attendanceRouter, attendanceConfigRouter } from '../modules/attendance/index.js';
+import { attendanceRouter, attendanceConfigRouter, attendanceRequestsRouter } from '../modules/attendance/index.js';
 import { workflowsRouter } from '../modules/workflows/index.js';
 
 export const appRouter = {
@@ -14,7 +14,7 @@ export const appRouter = {
   auth: authRouter,
   settings: settingsRouter,
   rbac: rbacRouter,
-  attendance: { ...attendanceRouter, ...attendanceConfigRouter },
+  attendance: { ...attendanceRouter, ...attendanceConfigRouter, ...attendanceRequestsRouter },
   workflows: workflowsRouter,
 };
 

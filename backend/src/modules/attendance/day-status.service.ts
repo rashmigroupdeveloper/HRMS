@@ -20,6 +20,7 @@ import type { AttShiftsTable, Database, DayStatus } from '../../core/db/types.js
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { getTypedSetting } from '../settings/index.js';
 import { addDaysIso, formatDbDate, istDateTime } from '../../core/dates.js';
+import { recordDetectedOvertime } from './overtime.service.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 type ShiftRow = Selectable<AttShiftsTable>;
@@ -34,6 +35,10 @@ export interface AttendancePolicy {
   earlyMarginMs: number;
   lateMarginMs: number;
   sessionPresentFraction: number;
+  /** OT below this is noise, not an entry (docs/04 §1.4). */
+  otMinMinutes: number;
+  /** ATT-08: the manager's hard decision window after intimation. */
+  otDecisionHours: number;
 }
 
 /** Resolve the tunable attendance policy from settings (docs/04 §1.1 defaults). */
@@ -41,7 +46,15 @@ export async function loadAttendancePolicy(db: Kysely<Database>): Promise<Attend
   const earlyHours = await getTypedSetting(db, 'att.swipe_window_early_hours', 'number', 4);
   const lateHours = await getTypedSetting(db, 'att.swipe_window_late_hours', 'number', 8);
   const sessionPresentFraction = await getTypedSetting(db, 'att.session_present_fraction', 'number', 0.5);
-  return { earlyMarginMs: earlyHours * 3600_000, lateMarginMs: lateHours * 3600_000, sessionPresentFraction };
+  const otMinMinutes = await getTypedSetting(db, 'att.ot_min_minutes', 'number', 30);
+  const otDecisionHours = await getTypedSetting(db, 'att.ot_decision_hours', 'number', 48);
+  return {
+    earlyMarginMs: earlyHours * 3600_000,
+    lateMarginMs: lateHours * 3600_000,
+    sessionPresentFraction,
+    otMinMinutes,
+    otDecisionHours,
+  };
 }
 
 export interface ResolvedShift {
@@ -188,6 +201,9 @@ export interface ComputedDay {
   sessionStatuses: SessionStatus[] | null;
   schemeCode: string | null;
   shiftId: number | null;
+  /** Detected OT (ATT-08): minutes beyond shift end, or ALL worked minutes on a
+   *  WO/holiday. Raw detection — the ≥ threshold gate applies at entry creation. */
+  otMinutes: number;
 }
 
 /**
@@ -201,9 +217,26 @@ export function computeDayStatus(
   swipeTimes: Date[],
   policy: AttendancePolicy,
 ): ComputedDay {
-  const empty = { firstIn: null, lastOut: null, workedMinutes: null, lateMinutes: 0, earlyExitMinutes: 0, sessionStatuses: null };
-  if (resolved.isHoliday) return { status: 'H', schemeCode: null, shiftId: null, ...empty };
-  if (resolved.isWeekOff || !resolved.shift) return { status: 'WO', schemeCode: null, shiftId: null, ...empty };
+  if (resolved.isHoliday || resolved.isWeekOff || !resolved.shift) {
+    // WO/H day: no shift interval, but swipes still mean WORK — FILO minutes
+    // become detected OT (docs/04 §1.4: week-off/holiday work is OT-eligible).
+    const sorted = [...swipeTimes].sort((a, b) => a.getTime() - b.getTime());
+    const firstIn = sorted[0] ?? null;
+    const lastOut = sorted.length > 1 ? (sorted[sorted.length - 1] ?? null) : null;
+    const worked = firstIn && lastOut ? Math.floor((lastOut.getTime() - firstIn.getTime()) / 60_000) : null;
+    return {
+      status: resolved.isHoliday ? 'H' : 'WO',
+      schemeCode: null,
+      shiftId: null,
+      firstIn,
+      lastOut,
+      workedMinutes: worked,
+      lateMinutes: 0,
+      earlyExitMinutes: 0,
+      sessionStatuses: null,
+      otMinutes: worked ?? 0,
+    };
+  }
 
   const shift = resolved.shift;
   const start = istDateTime(isoDate, shift.start_time);
@@ -215,7 +248,7 @@ export function computeDayStatus(
   const base = { schemeCode: shift.code, shiftId: shift.id };
 
   if (inWindow.length === 0) {
-    return { ...base, status: 'A', firstIn: null, lastOut: null, workedMinutes: 0, lateMinutes: 0, earlyExitMinutes: 0, sessionStatuses: null };
+    return { ...base, status: 'A', firstIn: null, lastOut: null, workedMinutes: 0, lateMinutes: 0, earlyExitMinutes: 0, sessionStatuses: null, otMinutes: 0 };
   }
 
   // FILO — first in, last out (ATT-18, PP-v2-2).
@@ -256,12 +289,17 @@ export function computeDayStatus(
     status = workedMinutes >= fullMin ? 'P' : workedMinutes >= halfMin ? 'HD' : 'A';
   }
 
-  return { ...base, status, firstIn, lastOut, workedMinutes, lateMinutes, earlyExitMinutes, sessionStatuses };
+  // OT = time past shift end (ATT-08); grace-out is a penalty concept, not an
+  // OT one, so it does not shave detected minutes.
+  const otMinutes = lastOut && lastOut.getTime() > end.getTime() ? Math.floor((lastOut.getTime() - end.getTime()) / 60_000) : 0;
+
+  return { ...base, status, firstIn, lastOut, workedMinutes, lateMinutes, earlyExitMinutes, sessionStatuses, otMinutes };
 }
 
-/** Recompute one employee-day from raw truth. Manual/locked rows are never
- *  overwritten — enforced both by the pre-check AND the conflict-WHERE, so a
- *  manual override committed concurrently is not clobbered (review F9). */
+/** Recompute one employee-day from raw truth. Manual/regularized/locked rows
+ *  are never overwritten — enforced both by the pre-check AND the
+ *  conflict-WHERE, so an override or an approved regularization committed
+ *  concurrently is not clobbered (review F9; Stage 1.4). */
 export async function recomputeDay(
   db: Kysely<Database>,
   employeeId: number,
@@ -276,7 +314,7 @@ export async function recomputeDay(
     .where('employee_id', '=', employeeId)
     .where('work_date', '=', sql<Date>`${isoDate}::date`)
     .executeTakeFirst();
-  if (existing && (existing.is_locked || existing.source === 'manual')) return 'skipped';
+  if (existing && (existing.is_locked || existing.source !== 'auto')) return 'skipped';
 
   const resolved = await resolveDay(db, employeeId, isoDate);
   const cur = shiftInterval(resolved, isoDate);
@@ -294,6 +332,19 @@ export async function recomputeDay(
       .orderBy('swipe_ts')
       .execute();
     owned = await attributeOwnedSwipes(db, employeeId, isoDate, cur, swipes.map((s) => s.swipe_ts));
+  } else {
+    // WO/holiday: no shift interval — any swipe inside the IST calendar day is
+    // week-off/holiday WORK and feeds OT detection (docs/04 §1.4).
+    const dayStart = istDateTime(isoDate, '00:00');
+    const swipes = await db
+      .selectFrom('att.swipe_events')
+      .select('swipe_ts')
+      .where('employee_id', '=', employeeId)
+      .where('swipe_ts', '>=', dayStart)
+      .where('swipe_ts', '<', new Date(dayStart.getTime() + 86_400_000))
+      .orderBy('swipe_ts')
+      .execute();
+    owned = swipes.map((s) => s.swipe_ts);
   }
 
   const computed = computeDayStatus(resolved, isoDate, owned, pol);
@@ -305,6 +356,7 @@ export async function recomputeDay(
     worked_minutes: computed.workedMinutes,
     late_minutes: computed.lateMinutes,
     early_exit_minutes: computed.earlyExitMinutes,
+    ot_minutes: computed.otMinutes,
     session_statuses: computed.sessionStatuses ? JSON.stringify(computed.sessionStatuses) : null,
     scheme_code: computed.schemeCode,
     source: 'auto' as const,
@@ -318,12 +370,18 @@ export async function recomputeDay(
       oc
         .columns(['employee_id', 'work_date'])
         .doUpdateSet(row)
-        // Never overwrite a manual override or a locked row — the guard makes
-        // the check-then-write race safe and avoids tripping the lock trigger.
-        .where('att.day_records.source', '<>', 'manual')
+        // Only plain auto rows are recomputable — the guard makes the
+        // check-then-write race safe and avoids tripping the lock trigger.
+        .where('att.day_records.source', '=', 'auto')
         .where('att.day_records.is_locked', '=', false),
     )
     .execute();
+
+  // Detection → entry + intimation happens here so EVERY recompute path (sync
+  // drain, roster edit, manual API) surfaces OT the moment swipes show it.
+  if (computed.otMinutes >= pol.otMinMinutes) {
+    await recordDetectedOvertime(db, employeeId, isoDate, computed.otMinutes, pol);
+  }
 
   return computed.status;
 }
