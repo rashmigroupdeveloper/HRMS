@@ -4,18 +4,9 @@
  */
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import {
-  ArrowUpRight,
-  CalendarPlus,
-  Inbox,
-  Lock,
-  SlidersHorizontal,
-} from 'lucide-react';
+import { ArrowUpRight, CalendarPlus, Inbox, Lock, SlidersHorizontal } from 'lucide-react';
 import { LeaveApplyDrawer } from '../leave/LeaveApplyDrawer';
-import {
-  EMPTY_PEOPLE_FILTERS,
-  PeopleFilterDrawer,
-} from '../people/PeopleFilterDrawer';
+import { EMPTY_PEOPLE_FILTERS, PeopleFilterDrawer } from '../people/PeopleFilterDrawer';
 import type { PeopleFilters } from '../people/PeopleFilterDrawer';
 import {
   Button,
@@ -39,13 +30,7 @@ import {
   Tooltip,
   toast,
 } from '../../ui';
-import type {
-  AttendanceDay,
-  Column,
-  Dot,
-  StatusTone,
-  TimelineStep,
-} from '../../ui';
+import type { AttendanceDay, Column, Dot, StatusTone, TimelineStep } from '../../ui';
 
 interface Employee {
   ecode: string;
@@ -134,24 +119,27 @@ const EMP_COLUMNS: Column<Employee>[] = [
 
 const APPROVAL_CHAIN: TimelineStep[] = [
   {
+    id: 'submitted',
     title: 'Submitted by employee',
     timestamp: '02 Jul 09:14',
     state: 'done',
     description: 'Leave request · 3 days',
   },
   {
+    id: 'manager',
     title: 'Reporting Manager approved',
     timestamp: '02 Jul 11:40',
     state: 'done',
     description: 'A. Saraf · “Approved”',
   },
   {
+    id: 'hod',
     title: 'HOD review',
     timestamp: 'Pending',
     state: 'current',
     description: 'Awaiting S. Sharma',
   },
-  { title: 'HR posting', state: 'pending' },
+  { id: 'hr-posting', title: 'HR posting', state: 'pending' },
 ];
 
 const MY_JULY: Partial<Record<number, AttendanceDay>> = {
@@ -171,13 +159,7 @@ const MY_JULY: Partial<Record<number, AttendanceDay>> = {
 const ATT_DOTS: Dot[] = Array.from({ length: 28 }, (_, i): Dot => {
   const day = i + 1;
   const weekend = day % 7 === 0 || day % 7 === 6;
-  const state = weekend
-    ? 'weekoff'
-    : day === 12
-      ? 'absent'
-      : day === 19
-        ? 'leave'
-        : 'present';
+  const state = weekend ? 'weekoff' : day === 12 ? 'absent' : day === 19 ? 'leave' : 'present';
   return { key: `d${String(day)}`, state, title: `Jun ${String(day)} · ${state}` };
 });
 
@@ -217,8 +199,7 @@ export function GalleryPage() {
   const [finalized, setFinalized] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [peopleFilters, setPeopleFilters] =
-    useState<PeopleFilters>(EMPTY_PEOPLE_FILTERS);
+  const [peopleFilters, setPeopleFilters] = useState<PeopleFilters>(EMPTY_PEOPLE_FILTERS);
   const [entitiesLoading, setEntitiesLoading] = useState(true);
 
   useEffect(() => {
@@ -236,9 +217,7 @@ export function GalleryPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm text-ink-muted">Design system</p>
-          <h1 className="mt-0.5 text-3xl font-light tracking-tight text-ink">
-            Component gallery
-          </h1>
+          <h1 className="mt-0.5 text-3xl font-light tracking-tight text-ink">Component gallery</h1>
           <p className="mt-1 text-sm text-ink-muted">
             Warm Editorial primitives — compose screens from these, never invent.
           </p>
@@ -286,9 +265,7 @@ export function GalleryPage() {
           <CardHeader
             title="Travel claims vs budget"
             subtitle="Yatra Avedan · Q2 FY26"
-            action={
-              <IconButton label="Filter" icon={<SlidersHorizontal />} size="sm" />
-            }
+            action={<IconButton label="Filter" icon={<SlidersHorizontal />} size="sm" />}
           />
           <div className="space-y-4">
             <SegmentedProgress
@@ -299,12 +276,7 @@ export function GalleryPage() {
               prefix="₹"
             />
             <SegmentedProgress label="Hotel" primary={64000} total={90000} prefix="₹" />
-            <SegmentedProgress
-              label="Daily allowance"
-              primary={21000}
-              total={30000}
-              prefix="₹"
-            />
+            <SegmentedProgress label="Daily allowance" primary={21000} total={30000} prefix="₹" />
           </div>
         </Card>
       </div>
@@ -398,10 +370,7 @@ export function GalleryPage() {
         </Card>
 
         <Card>
-          <CardHeader
-            title="Payroll — June 2026"
-            subtitle="Locks the run and issues payslips."
-          />
+          <CardHeader title="Payroll — June 2026" subtitle="Locks the run and issues payslips." />
           <div className="flex items-center gap-3">
             {finalized ? (
               <StatusBadge tone="positive">Finalized</StatusBadge>
@@ -450,9 +419,7 @@ export function GalleryPage() {
             <div className="flex flex-wrap gap-2">
               <Pill accent>{selected.entity}</Pill>
               <Pill>{selected.ecode}</Pill>
-              <StatusBadge tone={selected.status.tone}>
-                {selected.status.label}
-              </StatusBadge>
+              <StatusBadge tone={selected.status.tone}>{selected.status.label}</StatusBadge>
             </div>
             <div>
               <h3 className="mb-3 text-sm font-semibold text-ink">June attendance</h3>
@@ -468,9 +435,19 @@ export function GalleryPage() {
 
       <LeaveApplyDrawer
         open={leaveOpen}
+        leaveTypes={[
+          {
+            code: 'CL',
+            name: 'Casual Leave',
+            available: 4,
+            allowHalfDay: true,
+            maxPerRequest: null,
+          },
+        ]}
         onClose={() => {
           setLeaveOpen(false);
         }}
+        onSubmitted={() => undefined}
       />
 
       <PeopleFilterDrawer

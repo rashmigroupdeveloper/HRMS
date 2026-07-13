@@ -18,6 +18,13 @@ export interface RawSwipe {
 
 export interface DeviceInfo {
   doorCode: string;
+  /** Last successful contact. Health telemetry only; not proof of completeness. */
+  lastContactAt?: Date;
+  /**
+   * Highest device time for which the connector has proved there are no gaps.
+   * Implementations MUST omit this when completeness cannot be established.
+   */
+  watermarkTs?: Date;
 }
 
 export interface KentConnector {
@@ -57,6 +64,7 @@ const DOORS = ['Seamless-Plant_S4', 'Seamless-Plant_G4', 'DIP-6_Main', 'Corporat
  */
 export class MockKentConnector implements KentConnector {
   private readonly swipes: RawSwipe[];
+  private readonly devices: DeviceInfo[];
 
   constructor(opts: MockKentOptions) {
     const rand = mulberry32(opts.seed ?? 42);
@@ -92,6 +100,16 @@ export class MockKentConnector implements KentConnector {
       const offline = opts.offlineDoor;
       this.swipes = this.swipes.filter((s) => s.doorCode !== offline);
     }
+
+    const deliveredThrough = this.swipes.reduce(
+      (latest, swipe) => swipe.receivedAt > latest ? swipe.receivedAt : latest,
+      at(19 * 60),
+    );
+    this.devices = DOORS.map((doorCode) =>
+      doorCode === opts.offlineDoor
+        ? { doorCode }
+        : { doorCode, lastContactAt: deliveredThrough, watermarkTs: deliveredThrough },
+    );
   }
 
   fetchSince(since: Date): Promise<RawSwipe[]> {
@@ -99,6 +117,6 @@ export class MockKentConnector implements KentConnector {
   }
 
   listDevices(): Promise<DeviceInfo[]> {
-    return Promise.resolve(DOORS.map((doorCode) => ({ doorCode })));
+    return Promise.resolve(this.devices);
   }
 }

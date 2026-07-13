@@ -39,8 +39,7 @@ export function navForUser(user: SessionUser): NavItem[] {
     hasRole(user, 'super_admin');
   const isCeo = hasRole(user, 'ceo_cell') && !isOps;
   const isIt = hasRole(user, 'it_admin') || hasRole(user, 'super_admin');
-  const isManager =
-    hasRole(user, 'manager') || hasRole(user, 'senior_manager');
+  const isManager = hasRole(user, 'manager') || hasRole(user, 'senior_manager');
 
   // Home / dashboard
   if (isCeo) {
@@ -137,6 +136,9 @@ export function navForUser(user: SessionUser): NavItem[] {
   // IT admin
   if (hasPermission(user, 'admin.users') || hasPermission(user, 'admin.roles')) {
     push({ label: 'Users & Roles', to: '/admin/users', match: '/admin' });
+  }
+  if (hasPermission(user, 'admin.settings')) {
+    push({ label: 'Settings', to: '/admin/settings' });
   }
 
   // Design-system gallery (break-glass / local)

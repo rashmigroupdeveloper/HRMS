@@ -1,6 +1,7 @@
 import {
   cloneElement,
   isValidElement,
+  useCallback,
   useEffect,
   useId,
   useRef,
@@ -61,16 +62,14 @@ export function Tooltip({ label, side = 'top', children }: TooltipProps) {
     }, OPEN_DELAY_MS);
   };
 
-  const hide = () => {
+  const hide = useCallback(() => {
     if (showTimer.current) {
       clearTimeout(showTimer.current);
       showTimer.current = null;
     }
-    setOpen((was) => {
-      if (was) warmUntil = Date.now() + WARM_WINDOW_MS;
-      return false;
-    });
-  };
+    if (open) warmUntil = Date.now() + WARM_WINDOW_MS;
+    setOpen(false);
+  }, [open]);
 
   // Escape dismisses without moving focus (docs/05 §7 keyboard support).
   useEffect(() => {
@@ -82,7 +81,7 @@ export function Tooltip({ label, side = 'top', children }: TooltipProps) {
     return () => {
       document.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [open, hide]);
 
   useEffect(
     () => () => {

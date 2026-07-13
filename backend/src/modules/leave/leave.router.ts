@@ -190,6 +190,50 @@ const myApplications = withPermission('leave.own')
     }));
   });
 
+const myLedger = withPermission('leave.own')
+  .route({ method: 'GET', path: '/leave/ledger', summary: 'My immutable leave ledger (LV-05)' })
+  .output(
+    z.array(
+      z.object({
+        id: z.number(),
+        leaveType: z.string(),
+        txnType: z.string(),
+        delta: z.number(),
+        effectiveDate: z.string(),
+        expiryDate: z.string().nullable(),
+        note: z.string().nullable(),
+      }),
+    ),
+  )
+  .handler(async ({ context }) => {
+    const rows = await context.db
+      .selectFrom('lv.ledger as ledger')
+      .innerJoin('lv.leave_types as type', 'type.id', 'ledger.leave_type_id')
+      .where('ledger.employee_id', '=', requireEmployeeId(context.user))
+      .select([
+        'ledger.id',
+        'type.code',
+        'ledger.txn_type',
+        'ledger.delta',
+        'ledger.effective_date',
+        'ledger.expiry_date',
+        'ledger.note',
+      ])
+      .orderBy('ledger.effective_date', 'desc')
+      .orderBy('ledger.id', 'desc')
+      .limit(500)
+      .execute();
+    return rows.map((row) => ({
+      id: row.id,
+      leaveType: row.code,
+      txnType: row.txn_type,
+      delta: Number(row.delta),
+      effectiveDate: formatDbDate(row.effective_date),
+      expiryDate: row.expiry_date ? formatDbDate(row.expiry_date) : null,
+      note: row.note,
+    }));
+  });
+
 const cancel = withPermission('leave.own')
   .route({ method: 'POST', path: '/leave/applications/{id}/cancel', summary: 'Cancel approved leave — routes for re-approval (LV-08)' })
   .input(z.object({ id: z.coerce.number().int().positive() }))
@@ -321,6 +365,7 @@ export const leaveRouter = {
   employeeBalances,
   apply,
   myApplications,
+  myLedger,
   cancel,
   encash,
   listRestrictedHolidays,

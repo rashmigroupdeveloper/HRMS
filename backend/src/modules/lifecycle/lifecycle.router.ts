@@ -16,6 +16,8 @@ const personShape = z.object({
   department: z.string().nullable(),
   company: z.string(),
   reportingManager: z.string().nullable(),
+  costCenter: z.string().nullable(),
+  location: z.string().nullable(),
   date: z.string(),
 });
 

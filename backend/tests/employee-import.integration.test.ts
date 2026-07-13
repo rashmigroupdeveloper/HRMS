@@ -43,19 +43,50 @@ run('employee master + two-source import (live Postgres)', () => {
     // design); detach + delete audit-free ones; survivors relink via upsert.
     const fixtureEcodes = (loadFixture('ems-users.sample.json') as { userid: string }[]).map((r) => r.userid);
     await db.updateTable('core.users').set({ employee_id: null }).where('employee_id', 'is not', null).execute();
+    // Skip users referenced by audit (append-only) OR notifications (workflow/leave
+    // receipts) — hard-delete is impossible for both by design.
     await sql`
       DELETE FROM core.users u
       WHERE u.email LIKE '%@rashmi.test'
         AND NOT EXISTS (SELECT 1 FROM core.audit_log a WHERE a.actor_user_id = u.id)
+        AND NOT EXISTS (SELECT 1 FROM wf.notifications n WHERE n.recipient_user_id = u.id)
     `.execute(db);
     const existing = await db.selectFrom('core.employees').select('id').where('ecode', 'in', fixtureEcodes).execute();
     const ids = existing.map((e) => e.id);
     if (ids.length > 0) {
+      // Domain FKs that accumulate from later Phase-1 suites (workflows/leave/OT)
+      // when fixture employees were ever subjects — drop dependents first.
+      const reqIds = (
+        await db.selectFrom('wf.requests').select('id').where('subject_employee_id', 'in', ids).execute()
+      ).map((r) => r.id);
+      if (reqIds.length > 0) {
+        await db.deleteFrom('wf.request_steps').where('request_id', 'in', reqIds).execute();
+        await db.deleteFrom('lv.applications').where('workflow_request_id', 'in', reqIds).execute();
+        await db.deleteFrom('att.regularizations').where('workflow_request_id', 'in', reqIds).execute();
+        await db
+          .updateTable('att.overtime_entries')
+          .set({ workflow_request_id: null, comp_off_credit_id: null })
+          .where('workflow_request_id', 'in', reqIds)
+          .execute();
+        await db.deleteFrom('wf.requests').where('id', 'in', reqIds).execute();
+      }
+      await db.deleteFrom('att.overtime_entries').where('employee_id', 'in', ids).execute();
       await db.deleteFrom('att.recompute_queue').where('employee_id', 'in', ids).execute();
       await db.deleteFrom('att.day_records').where('employee_id', 'in', ids).where('is_locked', '=', false).execute();
       await db.deleteFrom('att.employee_shifts').where('employee_id', 'in', ids).execute();
       await db.deleteFrom('att.rosters').where('employee_id', 'in', ids).execute();
-      await db.deleteFrom('core.employees').where('id', 'in', ids).execute();
+      // lv.ledger is append-only — if any fixture employee has ledger rows we
+      // cannot hard-delete them; deactivate instead (same discipline as users).
+      const withLedger = (
+        await db.selectFrom('lv.ledger').select('employee_id').where('employee_id', 'in', ids).distinct().execute()
+      ).map((r) => r.employee_id);
+      const deletable = ids.filter((id) => !withLedger.includes(id));
+      if (deletable.length > 0) {
+        await db.deleteFrom('core.employees').where('id', 'in', deletable).execute();
+      }
+      if (withLedger.length > 0) {
+        await db.updateTable('core.employees').set({ status: 'exited' }).where('id', 'in', withLedger).execute();
+      }
     }
 
     const rows = loadFixture('ems-users.sample.json') as Record<string, unknown>[];

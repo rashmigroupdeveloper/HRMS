@@ -426,6 +426,13 @@ export interface AttIngestWatermarksTable {
   updated_at: Generated<Timestamp>;
 }
 
+/** att.device_watermarks — per-door completeness cursor (doc 14 §8.5). */
+export interface AttDeviceWatermarksTable {
+  device_id: number;
+  watermark_ts: Timestamp;
+  updated_at: Generated<Timestamp>;
+}
+
 /** att.shifts — shift catalog; every time/threshold is a row, never code (ATT-04). */
 export interface AttShiftsTable {
   id: Generated<number>;
@@ -545,7 +552,68 @@ export interface AttOvertimeEntriesTable {
   updated_at: Generated<Timestamp>;
 }
 
-/** lv.leave_types — the LV-01 catalog; every rate/cap is runtime-editable data. */
+/** att.month_locks — ATT-15 payroll precondition. */
+export interface AttMonthLocksTable {
+  id: Generated<number>;
+  company_id: number;
+  month: Timestamp;
+  locked_by: number;
+  locked_at: Generated<Timestamp>;
+  checklist: unknown;
+  created_at: Generated<Timestamp>;
+}
+
+/** reporting.muster_month — precomputed R1 muster (RPT-01). */
+export interface ReportingMusterMonthTable {
+  id: Generated<number>;
+  company_id: number;
+  month: Timestamp;
+  employee_id: number;
+  ecode: string;
+  employee_name: string;
+  reporting_manager: string | null;
+  functional_manager: string | null;
+  department: string | null;
+  designation: string | null;
+  org_unit: string | null;
+  cost_center: string | null;
+  contact: string | null;
+  category: string | null;
+  day_statuses: unknown;
+  present: Generated<number>;
+  absent: Generated<number>;
+  half_days: Generated<number>;
+  weekoffs: Generated<number>;
+  weekoffs_unpaid: Generated<number>;
+  holidays: Generated<number>;
+  leave_days: Generated<string>;
+  od_days: Generated<number>;
+  co_days: Generated<number>;
+  uab_days: Generated<number>;
+  lop_days: Generated<string>;
+  ot_hours: Generated<string>;
+  built_at: Generated<Timestamp>;
+}
+
+// (letters / policies / absence-case table types are declared once above —
+//  the merged parallel Stage-16 variants were removed with their migration.)
+
+// ── Leave (lv) — docs/03 §5, LV-01..09 ──────────────────────────────────────
+
+export type LeaveTxnType =
+  | 'accrual'
+  | 'grant'
+  | 'application'
+  | 'cancel'
+  | 'lapse'
+  | 'encash'
+  | 'comp_off_earn'
+  | 'adjustment';
+
+export type LeaveApplicationStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+export type SandwichRule = 'include' | 'exclude';
+
+/** lv.leave_types — LV-01 (live greytHR six + ML + RH). */
 export interface LvLeaveTypesTable {
   id: Generated<number>;
   code: string;
@@ -557,7 +625,7 @@ export interface LvLeaveTypesTable {
   encashable: Generated<boolean>;
   max_per_request: string | null;
   allow_half_day: Generated<boolean>;
-  sandwich_rule: Generated<'include' | 'exclude'>;
+  sandwich_rule: Generated<SandwichRule>;
   applicable_categories: EmploymentCategory[] | null;
   applicable_gender: string | null;
   is_active: Generated<boolean>;
@@ -565,12 +633,12 @@ export interface LvLeaveTypesTable {
   updated_at: Generated<Timestamp>;
 }
 
-/** lv.ledger — APPEND-ONLY leave transactions; balance = SUM(delta) (LV-05). */
+/** lv.ledger — immutable; balance = SUM(delta) (LV-05). */
 export interface LvLedgerTable {
   id: Generated<number>;
   employee_id: number;
   leave_type_id: number;
-  txn_type: 'accrual' | 'grant' | 'application' | 'cancel' | 'lapse' | 'encash' | 'comp_off_earn' | 'adjustment';
+  txn_type: LeaveTxnType;
   delta: string;
   effective_date: Timestamp;
   expiry_date: Timestamp | null;
@@ -580,7 +648,7 @@ export interface LvLedgerTable {
   created_at: Generated<Timestamp>;
 }
 
-/** lv.applications — LV-03; ledger debit/reversal linked, never inlined. */
+/** lv.applications — LV-03 / LV-06 / LV-08 / LV-09. */
 export interface LvApplicationsTable {
   id: Generated<number>;
   employee_id: number;
@@ -591,7 +659,7 @@ export interface LvApplicationsTable {
   to_half: Generated<boolean>;
   days: string;
   reason: string | null;
-  status: Generated<'pending' | 'approved' | 'rejected' | 'cancelled'>;
+  status: Generated<LeaveApplicationStatus>;
   workflow_request_id: number;
   cancel_workflow_request_id: number | null;
   ledger_txn_id: number | null;
@@ -599,7 +667,7 @@ export interface LvApplicationsTable {
   updated_at: Generated<Timestamp>;
 }
 
-/** lv.restricted_holidays + selections — LV-09 optional/floating holidays. */
+/** lv.restricted_holidays — optional/floating holiday list (LV-09). */
 export interface LvRestrictedHolidaysTable {
   id: Generated<number>;
   holiday_date: Timestamp;
@@ -685,6 +753,7 @@ export interface Database {
   'wf.event_subscriptions': EventSubscriptionsTable;
   'att.devices': AttDevicesTable;
   'att.ingest_watermarks': AttIngestWatermarksTable;
+  'att.device_watermarks': AttDeviceWatermarksTable;
   'att.swipe_events': AttSwipeEventsTable;
   'att.quarantined_swipes': AttQuarantinedSwipesTable;
   'att.shifts': AttShiftsTable;
@@ -695,6 +764,9 @@ export interface Database {
   'att.recompute_queue': AttRecomputeQueueTable;
   'att.regularizations': AttRegularizationsTable;
   'att.overtime_entries': AttOvertimeEntriesTable;
+  'att.absence_cases': AttAbsenceCasesTable;
+  'att.month_locks': AttMonthLocksTable;
+  'reporting.muster_month': ReportingMusterMonthTable;
   'lv.leave_types': LvLeaveTypesTable;
   'lv.ledger': LvLedgerTable;
   'lv.applications': LvApplicationsTable;
@@ -704,5 +776,4 @@ export interface Database {
   'core.letters': LettersTable;
   'core.policies': PoliciesTable;
   'core.policy_acknowledgments': PolicyAcknowledgmentsTable;
-  'att.absence_cases': AttAbsenceCasesTable;
 }

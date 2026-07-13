@@ -1,15 +1,32 @@
-/**
- * Role-aware home stub (docs/08 §3, 05 §4.9 greeting shell).
- * Full ESS / HR Ops / Payroll dashboards land in Phase 1–2.
- */
+/** Role-resolved Stage 1 dashboard (docs/08 §3, 05 §4.1/§4.9). */
 import type { SessionUser } from '../../lib/session';
-import { hasRole } from '../../lib/session';
+import { hasPermission, hasRole } from '../../lib/session';
 import { todayLongIST } from '../../lib/date';
 import { Card, CardHeader, Pill } from '../../ui';
+import { DashboardError, DashboardSkeleton } from './DashboardFeedback';
+import { DeviceHealthDashboard } from './DeviceHealthDashboard';
+import { EssDashboard } from './EssDashboard';
+import { HrOpsDashboard } from './HrOpsDashboard';
+import { ManagerDashboard } from './ManagerDashboard';
+import type {
+  DeviceHealth,
+  EssDashboardData,
+  HrDashboardData,
+  TeamMemberMonth,
+} from './dashboard-types';
+import { currentMonthIST } from './dashboard-format';
+import { useDashboardResource } from './useDashboardResource';
 
 interface RoleHomePageProps {
   user: SessionUser;
 }
+
+const ISO_DATE_IST = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Kolkata',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
 
 function greetingFromEmail(email: string): string {
   const local = email.split('@')[0] ?? email;
@@ -39,7 +56,7 @@ function homeBlurb(user: SessionUser): { title: string; body: string } {
   if (hasRole(user, 'plant_head')) {
     return {
       title: 'Plant dashboard',
-      body: 'BU headcount, absenteeism and plant muster export ship with Phase 1 reports.',
+      body: 'Plant muster remains available through reports. The aggregated BU dashboard ships from reporting snapshots in Phase 3.',
     };
   }
   if (hasRole(user, 'it_admin')) {
@@ -54,7 +71,7 @@ function homeBlurb(user: SessionUser): { title: string; body: string } {
   };
 }
 
-export function RoleHomePage({ user }: RoleHomePageProps) {
+function DeferredDashboard({ user }: RoleHomePageProps) {
   const name = greetingFromEmail(user.email);
   const blurb = homeBlurb(user);
 
@@ -62,9 +79,7 @@ export function RoleHomePage({ user }: RoleHomePageProps) {
     <div className="space-y-8">
       <div>
         <p className="text-sm text-ink-muted">{todayLongIST()}</p>
-        <h1 className="mt-0.5 text-3xl font-light tracking-tight text-ink">
-          Hello {name}
-        </h1>
+        <h1 className="mt-0.5 text-3xl font-light tracking-tight text-ink">Hello {name}</h1>
         <p className="mt-1 text-sm text-ink-muted">{blurb.body}</p>
       </div>
 
@@ -83,4 +98,45 @@ export function RoleHomePage({ user }: RoleHomePageProps) {
       </Card>
     </div>
   );
+}
+
+function EssHome() {
+  const resource = useDashboardResource<EssDashboardData>('/api/dashboards/ess');
+  if (resource.loading) return <DashboardSkeleton />;
+  if (resource.error) return <DashboardError message={resource.error} onRetry={resource.reload} />;
+  return resource.data ? <EssDashboard data={resource.data} /> : null;
+}
+
+function HrHome() {
+  const resource = useDashboardResource<HrDashboardData>('/api/dashboards/hr-ops');
+  if (resource.loading) return <DashboardSkeleton />;
+  if (resource.error) return <DashboardError message={resource.error} onRetry={resource.reload} />;
+  return resource.data ? <HrOpsDashboard data={resource.data} /> : null;
+}
+
+function ManagerHome({ subtree }: { subtree: boolean }) {
+  const month = currentMonthIST();
+  const query = new URLSearchParams({ month, subtree: String(subtree) });
+  const resource = useDashboardResource<TeamMemberMonth[]>(`/api/my/team/grid?${query.toString()}`);
+  const today = ISO_DATE_IST.format(new Date());
+  if (resource.loading) return <DashboardSkeleton />;
+  if (resource.error) return <DashboardError message={resource.error} onRetry={resource.reload} />;
+  return resource.data ? <ManagerDashboard data={resource.data} today={today} /> : null;
+}
+
+function DeviceHome() {
+  const resource = useDashboardResource<DeviceHealth[]>('/api/attendance/devices');
+  if (resource.loading) return <DashboardSkeleton />;
+  if (resource.error) return <DashboardError message={resource.error} onRetry={resource.reload} />;
+  return resource.data ? <DeviceHealthDashboard data={resource.data} /> : null;
+}
+
+export function RoleHomePage({ user }: RoleHomePageProps) {
+  if (hasPermission(user, 'reports.hr')) return <HrHome />;
+  if (hasPermission(user, 'attendance.team.read')) {
+    return <ManagerHome subtree={hasRole(user, 'senior_manager')} />;
+  }
+  if (hasPermission(user, 'admin.devices')) return <DeviceHome />;
+  if (hasPermission(user, 'attendance.own')) return <EssHome />;
+  return <DeferredDashboard user={user} />;
 }

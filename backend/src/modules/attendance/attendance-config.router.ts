@@ -295,13 +295,18 @@ const overrideDay = withPermission('attendance.manual_override')
 const recompute = withPermission('admin.integrations')
   .route({ method: 'POST', path: '/attendance/recompute', summary: 'Recompute a day or drain the dirty queue' })
   .input(z.object({ employeeId: z.number().int().positive(), date: isoDate }).optional())
-  .output(z.object({ processed: z.number() }))
+  .output(
+    z.object({
+      processed: z.number(),
+      outcome: z.enum(['P', 'A', 'HD', 'WO', 'H', 'L', 'OD', 'CO', 'UAB', 'held', 'skipped']).nullable(),
+    }),
+  )
   .handler(async ({ input, context }) => {
     if (input) {
-      await recomputeDay(context.db, input.employeeId, input.date);
-      return { processed: 1 };
+      const outcome = await recomputeDay(context.db, input.employeeId, input.date);
+      return { processed: 1, outcome };
     }
-    return { processed: await drainRecomputeQueue(context.db) };
+    return { processed: await drainRecomputeQueue(context.db), outcome: null };
   });
 
 const weekClose = withPermission('admin.integrations')

@@ -26,9 +26,8 @@ type Db = Kysely<Database> | Transaction<Database>;
 type ShiftRow = Selectable<AttShiftsTable>;
 
 /** Statuses that count as "present for the week" in week-off eligibility
- *  (docs/04 §1.2: P, HD, OD, CO, H; paid-leave L joins in Stage 1.5 once the
- *  leave ledger can flag paid vs LWP). One classifier so every consumer —
- *  week-off, the absentee engine, payroll — extends it in ONE place. */
+ *  (docs/04 §1.2: P, HD, OD, CO, H, L-paid). LWP is still status L but has
+ *  is_paid=false on lv.leave_types — closeWeek joins that flag. */
 const WEEKOFF_PRESENT_STATUSES: readonly DayStatus[] = ['P', 'HD', 'OD', 'CO', 'H'];
 
 export interface AttendancePolicy {
@@ -134,6 +133,28 @@ interface ShiftInterval {
   end: number;
 }
 
+export type FinalizationHoldReason =
+  | 'location_not_mapped'
+  | 'no_active_devices'
+  | 'device_watermark_pending';
+
+export interface AbsenceFinalizationReadiness {
+  ready: boolean;
+  reason: FinalizationHoldReason | null;
+  shiftEndAt: Date | null;
+  pendingDoors: string[];
+}
+
+export interface FinalizationHold {
+  employeeId: number;
+  ecode: string;
+  employeeName: string;
+  workDate: string;
+  shiftEndAt: string | null;
+  reason: FinalizationHoldReason;
+  pendingDoors: string[];
+}
+
 /** The working [start, end] instants (ms) for a resolved shift, or null (WO/holiday). */
 function shiftInterval(resolved: ResolvedShift, isoDate: string): ShiftInterval | null {
   if (resolved.isHoliday || resolved.isWeekOff || !resolved.shift) return null;
@@ -141,6 +162,70 @@ function shiftInterval(resolved: ResolvedShift, isoDate: string): ShiftInterval 
   const start = istDateTime(isoDate, s.start_time).getTime();
   const end = istDateTime(isoDate, s.end_time).getTime() + (s.crosses_midnight ? 86_400_000 : 0);
   return { start, end };
+}
+
+/**
+ * Doc 14 §8.5: an automatic absence is safe only after every active biometric
+ * door mapped to the employee's location is complete through shift end.
+ * Mobile/manual attendance and employees not yet biometrically registered do
+ * not depend on the Kent door fleet.
+ */
+export async function getAbsenceFinalizationReadiness(
+  db: Db,
+  employeeId: number,
+  isoDate: string,
+  resolvedDay?: ResolvedShift,
+): Promise<AbsenceFinalizationReadiness> {
+  const employee = await db
+    .selectFrom('core.employees')
+    .select(['attendance_mode', 'biometric_registered', 'location_id'])
+    .where('id', '=', employeeId)
+    .executeTakeFirstOrThrow();
+
+  if (employee.attendance_mode !== 'biometric' || !employee.biometric_registered) {
+    return { ready: true, reason: null, shiftEndAt: null, pendingDoors: [] };
+  }
+
+  const resolved = resolvedDay ?? (await resolveDay(db, employeeId, isoDate));
+  const interval = shiftInterval(resolved, isoDate);
+  if (!interval) {
+    return { ready: true, reason: null, shiftEndAt: null, pendingDoors: [] };
+  }
+  const shiftEndAt = new Date(interval.end);
+
+  if (employee.location_id === null) {
+    return {
+      ready: false,
+      reason: 'location_not_mapped',
+      shiftEndAt,
+      pendingDoors: [],
+    };
+  }
+
+  const devices = await db
+    .selectFrom('att.devices as device')
+    .leftJoin('att.device_watermarks as watermark', 'watermark.device_id', 'device.id')
+    .select(['device.door_code', 'watermark.watermark_ts'])
+    .where('device.location_id', '=', employee.location_id)
+    .where('device.is_active', '=', true)
+    .orderBy('device.door_code')
+    .execute();
+
+  if (devices.length === 0) {
+    return {
+      ready: false,
+      reason: 'no_active_devices',
+      shiftEndAt,
+      pendingDoors: [],
+    };
+  }
+
+  const pendingDoors = devices
+    .filter((device) => !device.watermark_ts || device.watermark_ts < shiftEndAt)
+    .map((device) => device.door_code);
+  return pendingDoors.length === 0
+    ? { ready: true, reason: null, shiftEndAt, pendingDoors: [] }
+    : { ready: false, reason: 'device_watermark_pending', shiftEndAt, pendingDoors };
 }
 
 /** Distance (ms) from an instant to a shift interval; 0 if inside. */
@@ -308,7 +393,7 @@ export async function recomputeDay(
   employeeId: number,
   isoDate: string,
   policy?: AttendancePolicy,
-): Promise<DayStatus | 'skipped'> {
+): Promise<DayStatus | 'held' | 'skipped'> {
   const pol = policy ?? (await loadAttendancePolicy(db));
 
   const existing = await db
@@ -351,6 +436,31 @@ export async function recomputeDay(
   }
 
   const computed = computeDayStatus(resolved, isoDate, owned, pol);
+  if (computed.status === 'A') {
+    const readiness = await getAbsenceFinalizationReadiness(
+      db,
+      employeeId,
+      isoDate,
+      resolved,
+    );
+    if (!readiness.ready) {
+      await db
+        .deleteFrom('att.day_records')
+        .where('employee_id', '=', employeeId)
+        .where('work_date', '=', sql<Date>`${isoDate}::date`)
+        .where('source', '=', 'auto')
+        .where('is_locked', '=', false)
+        .execute();
+      await db
+        .insertInto('att.recompute_queue')
+        .values({ employee_id: employeeId, work_date: sql<Date>`${isoDate}::date` })
+        .onConflict((oc) =>
+          oc.columns(['employee_id', 'work_date']).doUpdateSet({ queued_at: new Date() }),
+        )
+        .execute();
+      return 'held';
+    }
+  }
   const row = {
     shift_id: computed.shiftId,
     status: computed.status,
@@ -387,6 +497,48 @@ export async function recomputeDay(
   }
 
   return computed.status;
+}
+
+/** HR Ops visibility for PP-9: queued biometric days that are specifically
+ * waiting for device completeness, not generic recompute work. */
+export async function listFinalizationHolds(
+  db: Kysely<Database>,
+  companyId: number,
+  isoDate: string,
+): Promise<FinalizationHold[]> {
+  const candidates = await db
+    .selectFrom('att.recompute_queue as queue')
+    .innerJoin('core.employees as employee', 'employee.id', 'queue.employee_id')
+    .select([
+      'employee.id',
+      'employee.ecode',
+      'employee.first_name',
+      'employee.last_name',
+    ])
+    .distinct()
+    .where('employee.company_id', '=', companyId)
+    .where('employee.attendance_mode', '=', 'biometric')
+    .where('employee.biometric_registered', '=', true)
+    .where('queue.work_date', '=', sql<Date>`${isoDate}::date`)
+    .execute();
+
+  const holds: FinalizationHold[] = [];
+  for (const employee of candidates) {
+    const readiness = await getAbsenceFinalizationReadiness(db, employee.id, isoDate);
+    if (readiness.ready || readiness.reason === null) continue;
+    holds.push({
+      employeeId: employee.id,
+      ecode: employee.ecode,
+      employeeName: employee.last_name
+        ? `${employee.first_name} ${employee.last_name}`
+        : employee.first_name,
+      workDate: isoDate,
+      shiftEndAt: readiness.shiftEndAt?.toISOString() ?? null,
+      reason: readiness.reason,
+      pendingDoors: readiness.pendingDoors,
+    });
+  }
+  return holds;
 }
 
 /**
@@ -483,16 +635,23 @@ export async function closeWeek(db: Kysely<Database>, weekStartIso: string): Pro
   const minWorked = await getTypedSetting(db, 'att.weekoff_min_worked_days', 'number', 1);
   const presentList = WEEKOFF_PRESENT_STATUSES.join(',');
 
+  // Paid leave (L with lv.leave_types.is_paid) counts as present (docs/04 §1.2).
   const result = await sql<{ id: number }>`
     UPDATE att.day_records d
     SET weekoff_paid = (w.present >= ${minWorked})
     FROM (
-      SELECT employee_id,
-             COUNT(*) FILTER (WHERE status = ANY (string_to_array(${presentList}, ',')::att.day_status[])) AS present
-      FROM att.day_records
-      WHERE work_date >= ${weekStartIso}::date AND work_date < ${weekStartIso}::date + 7
-        AND is_locked = false
-      GROUP BY employee_id
+      SELECT dr.employee_id,
+             COUNT(*) FILTER (
+               WHERE dr.status = ANY (string_to_array(${presentList}, ',')::att.day_status[])
+                  OR (dr.status = 'L' AND EXISTS (
+                        SELECT 1 FROM lv.leave_types lt
+                        WHERE lt.id = dr.leave_type_id AND lt.is_paid = true
+                      ))
+             ) AS present
+      FROM att.day_records dr
+      WHERE dr.work_date >= ${weekStartIso}::date AND dr.work_date < ${weekStartIso}::date + 7
+        AND dr.is_locked = false
+      GROUP BY dr.employee_id
     ) w
     WHERE d.employee_id = w.employee_id
       AND d.status = 'WO'

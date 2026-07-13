@@ -173,7 +173,6 @@ run('central access control (live Postgres)', () => {
     expect(body.grants.length).toBeGreaterThan(150);
   });
 });
-
 run('notifications skeleton (live Postgres)', () => {
   let db: Kysely<Database>;
   const stamp = Date.now();
@@ -189,7 +188,17 @@ run('notifications skeleton (live Postgres)', () => {
     await db.destroy();
   });
 
+  /** Drain backlog so this suite is not starved by Stage 1.6 boarding/UAB fan-out. */
+  async function drainQueue(transport: NotificationTransport = devLogTransport): Promise<void> {
+    for (let i = 0; i < 200; i++) {
+      const r = await processQueue(db, transport, 100);
+      if (r.sent + r.failed === 0) break;
+    }
+  }
+
   it('fans an event out to an email subscriber and delivers via the transport', async () => {
+    await drainQueue();
+
     await db
       .insertInto('wf.event_subscriptions')
       .values({ event_code: eventCode, recipient_kind: 'email', recipient_ref: 'hr@rashmi.test' })
@@ -198,24 +207,22 @@ run('notifications skeleton (live Postgres)', () => {
     const queued = await enqueueEvent(db, eventCode, `tpl_${stamp}`, { hello: 'world' });
     expect(queued).toBe(1);
 
-    // A batch is capped at 50; other suites can leave a backlog ahead of ours,
-    // so drain until our notification is delivered (the worker loops in prod).
-    let row: { status: string; sent_at: unknown } | undefined;
-    for (let i = 0; i < 20; i++) {
-      const { failed } = await processQueue(db, devLogTransport);
-      expect(failed).toBe(0);
-      row = await db
-        .selectFrom('wf.notifications')
-        .select(['status', 'sent_at'])
-        .where('template_code', '=', `tpl_${stamp}`)
-        .executeTakeFirstOrThrow();
-      if (row.status === 'sent') break;
-    }
-    expect(row?.status).toBe('sent');
-    expect(row?.sent_at).not.toBeNull();
+    const { sent, failed } = await processQueue(db, devLogTransport, 100);
+    expect(sent).toBeGreaterThanOrEqual(1);
+    expect(failed).toBe(0);
+
+    const row = await db
+      .selectFrom('wf.notifications')
+      .select(['status', 'sent_at'])
+      .where('template_code', '=', `tpl_${stamp}`)
+      .executeTakeFirstOrThrow();
+    expect(row.status).toBe('sent');
+    expect(row.sent_at).not.toBeNull();
   });
 
   it('a permanently failing transport retries then parks the row in dead-letter — never silently dropped', async () => {
+    await drainQueue();
+
     const failing: NotificationTransport = {
       send: () => Promise.reject(new Error('SMTP down (test)')),
     };
@@ -230,7 +237,8 @@ run('notifications skeleton (live Postgres)', () => {
       })
       .execute();
 
-    for (let i = 0; i < 5; i++) await processQueue(db, failing);
+    // With an empty backlog this row is claimed every pass until dead.
+    for (let i = 0; i < 5; i++) await processQueue(db, failing, 10);
 
     const row = await db
       .selectFrom('wf.notifications')

@@ -120,9 +120,7 @@ export function DatePicker({
   // After open / month page, land focus on the intended day.
   useEffect(() => {
     if (!open || pendingFocus.current === null) return;
-    const el = gridRef.current?.querySelector<HTMLElement>(
-      `[data-iso="${pendingFocus.current}"]`,
-    );
+    const el = gridRef.current?.querySelector<HTMLElement>(`[data-iso="${pendingFocus.current}"]`);
     if (el) {
       el.focus();
       pendingFocus.current = null;
@@ -143,9 +141,7 @@ export function DatePicker({
     if (target.year !== view.year || target.month !== view.month) {
       setView(target);
     } else {
-      gridRef.current
-        ?.querySelector<HTMLElement>(`[data-iso="${nextISO}"]`)
-        ?.focus();
+      gridRef.current?.querySelector<HTMLElement>(`[data-iso="${nextISO}"]`)?.focus();
       pendingFocus.current = null;
     }
   };
@@ -154,11 +150,15 @@ export function DatePicker({
     const iso = (document.activeElement as HTMLElement | null)?.dataset['iso'];
     if (iso === undefined) return;
     const step =
-      e.key === 'ArrowRight' ? 1
-      : e.key === 'ArrowLeft' ? -1
-      : e.key === 'ArrowDown' ? 7
-      : e.key === 'ArrowUp' ? -7
-      : 0;
+      e.key === 'ArrowRight'
+        ? 1
+        : e.key === 'ArrowLeft'
+          ? -1
+          : e.key === 'ArrowDown'
+            ? 7
+            : e.key === 'ArrowUp'
+              ? -7
+              : 0;
     if (step !== 0) {
       e.preventDefault();
       moveFocus(iso, step);
@@ -195,7 +195,6 @@ export function DatePicker({
           disabled={disabled}
           aria-expanded={open}
           aria-haspopup="dialog"
-          aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           onClick={() => {
             if (open) close(false);
@@ -203,10 +202,7 @@ export function DatePicker({
           }}
           className={cn(TRIGGER_BASE, error && TRIGGER_ERROR)}
         >
-          <CalendarDays
-            aria-hidden
-            className="size-[1.1rem] shrink-0 text-ink-faint"
-          />
+          <CalendarDays aria-hidden className="size-[1.1rem] shrink-0 text-ink-faint" />
           <span className={value !== null ? 'text-ink' : 'text-ink-faint'}>
             {value !== null ? formatDateIN(value) : placeholder}
           </span>
@@ -283,9 +279,7 @@ export function DatePicker({
                       'u-press grid h-9 place-items-center rounded-[10px] text-sm tabular-nums',
                       'transition-colors duration-[var(--motion-micro)] ease-[var(--ease-std)]',
                       cell.inMonth ? 'text-ink' : 'text-ink-faint',
-                      isSelected
-                        ? 'bg-accent font-semibold text-accent-ink'
-                        : 'hover:bg-surface-2',
+                      isSelected ? 'bg-accent font-semibold text-accent-ink' : 'hover:bg-surface-2',
                       isToday && !isSelected && 'ring-1 ring-inset ring-line-strong',
                       blocked && 'pointer-events-none opacity-35',
                     )}
@@ -300,11 +294,7 @@ export function DatePicker({
       </div>
 
       {error ? (
-        <p
-          id={`${id}-error`}
-          role="alert"
-          className="mt-1.5 text-xs font-medium text-negative"
-        >
+        <p id={`${id}-error`} role="alert" className="mt-1.5 text-xs font-medium text-negative">
           {error}
         </p>
       ) : (
