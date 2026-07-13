@@ -146,6 +146,12 @@ async function buildBoardingExcel(reportDate: string, joins: BoardingRow[], exit
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
+/** On-demand R24 workbook for a date range (HR download). */
+export async function boardingExitExcel(db: Kysely<Database>, fromIso: string, toIso: string): Promise<Buffer> {
+  const report = await boardingExitReport(db, fromIso, toIso);
+  return buildBoardingExcel(fromIso, report.joins, report.exits);
+}
+
 /** The 07:00 IST job body: yesterday's movement + the Excel to the subscribed
  *  audience — queued unconditionally, empty day included. Returns recipients queued. */
 export async function sendBoardingExitEmail(db: Kysely<Database>, dateIso?: string): Promise<number> {

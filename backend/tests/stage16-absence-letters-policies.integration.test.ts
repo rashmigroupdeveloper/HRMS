@@ -21,8 +21,8 @@ import {
   runAbsenceScan,
 } from '../src/modules/attendance/index.js';
 import { issueLetter, registerLettersWorkflowHooks, renderTemplate } from '../src/modules/letters/index.js';
-import { acknowledgePolicy, listPoliciesFor, policyAckStatus, publishPolicy, runPolicyAckNag } from '../src/modules/policies/index.js';
-import { sendBoardingExitEmail } from '../src/modules/lifecycle/index.js';
+import { acknowledgePolicy, listActivePolicies, listPoliciesFor, myPendingPolicies, policyAckStatus, publishPolicy, runPolicyAckNag } from '../src/modules/policies/index.js';
+import { boardingExitExcel, sendBoardingExitEmail } from '../src/modules/lifecycle/index.js';
 import { act, WORKFLOW_DEFINITIONS } from '../src/modules/workflows/index.js';
 
 const DB_URL = process.env['DATABASE_URL'];
@@ -297,5 +297,39 @@ run('Stage 1.6 — absence, letters, policies (live Postgres)', () => {
       .execute();
     expect(nags).toHaveLength(1);
     expect(nags[0]?.recipient_user_id).toBe(nagUserId);
+  });
+
+  it('B5: merged-branch features preserved — summary-only policy, /pending, catalog, boarding Excel', async () => {
+    // A quick notice published as a body summary with NO document file.
+    const noticeId = await publishPolicy(db, {
+      title: `S16 Notice ${stamp}`,
+      effectiveDate: '2032-01-01',
+      requiresAcknowledgment: true,
+      bodySummary: 'Canteen timings change from Monday.',
+      actorUserId: hrOpsUserId,
+    });
+    policyIds.push(noticeId);
+
+    const notice = await db.selectFrom('core.policies').selectAll().where('id', '=', noticeId).executeTakeFirstOrThrow();
+    expect(notice.document_id).toBeNull();
+    expect(notice.body_summary).toContain('Canteen');
+
+    // It shows in the full HR catalog with its summary.
+    const catalog = await listActivePolicies(db);
+    expect(catalog.find((p) => p.id === noticeId)?.bodySummary).toContain('Canteen');
+
+    // ackEmpId (dept-scoped policy from B4) still has a pending policy; after
+    // acking everything targeted, the pending list empties.
+    const pendingBefore = await myPendingPolicies(db, nagEmpId);
+    expect(pendingBefore.length).toBeGreaterThanOrEqual(1);
+    for (const p of await listPoliciesFor(db, nagEmpId)) {
+      if (p.requiresAcknowledgment && p.acknowledgedAt === null) await acknowledgePolicy(db, p.id, nagEmpId);
+    }
+    expect(await myPendingPolicies(db, nagEmpId)).toHaveLength(0);
+
+    // The R24 workbook downloads for a range (a real .xlsx begins with 'PK').
+    const wb = await boardingExitExcel(db, '2032-06-01', '2032-06-01');
+    expect(wb.length).toBeGreaterThan(0);
+    expect(wb.subarray(0, 2).toString('latin1')).toBe('PK');
   });
 });

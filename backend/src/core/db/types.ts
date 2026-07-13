@@ -374,7 +374,8 @@ export interface LettersTable {
 export interface PoliciesTable {
   id: Generated<number>;
   title: string;
-  document_id: number;
+  document_id: number | null;
+  body_summary: string | null;
   effective_date: Timestamp;
   requires_acknowledgment: Generated<boolean>;
   audience: unknown;

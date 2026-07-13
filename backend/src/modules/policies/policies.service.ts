@@ -35,26 +35,37 @@ export interface PublishPolicyParams {
   effectiveDate: string;
   requiresAcknowledgment: boolean;
   audience?: PolicyAudience | undefined;
-  fileName: string;
-  mime: string;
-  content: string;
+  /** Optional short preview shown in lists (the parallel-branch feature) —
+   *  a policy may be a summary-only quick notice with no document file. */
+  bodySummary?: string | undefined;
+  /** Optional document upload; omit for a summary-only policy. */
+  fileName?: string | undefined;
+  mime?: string | undefined;
+  content?: string | undefined;
   actorUserId: number;
 }
 
 export async function publishPolicy(db: Kysely<Database>, params: PublishPolicyParams): Promise<number> {
-  const documentId = await createDocument(db, {
-    ownerEmployeeId: null,
-    kind: 'policy',
-    originalName: params.fileName,
-    mime: params.mime,
-    content: params.content,
-    uploadedBy: params.actorUserId,
-  });
+  if (params.content === undefined && params.bodySummary === undefined) {
+    throw new Error('A policy needs a document or a body summary');
+  }
+  let documentId: number | null = null;
+  if (params.content !== undefined) {
+    documentId = await createDocument(db, {
+      ownerEmployeeId: null,
+      kind: 'policy',
+      originalName: params.fileName ?? `${params.title}.txt`,
+      mime: params.mime ?? 'text/plain',
+      content: params.content,
+      uploadedBy: params.actorUserId,
+    });
+  }
   const policy = await db
     .insertInto('core.policies')
     .values({
       title: params.title,
       document_id: documentId,
+      body_summary: params.bodySummary ?? null,
       effective_date: sql<Date>`${params.effectiveDate}::date` as unknown as Date,
       requires_acknowledgment: params.requiresAcknowledgment,
       audience: params.audience ? JSON.stringify(params.audience) : null,
@@ -86,7 +97,7 @@ export async function listPoliciesFor(db: Db, employeeId: number) {
     .selectFrom('core.policies as p')
     .leftJoin('core.policy_acknowledgments as a', (join) => join.onRef('a.policy_id', '=', 'p.id').on('a.employee_id', '=', employeeId))
     .where('p.is_active', '=', true)
-    .select(['p.id', 'p.title', 'p.document_id', 'p.effective_date', 'p.requires_acknowledgment', 'p.audience', 'a.acknowledged_at'])
+    .select(['p.id', 'p.title', 'p.document_id', 'p.body_summary', 'p.effective_date', 'p.requires_acknowledgment', 'p.audience', 'a.acknowledged_at'])
     .orderBy('p.effective_date', 'desc')
     .execute();
 
@@ -103,10 +114,34 @@ export async function listPoliciesFor(db: Db, employeeId: number) {
       id: p.id,
       title: p.title,
       documentId: p.document_id,
+      bodySummary: p.body_summary,
       effectiveDate: formatDbDate(p.effective_date),
       requiresAcknowledgment: p.requires_acknowledgment,
       acknowledgedAt: p.acknowledged_at ? new Date(p.acknowledged_at as unknown as Date).toISOString() : null,
     }));
+}
+
+/** The whole active-policy catalog (HR view — not audience-filtered). */
+export async function listActivePolicies(db: Db) {
+  const rows = await db
+    .selectFrom('core.policies')
+    .select(['id', 'title', 'document_id', 'body_summary', 'effective_date', 'requires_acknowledgment'])
+    .where('is_active', '=', true)
+    .orderBy('effective_date', 'desc')
+    .execute();
+  return rows.map((p) => ({
+    id: p.id,
+    title: p.title,
+    documentId: p.document_id,
+    bodySummary: p.body_summary,
+    effectiveDate: formatDbDate(p.effective_date),
+    requiresAcknowledgment: p.requires_acknowledgment,
+  }));
+}
+
+/** ESS "still to acknowledge" — targeted, ack-required, not yet acked by me. */
+export async function myPendingPolicies(db: Db, employeeId: number) {
+  return (await listPoliciesFor(db, employeeId)).filter((p) => p.requiresAcknowledgment && p.acknowledgedAt === null);
 }
 
 /** One row per employee, idempotent — re-acking is a no-op, timestamp keeps the first. */

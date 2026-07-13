@@ -5,7 +5,7 @@
  */
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
-import { boardingExitReport, sendBoardingExitEmail } from './boarding-exit.service.js';
+import { boardingExitExcel, boardingExitReport, sendBoardingExitEmail } from './boarding-exit.service.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
 
@@ -40,4 +40,17 @@ const send = withPermission('admin.integrations')
   .output(z.object({ queued: z.number() }))
   .handler(async ({ input, context }) => ({ queued: await sendBoardingExitEmail(context.db, input?.date) }));
 
-export const lifecycleRouter = { report, send };
+const excel = withPermission('reports.hr')
+  .route({ method: 'GET', path: '/lifecycle/boarding-exit/excel', summary: 'Download the R24 boarding/exit workbook for a range' })
+  .input(z.object({ from: isoDate, to: isoDate }))
+  .output(z.object({ fileName: z.string(), mime: z.string(), base64: z.string() }))
+  .handler(async ({ input, context }) => {
+    const buffer = await boardingExitExcel(context.db, input.from, input.to);
+    return {
+      fileName: `boarding-exit-${input.from}_${input.to}.xlsx`,
+      mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      base64: buffer.toString('base64'),
+    };
+  });
+
+export const lifecycleRouter = { report, send, excel };
