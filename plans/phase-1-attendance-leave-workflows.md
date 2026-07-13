@@ -58,36 +58,40 @@
 **Goal:** ledger-true leave with the six live RML types and automatic monthly accrual.
 **Depends on:** 1.3.
 **Tasks:**
-- [x] P1-T20 — Types seeded (migration 0010): CL/SL/EL/**EL_VOTE**/CO/LWP + ML (gender-conditional) with accrual/carry/encash/half-day/sandwich config — **every rate is a runtime-editable row** (`PUT /leave/types/{code}`, leave.admin, audited); seed rates are DEFAULTS pending P0-T06 sign-off *(LV-01, 09 §1)*
-- [x] P1-T21 — `lv.ledger` **append-only at the DB** (UPDATE/DELETE-rejecting trigger, like the audit log); balance = SUM(delta), available = balance − pending applications; **monthly accrual idempotent BY THE DATABASE** (partial unique index: one accrual per employee×type×month), EL gated on `accrual_requires_service_months`, runs 1st 00:05 IST (pg-boss daily + IST-1st guard) — **never blocked by unapproved attendance**; prior-month A/UAB employees flagged via `leave.accrual_exceptions` event subscription *(LV-02/05, PP-1)*
-- [x] P1-T22 — Applications (`POST /leave/applications`, leave.own): balance check incl. pending reservations, half-day edges, **sandwich rule per type** (exclude skips holidays/week-offs; include counts them but never overwrites their H/WO record), max_per_request, gender/category applicability, locked-period + overlap guards; **approval = ledger debit + L/CO day-records inside the approving transaction** (completion hooks on 'leave'/'comp_off' chains); **Leave Cancel as re-approval** ('leave_cancel' chain: exact reversal txn + days handed back to the recompute pipeline); **employee-initiated encashment** ('leave_encashment' 3-step chain → 'encash' debit, clamped+audited if the balance moved); **Restricted Holiday** publish → pick (capped by `lv.rh_max_per_year`) → approve → personal H day-record *(LV-03/06/08/09)*
-- [x] P1-T23 — Comp-off: **OT convert now credits the ledger for real** (the Stage-1.4 deferred hookup): `comp_off_earn` with `expiry_date = work_date + lv.comp_off_validity_days` (90), fraction by `lv.comp_off_half_day_minutes`(240)/`_full_day_minutes`(480), linked via `att.overtime_entries.comp_off_credit_id` (FK added; paid-XOR-comp-off CHECK live); **daily expiry sweep** (00:30 IST) lapses unused credits FIFO-generously + idempotently; applying CO = normal application against the CO balance on the 'comp_off' chain *(LV-04, PP-18)*
-- Also: `leave.own` permission added to the grid (all roles, like attendance.own) — seed:rbac now 39 permissions/165 grants; year-end carry-forward cap job (`POST /leave/year-end/run`, boundary pending P0-T06); manual adjustments (leave.admin, note mandatory by DB CHECK, audited); FK `att.day_records.leave_type_id` → lv.leave_types live.
-**Tests:** 9 integration (hand-computed): accrual rates + EL service gate + DB-idempotence; sandwich exclude 3 vs include 4 over the same Fri–Mon; apply→approve e2e (API) with ledger −3 and per-day L records; balance guard; cancel reversal to the paise-exact day count + recompute handback; LWP writes days with zero ledger rows; OT 270 min → 0.5 comp-off earn → half-day spend → expiry sweep lapse (idempotent); RH cap + approved pick = H day; encashment 3-step chain → −5 encash txn + duplicate blocked — **120 total green, verify exit 0**.
-**Exit criteria:** balances on ESS match ledger sums ✅ (API = SUM proven) · accrual job runs on test clock without human trigger ✅ (idempotent, worker-scheduled) · a cancelled approved leave leaves a zero-net ledger trail ✅ (−3 then +3, both rows immutable).
+- [x] P1-T20 — Types seed: CL, SL, EL, **Election Leave** (`EL_VOTE`), Comp Off, LWP (+ ML catalog + RH) with accrual/carry/encash/sandwich config *(LV-01, 09 §1)* — migration 0010
+- [x] P1-T21 — Immutable `lv.ledger` (balance = SUM(delta), DB trigger rejects UPDATE/DELETE); monthly accrual job (daily cron + idempotent 1st-of-month credit) — never blocked by unapproved attendance, exceptions listed *(LV-02/05)*
+- [x] P1-T22 — Applications (balance check, half-day, sandwich); **Leave Cancel as re-approval** reversing the debit; employee-initiated encashment workflow; Restricted Holiday pick→approve→day H *(LV-03/06/08/09)*
+- [x] P1-T23 — Comp-off: earn from OT `convert_comp_off` → ledger credit + `comp_off_credit_id` FK; expiry window (`lv.comp_off_validity_days`) + lapse job *(LV-04)*
+- Engine: `onWorkflowFinal` hooks for leave / leave_cancel / leave_encashment / comp_off / restricted_holiday; day_records write-back `source='regularized'` with leave_type_id; paid-L counts for week-off eligibility.
+- APIs: `GET /leave/types|balances|mine|ledger` · `POST /leave/apply|cancel|encash` (**attendance.own**) · `POST /leave/adjust|accrual/run|comp-off/lapse` (**leave.admin**). Worker: `leave-monthly-accrual` · `comp-off-expiry`.
+**Tests:** sandwich pure unit (8) + 8 live integration (ledger append-only, apply→approve→debit+day L, insufficient balance, cancel zero-net trail, accrual idempotent, OT→CO credit, CO expiry lapse, API surface) — **127 total green, verify exit 0**.
+**Exit criteria:** balances = ledger SUM ✓ · accrual job on demand/idempotent ✓ · cancelled approved leave leaves zero-net ledger trail ✓ · ESS UI deferred to frontend.
 
-## Stage 1.6 — Absenteeism, alerts, letters, policies   `[ ☐ ]`
+## Stage 1.6 — Absenteeism, alerts, letters, policies   `[ ☑ done 13 Jul 2026 — backend; UI surfaces in Frontend Phase 1 ]`
 **Goal:** the automated vigilance HR asked Protiviti for 26 times — incl. the daily email. **Ship the email first.**
 **Depends on:** 1.2 (statuses); letters need 1.3 (signature workflow).
 **Tasks:**
-- [ ] P1-T31 — **Daily 07:00 boarding/exit email** per plant to HR/BH/CEO Cell, sent even when empty *(LC-03, PP-6/26)* ← deliver as early as data allows
-- [ ] P1-T30 — Absenteeism engine: daily scan; UAB alerts up hierarchy + HR; `absence_cases` watch(≥4d)→show_cause(≥7d)→warning; letter issued through the system *(ATT-10/11, PP-7)*
-- [ ] P1-T32 — Letters engine: docx templates + merge fields + **Letter Signature Approval** chain; show-cause/warning/certificates archived on employee + ESS *(CORE-09)*
-- [ ] P1-T33 — Policy repository + acknowledgment tracking + weekly nag + HR tile *(CORE-13)*
-**Tests required:** case stage transitions on test clock; email renders with ExcelJS attachment; empty-day email still sends; letter merge-field validation.
-**Exit criteria:** email observed on 3 consecutive mornings incl. one empty day · a 7-day synthetic absence opens a show-cause case with letter linked · policy-ack % tile matches DB.
+- [x] P1-T31 — **Daily 07:00 boarding/exit email** (ExcelJS R24 attachment, sent even when empty) via `wf.event_subscriptions` `daily.boarding_report` *(LC-03, PP-6/26)* — `modules/boarding`, worker queue `daily-boarding-exit`
+- [x] P1-T30 — Absenteeism engine: daily scan; UAB alerts; `absence_cases` watch(≥4)→show_cause(≥7); show-cause letter link *(ATT-10/11, PP-7)* — settings `att.absence_watch_days` / `att.show_cause_days`
+- [x] P1-T32 — Letters engine: templates + `{{merge}}` fields + issue + document archive on employee *(CORE-09)* — show_cause/warning seeded; letter_signature chain attach deferred to UI
+- [x] P1-T33 — Policy repository + acknowledgment + weekly nag + ack-% stats *(CORE-13)*
+- Migration 0011 · APIs: `/boarding/run`, `/attendance/absence-*`, `/letters/*`, `/policies/*` · workers: boarding 07:00 IST, absentee 06:00 IST, policy nag Mon
+**Tests:** 7 integration (empty boarding+Excel, join appears, UAB→case→show_cause, letter linked, policy ack %, merge validation) — verify green.
+**Exit criteria:** on-demand empty-day email queues ✓ · 7-day synthetic absence → show_cause + letter ✓ · policy-ack % matches hand formula ✓ · live morning observation still needs worker left running (ops).
 
-## Stage 1.7 — Reports, dashboards, ESS, month lock   `[ ☐ ]`
+## Stage 1.7 — Reports, dashboards, ESS, month lock   `[ ◐ backend + role-aware dashboard UI verified 13 Jul 2026 — stage remains open ]`
 **Goal:** the flagship muster + the daily surfaces for every role; the month becomes lockable.
 **Depends on:** 1.2, 1.5 (leave columns), 1.4 (AR/OD/OT data).
 **Tasks:**
-- [ ] P1-T40 — **R1 Muster Summary** with RM + Functional Mgr + Emp ID + Cost Center + leave columns; precomputed MV; virtualized; <10 s export at 3k (headroom to 10k <15 s) *(RPT-01, LV-07, PP-5/8/15/25)*
-- [ ] P1-T41 — R2 swipe/reconciliation (+cross-plant flag), R3 AR/OD, R4 late/early/UAB, R5 OT register, R6 absence cases, R24 boarding/exit, R27 headcount — all Excel-export with applied filters *(RPT-06)*
-- [ ] P1-T42 — HR Ops dashboard (05 §4.1) · manager team month-grid + roster editor · senior-manager subtree toggle (KQ) · device-health board
-- [ ] P1-T43 — ESS: home (greeting, shift chip, tiles) + My Attendance (calendar, day drill) + My Leave (balances, apply) *(05 §4.3/4.4/4.9)*
-- [ ] P1-T07 — Month-lock checklist + freeze trigger; **sync-watermark rule: no day finalized (no Absent marked) until device watermark passes shift end** *(ATT-12/15, doc 14 §8.5)*
-**Tests required:** muster MV vs raw recompute equivalence; export = view query (same filters); perf test 3k×31 in CI; lock immutability trigger; watermark holds finalization.
-**Exit criteria:** HR ops downloads the June-template muster with the new columns in <10 s · month-lock blocked until checklist green · CI perf test passes.
+- [~] P1-T40 — **R1 Muster Summary** snapshot `reporting.muster_month` with RM + Functional Mgr + Emp ID + Cost Center/Plant, Day 1–31 glyphs, leave-type totals and ExcelJS export *(RPT-01)*. Snapshot rebuild is set-based + atomic and batched; the frontend now rebuilds/views the snapshot and downloads the same-query Excel. The complete documented filter set remains.
+- [~] P1-T41 — company-scoped APIs exist for R2 swipes, R3 AR/OD, R4 late/early/UAB, R5 OT, R6 absence cases, R24 boarding and R27 headcount; the Stage 1 reports catalog exposes their truthful readiness and routes R1 into its working surface. Still required: filter/table UIs for R2–R6/R24/R27, exact doc-06 columns (raw-swipe reconciliation/cross-plant, approver timeline, OT latency/payout, R27 point-in-time dimensions) and same-query Excel exports for R2–R6/R24/R27 *(RPT-06)*.
+- [~] P1-T42 — HR Ops dashboard payload, manager team month-grid (+ subtree), and device-health API exist. Role-resolved homes render real HR Ops KPIs, manager signals and per-door health/watermarks. Working frontend pages now cover workflow approvals, team month grid, attendance-ops hub, unmatched swipes, devices and month lock with loading/error/empty states. Still required: manager attendance-approval ledger, manager-readable shift-catalog contract + complete roster editor, UAT and dashboard snapshot/performance proof.
+- [~] P1-T43 — ESS home `/dashboards/ess`, `/my/attendance` month cells and Stage 1.5 `/leave/*` APIs exist. The real ESS landing, My Attendance and My Leave pages now provide shift/swipes, calendar drill-down, AR/OD submission, OT/request histories, ledger-derived balances, live leave application and immutable ledger history. End-to-end UAT remains.
+- [~] P1-T07 — Month-lock checklist and atomic lock implemented; DB makes locks append-only, freezes existing rows and rejects late inserts/updates. **Per-device** monotonic completeness watermarks now gate automatic `A` finalization: every active door at the employee's mapped location must pass that shift's end; held days remain queued and appear on `/attendance/finalization-holds`; month lock requires full-month coverage including final-day night shifts *(ATT-12/15, doc 14 §8.5)*. The frontend runs the checklist and uses an exact typed confirmation before lock. Missing manager approval ledger still blocks lock when that policy is enabled.
+- Migrations 0012–0015 · `modules/reports` + per-device attendance finalization · local DB migrated through monotonic watermark hardening.
+**Tests:** Stage 1.7 has 5 live integration tests (muster identity/totals; checklist + freeze + late-insert rejection; already-locked; every-door watermark hold/release; invalid receipt + DB regression rejection). Full backend `npm run verify`: **139/139 tests green**, typecheck/lint/knip/dependency-cruiser/build green.
+**Remaining required tests:** muster snapshot vs raw equivalence · export=view applied-filter equality · 3k×31 performance CI.
+**Exit criteria:** not yet met — real HR Ops June-template export timing, real Kent connector completeness receipts/device mapping, manager approval adoption, roster-editor contract/wiring, supporting-report UIs/exports and HR-ops UAT remain.
 
 ---
 

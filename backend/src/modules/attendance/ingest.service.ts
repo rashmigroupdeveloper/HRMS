@@ -42,9 +42,21 @@ export async function ingestOnce(
     .executeTakeFirst();
   const since = new Date((wmRow?.watermark_ts ?? EPOCH).getTime() - OVERLAP_MINUTES * 60_000);
 
-  const fetched = await connector.fetchSince(since);
-  if (fetched.length === 0) {
-    return { fetched: 0, inserted: 0, quarantined: 0, unmatchedEmployeeNos: [], watermark: wmRow?.watermark_ts ?? null };
+  const [fetched, reportedDevices] = await Promise.all([
+    connector.fetchSince(since),
+    connector.listDevices(),
+  ]);
+  for (const device of reportedDevices) {
+    if (device.watermarkTs && !device.lastContactAt) {
+      throw new Error(`Device ${device.doorCode} reported a watermark without a contact receipt`);
+    }
+    if (
+      device.watermarkTs &&
+      device.lastContactAt &&
+      device.watermarkTs > device.lastContactAt
+    ) {
+      throw new Error(`Device ${device.doorCode} watermark exceeds its contact receipt`);
+    }
   }
 
   // Plausibility window (policy values — docs/04 §8; admin-tunable via settings).
@@ -76,6 +88,7 @@ export async function ingestOnce(
   let inserted = 0;
   let maxReceived = wmRow?.watermark_ts ?? EPOCH;
   for (const s of fetched) if (s.receivedAt > maxReceived) maxReceived = s.receivedAt;
+  const nextSourceWatermark = fetched.length > 0 ? maxReceived : (wmRow?.watermark_ts ?? null);
 
   await db.transaction().execute(async (trx) => {
     if (quarantine.length > 0) {
@@ -135,34 +148,74 @@ export async function ingestOnce(
       const prev = byDoor.get(s.doorCode);
       if (!prev || s.receivedAt > prev) byDoor.set(s.doorCode, s.receivedAt);
     }
+    const deviceStates = new Map(reportedDevices.map((device) => [device.doorCode, device]));
     for (const [doorCode, lastSeen] of byDoor) {
-      await trx
+      const reported = deviceStates.get(doorCode);
+      if (!reported) {
+        deviceStates.set(doorCode, { doorCode, lastContactAt: lastSeen });
+      } else if (!reported.lastContactAt || lastSeen > reported.lastContactAt) {
+        deviceStates.set(doorCode, { ...reported, lastContactAt: lastSeen });
+      }
+    }
+
+    for (const state of deviceStates.values()) {
+      const device = await trx
         .insertInto('att.devices')
-        .values({ door_code: doorCode, source, last_seen_at: lastSeen })
+        .values({
+          door_code: state.doorCode,
+          source,
+          last_seen_at: state.lastContactAt ?? null,
+        })
         .onConflict((oc) =>
-          oc.column('door_code').doUpdateSet((eb) => ({
-            last_seen_at: eb
-              .case()
-              .when(eb.ref('att.devices.last_seen_at'), 'is', null)
-              .then(lastSeen)
-              .when(eb.ref('att.devices.last_seen_at'), '<', lastSeen)
-              .then(lastSeen)
-              .else(eb.ref('att.devices.last_seen_at'))
-              .end(),
-          })),
+          oc.column('door_code').doUpdateSet({
+            source,
+            last_seen_at: state.lastContactAt
+              ? sql<Date>`GREATEST(
+                  COALESCE(att.devices.last_seen_at, ${state.lastContactAt}),
+                  ${state.lastContactAt}
+                )`
+              : sql<Date | null>`att.devices.last_seen_at`,
+          }),
         )
-        .execute();
+        .returning('id')
+        .executeTakeFirstOrThrow();
+
+      if (state.watermarkTs) {
+        await trx
+          .insertInto('att.device_watermarks')
+          .values({ device_id: device.id, watermark_ts: state.watermarkTs })
+          .onConflict((oc) =>
+            oc.column('device_id').doUpdateSet({
+              watermark_ts: sql`GREATEST(att.device_watermarks.watermark_ts, excluded.watermark_ts)`,
+              updated_at: new Date(),
+            }),
+          )
+          .execute();
+      }
     }
 
     // Watermark advances ONLY inside the same transaction as the data.
-    await trx
-      .insertInto('att.ingest_watermarks')
-      .values({ source, watermark_ts: maxReceived })
-      .onConflict((oc) => oc.column('source').doUpdateSet({ watermark_ts: maxReceived, updated_at: new Date() }))
-      .execute();
+    if (nextSourceWatermark) {
+      await trx
+        .insertInto('att.ingest_watermarks')
+        .values({ source, watermark_ts: nextSourceWatermark })
+        .onConflict((oc) =>
+          oc.column('source').doUpdateSet({
+            watermark_ts: nextSourceWatermark,
+            updated_at: new Date(),
+          }),
+        )
+        .execute();
+    }
   });
 
-  return { fetched: fetched.length, inserted, quarantined: quarantine.length, unmatchedEmployeeNos: unmatched, watermark: maxReceived };
+  return {
+    fetched: fetched.length,
+    inserted,
+    quarantined: quarantine.length,
+    unmatchedEmployeeNos: unmatched,
+    watermark: nextSourceWatermark,
+  };
 }
 
 /**

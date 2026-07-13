@@ -46,12 +46,20 @@ export function ConfirmModal({
     if (open) {
       setTyped('');
       setMounted(true);
-      const id = requestAnimationFrame(() => { setEntered(true); });
-      return () => { cancelAnimationFrame(id); };
+      const id = requestAnimationFrame(() => {
+        setEntered(true);
+      });
+      return () => {
+        cancelAnimationFrame(id);
+      };
     }
     setEntered(false);
-    const t = setTimeout(() => { setMounted(false); }, 200);
-    return () => { clearTimeout(t); };
+    const t = setTimeout(() => {
+      setMounted(false);
+    }, 200);
+    return () => {
+      clearTimeout(t);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -60,19 +68,21 @@ export function ConfirmModal({
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('keydown', onKey); };
+    return () => {
+      document.removeEventListener('keydown', onKey);
+    };
   }, [mounted, onClose]);
 
   if (!mounted) return null;
 
-  const confirmDisabled =
-    typedConfirmation !== undefined && typed !== typedConfirmation;
+  const confirmDisabled = typedConfirmation !== undefined && typed !== typedConfirmation;
 
   return createPortal(
     <div
       className="fixed inset-0 z-[60] grid place-items-center p-4"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="confirm-modal-title"
     >
       <button
         type="button"
@@ -91,10 +101,10 @@ export function ConfirmModal({
           entered ? 'scale-100 opacity-100' : 'scale-95 opacity-0',
         )}
       >
-        <h2 className="text-lg font-semibold text-ink">{title}</h2>
-        {description && (
-          <div className="mt-2 text-sm text-ink-muted">{description}</div>
-        )}
+        <h2 id="confirm-modal-title" className="text-lg font-semibold text-ink">
+          {title}
+        </h2>
+        {description && <div className="mt-2 text-sm text-ink-muted">{description}</div>}
 
         {typedConfirmation !== undefined && (
           <div className="mt-4">
@@ -102,13 +112,14 @@ export function ConfirmModal({
               htmlFor="confirm-phrase"
               className="mb-1.5 block text-xs font-medium text-ink-muted"
             >
-              Type <span className="font-semibold text-ink">{typedConfirmation}</span> to
-              confirm
+              Type <span className="font-semibold text-ink">{typedConfirmation}</span> to confirm
             </label>
             <input
               id="confirm-phrase"
               value={typed}
-              onChange={(e) => { setTyped(e.target.value); }}
+              onChange={(e) => {
+                setTyped(e.target.value);
+              }}
               autoComplete="off"
               autoFocus
               className={cn(

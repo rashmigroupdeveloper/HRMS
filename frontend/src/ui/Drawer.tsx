@@ -45,12 +45,20 @@ export function Drawer({
     if (open) {
       restoreFocusRef.current = document.activeElement as HTMLElement | null;
       setMounted(true);
-      const id = requestAnimationFrame(() => { setEntered(true); });
-      return () => { cancelAnimationFrame(id); };
+      const id = requestAnimationFrame(() => {
+        setEntered(true);
+      });
+      return () => {
+        cancelAnimationFrame(id);
+      };
     }
     setEntered(false);
-    const t = setTimeout(() => { setMounted(false); }, 300); // matches --motion-medium
-    return () => { clearTimeout(t); };
+    const t = setTimeout(() => {
+      setMounted(false);
+    }, 300); // matches --motion-medium
+    return () => {
+      clearTimeout(t);
+    };
   }, [open]);
 
   // Esc to close + body scroll lock while mounted.
@@ -77,7 +85,13 @@ export function Drawer({
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={title ? 'drawer-title' : undefined}
+      aria-label={title ? undefined : 'Detail panel'}
+    >
       {/* Scrim */}
       <button
         type="button"
@@ -107,22 +121,18 @@ export function Drawer({
         <div className="flex items-start justify-between gap-4 px-6 pb-4 pt-5">
           <div>
             {title && (
-              <h2 className="text-lg font-semibold text-ink">{title}</h2>
+              <h2 id="drawer-title" className="text-lg font-semibold text-ink">
+                {title}
+              </h2>
             )}
-            {subtitle && (
-              <p className="mt-0.5 text-sm text-ink-muted">{subtitle}</p>
-            )}
+            {subtitle && <p className="mt-0.5 text-sm text-ink-muted">{subtitle}</p>}
           </div>
           <IconButton label="Close" icon={<X />} size="sm" onClick={onClose} />
         </div>
 
         <div className="flex-1 overflow-auto px-6 pb-6">{children}</div>
 
-        {footer && (
-          <div className="border-t border-line bg-surface px-6 py-4">
-            {footer}
-          </div>
-        )}
+        {footer && <div className="border-t border-line bg-surface px-6 py-4">{footer}</div>}
       </div>
     </div>,
     document.body,

@@ -264,6 +264,14 @@ CREATE TABLE att.devices (          -- Kent/Astra doors ('Seamless-Plant_S4', 'S
   is_active BOOLEAN NOT NULL DEFAULT true
 );
 
+CREATE TABLE att.device_watermarks ( -- P1-T07 / doc 14 §8.5: completeness, distinct from heartbeat/source cursor
+  device_id BIGINT PRIMARY KEY REFERENCES att.devices ON DELETE CASCADE,
+  watermark_ts TIMESTAMPTZ NOT NULL, -- connector has proved this door has no ingestion gap through this instant
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- DB trigger rejects watermark regression. Swipe arrival and last_seen_at alone
+-- never advance this cursor; only an explicit connector completeness receipt may.
+
 CREATE TABLE att.swipe_events (     -- RAW, immutable (ATT-01). Columns mirror EmployeeSwipeDetails.xlsx so any Kent export loads losslessly.
   employee_id BIGINT REFERENCES core.employees, -- resolved from access_card/employee_no; NULL if unmatched (exception queue)
   employee_no TEXT NOT NULL,        -- as sent by Kent ('RGH033256') — kept verbatim for reconciliation

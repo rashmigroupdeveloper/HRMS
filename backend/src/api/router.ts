@@ -6,20 +6,38 @@ import { systemRouter } from '../modules/system/index.js';
 import { authRouter } from '../modules/auth/index.js';
 import { settingsRouter } from '../modules/settings/index.js';
 import { rbacRouter } from '../modules/rbac/index.js';
-import { attendanceRouter, attendanceConfigRouter, attendanceRequestsRouter } from '../modules/attendance/index.js';
+import {
+  attendanceRouter,
+  attendanceConfigRouter,
+  attendanceRequestsRouter,
+  absenceRouter,
+} from '../modules/attendance/index.js';
 import { workflowsRouter } from '../modules/workflows/index.js';
 import { employeesRouter } from '../modules/employees/index.js';
 import { leaveRouter } from '../modules/leave/index.js';
+import { boardingRouter } from '../modules/boarding/index.js';
+import { lettersRouter } from '../modules/letters/index.js';
+import { policiesRouter } from '../modules/policies/index.js';
+import { reportsRouter } from '../modules/reports/index.js';
 
 export const appRouter = {
   system: systemRouter,
   auth: authRouter,
   settings: settingsRouter,
   rbac: rbacRouter,
-  attendance: { ...attendanceRouter, ...attendanceConfigRouter, ...attendanceRequestsRouter },
+  attendance: {
+    ...attendanceRouter,
+    ...attendanceConfigRouter,
+    ...attendanceRequestsRouter,
+    ...absenceRouter,
+  },
   workflows: workflowsRouter,
   employees: employeesRouter,
   leave: leaveRouter,
+  boarding: boardingRouter,
+  letters: lettersRouter,
+  policies: policiesRouter,
+  reports: reportsRouter,
 };
 
 export type AppRouter = typeof appRouter;

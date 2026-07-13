@@ -15,6 +15,7 @@ import { cn } from './cn';
 export type TimelineState = 'done' | 'current' | 'pending' | 'rejected';
 
 export interface TimelineStep {
+  id: string;
   title: ReactNode;
   timestamp?: ReactNode;
   description?: ReactNode;
@@ -47,7 +48,7 @@ export function Timeline({ steps }: { steps: TimelineStep[] }) {
         const node = NODE[step.state];
         const last = i === steps.length - 1;
         return (
-          <li key={i} className="relative flex gap-3 pb-5 last:pb-0">
+          <li key={step.id} className="relative flex gap-3 pb-5 last:pb-0">
             {/* Connector */}
             {!last && (
               <span
@@ -80,9 +81,7 @@ export function Timeline({ steps }: { steps: TimelineStep[] }) {
                 )}
               </div>
               {step.description && (
-                <p className="mt-0.5 text-sm text-ink-muted">
-                  {step.description}
-                </p>
+                <p className="mt-0.5 text-sm text-ink-muted">{step.description}</p>
               )}
             </div>
           </li>

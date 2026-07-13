@@ -10,6 +10,9 @@ import { withPermission } from '../../api/orpc.js';
 import { getTypedSetting } from '../settings/index.js';
 import { runKentSync } from './kent-sync.job.js';
 import { reingestQuarantined } from './ingest.service.js';
+import { listFinalizationHolds } from './day-status.service.js';
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 const devicesProcedure = withPermission('admin.devices')
   .route({ method: 'GET', path: '/attendance/devices', summary: 'Device health board (last-seen, silent flags)' })
@@ -19,6 +22,7 @@ const devicesProcedure = withPermission('admin.devices')
         doorCode: z.string(),
         source: z.string(),
         lastSeenAt: z.string().nullable(),
+        watermarkAt: z.string().nullable(),
         isActive: z.boolean(),
         silent: z.boolean(),
       }),
@@ -29,18 +33,54 @@ const devicesProcedure = withPermission('admin.devices')
     const cutoff = Date.now() - thresholdMinutes * 60_000;
 
     const rows = await context.db
-      .selectFrom('att.devices')
-      .select(['door_code', 'source', 'last_seen_at', 'is_active'])
-      .orderBy('door_code')
+      .selectFrom('att.devices as device')
+      .leftJoin('att.device_watermarks as watermark', 'watermark.device_id', 'device.id')
+      .select([
+        'device.door_code',
+        'device.source',
+        'device.last_seen_at',
+        'device.is_active',
+        'watermark.watermark_ts',
+      ])
+      .orderBy('device.door_code')
       .execute();
     return rows.map((r) => ({
       doorCode: r.door_code,
       source: r.source,
       lastSeenAt: r.last_seen_at?.toISOString() ?? null,
+      watermarkAt: r.watermark_ts?.toISOString() ?? null,
       isActive: r.is_active,
       silent: r.is_active && (r.last_seen_at === null || r.last_seen_at.getTime() < cutoff),
     }));
   });
+
+const finalizationHoldsProcedure = withPermission('reports.hr')
+  .route({
+    method: 'GET',
+    path: '/attendance/finalization-holds',
+    summary: 'Biometric attendance days held until every mapped door is synchronized',
+  })
+  .input(z.object({ companyId: z.number().int().positive(), date: isoDate }))
+  .output(
+    z.array(
+      z.object({
+        employeeId: z.number(),
+        ecode: z.string(),
+        employeeName: z.string(),
+        workDate: isoDate,
+        shiftEndAt: z.string().nullable(),
+        reason: z.enum([
+          'location_not_mapped',
+          'no_active_devices',
+          'device_watermark_pending',
+        ]),
+        pendingDoors: z.array(z.string()),
+      }),
+    ),
+  )
+  .handler(async ({ input, context }) =>
+    listFinalizationHolds(context.db, input.companyId, input.date),
+  );
 
 const unmatchedProcedure = withPermission('attendance.manual_override')
   .route({
@@ -156,6 +196,7 @@ const reingestProcedure = withPermission('admin.integrations')
 
 export const attendanceRouter = {
   devices: devicesProcedure,
+  finalizationHolds: finalizationHoldsProcedure,
   unmatched: unmatchedProcedure,
   quarantined: quarantineProcedure,
   syncNow: syncNowProcedure,

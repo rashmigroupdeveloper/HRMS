@@ -5,6 +5,20 @@ export { runKentSync, KENT_SOURCE } from './kent-sync.job.js';
 export { attendanceRouter } from './attendance.router.js';
 export { attendanceConfigRouter } from './attendance-config.router.js';
 export { attendanceRequestsRouter } from './attendance-requests.router.js';
+export { absenceRouter } from './absence.router.js';
+export {
+  runAbsenteeScan,
+  issueShowCauseLetter,
+  listOpenAbsenceCases,
+  consecutiveUabDays,
+} from './absence.service.js';
+export {
+  getMonthLockChecklist,
+  lockMonth,
+  isMonthLocked,
+  monthStart,
+  nextMonthStart,
+} from './month-lock.service.js';
 export { registerAttendanceWorkflowHooks } from './workflow-hooks.js';
 export { createRegularization, listRegularizations } from './regularization.service.js';
 export {
@@ -22,6 +36,11 @@ export {
   setManualStatus,
   closeWeek,
   loadAttendancePolicy,
+  getAbsenceFinalizationReadiness,
+  listFinalizationHolds,
   type ResolvedShift,
   type AttendancePolicy,
+  type AbsenceFinalizationReadiness,
+  type FinalizationHold,
+  type FinalizationHoldReason,
 } from './day-status.service.js';
