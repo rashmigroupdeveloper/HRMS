@@ -313,4 +313,61 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
     expect(lapsed).toBeGreaterThanOrEqual(1);
     expect((await otEntry(emp3Id, sunday)).status).toBe('lapsed');
   });
+
+  it('R3: an AR spanning a Sunday marks the working days P but leaves the week-off intact', async () => {
+    // A recent Sunday whose following Monday is still in the past (AR window).
+    let sun = addDaysIso(today, -1);
+    while (!(dow(sun) === 0 && addDaysIso(sun, 1) <= today)) sun = addDaysIso(sun, -1);
+    const fri = addDaysIso(sun, -2);
+    const mon = addDaysIso(sun, 1);
+
+    const { workflowRequestId } = await createRegularization(db, {
+      employeeId: empId,
+      requestedByUserId: empUserId,
+      kind: 'AR',
+      fromDate: fri,
+      toDate: mon,
+      reason: 'Reader outage across the weekend',
+    });
+    expect(await act(db, { requestId: workflowRequestId, actorUserId: mgrUserId, action: 'approve' })).toBe('approved');
+
+    expect((await day(empId, fri)).status).toBe('P'); // working day → regularized P
+    expect((await day(empId, mon)).status).toBe('P');
+    const sundayRow = await db
+      .selectFrom('att.day_records')
+      .selectAll()
+      .where('employee_id', '=', empId)
+      .where('work_date', '=', sql<Date>`${sun}::date`)
+      .executeTakeFirst();
+    expect(sundayRow?.status).not.toBe('P'); // the paid week-off was never converted
+  });
+
+  it('O4: converting workflow-backed OT to comp-off lands the entry AND the ledger credit atomically', async () => {
+    // A fresh past working day for the ESS employee (has a user → workflow-backed).
+    let convDay = addDaysIso(today, -14);
+    while (dow(convDay) === 0) convDay = addDaysIso(convDay, -1);
+    await swipe(empId, ist(convDay, '09:00'));
+    await swipe(empId, ist(convDay, '22:30')); // GEN 18:00 → OT 270 (≥ half-day)
+    await recomputeDay(db, empId, convDay);
+
+    const entry = await otEntry(empId, convDay);
+    expect(entry.workflow_request_id).not.toBeNull();
+    expect(entry.detected_minutes).toBe(270);
+
+    const decided = await decideOvertime(db, { entryId: entry.id, actorUserId: mgrUserId, action: 'convert_comp_off' });
+    expect(decided.status).toBe('converted_comp_off');
+    expect(decided.comp_off_credit_id).not.toBeNull();
+
+    // The credit is a real, linked, immutable comp-off ledger row (0.5 for 270 min).
+    const credit = await db
+      .selectFrom('lv.ledger')
+      .selectAll()
+      .where('id', '=', decided.comp_off_credit_id ?? -1)
+      .executeTakeFirstOrThrow();
+    expect(credit.txn_type).toBe('comp_off_earn');
+    expect(Number(credit.delta)).toBe(0.5);
+    expect(credit.reference_id).toBe(entry.id);
+    const wf = await db.selectFrom('wf.requests').select('status').where('id', '=', entry.workflow_request_id ?? -1).executeTakeFirstOrThrow();
+    expect(wf.status).toBe('approved');
+  });
 });

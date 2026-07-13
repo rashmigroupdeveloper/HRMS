@@ -21,6 +21,7 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { addDaysIso, formatDbDate, istDateString } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
 import { createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
+import { resolveDay } from './day-status.service.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 
@@ -143,7 +144,9 @@ export async function createRegularization(
 
 /**
  * Completion hook ('regularization' + 'od' chains): approval writes the
- * requested status into every day of the range with source='regularized'.
+ * requested status into every WORKING day of the range with source='regularized'.
+ * Holidays and week-offs are skipped — never converted into a present/OD day
+ * (that would inflate payable days; a genuine WO/holiday worked is OT, not AR).
  * Locked days and HR manual overrides are never clobbered (ATT-17 wins).
  * Runs inside the approving transaction — decision and write-back are atomic.
  */
@@ -162,6 +165,8 @@ export async function applyRegularizationOnFinal(db: Db, request: RequestRow, st
     computed_at: new Date(),
   };
   for (let iso = formatDbDate(reg.from_date); iso <= toIso; iso = addDaysIso(iso, 1)) {
+    const resolved = await resolveDay(db, reg.employee_id, iso);
+    if (resolved.isHoliday || resolved.isWeekOff) continue; // leave the paid off-day intact
     await db
       .insertInto('att.day_records')
       .values({ employee_id: reg.employee_id, work_date: sql<Date>`${iso}::date` as unknown as Date, ...row })

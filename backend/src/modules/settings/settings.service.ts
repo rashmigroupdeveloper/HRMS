@@ -3,7 +3,7 @@
  * policy-like is hardcoded). Reads are typed; writes are AUDITED (old → new
  * lands in the hash-chained audit log).
  */
-import type { Kysely } from 'kysely';
+import type { Kysely, Transaction } from 'kysely';
 import { z } from 'zod';
 import type { Database, SettingsTable } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
@@ -20,7 +20,7 @@ export type SettingType = SettingsTable['value_type'];
 
 /** Typed read; returns `fallback` when the key has never been set. */
 export async function getTypedSetting<T>(
-  db: Kysely<Database>,
+  db: Kysely<Database> | Transaction<Database>,
   key: string,
   type: SettingType,
   fallback: T,

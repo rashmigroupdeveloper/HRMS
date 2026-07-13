@@ -64,7 +64,10 @@ export interface ResolvedShift {
   holidayName?: string;
 }
 
-async function resolveDay(db: Db, employeeId: number, isoDate: string): Promise<ResolvedShift> {
+/** Resolve a day's shift/off-day kind (roster → scheme → default + holidays).
+ *  Exported so the regularization write-back can skip off-days authoritatively
+ *  instead of re-deriving the calendar. */
+export async function resolveDay(db: Db, employeeId: number, isoDate: string): Promise<ResolvedShift> {
   const employee = await db
     .selectFrom('core.employees')
     .select(['location_id'])

@@ -208,6 +208,9 @@ export async function decideOvertime(db: Kysely<Database>, params: DecideOvertim
     .where('id', '=', params.actorUserId)
     .executeTakeFirstOrThrow();
 
+  // Workflow-backed entries go THROUGH the engine first (its own transaction:
+  // authorization, receipts, audit). This commits the approval/rejection and
+  // the completion hook moves the entry off 'pending'.
   if (entry.workflow_request_id !== null) {
     await act(db, {
       requestId: entry.workflow_request_id,
@@ -215,52 +218,55 @@ export async function decideOvertime(db: Kysely<Database>, params: DecideOvertim
       action: params.action === 'reject' ? 'reject' : 'approve',
       comment: params.comment,
     });
-    // The hook has set the full-approve/reject baseline; refine for partial
-    // minutes / comp-off conversion + record who decided.
-    await db
+  }
+
+  const newStatus =
+    params.action === 'convert_comp_off' ? ('converted_comp_off' as const) : params.action === 'reject' ? ('rejected' as const) : ('approved' as const);
+
+  // The entry mutation AND the ledger credit are ONE transaction, so a
+  // converted entry ALWAYS carries its comp-off credit (or neither commits) —
+  // the OT minutes can never vanish between the two writes (money atomicity).
+  await db.transaction().execute(async (trx) => {
+    let update = trx
       .updateTable('att.overtime_entries')
       .set({
-        status: params.action === 'convert_comp_off' ? 'converted_comp_off' : params.action === 'reject' ? 'rejected' : 'approved',
-        approved_minutes: params.action === 'reject' ? null : minutes,
-        manager_id: actor.employee_id ?? entry.manager_id,
-      })
-      .where('id', '=', entry.id)
-      .execute();
-  } else {
-    await db
-      .updateTable('att.overtime_entries')
-      .set({
-        status: params.action === 'convert_comp_off' ? 'converted_comp_off' : params.action === 'reject' ? 'rejected' : 'approved',
+        status: newStatus,
         approved_minutes: params.action === 'reject' ? null : minutes,
         manager_id: actor.employee_id ?? entry.manager_id,
         decided_at: new Date(),
       })
-      .where('id', '=', entry.id)
-      .where('status', '=', 'pending')
-      .execute();
-    await writeAudit(db, {
-      actorUserId: params.actorUserId,
-      action: 'update',
-      entity: 'att.overtime_entries',
-      entityId: entry.id,
-      field: 'decision',
-      oldValue: 'pending',
-      newValue: `${params.action}:${params.action === 'reject' ? 0 : minutes}min`,
-    });
-  }
+      .where('id', '=', entry.id);
+    // Workflow-less entries are still 'pending' here (no engine ran) — guard
+    // the flip so a concurrent lapse sweep can't be silently overwritten.
+    // Workflow-backed ones were already moved off 'pending' by the hook.
+    if (entry.workflow_request_id === null) update = update.where('status', '=', 'pending');
+    await update.execute();
 
-  // LV-04: the converted minutes become a comp-off ledger CREDIT with an
-  // expiry window; the entry's comp_off_credit_id link makes the XOR
-  // (money vs comp-off) checkable at the DB.
-  if (params.action === 'convert_comp_off') {
-    await creditCompOffForOvertime(db, {
-      otEntryId: entry.id,
-      employeeId: entry.employee_id,
-      workDateIso: formatDbDate(entry.work_date),
-      minutes,
-      actorUserId: params.actorUserId,
-    });
-  }
+    if (entry.workflow_request_id === null) {
+      await writeAudit(trx, {
+        actorUserId: params.actorUserId,
+        action: 'update',
+        entity: 'att.overtime_entries',
+        entityId: entry.id,
+        field: 'decision',
+        oldValue: 'pending',
+        newValue: `${params.action}:${params.action === 'reject' ? 0 : minutes}min`,
+      });
+    }
+
+    // LV-04: the converted minutes become a comp-off ledger CREDIT with an
+    // expiry window; the entry's comp_off_credit_id link makes the XOR
+    // (money vs comp-off) checkable at the DB.
+    if (params.action === 'convert_comp_off') {
+      await creditCompOffForOvertime(trx, {
+        otEntryId: entry.id,
+        employeeId: entry.employee_id,
+        workDateIso: formatDbDate(entry.work_date),
+        minutes,
+        actorUserId: params.actorUserId,
+      });
+    }
+  });
 
   return db.selectFrom('att.overtime_entries').selectAll().where('id', '=', entry.id).executeTakeFirstOrThrow();
 }

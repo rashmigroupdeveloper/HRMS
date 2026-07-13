@@ -1,10 +1,12 @@
 /** All database access for the settings module. */
-import type { Kysely, Selectable } from 'kysely';
+import type { Kysely, Selectable, Transaction } from 'kysely';
 import type { Database, SettingsTable } from '../../core/db/types.js';
 
 export type SettingRow = Selectable<SettingsTable>;
 
-export function getSetting(db: Kysely<Database>, key: string): Promise<SettingRow | undefined> {
+/** Reads accept a transaction too, so policy numbers can be resolved mid-txn
+ *  (e.g. inside an atomic money decision). Writes stay Kysely-only. */
+export function getSetting(db: Kysely<Database> | Transaction<Database>, key: string): Promise<SettingRow | undefined> {
   return db.selectFrom('core.settings').selectAll().where('key', '=', key).executeTakeFirst();
 }
 

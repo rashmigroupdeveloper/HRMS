@@ -198,17 +198,21 @@ run('notifications skeleton (live Postgres)', () => {
     const queued = await enqueueEvent(db, eventCode, `tpl_${stamp}`, { hello: 'world' });
     expect(queued).toBe(1);
 
-    const { sent, failed } = await processQueue(db, devLogTransport);
-    expect(sent).toBeGreaterThanOrEqual(1);
-    expect(failed).toBe(0);
-
-    const row = await db
-      .selectFrom('wf.notifications')
-      .select(['status', 'sent_at'])
-      .where('template_code', '=', `tpl_${stamp}`)
-      .executeTakeFirstOrThrow();
-    expect(row.status).toBe('sent');
-    expect(row.sent_at).not.toBeNull();
+    // A batch is capped at 50; other suites can leave a backlog ahead of ours,
+    // so drain until our notification is delivered (the worker loops in prod).
+    let row: { status: string; sent_at: unknown } | undefined;
+    for (let i = 0; i < 20; i++) {
+      const { failed } = await processQueue(db, devLogTransport);
+      expect(failed).toBe(0);
+      row = await db
+        .selectFrom('wf.notifications')
+        .select(['status', 'sent_at'])
+        .where('template_code', '=', `tpl_${stamp}`)
+        .executeTakeFirstOrThrow();
+      if (row.status === 'sent') break;
+    }
+    expect(row?.status).toBe('sent');
+    expect(row?.sent_at).not.toBeNull();
   });
 
   it('a permanently failing transport retries then parks the row in dead-letter — never silently dropped', async () => {

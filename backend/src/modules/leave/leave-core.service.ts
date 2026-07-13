@@ -99,7 +99,7 @@ export async function runMonthlyAccrual(db: Kysely<Database>, monthStartIso?: st
 }
 
 /** Fraction policy (settings): ≥ full-day minutes → 1.0, ≥ half-day → 0.5, else 0. */
-export async function compOffDaysForMinutes(db: Kysely<Database>, minutes: number): Promise<number> {
+export async function compOffDaysForMinutes(db: Db, minutes: number): Promise<number> {
   const halfDayMinutes = await getTypedSetting(db, 'lv.comp_off_half_day_minutes', 'number', 240);
   const fullDayMinutes = await getTypedSetting(db, 'lv.comp_off_full_day_minutes', 'number', 480);
   return minutes >= fullDayMinutes ? 1 : minutes >= halfDayMinutes ? 0.5 : 0;
@@ -111,7 +111,7 @@ export async function compOffDaysForMinutes(db: Kysely<Database>, minutes: numbe
  * settings, not code.
  */
 export async function creditCompOffForOvertime(
-  db: Kysely<Database>,
+  db: Db,
   params: { otEntryId: number; employeeId: number; workDateIso: string; minutes: number; actorUserId: number },
 ): Promise<number> {
   const validityDays = await getTypedSetting(db, 'lv.comp_off_validity_days', 'number', 90);
