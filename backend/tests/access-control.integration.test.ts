@@ -21,6 +21,7 @@ import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { hashPassword } from '../src/modules/auth/index.js';
+import { PERMISSIONS } from '../src/core/rbac/seed-data.js';
 import {
   devLogTransport,
   enqueueEvent,
@@ -168,7 +169,7 @@ run('central access control (live Postgres)', () => {
     expect(res.status).toBe(200);
     const body = res.body as { roles: unknown[]; permissions: string[]; grants: unknown[] };
     expect(body.roles).toHaveLength(10);
-    expect(body.permissions).toHaveLength(38);
+    expect(body.permissions).toHaveLength(PERMISSIONS.length);
     expect(body.grants.length).toBeGreaterThan(150);
   });
 });

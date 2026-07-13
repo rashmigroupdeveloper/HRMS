@@ -21,9 +21,10 @@ import {
   runKentSync,
   sendOvertimeSummaries,
 } from '../modules/attendance/index.js';
+import { registerLeaveWorkflowHooks, runCompOffExpiry, runMonthlyAccrual } from '../modules/leave/index.js';
 import { enqueueEvent } from '../modules/notifications/index.js';
 import { runEscalations } from '../modules/workflows/index.js';
-import { previousWeekStartIso } from '../core/dates.js';
+import { istDateString, previousWeekStartIso } from '../core/dates.js';
 
 const KENT_SYNC_QUEUE = 'kent-sync';
 const RECOMPUTE_QUEUE = 'attendance-recompute';
@@ -31,14 +32,18 @@ const WEEK_CLOSE_QUEUE = 'attendance-week-close';
 const ROSTER_REMINDER_QUEUE = 'roster-reminder';
 const WF_ESCALATION_QUEUE = 'workflow-escalation';
 const OT_SUMMARY_QUEUE = 'ot-daily-summary';
+const LEAVE_ACCRUAL_QUEUE = 'leave-accrual';
+const COMP_OFF_EXPIRY_QUEUE = 'comp-off-expiry';
 
 async function main(): Promise<void> {
   const env = loadEnv();
   const db = createDatabase(env.DATABASE_URL);
 
-  // The escalation sweep can LAPSE an overtime request (ATT-08) — the hook that
-  // mirrors that onto att.overtime_entries must be registered in this process.
+  // The escalation sweep can LAPSE an overtime request (ATT-08) and finalize
+  // leave chains — the hooks that mirror finals onto domain rows must be
+  // registered in this process too.
   registerAttendanceWorkflowHooks();
+  registerLeaveWorkflowHooks();
 
   const boss = new PgBoss({ connectionString: env.DATABASE_URL });
   boss.on('error', (err: Error) => {
@@ -46,9 +51,33 @@ async function main(): Promise<void> {
   });
 
   await boss.start();
-  for (const q of [KENT_SYNC_QUEUE, RECOMPUTE_QUEUE, WEEK_CLOSE_QUEUE, ROSTER_REMINDER_QUEUE, WF_ESCALATION_QUEUE, OT_SUMMARY_QUEUE]) {
+  const queues = [
+    KENT_SYNC_QUEUE,
+    RECOMPUTE_QUEUE,
+    WEEK_CLOSE_QUEUE,
+    ROSTER_REMINDER_QUEUE,
+    WF_ESCALATION_QUEUE,
+    OT_SUMMARY_QUEUE,
+    LEAVE_ACCRUAL_QUEUE,
+    COMP_OFF_EXPIRY_QUEUE,
+  ];
+  for (const q of queues) {
     await boss.createQueue(q);
   }
+
+  // LV-02: monthly credit on the 1st, 00:05 IST (= 18:35 UTC the evening
+  // before). Scheduled daily with an IST-date guard — the DB's one-accrual-
+  // per-month unique index makes any extra run a no-op anyway.
+  await boss.schedule(LEAVE_ACCRUAL_QUEUE, '35 18 * * *');
+  await boss.work(LEAVE_ACCRUAL_QUEUE, async () => {
+    if (istDateString().endsWith('-01')) await runMonthlyAccrual(db);
+  });
+
+  // LV-04: expired comp-off credits lapse daily at 00:30 IST.
+  await boss.schedule(COMP_OFF_EXPIRY_QUEUE, '0 19 * * *');
+  await boss.work(COMP_OFF_EXPIRY_QUEUE, async () => {
+    await runCompOffExpiry(db);
+  });
 
   // Approval SLA sweep, hourly (WF-03): breach → escalate/auto-reject/lapse/
   // auto-approve. The companion sweep lapses workflow-less OT entries (ATT-08).
@@ -94,10 +123,7 @@ async function main(): Promise<void> {
   // One immediate cycle on boot so a fresh environment has data instantly.
   await boss.send(KENT_SYNC_QUEUE, {});
 
-  logger.info(
-    { queues: [KENT_SYNC_QUEUE, RECOMPUTE_QUEUE, WEEK_CLOSE_QUEUE, ROSTER_REMINDER_QUEUE] },
-    'hrms-worker running',
-  );
+  logger.info({ queues }, 'hrms-worker running');
 }
 
 main().catch((err: unknown) => {

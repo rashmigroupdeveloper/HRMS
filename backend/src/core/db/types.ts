@@ -483,6 +483,79 @@ export interface AttOvertimeEntriesTable {
   updated_at: Generated<Timestamp>;
 }
 
+/** lv.leave_types — the LV-01 catalog; every rate/cap is runtime-editable data. */
+export interface LvLeaveTypesTable {
+  id: Generated<number>;
+  code: string;
+  name: string;
+  is_paid: Generated<boolean>;
+  accrual_per_month: Generated<string>;
+  accrual_requires_service_months: Generated<number>;
+  max_carry_forward: string | null;
+  encashable: Generated<boolean>;
+  max_per_request: string | null;
+  allow_half_day: Generated<boolean>;
+  sandwich_rule: Generated<'include' | 'exclude'>;
+  applicable_categories: EmploymentCategory[] | null;
+  applicable_gender: string | null;
+  is_active: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+/** lv.ledger — APPEND-ONLY leave transactions; balance = SUM(delta) (LV-05). */
+export interface LvLedgerTable {
+  id: Generated<number>;
+  employee_id: number;
+  leave_type_id: number;
+  txn_type: 'accrual' | 'grant' | 'application' | 'cancel' | 'lapse' | 'encash' | 'comp_off_earn' | 'adjustment';
+  delta: string;
+  effective_date: Timestamp;
+  expiry_date: Timestamp | null;
+  reference_id: number | null;
+  note: string | null;
+  created_by: number | null;
+  created_at: Generated<Timestamp>;
+}
+
+/** lv.applications — LV-03; ledger debit/reversal linked, never inlined. */
+export interface LvApplicationsTable {
+  id: Generated<number>;
+  employee_id: number;
+  leave_type_id: number;
+  from_date: Timestamp;
+  to_date: Timestamp;
+  from_half: Generated<boolean>;
+  to_half: Generated<boolean>;
+  days: string;
+  reason: string | null;
+  status: Generated<'pending' | 'approved' | 'rejected' | 'cancelled'>;
+  workflow_request_id: number;
+  cancel_workflow_request_id: number | null;
+  ledger_txn_id: number | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+/** lv.restricted_holidays + selections — LV-09 optional/floating holidays. */
+export interface LvRestrictedHolidaysTable {
+  id: Generated<number>;
+  holiday_date: Timestamp;
+  name: string;
+  location_id: number | null;
+  created_at: Generated<Timestamp>;
+}
+
+export interface LvRhSelectionsTable {
+  id: Generated<number>;
+  employee_id: number;
+  restricted_holiday_id: number;
+  workflow_request_id: number;
+  applied: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
 /** att.quarantined_swipes — implausible timestamps parked for review (doc 14 §8.4). */
 export interface AttQuarantinedSwipesTable {
   id: Generated<number>;
@@ -560,4 +633,9 @@ export interface Database {
   'att.recompute_queue': AttRecomputeQueueTable;
   'att.regularizations': AttRegularizationsTable;
   'att.overtime_entries': AttOvertimeEntriesTable;
+  'lv.leave_types': LvLeaveTypesTable;
+  'lv.ledger': LvLedgerTable;
+  'lv.applications': LvApplicationsTable;
+  'lv.restricted_holidays': LvRestrictedHolidaysTable;
+  'lv.rh_selections': LvRhSelectionsTable;
 }

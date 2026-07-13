@@ -9,6 +9,7 @@ import { rbacRouter } from '../modules/rbac/index.js';
 import { attendanceRouter, attendanceConfigRouter, attendanceRequestsRouter } from '../modules/attendance/index.js';
 import { workflowsRouter } from '../modules/workflows/index.js';
 import { employeesRouter } from '../modules/employees/index.js';
+import { leaveRouter } from '../modules/leave/index.js';
 
 export const appRouter = {
   system: systemRouter,
@@ -18,6 +19,7 @@ export const appRouter = {
   attendance: { ...attendanceRouter, ...attendanceConfigRouter, ...attendanceRequestsRouter },
   workflows: workflowsRouter,
   employees: employeesRouter,
+  leave: leaveRouter,
 };
 
 export type AppRouter = typeof appRouter;

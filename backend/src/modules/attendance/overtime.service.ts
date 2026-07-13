@@ -15,8 +15,10 @@
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import type { AttOvertimeEntriesTable, Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
+import { formatDbDate } from '../../core/dates.js';
 import { enqueue } from '../notifications/index.js';
 import { act, createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
+import { compOffDaysForMinutes, creditCompOffForOvertime } from '../leave/index.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 type OvertimeEntry = Selectable<AttOvertimeEntriesTable>;
@@ -194,6 +196,11 @@ export async function decideOvertime(db: Kysely<Database>, params: DecideOvertim
   if (params.action !== 'reject' && (minutes <= 0 || minutes > entry.claimed_minutes)) {
     throw new Error(`approvedMinutes must be 1..${entry.claimed_minutes}`);
   }
+  // Validate the conversion BEFORE consuming the workflow approval, so a
+  // below-threshold convert fails cleanly instead of half-deciding the entry.
+  if (params.action === 'convert_comp_off' && (await compOffDaysForMinutes(db, minutes)) === 0) {
+    throw new Error('Too few minutes for a comp-off — approve as OT pay or reject instead');
+  }
 
   const actor = await db
     .selectFrom('core.users')
@@ -239,6 +246,19 @@ export async function decideOvertime(db: Kysely<Database>, params: DecideOvertim
       field: 'decision',
       oldValue: 'pending',
       newValue: `${params.action}:${params.action === 'reject' ? 0 : minutes}min`,
+    });
+  }
+
+  // LV-04: the converted minutes become a comp-off ledger CREDIT with an
+  // expiry window; the entry's comp_off_credit_id link makes the XOR
+  // (money vs comp-off) checkable at the DB.
+  if (params.action === 'convert_comp_off') {
+    await creditCompOffForOvertime(db, {
+      otEntryId: entry.id,
+      employeeId: entry.employee_id,
+      workDateIso: formatDbDate(entry.work_date),
+      minutes,
+      actorUserId: params.actorUserId,
     });
   }
 
