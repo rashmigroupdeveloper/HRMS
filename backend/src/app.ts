@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import { getOpenApiSpec, orpcMiddleware, type AppDeps } from './api/handler.js';
 import { registerAttendanceWorkflowHooks } from './modules/attendance/index.js';
 import { registerLeaveWorkflowHooks } from './modules/leave/index.js';
+import { registerLettersWorkflowHooks } from './modules/letters/index.js';
 
 /**
  * Express app factory — pure, no I/O at import time; tests inject their own
@@ -24,6 +25,7 @@ export function createApp(deps?: Partial<AppDeps>): Express {
   // in every process that can finalize a request.
   registerAttendanceWorkflowHooks();
   registerLeaveWorkflowHooks();
+  registerLettersWorkflowHooks();
 
   const app = express();
 

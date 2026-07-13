@@ -344,6 +344,68 @@ export interface DocumentsTable {
   updated_at: Generated<Timestamp>;
 }
 
+/** core.letter_templates — CORE-09; body is runtime-editable data. */
+export interface LetterTemplatesTable {
+  id: Generated<number>;
+  code: string;
+  name: string;
+  body_template: string;
+  body_docx_document_id: number | null;
+  merge_fields: unknown;
+  is_active: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+/** core.letters — issued letters; NULL issued_at = awaiting signature (PP-14). */
+export interface LettersTable {
+  id: Generated<number>;
+  employee_id: number;
+  template_code: string;
+  document_id: number;
+  issued_by: number | null;
+  issued_at: Timestamp | null;
+  workflow_request_id: number | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+/** core.policies + acknowledgments — CORE-13 repository and live ack tracking. */
+export interface PoliciesTable {
+  id: Generated<number>;
+  title: string;
+  document_id: number;
+  effective_date: Timestamp;
+  requires_acknowledgment: Generated<boolean>;
+  audience: unknown;
+  is_active: Generated<boolean>;
+  created_by: number | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface PolicyAcknowledgmentsTable {
+  id: Generated<number>;
+  policy_id: number;
+  employee_id: number;
+  acknowledged_at: Generated<Timestamp>;
+}
+
+/** att.absence_cases — ATT-10 continuous-absence engine; one open case per employee. */
+export interface AttAbsenceCasesTable {
+  id: Generated<number>;
+  employee_id: number;
+  start_date: Timestamp;
+  days_absent: number;
+  stage: Generated<'watch' | 'show_cause' | 'warning' | 'termination_review'>;
+  letter_id: number | null;
+  hr_owner_id: number | null;
+  resolution: 'returned' | 'regularized' | 'exited' | null;
+  closed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
 /** att.devices — door health board (ATT-02). */
 export interface AttDevicesTable {
   id: Generated<number>;
@@ -638,4 +700,9 @@ export interface Database {
   'lv.applications': LvApplicationsTable;
   'lv.restricted_holidays': LvRestrictedHolidaysTable;
   'lv.rh_selections': LvRhSelectionsTable;
+  'core.letter_templates': LetterTemplatesTable;
+  'core.letters': LettersTable;
+  'core.policies': PoliciesTable;
+  'core.policy_acknowledgments': PolicyAcknowledgmentsTable;
+  'att.absence_cases': AttAbsenceCasesTable;
 }

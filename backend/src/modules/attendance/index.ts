@@ -5,6 +5,8 @@ export { runKentSync, KENT_SOURCE } from './kent-sync.job.js';
 export { attendanceRouter } from './attendance.router.js';
 export { attendanceConfigRouter } from './attendance-config.router.js';
 export { attendanceRequestsRouter } from './attendance-requests.router.js';
+export { absenceRouter } from './absence.router.js';
+export { runAbsenceScan, setAbsenceCaseStage, issueAbsenceCaseLetter, listAbsenceCases } from './absence.service.js';
 export { registerAttendanceWorkflowHooks } from './workflow-hooks.js';
 export { createRegularization, listRegularizations } from './regularization.service.js';
 export {

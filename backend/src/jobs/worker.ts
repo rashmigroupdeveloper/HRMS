@@ -18,10 +18,14 @@ import {
   drainRecomputeQueue,
   lapseExpiredOvertime,
   registerAttendanceWorkflowHooks,
+  runAbsenceScan,
   runKentSync,
   sendOvertimeSummaries,
 } from '../modules/attendance/index.js';
 import { registerLeaveWorkflowHooks, runCompOffExpiry, runMonthlyAccrual } from '../modules/leave/index.js';
+import { registerLettersWorkflowHooks } from '../modules/letters/index.js';
+import { runPolicyAckNag } from '../modules/policies/index.js';
+import { sendBoardingExitEmail } from '../modules/lifecycle/index.js';
 import { enqueueEvent } from '../modules/notifications/index.js';
 import { runEscalations } from '../modules/workflows/index.js';
 import { istDateString, previousWeekStartIso } from '../core/dates.js';
@@ -34,6 +38,9 @@ const WF_ESCALATION_QUEUE = 'workflow-escalation';
 const OT_SUMMARY_QUEUE = 'ot-daily-summary';
 const LEAVE_ACCRUAL_QUEUE = 'leave-accrual';
 const COMP_OFF_EXPIRY_QUEUE = 'comp-off-expiry';
+const BOARDING_EXIT_QUEUE = 'boarding-exit-email';
+const ABSENCE_SCAN_QUEUE = 'absence-scan';
+const POLICY_NAG_QUEUE = 'policy-ack-nag';
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -44,6 +51,7 @@ async function main(): Promise<void> {
   // registered in this process too.
   registerAttendanceWorkflowHooks();
   registerLeaveWorkflowHooks();
+  registerLettersWorkflowHooks();
 
   const boss = new PgBoss({ connectionString: env.DATABASE_URL });
   boss.on('error', (err: Error) => {
@@ -60,10 +68,32 @@ async function main(): Promise<void> {
     OT_SUMMARY_QUEUE,
     LEAVE_ACCRUAL_QUEUE,
     COMP_OFF_EXPIRY_QUEUE,
+    BOARDING_EXIT_QUEUE,
+    ABSENCE_SCAN_QUEUE,
+    POLICY_NAG_QUEUE,
   ];
   for (const q of queues) {
     await boss.createQueue(q);
   }
+
+  // LC-03: the daily boarding/exit email at 07:00 IST (01:30 UTC) — queued
+  // even on an empty day ("runs without exception", PP-6/26).
+  await boss.schedule(BOARDING_EXIT_QUEUE, '30 1 * * *');
+  await boss.work(BOARDING_EXIT_QUEUE, async () => {
+    await sendBoardingExitEmail(db);
+  });
+
+  // ATT-10/11: absence scan of yesterday at 06:00 IST (00:30 UTC).
+  await boss.schedule(ABSENCE_SCAN_QUEUE, '30 0 * * *');
+  await boss.work(ABSENCE_SCAN_QUEUE, async () => {
+    await runAbsenceScan(db);
+  });
+
+  // CORE-13: weekly policy-acknowledgment nag, Monday 09:30 IST (04:00 UTC).
+  await boss.schedule(POLICY_NAG_QUEUE, '0 4 * * 1');
+  await boss.work(POLICY_NAG_QUEUE, async () => {
+    await runPolicyAckNag(db);
+  });
 
   // LV-02: monthly credit on the 1st, 00:05 IST (= 18:35 UTC the evening
   // before). Scheduled daily with an IST-date guard — the DB's one-accrual-

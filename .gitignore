@@ -27,3 +27,6 @@ coverage/
 
 # local data volumes
 .pgdata/
+
+# local object-storage dev root (SeaweedFS stand-in — docs/14 §4)
+backend/var/
