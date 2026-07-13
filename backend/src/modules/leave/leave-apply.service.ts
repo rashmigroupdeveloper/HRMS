@@ -21,7 +21,9 @@ interface SpanDay {
   counted: boolean;
   /** 0.5 for the half-day edges, else 1 */
   weight: number;
-  /** gets a leave day-record on approval (full, non-holiday/WO days only) */
+  /** a half-day edge → the day record is written as HD, not L/CO */
+  isHalf: boolean;
+  /** gets a leave day-record on approval (any working, non-holiday/WO day) */
   writesRecord: boolean;
 }
 
@@ -65,7 +67,10 @@ export async function computeLeaveSpan(
       iso,
       counted,
       weight: isHalf ? 0.5 : 1,
-      writesRecord: counted && !offDay && !isHalf,
+      isHalf,
+      // Every working day of the leave gets a record (full → L/CO, half → HD),
+      // so payroll counts it. Only holidays/week-offs are left untouched.
+      writesRecord: counted && !offDay,
     });
   }
   const days = span.filter((d) => d.counted).reduce((acc, d) => acc + d.weight, 0);
@@ -206,13 +211,17 @@ export async function applyLeaveOnFinal(db: Db, request: RequestRow, status: Wor
 
   const employee = await db.selectFrom('core.employees').select(['id', 'location_id']).where('id', '=', app.employee_id).executeTakeFirstOrThrow();
   const { span } = await computeLeaveSpan(db, employee, type, formatDbDate(app.from_date), formatDbDate(app.to_date), app.from_half, app.to_half);
-  const row = {
-    status: type.code === 'CO' ? ('CO' as const) : ('L' as const),
-    leave_type_id: app.leave_type_id,
-    source: 'regularized' as const,
-    computed_at: new Date(),
-  };
+  // Full day → L (or CO for comp-off); half-day edge → HD so payroll's HD×0.5
+  // pays the leave half. (The single-status day model can't also record a
+  // worked other-half — the two-session refinement, docs/09 §4, covers that.)
+  const fullStatus = type.code === 'CO' ? ('CO' as const) : ('L' as const);
   for (const day of span.filter((d) => d.writesRecord)) {
+    const row = {
+      status: day.isHalf ? ('HD' as const) : fullStatus,
+      leave_type_id: app.leave_type_id,
+      source: 'regularized' as const,
+      computed_at: new Date(),
+    };
     await db
       .insertInto('att.day_records')
       .values({ employee_id: app.employee_id, work_date: sql<Date>`${day.iso}::date` as unknown as Date, ...row })
@@ -290,7 +299,10 @@ export async function applyCancelOnFinal(db: Db, request: RequestRow, status: Wo
   for (let iso = formatDbDate(app.from_date); iso <= formatDbDate(app.to_date); iso = addDaysIso(iso, 1)) {
     await db
       .updateTable('att.day_records')
-      .set({ source: 'auto', leave_type_id: null })
+      // Reset to the ABSENT floor (never leave a cancelled leave showing as a
+      // paid 'L'/'HD' — that would over-pay if the month locks before the
+      // queued recompute re-derives the day from swipes).
+      .set({ status: 'A', source: 'auto', leave_type_id: null })
       .where('employee_id', '=', app.employee_id)
       .where('work_date', '=', sql<Date>`${iso}::date`)
       .where('source', '=', 'regularized')

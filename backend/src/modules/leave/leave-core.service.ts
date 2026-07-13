@@ -21,8 +21,9 @@ export async function getLeaveType(db: Db, code: string): Promise<LeaveTypeRow> 
   return type;
 }
 
-/** Balance = SUM(delta). Available additionally subtracts PENDING application days
- *  so two overlapping requests cannot both pass the balance check (LV-03). */
+/** Balance = SUM(delta). Available subtracts everything already RESERVED —
+ *  pending applications AND in-flight encashment requests — so two competing
+ *  requests can never both pass the balance check (LV-03/06). */
 export async function getBalance(db: Db, employeeId: number, leaveTypeId: number): Promise<{ balance: number; pending: number; available: number }> {
   const ledger = await db
     .selectFrom('lv.ledger')
@@ -30,15 +31,25 @@ export async function getBalance(db: Db, employeeId: number, leaveTypeId: number
     .where('employee_id', '=', employeeId)
     .where('leave_type_id', '=', leaveTypeId)
     .executeTakeFirstOrThrow();
-  const pendingRow = await db
+  const pendingApps = await db
     .selectFrom('lv.applications')
     .select(({ fn }) => fn.coalesce(fn.sum('days'), sql<string>`0`).as('total'))
     .where('employee_id', '=', employeeId)
     .where('leave_type_id', '=', leaveTypeId)
     .where('status', '=', 'pending')
     .executeTakeFirstOrThrow();
+  // Encashment requests carry their days in the workflow payload (no lv.applications
+  // row), so reserve them here or an encashment + a leave could double-spend.
+  const pendingEncash = await db
+    .selectFrom('wf.requests')
+    .select(sql<string>`coalesce(sum((payload->>'days')::numeric), 0)`.as('total'))
+    .where('definition_code', '=', 'leave_encashment')
+    .where('subject_employee_id', '=', employeeId)
+    .where('status', 'in', ['pending', 'sent_back'])
+    .where(sql<boolean>`(payload->>'leaveTypeId')::bigint = ${leaveTypeId}`)
+    .executeTakeFirstOrThrow();
   const balance = Number(ledger.total);
-  const pending = Number(pendingRow.total);
+  const pending = Number(pendingApps.total) + Number(pendingEncash.total);
   return { balance, pending, available: balance - pending };
 }
 

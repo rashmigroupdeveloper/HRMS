@@ -16,12 +16,19 @@ import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import type { AttOvertimeEntriesTable, Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
+import { logger } from '../../core/logger.js';
 import { enqueue } from '../notifications/index.js';
 import { act, createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
 import { compOffDaysForMinutes, creditCompOffForOvertime } from '../leave/index.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 type OvertimeEntry = Selectable<AttOvertimeEntriesTable>;
+
+/** Postgres unique-violation — the ONE expected failure when two detectors
+ *  race to create the same employee-day OT entry (UNIQUE employee_id,work_date). */
+function isUniqueViolation(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: unknown }).code === '23505';
+}
 
 /** The slice of AttendancePolicy this module needs (kept structural so there is
  *  no import back into day-status.service — no cycle). */
@@ -112,8 +119,15 @@ export async function recordDetectedOvertime(
         templateCode: 'ot_detected',
         payload: { workDate: isoDate, detectedMinutes, deadline: deadline.toISOString() },
       });
-    } catch {
-      return; // lost the race — the winning entry already carries the request
+    } catch (err) {
+      // The lost-race (duplicate entry) is expected and benign — the winning
+      // detector already carries the request. ANY other failure (e.g. the
+      // 'overtime' chain missing/inactive) must be LOUD: OT is money, it can't
+      // vanish silently. Log it but don't abort the whole recompute cycle.
+      if (!isUniqueViolation(err)) {
+        logger.error({ err, employeeId, workDate: isoDate, detectedMinutes }, 'overtime detection failed to record');
+      }
+      return;
     }
     return;
   }

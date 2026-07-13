@@ -252,8 +252,12 @@ run('Stage 1.5 — leave module (live Postgres)', () => {
     expect(after.status).toBe('cancelled');
     expect(await balanceOf(empId, 'CL')).toBe(5.75); // debit exactly reversed
 
-    // The days went back to the recompute pipeline.
-    expect((await day(empId, FRI))?.source).toBe('auto');
+    // The days went back to the recompute pipeline AND were reset to the ABSENT
+    // floor — never left showing a paid 'L' that a month-lock could freeze.
+    const friAfter = await day(empId, FRI);
+    expect(friAfter?.source).toBe('auto');
+    expect(friAfter?.status).toBe('A');
+    expect(friAfter?.leave_type_id).toBeNull();
     const queued = await db
       .selectFrom('att.recompute_queue')
       .select('work_date')
@@ -402,5 +406,43 @@ run('Stage 1.5 — leave module (live Postgres)', () => {
       .executeTakeFirstOrThrow();
     expect(Number(encash.delta)).toBe(-5);
     expect(encash.reference_id).toBe(requestId);
+  });
+
+  it('A10: a half-day leave writes an HD day-record so payroll pays the 0.5', async () => {
+    // 2033-01-03 is a Monday (2033-01-01 = Saturday) → a plain working day.
+    const halfDay = '2033-01-03';
+    const before = await balanceOf(empId, 'CL'); // 5.75 after the A5 reversal
+
+    const applied = await applyForLeave(db, {
+      employeeId: empId,
+      requestedByUserId: mgrUserId,
+      leaveTypeCode: 'CL',
+      fromDate: halfDay,
+      toDate: halfDay,
+      fromHalf: true,
+    });
+    expect(applied.days).toBe(0.5);
+    expect(await act(db, { requestId: applied.workflowRequestId, actorUserId: mgrUserId, action: 'approve' })).toBe('approved');
+
+    const d = await day(empId, halfDay);
+    expect(d?.status).toBe('HD'); // half-day → HD (not left blank, not a full 'L')
+    const cl = await getLeaveType(db, 'CL');
+    expect(d?.leave_type_id).toBe(cl.id);
+    expect(d?.source).toBe('regularized');
+    expect(await balanceOf(empId, 'CL')).toBe(before - 0.5);
+  });
+
+  it('A11: a pending encashment is RESERVED against the balance (no double-spend)', async () => {
+    await adjustBalance(db, { employeeId: emp2Id, leaveTypeCode: 'EL', delta: 5, note: 'test grant', actorUserId: mgrUserId });
+    const el = await getLeaveType(db, 'EL');
+
+    // In-flight encashment (left pending) must shrink AVAILABLE even though it
+    // has no lv.applications row — else a leave could spend the same balance.
+    await requestEncashment(db, { employeeId: emp2Id, requestedByUserId: mgrUserId, leaveTypeCode: 'EL', days: 4 });
+
+    const bal = await getBalance(db, emp2Id, el.id);
+    expect(bal.balance).toBe(5);
+    expect(bal.pending).toBe(4);
+    expect(bal.available).toBe(1);
   });
 });
