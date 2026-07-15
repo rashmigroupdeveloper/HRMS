@@ -4,6 +4,7 @@
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
+import { booleanQuery } from '../../api/zod.js';
 import {
   getMonthLockChecklist,
   lockMonth,
@@ -304,7 +305,7 @@ const myAttendance = withPermission('attendance.own')
 
 const teamGrid = withPermission('attendance.team.read')
   .route({ method: 'GET', path: '/my/team/grid', summary: 'Manager team month grid' })
-  .input(z.object({ month: monthStr, subtree: z.boolean().optional() }))
+  .input(z.object({ month: monthStr, subtree: booleanQuery().optional() }))
   .output(z.array(z.object({
     employeeId: z.number(),
     ecode: z.string(),

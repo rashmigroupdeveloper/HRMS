@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
-import { CalendarRange, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import type { SessionUser } from '../../lib/session';
-import { hasRole } from '../../lib/session';
-import { Button, Card, CardHeader, EmptyState, IconButton, StatusBadge, Switch } from '../../ui';
+import { hasPermission, hasRole } from '../../lib/session';
+import { Button, Card, IconButton, EmptyState, StatusBadge, Switch } from '../../ui';
 import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
 import { currentMonthIST, formatTime } from '../home/dashboard-format';
 import type { TeamMemberMonth } from '../home/dashboard-types';
 import { useDashboardResource } from '../home/useDashboardResource';
+import { RosterEditorDrawer } from './RosterEditorDrawer';
 
 function moveMonth(month: string, delta: number): string {
   const [year = 0, number = 1] = month.split('-').map(Number);
@@ -34,9 +35,11 @@ function statusStyle(status: string | undefined): string {
 export function TeamPage({ user }: { user: SessionUser }) {
   const [month, setMonth] = useState(() => currentMonthIST());
   const [subtree, setSubtree] = useState(() => hasRole(user, 'senior_manager'));
+  const [rosterFor, setRosterFor] = useState<{ employeeId: number; name: string; ecode: string } | null>(null);
   const query = new URLSearchParams({ month, subtree: String(subtree) });
   const resource = useDashboardResource<TeamMemberMonth[]>(`/api/my/team/grid?${query.toString()}`);
   const days = useMemo(() => monthDays(month), [month]);
+  const canRoster = hasPermission(user, 'attendance.roster.write');
 
   if (resource.loading) return <DashboardSkeleton />;
   if (resource.error) return <DashboardError message={resource.error} onRetry={resource.reload} />;
@@ -123,8 +126,26 @@ export function TeamPage({ user }: { user: SessionUser }) {
                   style={{ gridTemplateColumns: `220px repeat(${String(days.length)}, 36px)` }}
                 >
                   <div className="sticky left-0 z-10 bg-surface px-4 py-3">
-                    <p className="truncate text-sm font-semibold text-ink">{member.name}</p>
-                    <p className="text-xs text-ink-muted">{member.ecode}</p>
+                    {canRoster ? (
+                      <button
+                        type="button"
+                        className="u-press block w-full text-left"
+                        title="Edit this employee's roster"
+                        onClick={() => {
+                          setRosterFor({ employeeId: member.employeeId, name: member.name, ecode: member.ecode });
+                        }}
+                      >
+                        <p className="truncate text-sm font-semibold text-ink underline-offset-2 hover:underline">
+                          {member.name}
+                        </p>
+                        <p className="text-xs text-ink-muted">{member.ecode}</p>
+                      </button>
+                    ) : (
+                      <>
+                        <p className="truncate text-sm font-semibold text-ink">{member.name}</p>
+                        <p className="text-xs text-ink-muted">{member.ecode}</p>
+                      </>
+                    )}
                   </div>
                   {days.map((date) => {
                     const day = member.days[date];
@@ -156,20 +177,25 @@ export function TeamPage({ user }: { user: SessionUser }) {
         )}
       </Card>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <StatusBadge tone="positive">P Present</StatusBadge>
         <StatusBadge tone="negative">A / UAB absent</StatusBadge>
         <StatusBadge tone="info">L Leave</StatusBadge>
         <StatusBadge tone="neutral">WO / H non-working</StatusBadge>
+        {canRoster && (
+          <span className="text-xs text-ink-muted">· Click an employee’s name to edit their roster (ATT-04)</span>
+        )}
       </div>
-      <Card>
-        <CardHeader title="Roster editing" subtitle="ATT-04 configuration readiness" />
-        <EmptyState
-          icon={<CalendarRange />}
-          title="Shift catalog read contract required"
-          description="The roster write endpoint exists, but managers cannot yet read the active shift catalog. The editor remains intentionally disabled rather than accepting an unverified shift code."
-        />
-      </Card>
+
+      <RosterEditorDrawer
+        open={rosterFor !== null}
+        onClose={() => {
+          setRosterFor(null);
+        }}
+        onSaved={resource.reload}
+        employee={rosterFor}
+        month={month}
+      />
     </div>
   );
 }

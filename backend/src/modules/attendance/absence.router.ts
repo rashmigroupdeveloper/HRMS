@@ -7,6 +7,7 @@
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
+import { booleanQuery } from '../../api/zod.js';
 import { formatDbDate } from '../../core/dates.js';
 import { issueAbsenceCaseLetter, listAbsenceCases, runAbsenceScan, setAbsenceCaseStage } from './absence.service.js';
 
@@ -18,7 +19,7 @@ function asBadRequest(err: unknown): never {
 
 const cases = withPermission('attendance.team.read')
   .route({ method: 'GET', path: '/attendance/absence-cases', summary: 'Absence-case queue (ATT-10)' })
-  .input(z.object({ open: z.coerce.boolean().default(true) }).optional())
+  .input(z.object({ open: booleanQuery().optional() }).optional())
   .output(
     z.array(
       z.object({

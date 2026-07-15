@@ -68,11 +68,24 @@ export function navForUser(user: SessionUser): NavItem[] {
   // Manager
   if (isManager || hasPermission(user, 'attendance.team.read')) {
     if (!isOps) {
-      push({ label: 'My Team', to: '/my/team' });
+      push({ label: 'My Team', to: '/my/team', match: '/my/team' });
     }
   }
   if (hasAnyPermission(user, APPROVAL_PERMS)) {
     push({ label: 'Approvals', to: '/approvals' });
+  }
+  if (hasPermission(user, 'ot.approve') && !isOps) {
+    push({ label: 'OT Decisions', to: '/my/team/overtime' });
+  }
+
+  // Policies — everyone reads + acknowledges (CORE-13); HR publishes from the same page.
+  push({ label: 'Policies', to: '/policies' });
+
+  // Letters console (CORE-09) — template + issuance holders.
+  if (hasPermission(user, 'letters.issue')) {
+    push({ label: 'Letters', to: '/letters' });
+  } else if (!isCeo) {
+    push({ label: 'My Letters', to: '/my/letters' });
   }
 
   // People / directory

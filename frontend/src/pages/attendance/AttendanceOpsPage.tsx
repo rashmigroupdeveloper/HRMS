@@ -44,6 +44,12 @@ const surfaces = [
     body: 'Preconditions and irreversible attendance freeze.',
     icon: CalendarCheck,
   },
+  {
+    to: '/attendance/absence-cases',
+    title: 'Absence cases',
+    body: 'Watch → show-cause queue with letters through the chain.',
+    icon: ScanSearch,
+  },
 ];
 
 export function AttendanceOpsPage({ user }: { user: SessionUser }) {

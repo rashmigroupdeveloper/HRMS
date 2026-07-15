@@ -45,7 +45,10 @@ run('Stage 1.7 — per-device absence finalization watermark', () => {
   const doorA = `WM-A-${stamp}`;
   const doorB = `WM-B-${stamp}`;
   const source = `wm-${stamp}`;
-  const workDate = `2042-${String((stamp % 12) + 1).padStart(2, '0')}-10`;
+  // Fixed weekday (2042-06-10 is a Tuesday) — uniqueness already comes from the
+  // per-run company/employee/source, and a month-varying `-10` could land on a
+  // Sunday (→ WO, not the expected 'held'), an ~8% flake. See merge audit note.
+  const workDate = '2042-06-10';
   const beforeShiftEnd = istDateTime(workDate, '17:59');
   const afterShiftEnd = istDateTime(workDate, '18:01');
   let companyId: number;

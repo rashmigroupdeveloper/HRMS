@@ -21,6 +21,13 @@ import { MyLeavePage } from '../pages/leave/MyLeavePage';
 import { LeaveAdminPage } from '../pages/leave/LeaveAdminPage';
 import { MusterPage } from '../pages/reports/MusterPage';
 import { ReportsPage } from '../pages/reports/ReportsPage';
+import { ReportRunPage } from '../pages/reports/ReportRunPage';
+import { BoardingExitPage } from '../pages/reports/BoardingExitPage';
+import { AbsenceCasesPage } from '../pages/attendance/AbsenceCasesPage';
+import { OtDecisionsPage } from '../pages/team/OtDecisionsPage';
+import { PoliciesPage } from '../pages/policies/PoliciesPage';
+import { LettersPage } from '../pages/letters/LettersPage';
+import { MyLettersPage } from '../pages/letters/MyLettersPage';
 import { TeamPage } from '../pages/team/TeamPage';
 import { AccessControlPage } from '../pages/admin/AccessControlPage';
 import { SettingsPage } from '../pages/admin/SettingsPage';
@@ -52,12 +59,17 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
           element={<PlaceholderPage title="My Claims" description="Phase 2 — P2-T10." />}
         />
         <Route path="my/team" element={<TeamPage user={user} />} />
+        <Route path="my/team/overtime" element={<OtDecisionsPage />} />
+        <Route path="my/letters" element={<MyLettersPage />} />
+        <Route path="policies" element={<PoliciesPage user={user} />} />
+        <Route path="letters" element={<LettersPage />} />
 
         <Route path="attendance" element={<AttendanceOpsPage user={user} />} />
         <Route path="attendance/muster" element={<MusterPage />} />
         <Route path="attendance/exceptions" element={<ExceptionsPage />} />
         <Route path="attendance/devices" element={<DeviceHealthPage />} />
         <Route path="attendance/month-lock" element={<MonthLockPage />} />
+        <Route path="attendance/absence-cases" element={<AbsenceCasesPage user={user} />} />
 
         <Route path="leave" element={<LeaveAdminPage />} />
         <Route
@@ -80,6 +92,8 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
           element={<PlaceholderPage title="Engagement" description="Phase 3." />}
         />
         <Route path="reports" element={<ReportsPage />} />
+        <Route path="reports/boarding-exit" element={<BoardingExitPage user={user} />} />
+        <Route path="reports/:code" element={<ReportRunPage />} />
         <Route
           path="executive"
           element={

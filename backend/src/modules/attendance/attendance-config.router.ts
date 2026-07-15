@@ -168,6 +168,38 @@ const setScheme = withPermission('attendance.roster.write')
     return { ok: true as const };
   });
 
+/** The manager-readable shift catalog (ATT-04): rostering needs the ACTIVE
+ *  codes, but the full shift-config surface stays admin.settings. This is the
+ *  read contract the roster editor was blocked on. */
+const shiftCatalog = withPermission('attendance.roster.write')
+  .route({ method: 'GET', path: '/attendance/roster/shift-catalog', summary: 'Active shifts a roster may reference (manager-readable)' })
+  .output(
+    z.array(
+      z.object({
+        code: z.string(),
+        name: z.string(),
+        startTime: z.string(),
+        endTime: z.string(),
+        crossesMidnight: z.boolean(),
+      }),
+    ),
+  )
+  .handler(async ({ context }) => {
+    const rows = await context.db
+      .selectFrom('att.shifts')
+      .select(['code', 'name', 'start_time', 'end_time', 'crosses_midnight'])
+      .where('is_active', '=', true)
+      .orderBy('code')
+      .execute();
+    return rows.map((r) => ({
+      code: r.code,
+      name: r.name,
+      startTime: r.start_time.slice(0, 5),
+      endTime: r.end_time.slice(0, 5),
+      crossesMidnight: r.crosses_midnight,
+    }));
+  });
+
 const setRoster = withPermission('attendance.roster.write')
   .route({ method: 'PUT', path: '/attendance/roster', summary: 'Set roster days (bulk; manager-maintained — ATT-04)' })
   .input(
@@ -323,6 +355,7 @@ export const attendanceConfigRouter = {
   listHolidays,
   upsertHoliday,
   setScheme,
+  shiftCatalog,
   setRoster,
   dayRecords,
   overrideDay,

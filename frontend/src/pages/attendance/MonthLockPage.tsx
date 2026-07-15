@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { CheckCircle2, LockKeyhole, ShieldAlert, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CheckCircle2, Hourglass, LockKeyhole, ShieldAlert, XCircle } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
+import { fetchApprovalLedger } from '../../lib/approval-ledger';
 import {
   Button,
   Card,
@@ -20,6 +21,34 @@ interface Checklist {
   canLock: boolean;
   alreadyLocked: boolean;
   items: { code: string; label: string; ok: boolean; detail: string }[];
+}
+
+/** ATT-12 manager approval ledger — consumes the integration stub; the row
+ *  upgrades itself the day the backend API lands (swap inside lib/approval-ledger). */
+function ApprovalLedgerNote({ month }: { month: string }) {
+  const [available, setAvailable] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetchApprovalLedger(month)
+      .then((result) => {
+        setAvailable(result.available);
+      })
+      .catch(() => {
+        setAvailable(false);
+      });
+  }, [month]);
+  if (available !== false) return null;
+  return (
+    <div className="mt-2 flex items-start gap-3 rounded-row bg-surface-2 p-4">
+      <Hourglass className="mt-0.5 size-5 shrink-0 text-ink-faint" />
+      <div>
+        <p className="text-sm font-semibold text-ink">Manager approval ledger — integration pending</p>
+        <p className="mt-0.5 text-xs leading-5 text-ink-muted">
+          Per-manager monthly sign-off (ATT-12) is not wired yet; when the API lands this row becomes a
+          real gate. Until then the lock relies on the checklist items above.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export function MonthLockPage() {
@@ -131,6 +160,7 @@ export function MonthLockPage() {
               </div>
             ))}
           </div>
+          <ApprovalLedgerNote month={checklist.month} />
           <div className="mt-6 flex justify-end">
             <Button
               variant="danger"

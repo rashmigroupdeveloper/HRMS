@@ -5,6 +5,7 @@
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
+import { booleanQuery } from '../../api/zod.js';
 import { getEmployeeByEcode, listEmployees } from './employees.service.js';
 
 const guard = () => withPermission('employee.read');
@@ -32,7 +33,7 @@ const listProcedure = guard()
         q: z.string().optional(),
         companyCode: z.string().optional(),
         status: z.enum(['onboarding', 'active', 'on_notice', 'exited']).optional(),
-        activeOnly: z.coerce.boolean().optional(),
+        activeOnly: booleanQuery().optional(),
         page: z.coerce.number().int().min(1).optional(),
         pageSize: z.coerce.number().int().min(1).max(200).optional(),
       })
