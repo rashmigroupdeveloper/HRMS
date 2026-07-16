@@ -7,11 +7,17 @@ import type { NextFunction, Request, Response } from 'express';
 import type { Kysely } from 'kysely';
 import { OpenAPIHandler } from '@orpc/openapi/node';
 import { OpenAPIGenerator } from '@orpc/openapi';
-import { ZodToJsonSchemaConverter } from '@orpc/zod';
+import { ZodSmartCoercionPlugin, ZodToJsonSchemaConverter } from '@orpc/zod';
 import { appRouter } from './router.js';
 import type { Database } from '../core/db/types.js';
 
-const rpcHandler = new OpenAPIHandler(appRouter);
+// Query and path params arrive as STRINGS. The smart-coercion plugin converts
+// them to each procedure's zod input type (number, boolean, date) BEFORE
+// validation — so `?companyId=1&limit=20` and `?open=false` parse correctly.
+// Without it, a plain `z.number()`/`z.boolean()` query param 400s. (docs/14 §3)
+const rpcHandler = new OpenAPIHandler(appRouter, {
+  plugins: [new ZodSmartCoercionPlugin()],
+});
 
 export interface AppDeps {
   db: Kysely<Database> | null;

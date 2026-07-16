@@ -100,4 +100,21 @@ run('Stage 1.7 — absence-case API open filter (live Postgres)', () => {
     const allRows = our(all.body as CaseDto[]);
     expect(allRows.some((r) => r.ecode.endsWith('C') && r.closedAt !== null)).toBe(true); // closed now visible
   });
+
+  it('numeric query params coerce from the string (?limit / ?companyId) — no 400', async () => {
+    const rml = await db.selectFrom('core.companies').select('id').where('code', '=', 'RML').executeTakeFirstOrThrow();
+
+    // `?limit=20` on a `z.number()` query param would 400 without the smart-
+    // coercion plugin (query values are strings). Proves the global fix.
+    const unmatched = await request(app)
+      .get('/api/attendance/exceptions/unmatched?limit=20')
+      .set('Authorization', `Bearer ${token}`);
+    expect(unmatched.status).toBe(200);
+
+    const r6 = await request(app)
+      .get(`/api/reports/r6-absence?companyId=${String(rml.id)}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(r6.status).toBe(200);
+    expect(Array.isArray(r6.body)).toBe(true);
+  });
 });
