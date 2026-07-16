@@ -17,8 +17,8 @@ import { hasAnyPermission } from '../lib/session';
 import { cn, IconButton, ThemeToggle, Toaster, Tooltip } from '../ui';
 import { isNavActive, navForUser } from './nav-config';
 import { Sidebar } from './Sidebar';
+import { AccountMenu } from './AccountMenu';
 import { CommandPalette } from './CommandPalette';
-import { UserMenu } from './UserMenu';
 import { useInboxCount } from './useInboxCount';
 
 interface AppShellProps {
@@ -169,7 +169,7 @@ export function AppShell({ user, onSignedOut }: AppShellProps) {
               )}
 
               <ThemeToggle />
-              <UserMenu user={user} onSignedOut={onSignedOut} />
+              <AccountMenu user={user} onSignedOut={onSignedOut} />
             </div>
           </div>
         </header>

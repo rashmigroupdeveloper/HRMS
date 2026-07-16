@@ -100,7 +100,11 @@ function MaskedNote({ masked }: { masked: boolean }) {
   );
 }
 
-export function ProfilePage() {
+/**
+ * @param self When true, render the signed-in user's OWN profile via the
+ *   self-service endpoint (/me route) — no e-code param, no directory back-link.
+ */
+export function ProfilePage({ self = false }: { self?: boolean } = {}) {
   const { ecode = '' } = useParams<{ ecode: string }>();
   const [profile, setProfile] = useState<EmployeeProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -111,7 +115,8 @@ export function ProfilePage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    void apiFetch<EmployeeProfile>(`/api/employees/${encodeURIComponent(ecode)}`)
+    const path = self ? '/api/employees/me' : `/api/employees/${encodeURIComponent(ecode)}`;
+    void apiFetch<EmployeeProfile>(path)
       .then((p) => {
         if (!cancelled) setProfile(p);
       })
@@ -127,7 +132,7 @@ export function ProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [ecode]);
+  }, [ecode, self]);
 
   if (loading) {
     return (
@@ -144,11 +149,11 @@ export function ProfilePage() {
       <EmptyState
         icon={<UserRound />}
         title="Profile not found"
-        description={error ?? `No employee with e-code ${ecode}.`}
+        description={error ?? (self ? 'We could not load your profile.' : `No employee with e-code ${ecode}.`)}
         action={
-          <Link to="/people">
+          <Link to={self ? '/' : '/people'}>
             <Button variant="secondary" leadingIcon={<ArrowLeft />}>
-              Back to directory
+              {self ? 'Back to home' : 'Back to directory'}
             </Button>
           </Link>
         }
@@ -172,13 +177,17 @@ export function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <Link
-        to="/people"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
-      >
-        <ArrowLeft className="size-4" aria-hidden />
-        People
-      </Link>
+      {self ? (
+        <p className="text-sm text-ink-muted">My information</p>
+      ) : (
+        <Link
+          to="/people"
+          className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink"
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          People
+        </Link>
+      )}
 
       <Card>
         <div className="flex flex-wrap items-start gap-4">

@@ -6,7 +6,7 @@ import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
-import { getEmployeeByEcode, listEmployees } from './employees.service.js';
+import { getEmployeeByEcode, getOwnProfile, listEmployees } from './employees.service.js';
 
 const guard = () => withPermission('employee.read');
 
@@ -96,6 +96,23 @@ const profileOutput = z.object({
   canViewCompensation: z.boolean(),
 });
 
+const getOwnProcedure = guard()
+  .route({
+    method: 'GET',
+    path: '/employees/me',
+    summary: 'The signed-in user’s own employee profile (self-service; statutory permission-masked)',
+  })
+  .output(profileOutput)
+  .handler(async ({ context }) => {
+    const profile = await getOwnProfile(context.db, context.user, context.permissions);
+    if (!profile) {
+      throw new ORPCError('NOT_FOUND', {
+        message: 'No employee profile is linked to your account',
+      });
+    }
+    return profile;
+  });
+
 const getByEcodeProcedure = guard()
   .route({
     method: 'GET',
@@ -119,5 +136,6 @@ const getByEcodeProcedure = guard()
 
 export const employeesRouter = {
   list: listProcedure,
+  getOwn: getOwnProcedure,
   getByEcode: getByEcodeProcedure,
 };

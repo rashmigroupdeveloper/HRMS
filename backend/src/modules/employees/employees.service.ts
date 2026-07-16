@@ -9,6 +9,7 @@ import type { Database, UsersTable } from '../../core/db/types.js';
 import {
   countDirectory,
   findByEcode,
+  findById,
   listDirectory,
   type DirectoryFilters,
   type DirectoryRow,
@@ -222,6 +223,31 @@ export async function getEmployeeByEcode(
   permissions: ReadonlySet<string>,
 ): Promise<EmployeeProfile | null> {
   const row = await findByEcode(db, ecode);
+  if (!row) return null;
+
+  const unmask = canViewStatutoryIds(user, permissions, row.id);
+  return toProfile(row, {
+    statutoryMasked: !unmask,
+    canViewCompensation: permissions.has('employee.compensation.read'),
+  });
+}
+
+/**
+ * The signed-in user's OWN profile (self-service `/employees/me`). Resolved from
+ * the account's employee link — it can only ever return the caller's own record,
+ * so no directory scope is involved. Masking follows the same rule as any
+ * profile: the owner sees their statutory IDs unmasked only when they hold
+ * `employee.statutory_ids.read` (docs/08 — employee role has it at 'own' scope).
+ * Returns null when the account isn't linked to an employee.
+ */
+export async function getOwnProfile(
+  db: Kysely<Database>,
+  user: AuthedUser,
+  permissions: ReadonlySet<string>,
+): Promise<EmployeeProfile | null> {
+  if (user.employee_id === null) return null;
+
+  const row = await findById(db, user.employee_id);
   if (!row) return null;
 
   const unmask = canViewStatutoryIds(user, permissions, row.id);

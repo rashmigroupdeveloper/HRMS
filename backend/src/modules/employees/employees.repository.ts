@@ -149,10 +149,12 @@ export async function listDirectory(
     .execute();
 }
 
-export async function findByEcode(
-  db: Kysely<Database>,
-  ecode: string,
-): Promise<EmployeeProfileRow | undefined> {
+/**
+ * Shared profile SELECT — the full identity/job/statutory projection used by
+ * both the by-ecode lookup (directory) and the by-id lookup (self-service).
+ * Callers append the `where` that scopes it to one employee.
+ */
+function selectProfile(db: Kysely<Database>) {
   return db
     .selectFrom('core.employees as e')
     .innerJoin('core.companies as c', 'c.id', 'e.company_id')
@@ -207,7 +209,20 @@ export async function findByEcode(
       sql<string | null>`nullif(trim(concat_ws(' ', rm.first_name, rm.last_name)), '')`.as(
         'reporting_manager_name',
       ),
-    )
-    .where('e.ecode', '=', ecode)
-    .executeTakeFirst();
+    );
+}
+
+export async function findByEcode(
+  db: Kysely<Database>,
+  ecode: string,
+): Promise<EmployeeProfileRow | undefined> {
+  return selectProfile(db).where('e.ecode', '=', ecode).executeTakeFirst();
+}
+
+/** Profile by internal id — the self-service (`/employees/me`) resolution path. */
+export async function findById(
+  db: Kysely<Database>,
+  id: number,
+): Promise<EmployeeProfileRow | undefined> {
+  return selectProfile(db).where('e.id', '=', id).executeTakeFirst();
 }

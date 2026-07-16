@@ -42,6 +42,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
     <Routes>
       <Route element={<AppShell user={user} onSignedOut={onSignedOut} />}>
         <Route index element={<RoleHomePage user={user} />} />
+        <Route path="me" element={<ProfilePage self />} />
         <Route path="people" element={<DirectoryPage />} />
         <Route path="people/:ecode" element={<ProfilePage />} />
 

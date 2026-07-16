@@ -3,7 +3,11 @@
  * Hand-checked expectations — no golden from running the code under test.
  */
 import { describe, expect, it } from 'vitest';
-import { canViewStatutoryIds, statusLabel } from '../src/modules/employees/employees.service.js';
+import {
+  canViewStatutoryIds,
+  getOwnProfile,
+  statusLabel,
+} from '../src/modules/employees/employees.service.js';
 
 describe('canViewStatutoryIds', () => {
   const userOwn = { employee_id: 42 } as { employee_id: number | null };
@@ -33,6 +37,16 @@ describe('canViewStatutoryIds', () => {
         42,
       ),
     ).toBe(true);
+  });
+});
+
+describe('getOwnProfile', () => {
+  it('returns null without touching the DB when the account has no employee link', async () => {
+    // db is intentionally a poison value: the null-employee guard must short-circuit
+    // before any query, so a self-view for an unlinked account is a clean 404.
+    const db = null as never;
+    const user = { employee_id: null } as never;
+    await expect(getOwnProfile(db, user, new Set())).resolves.toBeNull();
   });
 });
 
