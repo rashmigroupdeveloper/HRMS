@@ -164,6 +164,18 @@ body {
   }
 }
 
+/* Off-canvas nav drawer (mobile) — slides in from the left. Transform-only so
+ * it stays off the main thread (docs/05 §2.4). Reduced-motion is handled by the
+ * global block below (animation-duration collapses to ~0). */
+@keyframes u-slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 /* Press feedback — every pressable element scales to 0.97 on :active with the
  * exact motion tokens (docs/05 §2.3). Applied via class so the easing is uniform. */
 .u-press {
