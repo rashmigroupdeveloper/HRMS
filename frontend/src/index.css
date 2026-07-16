@@ -31,6 +31,16 @@
   --radius-row: 14px;
 
   --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  /* Warm Editorial display face — used by `font-serif` on page titles and the
+     ESS greeting. Without this, Tailwind's font-serif falls back to Times. */
+  --font-serif: 'Fraunces', ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+}
+
+/* Editorial display headings: optical sizing + a slightly tighter set so the
+   large light-weight titles read as intentional craft, not a browser default. */
+.font-serif {
+  font-optical-sizing: auto;
+  letter-spacing: -0.01em;
 }
 
 body {

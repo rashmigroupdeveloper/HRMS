@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlarmClock, Check, Repeat, X } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
-import { Button, Card, DataTable, Drawer, EmptyState, StatusBadge, TextField, toast } from '../../ui';
+import { Button, Card, DataTable, Drawer, EmptyState, PageHeader, StatusBadge, TextField, toast } from '../../ui';
 import type { Column } from '../../ui';
 
 interface OtEntry {
@@ -104,13 +104,11 @@ export function OtDecisionsPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="text-sm text-ink-muted">Manager workspace · ATT-08</p>
-        <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">Overtime decisions</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Undecided entries lapse at the 48-hour mark — a lapse pays nothing and credits nothing.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="Manager workspace · ATT-08"
+        title="Overtime decisions"
+        description="Undecided entries lapse at the 48-hour mark — a lapse pays nothing and credits nothing."
+      />
 
       {error && (
         <Card>

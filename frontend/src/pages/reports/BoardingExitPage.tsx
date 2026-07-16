@@ -10,7 +10,7 @@ import { apiFetch } from '../../lib/api';
 import { downloadBase64 } from '../../lib/downloads';
 import type { SessionUser } from '../../lib/session';
 import { hasPermission } from '../../lib/session';
-import { Button, Card, CardHeader, DataTable, EmptyState, TextField, toast, todayISOIST } from '../../ui';
+import { Button, Card, CardHeader, DataTable, EmptyState, PageHeader, TextField, toast, todayISOIST } from '../../ui';
 import type { Column } from '../../ui';
 
 interface PersonRow {
@@ -111,35 +111,35 @@ export function BoardingExitPage({ user }: { user: SessionUser }) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-ink-muted">
+      <PageHeader
+        eyebrow={
+          <span>
             <Link to="/reports" className="inline-flex items-center gap-1 hover:text-ink">
               <ArrowLeft className="size-3.5" /> Reports
             </Link>{' '}
             · R24 · behind the 07:00 daily email
-          </p>
-          <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">Boarding & exits</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Joins and exits for a date range — the email version goes out even on empty days.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {hasPermission(user, 'admin.integrations') && (
-            <Button variant="ghost" leadingIcon={<Send className="size-4" />} onClick={() => void sendNow()}>
-              Send today’s email now
+          </span>
+        }
+        title="Boarding & exits"
+        description="Joins and exits for a date range — the email version goes out even on empty days."
+        actions={
+          <>
+            {hasPermission(user, 'admin.integrations') && (
+              <Button variant="ghost" leadingIcon={<Send className="size-4" />} onClick={() => void sendNow()}>
+                Send today’s email now
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              disabled={!report}
+              leadingIcon={<Download className="size-4" />}
+              onClick={() => void download()}
+            >
+              Download Excel
             </Button>
-          )}
-          <Button
-            variant="primary"
-            disabled={!report}
-            leadingIcon={<Download className="size-4" />}
-            onClick={() => void download()}
-          >
-            Download Excel
-          </Button>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <Card>
         <div className="flex flex-wrap items-end gap-4">

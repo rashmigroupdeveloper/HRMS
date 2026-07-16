@@ -17,6 +17,7 @@ export { ThemeToggle } from './ThemeToggle';
 
 export { Button } from './Button';
 export { IconButton } from './IconButton';
+export { PageHeader } from './PageHeader';
 export { Card, CardHeader } from './Card';
 export { DarkCard } from './DarkCard';
 export { StatusBadge, Pill } from './StatusBadge';

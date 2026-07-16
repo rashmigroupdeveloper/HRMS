@@ -16,6 +16,7 @@ import {
   DataTable,
   Drawer,
   EmptyState,
+  PageHeader,
   SegmentedProgress,
   StatusBadge,
   TextField,
@@ -147,22 +148,22 @@ export function PoliciesPage({ user }: { user: SessionUser }) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-ink-muted">CORE-13 · acknowledgment tracked live</p>
-          <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">Policies</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            {pending.length > 0
-              ? `${String(pending.length)} polic${pending.length === 1 ? 'y needs' : 'ies need'} your acknowledgment.`
-              : 'You are fully acknowledged.'}
-          </p>
-        </div>
-        {canPublish && (
-          <Button variant="primary" leadingIcon={<FileUp className="size-4" />} onClick={() => { setPublishOpen(true); }}>
-            Publish policy
-          </Button>
-        )}
-      </header>
+      <PageHeader
+        eyebrow="CORE-13 · acknowledgment tracked live"
+        title="Policies"
+        description={
+          pending.length > 0
+            ? `${String(pending.length)} polic${pending.length === 1 ? 'y needs' : 'ies need'} your acknowledgment.`
+            : 'You are fully acknowledged.'
+        }
+        actions={
+          canPublish && (
+            <Button variant="primary" leadingIcon={<FileUp className="size-4" />} onClick={() => { setPublishOpen(true); }}>
+              Publish policy
+            </Button>
+          )
+        }
+      />
 
       {error && (
         <Card>

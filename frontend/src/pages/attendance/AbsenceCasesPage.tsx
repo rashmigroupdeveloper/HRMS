@@ -16,6 +16,7 @@ import {
   DataTable,
   Drawer,
   EmptyState,
+  PageHeader,
   Select,
   StatusBadge,
   Switch,
@@ -156,22 +157,20 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-ink-muted">Attendance ops · ATT-10 / PP-7</p>
-          <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">Absence cases</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Opened automatically by the daily scan; letters and escalations stay human decisions.
-          </p>
-        </div>
-        <Switch
-          label="Open cases only"
-          checked={onlyOpen}
-          onChange={(event) => {
-            setOnlyOpen(event.currentTarget.checked);
-          }}
-        />
-      </header>
+      <PageHeader
+        eyebrow="Attendance ops · ATT-10 / PP-7"
+        title="Absence cases"
+        description="Opened automatically by the daily scan; letters and escalations stay human decisions."
+        actions={
+          <Switch
+            label="Open cases only"
+            checked={onlyOpen}
+            onChange={(event) => {
+              setOnlyOpen(event.currentTarget.checked);
+            }}
+          />
+        }
+      />
 
       {error && (
         <Card>

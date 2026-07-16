@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { FileText } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
-import { Button, Card, DataTable, Drawer, EmptyState, toast } from '../../ui';
+import { Button, Card, DataTable, Drawer, EmptyState, PageHeader, toast } from '../../ui';
 import type { Column } from '../../ui';
 
 interface LetterRow {
@@ -53,11 +53,11 @@ export function MyLettersPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="text-sm text-ink-muted">Employee self-service</p>
-        <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">My letters</h1>
-        <p className="mt-1 text-sm text-ink-muted">Everything HR has formally issued to you, archived permanently.</p>
-      </header>
+      <PageHeader
+        eyebrow="Employee self-service"
+        title="My letters"
+        description="Everything HR has formally issued to you, archived permanently."
+      />
 
       {error && (
         <Card>

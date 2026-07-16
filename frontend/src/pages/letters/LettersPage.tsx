@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FileSignature, FileText, Search } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
-import { Button, Card, CardHeader, DataTable, Drawer, EmptyState, Select, StatusBadge, TextField, toast } from '../../ui';
+import { Button, Card, CardHeader, DataTable, Drawer, EmptyState, PageHeader, Select, StatusBadge, TextField, toast } from '../../ui';
 import type { Column } from '../../ui';
 
 interface Template {
@@ -111,18 +111,16 @@ export function LettersPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-ink-muted">CORE-09 · issuance = signature-chain approval</p>
-          <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">Letters</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Rendered from runtime-editable templates; a missing merge field is a hard error, never a blank letter.
-          </p>
-        </div>
-        <Button variant="primary" leadingIcon={<FileSignature className="size-4" />} onClick={() => { setIssueOpen(true); }}>
-          Issue letter
-        </Button>
-      </header>
+      <PageHeader
+        eyebrow="CORE-09 · issuance = signature-chain approval"
+        title="Letters"
+        description="Rendered from runtime-editable templates; a missing merge field is a hard error, never a blank letter."
+        actions={
+          <Button variant="primary" leadingIcon={<FileSignature className="size-4" />} onClick={() => { setIssueOpen(true); }}>
+            Issue letter
+          </Button>
+        }
+      />
 
       <Card>
         <div className="flex flex-wrap items-end gap-4">

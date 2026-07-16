@@ -7,7 +7,7 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Download, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { downloadCsv } from '../../lib/downloads';
-import { Button, Card, DataTable, EmptyState, StatusBadge, TextField } from '../../ui';
+import { Button, Card, DataTable, EmptyState, PageHeader, StatusBadge, TextField } from '../../ui';
 import type { Column } from '../../ui';
 import { REPORT_DEFS } from './report-defs';
 import type { ReportDef, ReportRow } from './report-defs';
@@ -70,32 +70,34 @@ function Runner({ def }: { def: ReportDef }) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-ink-muted">
+      <PageHeader
+        eyebrow={
+          <span>
             <Link to="/reports" className="inline-flex items-center gap-1 hover:text-ink">
               <ArrowLeft className="size-3.5" /> Reports
             </Link>{' '}
             · {def.code}
-          </p>
-          <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">{def.title}</h1>
-          <p className="mt-1 text-sm text-ink-muted">{def.subtitle}</p>
-        </div>
-        <Button
-          variant="primary"
-          disabled={rows.length === 0}
-          leadingIcon={<Download className="size-4" />}
-          onClick={() => {
-            downloadCsv(
-              `${def.code.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`,
-              def.columns.map((c) => ({ header: c.header, value: (row: ReportRow) => cellText(row[c.key]) })),
-              rows,
-            );
-          }}
-        >
-          Download CSV
-        </Button>
-      </header>
+          </span>
+        }
+        title={def.title}
+        description={def.subtitle}
+        actions={
+          <Button
+            variant="primary"
+            disabled={rows.length === 0}
+            leadingIcon={<Download className="size-4" />}
+            onClick={() => {
+              downloadCsv(
+                `${def.code.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`,
+                def.columns.map((c) => ({ header: c.header, value: (row: ReportRow) => cellText(row[c.key]) })),
+                rows,
+              );
+            }}
+          >
+            Download CSV
+          </Button>
+        }
+      />
 
       <Card>
         <div className="flex flex-wrap items-end gap-4">
