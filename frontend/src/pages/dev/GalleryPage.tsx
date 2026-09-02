@@ -442,6 +442,7 @@ export function GalleryPage() {
             available: 4,
             allowHalfDay: true,
             maxPerRequest: null,
+            sandwichRule: 'exclude',
           },
         ]}
         onClose={() => {

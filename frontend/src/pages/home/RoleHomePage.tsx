@@ -2,7 +2,8 @@
 import type { SessionUser } from '../../lib/session';
 import { hasPermission, hasRole } from '../../lib/session';
 import { todayLongIST } from '../../lib/date';
-import { Card, CardHeader, Pill } from '../../ui';
+import { Card, CardHeader, Pill, PageHeader } from '../../ui';
+import { BusinessUnitDashboard } from './BusinessUnitDashboard';
 import { DashboardError, DashboardSkeleton } from './DashboardFeedback';
 import { DeviceHealthDashboard } from './DeviceHealthDashboard';
 import { EssDashboard } from './EssDashboard';
@@ -34,40 +35,47 @@ function greetingFromEmail(email: string): string {
   return first.charAt(0).toUpperCase() + first.slice(1);
 }
 
+const ROLE_LABEL: Record<string, string> = {
+  employee: 'Employee',
+  manager: 'Manager',
+  senior_manager: 'Senior manager',
+  hr_ops: 'HR operations',
+  hr_head: 'HR head',
+  payroll_admin: 'Payroll',
+  plant_head: 'Plant head',
+  ceo_cell: 'CEO cell',
+  it_admin: 'IT admin',
+  super_admin: 'Super admin',
+};
+
 function homeBlurb(user: SessionUser): { title: string; body: string } {
   if (hasRole(user, 'ceo_cell')) {
     return {
       title: 'Executive overview',
-      body: 'The CEO dashboard at /executive ships in Phase 3. Use Reports for read-only exports meanwhile.',
+      body: 'The group dashboard at /executive ships in Phase 3. Reports already export what is live today — we show nothing invented.',
     };
   }
   if (hasRole(user, 'payroll_admin')) {
     return {
       title: 'Payroll console',
-      body: 'Run stepper, review grid and finalize ceremony arrive in Phase 2.',
+      body: 'You will run payroll here. The engine is still being built in Phase 2 — this landing stays empty rather than showing figures that were never computed.',
     };
   }
   if (hasRole(user, 'hr_ops') || hasRole(user, 'hr_head') || hasRole(user, 'super_admin')) {
     return {
       title: 'HR operations',
-      body: 'Muster, absence cases and the HR Ops KPI row land in Stage 1.7. People directory is live now.',
-    };
-  }
-  if (hasRole(user, 'plant_head')) {
-    return {
-      title: 'Plant dashboard',
-      body: 'Plant muster remains available through reports. The aggregated BU dashboard ships from reporting snapshots in Phase 3.',
+      body: 'Muster, absence cases and the people directory are live. Use the rail to open today’s queue.',
     };
   }
   if (hasRole(user, 'it_admin')) {
     return {
       title: 'IT administration',
-      body: 'Users & Roles, device health and integrations are reachable from the masthead.',
+      body: 'Users & roles, device health and integrations sit in Admin. Nothing here is a placeholder number.',
     };
   }
   return {
     title: 'Your day',
-    body: 'My Attendance, My Leave and the full ESS home ship in Stage 1.7. Directory is available now.',
+    body: 'My Attendance, My Leave and this home are live when your login has self-service access. If you are seeing this card, IT still needs to attach those permissions.',
   };
 }
 
@@ -77,22 +85,20 @@ function DeferredDashboard({ user }: RoleHomePageProps) {
 
   return (
     <div className="space-y-8">
-      <div>
-        <p className="text-sm text-ink-muted">{todayLongIST()}</p>
-        <h1 className="mt-0.5 text-3xl font-light tracking-tight text-ink">Hello {name}</h1>
-        <p className="mt-1 text-sm text-ink-muted">{blurb.body}</p>
-      </div>
+      <PageHeader
+        eyebrow={todayLongIST()}
+        title={`Hello ${name}`}
+        description={blurb.body}
+      />
 
       <Card>
-        <CardHeader title={blurb.title} subtitle="Role shell" />
+        <CardHeader title={blurb.title} subtitle="What this login can already do" />
         <div className="flex flex-wrap gap-2">
           {user.roles.map((role) => (
-            <Pill key={role} accent={role === 'super_admin'}>
-              {role}
-            </Pill>
+            <Pill key={role}>{ROLE_LABEL[role] ?? role}</Pill>
           ))}
           {user.roles.length === 0 && (
-            <p className="text-sm text-ink-muted">No roles assigned yet.</p>
+            <p className="text-sm text-ink-muted">No roles assigned yet — IT provisions access at onboarding.</p>
           )}
         </div>
       </Card>
@@ -132,6 +138,12 @@ function DeviceHome() {
 }
 
 export function RoleHomePage({ user }: RoleHomePageProps) {
+  // RPT-04: plant/BU heads get their own scoped dashboard (docs/06 §5),
+  // checked BEFORE the HR dashboard so a plant head never lands on a
+  // company-wide operational screen.
+  if (hasPermission(user, 'reports.bu') && !hasPermission(user, 'reports.hr')) {
+    return <BusinessUnitDashboard />;
+  }
   if (hasPermission(user, 'reports.hr')) return <HrHome />;
   if (hasPermission(user, 'attendance.team.read')) {
     return <ManagerHome subtree={hasRole(user, 'senior_manager')} />;

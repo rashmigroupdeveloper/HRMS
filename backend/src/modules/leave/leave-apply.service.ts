@@ -373,6 +373,7 @@ export async function applyEncashmentOnFinal(db: Db, request: RequestRow, status
       action: 'update',
       entity: 'lv.ledger',
       entityId: request.id,
+      subjectEmployeeId: request.subject_employee_id,
       field: 'encash_clamped',
       oldValue: String(payload.days),
       newValue: String(days),

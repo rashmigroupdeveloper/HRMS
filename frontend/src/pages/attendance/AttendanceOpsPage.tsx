@@ -1,14 +1,16 @@
 import {
   AlertTriangle,
+  ArrowRight,
   CalendarCheck,
   FileSpreadsheet,
   RadioTower,
   ScanSearch,
+  UserMinus,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { SessionUser } from '../../lib/session';
 import { hasPermission } from '../../lib/session';
-import { Card, DarkCard, EmptyState, StatusBadge } from '../../ui';
+import { Card, DarkCard, EmptyState, KpiNumber, PageHeader, StatusBadge } from '../../ui';
 import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
 import { useDashboardResource } from '../home/useDashboardResource';
 
@@ -48,7 +50,7 @@ const surfaces = [
     to: '/attendance/absence-cases',
     title: 'Absence cases',
     body: 'Watch → show-cause queue with letters through the chain.',
-    icon: ScanSearch,
+    icon: UserMinus,
   },
 ];
 
@@ -68,40 +70,76 @@ function AttendanceOpsWithQueue() {
 }
 
 function AttendanceOpsContent({ unmatchedRows }: { unmatchedRows?: UnmatchedSwipe[] }) {
+  const gated = unmatchedRows === undefined;
   const queue = unmatchedRows ?? [];
+  const mappingNeeded = !gated && queue.length > 0;
+  const goldTo = gated ? '/attendance/muster' : mappingNeeded ? '/attendance/exceptions' : '/attendance/month-lock';
+  const goldLabel = gated
+    ? 'Open muster'
+    : mappingNeeded
+      ? 'Map unmatched numbers'
+      : 'Run month-lock checklist';
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="text-sm text-ink-muted">HR operations</p>
-        <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">
-          Attendance operations
-        </h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          From biometric completeness to the frozen monthly muster.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow="HR operations · ATT-02 / ATT-15"
+        title="Attendance operations"
+        description="From biometric completeness to the frozen monthly muster."
+      />
+
       <DarkCard>
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
           Operational priority
         </p>
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <p className="text-4xl font-light tabular-nums">{queue.length}</p>
-            <p className="mt-1 text-sm text-hero-muted">
-              unmatched employee numbers in the current queue
-            </p>
+        {gated ? (
+          <div className="mt-3 flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <p className="text-2xl font-light text-hero-ink">Exception mapping is gated</p>
+              <p className="mt-1 text-sm text-hero-muted">
+                The workspaces stay visible. Mapping ghost employee numbers needs
+                attendance.manual_override.
+              </p>
+            </div>
+            <Link
+              to={goldTo}
+              className="u-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink"
+            >
+              {goldLabel} <ArrowRight className="size-4" />
+            </Link>
           </div>
-          <StatusBadge tone={queue.length ? 'negative' : 'positive'}>
-            {queue.length ? 'Mapping required' : 'Queue clear'}
-          </StatusBadge>
-        </div>
+        ) : (
+          <div className="mt-3 flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <p className="text-4xl font-light tabular-nums">
+                <KpiNumber value={queue.length} animateOnMount={false} />
+              </p>
+              <p className="mt-1 text-sm text-hero-muted">
+                {mappingNeeded
+                  ? 'unmatched employee numbers — attendance will not lock while these sit open'
+                  : 'unmatched employee numbers. Queue is clear — the month can move toward lock.'}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <StatusBadge tone={mappingNeeded ? 'negative' : 'positive'}>
+                {mappingNeeded ? 'Mapping required' : 'Queue clear'}
+              </StatusBadge>
+              <Link
+                to={goldTo}
+                className="u-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink"
+              >
+                {goldLabel} <ArrowRight className="size-4" />
+              </Link>
+            </div>
+          </div>
+        )}
       </DarkCard>
+
       <div className="grid gap-4 sm:grid-cols-2">
         {surfaces.map(({ to, title, body, icon: Icon }) => (
           <Link key={to} to={to} className="group">
             <Card interactive className="h-full">
-              <div className="grid size-11 place-items-center rounded-full bg-accent-soft text-accent-ink">
+              <div className="grid size-11 place-items-center rounded-full bg-surface-2 text-ink">
                 <Icon className="size-5" />
               </div>
               <h2 className="mt-6 text-lg font-semibold text-ink">{title}</h2>
@@ -113,12 +151,13 @@ function AttendanceOpsContent({ unmatchedRows }: { unmatchedRows?: UnmatchedSwip
           </Link>
         ))}
       </div>
-      {unmatchedRows === undefined && (
+
+      {gated && (
         <Card>
           <EmptyState
             icon={<AlertTriangle />}
             title="Exception details are permission-gated"
-            description="The dashboard remains visible, while employee-number mapping requires attendance.manual_override."
+            description="Ask a colleague with attendance.manual_override to map unmatched numbers before month lock."
           />
         </Card>
       )}

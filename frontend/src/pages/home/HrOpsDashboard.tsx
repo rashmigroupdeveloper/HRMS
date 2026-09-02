@@ -1,8 +1,23 @@
-import { AlertTriangle, ArrowRight, CheckCircle2, Users } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, UserMinus, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { todayLongIST } from '../../lib/date';
-import { Card, CardHeader, DarkCard, EmptyState, KpiPillRow, Pill, StatusBadge } from '../../ui';
+import {
+  Card,
+  CardHeader,
+  DarkCard,
+  EmptyState,
+  KpiNumber,
+  KpiPillRow,
+  PageHeader,
+  Pill,
+  StatusBadge,
+} from '../../ui';
 import type { HrDashboardData } from './dashboard-types';
+
+const GOLD =
+  'u-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink';
+const CREAM =
+  'u-press inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--surface)_12%,transparent)] px-5 py-2.5 text-sm font-semibold text-hero-ink';
 
 function stageLabel(stage: string): string {
   return stage.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase());
@@ -11,37 +26,46 @@ function stageLabel(stage: string): string {
 export function HrOpsDashboard({ data }: { data: HrDashboardData }) {
   const headcount = data.headcountByCategory.reduce((sum, row) => sum + row.count, 0);
   const openAbsences = data.openAbsenceByStage.reduce((sum, row) => sum + row.count, 0);
+  const absentIsTheJob = data.absentToday > 0;
+  const approvalsAreTheJob = !absentIsTheJob && data.pendingApprovals > 0;
+  const goldOnCta = !absentIsTheJob && !approvalsAreTheJob;
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="text-sm text-ink-muted">{todayLongIST()}</p>
-        <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">
-          HR operations
-        </h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Company-wide workforce signals as of {data.asOf}.
-        </p>
-      </header>
+      <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+      <PageHeader
+        eyebrow={todayLongIST()}
+        title="HR operations"
+        description={`Company-wide signals as of ${data.asOf}. Every tile opens the list behind the number.`}
+      />
 
       <KpiPillRow
         pills={[
-          { label: 'Headcount', value: headcount, state: 'filled', icon: <Users /> },
+          { label: 'Headcount', value: headcount, state: 'filled', icon: <Users />, to: '/people' },
           {
             label: 'Absent today',
             value: data.absentToday,
-            state: 'accent',
+            state: absentIsTheJob ? 'accent' : 'outline',
             icon: <AlertTriangle />,
+            to: '/attendance',
           },
           {
             label: 'Pending approvals',
             value: data.pendingApprovals,
-            state: 'hatched',
+            state: approvalsAreTheJob ? 'accent' : data.pendingApprovals > 0 ? 'hatched' : 'outline',
             icon: <CheckCircle2 />,
+            to: '/approvals',
           },
-          { label: 'Joiners MTD', value: data.joinersMtd, state: 'outline', icon: <Users /> },
+          {
+            label: 'Exits MTD',
+            value: data.exitsMtd,
+            state: 'outline',
+            icon: <UserMinus />,
+            to: '/people',
+          },
         ]}
       />
+      </div>
 
       <DarkCard className="grid gap-8 md:grid-cols-[1.4fr_1fr]">
         <div>
@@ -56,39 +80,56 @@ export function HrOpsDashboard({ data }: { data: HrDashboardData }) {
             </StatusBadge>
           </div>
           <h2 className="mt-4 text-5xl font-light tabular-nums">
-            {data.absentToday.toLocaleString('en-IN')}
+            <KpiNumber value={data.absentToday} />
           </h2>
-          <p className="mt-1 text-sm text-hero-muted">employees marked A or UAB today</p>
+          <p className="mt-1 text-sm text-hero-muted">
+            marked A or UAB, against {headcount.toLocaleString('en-IN')} people on rolls — not a
+            scheduled-day rate.
+          </p>
+          {data.silentDevices > 0 && (
+            <p className="mt-3 max-w-xl text-sm leading-6 text-hero-muted">
+              Month lock waits on every expected door. A silent device is a real cutoff risk, not a
+              reminder.
+            </p>
+          )}
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              to="/attendance"
-              className="u-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink"
-            >
+            <Link to="/attendance" className={goldOnCta ? GOLD : CREAM}>
               Open attendance ops <ArrowRight className="size-4" />
             </Link>
-            <Link
-              to="/approvals"
-              className="u-press inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--surface)_12%,transparent)] px-5 py-2.5 text-sm font-semibold text-hero-ink"
-            >
+            <Link to="/approvals" className={CREAM}>
               Review approvals
             </Link>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 self-end">
-          <div className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)] p-4">
+          <Link
+            to="/attendance/absence-cases"
+            className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)] p-4 u-press"
+          >
             <p className="text-xs text-hero-muted">Open absence cases</p>
             <p className="mt-1 text-3xl font-semibold tabular-nums">{openAbsences}</p>
-          </div>
-          <div className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)] p-4">
+          </Link>
+          <Link
+            to="/approvals"
+            className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)] p-4 u-press"
+          >
             <p className="text-xs text-hero-muted">OT awaiting decision</p>
             <p className="mt-1 text-3xl font-semibold tabular-nums">{data.pendingOt}</p>
-          </div>
+          </Link>
         </div>
       </DarkCard>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Absence cases" subtitle="Open cases by action stage" />
+          <CardHeader
+            title="Absence cases"
+            subtitle="Open cases by action stage"
+            action={
+              <Link to="/attendance/absence-cases" className="text-sm font-semibold text-ink hover:underline">
+                Open queue
+              </Link>
+            }
+          />
           {data.openAbsenceByStage.length === 0 ? (
             <EmptyState
               icon={<CheckCircle2 />}
@@ -98,26 +139,24 @@ export function HrOpsDashboard({ data }: { data: HrDashboardData }) {
           ) : (
             <div className="space-y-2">
               {data.openAbsenceByStage.map((row) => (
-                <div
+                <Link
                   key={row.stage}
-                  className="flex items-center justify-between rounded-row bg-surface-2 px-4 py-3"
+                  to="/attendance/absence-cases"
+                  className="flex items-center justify-between rounded-row bg-surface-2 px-4 py-3 transition-colors hover:bg-accent-soft"
                 >
                   <span className="text-sm font-medium text-ink">{stageLabel(row.stage)}</span>
-                  <Pill
-                    accent={
-                      row.count === Math.max(...data.openAbsenceByStage.map((item) => item.count))
-                    }
-                  >
-                    {row.count.toLocaleString('en-IN')}
-                  </Pill>
-                </div>
+                  <Pill>{row.count.toLocaleString('en-IN')}</Pill>
+                </Link>
               ))}
             </div>
           )}
         </Card>
 
         <Card>
-          <CardHeader title="Workforce mix" subtitle="Active and on-notice employees" />
+          <CardHeader
+            title="Workforce mix"
+            subtitle={`${data.joinersMtd.toLocaleString('en-IN')} joiners this month · active and on-notice`}
+          />
           <div className="space-y-3">
             {data.headcountByCategory.map((row) => {
               const percent = headcount === 0 ? 0 : (row.count / headcount) * 100;
@@ -139,7 +178,10 @@ export function HrOpsDashboard({ data }: { data: HrDashboardData }) {
               );
             })}
           </div>
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-row bg-accent-soft p-4">
+          <Link
+            to="/policies"
+            className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-row bg-surface-2 p-4 transition-colors hover:bg-accent-soft"
+          >
             <div>
               <p className="text-xs text-ink-muted">Policy acknowledgement</p>
               <p className="mt-0.5 text-xl font-semibold tabular-nums text-ink">
@@ -149,15 +191,9 @@ export function HrOpsDashboard({ data }: { data: HrDashboardData }) {
             <StatusBadge tone={data.policyAckPercent >= 100 ? 'positive' : 'warning'}>
               {data.policyAckPercent >= 100 ? 'Complete' : 'Follow-up required'}
             </StatusBadge>
-          </div>
+          </Link>
         </Card>
       </div>
-
-      {data.exitsMtd > 0 && (
-        <p className="text-xs text-ink-muted">
-          Exits this month: {data.exitsMtd.toLocaleString('en-IN')}
-        </p>
-      )}
     </div>
   );
 }

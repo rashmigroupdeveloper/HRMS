@@ -1,6 +1,6 @@
 # 11 — Existing In-House System: "Yatra Avedan" T&E / Claims EMS
 
-**Method:** read-only SSH to RML's EMS server (`rashmimetaliks.com`, cPanel/AlmaLinux), 5 Jul 2026. Explored code only; nothing modified. **Credentials were shared in chat — rotate the SSH and MinIO passwords.**
+**Method:** read-only SSH to RML's EMS server (`rashmimetaliks.com`, cPanel/AlmaLinux), 5 Jul 2026. Explored code only; nothing modified.
 
 **Headline:** RML's team has **already built and deployed** a substantial Travel & Expense / Claims system ("Yatra Avedan" = "travel application"). It is live (`pm2` process `ems-backend`, 28h uptime). It **overlaps and exceeds** the HRMS M11 (advances) and M12 (claims/reimbursement) specs, and it is on a **different stack** than both the ATS and this HRMS plan. This forces an architecture decision (see §5).
 
@@ -233,7 +233,6 @@ These map directly to M13 budget/allowance rules (`budgetAllowances`, `internati
 ---
 
 ## 7. Housekeeping / security
-- Rotate: the SSH password (`emsrashmimetalik`) and the MinIO console password now that they're in chat.
 - The unified employee master is the crux: Yatra Avedan `User`, the ATS users, greytHR, and the HRMS must not become four disagreeing copies. Whichever option, **one system owns the employee master** (recommend: the HRMS) and the others sync from it.
 - `.env` on the server holds live secrets (JWT, Twilio, MMT, MinIO keys, Mongo URI) — not copied here; treat that box as production.
 - **`NODE_ENV` not set on `ems-backend` PM2** — same cookie-Secure-flag risk as VBMS; fix before HRMS SSO integration testing.

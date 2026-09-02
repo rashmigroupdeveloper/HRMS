@@ -236,3 +236,93 @@ export async function runPolicyAckNag(db: Kysely<Database>): Promise<number> {
   }
   return queued;
 }
+
+/**
+ * R30 — Policy Acknowledgment Report (docs/06 §3).
+ *
+ * The tile answers "what percentage?"; the REPORT has to answer "who?", because
+ * that is the question an auditor and an HR chaser both actually ask. Rows are
+ * per employee per policy, so a non-acknowledger is a name, not a residual
+ * number — and it reuses the same `targetedEmployees` audience query the tile
+ * and the nag use, so the three can never disagree.
+ */
+export interface PolicyAckReportRow {
+  policyId: number;
+  policyTitle: string;
+  effectiveDate: string;
+  ecode: string;
+  employeeName: string;
+  department: string | null;
+  entity: string;
+  acknowledged: boolean;
+  acknowledgedAt: string | null;
+}
+
+export async function policyAckReport(
+  db: Kysely<Database>,
+  params: { policyId?: number | undefined; pendingOnly?: boolean | undefined },
+): Promise<PolicyAckReportRow[]> {
+  const policies = await db
+    .selectFrom('core.policies')
+    .selectAll()
+    .where('is_active', '=', true)
+    .where('requires_acknowledgment', '=', true)
+    .$if(params.policyId !== undefined, (qb) => qb.where('id', '=', params.policyId ?? 0))
+    .orderBy('effective_date', 'desc')
+    .execute();
+
+  const rows: PolicyAckReportRow[] = [];
+
+  for (const policy of policies) {
+    const audience = policy.audience as PolicyAudience | null;
+    const targeted = await targetedEmployees(db, audience)
+      .clearSelect()
+      .innerJoin('core.companies as rc', 'rc.id', 'core.employees.company_id')
+      .leftJoin('core.departments as rd', 'rd.id', 'core.employees.department_id')
+      .select([
+        'core.employees.id as employee_id',
+        'core.employees.ecode as ecode',
+        'core.employees.first_name as first_name',
+        'core.employees.last_name as last_name',
+        'rc.code as entity',
+        'rd.name as department',
+      ])
+      .orderBy('core.employees.ecode')
+      .execute();
+
+    if (targeted.length === 0) continue;
+
+    const acks = await db
+      .selectFrom('core.policy_acknowledgments')
+      .select(['employee_id', 'acknowledged_at'])
+      .where('policy_id', '=', policy.id)
+      .where(
+        'employee_id',
+        'in',
+        targeted.map((t) => t.employee_id),
+      )
+      .execute();
+    const ackByEmployee = new Map(acks.map((a) => [a.employee_id, a.acknowledged_at]));
+
+    for (const employee of targeted) {
+      const at = ackByEmployee.get(employee.employee_id);
+      const acknowledged = at !== undefined;
+      if (params.pendingOnly === true && acknowledged) continue;
+      rows.push({
+        policyId: policy.id,
+        policyTitle: policy.title,
+        effectiveDate: formatDbDate(policy.effective_date),
+        ecode: employee.ecode,
+        employeeName: [employee.first_name, employee.last_name]
+          .filter((p) => p !== null && p !== '')
+          .join(' '),
+        department: employee.department,
+        entity: employee.entity,
+        acknowledged,
+        acknowledgedAt: at instanceof Date ? at.toISOString() : typeof at === 'string' ? at : null,
+      });
+    }
+  }
+
+  return rows;
+}

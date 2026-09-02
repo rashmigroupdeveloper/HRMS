@@ -28,6 +28,8 @@ import { runPolicyAckNag } from '../modules/policies/index.js';
 import { sendBoardingExitEmail } from '../modules/lifecycle/index.js';
 import { enqueueEvent } from '../modules/notifications/index.js';
 import { runEscalations } from '../modules/workflows/index.js';
+import { buildKpiSnapshot } from '../modules/reports/index.js';
+import { escalateBreachedTickets } from '../modules/helpdesk/index.js';
 import { istDateString, previousWeekStartIso } from '../core/dates.js';
 
 const KENT_SYNC_QUEUE = 'kent-sync';
@@ -41,6 +43,8 @@ const COMP_OFF_EXPIRY_QUEUE = 'comp-off-expiry';
 const BOARDING_EXIT_QUEUE = 'boarding-exit-email';
 const ABSENCE_SCAN_QUEUE = 'absence-scan';
 const POLICY_NAG_QUEUE = 'policy-ack-nag';
+const KPI_SNAPSHOT_QUEUE = 'kpi-daily-snapshot';
+const HELPDESK_ESCALATION_QUEUE = 'helpdesk-escalation';
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -87,6 +91,23 @@ async function main(): Promise<void> {
   await boss.schedule(ABSENCE_SCAN_QUEUE, '30 0 * * *');
   await boss.work(ABSENCE_SCAN_QUEUE, async () => {
     await runAbsenceScan(db);
+  });
+
+  // RPT-03: the CEO dashboard reads PRECOMPUTED rows, so something has to
+  // precompute them. Nightly at 02:15 IST (20:45 UTC the evening before) —
+  // after the day's attendance has settled, before anyone opens the dashboard.
+  await boss.schedule(KPI_SNAPSHOT_QUEUE, '45 20 * * *');
+  await boss.work(KPI_SNAPSHOT_QUEUE, async () => {
+    const result = await buildKpiSnapshot(db);
+    logger.info(result, 'kpi snapshot rebuilt');
+  });
+
+  // SOW-9.2: helpdesk SLA escalation, hourly — the same cadence as workflow
+  // escalation, because a breached ticket ages exactly as fast.
+  await boss.schedule(HELPDESK_ESCALATION_QUEUE, '15 * * * *');
+  await boss.work(HELPDESK_ESCALATION_QUEUE, async () => {
+    const { escalated } = await escalateBreachedTickets(db);
+    if (escalated > 0) logger.info({ escalated }, 'helpdesk tickets escalated');
   });
 
   // CORE-13: weekly policy-acknowledgment nag, Monday 09:30 IST (04:00 UTC).

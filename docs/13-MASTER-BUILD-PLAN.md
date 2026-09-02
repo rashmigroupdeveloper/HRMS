@@ -107,7 +107,6 @@ Monorepo `rashmi-hrms`: `frontend`, `backend`, `packages/{ui,tokens,shared}`, `b
 - `P0-T08` **Entity-scope confirmations** (doc 11 §0.2): which small India entities payroll here (eHoome/Koove ×2/Rashmi Rare Earth); canonical RPL name; 5 foreign entities stay master-only.
 - `P0-T09` **Sanctioned EMS Mongo export** of the `users` collection (1,066 rows) + snapshot date freeze — the employee-master seed (doc 11 §0.1).
 - `P0-T06` Resolve the 9 statutory policy decisions in 10 §15 (PF base, bonus true-up, LOP divisor, OT base, DA/VDA, penalty→pay, gratuity 5y/4y240d, grade structures, sample formats). **Do not code payroll until signed.** Plus: **verify the 2026 Labour Codes status** (F&F TAT ~2 working days vs 3? "wages" ≥ 50% of CTC widening the PF/gratuity base?) per 10 §8 — owner: payroll admin; re-checked at the Phase-3 F&F gate.
-- `P0-T07` Rotate the leaked credentials flagged in docs 09/11 (greytHR password, EMS SSH, MinIO console). *(security)*
 
 ### 3.2 Repo & pipeline
 - `P0-T10` Scaffold monorepo (frontend, backend, packages). CI: lint + typecheck + test on PR.
@@ -221,7 +220,7 @@ Sequencing: stand up ingestion first so it accumulates data while the rest is bu
 ## 7. Cross-cutting workstreams (run across all phases)
 
 - **Testing (the doc 14 §10 reliability program):** TDD; 80% floor, payroll 100% branch; exact-value statutory unit tests with hand-computed expected values; golden fixtures G1–G10 (10 §13) + a **golden-master full-run snapshot** (~100 synthetic employees covering every edge, diffed in CI); **fast-check property tests** on invariants (net = gross − deductions, paise conservation, idempotent recompute); **Stryker mutation testing nightly on payroll-core** (catches vacuous tests — essential when AI agents write both code and tests); Testcontainers integration tests asserting DB constraints; thin Playwright smoke (10–20 journeys); muster/dashboard perf tests at 10k scale in CI; **shadow runs** on every payroll-logic change (old vs new engine diff must be empty before the new one pays).
-- **Security:** RBAC everywhere; restricted columns masked + never logged; TLS; rate limits (5/min auth, 100/min general); parameterized queries only; payroll immutability triggers; quarterly super_admin role review; rotate the leaked creds (P0-T07).
+- **Security:** RBAC everywhere; restricted columns masked + never logged; TLS; rate limits (5/min auth, 100/min general); parameterized queries only; payroll immutability triggers; quarterly super_admin role review.
 - **Data migration:** greytHR/Adrenalin master + leave balances + salary structures + YTD payroll; Yatra Avedan Mongo (Phase 3.5); SAP legacy loans; every load has a per-row validation report and reconciliation counts; go-live only on clean load.
 - **Training & change management (07 §4b):** per-phase UAT sign-off is part of the gate; 1-page role quick-guides + short screen recordings; in-app contextual help + teaching empty states (CORE-14); published admin-access matrix each phase; helpdesk "HRMS platform" category from day one.
 - **Statutory ownership (the forever cost):** budget ~15–20% of build effort/year permanently; named owner reviews each Union Budget + EPFO/ESIC/PT/LWF notification; rates are versioned data (`statutory_rates`), updates are row edits + new goldens, not redeploys. *(07 risk #10)*
@@ -259,11 +258,10 @@ Sequencing: stand up ingestion first so it accumulates data while the rest is bu
 ## 10. Immediate next actions (on plan approval)
 
 1. Send the Phase-0 external-dependency asks **today**: Kent access (IT), admin greytHR login (HR), bank/JV/ECR formats (Finance), the 9 payroll policy questions (Payroll), true 10k headcount + ESS-active split (Sponsor).
-2. Rotate the three leaked credentials (P0-T07).
-3. Scaffold `rashmi-hrms` monorepo + CI + staging + **PgBouncer**.
-4. Port design tokens/primitives from ATS into `packages/ui`.
-5. Employee-master schema + import current headcount export (dry run).
-6. Run the two spikes in parallel: **Kent one-day pull** and **10k synthetic scale/partitioning test** — freeze the infra plan on measured numbers.
+2. Scaffold `rashmi-hrms` monorepo + CI + staging + **PgBouncer**.
+3. Port design tokens/primitives from ATS into `packages/ui`.
+4. Employee-master schema + import current headcount export (dry run).
+5. Run the two spikes in parallel: **Kent one-day pull** and **10k synthetic scale/partitioning test** — freeze the infra plan on measured numbers.
 
 ---
 

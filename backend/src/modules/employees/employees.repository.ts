@@ -3,12 +3,23 @@
  * All DB access for the employees read API lives here.
  */
 import { sql, type Kysely, type ExpressionBuilder } from 'kysely';
-import type { Database, EmployeeStatus } from '../../core/db/types.js';
+import type { Database, EmployeeStatus, EmploymentCategory } from '../../core/db/types.js';
 
 export interface DirectoryFilters {
   q?: string | undefined;
   companyCode?: string | undefined;
   status?: EmployeeStatus | undefined;
+  /**
+   * docs/05 §4.2 filter set: entity · plant · dept · category · status · RM.
+   * These are LISTS because the filter drawer offers multi-select checkboxes —
+   * a single-valued filter would silently ignore a second selection.
+   */
+  companyCodes?: string[] | undefined;
+  statuses?: EmployeeStatus[] | undefined;
+  departmentIds?: number[] | undefined;
+  locationIds?: number[] | undefined;
+  categories?: EmploymentCategory[] | undefined;
+  reportingManagerId?: number | undefined;
   activeOnly: boolean;
   limit: number;
   offset: number;
@@ -91,6 +102,24 @@ function applyFilters(eb: DirEB, filters: DirectoryFilters) {
   }
   if (filters.companyCode !== undefined && filters.companyCode !== '') {
     parts.push(eb('c.code', '=', filters.companyCode));
+  }
+  if (filters.companyCodes !== undefined && filters.companyCodes.length > 0) {
+    parts.push(eb('c.code', 'in', filters.companyCodes));
+  }
+  if (filters.statuses !== undefined && filters.statuses.length > 0) {
+    parts.push(eb('e.status', 'in', filters.statuses));
+  }
+  if (filters.departmentIds !== undefined && filters.departmentIds.length > 0) {
+    parts.push(eb('e.department_id', 'in', filters.departmentIds));
+  }
+  if (filters.locationIds !== undefined && filters.locationIds.length > 0) {
+    parts.push(eb('e.location_id', 'in', filters.locationIds));
+  }
+  if (filters.categories !== undefined && filters.categories.length > 0) {
+    parts.push(eb('e.category', 'in', filters.categories));
+  }
+  if (filters.reportingManagerId !== undefined) {
+    parts.push(eb('e.reporting_manager_id', '=', filters.reportingManagerId));
   }
   if (filters.q !== undefined && filters.q.trim() !== '') {
     const term = `%${filters.q.trim()}%`;

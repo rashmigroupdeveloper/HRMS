@@ -5,7 +5,7 @@
  */
 import type { Kysely } from 'kysely';
 import type { Selectable } from 'kysely';
-import type { Database, UsersTable } from '../../core/db/types.js';
+import type { Database, EmploymentCategory, UsersTable } from '../../core/db/types.js';
 import {
   countDirectory,
   findByEcode,
@@ -136,6 +136,12 @@ export async function listEmployees(
     q?: string | undefined;
     companyCode?: string | undefined;
     status?: 'onboarding' | 'active' | 'on_notice' | 'exited' | undefined;
+    companyCodes?: string[] | undefined;
+    statuses?: ('onboarding' | 'active' | 'on_notice' | 'exited')[] | undefined;
+    departmentIds?: number[] | undefined;
+    locationIds?: number[] | undefined;
+    categories?: EmploymentCategory[] | undefined;
+    reportingManagerId?: number | undefined;
     activeOnly?: boolean | undefined;
     page?: number | undefined;
     pageSize?: number | undefined;
@@ -147,6 +153,12 @@ export async function listEmployees(
     q: input.q,
     companyCode: input.companyCode,
     status: input.status,
+    companyCodes: input.companyCodes,
+    statuses: input.statuses,
+    departmentIds: input.departmentIds,
+    locationIds: input.locationIds,
+    categories: input.categories,
+    reportingManagerId: input.reportingManagerId,
     activeOnly: input.activeOnly ?? true,
     limit: pageSize,
     offset: (page - 1) * pageSize,
@@ -255,4 +267,115 @@ export async function getOwnProfile(
     statutoryMasked: !unmask,
     canViewCompensation: permissions.has('employee.compensation.read'),
   });
+}
+
+/**
+ * Directory filter facets (docs/05 §4.2: "filters: entity, plant, dept,
+ * category, status, RM").
+ *
+ * Counts are DERIVED from the employee master, never authored. The drawer
+ * previously shipped four hardcoded entity headcounts (667/174/96/57), which
+ * both went stale the moment anyone joined and violated the never-fake-data
+ * rule (docs/05 §4.8). Deriving them means the numbers are either right or
+ * absent — there is no third state where they quietly lie.
+ *
+ * `activeOnly` mirrors the directory's own default so the facet counts always
+ * describe the list the user is actually looking at.
+ */
+export interface DirectoryFacets {
+  entities: { code: string; label: string; count: number }[];
+  departments: { code: string; label: string; count: number }[];
+  categories: { code: string; label: string; count: number }[];
+  locations: { code: string; label: string; count: number }[];
+  statuses: { code: string; label: string; count: number }[];
+  total: number;
+}
+
+/** docs/03 employee status enum → the words HR actually uses. */
+const STATUS_LABELS: Record<string, string> = {
+  onboarding: 'Onboarding',
+  active: 'Active',
+  on_notice: 'Notice period',
+  exited: 'Exited',
+};
+
+export async function listDirectoryFacets(
+  db: Kysely<Database>,
+  input: { activeOnly?: boolean | undefined },
+): Promise<DirectoryFacets> {
+  const activeOnly = input.activeOnly ?? true;
+
+  const base = db
+    .selectFrom('core.employees as e')
+    .$if(activeOnly, (qb) => qb.where('e.status', 'in', ['active', 'on_notice']));
+
+  const [entities, departments, categories, locations, statuses, totalRow] = await Promise.all([
+    base
+      .innerJoin('core.companies as c', 'c.id', 'e.company_id')
+      .select(['c.code as code', 'c.name as label'])
+      .select((eb) => eb.fn.countAll<string>().as('count'))
+      .groupBy(['c.code', 'c.name'])
+      .orderBy('c.code')
+      .execute(),
+    base
+      .innerJoin('core.departments as d', 'd.id', 'e.department_id')
+      // Departments carry no code column — the id IS the filter key.
+      .select(['d.id as id', 'd.name as label'])
+      .select((eb) => eb.fn.countAll<string>().as('count'))
+      .groupBy(['d.id', 'd.name'])
+      .orderBy('d.name')
+      .execute(),
+    base
+      .select('e.category as code')
+      .select((eb) => eb.fn.countAll<string>().as('count'))
+      .where('e.category', 'is not', null)
+      .groupBy('e.category')
+      .orderBy('e.category')
+      .execute(),
+    base
+      .innerJoin('core.locations as l', 'l.id', 'e.location_id')
+      .select(['l.id as id', 'l.name as label'])
+      .select((eb) => eb.fn.countAll<string>().as('count'))
+      .groupBy(['l.id', 'l.name'])
+      .orderBy('l.name')
+      .execute(),
+    // Status facets deliberately ignore activeOnly: otherwise "Exited" could
+    // never be discovered from a directory that defaults to active-only.
+    db
+      .selectFrom('core.employees')
+      .select('status as code')
+      .select((eb) => eb.fn.countAll<string>().as('count'))
+      .groupBy('status')
+      .orderBy('status')
+      .execute(),
+    base.select((eb) => eb.fn.countAll<string>().as('count')).executeTakeFirst(),
+  ]);
+
+  const titleCase = (value: string): string =>
+    value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, ' ');
+
+  return {
+    entities: entities.map((r) => ({ code: r.code, label: r.label, count: Number(r.count) })),
+    departments: departments.map((r) => ({
+      code: String(r.id),
+      label: r.label,
+      count: Number(r.count),
+    })),
+    categories: categories.map((r) => ({
+      code: String(r.code),
+      label: titleCase(String(r.code)),
+      count: Number(r.count),
+    })),
+    locations: locations.map((r) => ({
+      code: String(r.id),
+      label: r.label,
+      count: Number(r.count),
+    })),
+    statuses: statuses.map((r) => ({
+      code: r.code,
+      label: STATUS_LABELS[r.code] ?? titleCase(r.code),
+      count: Number(r.count),
+    })),
+    total: Number(totalRow?.count ?? 0),
+  };
 }

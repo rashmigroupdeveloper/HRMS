@@ -13,9 +13,9 @@
  * errors announced via `role="alert"`.
  */
 import { useRef, useState } from 'react';
-import type { SyntheticEvent } from 'react';
+import type { CSSProperties, SyntheticEvent } from 'react';
 import { IdCard, Lock, ShieldCheck } from 'lucide-react';
-import { Button, StatusBadge, TextField, ThemeToggle } from '../../ui';
+import { Button, Checkbox, StatusBadge, TextField, ThemeToggle } from '../../ui';
 import { type SessionUser } from '../../lib/session';
 
 interface LoginPageProps {
@@ -57,9 +57,25 @@ function validatePassword(value: string): string | undefined {
   return undefined;
 }
 
+const IDENTIFIER_KEY = 'rashmi.login.identifier';
+
+function enterDelay(ms: number): CSSProperties {
+  return { '--enter-delay': `${String(ms)}ms` } as CSSProperties;
+}
+
+function readRememberedIdentifier(): string {
+  try {
+    return localStorage.getItem(IDENTIFIER_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
 export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
-  const [employeeId, setEmployeeId] = useState('');
+  const remembered = readRememberedIdentifier();
+  const [employeeId, setEmployeeId] = useState(remembered);
   const [password, setPassword] = useState('');
+  const [rememberIdentifier, setRememberIdentifier] = useState(remembered.length > 0);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Touched>({
     employeeId: false,
@@ -121,6 +137,15 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
       }
 
       const body = (await res.json()) as { accessToken: string };
+      try {
+        if (rememberIdentifier) {
+          localStorage.setItem(IDENTIFIER_KEY, employeeId.trim());
+        } else {
+          localStorage.removeItem(IDENTIFIER_KEY);
+        }
+      } catch {
+        /* private mode — remembering the ID is a convenience, not a requirement */
+      }
       const user = await loadSession(body.accessToken);
       onSuccess?.(user);
     } catch {
@@ -131,33 +156,40 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-dvh lg:grid-cols-2">
       {/* Brand panel — the single charcoal hero surface (§1 rule 2), grain-textured.
           Hidden on small screens where the form leads. */}
-      <aside className="u-grain relative hidden flex-col justify-between bg-hero p-12 text-hero-ink lg:flex">
-        <div className="flex items-center gap-2.5">
+      <aside className="u-grain relative hidden flex-col justify-between overflow-hidden bg-hero px-12 py-14 text-hero-ink lg:flex">
+        <div className="u-enter flex items-center gap-2.5" style={enterDelay(0)}>
           <span className="grid size-9 place-items-center rounded-full bg-accent text-sm font-bold text-accent-ink">
             R
           </span>
           <span className="text-sm font-semibold">Rashmi HRMS</span>
         </div>
 
-        <div className="max-w-md">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-hero-muted">
+        <div className="u-enter max-w-lg" style={enterDelay(50)}>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color-mix(in_srgb,var(--hero-ink)_78%,var(--hero-muted))]">
             One platform · 14 entities
           </p>
-          <h1 className="mt-4 text-4xl font-light leading-[1.1] tracking-tight">
-            People, attendance and payroll — finally in one place.
+          <h1 className="mt-5 text-5xl font-light leading-[1.12] tracking-tight">
+            <span className="block">People, attendance and payroll</span>
+            <span className="relative mt-2 inline-block pb-1">
+              finally in one place.
+              <span className="u-gold-sweep absolute inset-x-0 -bottom-0.5 h-0.5 rounded-full bg-accent" aria-hidden />
+            </span>
           </h1>
-          <p className="mt-4 text-sm leading-relaxed text-hero-muted">
+          <p className="mt-6 max-w-md text-sm leading-relaxed text-[color-mix(in_srgb,var(--hero-ink)_72%,var(--hero-muted))]">
             Sign in with your Rashmi Group employee ID to reach your dashboard,
             requests and payslips.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-hero-muted">
+        <div
+          className="u-enter flex items-center gap-2 text-xs text-[color-mix(in_srgb,var(--hero-ink)_72%,var(--hero-muted))]"
+          style={enterDelay(110)}
+        >
           <ShieldCheck className="size-4" aria-hidden />
-          Secured with single sign-on · sessions expire automatically
+          Sessions expire automatically. Sign in with your Rashmi employee ID.
         </div>
       </aside>
 
@@ -167,7 +199,10 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
           <ThemeToggle />
         </div>
 
-        <div className="w-full max-w-sm">
+        <div
+          className="u-enter u-shadow-float w-full max-w-md rounded-card bg-surface p-8 sm:p-10"
+          style={enterDelay(40)}
+        >
           {/* Compact brand mark for the mobile layout where the aside is hidden. */}
           <div className="mb-8 flex items-center gap-2.5 lg:hidden">
             <span className="grid size-9 place-items-center rounded-full bg-hero text-sm font-bold text-hero-ink">
@@ -176,14 +211,15 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
             <span className="text-sm font-semibold text-ink">Rashmi HRMS</span>
           </div>
 
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">
-            Welcome back
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+            Employee sign-in
           </p>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight text-ink">
             Sign in to your account
           </h2>
 
           <form
+            aria-label="Employee sign-in"
             onSubmit={(e) => {
               void handleSubmit(e);
             }}
@@ -216,7 +252,7 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
               }}
               error={touched.employeeId ? errors.employeeId : undefined}
               required
-              autoFocus
+              autoFocus={remembered.length === 0}
             />
 
             <TextField
@@ -236,22 +272,23 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
               }}
               error={touched.password ? errors.password : undefined}
               required
+              autoFocus={remembered.length > 0}
             />
 
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-ink-muted">
-                <input
-                  type="checkbox"
-                  className="size-4 rounded accent-[var(--accent)]"
-                />
-                Keep me signed in
-              </label>
-              <button
-                type="button"
-                className="rounded text-sm font-medium text-ink-muted underline-offset-4 hover:text-ink hover:underline"
+            <div className="flex flex-wrap items-start justify-between gap-3 pt-1">
+              <Checkbox
+                label="Remember my employee ID"
+                checked={rememberIdentifier}
+                onChange={(event) => {
+                  setRememberIdentifier(event.target.checked);
+                }}
+              />
+              <a
+                href="mailto:hrms-support@rashmigroup.com?subject=Password%20reset"
+                className="rounded text-sm font-medium text-ink underline-offset-4 hover:underline"
               >
-                Forgot password?
-              </button>
+                Forgot password? Email HR Ops
+              </a>
             </div>
 
             <Button
@@ -265,9 +302,14 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
             </Button>
           </form>
 
-          <p className="mt-8 text-xs leading-relaxed text-ink-faint">
+          <p className="mt-8 text-xs leading-relaxed text-ink-muted">
             Trouble signing in? Contact HR Ops at{' '}
-            <span className="text-ink-muted">hrms-support@rashmigroup.com</span>
+            <a
+              href="mailto:hrms-support@rashmigroup.com"
+              className="font-medium text-ink underline-offset-4 hover:underline"
+            >
+              hrms-support@rashmigroup.com
+            </a>
             . Access is provisioned by IT during onboarding.
           </p>
         </div>

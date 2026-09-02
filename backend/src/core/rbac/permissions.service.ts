@@ -9,6 +9,14 @@
  */
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/types.js';
+import type { PermissionCode, Scope } from './seed-data.js';
+
+export interface PermissionAccess {
+  all: boolean;
+  own: boolean;
+  subtree: boolean;
+  orgUnitIds: readonly number[];
+}
 
 /** Every permission the user currently holds, via their roles. */
 export async function getUserPermissions(
@@ -26,6 +34,39 @@ export async function getUserPermissions(
   return new Set(rows.map((r) => r.code));
 }
 
+/** Runtime data scope for one permission across all of the user's roles. */
+export async function getUserPermissionAccess(
+  db: Kysely<Database>,
+  userId: number,
+  permission: PermissionCode,
+): Promise<PermissionAccess | null> {
+  const rows = await db
+    .selectFrom('core.user_roles as ur')
+    .innerJoin('core.role_permissions as rp', 'rp.role_id', 'ur.role_id')
+    .innerJoin('core.permissions as p', 'p.id', 'rp.permission_id')
+    .where('ur.user_id', '=', userId)
+    .where('p.code', '=', permission)
+    .select(['rp.scope', 'ur.scope_org_unit_id'])
+    .execute();
+  if (rows.length === 0) return null;
+
+  const scopes = new Set<Scope>(rows.map((row) => row.scope));
+  const orgUnitIds = [
+    ...new Set(
+      rows
+        .filter((row) => row.scope === 'org_unit')
+        .map((row) => row.scope_org_unit_id)
+        .filter((id): id is number => id !== null),
+    ),
+  ];
+  return {
+    all: scopes.has('all') || scopes.has('readonly'),
+    own: scopes.has('own'),
+    subtree: scopes.has('subtree'),
+    orgUnitIds,
+  };
+}
+
 /** Every role CODE the user currently holds — for workflow role-queues (WF-01):
  *  any holder of a `role:<code>` step may act, not just one designated user. */
 export async function getUserRoleCodes(db: Kysely<Database>, userId: number): Promise<ReadonlySet<string>> {
@@ -38,4 +79,3 @@ export async function getUserRoleCodes(db: Kysely<Database>, userId: number): Pr
     .execute();
   return new Set(rows.map((r) => r.code));
 }
-

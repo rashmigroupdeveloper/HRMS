@@ -1,7 +1,7 @@
 /**
  * Presentation helpers for the signed-in user — initials, a friendly greeting
  * name, and the human label for their highest-privilege role. Shared by the
- * sidebar account menu (and anywhere else identity is shown) so the derivation
+ * masthead account menu (and anywhere else identity is shown) so the derivation
  * lives in exactly one place.
  */
 import type { SessionUser } from '../lib/session';

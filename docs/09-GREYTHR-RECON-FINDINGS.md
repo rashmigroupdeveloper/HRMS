@@ -2,7 +2,7 @@
 
 **Method:** read-only ESS session against `rashmi-group.greythr.com` (Playwright, headless), 3 Jul 2026, account RML033903. No data modified. Screenshots archived in the build scratchpad. This document records **real RML configuration** that supersedes assumptions in docs 01–08 where they differ. greytHR platform build tag observed: `main-2311`.
 
-> **Security note recorded for the sponsor:** the password was shared in chat and used here once. **Rotate it now.** For deeper admin-side capture (payroll register formats, workflow configs, statutory files), create a dedicated read-only admin user rather than reusing a personal account (see §8).
+> For deeper admin-side capture (payroll register formats, workflow configs, statutory files), create a dedicated read-only admin user rather than reusing a personal account (see §8).
 
 ---
 

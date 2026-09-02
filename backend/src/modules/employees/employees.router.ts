@@ -5,8 +5,13 @@
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
-import { booleanQuery } from '../../api/zod.js';
-import { getEmployeeByEcode, getOwnProfile, listEmployees } from './employees.service.js';
+import { booleanQuery, csvList } from '../../api/zod.js';
+import {
+  getEmployeeByEcode,
+  getOwnProfile,
+  listDirectoryFacets,
+  listEmployees,
+} from './employees.service.js';
 
 const guard = () => withPermission('employee.read');
 
@@ -33,6 +38,17 @@ const listProcedure = guard()
         q: z.string().optional(),
         companyCode: z.string().optional(),
         status: z.enum(['onboarding', 'active', 'on_notice', 'exited']).optional(),
+        // docs/05 §4.2 filter set — every facet the drawer offers is applied
+        // here. Multi-valued, because the drawer offers multi-select: a
+        // single-valued filter would silently drop the second selection.
+        companyCodes: csvList(z.string()).optional(),
+        statuses: csvList(z.enum(['onboarding', 'active', 'on_notice', 'exited'])).optional(),
+        departmentIds: csvList(z.coerce.number().int().positive()).optional(),
+        locationIds: csvList(z.coerce.number().int().positive()).optional(),
+        categories: csvList(
+          z.enum(['white_collar', 'blue_collar', 'trainee', 'consultant', 'contract']),
+        ).optional(),
+        reportingManagerId: z.coerce.number().int().positive().optional(),
         activeOnly: booleanQuery().optional(),
         page: z.coerce.number().int().min(1).optional(),
         pageSize: z.coerce.number().int().min(1).max(200).optional(),
@@ -134,8 +150,37 @@ const getByEcodeProcedure = guard()
     return profile;
   });
 
+const facetGroup = z.array(z.object({ code: z.string(), label: z.string(), count: z.number() }));
+
+/**
+ * Real filter facets for the directory (docs/05 §4.2: "filters: entity, plant,
+ * dept, category, status, RM"). Counts are DERIVED from the master — the
+ * filter drawer must never author a headcount of its own.
+ */
+const facetsProcedure = guard()
+  .route({
+    method: 'GET',
+    path: '/employees/facets',
+    summary: 'Directory filter facets with live counts',
+  })
+  .input(z.object({ activeOnly: booleanQuery().optional() }).optional())
+  .output(
+    z.object({
+      entities: facetGroup,
+      departments: facetGroup,
+      categories: facetGroup,
+      locations: facetGroup,
+      statuses: facetGroup,
+      total: z.number(),
+    }),
+  )
+  .handler(async ({ input, context }) => {
+    return listDirectoryFacets(context.db, { activeOnly: input?.activeOnly });
+  });
+
 export const employeesRouter = {
   list: listProcedure,
+  facets: facetsProcedure,
   getOwn: getOwnProcedure,
   getByEcode: getByEcodeProcedure,
 };

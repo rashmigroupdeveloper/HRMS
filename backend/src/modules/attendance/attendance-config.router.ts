@@ -2,7 +2,9 @@
  * Attendance configuration surface (Stage 1.2) — the sponsor's centralization
  * rule made concrete: shifts, schemes, rosters and holidays are ALL runtime
  * data behind the central permission gates. Nothing here requires a deploy.
- *   shifts/holidays   → admin.settings           (policy config)
+ *   shifts            → admin.settings           (policy config)
+ *   holidays GET      → attendance.own            (ESS calendar — ATT-13 / P1-T43)
+ *   holidays PUT      → admin.settings           (policy config)
  *   schemes/rosters   → attendance.roster.write   (managers — ATT-04)
  *   manual override   → attendance.manual_override (HR only, reason + audit — ATT-17)
  *   recompute/week ops→ admin.integrations
@@ -12,14 +14,17 @@ import { ORPCError } from '@orpc/server';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
+import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
+import { assertEmployeesInScope } from '../../core/rbac/employee-scope.js';
 import {
   closeWeek,
   drainRecomputeQueue,
   recomputeDay,
   setManualStatus,
 } from './day-status.service.js';
+import { applyRosterEntries } from './roster.service.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
 
@@ -38,25 +43,77 @@ const shiftShape = z.object({
   isActive: z.boolean().default(true),
 });
 
+function mapShiftRow(r: {
+  id: number;
+  code: string;
+  name: string;
+  start_time: string;
+  end_time: string;
+  crosses_midnight: boolean;
+  session_split: string | null;
+  grace_in_minutes: number;
+  grace_out_minutes: number;
+  min_half_day_hours: string;
+  min_full_day_hours: string;
+  break_minutes: number;
+  is_active: boolean;
+}) {
+  return {
+    id: r.id,
+    code: r.code,
+    name: r.name,
+    startTime: r.start_time.slice(0, 5),
+    endTime: r.end_time.slice(0, 5),
+    crossesMidnight: r.crosses_midnight,
+    sessionSplit: r.session_split?.slice(0, 5) ?? null,
+    graceInMinutes: r.grace_in_minutes,
+    graceOutMinutes: r.grace_out_minutes,
+    minHalfDayHours: Number(r.min_half_day_hours),
+    minFullDayHours: Number(r.min_full_day_hours),
+    breakMinutes: r.break_minutes,
+    isActive: r.is_active,
+  };
+}
+
 const listShifts = withPermission('admin.settings')
-  .route({ method: 'GET', path: '/attendance/config/shifts', summary: 'Shift catalog' })
+  .route({ method: 'GET', path: '/attendance/config/shifts', summary: 'Shift catalog (admin full)' })
   .output(z.array(shiftShape.extend({ id: z.number() })))
   .handler(async ({ context }) => {
     const rows = await context.db.selectFrom('att.shifts').selectAll().orderBy('code').execute();
+    return rows.map(mapShiftRow);
+  });
+
+/** Manager-readable active shift catalog for roster editing (P1-T42). */
+const listShiftsForRoster = withPermission('attendance.roster.write')
+  .route({
+    method: 'GET',
+    path: '/attendance/config/shifts/active',
+    summary: 'Active shifts for roster editors (ATT-04 manager surface)',
+  })
+  .output(
+    z.array(
+      z.object({
+        code: z.string(),
+        name: z.string(),
+        startTime: z.string(),
+        endTime: z.string(),
+        crossesMidnight: z.boolean(),
+      }),
+    ),
+  )
+  .handler(async ({ context }) => {
+    const rows = await context.db
+      .selectFrom('att.shifts')
+      .selectAll()
+      .where('is_active', '=', true)
+      .orderBy('code')
+      .execute();
     return rows.map((r) => ({
-      id: r.id,
       code: r.code,
       name: r.name,
       startTime: r.start_time.slice(0, 5),
       endTime: r.end_time.slice(0, 5),
       crossesMidnight: r.crosses_midnight,
-      sessionSplit: r.session_split?.slice(0, 5) ?? null,
-      graceInMinutes: r.grace_in_minutes,
-      graceOutMinutes: r.grace_out_minutes,
-      minHalfDayHours: Number(r.min_half_day_hours),
-      minFullDayHours: Number(r.min_full_day_hours),
-      breakMinutes: r.break_minutes,
-      isActive: r.is_active,
     }));
   });
 
@@ -95,8 +152,8 @@ const upsertShift = withPermission('admin.settings')
     return { ok: true as const };
   });
 
-const listHolidays = withPermission('admin.settings')
-  .route({ method: 'GET', path: '/attendance/config/holidays', summary: 'Holiday calendar' })
+const listHolidays = withPermission('attendance.own')
+  .route({ method: 'GET', path: '/attendance/config/holidays', summary: 'Holiday calendar (ESS-readable)' })
   .input(z.object({ year: z.number().int() }).optional())
   .output(z.array(z.object({ date: z.string(), name: z.string(), locationId: z.number().nullable() })))
   .handler(async ({ input, context }) => {
@@ -168,35 +225,90 @@ const setScheme = withPermission('attendance.roster.write')
     return { ok: true as const };
   });
 
-/** The manager-readable shift catalog (ATT-04): rostering needs the ACTIVE
- *  codes, but the full shift-config surface stays admin.settings. This is the
- *  read contract the roster editor was blocked on. */
-const shiftCatalog = withPermission('attendance.roster.write')
-  .route({ method: 'GET', path: '/attendance/roster/shift-catalog', summary: 'Active shifts a roster may reference (manager-readable)' })
+const monthStr = z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/);
+
+/** Team roster month grid for managers (P1-T42). */
+const getTeamRoster = withPermission('attendance.roster.write')
+  .route({
+    method: 'GET',
+    path: '/attendance/roster',
+    summary: 'Team roster for a month (manager-maintained — ATT-04)',
+  })
+  .input(
+    z.object({
+      month: monthStr,
+      subtree: booleanQuery().optional(),
+    }),
+  )
   .output(
     z.array(
       z.object({
-        code: z.string(),
+        employeeId: z.number(),
+        ecode: z.string(),
         name: z.string(),
-        startTime: z.string(),
-        endTime: z.string(),
-        crossesMidnight: z.boolean(),
+        days: z.record(
+          z.object({
+            shiftCode: z.string().nullable(),
+            weekOff: z.boolean(),
+          }),
+        ),
       }),
     ),
   )
-  .handler(async ({ context }) => {
-    const rows = await context.db
-      .selectFrom('att.shifts')
-      .select(['code', 'name', 'start_time', 'end_time', 'crosses_midnight'])
-      .where('is_active', '=', true)
-      .orderBy('code')
+  .handler(async ({ input, context }) => {
+    const managerId = context.user.employee_id;
+    if (managerId === null) {
+      throw new ORPCError('BAD_REQUEST', { message: 'No employee profile linked' });
+    }
+    const month = input.month.length === 7 ? `${input.month}-01` : input.month;
+    const [y = 0, mo = 1] = month.split('-').map(Number);
+    const daysInMonth = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    const monthEnd = `${y}-${String(mo).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+
+    let teamQuery = context.db
+      .selectFrom('core.employees as e')
+      .select(['e.id', 'e.ecode', 'e.first_name', 'e.last_name'])
+      .where('e.status', 'in', ['active', 'on_notice']);
+
+    if (input.subtree === true) {
+      teamQuery = teamQuery.where(
+        'e.id',
+        'in',
+        sql<number>`(SELECT rt.employee_id FROM core.reporting_tree rt WHERE rt.manager_id = ${managerId})`,
+      );
+    } else {
+      teamQuery = teamQuery.where('e.reporting_manager_id', '=', managerId);
+    }
+
+    const team = await teamQuery.orderBy('e.ecode').execute();
+    if (team.length === 0) return [];
+
+    const ids = team.map((t) => t.id);
+    const rosterRows = await context.db
+      .selectFrom('att.rosters as r')
+      .leftJoin('att.shifts as s', 's.id', 'r.shift_id')
+      .select(['r.employee_id', 'r.work_date', 'r.is_week_off', 's.code as shift_code'])
+      .where('r.employee_id', 'in', ids)
+      .where('r.work_date', '>=', sql<Date>`${month}::date`)
+      .where('r.work_date', '<=', sql<Date>`${monthEnd}::date`)
       .execute();
-    return rows.map((r) => ({
-      code: r.code,
-      name: r.name,
-      startTime: r.start_time.slice(0, 5),
-      endTime: r.end_time.slice(0, 5),
-      crossesMidnight: r.crosses_midnight,
+
+    const byEmp = new Map<number, Record<string, { shiftCode: string | null; weekOff: boolean }>>();
+    for (const row of rosterRows) {
+      const date = formatDbDate(row.work_date);
+      const bucket = byEmp.get(row.employee_id) ?? {};
+      bucket[date] = {
+        shiftCode: row.shift_code,
+        weekOff: row.is_week_off,
+      };
+      byEmp.set(row.employee_id, bucket);
+    }
+
+    return team.map((member) => ({
+      employeeId: member.id,
+      ecode: member.ecode,
+      name: member.last_name ? `${member.first_name} ${member.last_name}` : member.first_name,
+      days: byEmp.get(member.id) ?? {},
     }));
   });
 
@@ -220,41 +332,56 @@ const setRoster = withPermission('attendance.roster.write')
   .output(z.object({ upserted: z.number() }))
   .handler(async ({ input, context }) => {
     const db = context.db;
-    const shiftIds = new Map<string, number>();
-    let upserted = 0;
-    for (const entry of input.entries) {
-      let shiftId: number | null = null;
-      if (!entry.weekOff) {
-        if (!entry.shiftCode) throw new ORPCError('BAD_REQUEST', { message: 'shiftCode required unless weekOff' });
-        let id = shiftIds.get(entry.shiftCode);
-        if (id === undefined) {
-          const row = await db.selectFrom('att.shifts').select('id').where('code', '=', entry.shiftCode).executeTakeFirst();
-          if (!row) throw new ORPCError('NOT_FOUND', { message: `Unknown shift: ${entry.shiftCode}` });
-          id = row.id;
-          shiftIds.set(entry.shiftCode, id);
-        }
-        shiftId = id;
-      }
-      await db
-        .insertInto('att.rosters')
-        .values({
-          employee_id: entry.employeeId,
-          work_date: sql<Date>`${entry.date}::date` as unknown as Date,
-          shift_id: shiftId,
-          is_week_off: entry.weekOff,
-          set_by: context.user.id,
-        })
-        .onConflict((oc) =>
-          oc.columns(['employee_id', 'work_date']).doUpdateSet({ shift_id: shiftId, is_week_off: entry.weekOff, set_by: context.user.id }),
-        )
-        .execute();
-      await db
-        .insertInto('att.recompute_queue')
-        .values({ employee_id: entry.employeeId, work_date: sql<Date>`${entry.date}::date` as unknown as Date })
-        .onConflict((oc) => oc.doNothing())
-        .execute();
-      upserted += 1;
+    try {
+      await assertEmployeesInScope(
+        db,
+        { ...context.permissionAccess, actorEmployeeId: context.user.employee_id },
+        input.entries.map((entry) => entry.employeeId),
+      );
+    } catch (error) {
+      throw new ORPCError('FORBIDDEN', {
+        message: error instanceof Error ? error.message : 'Employee outside permitted scope',
+      });
     }
+
+    const requestedCodes = [
+      ...new Set(
+        input.entries
+          .filter((entry) => !entry.weekOff)
+          .map((entry) => entry.shiftCode)
+          .filter((code): code is string => code !== null && code !== undefined),
+      ),
+    ];
+    const shifts = requestedCodes.length === 0
+      ? []
+      : await db
+          .selectFrom('att.shifts')
+          .select(['id', 'code'])
+          .where('code', 'in', requestedCodes)
+          .where('is_active', '=', true)
+          .execute();
+    const shiftIds = new Map(shifts.map((shift) => [shift.code, shift.id]));
+    const missing = requestedCodes.find((code) => !shiftIds.has(code));
+    if (missing !== undefined) {
+      throw new ORPCError('NOT_FOUND', { message: `Unknown or inactive shift: ${missing}` });
+    }
+
+    const entries = input.entries.map((entry) => {
+      if (!entry.weekOff && !entry.shiftCode) {
+        throw new ORPCError('BAD_REQUEST', { message: 'shiftCode required unless weekOff' });
+      }
+      return {
+        employeeId: entry.employeeId,
+        date: entry.date,
+        shiftId: entry.weekOff ? null : (shiftIds.get(entry.shiftCode ?? '') ?? null),
+        weekOff: entry.weekOff,
+      };
+    });
+    const upserted = await applyRosterEntries(db, {
+      actorUserId: context.user.id,
+      entries,
+      ip: context.req.ip ?? null,
+    });
     return { upserted };
   });
 
@@ -351,11 +478,12 @@ const weekClose = withPermission('admin.integrations')
 
 export const attendanceConfigRouter = {
   listShifts,
+  listShiftsForRoster,
   upsertShift,
   listHolidays,
   upsertHoliday,
   setScheme,
-  shiftCatalog,
+  getTeamRoster,
   setRoster,
   dayRecords,
   overrideDay,

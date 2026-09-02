@@ -236,7 +236,9 @@ run('Stage 1.6 — absence, letters, policies (live Postgres)', () => {
     expect(letter.issued_at).not.toBeNull();
 
     // The archived document carries the SUBSTITUTED values.
-    const doc = await readDocument(db, letter.document_id);
+    const documentId = letter.document_id;
+    if (documentId === null) throw new Error('expected letter.document_id');
+    const doc = await readDocument(db, documentId);
     const body = doc.content.toString('utf8');
     expect(body).toContain('2032-07-01'); // absence_start_date rendered
     expect(body).toContain('(7 days)');

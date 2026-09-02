@@ -14,7 +14,14 @@ export {
   monthStart,
   nextMonthStart,
 } from './month-lock.service.js';
+export {
+  getManagerApprovalLedger,
+  approveManagerMonth,
+  countPendingManagerApprovals,
+  listManagersWithReports,
+} from './manager-approval.service.js';
 export { registerAttendanceWorkflowHooks } from './workflow-hooks.js';
+export { applyRosterEntries, type RosterPersistenceEntry } from './roster.service.js';
 export { createRegularization, listRegularizations } from './regularization.service.js';
 export {
   recordDetectedOvertime,

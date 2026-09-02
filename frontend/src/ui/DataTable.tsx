@@ -77,6 +77,7 @@ export function DataTable<T>({
   const cell = (col: Column<T>, row: T): ReactNode => (
     <div
       key={col.key}
+      role="cell"
       className={cn(
         'truncate',
         col.numeric && 'text-right tabular-nums',
@@ -92,28 +93,44 @@ export function DataTable<T>({
   };
 
   return (
-    <div className="overflow-hidden rounded-card bg-surface u-shadow-card">
-      {/* Header */}
-      <div
-        className="grid gap-3 border-b border-line px-4 py-3 text-xs font-semibold uppercase tracking-wide text-ink-muted"
-        style={{ gridTemplateColumns: gridTemplate }}
-      >
-        {columns.map((c) => (
-          <div key={c.key} className={cn(c.numeric && 'text-right')}>
-            {c.header}
-          </div>
-        ))}
+    <div
+      role="table"
+      aria-rowcount={rows.length + 1}
+      aria-colcount={columns.length}
+      className="overflow-hidden rounded-card bg-surface u-shadow-card"
+    >
+      {/* Header — role chain must be table > rowgroup > row > columnheader, or
+          a screen reader cannot navigate the grid at all. */}
+      <div role="rowgroup">
+        <div
+          role="row"
+          aria-rowindex={1}
+          className="grid gap-3 border-b border-line px-4 py-3 text-xs font-semibold uppercase tracking-wide text-ink-muted"
+          style={{ gridTemplateColumns: gridTemplate }}
+        >
+          {columns.map((c) => (
+            <div key={c.key} role="columnheader" className={cn(c.numeric && 'text-right')}>
+              {c.header}
+            </div>
+          ))}
+        </div>
       </div>
 
       {rows.length === 0 ? (
-        <div className="p-6">{empty ?? <DefaultEmpty />}</div>
+        <div role="presentation" className="p-6">
+          {empty ?? <DefaultEmpty />}
+        </div>
       ) : virtualize ? (
         <div
           ref={scrollRef}
+          role="rowgroup"
           className="overflow-auto"
           style={{ maxHeight }}
         >
+          {/* Presentational: the virtualizer's sizer must not sit in the
+              accessibility tree between the rowgroup and its rows. */}
           <div
+            role="presentation"
             style={{ height: virtualizer.getTotalSize(), position: 'relative' }}
           >
             {virtualizer.getVirtualItems().map((vi) => {
@@ -124,6 +141,8 @@ export function DataTable<T>({
                 <div
                   key={key}
                   role="row"
+                  aria-rowindex={vi.index + 2}
+                  aria-selected={key === selectedKey ? true : undefined}
                   tabIndex={clickable ? 0 : undefined}
                   onClick={() => { activate(row); }}
                   onKeyDown={(e) => {
@@ -151,15 +170,18 @@ export function DataTable<T>({
         </div>
       ) : (
         <div
+          role="rowgroup"
           className="overflow-auto"
           style={{ maxHeight: rows.length * rowHeight > maxHeight ? maxHeight : undefined }}
         >
-          {rows.map((row) => {
+          {rows.map((row, index) => {
             const key = rowKey(row);
             return (
               <div
                 key={key}
                 role="row"
+                aria-rowindex={index + 2}
+                aria-selected={key === selectedKey ? true : undefined}
                 tabIndex={clickable ? 0 : undefined}
                 onClick={() => { activate(row); }}
                 onKeyDown={(e) => {

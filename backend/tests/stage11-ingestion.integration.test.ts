@@ -9,7 +9,7 @@ import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
-import type { Kysely } from 'kysely';
+import { sql, type Kysely } from 'kysely';
 import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
@@ -126,6 +126,7 @@ run('Stage 1.1 — productionized ingestion (live Postgres)', () => {
       .select(db.fn.countAll().as('n'))
       .where('template_code', '=', 'device_silent')
       .where('recipient_email', '=', `it-${stamp}@rashmi.test`)
+      .where(sql<boolean>`payload ->> 'doorCode' = ${door}`)
       .executeTakeFirstOrThrow();
     expect(Number(queued.n)).toBe(2); // exactly two transitions, two alerts
 

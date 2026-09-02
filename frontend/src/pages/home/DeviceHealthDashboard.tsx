@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2, DatabaseZap, RadioTower } from 'lucide-react';
 import { todayLongIST } from '../../lib/date';
-import { Card, CardHeader, DarkCard, EmptyState, KpiPillRow, StatusBadge } from '../../ui';
+import { Card, CardHeader, DarkCard, EmptyState, KpiPillRow, PageHeader, StatusBadge } from '../../ui';
 import type { DeviceHealth } from './dashboard-types';
 import { formatTimestamp } from './dashboard-format';
 
@@ -12,15 +12,11 @@ export function DeviceHealthDashboard({ data }: { data: DeviceHealth[] }) {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="text-sm text-ink-muted">{todayLongIST()}</p>
-        <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">
-          Device health
-        </h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Kent doors, last contact and per-device ingestion watermarks.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow={todayLongIST()}
+        title="Device health"
+        description="Kent doors, last contact and per-device ingestion watermarks. Month lock waits on every expected door."
+      />
 
       <KpiPillRow
         pills={[

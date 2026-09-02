@@ -267,3 +267,122 @@ export async function teamMonthGrid(
     };
   });
 }
+
+/**
+ * Business-Unit dashboard (docs/06 §5, RPT-04) — the plant/BU head's landing.
+ *
+ * Content is exactly what §5 names: headcount, absenteeism, OT, joiners/exits
+ * and absence cases, **scoped to their org unit**. A plant head must not see
+ * another plant's numbers, so the scope is applied to every query rather than
+ * filtered in the UI.
+ *
+ * Trends come from `reporting.kpi_daily` (precomputed) — this endpoint does the
+ * "today" counts live because they are single-day and indexed, but never a
+ * multi-month scan (CLAUDE.md §1.9).
+ */
+export interface BusinessUnitDashboard {
+  scopeLabel: string;
+  headcount: { category: string; count: number }[];
+  headcountTotal: number;
+  absentToday: number;
+  scheduledToday: number;
+  absenteeismTodayPct: number | null;
+  otHoursMtd: number;
+  joinersMtd: number;
+  exitsMtd: number;
+  openAbsenceCases: { stage: string; count: number }[];
+}
+
+export async function businessUnitDashboard(
+  db: Kysely<Database>,
+  scope: { companyId?: number | undefined; locationId?: number | undefined },
+): Promise<BusinessUnitDashboard> {
+  const today = istDateString();
+  const monthStart = `${today.slice(0, 7)}-01`;
+
+  const headcountRows = await db
+    .selectFrom('core.employees as e')
+    .select((eb) => ['e.category as category', eb.fn.countAll<string>().as('n')])
+    .where('e.status', 'in', ['active', 'on_notice'])
+    .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
+    .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .groupBy('e.category')
+    .orderBy('e.category')
+    .execute();
+
+  const headcount = headcountRows.map((r) => ({
+    category: r.category ?? 'unspecified',
+    count: Number(r.n),
+  }));
+  const headcountTotal = headcount.reduce((sum, r) => sum + r.count, 0);
+
+  const dayRow = await db
+    .selectFrom('att.day_records as d')
+    .innerJoin('core.employees as e', 'e.id', 'd.employee_id')
+    .select(sql<string>`COUNT(*) FILTER (WHERE d.status IN ('A','UAB'))`.as('absent'))
+    .select(sql<string>`COUNT(*) FILTER (WHERE d.status NOT IN ('WO','H'))`.as('scheduled'))
+    .where('d.work_date', '=', sql<Date>`${today}::date`)
+    .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
+    .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .executeTakeFirst();
+
+  const absentToday = Number(dayRow?.absent ?? 0);
+  const scheduledToday = Number(dayRow?.scheduled ?? 0);
+
+  const otRow = await db
+    .selectFrom('att.day_records as d')
+    .innerJoin('core.employees as e', 'e.id', 'd.employee_id')
+    .select(sql<string>`COALESCE(SUM(d.ot_minutes), 0)`.as('minutes'))
+    .where('d.work_date', '>=', sql<Date>`${monthStart}::date`)
+    .where('d.work_date', '<=', sql<Date>`${today}::date`)
+    .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
+    .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .executeTakeFirst();
+
+  const movement = await db
+    .selectFrom('core.employees as e')
+    .select(
+      sql<string>`COUNT(*) FILTER (WHERE e.doj >= ${monthStart}::date AND e.doj <= ${today}::date)`.as(
+        'joiners',
+      ),
+    )
+    .select(
+      sql<string>`COUNT(*) FILTER (WHERE e.dol >= ${monthStart}::date AND e.dol <= ${today}::date)`.as(
+        'exits',
+      ),
+    )
+    .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
+    .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .executeTakeFirst();
+
+  const cases = await db
+    .selectFrom('att.absence_cases as c')
+    .innerJoin('core.employees as e', 'e.id', 'c.employee_id')
+    .select((eb) => ['c.stage as stage', eb.fn.countAll<string>().as('n')])
+    .where('c.closed_at', 'is', null)
+    .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
+    .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .groupBy('c.stage')
+    .execute();
+
+  const scopeLabel =
+    scope.locationId !== undefined
+      ? `Location #${String(scope.locationId)}`
+      : scope.companyId !== undefined
+        ? `Entity #${String(scope.companyId)}`
+        : 'All entities';
+
+  return {
+    scopeLabel,
+    headcount,
+    headcountTotal,
+    absentToday,
+    scheduledToday,
+    // Absence with no scheduled days is NOT 0% — it is unmeasured.
+    absenteeismTodayPct: scheduledToday === 0 ? null : (absentToday / scheduledToday) * 100,
+    otHoursMtd: Number(otRow?.minutes ?? 0) / 60,
+    joinersMtd: Number(movement?.joiners ?? 0),
+    exitsMtd: Number(movement?.exits ?? 0),
+    openAbsenceCases: cases.map((c) => ({ stage: c.stage, count: Number(c.n) })),
+  };
+}

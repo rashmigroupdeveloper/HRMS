@@ -202,6 +202,7 @@ const setDelegation = authed
       actorUserId: context.user.id,
       action: 'create',
       entity: 'wf.delegations',
+      subjectEmployeeId: context.user.employee_id,
       newValue: `→ user ${input.toUserId} (${input.fromDate}..${input.toDate})`,
     });
     return { ok: true as const };

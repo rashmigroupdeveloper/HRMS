@@ -3,7 +3,10 @@ import { Button, Card, EmptyState, Skeleton } from '../../ui';
 
 export function DashboardSkeleton() {
   return (
-    <div className="space-y-6" aria-busy="true" aria-label="Loading dashboard">
+    // role="status" is what makes aria-label legal here: a bare <div> has no
+    // role, so an aria-label on it is PROHIBITED (axe: aria-prohibited-attr)
+    // and screen readers ignore it — the label was silently doing nothing.
+    <div role="status" className="space-y-6" aria-busy="true" aria-label="Loading dashboard">
       <div className="space-y-2">
         <Skeleton className="w-36" />
         <Skeleton className="h-9 w-72" />
@@ -24,7 +27,11 @@ export function DashboardSkeleton() {
 
 export function DashboardError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <Card>
+    // role="alert" + aria-live: a failure must be ANNOUNCED, not just drawn
+    // (docs/05 §7 `aria-live-errors`). This is the shared error surface for
+    // every dashboard and list in the product, so announcing here fixes them
+    // all at once — and every error carries a recovery path (§6 kill-list #5).
+    <Card role="alert" aria-live="assertive">
       <EmptyState
         icon={<AlertTriangle />}
         title="Dashboard unavailable"

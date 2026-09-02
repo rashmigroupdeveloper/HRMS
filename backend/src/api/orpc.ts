@@ -12,7 +12,7 @@ import type { Request, Response } from 'express';
 import type { Kysely, Selectable } from 'kysely';
 import type { Database, UsersTable } from '../core/db/types.js';
 import { verifyToken } from '../core/auth/jwt.js';
-import { getUserPermissions } from '../core/rbac/permissions.service.js';
+import { getUserPermissionAccess, getUserPermissions } from '../core/rbac/permissions.service.js';
 import type { PermissionCode } from '../core/rbac/seed-data.js';
 
 /** Per-request context assembled by the Express middleware (handler.ts). */
@@ -77,6 +77,37 @@ export const authed = base.use(async ({ context, next }) => {
  * the next request, no deploy. The required permission is also stamped into
  * the OpenAPI description so the contract documents who can call what.
  */
+/**
+ * Some surfaces are legitimately reachable through MORE THAN ONE permission,
+ * because docs/08 §2 defines three parallel report permissions —
+ * `reports.hr`, `reports.bu`, `reports.ceo` — granted to different roles for
+ * the SAME screens. Gating those on `reports.hr` alone silently killed the
+ * "Reports (BU)" nav docs/08 §3 promises plant_head, and the "Reports (read)"
+ * it promises ceo_cell.
+ *
+ * The narrowing still comes from SCOPE, not from the permission: whichever
+ * permission the caller holds, `permissionAccess` carries its scope
+ * (`org_unit` for plant_head, `all` for hr_head), and the query applies it.
+ * This widens WHO may ask, never WHAT they get back.
+ */
+export function withAnyPermission(...permissions: PermissionCode[]) {
+  return authed.use(async ({ context, next }) => {
+    const held = await getUserPermissions(context.db, context.user.id);
+    const matched = permissions.find((code) => held.has(code));
+    if (matched === undefined) {
+      throw new ORPCError('FORBIDDEN', {
+        message: `Missing permission: one of ${permissions.join(', ')}`,
+      });
+    }
+    // Scope comes from the permission the caller actually holds.
+    const permissionAccess = await getUserPermissionAccess(context.db, context.user.id, matched);
+    if (permissionAccess === null) {
+      throw new ORPCError('FORBIDDEN', { message: `Missing permission: ${matched}` });
+    }
+    return next({ context: { permissions: held, permissionAccess } });
+  });
+}
+
 export function withPermission(permission: PermissionCode) {
   return authed.use(async ({ context, next }) => {
     // context.db is already the non-null instance injected by `authed`.
@@ -84,6 +115,14 @@ export function withPermission(permission: PermissionCode) {
     if (!permissions.has(permission)) {
       throw new ORPCError('FORBIDDEN', { message: `Missing permission: ${permission}` });
     }
-    return next({ context: { permissions } });
+    const permissionAccess = await getUserPermissionAccess(
+      context.db,
+      context.user.id,
+      permission,
+    );
+    if (permissionAccess === null) {
+      throw new ORPCError('FORBIDDEN', { message: `Missing permission: ${permission}` });
+    }
+    return next({ context: { permissions, permissionAccess } });
   });
 }

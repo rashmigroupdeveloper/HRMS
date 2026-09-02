@@ -8,8 +8,20 @@
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
+import { booleanQuery } from '../../api/zod.js';
+import { writeAudit } from '../../core/audit/audit.service.js';
+import { rowsToExcelBuffer } from '../../core/excel/workbook.js';
 import { readDocument } from '../../core/storage/index.js';
-import { acknowledgePolicy, listActivePolicies, listPoliciesFor, myPendingPolicies, policyAckStatus, publishPolicy, runPolicyAckNag } from './policies.service.js';
+import {
+  acknowledgePolicy,
+  listActivePolicies,
+  listPoliciesFor,
+  myPendingPolicies,
+  policyAckReport,
+  policyAckStatus,
+  publishPolicy,
+  runPolicyAckNag,
+} from './policies.service.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
 
@@ -148,4 +160,74 @@ const nag = withPermission('admin.integrations')
   .output(z.object({ queued: z.number() }))
   .handler(async ({ context }) => ({ queued: await runPolicyAckNag(context.db) }));
 
-export const policiesRouter = { publish, myPolicies, pendingPolicies, policyCatalog, policyContent, ack, ackStatus, nag };
+/**
+ * R30 — Policy Acknowledgment Report (docs/06 §3), on screen and as Excel.
+ * Both call `policyAckReport` with the SAME filters, so the workbook can never
+ * disagree with the table (RPT-06).
+ */
+const ackReportInput = z.object({
+  policyId: z.coerce.number().int().positive().optional(),
+  pendingOnly: booleanQuery().optional(),
+});
+
+const ackReportRow = z.object({
+  policyId: z.number(),
+  policyTitle: z.string(),
+  effectiveDate: z.string(),
+  ecode: z.string(),
+  employeeName: z.string(),
+  department: z.string().nullable(),
+  entity: z.string(),
+  acknowledged: z.boolean(),
+  acknowledgedAt: z.string().nullable(),
+});
+
+const ackReport = withPermission('reports.hr')
+  .route({ method: 'GET', path: '/policies/ack-report', summary: 'R30 — per-employee acknowledgment status' })
+  .input(ackReportInput)
+  .output(z.array(ackReportRow))
+  .handler(({ input, context }) => policyAckReport(context.db, input));
+
+const ackReportExcel = withPermission('reports.hr')
+  .route({ method: 'GET', path: '/policies/ack-report/export', summary: 'R30 as Excel (same query as the table)' })
+  .input(ackReportInput)
+  .output(z.object({ filename: z.string(), base64: z.string() }))
+  .handler(async ({ input, context }) => {
+    const rows = await policyAckReport(context.db, input);
+    const buf = await rowsToExcelBuffer(
+      'R30 Policy acknowledgment',
+      [
+        { header: 'Policy', key: 'policyTitle', width: 34 },
+        { header: 'Effective', key: 'effectiveDate', width: 12 },
+        { header: 'E-code', key: 'ecode', width: 14 },
+        { header: 'Employee', key: 'employeeName', width: 26 },
+        { header: 'Entity', key: 'entity', width: 10 },
+        { header: 'Department', key: 'department', width: 22 },
+        { header: 'Acknowledged', key: 'acknowledged', width: 14 },
+        { header: 'Acknowledged at', key: 'acknowledgedAt', width: 24 },
+      ],
+      rows,
+    );
+    await writeAudit(context.db, {
+      actorUserId: context.user.id,
+      action: 'export',
+      entity: 'core.policy_acknowledgments',
+      field: 'R30',
+      newValue: `${String(rows.length)} rows`,
+      ip: context.req.ip ?? null,
+    });
+    return { filename: `R30-policy-acknowledgment.xlsx`, base64: buf.toString('base64') };
+  });
+
+export const policiesRouter = {
+  publish,
+  myPolicies,
+  pendingPolicies,
+  policyCatalog,
+  policyContent,
+  ack,
+  ackStatus,
+  nag,
+  ackReport,
+  ackReportExcel,
+};

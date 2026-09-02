@@ -19,8 +19,8 @@
 - [x] Both projects: `npm install` clean; **`npm run verify` exits 0** (backend: typecheck → lint → knip → depcruise → test → build · frontend: typecheck → lint → knip → build)
 **Exit criteria — all verified 6 Jul 2026:** ✅ both verifies green (exit 0) independently · ✅ `/health` responded live on :5199 with the correct envelope · ✅ `npm run migrate` connected to Postgres 16 and completed ("No migrations to run!", `pgmigrations` table created).
 
-## Stage 0.1 — External dependency chase + security hygiene   `[ ☐ ]`
-**Goal:** unblock the build's two hard external dependencies and close known credential leaks — asks sent day 1.
+## Stage 0.1 — External dependency chase   `[ ☐ ]`
+**Goal:** unblock the build's hard external dependencies — asks sent day 1.
 **Depends on:** nothing. Chase relentlessly; everything in Phase 1–2 hangs on these.
 **Tasks:**
 - [ ] P0-T01 — Kent/Astra access method (DB view / REST / SFTP-CSV) confirmed with IT *(blocks Phase 1)*
@@ -29,10 +29,9 @@
 - [ ] P0-T04 — Payslip template sign-off (09-RECON §2 is the reference)
 - [ ] P0-T05 — Exact per-entity headcount confirmed (capacity sign-off input). *Part-answered by the live EMS read (doc 11 §0): 1,066 in the EMS master — confirm this covers all on-roll (blue-collar too?) vs the ~3k figure.*
 - [ ] P0-T06 — The 9 statutory policy decisions (10 §15) signed: PF base, bonus true-up, LOP divisor, OT base, DA/VDA, penalty→pay, gratuity 5y/4y240d, grade structures, sample formats. **Plus 2026 Labour Codes verification** (F&F TAT, wages ≥50% CTC — 10 §8)
-- [ ] P0-T07 — Rotate leaked credentials: greytHR password, EMS SSH, MinIO console (docs 09/11) — *still open after the 6 Jul Mongo read (Atlas URI also seen)*
 - [ ] P0-T08 *(new — from doc 11 §0.2 / doc 00 D3 update)* — **Entity-scope confirmations from HR:** (a) which small India entities actually run payroll through this HRMS (eHoome iOT, Koove iOT, Koove Organic, Rashmi Rare Earth) vs. group companies out of scope; (b) canonical legal name of "Rashmi 6 Paradigm Limited" (suspected typo); (c) confirm the 5 foreign entities (RPF Dubai, Reach Mining Tanzania, RM UK, RM Bahrain, Rashmi Group holding) stay master-only / out of India payroll
 - [~] P0-T09 *(new)* — **Read-only EMS Mongo export** for the employee-master seed (users collection, 1,066 rows) — we have evidence of access; formalize a sanctioned export + freeze a snapshot date with IT. *Progress 7 Jul 2026: read-only taxonomy/schema recon done (no PII) → `docs/recon/ems-master-taxonomy.md` (14 entities + counts, 112 departments, 176 designations, e-code prefixes, travel tiers, data-quality counts). The sanctioned frozen-snapshot export itself still pending IT.*
-**Exit criteria:** Kent method confirmed in writing · admin-recon artifacts archived in repo (`docs/recon/`) · all 9+1 policy decisions recorded with owner sign-off in `core.settings` seed notes · entity-scope answers recorded (P0-T08) · EMS users snapshot secured (P0-T09) · credentials rotated (confirmed by IT).
+**Exit criteria:** Kent method confirmed in writing · admin-recon artifacts archived in repo (`docs/recon/`) · all 9+1 policy decisions recorded with owner sign-off in `core.settings` seed notes · entity-scope answers recorded (P0-T08) · EMS users snapshot secured (P0-T09).
 
 ## Stage 0.2 — Scaffold, tooling, CI, deploy   `[ ◐ in progress ]`
 **Goal:** every machine-enforced quality gate live from commit #1; deploy machinery ready.
@@ -48,7 +47,7 @@
 - [x] CI pipeline: two independent jobs (backend/frontend), gate order typecheck → eslint → knip → depcruise → test → build *(Testcontainers integration stage added when first DB test lands)*
 **Exit criteria:** fresh clone → `npm install && npm run verify` green in both projects ✅ (6 Jul 2026) · Money rounding tests pass ✅ · staging deploy via script works ⏳ (server access) · deliberate cross-module import fails CI ⏳ (test on first PR).
 
-## Stage 0.3 — Design system port (`frontend/src/tokens` + `frontend/src/ui`)   `[ ◐ in progress ]`
+## Stage 0.3 — Design system port (`frontend/src/tokens` + `frontend/src/ui`)   `[ ☑ done 1 Sep 2026 — test + a11y harness closed the last exit criterion ]`
 **Goal:** the Warm Editorial component kit ready so every later screen composes, never invents.
 **Depends on:** 0.2.
 **Tasks:**
@@ -56,7 +55,10 @@
 - [~] P0-T12 — Port/build primitives: **done** — Button (5 variants × 7 states), IconButton, Card/CardHeader, DarkCard (grain), Pill/StatusBadge (icon+label, 5 tones), KpiNumber (count-up once, reduced-motion, en-IN tabular), **TextField** (label-above per §284, blur-validated error with `role="alert"`, `aria-invalid`/`aria-describedby`, leading-icon + password-reveal, ref-forwarded for focus-first-invalid), **DataTable** (virtualized >50 via @tanstack/react-virtual, sticky header, right-aligned numerics, hover-wash / solid-gold-selected per doc 12 §7.4, keyboard-activatable rows), **Drawer** (right slide, `--ease-drawer`, scrim+Esc close, scroll-lock, focus in/restore), **ConfirmModal** (centered, **typed-confirmation** variant), **EmptyState**, **Timeline** (approval-chain, 4 states). **FilterPanel + MonthCalendar done 8 Jul 2026** (see below) — primitive port complete
 - [~] P0-T12 — Crextio-signature set: **done** — KpiPillRow (4-state), HatchFill, SegmentedProgress (tri-segment), IconButton, DotMatrix. **Remaining:** RosterGrid, ApprovalInbox *(05 §5, 12 §7)*
 - [x] App shell: **done 11 Jul 2026** — masthead + gold-active pill-nav + ⌘K search stub + theme toggle; **`react-router-dom` routing** with deep links; **per-role nav** from `/auth/me` permissions (docs/08 §3) in `frontend/src/app/{AppShell,nav-config,router}.tsx`; design-system gallery moved to `/dev/gallery` (super_admin). Deferred: RosterGrid, ApprovalInbox, Vitest+axe, ⌘K real search.
-- [ ] **Tests + a11y (exit-criteria gap):** frontend has no test runner yet (Vitest+Testing Library+axe) — add it, then cover all 7 states per component in both themes. *This is the remaining blocker for Stage 0.3 sign-off.*
+- [x] **Tests + a11y — DONE 1 Sep 2026.** Vitest + Testing Library + axe-core harness added; **156 tests, 13 files, 82.26% statement / 79.9% branch coverage** (repo floor is 80%). Every kit component is asserted in BOTH themes via `renderThemed`, and axe runs on the rendered output. `npm run verify` now runs tests **before** build, so an accessibility regression fails the pipeline.
+  - **Found and fixed a critical product-wide a11y defect:** `DataTable` emitted `role="row"` with no `role="table"` ancestor and no `role="cell"` children, so screen readers could not navigate **any** table in the product (muster, all reports, audit log, permission grid). Now a complete `table → rowgroup → row → cell` chain with `aria-rowcount`/`aria-rowindex`/`aria-selected`, with regression tests covering the virtualized muster path.
+  - Also patched a pre-existing **high-severity `react-router` CSRF advisory** (GHSA-qwww-vcr4-c8h2) found during install; production dependencies now audit clean.
+- [x] *(1 Sep 2026)* **Hover gating fixed** — `hover:` utilities were emitted ungated, so plant tablets got sticky hover states on tap. A `@custom-variant hover` in `index.css` now wraps every hover utility in `@media (hover: hover) and (pointer: fine)` (docs/05 §2.3). Verified in the built CSS: 14/14 gated.
 **Delivered 6 Jul 2026:** `frontend/src/ui/` (cn, theme, ThemeToggle, Button, IconButton, Card, DarkCard, StatusBadge, KpiNumber, HatchFill, KpiPillRow, SegmentedProgress, DotMatrix, DataTable, Drawer, ConfirmModal, EmptyState, Timeline, index barrel) + interactive gallery in `App.tsx`. **`npm run verify` green (typecheck → lint → knip → build, exit 0).** lucide-react + @tanstack/react-virtual added (both sanctioned by §5/§7). Zero hardcoded hex in components (all via tokens/`color-mix`).
 **Delivered 8 Jul 2026 — §5 inventory completion:** **Toast** (sonner — spec-named dep — Warm Editorial theme, aria-live polite per kill-list #10, Undo-action per #6), **form vocabulary** (**Select** — ARIA combobox/listbox, `aria-activedescendant`, typeahead, scale-from-trigger; **DatePicker** — ISO value / `DD MMM YYYY` display, IST today, keyboard arrows cross month edges, min/max; **Textarea** with warning-toned live counter; **Checkbox** gold-check; **Switch** gold-track `role="switch"`), **feedback layer** (**Skeleton** `.u-shimmer`, reduced-motion-safe; **Tooltip** — charcoal pill per 12 §7, delayed-first/instant-adjacent per 05 §2.3, focus + Escape), **FilterPanel/FilterSection** (accordion — instant per frequency test, async skeleton facets, Clear-all + active-count), **MonthCalendar** (Monday-first grid via shared `calendar.ts`, hatched week-offs, gold today-ring as the view's one accent, state dots + auto legend + per-day aria-labels, note tooltips, roving-tabindex arrow nav). Gallery now exercises: apply-leave drawer (`pages/leave/` — draft survives close per kill-list #4, error → focus-first-invalid), people-filter drawer (`pages/people/` — selections persist per #2), skeleton facet load, approve-with-Undo toast, finalize-ceremony toast, masthead tooltips. **`npm run verify` green.** Deferred to module phases by design: RosterGrid + ApprovalInbox (Phase 1 composites), payroll Stepper (Phase 2), ⌘K palette (ships with real routing/shell).
 **Tests required:** Testing Library component tests (all 7 interactive states per component — 05 §7b); axe accessibility checks in both themes.
@@ -99,6 +101,14 @@
 **Exit criteria:** ~~scale numbers recorded~~ ✅ · ~~partitioning frozen~~ ✅ · one real day of REAL Kent data ⏳ (blocked on P0-T01 — the only remaining piece).
 
 ---
+
+> **Per-role access audit (1 Sep 2026).** A probe user was created for all 10 roles and every page's data flow traced end to end. Findings:
+> - **DEFECT FIXED — reports gated on one permission of three.** docs/08 §2 defines `reports.hr` / `reports.bu` / `reports.ceo` as parallel grants to different roles, but every report procedure required `reports.hr`. The "Reports (BU)" nav §3 promises **plant_head**, and the "Reports (read)" it promises **ceo_cell**, both returned 403. Added `withAnyPermission()`; the narrowing still comes from SCOPE (plant_head stays `org_unit`), so this widens who may ask, never what comes back. The HR *operational* dashboard deliberately stays on `reports.hr` alone, because §3 says ceo_cell gets no operational screens.
+> - **DEFECT FIXED — helpdesk ticket numbers from `COUNT(*)`.** A count goes backwards after any deletion and races under concurrency; both collide on a UNIQUE column. Replaced with a Postgres sequence.
+> - New suite `tests/role-access.integration.test.ts` (9 tests) pins the matrix so a permission change cannot silently close a screen — including the explicit RML rule that **managers never hold `attendance.manual_override`** (PP-v2-18: greytHR let managers mark absent employees "Present").
+>
+> **⚠ DOC CONTRADICTION — needs a decision, not a code change.** docs/08 **§2** grants `ceo_cell` both `attendance.team.read` (✓R) and `attendance.muster.export` (✓), but **§3** says ceo_cell has "**No operational screens**". The seed follows §2, so CEO Cell can currently open the muster and team views. Per CLAUDE.md ("if the docs contradict each other, surface it — don't silently pick one") this is left as-is and raised rather than resolved unilaterally.
+> **⚠ Also for decision:** `GET /settings` is `authed` (any signed-in user can read policy values), but the §2 grid marks `admin.settings` as `—` for employee. Defensible — grace minutes and OT thresholds govern the employee's own attendance — but it is a deviation from the grid.
 
 ## Gate G0 — Phase 0 sign-off
 

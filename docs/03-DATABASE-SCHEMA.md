@@ -47,6 +47,7 @@ CREATE TABLE core.user_roles (
 );
 
 CREATE TABLE core.audit_log (      -- append-only (CORE-11, NFR-04); INSERT-only enforced by trigger
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   actor_user_id BIGINT REFERENCES core.users,  -- who did it (NULL = system job)
   action  TEXT NOT NULL,           -- 'update' | 'create' | 'delete' | 'login' | 'approve' | 'finalize' ...
   entity  TEXT NOT NULL,           -- table or domain name, e.g. 'core.employees'
@@ -54,9 +55,14 @@ CREATE TABLE core.audit_log (      -- append-only (CORE-11, NFR-04); INSERT-only
   field   TEXT,                    -- which column (for field-level changes)
   old_value TEXT, new_value TEXT,  -- values as text; sensitive fields stored masked
   ip      INET,                    -- source of auth events
-  at      TIMESTAMPTZ NOT NULL DEFAULT now()
+  at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  scope_org_unit_id BIGINT REFERENCES core.org_units, -- historical CORE-10 data scope; NULL = global/all-scope readers only
+  hash_version SMALLINT NOT NULL DEFAULT 2 CHECK (hash_version IN (1, 2)), -- v1 legacy; v2 hashes scope
+  prev_hash TEXT NOT NULL,         -- 'GENESIS' for the first row, otherwise previous row_hash
+  row_hash  TEXT NOT NULL          -- SHA-256(prev_hash || row content), set by DB trigger (14 §7.4)
 );
 CREATE INDEX ON core.audit_log (entity, entity_id, at);
+CREATE INDEX ON core.audit_log (scope_org_unit_id, at DESC, id DESC);
 ```
 
 ## 2. Organization structure (`core`)

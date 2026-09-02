@@ -34,7 +34,7 @@ async function main(): Promise<void> {
       permIds.set(row.code, row.id);
     }
 
-    const pairs: { role_id: number; permission_id: number }[] = [];
+    const pairs: { role_id: number; permission_id: number; scope: (typeof ROLE_GRANTS)[RoleCode][number]['scope'] }[] = [];
     for (const [roleCode, grants] of Object.entries(ROLE_GRANTS) as [
       RoleCode,
       (typeof ROLE_GRANTS)[RoleCode],
@@ -47,7 +47,7 @@ async function main(): Promise<void> {
         if (permId === undefined) throw new Error(`permission missing after seed: ${grant.permission}`);
         if (!seen.has(permId)) {
           seen.add(permId);
-          pairs.push({ role_id: roleId, permission_id: permId });
+          pairs.push({ role_id: roleId, permission_id: permId, scope: grant.scope });
         }
       }
     }
@@ -55,7 +55,11 @@ async function main(): Promise<void> {
     await db
       .insertInto('core.role_permissions')
       .values(pairs)
-      .onConflict((oc) => oc.columns(['role_id', 'permission_id']).doNothing())
+      .onConflict((oc) =>
+        oc.columns(['role_id', 'permission_id']).doUpdateSet((eb) => ({
+          scope: eb.ref('excluded.scope'),
+        })),
+      )
       .execute();
 
     const counts = {

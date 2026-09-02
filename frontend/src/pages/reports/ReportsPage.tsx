@@ -1,113 +1,115 @@
-import { CalendarDays, Clock3, FileSpreadsheet, ScanLine, UserMinus, Users } from 'lucide-react';
+import { ArrowRight, CalendarDays, Clock3, ScanLine, UserMinus, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Card, Pill } from '../../ui';
+import { Card, DarkCard, PageHeader } from '../../ui';
+
+const featured = {
+  code: 'R1',
+  title: 'Muster summary',
+  body: 'Employee day glyphs, totals, managers and cost centres. Defaults to this month; list and Excel share the same filters.',
+  to: '/attendance/muster',
+};
 
 const reports = [
   {
-    code: 'R1',
-    title: 'Muster summary',
-    body: 'Employee day glyphs, totals, managers and cost centres.',
-    to: '/attendance/muster',
-    icon: FileSpreadsheet,
-    ready: true,
-  },
-  {
     code: 'R2',
     title: 'Swipe detail',
-    body: 'Processed first-in, last-out, late, early and OT evidence.',
-    to: '/reports/r2',
+    body: 'First-in, last-out, doors, late/early and raw-swipe reconciliation.',
+    to: '/reports/r2-swipes',
     icon: ScanLine,
-    ready: true,
   },
   {
     code: 'R3',
     title: 'AR / OD register',
     body: 'Regularisation type, period, workflow and applied state.',
-    to: '/reports/r3',
+    to: '/reports/r3-regularizations',
     icon: CalendarDays,
-    ready: true,
   },
   {
     code: 'R4',
     title: 'Attendance exceptions',
     body: 'Late, early exit and unauthorised absence by month.',
-    to: '/reports/r4',
+    to: '/reports/r4-exceptions',
     icon: Clock3,
-    ready: true,
   },
   {
     code: 'R5',
     title: 'Overtime register',
-    body: 'Detected, claimed, approved and decision latency.',
-    to: '/reports/r5',
+    body: 'Detected, claimed, approved and 48-hour decision latency.',
+    to: '/reports/r5-ot',
     icon: Clock3,
-    ready: true,
   },
   {
     code: 'R6',
     title: 'Absence cases',
     body: 'Watch, show-cause and resolution stages.',
-    to: '/reports/r6',
+    to: '/reports/r6-absence',
     icon: UserMinus,
-    ready: true,
   },
   {
     code: 'R24',
     title: 'Boarding and exits',
     body: 'Daily joiners and exits behind the 07:00 notification.',
-    to: '/reports/boarding-exit',
+    to: '/reports/r24-boarding',
     icon: Users,
-    ready: true,
   },
   {
     code: 'R27',
     title: 'Headcount demographics',
-    body: 'Status and employment-category counts.',
-    to: '/reports/r27',
+    body: 'Status × category × department counts.',
+    to: '/reports/r27-headcount',
     icon: Users,
-    ready: true,
   },
 ];
 
 export function ReportsPage() {
   return (
     <div className="space-y-6">
-      <header>
-        <p className="text-sm text-ink-muted">Self-service reporting</p>
-        <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">
-          Reports catalog
-        </h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Stage 1 attendance and workforce reports. Exact-column completion remains tracked per
-          report.
+      <PageHeader
+        eyebrow="Self-service reporting · RPT-01"
+        title="Reports catalog"
+        description="Stage 1 attendance and workforce reports. Each row opens the live filter + Excel surface. Muster is this month until you change it."
+      />
+
+      <DarkCard>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+          {featured.code} · daily loop
         </p>
-      </header>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {reports.map(({ code, title, body, to, icon: Icon, ready }) => {
-          const content = (
-            <Card interactive={Boolean(to)} className="h-full">
-              <div className="flex items-start justify-between gap-3">
-                <div className="grid size-11 place-items-center rounded-full bg-accent-soft text-accent-ink">
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <h2 className="text-3xl font-light tracking-tight text-hero-ink">{featured.title}</h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-hero-muted">{featured.body}</p>
+          </div>
+          <Link
+            to={featured.to}
+            className="u-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink"
+          >
+            Open this month <ArrowRight className="size-4" />
+          </Link>
+        </div>
+      </DarkCard>
+
+      <Card padded={false}>
+        <ul>
+          {reports.map(({ code, title, body, to, icon: Icon }) => (
+            <li key={code} className="border-b border-dashed border-line last:border-0">
+              <Link
+                to={to}
+                className="flex items-start gap-4 px-6 py-5 transition-colors duration-[var(--motion-micro)] ease-[var(--ease-std)] hover:bg-accent-soft"
+              >
+                <div className="grid size-11 shrink-0 place-items-center rounded-full bg-surface-2 text-ink">
                   <Icon className="size-5" />
                 </div>
-                <Pill accent={code === 'R1'}>{code}</Pill>
-              </div>
-              <h2 className="mt-6 text-lg font-semibold text-ink">{title}</h2>
-              <p className="mt-1 text-sm leading-6 text-ink-muted">{body}</p>
-              <p className="mt-5 text-xs font-semibold text-ink">
-                {to ? 'Open report →' : ready ? 'API ready · filter UI next' : 'Planned'}
-              </p>
-            </Card>
-          );
-          return to ? (
-            <Link key={code} to={to}>
-              {content}
-            </Link>
-          ) : (
-            <div key={code}>{content}</div>
-          );
-        })}
-      </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs tabular-nums text-ink-muted">{code}</p>
+                  <h2 className="mt-0.5 text-base font-semibold text-ink">{title}</h2>
+                  <p className="mt-1 text-sm leading-6 text-ink-muted">{body}</p>
+                </div>
+                <span className="shrink-0 pt-5 text-sm font-semibold text-ink">Open →</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Card>
     </div>
   );
 }

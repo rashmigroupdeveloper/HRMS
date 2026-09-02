@@ -7,12 +7,47 @@ import {
   DarkCard,
   DotMatrix,
   EmptyState,
+  formatDateIN,
   KpiPillRow,
+  PageHeader,
   Pill,
   StatusBadge,
 } from '../../ui';
 import type { TeamMemberMonth } from './dashboard-types';
 import { attendanceDot, attendanceLabel, formatTime } from './dashboard-format';
+
+const GOLD =
+  'u-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink';
+const CREAM =
+  'u-press inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--surface)_12%,transparent)] px-5 py-2.5 text-sm font-semibold text-hero-ink';
+
+/**
+ * Monday–Sunday ISO dates for the IST calendar week that contains `today`.
+ * `today` is already YYYY-MM-DD in IST; weekday math uses UTC calendar
+ * arithmetic so the browser timezone cannot shift the window.
+ */
+function istWeekDates(today: string): string[] {
+  const [year, month, day] = today.split('-').map(Number);
+  if (year === undefined || month === undefined || day === undefined) return [];
+  const utc = new Date(Date.UTC(year, month - 1, day));
+  if (Number.isNaN(utc.getTime())) return [];
+  const monday = new Date(utc);
+  monday.setUTCDate(utc.getUTCDate() - ((utc.getUTCDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(monday);
+    date.setUTCDate(monday.getUTCDate() + index);
+    return `${String(date.getUTCFullYear())}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+  });
+}
+
+function membersOnLeaveThisWeek(members: TeamMemberMonth[], week: string[]) {
+  return members
+    .map((member) => ({
+      member,
+      dates: week.filter((iso) => member.days[iso]?.status === 'L'),
+    }))
+    .filter((row) => row.dates.length > 0);
+}
 
 export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; today: string }) {
   const todayRows = data.map((member) => ({ member, day: member.days[today] }));
@@ -20,32 +55,55 @@ export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; tod
   const absent = todayRows.filter(({ day }) => day?.status === 'A' || day?.status === 'UAB').length;
   const onLeave = todayRows.filter(({ day }) => day?.status === 'L').length;
   const awaiting = todayRows.filter(({ day }) => day === undefined).length;
+  const absentIsTheJob = absent > 0;
+  const goldOnCta = !absentIsTheJob;
+  const week = istWeekDates(today);
+  const onLeaveWeek = membersOnLeaveThisWeek(data, week);
+  const weekMonday = week[0];
+  const weekSunday = week[6];
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="text-sm text-ink-muted">{todayLongIST()}</p>
-        <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">
-          Your team today
-        </h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Direct-report attendance from the current processed month.
-        </p>
-      </header>
+      <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+      <PageHeader
+        eyebrow={todayLongIST()}
+        title="Your team today"
+        description="Direct-report attendance from the current processed month. Names open the person; the gold path opens the month you sign."
+      />
 
       <KpiPillRow
         pills={[
-          { label: 'Team members', value: data.length, state: 'filled', icon: <Users /> },
-          { label: 'Present today', value: present, state: 'outline', icon: <CheckCircle2 /> },
+          {
+            label: 'Team members',
+            value: data.length,
+            state: 'filled',
+            icon: <Users />,
+            to: '/my/team',
+          },
+          {
+            label: 'Present today',
+            value: present,
+            state: 'outline',
+            icon: <CheckCircle2 />,
+            to: '/my/team',
+          },
           {
             label: 'Absent / UAB',
             value: absent,
-            state: absent > 0 ? 'accent' : 'outline',
+            state: absentIsTheJob ? 'accent' : 'outline',
             icon: <AlertTriangle />,
+            to: '/my/team',
           },
-          { label: 'Awaiting record', value: awaiting, state: 'hatched', icon: <Clock3 /> },
+          {
+            label: 'Awaiting record',
+            value: awaiting,
+            state: awaiting > 0 ? 'hatched' : 'outline',
+            icon: <Clock3 />,
+            to: '/my/team',
+          },
         ]}
       />
+      </div>
 
       <DarkCard className="grid gap-8 md:grid-cols-[1.25fr_1fr]">
         <div>
@@ -58,20 +116,15 @@ export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; tod
               : `${String(present)} of ${String(data.length)} present`}
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-6 text-hero-muted">
-            Open the month grid for day-level first-in, last-out and attendance status. Subtree
-            scope remains available to senior managers.
+            {absent + awaiting > 0
+              ? `${String(absent + awaiting)} people still need a mark or a regularisation before month lock.`
+              : 'Everyone in view has a processed mark for today.'}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              to="/my/team"
-              className="u-press inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink"
-            >
+            <Link to="/my/team" className={goldOnCta ? GOLD : CREAM}>
               Open team month grid <ArrowRight className="size-4" />
             </Link>
-            <Link
-              to="/approvals"
-              className="u-press inline-flex items-center rounded-full bg-[color-mix(in_srgb,var(--surface)_12%,transparent)] px-5 py-2.5 text-sm font-semibold text-hero-ink"
-            >
+            <Link to="/approvals" className={CREAM}>
               Review approvals
             </Link>
           </div>
@@ -88,6 +141,40 @@ export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; tod
         </div>
       </DarkCard>
 
+      {data.length > 0 && weekMonday && weekSunday && (
+        <Card>
+          <CardHeader
+            title="On leave this week"
+            subtitle={`${formatDateIN(weekMonday)} – ${formatDateIN(weekSunday)} · approved days marked L, not pending requests`}
+          />
+          {onLeaveWeek.length === 0 ? (
+            <p className="text-sm leading-6 text-ink-muted">
+              Nobody on your team is on leave this week
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {onLeaveWeek.map(({ member, dates }) => (
+                <li
+                  key={member.employeeId}
+                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-tile bg-surface-2 px-4 py-3"
+                >
+                  <Link
+                    to={`/people/${member.ecode}`}
+                    className="min-w-0 rounded-row outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    <p className="truncate text-sm font-semibold text-ink">{member.name}</p>
+                    <p className="text-xs text-ink-muted">{member.ecode}</p>
+                  </Link>
+                  <p className="text-sm tabular-nums text-ink-muted">
+                    {dates.map((iso) => formatDateIN(iso)).join(' · ')}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
+
       <Card>
         <CardHeader title="Team pulse" subtitle="Today’s processed attendance by employee" />
         {data.length === 0 ? (
@@ -99,8 +186,9 @@ export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; tod
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {todayRows.map(({ member, day }) => (
-              <div
+              <Link
                 key={member.employeeId}
+                to={`/people/${member.ecode}`}
                 className="rounded-tile bg-surface-2 p-4 transition-colors hover:bg-accent-soft"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -147,14 +235,14 @@ export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; tod
                       }))}
                   />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
         <div className="mt-4 flex flex-wrap gap-2">
           <Pill>Present {present}</Pill>
           <Pill>Leave {onLeave}</Pill>
-          <Pill accent={absent > 0}>Absent / UAB {absent}</Pill>
+          <Pill>Absent / UAB {absent}</Pill>
         </div>
       </Card>
     </div>

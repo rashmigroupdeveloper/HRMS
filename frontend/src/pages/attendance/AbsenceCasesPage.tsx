@@ -13,14 +13,17 @@ import {
   Button,
   Card,
   ConfirmModal,
+  DarkCard,
   DataTable,
   Drawer,
   EmptyState,
+  KpiNumber,
   PageHeader,
   Select,
   StatusBadge,
   Switch,
   TextField,
+  formatDateIN,
   toast,
 } from '../../ui';
 import type { Column, StatusTone } from '../../ui';
@@ -38,12 +41,72 @@ interface CaseRow {
   closedAt: string | null;
 }
 
+const STAGE_LABEL: Record<string, string> = {
+  watch: 'Watch',
+  show_cause: 'Show-cause',
+  warning: 'Warning',
+  termination_review: 'Termination review',
+};
+
 const STAGE_TONE: Record<string, StatusTone> = {
   watch: 'info',
-  show_cause: 'negative',
+  show_cause: 'warning',
   warning: 'negative',
   termination_review: 'negative',
 };
+
+function stageLabel(stage: string): string {
+  return STAGE_LABEL[stage] ?? stage.replaceAll('_', ' ');
+}
+
+function stageTone(stage: string): StatusTone {
+  return STAGE_TONE[stage] ?? 'neutral';
+}
+
+type NextKind = 'letter' | 'escalate-warning' | 'escalate-termination' | 'wait';
+
+function nextAction(row: CaseRow): { title: string; body: string; kind: NextKind } {
+  if (row.stage === 'watch') {
+    return {
+      title: 'Stay on watch',
+      body: 'The daily scan moves this case to show-cause at the configured day count. Regularise the missing days to close it.',
+      kind: 'wait',
+    };
+  }
+  if (row.stage === 'show_cause' && row.letterId === null) {
+    return {
+      title: 'Draft the show-cause notice',
+      body: 'Issue the letter through the signature chain. Escalation waits until this is on record.',
+      kind: 'letter',
+    };
+  }
+  if (row.stage === 'show_cause') {
+    return {
+      title: 'Escalate to warning',
+      body: 'Show-cause is on file. Moving forward is a deliberate, audited human step — never automatic.',
+      kind: 'escalate-warning',
+    };
+  }
+  if (row.stage === 'warning' && row.letterId === null) {
+    return {
+      title: 'Draft the warning letter',
+      body: 'A warning through the chain should land before termination review.',
+      kind: 'letter',
+    };
+  }
+  if (row.stage === 'warning') {
+    return {
+      title: 'Move to termination review',
+      body: 'Forward-only. This is the last attendance-ops stage before separation handling.',
+      kind: 'escalate-termination',
+    };
+  }
+  return {
+    title: 'In termination review',
+    body: 'No further attendance-ops step. Separation continues on the lifecycle path.',
+    kind: 'wait',
+  };
+}
 
 export function AbsenceCasesPage({ user }: { user: SessionUser }) {
   const [onlyOpen, setOnlyOpen] = useState(true);
@@ -56,6 +119,11 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
   const [responseDays, setResponseDays] = useState('7');
   const [busy, setBusy] = useState(false);
   const canAct = hasPermission(user, 'letters.issue');
+  const needsLetter = rows.filter(
+    (row) => row.closedAt === null && row.letterId === null && (row.stage === 'show_cause' || row.stage === 'warning'),
+  ).length;
+  const openCount = rows.filter((row) => row.closedAt === null).length;
+  const selectedNext = selected ? nextAction(selected) : null;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -81,7 +149,7 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
         method: 'POST',
         body: JSON.stringify({ stage }),
       });
-      toast.success(`Case escalated to ${stage.replace('_', ' ')}`, { description: `${selected.name} (${selected.ecode})` });
+      toast.success(`Case escalated to ${stageLabel(stage)}`, { description: `${selected.name} (${selected.ecode})` });
       setConfirmStage(null);
       setSelected(null);
       await load();
@@ -120,6 +188,12 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
     }
   };
 
+  const openCase = (row: CaseRow) => {
+    if (row.closedAt) return;
+    setSelected(row);
+    setLetterTemplate(row.stage === 'warning' ? 'warning' : 'show_cause');
+  };
+
   const columns: Column<CaseRow>[] = [
     {
       key: 'who',
@@ -132,26 +206,35 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
         </div>
       ),
     },
-    { key: 'since', header: 'Absent since', width: '120px', render: (row) => row.startDate },
+    {
+      key: 'since',
+      header: 'Absent since',
+      width: '140px',
+      render: (row) => formatDateIN(row.startDate.slice(0, 10)),
+    },
     { key: 'days', header: 'Days', width: '80px', numeric: true, render: (row) => row.daysAbsent },
     {
       key: 'stage',
       header: 'Stage',
-      width: '160px',
-      render: (row) => <StatusBadge tone={STAGE_TONE[row.stage] ?? 'neutral'}>{row.stage.replace('_', ' ')}</StatusBadge>,
+      width: '170px',
+      render: (row) => <StatusBadge tone={stageTone(row.stage)}>{stageLabel(row.stage)}</StatusBadge>,
+    },
+    {
+      key: 'next',
+      header: 'Next action',
+      width: 'minmax(160px,1fr)',
+      render: (row) =>
+        row.closedAt ? (
+          <span className="text-ink-muted">Closed</span>
+        ) : (
+          <span className="font-medium text-ink">{nextAction(row).title}</span>
+        ),
     },
     {
       key: 'letter',
       header: 'Letter',
       width: '110px',
       render: (row) => (row.letterId ? `#${String(row.letterId)}` : '—'),
-    },
-    {
-      key: 'state',
-      header: 'Case',
-      width: '130px',
-      render: (row) =>
-        row.closedAt ? <StatusBadge tone="positive">{row.resolution ?? 'closed'}</StatusBadge> : <StatusBadge tone="neutral">open</StatusBadge>,
     },
   ];
 
@@ -172,9 +255,37 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
         }
       />
 
+      <DarkCard>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+          Letters still owed
+        </p>
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <p className="text-4xl font-light tabular-nums">
+              <KpiNumber value={needsLetter} animateOnMount={false} />
+            </p>
+            <p className="mt-1 text-sm text-hero-muted">
+              {needsLetter
+                ? `of ${String(openCount)} open cases still need a show-cause or warning letter`
+                : openCount
+                  ? `${String(openCount)} open cases — letters are on file. Escalation stays a human click.`
+                  : 'open cases needing a letter. The watch queue is clear.'}
+            </p>
+          </div>
+          <StatusBadge tone={needsLetter ? 'negative' : 'positive'}>
+            {needsLetter ? 'Action required' : 'Queue clear'}
+          </StatusBadge>
+        </div>
+      </DarkCard>
+
       {error && (
         <Card>
-          <EmptyState icon={<ShieldAlert />} title="Could not load cases" description={error} action={<Button onClick={() => void load()}>Retry</Button>} />
+          <EmptyState
+            icon={<ShieldAlert />}
+            title="Could not load cases"
+            description={error}
+            action={<Button onClick={() => void load()}>Retry</Button>}
+          />
         </Card>
       )}
 
@@ -182,10 +293,11 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
         rows={rows}
         columns={columns}
         rowKey={(row) => String(row.id)}
+        selectedKey={selected ? String(selected.id) : undefined}
         {...(canAct
           ? {
               onRowClick: (row: CaseRow) => {
-                if (!row.closedAt) setSelected(row);
+                openCase(row);
               },
             }
           : {})}
@@ -193,8 +305,26 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
         empty={
           <EmptyState
             icon={<UserMinus />}
-            title={loading ? 'Loading…' : 'No cases'}
-            description={onlyOpen ? 'Nobody is in a continuous-absence case right now.' : 'No case history yet.'}
+            title={loading ? 'Loading…' : onlyOpen ? 'No open cases' : 'No case history'}
+            description={
+              loading
+                ? 'Reading the absence queue.'
+                : onlyOpen
+                  ? 'Nobody is in a continuous-absence case right now.'
+                  : 'The daily scan has not opened a case yet.'
+            }
+            action={
+              loading ? undefined : onlyOpen ? (
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setOnlyOpen(false);
+                  }}
+                >
+                  Show closed cases
+                </Button>
+              ) : undefined
+            }
           />
         }
       />
@@ -205,12 +335,38 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
           setSelected(null);
         }}
         title={selected ? `${selected.name} (${selected.ecode})` : ''}
-        subtitle={selected ? `Absent since ${selected.startDate} · ${String(selected.daysAbsent)} days · stage ${selected.stage}` : undefined}
+        subtitle={
+          selected
+            ? `Absent since ${formatDateIN(selected.startDate.slice(0, 10))} · ${String(selected.daysAbsent)} days · ${stageLabel(selected.stage)}`
+            : undefined
+        }
       >
-        {selected && (
+        {selected && selectedNext && (
           <div className="space-y-6">
             <Card>
-              <h3 className="text-sm font-semibold text-ink">Issue letter through the system</h3>
+              <p className="text-xs font-medium text-ink-muted">Next action</p>
+              <h3 className="mt-1 text-lg font-semibold text-ink">{selectedNext.title}</h3>
+              <p className="mt-1 text-sm leading-6 text-ink-muted">{selectedNext.body}</p>
+              {selectedNext.kind === 'escalate-warning' && (
+                <div className="mt-4">
+                  <Button variant="primary" onClick={() => { setConfirmStage('warning'); }}>
+                    {selectedNext.title}
+                  </Button>
+                </div>
+              )}
+              {selectedNext.kind === 'escalate-termination' && (
+                <div className="mt-4">
+                  <Button variant="primary" onClick={() => { setConfirmStage('termination_review'); }}>
+                    {selectedNext.title}
+                  </Button>
+                </div>
+              )}
+            </Card>
+
+            <Card>
+              <h3 className="text-sm font-semibold text-ink">
+                {selectedNext.kind === 'letter' ? selectedNext.title : 'Issue a letter'}
+              </h3>
               <p className="mt-1 text-xs text-ink-muted">
                 Drafts against the case, walks hr_ops → hr_head, and is archived on the employee (CORE-09).
               </p>
@@ -236,21 +392,13 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
                     }}
                   />
                 )}
-                <Button variant="primary" loading={busy} leadingIcon={<FileWarning className="size-4" />} onClick={() => void issueLetter()}>
-                  Draft letter
-                </Button>
-              </div>
-            </Card>
-
-            <Card>
-              <h3 className="text-sm font-semibold text-ink">Escalate (forward-only, audited)</h3>
-              <p className="mt-1 text-xs text-ink-muted">PP-7 keeps these human: no automatic warnings or terminations.</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button variant="ghost" disabled={selected.stage !== 'show_cause'} onClick={() => { setConfirmStage('warning'); }}>
-                  Move to warning
-                </Button>
-                <Button variant="ghost" disabled={selected.stage !== 'warning'} onClick={() => { setConfirmStage('termination_review'); }}>
-                  Move to termination review
+                <Button
+                  variant={selectedNext.kind === 'letter' ? 'primary' : 'secondary'}
+                  loading={busy}
+                  leadingIcon={<FileWarning className="size-4" />}
+                  onClick={() => void issueLetter()}
+                >
+                  {selectedNext.kind === 'letter' ? selectedNext.title : 'Draft letter'}
                 </Button>
               </div>
             </Card>

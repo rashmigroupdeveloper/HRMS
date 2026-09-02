@@ -619,6 +619,7 @@ export async function setManualStatus(
     action: 'update',
     entity: 'att.day_records',
     entityId: params.employeeId,
+    subjectEmployeeId: params.employeeId,
     field: `manual_override:${params.isoDate}`,
     oldValue: previous?.status ?? null,
     newValue: `${params.status} — ${params.reason}`,

@@ -1,24 +1,20 @@
 /**
- * App shell — sidebar rail + slim top bar + warm canvas (docs/05 §3, §7
- * "≥1024px = sidebar-capable shell"). Composed only from `frontend/src/ui`
- * (§0.1 firewall) + local shell parts.
- *
- * Layout: role-filtered nav lives in the left rail (collapsible to an icon
- * rail, remembered per user — state-preservation §6). The top bar keeps the
- * masthead affordances one-click-from-anywhere (docs/05 §3): page context ·
- * ⌘K command palette · approvals badge · theme toggle · identity menu. On
- * mobile the rail becomes an off-canvas drawer. Skip-link rounds out a11y.
+ * App shell — Crextio masthead + center pill nav (docs/05 §3, 12 §7).
+ * Wordmark left, dark-active pills center, ⌘K / approvals / identity right.
+ * Mobile uses a four-action bottom bar, not an off-canvas reprint of the catalog.
  */
-import { useEffect, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { CheckCheck, Menu, Search } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { CheckCheck, Search, Settings } from 'lucide-react';
 import type { SessionUser } from '../lib/session';
-import { hasAnyPermission } from '../lib/session';
-import { cn, IconButton, ThemeToggle, Toaster, Tooltip } from '../ui';
-import { isNavActive, navForUser } from './nav-config';
-import { Sidebar } from './Sidebar';
+import { hasAnyPermission, hasPermission } from '../lib/session';
+import { IconButton, ThemeToggle, Toaster, Tooltip } from '../ui';
+import { isNavActive, mobileTabs, navForUser, splitNav } from './nav-config';
 import { AccountMenu } from './AccountMenu';
+import { BottomBar } from './BottomBar';
 import { CommandPalette } from './CommandPalette';
+import { NavMoreList } from './NavMoreList';
+import { PillNav } from './PillNav';
 import { useInboxCount } from './useInboxCount';
 
 interface AppShellProps {
@@ -28,46 +24,34 @@ interface AppShellProps {
 
 const APPROVAL_PERMS = ['leave.approve', 'ar.approve', 'od.approve', 'ot.approve', 'claims.approve'] as const;
 
-const COLLAPSE_KEY = 'rashmi.sidebar.collapsed';
-
-function readCollapsed(): boolean {
-  try {
-    return localStorage.getItem(COLLAPSE_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
 export function AppShell({ user, onSignedOut }: AppShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const nav = navForUser(user);
+  const catalog = useMemo(() => navForUser(user), [user]);
+  const { pills, more } = useMemo(() => splitNav(catalog), [catalog]);
+  const tabs = useMemo(() => mobileTabs(pills), [pills]);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState<boolean>(readCollapsed);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [compact, setCompact] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches,
+  );
+  const moreRef = useRef<HTMLDivElement>(null);
   const canApprove = hasAnyPermission(user, APPROVAL_PERMS);
   const inboxCount = useInboxCount(canApprove);
+  const moreActive = more.some((item) => isNavActive(location.pathname, item));
 
-  // Page context for the top bar — the most specific active nav item wins so
-  // /admin/settings reads "Settings", not the broader "Users & Roles".
-  const activeItem = nav
-    .filter((item) => isNavActive(location.pathname, item))
-    .sort((a, b) => (b.match ?? b.to).length - (a.match ?? a.to).length)[0];
-  const pageTitle = activeItem?.label ?? 'Rashmi HRMS';
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px)');
+    const sync = (): void => {
+      setCompact(mq.matches);
+    };
+    sync();
+    mq.addEventListener('change', sync);
+    return () => {
+      mq.removeEventListener('change', sync);
+    };
+  }, []);
 
-  const toggleCollapsed = (): void => {
-    setCollapsed((value) => {
-      const next = !value;
-      try {
-        localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0');
-      } catch {
-        /* private mode / storage disabled — the rail simply won't persist. */
-      }
-      return next;
-    });
-  };
-
-  // ⌘K / Ctrl-K opens the palette from anywhere (docs/05 §6 #8).
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
@@ -81,28 +65,38 @@ export function AppShell({ user, onSignedOut }: AppShellProps) {
     };
   }, []);
 
-  // Close the mobile drawer on navigation.
   useEffect(() => {
-    setMobileOpen(false);
+    setMoreOpen(false);
   }, [location.pathname]);
 
-  // Lock body scroll behind the mobile drawer + close it on Escape.
   useEffect(() => {
-    if (!mobileOpen) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    if (!moreOpen) return;
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') setMobileOpen(false);
+      if (event.key === 'Escape') setMoreOpen(false);
     };
     document.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = previous;
-      document.removeEventListener('keydown', onKey);
+    if (compact) {
+      return () => {
+        document.removeEventListener('keydown', onKey);
+      };
+    }
+    const onDoc = (event: MouseEvent): void => {
+      if (moreRef.current?.contains(event.target as Node)) return;
+      setMoreOpen(false);
     };
-  }, [mobileOpen]);
+    document.addEventListener('mousedown', onDoc);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onDoc);
+    };
+  }, [moreOpen, compact]);
+
+  const closeMore = (): void => {
+    setMoreOpen(false);
+  };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-hero focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-hero-ink"
@@ -110,102 +104,125 @@ export function AppShell({ user, onSignedOut }: AppShellProps) {
         Skip to content
       </a>
 
-      {/* Desktop rail — sticky full-height; width snaps between rail/expanded
-          (docs/05 §2.4: no width animation on a hot path). */}
-      <aside
-        className={cn(
-          'sticky top-0 hidden h-screen shrink-0 lg:block',
-          collapsed ? 'w-[4.75rem]' : 'w-64',
-        )}
-      >
-        <Sidebar nav={nav} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
-      </aside>
+      <header className="sticky top-0 z-20 px-4 pt-4 sm:px-6">
+        <div className="mx-auto flex max-w-[1400px] items-center gap-3">
+          <Link
+            to={pills[0]?.to ?? '/'}
+            aria-label="Rashmi HRMS — home"
+            className="u-press flex shrink-0 items-center gap-2.5"
+          >
+            <span className="grid size-9 place-items-center rounded-full bg-hero text-sm font-bold text-hero-ink">
+              R
+            </span>
+            <span className="hidden text-[15px] font-semibold tracking-wide text-ink sm:inline">
+              Rashmi
+            </span>
+          </Link>
 
-      {/* Main column */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 border-b border-line/60 bg-[color-mix(in_srgb,var(--surface)_82%,transparent)] backdrop-blur-md">
-          <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
-            <div className="lg:hidden">
-              <IconButton
-                label="Open navigation"
-                icon={<Menu />}
-                onClick={() => {
-                  setMobileOpen(true);
+          {!compact ? (
+            <div ref={moreRef} className="relative flex min-w-0 flex-1 justify-center">
+              <PillNav
+                pills={pills}
+                moreCount={more.length}
+                moreOpen={moreOpen}
+                moreActive={moreActive}
+                onToggleMore={() => {
+                  setMoreOpen((value) => !value);
                 }}
               />
+              {moreOpen && more.length > 0 ? (
+                <div role="menu" className="u-pop-in u-shadow-float absolute top-full z-40 mt-2 w-72 overflow-hidden rounded-tile bg-surface">
+                  <NavMoreList items={more} pathname={location.pathname} onNavigate={closeMore} />
+                </div>
+              ) : null}
             </div>
+          ) : (
+            <div className="min-w-0 flex-1" />
+          )}
 
-            <h1 className="truncate text-base font-semibold text-ink">{pageTitle}</h1>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {hasPermission(user, 'admin.settings') ? (
+              <Link
+                to="/admin/settings"
+                className="u-press u-shadow-card hidden items-center gap-2 rounded-full bg-surface px-4 py-2 text-sm font-medium text-ink lg:inline-flex"
+              >
+                <Settings className="size-4" aria-hidden />
+                Settings
+              </Link>
+            ) : null}
 
-            <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-              <Tooltip label="Search · ⌘K" side="bottom">
-                <IconButton
-                  label="Open command palette (⌘K)"
-                  icon={<Search />}
+            <Tooltip label="Search · ⌘K" side="bottom">
+              <IconButton
+                label="Open command palette (⌘K)"
+                icon={<Search />}
+                onClick={() => {
+                  setPaletteOpen(true);
+                }}
+              />
+            </Tooltip>
+
+            {canApprove && (
+              <Tooltip label="Approvals" side="bottom">
+                <button
+                  type="button"
                   onClick={() => {
-                    setPaletteOpen(true);
+                    void navigate('/approvals');
                   }}
-                />
+                  aria-label={`Approvals${inboxCount > 0 ? ` — ${String(inboxCount)} waiting` : ''}`}
+                  className="u-press u-shadow-card relative grid size-10 place-items-center rounded-full bg-surface text-ink-muted transition-colors hover:text-ink"
+                >
+                  <CheckCheck className="size-[1.15rem]" aria-hidden />
+                  {inboxCount > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 grid min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-ink tabular-nums ring-2 ring-canvas">
+                      {inboxCount > 99 ? '99+' : inboxCount}
+                    </span>
+                  )}
+                </button>
               </Tooltip>
+            )}
 
-              {canApprove && (
-                <Tooltip label="Approvals" side="bottom">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigate('/approvals');
-                    }}
-                    aria-label={`Approvals${inboxCount > 0 ? ` — ${String(inboxCount)} waiting` : ''}`}
-                    className="u-press relative grid size-10 place-items-center rounded-full bg-surface-2 text-ink-muted transition-colors hover:text-ink"
-                  >
-                    <CheckCheck className="size-[1.15rem]" aria-hidden />
-                    {inboxCount > 0 && (
-                      <span className="absolute -right-0.5 -top-0.5 grid min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-ink tabular-nums ring-2 ring-surface">
-                        {inboxCount > 99 ? '99+' : inboxCount}
-                      </span>
-                    )}
-                  </button>
-                </Tooltip>
-              )}
-
-              <ThemeToggle />
-              <AccountMenu user={user} onSignedOut={onSignedOut} />
-            </div>
-          </div>
-        </header>
-
-        <main id="main" className="flex-1 px-4 py-8 sm:px-6 lg:py-10">
-          <div className="mx-auto max-w-[1280px]">
-            <Outlet />
-          </div>
-        </main>
-      </div>
-
-      {/* Mobile drawer — the rail as an off-canvas sheet (docs/05 §7 adaptive-nav). */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <button
-            type="button"
-            aria-label="Close navigation"
-            onClick={() => {
-              setMobileOpen(false);
-            }}
-            className="absolute inset-0 bg-[color-mix(in_srgb,var(--ink)_45%,transparent)]"
-          />
-          <div
-            className="absolute inset-y-0 left-0 w-72 max-w-[82%]"
-            style={{ animation: 'u-slide-in-left var(--motion-short) var(--ease-drawer)' }}
-          >
-            <Sidebar
-              nav={nav}
-              collapsed={false}
-              onNavigate={() => {
-                setMobileOpen(false);
-              }}
-            />
+            <ThemeToggle />
+            <AccountMenu user={user} onSignedOut={onSignedOut} />
           </div>
         </div>
-      )}
+      </header>
+
+      <main
+        id="main"
+        className={compact ? 'flex-1 px-4 pb-24 pt-6 sm:px-6' : 'flex-1 px-6 pb-12 pt-6 lg:px-8 lg:pt-8'}
+      >
+        <div className="mx-auto max-w-[1280px]">
+          <Outlet />
+        </div>
+      </main>
+
+      {compact ? (
+        <BottomBar
+          tabs={tabs}
+          moreOpen={moreOpen}
+          moreActive={moreActive}
+          onToggleMore={() => {
+            setMoreOpen((value) => !value);
+          }}
+        />
+      ) : null}
+
+      {compact && moreOpen && more.length > 0 ? (
+        <div className="fixed inset-0 z-40">
+          <button
+            type="button"
+            aria-label="Close menu"
+            className="absolute inset-0 bg-[color-mix(in_srgb,var(--ink)_45%,transparent)]"
+            onClick={closeMore}
+          />
+          <div
+            className="u-shadow-float absolute inset-x-0 bottom-14 max-h-[70vh] overflow-y-auto rounded-t-card bg-surface pb-[env(safe-area-inset-bottom)]"
+            style={{ animation: 'u-slide-in-up var(--motion-short) var(--ease-drawer)' }}
+          >
+            <NavMoreList items={more} pathname={location.pathname} onNavigate={closeMore} />
+          </div>
+        </div>
+      ) : null}
 
       <CommandPalette
         open={paletteOpen}

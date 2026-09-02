@@ -42,6 +42,7 @@ export interface RolePermissionsTable {
   id: Generated<number>;
   role_id: number;
   permission_id: number;
+  scope: Generated<'all' | 'subtree' | 'own' | 'org_unit' | 'readonly'>;
   created_at: Generated<Timestamp>;
   updated_at: Generated<Timestamp>;
 }
@@ -67,6 +68,10 @@ export interface AuditLogTable {
   new_value: string | null;
   ip: string | null;
   at: Generated<Timestamp>;
+  /** Historical data scope captured when the event is written (CORE-10). */
+  scope_org_unit_id: number | null;
+  /** V1 predates scoped audit rows; V2 commits scope_org_unit_id into row_hash. */
+  hash_version: Generated<1 | 2>;
   /** Set by the DB trigger — never write from the app. */
   prev_hash: Generated<string>;
   /** Set by the DB trigger — never write from the app. */
@@ -362,7 +367,9 @@ export interface LettersTable {
   id: Generated<number>;
   employee_id: number;
   template_code: string;
-  document_id: number;
+  document_id: number | null;
+  body_rendered: string;
+  status: Generated<'draft' | 'pending_signature' | 'issued'>;
   issued_by: number | null;
   issued_at: Timestamp | null;
   workflow_request_id: number | null;
@@ -564,6 +571,19 @@ export interface AttMonthLocksTable {
   created_at: Generated<Timestamp>;
 }
 
+/** att.manager_month_approvals — ATT-12 manager attendance sign-off ledger. */
+export interface AttManagerMonthApprovalsTable {
+  id: Generated<number>;
+  company_id: number;
+  month: Timestamp;
+  manager_employee_id: number;
+  approved_by_user_id: number | null;
+  approved_at: Generated<Timestamp>;
+  event_type: Generated<'approve' | 'invalidate'>;
+  note: string | null;
+  created_at: Generated<Timestamp>;
+}
+
 /** reporting.muster_month — precomputed R1 muster (RPT-01). */
 export interface ReportingMusterMonthTable {
   id: Generated<number>;
@@ -726,6 +746,168 @@ export interface AttSwipeEventsTable {
   created_at: Generated<Timestamp>;
 }
 
+/* ── M8 Assets (ast) — AST-01..06, docs/03 §9 ─────────────────────────────── */
+
+export type AssetStatus = 'in_stock' | 'assigned' | 'maintenance' | 'lost' | 'scrapped';
+export type HolderKind = 'employee' | 'third_party';
+export type ReturnCondition = 'ok' | 'damaged' | 'not_returned';
+export type MaintenanceKind = 'scheduled' | 'incident' | 'damage' | 'lost';
+
+/** ast.assets — the registry (AST-01). `warranty_till` accepts PAST dates (AST-02). */
+export interface AssetsTable {
+  id: Generated<number>;
+  asset_no: string;
+  category: string;
+  description: string | null;
+  serial_no: string | null;
+  purchase_date: Timestamp | null;
+  warranty_till: Timestamp | null;
+  status: Generated<AssetStatus>;
+  location_id: number | null;
+  company_id: number;
+  created_by: number | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+/** ast.assignments — who holds it (AST-03); an open row means still out (AST-04/05). */
+export interface AssetAssignmentsTable {
+  id: Generated<number>;
+  asset_id: number;
+  holder_kind: HolderKind;
+  employee_id: number | null;
+  third_party_name: string | null;
+  third_party_org: string | null;
+  assigned_at: Generated<Timestamp>;
+  returned_at: Timestamp | null;
+  return_condition: ReturnCondition | null;
+  notes: string | null;
+  assigned_by: number;
+  returned_by: number | null;
+  created_at: Generated<Timestamp>;
+}
+
+/** ast.maintenance — scheduled service, incidents, damage and loss (AST-06). */
+export interface AssetMaintenanceTable {
+  id: Generated<number>;
+  asset_id: number;
+  kind: MaintenanceKind;
+  scheduled_for: Timestamp | null;
+  reported_by: number | null;
+  description: string;
+  resolved_at: Timestamp | null;
+  resolution: string | null;
+  cost: string | null;
+  created_at: Generated<Timestamp>;
+}
+
+
+/* ── M9 Helpdesk (hd) — HD-01, docs/03 §9 ─────────────────────────────────── */
+
+export type TicketStatus = 'open' | 'pending' | 'resolved' | 'closed';
+export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent';
+
+/** hd.categories — routing + SLA as runtime data, never a switch statement. */
+export interface HdCategoriesTable {
+  id: Generated<number>;
+  code: string;
+  name: string;
+  assignee_role_code: string | null;
+  sla_hours: Generated<number>;
+  escalate_after_hours: number | null;
+  is_active: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+/** hd.tickets — every ticket carries a clock (sla_due_at NOT NULL). */
+export interface HdTicketsTable {
+  id: Generated<number>;
+  ticket_no: string;
+  raised_by: number;
+  category_id: number;
+  subject: string;
+  body: string;
+  assignee_user_id: number | null;
+  status: Generated<TicketStatus>;
+  priority: Generated<TicketPriority>;
+  sla_due_at: Timestamp;
+  escalated_level: Generated<number>;
+  escalated_at: Timestamp | null;
+  acknowledged_at: Timestamp | null;
+  resolved_at: Timestamp | null;
+  resolution: string | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+/** hd.ticket_messages — append-only audit thread (SOW-9.4). INSERT only. */
+export interface HdTicketMessagesTable {
+  id: Generated<number>;
+  ticket_id: number;
+  author_user_id: number;
+  body: string;
+  is_internal: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+}
+
+/* ── M10 Engagement (eng) — EN-01..03 ─────────────────────────────────────── */
+
+/** eng.announcements — audience-filtered broadcast (EN-01). */
+export interface EngAnnouncementsTable {
+  id: Generated<number>;
+  title: string;
+  body: string;
+  audience: unknown;
+  published_by: number;
+  published_at: Generated<Timestamp>;
+  expires_at: Timestamp | null;
+  is_active: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+}
+
+/** eng.polls — polls and pulse surveys; anonymity is fixed at creation. */
+export interface EngPollsTable {
+  id: Generated<number>;
+  question: string;
+  options: unknown;
+  kind: Generated<'poll' | 'pulse'>;
+  is_anonymous: Generated<boolean>;
+  audience: unknown;
+  created_by: number;
+  opens_at: Generated<Timestamp>;
+  closes_at: Timestamp | null;
+  is_active: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+}
+
+/** eng.poll_responses — respondent is NULL when the poll is anonymous. */
+export interface EngPollResponsesTable {
+  id: Generated<number>;
+  poll_id: number;
+  respondent_user_id: number | null;
+  /** Salted HMAC of (poll, user) — set instead of `respondent_user_id` on an
+   *  anonymous poll so responses dedupe without storing identity (docs/03 §9).
+   *  A DB CHECK enforces exactly one of the two. */
+  respondent_hash: string | null;
+  option_index: number;
+  comment: string | null;
+  created_at: Generated<Timestamp>;
+}
+
+/** reporting.kpi_daily — RPT-03 nightly snapshot (docs/06 §4). */
+export interface KpiDailyTable {
+  id: Generated<number>;
+  snapshot_date: Timestamp;
+  company_id: number | null;
+  category: Generated<string>;
+  metric: string;
+  /** NULL means NOT COMPUTABLE — never conflate with zero. */
+  value: string | null;
+  unavailable_reason: string | null;
+  computed_at: Generated<Timestamp>;
+}
+
 export interface Database {
   'core.users': UsersTable;
   'core.roles': RolesTable;
@@ -733,6 +915,16 @@ export interface Database {
   'core.role_permissions': RolePermissionsTable;
   'core.user_roles': UserRolesTable;
   'core.audit_log': AuditLogTable;
+  'reporting.kpi_daily': KpiDailyTable;
+  'hd.categories': HdCategoriesTable;
+  'hd.tickets': HdTicketsTable;
+  'hd.ticket_messages': HdTicketMessagesTable;
+  'eng.announcements': EngAnnouncementsTable;
+  'eng.polls': EngPollsTable;
+  'eng.poll_responses': EngPollResponsesTable;
+  'ast.assets': AssetsTable;
+  'ast.assignments': AssetAssignmentsTable;
+  'ast.maintenance': AssetMaintenanceTable;
   'core.settings': SettingsTable;
   'core.companies': CompaniesTable;
   'core.locations': LocationsTable;
@@ -767,6 +959,7 @@ export interface Database {
   'att.overtime_entries': AttOvertimeEntriesTable;
   'att.absence_cases': AttAbsenceCasesTable;
   'att.month_locks': AttMonthLocksTable;
+  'att.manager_month_approvals': AttManagerMonthApprovalsTable;
   'reporting.muster_month': ReportingMusterMonthTable;
   'lv.leave_types': LvLeaveTypesTable;
   'lv.ledger': LvLedgerTable;

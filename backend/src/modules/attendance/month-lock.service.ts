@@ -7,6 +7,7 @@ import type { Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { addDaysIso, istDateString } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
+import { countPendingManagerApprovals } from './manager-approval.service.js';
 
 export interface ChecklistItem {
   code: string;
@@ -155,6 +156,10 @@ export async function getMonthLockChecklist(
   };
   const watermarkIssues = coverage.pending_locations + coverage.unmapped_employees;
 
+  const managerApprovals = managerApprovalRequired
+    ? await countPendingManagerApprovals(db, companyId, m)
+    : { total: 0, pending: 0 };
+
   const items: ChecklistItem[] = [
     {
       code: 'pending_requests',
@@ -183,10 +188,14 @@ export async function getMonthLockChecklist(
     {
       code: 'manager_approvals',
       label: 'Managers have approved team attendance',
-      ok: !managerApprovalRequired,
-      detail: managerApprovalRequired
-        ? 'Approval ledger is not implemented; lock remains blocked'
-        : 'Approval precondition disabled by policy',
+      ok: !managerApprovalRequired || managerApprovals.pending === 0,
+      detail: !managerApprovalRequired
+        ? 'Approval precondition disabled by policy'
+        : managerApprovals.pending === 0
+          ? managerApprovals.total === 0
+            ? 'No managers with reports in scope'
+            : `All ${String(managerApprovals.total)} manager(s) approved`
+          : `${String(managerApprovals.pending)} of ${String(managerApprovals.total)} manager(s) still pending`,
     },
     {
       code: 'sync_watermark',

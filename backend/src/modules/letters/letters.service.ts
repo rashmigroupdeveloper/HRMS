@@ -101,6 +101,8 @@ export async function issueLetter(
       employee_id: params.employeeId,
       template_code: params.templateCode,
       document_id: documentId,
+      body_rendered: rendered,
+      status: 'pending_signature',
       issued_by: params.requestedByUserId,
     })
     .returning('id')

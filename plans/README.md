@@ -33,7 +33,8 @@ This folder is the **live execution tracker** for the Rashmi HRMS build. The spe
 ## Definition of done (every task, every stage — from docs/14)
 
 1. **Traceability:** the PR title cites a requirement ID (`feat: ATT-08 OT 48h lapse job`). No orphan features.
-2. **CI gates all green (blocking):** typecheck (max-strict) → eslint (type-aware) → knip → dependency-cruiser (module boundaries) → unit/property tests → integration tests (real Postgres via Testcontainers) → golden-master payroll diff (Phase 2+) → Playwright smoke.
+2. **CI gates all green (blocking):** typecheck (max-strict) → eslint (type-aware) → knip → dependency-cruiser (module boundaries) → unit/property tests → integration tests (real Postgres) → golden-master payroll diff (Phase 2+) → Playwright smoke.
+   *Status 1 Sep 2026:* backend `verify` runs typecheck · lint · knip · dependency-cruiser · **162 tests** · build. Frontend `verify` runs typecheck · lint · knip · **156 tests (Vitest + Testing Library + axe, 82% coverage)** · build. **Playwright E2E smoke is still the one missing gate.**
 3. **Tests written per the doc 14 §10 program** — statutory logic is test-FIRST with hand-computed expected values; 80% coverage floor, payroll-core 100% branch.
 4. **No hardcoded policy values** — every policy number reads from `core.settings` (docs/04 §8).
 5. **Design firewall respected** — Warm Editorial only (docs/05 §0.1); accessibility bar (docs/05 §7) is part of done.
@@ -49,17 +50,19 @@ This folder is the **live execution tracker** for the Rashmi HRMS build. The spe
 
 ## Frontend route map (locked 11 Jul 2026 — P0-T33 shell)
 
-Product routes live in `frontend/src/app/router.tsx`. Surfaces not yet built render `PlaceholderPage` so deep links and per-role nav work.
+Product routes live in `frontend/src/app/router.tsx`. **Every route now resolves to a real page** — `PlaceholderPage` is gone. Surfaces whose *backend* lands in a later phase render their real layout plus an honest pending panel naming the phase and task, and never invented data (docs/05 §4.8: *"never fake data"*).
 
 | Path | Status | Phase |
 |---|---|---|
 | `/login`, `/` (role home) | live | 0 |
 | `/people`, `/people/:ecode` | live (P0-T33) | 0 |
-| `/approvals`, `/my/*`, `/attendance/*`, `/leave` | placeholder | 1 |
-| `/payroll/*`, `/loans`, `/claims`, `/my/pay`, `/my/claims` | placeholder | 2 |
-| `/lifecycle/*`, `/assets`, `/helpdesk`, `/engagement`, `/executive` | placeholder | 3 |
-| `/travel/*` | placeholder | 3.5 |
-| `/recruitment/*` | placeholder | 4 |
+| `/approvals`, `/my/*`, `/attendance/*`, `/leave` | live (Stage 1.3–1.7) | 1 |
+| `/team`, `/reports/*`, `/policies`, `/letters` | live (Stage 1.7) | 1 |
+| `/admin/users`, `/admin/settings`, `/admin/workflows`, `/admin/masters`, `/admin/audit` | live (Stage 1.8) | 1 |
+| `/payroll/*`, `/loans`, `/claims`, `/my/pay`, `/my/claims` | UI live · backend Phase 2 | 2 |
+| `/lifecycle/*`, `/assets`, `/helpdesk`, `/engagement`, `/executive` | UI live · backend Phase 3 | 3 |
+| `/travel/*` | UI live · backend Phase 3.5 | 3.5 |
+| `/recruitment/*` | UI live · backend Phase 4 | 4 |
 | `/dev/gallery` | live (super_admin) | 0 |
 
-**Next UI stage after P0-T33:** Approvals inbox (P1-T12 UI) — do not start until sponsor announces Stage 1.x.
+**Next UI stage:** Phase 2 payroll console (P2-T08) — **blocked** until the 9 statutory policy decisions (P0-T06) are signed; no money code starts before that.

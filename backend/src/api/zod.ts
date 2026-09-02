@@ -16,3 +16,27 @@ export function booleanQuery() {
     return value;
   }, z.boolean());
 }
+
+/**
+ * `csvList` — a repeated filter value carried in a query string.
+ *
+ * The directory drawer offers multi-select facets, so `?statuses=active,on_notice`
+ * has to arrive as a real array. A bare `z.array()` rejects the comma-joined
+ * string a query string actually carries, so this splits it first and lets a
+ * genuine array (from a JSON body) pass through untouched — the same schema
+ * then serves both transports.
+ *
+ * Empty segments are dropped so a trailing comma cannot become an empty filter
+ * value that matches nothing.
+ */
+export function csvList<T extends z.ZodTypeAny>(item: T) {
+  return z.preprocess((value) => {
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((part) => part.trim())
+        .filter((part) => part !== '');
+    }
+    return value;
+  }, z.array(item).min(1));
+}

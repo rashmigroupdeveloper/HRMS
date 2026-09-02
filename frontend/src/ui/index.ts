@@ -45,6 +45,9 @@ export { Toaster, toast } from './Toast';
 export { Skeleton } from './Skeleton';
 export { Tooltip } from './Tooltip';
 
+export { TrendChart, BarChart } from './Chart';
+export type { ChartPoint } from './Chart';
+
 export { DataTable } from './DataTable';
 export type { Column } from './DataTable';
 export { Drawer } from './Drawer';

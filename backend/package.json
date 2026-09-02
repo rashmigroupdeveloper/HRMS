@@ -20,6 +20,7 @@
     "format": "prettier --write .",
     "seed:rbac": "tsx src/core/rbac/seed.ts",
     "seed:workflows": "tsx src/modules/workflows/seed.ts",
+    "seed:settings": "tsx src/modules/settings/seed.ts",
     "migrate": "tsx -r dotenv/config node_modules/node-pg-migrate/bin/node-pg-migrate -j ts --ignore-pattern \".*\\.md\" up",
     "migrate:down": "tsx -r dotenv/config node_modules/node-pg-migrate/bin/node-pg-migrate -j ts --ignore-pattern \".*\\.md\" down",
     "migrate:create": "tsx -r dotenv/config node_modules/node-pg-migrate/bin/node-pg-migrate -j ts --ignore-pattern \".*\\.md\" create"

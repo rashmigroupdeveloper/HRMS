@@ -59,7 +59,7 @@ export function AccountMenu({ user, onSignedOut }: AccountMenuProps) {
         onClick={() => {
           setOpen((value) => !value);
         }}
-        className="u-press grid size-9 place-items-center rounded-full bg-hero text-xs font-bold text-hero-ink ring-1 ring-line/40 transition-transform hover:brightness-110"
+        className="u-press u-shadow-card grid size-9 place-items-center rounded-full bg-hero text-xs font-bold text-hero-ink transition-transform hover:brightness-110"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account menu"

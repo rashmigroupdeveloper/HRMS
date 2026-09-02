@@ -21,6 +21,7 @@ import {
   listPermissions,
   listRoles,
   removeRoleFromUser,
+  searchUsersWithRoles,
 } from './rbac.repository.js';
 
 const guard = () => withPermission('admin.roles');
@@ -31,7 +32,13 @@ const matrixProcedure = guard()
     z.object({
       roles: z.array(z.object({ code: z.string(), name: z.string() })),
       permissions: z.array(z.string()),
-      grants: z.array(z.object({ role: z.string(), permission: z.string() })),
+      grants: z.array(
+        z.object({
+          role: z.string(),
+          permission: z.string(),
+          scope: z.enum(['all', 'subtree', 'own', 'org_unit', 'readonly']),
+        }),
+      ),
     }),
   )
   .handler(async ({ context }) => {
@@ -48,7 +55,11 @@ const matrixProcedure = guard()
     };
   });
 
-const grantInput = z.object({ role: z.string().min(1), permission: z.string().min(1) });
+const grantInput = z.object({
+  role: z.string().min(1),
+  permission: z.string().min(1),
+  scope: z.enum(['all', 'subtree', 'own', 'org_unit', 'readonly']).default('all'),
+});
 
 const grantProcedure = guard()
   .route({ method: 'POST', path: '/rbac/grants', summary: 'Grant a permission to a role (runtime, audited)' })
@@ -62,14 +73,14 @@ const grantProcedure = guard()
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
     if (!permission) throw new ORPCError('NOT_FOUND', { message: `Unknown permission: ${input.permission}` });
 
-    const changed = await insertGrant(db, role.id, permission.id);
+    const changed = await insertGrant(db, role.id, permission.id, input.scope);
     if (changed) {
       await writeAudit(db, {
         actorUserId: context.user.id,
         action: 'grant',
         entity: 'core.role_permissions',
         field: `${input.role}→${input.permission}`,
-        newValue: 'granted',
+        newValue: `granted:${input.scope}`,
         ip: context.req.ip ?? null,
       });
     }
@@ -158,8 +169,38 @@ const removeRoleProcedure = guard()
     return { changed };
   });
 
+/** Who can be given a role — the picker behind the access console. */
+const usersProcedure = guard()
+  .route({ method: 'GET', path: '/rbac/users', summary: 'Search users (with their current roles)' })
+  .input(z.object({ q: z.string().optional(), limit: z.coerce.number().int().min(1).max(100).default(25) }))
+  .output(
+    z.array(
+      z.object({
+        userId: z.number(),
+        email: z.string(),
+        ecode: z.string().nullable(),
+        name: z.string().nullable(),
+        roles: z.array(z.string()),
+      }),
+    ),
+  )
+  .handler(async ({ input, context }) => {
+    const rows = await searchUsersWithRoles(context.db, { q: input.q, limit: input.limit });
+    return rows.map((r) => {
+      const full = [r.first_name, r.last_name].filter((part) => part !== null && part !== '').join(' ');
+      return {
+        userId: r.user_id,
+        email: r.email,
+        ecode: r.ecode,
+        name: full === '' ? null : full,
+        roles: Array.isArray(r.role_codes) ? r.role_codes : [],
+      };
+    });
+  });
+
 export const rbacRouter = {
   matrix: matrixProcedure,
+  users: usersProcedure,
   grant: grantProcedure,
   revoke: revokeProcedure,
   assignRole: assignRoleProcedure,

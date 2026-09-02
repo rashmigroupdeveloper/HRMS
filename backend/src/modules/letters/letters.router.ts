@@ -17,7 +17,7 @@ function asBadRequest(err: unknown): never {
 const letterShape = z.object({
   id: z.number(),
   templateCode: z.string(),
-  documentId: z.number(),
+  documentId: z.number().nullable(),
   issuedAt: z.string().nullable(),
   workflowRequestId: z.number().nullable(),
 });
@@ -131,8 +131,15 @@ const letterContent = withPermission('employee.read')
     if (!isOwner && !context.permissions.has('letters.issue')) {
       throw new ORPCError('FORBIDDEN', { message: 'Not your letter' });
     }
-    const doc = await readDocument(context.db, letter.document_id);
-    return { mime: doc.mime, fileName: doc.originalName, content: doc.content.toString('utf8') };
+    if (letter.document_id !== null) {
+      const doc = await readDocument(context.db, letter.document_id);
+      return { mime: doc.mime, fileName: doc.originalName, content: doc.content.toString('utf8') };
+    }
+    return {
+      mime: 'text/plain',
+      fileName: `${letter.template_code}-${String(letter.id)}.txt`,
+      content: letter.body_rendered,
+    };
   });
 
 export const lettersRouter = { listTemplates, upsertTemplate, issue, myLetters, employeeLetters, letterContent };

@@ -29,7 +29,7 @@ export function LeaveAdminPage() {
     <div className="space-y-6">
       <header>
         <p className="text-sm text-ink-muted">Leave administration</p>
-        <h1 className="mt-1 font-serif text-4xl font-light tracking-tight text-ink">
+        <h1 className="mt-1 text-4xl font-light tracking-tight text-ink">
           Leave operations
         </h1>
         <p className="mt-1 text-sm text-ink-muted">

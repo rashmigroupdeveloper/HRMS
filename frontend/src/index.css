@@ -2,6 +2,21 @@
 @import './tokens/tokens.css';
 
 /*
+ * Hover is a CAPABILITY, not an assumption (docs/05 §2.3). The plant floor runs
+ * on tablets: an ungated `hover:` fires on tap and then STICKS until the user
+ * touches something else, so rows and buttons look permanently focused. Gating
+ * the variant at the source fixes every `hover:` utility in the product at once
+ * — no screen has to remember to do it.
+ */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
+/*
  * Map Warm Editorial tokens into Tailwind v4 theme so utilities like
  * bg-canvas / text-ink / rounded-card work everywhere (docs/05 §1).
  */
@@ -164,16 +179,54 @@ body {
   }
 }
 
-/* Off-canvas nav drawer (mobile) — slides in from the left. Transform-only so
- * it stays off the main thread (docs/05 §2.4). Reduced-motion is handled by the
+/* Mobile More sheet — slides up from the thumb bar. Transform-only so it
+ * stays off the main thread (docs/05 §2.4). Reduced-motion is handled by the
  * global block below (animation-duration collapses to ~0). */
-@keyframes u-slide-in-left {
+@keyframes u-slide-in-up {
   from {
-    transform: translateX(-100%);
+    transform: translateY(100%);
   }
   to {
-    transform: translateX(0);
+    transform: translateY(0);
   }
+}
+
+/* First-paint entrance (login, rare surfaces). Transform + opacity only;
+ * stagger via --enter-delay. Reduced-motion collapses to a fade. */
+.u-enter {
+  animation: u-enter var(--motion-short) var(--ease-out-strong) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+@keyframes u-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Payday-style gold underline (docs/05 §6) — scaleX from the left, never
+ * background-size. One accent per view; 800ms because this is a rare surface. */
+.u-gold-sweep {
+  transform: scaleX(0);
+  transform-origin: left center;
+  animation: u-gold-sweep var(--motion-counter) var(--ease-out-strong) 160ms both;
+}
+@keyframes u-gold-sweep {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.u-pop-in {
+  transform-origin: top center;
+  animation: u-pop var(--motion-short) var(--ease-out-strong);
 }
 
 /* Press feedback — every pressable element scales to 0.97 on :active with the
@@ -191,6 +244,15 @@ body {
   .u-press,
   .u-press:active {
     transform: none;
+  }
+  .u-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .u-gold-sweep {
+    animation: none;
+    transform: scaleX(1);
   }
   *,
   *::before,

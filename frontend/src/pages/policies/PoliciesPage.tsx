@@ -13,9 +13,11 @@ import {
   Button,
   Card,
   CardHeader,
+  DarkCard,
   DataTable,
   Drawer,
   EmptyState,
+  KpiNumber,
   PageHeader,
   SegmentedProgress,
   StatusBadge,
@@ -81,19 +83,26 @@ export function PoliciesPage({ user }: { user: SessionUser }) {
       );
       setReader({ policy, content: doc.content });
     } catch (cause) {
-      toast.error('Could not open the policy', { description: cause instanceof Error ? cause.message : 'Try again.' });
+      toast.error('Could not open the policy', {
+        description: cause instanceof Error ? cause.message : 'Try again.',
+      });
     }
   };
 
   const acknowledge = async (policy: PolicyItem) => {
     setBusy(true);
     try {
-      await apiFetch(`/api/policies/${String(policy.id)}/ack`, { method: 'POST', body: JSON.stringify({}) });
-      toast.success('Acknowledged', { description: policy.title });
+      await apiFetch(`/api/policies/${String(policy.id)}/ack`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      toast.success('You are covered', { description: policy.title });
       setReader(null);
       await load();
     } catch (cause) {
-      toast.error('Acknowledgment failed', { description: cause instanceof Error ? cause.message : 'Try again.' });
+      toast.error('Acknowledgment failed', {
+        description: cause instanceof Error ? cause.message : 'Try again.',
+      });
     } finally {
       setBusy(false);
     }
@@ -118,12 +127,16 @@ export function PoliciesPage({ user }: { user: SessionUser }) {
             : {}),
         }),
       });
-      toast.success('Policy published', { description: 'Targeted employees see it immediately; the weekly nag chases stragglers.' });
+      toast.success('Policy published', {
+        description: 'Targeted employees see it immediately; the weekly nag chases stragglers.',
+      });
       setPublishOpen(false);
       setForm({ title: '', effectiveDate: todayISOIST(), summary: '', content: '' });
       await load();
     } catch (cause) {
-      toast.error('Publish failed', { description: cause instanceof Error ? cause.message : 'Try again.' });
+      toast.error('Publish failed', {
+        description: cause instanceof Error ? cause.message : 'Try again.',
+      });
     } finally {
       setBusy(false);
     }
@@ -133,33 +146,45 @@ export function PoliciesPage({ user }: { user: SessionUser }) {
     { key: 'title', header: 'Policy', width: 'minmax(220px,2fr)', render: (row) => row.title },
     { key: 'eff', header: 'Effective', width: '110px', render: (row) => row.effectiveDate },
     { key: 'targeted', header: 'Targeted', width: '100px', numeric: true, render: (row) => row.targeted },
-    { key: 'acked', header: 'Acked', width: '100px', numeric: true, render: (row) => row.acknowledged },
+    { key: 'acked', header: 'Already acknowledged', width: '140px', numeric: true, render: (row) => row.acknowledged },
     {
       key: 'pct',
       header: 'Coverage',
       width: 'minmax(160px,1fr)',
       render: (row) => (
-        <SegmentedProgress label={`${String(row.pct)}%`} primary={row.acknowledged} total={Math.max(row.targeted, 1)} />
+        <SegmentedProgress
+          label={`${String(row.pct)}% of ${String(row.targeted)}`}
+          primary={row.acknowledged}
+          total={Math.max(row.targeted, 1)}
+        />
       ),
     },
   ];
 
-  const pending = mine.filter((p) => p.requiresAcknowledgment && !p.acknowledgedAt);
+  const pending = mine.filter((policy) => policy.requiresAcknowledgment && !policy.acknowledgedAt);
+  const acked = mine.filter((policy) => policy.acknowledgedAt !== null).length;
+  const firstPending = pending[0];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="CORE-13 · acknowledgment tracked live"
+        eyebrow="Read first — then you are covered"
         title="Policies"
         description={
-          pending.length > 0
-            ? `${String(pending.length)} polic${pending.length === 1 ? 'y needs' : 'ies need'} your acknowledgment.`
-            : 'You are fully acknowledged.'
+          mine.length > 0
+            ? `${String(acked)} of ${String(mine.length)} already acknowledged.`
+            : 'Policies aimed at you appear here the moment HR publishes them.'
         }
         actions={
           canPublish && (
-            <Button variant="primary" leadingIcon={<FileUp className="size-4" />} onClick={() => { setPublishOpen(true); }}>
-              Publish policy
+            <Button
+              variant="secondary"
+              leadingIcon={<FileUp className="size-4" />}
+              onClick={() => {
+                setPublishOpen(true);
+              }}
+            >
+              Publish a policy
             </Button>
           )
         }
@@ -167,8 +192,41 @@ export function PoliciesPage({ user }: { user: SessionUser }) {
 
       {error && (
         <Card>
-          <EmptyState icon={<ScrollText />} title="Could not load" description={error} action={<Button onClick={() => void load()}>Retry</Button>} />
+          <EmptyState
+            icon={<ScrollText />}
+            title="Policies could not be loaded"
+            description={error}
+            action={<Button onClick={() => void load()}>Try again</Button>}
+          />
         </Card>
+      )}
+
+      {mine.length > 0 && (
+        <DarkCard className="flex flex-wrap items-end justify-between gap-8">
+          <div>
+            <p className="text-xs font-medium tracking-tight text-hero-muted">
+              Already on your list
+            </p>
+            <p className="mt-3 text-5xl font-light tabular-nums">
+              <KpiNumber value={mine.length} />
+            </p>
+            <p className="mt-1 text-sm text-hero-muted">
+              {`${String(acked)} of ${String(mine.length)} already acknowledged`}
+              {pending.length > 0
+                ? ` · ${firstPending?.title ?? 'the next one'} still needs your read`
+                : ' — you are covered'}
+            </p>
+          </div>
+          {firstPending !== undefined && (
+            <Button
+              variant="primary"
+              leadingIcon={<CheckCircle2 className="size-4" />}
+              onClick={() => void openReader(firstPending)}
+            >
+              Read {firstPending.title}
+            </Button>
+          )}
+        </DarkCard>
       )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -178,20 +236,27 @@ export function PoliciesPage({ user }: { user: SessionUser }) {
               <h2 className="text-base font-semibold text-ink">{policy.title}</h2>
               {policy.requiresAcknowledgment &&
                 (policy.acknowledgedAt ? (
-                  <StatusBadge tone="positive">acknowledged</StatusBadge>
+                  <StatusBadge tone="positive">already acknowledged</StatusBadge>
                 ) : (
-                  <StatusBadge tone="warning">action needed</StatusBadge>
+                  <StatusBadge tone="warning">needs your read</StatusBadge>
                 ))}
             </div>
             <p className="mt-1 text-xs text-ink-muted">Effective {policy.effectiveDate}</p>
-            {policy.bodySummary && <p className="mt-3 text-sm leading-6 text-ink-muted">{policy.bodySummary}</p>}
+            {policy.bodySummary && (
+              <p className="mt-3 text-sm leading-6 text-ink-muted">{policy.bodySummary}</p>
+            )}
             <div className="mt-auto flex gap-2 pt-4">
               <Button size="sm" variant="ghost" onClick={() => void openReader(policy)}>
                 Read
               </Button>
               {policy.requiresAcknowledgment && !policy.acknowledgedAt && (
-                <Button size="sm" variant="primary" loading={busy} leadingIcon={<CheckCircle2 className="size-4" />} onClick={() => void acknowledge(policy)}>
-                  Acknowledge
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  loading={busy}
+                  onClick={() => void acknowledge(policy)}
+                >
+                  I have read this
                 </Button>
               )}
             </div>
@@ -199,7 +264,11 @@ export function PoliciesPage({ user }: { user: SessionUser }) {
         ))}
         {mine.length === 0 && !loading && !error && (
           <Card className="md:col-span-2 xl:col-span-3">
-            <EmptyState icon={<BookOpenCheck />} title="No policies target you yet" description="Published policies appear here the moment HR releases them." />
+            <EmptyState
+              icon={<BookOpenCheck />}
+              title="No policy is aimed at you yet"
+              description="When HR publishes a plant or company policy, it appears here so you can read it before the acknowledgment deadline. Nothing is waiting on you until then."
+            />
           </Card>
         )}
       </div>
@@ -207,14 +276,23 @@ export function PoliciesPage({ user }: { user: SessionUser }) {
       {seesTile && (
         <Card padded={false}>
           <div className="p-5 pb-1">
-            <CardHeader title="Acknowledgment coverage" subtitle="Live query — targeted × acknowledged per policy (the HR tile)" />
+            <CardHeader
+              title="How many people are already covered"
+              subtitle="Live · acknowledged of targeted — not a stored percentage"
+            />
           </div>
           <DataTable
             rows={tile}
             columns={tileColumns}
             rowKey={(row) => String(row.id)}
             maxHeight={360}
-            empty={<EmptyState icon={<BookOpenCheck />} title="No ack-required policies" />}
+            empty={
+              <EmptyState
+                icon={<BookOpenCheck />}
+                title="No acknowledgment-required policies yet"
+                description="Coverage appears here the moment a policy that needs a read is published."
+              />
+            }
           />
         </Card>
       )}
@@ -228,14 +306,22 @@ export function PoliciesPage({ user }: { user: SessionUser }) {
         subtitle={reader ? `Effective ${reader.policy.effectiveDate}` : undefined}
         footer={
           reader?.policy.requiresAcknowledgment && !reader.policy.acknowledgedAt ? (
-            <Button variant="primary" loading={busy} leadingIcon={<CheckCircle2 className="size-4" />} onClick={() => void acknowledge(reader.policy)}>
-              I have read this — acknowledge
+            <Button
+              variant="primary"
+              loading={busy}
+              leadingIcon={<CheckCircle2 className="size-4" />}
+              onClick={() => void acknowledge(reader.policy)}
+            >
+              I have read this — mark me covered
             </Button>
           ) : undefined
         }
         width={560}
       >
-        <article className="whitespace-pre-wrap text-sm leading-7 text-ink" dangerouslySetInnerHTML={{ __html: reader?.content ?? '' }} />
+        <article
+          className="whitespace-pre-wrap text-sm leading-7 text-ink"
+          dangerouslySetInnerHTML={{ __html: reader?.content ?? '' }}
+        />
       </Drawer>
 
       <Drawer
@@ -244,15 +330,22 @@ export function PoliciesPage({ user }: { user: SessionUser }) {
           setPublishOpen(false);
         }}
         title="Publish a policy"
-        subtitle="A short summary, a full document body, or both — acknowledgment tracking starts immediately"
+        subtitle="Effective date defaults to today. Employees see it as soon as you publish."
         footer={
           <Button variant="primary" loading={busy} onClick={() => void publish()}>
-            Publish
+            Publish for everyone targeted
           </Button>
         }
         width={560}
       >
         <div className="space-y-4">
+          {form.title.trim().length > 0 && (
+            <div className="rounded-row bg-surface-2 px-4 py-3">
+              <p className="text-xs text-ink-muted">Employees will see</p>
+              <p className="mt-1 text-sm font-semibold text-ink">{form.title.trim()}</p>
+              <p className="mt-1 text-xs text-ink-muted">Effective {form.effectiveDate}</p>
+            </div>
+          )}
           <TextField
             label="Title"
             value={form.title}

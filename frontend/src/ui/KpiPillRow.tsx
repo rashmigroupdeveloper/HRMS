@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { cn } from './cn';
 import { KpiNumber } from './KpiNumber';
 
@@ -25,6 +26,8 @@ export interface KpiPill {
   suffix?: string;
   precision?: number;
   icon?: ReactNode;
+  /** When set, the pill is the list behind the number (docs/05 §8). */
+  to?: string;
 }
 
 const STATE_SHELL: Record<PillState, string> = {
@@ -42,38 +45,52 @@ const STATE_LABEL: Record<PillState, string> = {
   outline: 'text-ink-muted',
 };
 
+function PillBody({ p }: { p: KpiPill }) {
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <span className={cn('text-xs font-medium tracking-tight', STATE_LABEL[p.state])}>
+          {p.label}
+        </span>
+        {p.icon && <span className="[&_svg]:size-4">{p.icon}</span>}
+      </div>
+      <div className="mt-1 text-xl font-semibold leading-none">
+        <KpiNumber
+          value={p.value}
+          prefix={p.prefix}
+          suffix={p.suffix}
+          precision={p.precision ?? 0}
+        />
+      </div>
+    </>
+  );
+}
+
 export function KpiPillRow({ pills }: { pills: KpiPill[] }) {
   return (
     <div className="flex flex-wrap gap-3">
-      {pills.map((p) => (
-        <div
-          key={p.label}
-          className={cn(
-            'min-w-[9.5rem] flex-1 rounded-tile px-4 py-3.5',
-            STATE_SHELL[p.state],
-          )}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span
-              className={cn(
-                'text-xs font-medium tracking-tight',
-                STATE_LABEL[p.state],
-              )}
+      {pills.map((p) => {
+        const shell = cn(
+          'min-w-[8.5rem] rounded-full px-5 py-2.5',
+          STATE_SHELL[p.state],
+        );
+        if (p.to !== undefined) {
+          return (
+            <Link
+              key={p.label}
+              to={p.to}
+              className={cn(shell, 'u-press focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent')}
             >
-              {p.label}
-            </span>
-            {p.icon && <span className="[&_svg]:size-4">{p.icon}</span>}
+              <PillBody p={p} />
+            </Link>
+          );
+        }
+        return (
+          <div key={p.label} className={shell}>
+            <PillBody p={p} />
           </div>
-          <div className="mt-1.5 text-2xl font-semibold leading-none">
-            <KpiNumber
-              value={p.value}
-              prefix={p.prefix}
-              suffix={p.suffix}
-              precision={p.precision ?? 0}
-            />
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

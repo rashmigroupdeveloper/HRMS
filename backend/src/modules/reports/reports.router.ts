@@ -3,15 +3,33 @@
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { withPermission } from '../../api/orpc.js';
+import { withAnyPermission, withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
+import { writeAudit } from '../../core/audit/audit.service.js';
+import type { Database } from '../../core/db/types.js';
+import type { EmployeeScope } from '../../core/rbac/employee-scope.js';
+import type { PermissionAccess } from '../../core/rbac/permissions.service.js';
+import type { Kysely } from 'kysely';
 import {
+  approveManagerMonth,
+  getManagerApprovalLedger,
   getMonthLockChecklist,
   lockMonth,
 } from '../attendance/index.js';
 import { buildMusterMonth, exportMusterExcel, listMuster } from './muster.service.js';
+import { buildKpiSnapshot, kpiTrend, readKpiSnapshot } from './kpi-snapshot.service.js';
+import {
+  exportR2Excel,
+  exportR3Excel,
+  exportR4Excel,
+  exportR5Excel,
+  exportR6Excel,
+  exportR24Excel,
+  exportR27Excel,
+} from './reports-export.service.js';
 import {
   reportR2Swipes,
+  reportR2RawSwipes,
   reportR3Regularizations,
   reportR4Exceptions,
   reportR5Ot,
@@ -19,10 +37,23 @@ import {
   reportR24Boarding,
   reportR27Headcount,
 } from './reports.service.js';
-import { essHome, hrOpsDashboard, myAttendanceMonth, teamMonthGrid } from './dashboard.service.js';
+import {
+  businessUnitDashboard,
+  essHome,
+  hrOpsDashboard,
+  myAttendanceMonth,
+  teamMonthGrid,
+} from './dashboard.service.js';
+
+/**
+ * docs/08 §2 grants report access through THREE parallel permissions to
+ * different roles. Scope still narrows the rows (plant_head is org_unit).
+ */
+const reportGuard = () => withAnyPermission('reports.hr', 'reports.bu', 'reports.ceo');
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const monthStr = z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/);
+const fileOut = z.object({ filename: z.string(), base64: z.string() });
 
 function asBadRequest(err: unknown): never {
   throw new ORPCError('BAD_REQUEST', { message: err instanceof Error ? err.message : 'Invalid request' });
@@ -33,6 +64,37 @@ function requireEmployeeId(user: { employee_id: number | null }): number {
     throw new ORPCError('BAD_REQUEST', { message: 'No employee profile linked' });
   }
   return user.employee_id;
+}
+
+function filePayload(filename: string, buf: Buffer) {
+  return { filename, base64: buf.toString('base64') };
+}
+
+function employeeScope(context: {
+  permissionAccess: PermissionAccess;
+  user: { employee_id: number | null };
+}): EmployeeScope {
+  return { ...context.permissionAccess, actorEmployeeId: context.user.employee_id };
+}
+
+async function auditedFilePayload(
+  db: Kysely<Database>,
+  actorUserId: number,
+  ip: string | null,
+  reportCode: string,
+  filters: unknown,
+  filename: string,
+  buf: Buffer,
+) {
+  await writeAudit(db, {
+    actorUserId,
+    action: 'export',
+    entity: 'reporting.report_export',
+    field: reportCode,
+    newValue: JSON.stringify(filters),
+    ip,
+  });
+  return filePayload(filename, buf);
 }
 
 // ── Month lock ──────────────────────────────────────────────────────────────
@@ -74,6 +136,77 @@ const monthLock = withPermission('attendance.month_lock')
     }
   });
 
+const managerApprovalRow = z.object({
+  managerEmployeeId: z.number(),
+  managerEcode: z.string(),
+  managerName: z.string(),
+  reportCount: z.number(),
+  approved: z.boolean(),
+  approvedAt: z.string().nullable(),
+  approvedByUserId: z.number().nullable(),
+  note: z.string().nullable(),
+});
+
+/** HR/payroll view of the full company ledger (ATT-12). */
+const managerApprovalLedger = withPermission('attendance.month_lock')
+  .route({
+    method: 'GET',
+    path: '/attendance/manager-approvals',
+    summary: 'Manager attendance-approval ledger for a company×month (ATT-12)',
+  })
+  .input(z.object({ companyId: z.number().int().positive(), month: monthStr }))
+  .output(z.array(managerApprovalRow))
+  .handler(async ({ input, context }) =>
+    getManagerApprovalLedger(context.db, input.companyId, input.month),
+  );
+
+/**
+ * Manager self-approval for own team (or HR co-sign via month_lock holders).
+ * Managers need attendance.team.read; HR can pass any managerEmployeeId when they
+ * hold attendance.month_lock (enforced here via permission OR identity).
+ */
+const approveManagerAttendance = withPermission('attendance.team.read')
+  .route({
+    method: 'POST',
+    path: '/attendance/manager-approvals',
+    summary: 'Approve team attendance for a month (ATT-12)',
+  })
+  .input(
+    z.object({
+      companyId: z.number().int().positive(),
+      month: monthStr,
+      /** Defaults to the caller's employee_id when omitted. */
+      managerEmployeeId: z.number().int().positive().optional(),
+      note: z.string().max(500).optional(),
+    }),
+  )
+  .output(z.object({ ok: z.literal(true) }))
+  .handler(async ({ input, context }) => {
+    const selfId = context.user.employee_id;
+    const targetId = input.managerEmployeeId ?? selfId;
+    if (targetId === null) {
+      throw new ORPCError('BAD_REQUEST', { message: 'No employee profile linked' });
+    }
+    const isSelf = selfId !== null && selfId === targetId;
+    const isHr = context.permissions.has('attendance.month_lock');
+    if (!isSelf && !isHr) {
+      throw new ORPCError('FORBIDDEN', {
+        message: 'You may only approve your own team attendance',
+      });
+    }
+    try {
+      return await approveManagerMonth(context.db, {
+        companyId: input.companyId,
+        month: input.month,
+        managerEmployeeId: targetId,
+        actorUserId: context.user.id,
+        note: input.note,
+      });
+    } catch (error) {
+      asBadRequest(error);
+    }
+  });
+
 // ── Muster R1 ───────────────────────────────────────────────────────────────
 
 const musterBuild = withPermission('attendance.muster.export')
@@ -84,129 +217,314 @@ const musterBuild = withPermission('attendance.muster.export')
     rows: await buildMusterMonth(context.db, input.companyId, input.month),
   }));
 
+const musterRowOut = z.object({
+  ecode: z.string(),
+  employeeName: z.string(),
+  reportingManager: z.string().nullable(),
+  functionalManager: z.string().nullable(),
+  department: z.string().nullable(),
+  designation: z.string().nullable(),
+  orgUnit: z.string().nullable(),
+  costCenter: z.string().nullable(),
+  contact: z.string().nullable(),
+  category: z.string().nullable(),
+  dayStatuses: z.record(z.string()),
+  leaveByType: z.record(z.number()),
+  present: z.number(),
+  absent: z.number(),
+  halfDays: z.number(),
+  weekoffs: z.number(),
+  weekoffsUnpaid: z.number(),
+  holidays: z.number(),
+  leaveDays: z.number(),
+  odDays: z.number(),
+  coDays: z.number(),
+  uabDays: z.number(),
+  lopDays: z.number(),
+  otHours: z.number(),
+});
+
+/** Shared R1 filter contract — list and export must stay identical (RPT-06). */
+const musterFilterInput = z.object({
+  companyId: z.number().int().positive(),
+  month: monthStr,
+  department: z.string().min(1).optional(),
+  costCenter: z.string().min(1).optional(),
+  location: z.string().min(1).optional(),
+  orgUnit: z.string().min(1).optional(),
+  category: z
+    .enum(['white_collar', 'blue_collar', 'trainee', 'consultant', 'contract'])
+    .optional(),
+  employeeStatus: z.enum(['active', 'on_notice', 'exited', 'onboarding']).optional(),
+  reportingManagerId: z.number().int().positive().optional(),
+  subtree: z.boolean().optional(),
+  ecode: z.string().min(1).optional(),
+});
+
 const musterList = withPermission('attendance.muster.export')
   .route({ method: 'GET', path: '/reports/muster', summary: 'R1 Muster Summary list (from snapshot)' })
-  .input(z.object({ companyId: z.number().int().positive(), month: monthStr }))
-  .output(
-    z.array(
-      z.object({
-        ecode: z.string(),
-        employeeName: z.string(),
-        reportingManager: z.string().nullable(),
-        functionalManager: z.string().nullable(),
-        department: z.string().nullable(),
-        designation: z.string().nullable(),
-        orgUnit: z.string().nullable(),
-        costCenter: z.string().nullable(),
-        contact: z.string().nullable(),
-        category: z.string().nullable(),
-        dayStatuses: z.record(z.string()),
-        leaveByType: z.record(z.number()),
-        present: z.number(),
-        absent: z.number(),
-        halfDays: z.number(),
-        weekoffs: z.number(),
-        weekoffsUnpaid: z.number(),
-        holidays: z.number(),
-        leaveDays: z.number(),
-        odDays: z.number(),
-        coDays: z.number(),
-        uabDays: z.number(),
-        lopDays: z.number(),
-        otHours: z.number(),
-      }),
-    ),
-  )
+  .input(musterFilterInput)
+  .output(z.array(musterRowOut))
   .handler(async ({ input, context }) =>
-    listMuster(context.db, { companyId: input.companyId, month: input.month }),
+    listMuster(context.db, { ...input, scope: employeeScope(context) }),
   );
 
 const musterExport = withPermission('attendance.muster.export')
-  .route({ method: 'GET', path: '/reports/muster/export', summary: 'R1 Muster Excel export' })
-  .input(z.object({ companyId: z.number().int().positive(), month: monthStr }))
-  .output(z.object({ filename: z.string(), base64: z.string() }))
+  .route({ method: 'GET', path: '/reports/muster/export', summary: 'R1 Muster Excel export (same filters as list)' })
+  .input(musterFilterInput)
+  .output(fileOut)
   .handler(async ({ input, context }) => {
-    const buf = await exportMusterExcel(context.db, { companyId: input.companyId, month: input.month });
-    return {
-      filename: `muster-${input.month}.xlsx`,
-      base64: buf.toString('base64'),
-    };
+    const filters = { ...input, scope: employeeScope(context) };
+    const buf = await exportMusterExcel(context.db, filters);
+    return auditedFilePayload(
+      context.db,
+      context.user.id,
+      context.req.ip ?? null,
+      'R1',
+      input,
+      `muster-${input.month}.xlsx`,
+      buf,
+    );
   });
 
-// ── Supporting reports ──────────────────────────────────────────────────────
+// ── Supporting reports R2–R6, R24, R27 ──────────────────────────────────────
 
-const r2 = withPermission('attendance.team.read')
+const r2Row = z.object({
+  ecode: z.string(),
+  employeeName: z.string(),
+  workDate: z.string(),
+  status: z.string(),
+  firstIn: z.string().nullable(),
+  lastOut: z.string().nullable(),
+  workedMinutes: z.number().nullable(),
+  lateMinutes: z.number(),
+  earlyExitMinutes: z.number(),
+  otMinutes: z.number(),
+  firstDoor: z.string().nullable(),
+  lastDoor: z.string().nullable(),
+  mappedLocation: z.string().nullable(),
+  majoritySwipeLocation: z.string().nullable(),
+  crossPlantFlag: z.boolean(),
+  rawSwipeCount: z.number(),
+  statusVsSwipes: z.enum([
+    'match',
+    'status_without_swipes',
+    'swipes_without_presence',
+    'both_absent',
+  ]),
+});
+
+const r2Input = z.object({
+  companyId: z.number().int().positive(),
+  month: monthStr,
+  ecode: z.string().min(1).optional(),
+});
+
+const r2 = withPermission('attendance.muster.export')
   .route({ method: 'GET', path: '/reports/r2-swipes', summary: 'R2 daily attendance / swipe detail' })
-  .input(z.object({ employeeId: z.number().int().positive(), fromDate: isoDate, toDate: isoDate }))
-  .output(z.array(z.object({
-    workDate: z.string(),
-    status: z.string(),
-    firstIn: z.string().nullable(),
-    lastOut: z.string().nullable(),
-    workedMinutes: z.number().nullable(),
-    lateMinutes: z.number(),
-    earlyExitMinutes: z.number(),
-    otMinutes: z.number(),
-  })))
-  .handler(async ({ input, context }) => reportR2Swipes(context.db, input));
+  .input(r2Input)
+  .output(z.array(r2Row))
+  .handler(async ({ input, context }) =>
+    reportR2Swipes(context.db, { ...input, scope: employeeScope(context) }),
+  );
+
+const r2Export = withPermission('attendance.muster.export')
+  .route({ method: 'GET', path: '/reports/r2-swipes/export', summary: 'R2 Excel (same filters as list)' })
+  .input(r2Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR2Excel(context.db, { ...input, scope: employeeScope(context) });
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R2', input, `r2-swipes-${input.month}.xlsx`, buf);
+  });
+
+const r2RawSwipeRow = z.object({
+  employeeNo: z.string(),
+  accessCard: z.string().nullable(),
+  shiftLabel: z.string().nullable(),
+  swipeTs: z.string(),
+  doorCode: z.string().nullable(),
+  longitude: z.string().nullable(),
+  latitude: z.string().nullable(),
+  locationType: z.string().nullable(),
+  mobileDeviceName: z.string().nullable(),
+  mobileDeviceId: z.string().nullable(),
+  swipeType: z.string().nullable(),
+  direction: z.string().nullable(),
+  remarks: z.string().nullable(),
+  permissionReason: z.string().nullable(),
+  signedBy: z.string().nullable(),
+  receivedAt: z.string(),
+  source: z.string(),
+});
+
+const r2Raw = withPermission('attendance.muster.export')
+  .route({ method: 'GET', path: '/reports/r2-swipes/raw', summary: 'R2 lossless raw-swipe drill-down' })
+  .input(z.object({ ecode: z.string().min(1), workDate: isoDate }))
+  .output(z.array(r2RawSwipeRow))
+  .handler(async ({ input, context }) =>
+    reportR2RawSwipes(context.db, { ...input, scope: employeeScope(context) }),
+  );
+
+const r3Row = z.object({
+  id: z.number(),
+  ecode: z.string(),
+  employeeName: z.string(),
+  kind: z.string(),
+  fromDate: z.string(),
+  toDate: z.string(),
+  fromTime: z.string().nullable(),
+  toTime: z.string().nullable(),
+  reason: z.string(),
+  requestedStatus: z.string(),
+  applied: z.boolean(),
+  workflowStatus: z.string(),
+  currentStep: z.number(),
+  decidedAt: z.string().nullable(),
+  timeline: z.array(z.object({
+    stepNo: z.number(),
+    approverName: z.string(),
+    delegatedFromName: z.string().nullable(),
+    action: z.string().nullable(),
+    comment: z.string().nullable(),
+    notifiedAt: z.string(),
+    actedAt: z.string().nullable(),
+    slaDueAt: z.string(),
+  })),
+});
+
+const r3Input = z.object({
+  companyId: z.number().int().positive(),
+  kind: z.string().optional(),
+  status: z.string().optional(),
+});
 
 const r3 = withPermission('attendance.muster.export')
   .route({ method: 'GET', path: '/reports/r3-regularizations', summary: 'R3 AR/OD report' })
-  .input(z.object({ companyId: z.number().int().positive() }))
-  .output(z.array(z.object({
-    id: z.number(),
-    ecode: z.string(),
-    kind: z.string(),
-    fromDate: z.string(),
-    toDate: z.string(),
-    reason: z.string(),
-    applied: z.boolean(),
-    workflowStatus: z.string(),
-  })))
-  .handler(async ({ input, context }) => reportR3Regularizations(context.db, input.companyId));
+  .input(r3Input)
+  .output(z.array(r3Row))
+  .handler(async ({ input, context }) =>
+    reportR3Regularizations(context.db, { ...input, scope: employeeScope(context) }),
+  );
+
+const r3Export = withPermission('attendance.muster.export')
+  .route({ method: 'GET', path: '/reports/r3-regularizations/export', summary: 'R3 Excel' })
+  .input(r3Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR3Excel(context.db, { ...input, scope: employeeScope(context) });
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R3', input, `r3-regularizations-${String(input.companyId)}.xlsx`, buf);
+  });
+
+const r4Row = z.object({
+  ecode: z.string(),
+  employeeName: z.string(),
+  workDate: z.string(),
+  status: z.string(),
+  lateMinutes: z.number(),
+  earlyExitMinutes: z.number(),
+  monthlyExceptionCount: z.number(),
+  monthlyLateMinutes: z.number(),
+  monthlyEarlyExitMinutes: z.number(),
+  monthlyUabDays: z.number(),
+});
+
+const r4Input = z.object({ companyId: z.number().int().positive(), month: monthStr });
 
 const r4 = withPermission('attendance.muster.export')
   .route({ method: 'GET', path: '/reports/r4-exceptions', summary: 'R4 late/early/UAB' })
-  .input(z.object({ companyId: z.number().int().positive(), month: monthStr }))
-  .output(z.array(z.object({
-    ecode: z.string(),
-    workDate: z.string(),
-    status: z.string(),
-    lateMinutes: z.number(),
-    earlyExitMinutes: z.number(),
-  })))
-  .handler(async ({ input, context }) => reportR4Exceptions(context.db, input.companyId, input.month));
+  .input(r4Input)
+  .output(z.array(r4Row))
+  .handler(async ({ input, context }) =>
+    reportR4Exceptions(context.db, input.companyId, input.month, employeeScope(context)),
+  );
 
-const r5 = withPermission('attendance.muster.export')
+const r4Export = withPermission('attendance.muster.export')
+  .route({ method: 'GET', path: '/reports/r4-exceptions/export', summary: 'R4 Excel' })
+  .input(r4Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR4Excel(context.db, input.companyId, input.month, employeeScope(context));
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R4', input, `r4-exceptions-${input.month}.xlsx`, buf);
+  });
+
+const r5Row = z.object({
+  ecode: z.string(),
+  employeeName: z.string(),
+  workDate: z.string(),
+  detectedMinutes: z.number(),
+  claimedMinutes: z.number(),
+  approvedMinutes: z.number().nullable(),
+  status: z.string(),
+  managerEcode: z.string().nullable(),
+  managerName: z.string().nullable(),
+  deadlineAt: z.string(),
+  decidedAt: z.string().nullable(),
+  decisionLatencyHours: z.number().nullable(),
+  convertedCompOff: z.boolean(),
+  compOffCreditId: z.number().nullable(),
+  payrollItemId: z.number().nullable(),
+  within48h: z.boolean().nullable(),
+  managerDecisionCount: z.number(),
+  managerAverageLatencyHours: z.number().nullable(),
+});
+
+const r5Input = z.object({ companyId: z.number().int().positive(), month: monthStr });
+
+// The manager-latency league table is explicitly HR-only (docs/06 R5).
+const r5 = reportGuard()
   .route({ method: 'GET', path: '/reports/r5-ot', summary: 'R5 OT register' })
-  .input(z.object({ companyId: z.number().int().positive(), month: monthStr }))
-  .output(z.array(z.object({
-    ecode: z.string(),
-    workDate: z.string(),
-    detectedMinutes: z.number(),
-    claimedMinutes: z.number(),
-    approvedMinutes: z.number().nullable(),
-    status: z.string(),
-    deadlineAt: z.string(),
-    decidedAt: z.string().nullable(),
-    convertedCompOff: z.boolean(),
-  })))
-  .handler(async ({ input, context }) => reportR5Ot(context.db, input.companyId, input.month));
+  .input(r5Input)
+  .output(z.array(r5Row))
+  .handler(async ({ input, context }) =>
+    reportR5Ot(context.db, input.companyId, input.month, employeeScope(context)),
+  );
 
-const r6 = withPermission('reports.hr')
+const r5Export = reportGuard()
+  .route({ method: 'GET', path: '/reports/r5-ot/export', summary: 'R5 Excel' })
+  .input(r5Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR5Excel(context.db, input.companyId, input.month, employeeScope(context));
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R5', input, `r5-ot-${input.month}.xlsx`, buf);
+  });
+
+const r6Row = z.object({
+  id: z.number(),
+  ecode: z.string(),
+  employeeName: z.string(),
+  startDate: z.string(),
+  daysAbsent: z.number(),
+  stage: z.string(),
+  ownerName: z.string().nullable(),
+  letterId: z.number().nullable(),
+  letterStatus: z.string().nullable(),
+  letterContentPath: z.string().nullable(),
+  resolution: z.string().nullable(),
+  closedAt: z.string().nullable(),
+});
+
+const r6Input = z.object({
+  companyId: z.number().int().positive(),
+  stage: z.string().optional(),
+  openOnly: z.boolean().optional(),
+});
+
+const r6 = reportGuard()
   .route({ method: 'GET', path: '/reports/r6-absence', summary: 'R6 absence cases' })
-  .input(z.object({ companyId: z.number().int().positive() }))
-  .output(z.array(z.object({
-    id: z.number(),
-    ecode: z.string(),
-    startDate: z.string(),
-    daysAbsent: z.number(),
-    stage: z.string(),
-    letterId: z.number().nullable(),
-    resolution: z.string().nullable(),
-    closedAt: z.string().nullable(),
-  })))
-  .handler(async ({ input, context }) => reportR6AbsenceCases(context.db, input.companyId));
+  .input(r6Input)
+  .output(z.array(r6Row))
+  .handler(async ({ input, context }) =>
+    reportR6AbsenceCases(context.db, { ...input, scope: employeeScope(context) }),
+  );
+
+const r6Export = reportGuard()
+  .route({ method: 'GET', path: '/reports/r6-absence/export', summary: 'R6 Excel' })
+  .input(r6Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR6Excel(context.db, { ...input, scope: employeeScope(context) });
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R6', input, `r6-absence-${String(input.companyId)}.xlsx`, buf);
+  });
 
 const boardingRow = z.object({
   ecode: z.string(),
@@ -222,26 +540,85 @@ const boardingRow = z.object({
   kind: z.enum(['join', 'exit']),
 });
 
-const r24 = withPermission('reports.hr')
-  .route({ method: 'GET', path: '/reports/r24-boarding', summary: 'R24 boarding/exit for a date' })
-  .input(z.object({ companyId: z.number().int().positive(), reportDate: isoDate }))
+const r24Input = z.object({
+  companyId: z.number().int().positive(),
+  fromDate: isoDate,
+  toDate: isoDate,
+}).refine((value) => value.fromDate <= value.toDate, {
+  message: 'fromDate must be on or before toDate',
+  path: ['toDate'],
+});
+
+const r24 = reportGuard()
+  .route({ method: 'GET', path: '/reports/r24-boarding', summary: 'R24 boarding/exit for a date range' })
+  .input(r24Input)
   .output(z.object({ joins: z.array(boardingRow), exits: z.array(boardingRow) }))
   .handler(async ({ input, context }) =>
-    reportR24Boarding(context.db, input.reportDate, input.companyId),
+    reportR24Boarding(context.db, input.fromDate, input.toDate, input.companyId, employeeScope(context)),
   );
 
-const r27 = withPermission('reports.hr')
+const r24Export = reportGuard()
+  .route({ method: 'GET', path: '/reports/r24-boarding/export', summary: 'R24 Excel' })
+  .input(r24Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR24Excel(context.db, input.fromDate, input.toDate, input.companyId, employeeScope(context));
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R24', input, `r24-boarding-${input.fromDate}-${input.toDate}.xlsx`, buf);
+  });
+
+const r27Row = z.object({
+  snapshotDate: z.string(),
+  status: z.string(),
+  company: z.string(),
+  location: z.string().nullable(),
+  category: z.string().nullable(),
+  department: z.string().nullable(),
+  grade: z.string().nullable(),
+  gender: z.string().nullable(),
+  ageBand: z.string(),
+  tenureBand: z.string(),
+  count: z.number(),
+});
+
+const r27Input = z.object({
+  companyId: z.number().int().positive().optional(),
+  asOf: isoDate.optional(),
+  fromMonth: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+  toMonth: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+}).refine((value) =>
+  (value.fromMonth === undefined && value.toMonth === undefined) ||
+  (value.fromMonth !== undefined && value.toMonth !== undefined && value.fromMonth <= value.toMonth),
+  { message: 'fromMonth and toMonth must be supplied together in ascending order' },
+).refine((value) => {
+  if (value.fromMonth === undefined || value.toMonth === undefined) return true;
+  const [fromYear, fromMonth] = value.fromMonth.split('-').map(Number);
+  const [toYear, toMonth] = value.toMonth.split('-').map(Number);
+  return ((toYear ?? 0) * 12 + (toMonth ?? 0)) - ((fromYear ?? 0) * 12 + (fromMonth ?? 0)) <= 59;
+},
+  { message: 'Headcount trend is limited to 60 months per request' },
+).optional();
+
+const r27 = reportGuard()
   .route({ method: 'GET', path: '/reports/r27-headcount', summary: 'R27 headcount demographics' })
-  .input(z.object({ companyId: z.number().int().positive().optional() }).optional())
-  .output(z.array(z.object({
-    status: z.string(),
-    category: z.string().nullable(),
-    count: z.number(),
-  })))
-  .handler(async ({ input, context }) => reportR27Headcount(context.db, input?.companyId));
+  .input(r27Input)
+  .output(z.array(r27Row))
+  .handler(async ({ input, context }) =>
+    reportR27Headcount(context.db, { ...input, scope: employeeScope(context) }),
+  );
+
+const r27Export = reportGuard()
+  .route({ method: 'GET', path: '/reports/r27-headcount/export', summary: 'R27 Excel' })
+  .input(r27Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR27Excel(context.db, { ...input, scope: employeeScope(context) });
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R27', input ?? {}, 'r27-headcount.xlsx', buf);
+  });
 
 // ── Dashboards / ESS ────────────────────────────────────────────────────────
 
+// NOT reportGuard: this is an OPERATIONAL dashboard, and docs/08 §3 is
+// explicit that ceo_cell gets "no operational screens".
 const hrDashboard = withPermission('reports.hr')
   .route({ method: 'GET', path: '/dashboards/hr-ops', summary: 'HR Ops home KPIs (05 §4.1)' })
   .input(z.object({ companyId: z.number().int().positive().optional() }).optional())
@@ -321,19 +698,122 @@ const teamGrid = withPermission('attendance.team.read')
     return teamMonthGrid(context.db, managerId, input.month, input.subtree ?? false);
   });
 
+/**
+ * RPT-03 — the CEO dashboard reads a PRECOMPUTED snapshot. It never triggers an
+ * aggregation: opening this page must not scan att.day_records (docs/06 §4,
+ * CLAUDE.md §1.9). A metric that cannot be computed yet comes back with a null
+ * value AND a reason, so the UI explains the gap instead of showing a zero.
+ */
+const executiveKpis = withPermission('reports.ceo')
+  .route({ method: 'GET', path: '/reports/executive', summary: 'RPT-03 CEO dashboard KPI snapshot' })
+  .input(z.object({ date: isoDate.optional() }).optional())
+  .output(
+    z.object({
+      snapshotDate: z.string(),
+      computedAt: z.string().nullable(),
+      metrics: z.array(
+        z.object({
+          companyId: z.number().nullable(),
+          category: z.string(),
+          metric: z.string(),
+          value: z.number().nullable(),
+          unavailableReason: z.string().nullable(),
+        }),
+      ),
+    }),
+  )
+  .handler(async ({ input, context }) => {
+    const snapshot = await readKpiSnapshot(context.db, { date: input?.date });
+    if (!snapshot) {
+      throw new ORPCError('NOT_FOUND', {
+        message: 'No KPI snapshot has been built yet — run the nightly job or rebuild now.',
+      });
+    }
+    return snapshot;
+  });
+
+/**
+ * RPT-04 — the Business-Unit dashboard (docs/06 §5). Gated on `reports.bu`
+ * (plant heads) or `reports.hr` (HR previewing a plant), and scoped so a plant
+ * head can never see another plant's numbers.
+ */
+const businessUnit = withAnyPermission('reports.bu', 'reports.hr')
+  .route({ method: 'GET', path: '/dashboards/business-unit', summary: 'RPT-04 BU / plant dashboard' })
+  .input(
+    z.object({
+      companyId: z.coerce.number().int().positive().optional(),
+      locationId: z.coerce.number().int().positive().optional(),
+    }).optional(),
+  )
+  .output(
+    z.object({
+      scopeLabel: z.string(),
+      headcount: z.array(z.object({ category: z.string(), count: z.number() })),
+      headcountTotal: z.number(),
+      absentToday: z.number(),
+      scheduledToday: z.number(),
+      absenteeismTodayPct: z.number().nullable(),
+      otHoursMtd: z.number(),
+      joinersMtd: z.number(),
+      exitsMtd: z.number(),
+      openAbsenceCases: z.array(z.object({ stage: z.string(), count: z.number() })),
+    }),
+  )
+  .handler(({ input, context }) =>
+    businessUnitDashboard(context.db, {
+      companyId: input?.companyId,
+      locationId: input?.locationId,
+    }),
+  );
+
+/** Trend series for the dashboard charts — reads snapshots, never aggregates. */
+const executiveTrend = reportGuard()
+  .route({ method: 'GET', path: '/reports/executive/trend', summary: 'KPI trend from the daily snapshots' })
+  .input(
+    z.object({
+      metric: z.string().min(1),
+      months: z.coerce.number().int().min(1).max(24).optional(),
+      category: z.string().optional(),
+    }),
+  )
+  .output(z.array(z.object({ label: z.string(), date: z.string(), value: z.number().nullable() })))
+  .handler(({ input, context }) => kpiTrend(context.db, input));
+
+const rebuildExecutiveKpis = withPermission('admin.integrations')
+  .route({ method: 'POST', path: '/reports/executive/rebuild', summary: 'Rebuild the KPI snapshot now' })
+  .input(z.object({ date: isoDate.optional() }).optional())
+  .output(z.object({ snapshotDate: z.string(), metrics: z.number() }))
+  .handler(async ({ input, context }) => {
+    return buildKpiSnapshot(context.db, { date: input?.date });
+  });
+
 export const reportsRouter = {
+  executiveKpis,
+  executiveTrend,
+  businessUnit,
+  rebuildExecutiveKpis,
   monthLockChecklist,
   monthLock,
+  managerApprovalLedger,
+  approveManagerAttendance,
   musterBuild,
   musterList,
   musterExport,
   r2,
+  r2Raw,
+  r2Export,
   r3,
+  r3Export,
   r4,
+  r4Export,
   r5,
+  r5Export,
   r6,
+  r6Export,
   r24,
+  r24Export,
   r27,
+  r27Export,
   hrDashboard,
   ess,
   myAttendance,

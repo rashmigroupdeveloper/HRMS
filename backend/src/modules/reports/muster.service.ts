@@ -6,15 +6,33 @@ import ExcelJS from 'exceljs';
 import { sql, type Insertable, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { formatDbDate } from '../../core/dates.js';
+import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { monthStart, nextMonthStart } from '../attendance/index.js';
 
 function fullName(first: string, last: string | null): string {
   return last ? `${first} ${last}` : first;
 }
 
+/**
+ * R1 filters (docs/06 §R1): month, entity, plant/location, cost center,
+ * department, RM (+ subtree), category, status. List and Excel share this shape.
+ */
 export interface MusterFilters {
   companyId: number;
   month: string; // YYYY-MM or YYYY-MM-01
+  department?: string | undefined;
+  costCenter?: string | undefined;
+  location?: string | undefined;
+  orgUnit?: string | undefined;
+  category?: string | undefined;
+  /** Employee lifecycle status filter (active / on_notice / exited / onboarding). */
+  employeeStatus?: string | undefined;
+  /** Filter to a reporting manager's team (employee id). */
+  reportingManagerId?: number | undefined;
+  /** When true with reportingManagerId, entire reporting_tree subtree (CORE-10 / KQ). */
+  subtree?: boolean | undefined;
+  ecode?: string | undefined;
+  scope?: EmployeeScope | undefined;
 }
 
 export interface MusterRow {
@@ -223,31 +241,96 @@ export async function buildMusterMonth(
   return values.length;
 }
 
+function parseDayStatuses(raw: unknown): Record<string, string> {
+  if (typeof raw === 'string') return JSON.parse(raw) as Record<string, string>;
+  return (raw ?? {}) as Record<string, string>;
+}
+
+/** Case-insensitive contains for text filters; escapes ILIKE metacharacters. */
+function containsPattern(value: string): string {
+  return `%${value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')}%`;
+}
+
+function leaveTypeCounts(dayStatuses: Record<string, string>): Record<string, number> {
+  const leaveByType: Record<string, number> = {};
+  const attendanceCodes = new Set(['P', 'A', 'HD', 'WO', 'H', 'OD', 'CO', 'UAB']);
+  for (const status of Object.values(dayStatuses)) {
+    if (!attendanceCodes.has(status)) {
+      leaveByType[status] = (leaveByType[status] ?? 0) + 1;
+    }
+  }
+  return leaveByType;
+}
+
 export async function listMuster(
   db: Kysely<Database>,
   filters: MusterFilters,
 ): Promise<MusterRow[]> {
   const m = monthStart(filters.month);
-  const rows = await db
-    .selectFrom('reporting.muster_month')
-    .selectAll()
-    .where('company_id', '=', filters.companyId)
-    .where('month', '=', sql<Date>`${m}::date`)
-    .orderBy('ecode')
-    .execute();
+
+  // Join live employee master so R1 filters (location, cost center, RM subtree,
+  // status) resolve by FK/id — not brittle string matching on the snapshot alone.
+  let q = db
+    .selectFrom('reporting.muster_month as mm')
+    .innerJoin('core.employees as e', 'e.id', 'mm.employee_id')
+    .leftJoin('core.departments as dep', 'dep.id', 'e.department_id')
+    .leftJoin('core.cost_centers as cc', 'cc.id', 'e.cost_center_id')
+    .leftJoin('core.locations as loc', 'loc.id', 'e.location_id')
+    .leftJoin('core.org_units as ou', 'ou.id', 'e.org_unit_id')
+    .selectAll('mm')
+    .where('mm.company_id', '=', filters.companyId)
+    .where('mm.month', '=', sql<Date>`${m}::date`)
+    .where(employeeScopeSql(filters.scope, 'e'));
+
+  if (filters.department !== undefined && filters.department !== '') {
+    q = q.where('dep.name', 'ilike', containsPattern(filters.department));
+  }
+  if (filters.costCenter !== undefined && filters.costCenter !== '') {
+    q = q.where('cc.code', 'ilike', containsPattern(filters.costCenter));
+  }
+  if (filters.location !== undefined && filters.location !== '') {
+    q = q.where('loc.name', 'ilike', containsPattern(filters.location));
+  }
+  if (filters.orgUnit !== undefined && filters.orgUnit !== '') {
+    q = q.where('ou.name', 'ilike', containsPattern(filters.orgUnit));
+  }
+  if (
+    filters.category === 'white_collar' ||
+    filters.category === 'blue_collar' ||
+    filters.category === 'trainee' ||
+    filters.category === 'consultant' ||
+    filters.category === 'contract'
+  ) {
+    q = q.where('e.category', '=', filters.category);
+  }
+  if (
+    filters.employeeStatus === 'active' ||
+    filters.employeeStatus === 'on_notice' ||
+    filters.employeeStatus === 'exited' ||
+    filters.employeeStatus === 'onboarding'
+  ) {
+    q = q.where('e.status', '=', filters.employeeStatus);
+  }
+  if (filters.ecode !== undefined && filters.ecode !== '') {
+    q = q.where('mm.ecode', 'ilike', containsPattern(filters.ecode));
+  }
+  if (filters.reportingManagerId !== undefined) {
+    const managerId = filters.reportingManagerId;
+    if (filters.subtree === true) {
+      q = q.where(
+        'e.id',
+        'in',
+        sql<number>`(SELECT rt.employee_id FROM core.reporting_tree rt WHERE rt.manager_id = ${managerId})`,
+      );
+    } else {
+      q = q.where('e.reporting_manager_id', '=', managerId);
+    }
+  }
+
+  const rows = await q.orderBy('mm.ecode').execute();
 
   return rows.map((r) => {
-    const dayStatuses: Record<string, string> =
-      typeof r.day_statuses === 'string'
-        ? (JSON.parse(r.day_statuses) as Record<string, string>)
-        : (r.day_statuses as Record<string, string>);
-    const leaveByType: Record<string, number> = {};
-    const attendanceCodes = new Set(['P', 'A', 'HD', 'WO', 'H', 'OD', 'CO', 'UAB']);
-    for (const status of Object.values(dayStatuses)) {
-      if (!attendanceCodes.has(status)) {
-        leaveByType[status] = (leaveByType[status] ?? 0) + 1;
-      }
-    }
+    const dayStatuses = parseDayStatuses(r.day_statuses);
     return {
       ecode: r.ecode,
       employeeName: r.employee_name,
@@ -260,7 +343,7 @@ export async function listMuster(
       contact: r.contact,
       category: r.category,
       dayStatuses,
-      leaveByType,
+      leaveByType: leaveTypeCounts(dayStatuses),
       present: r.present,
       absent: r.absent,
       halfDays: r.half_days,

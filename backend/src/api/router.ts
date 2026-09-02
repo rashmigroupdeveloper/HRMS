@@ -19,6 +19,10 @@ import { lettersRouter } from '../modules/letters/index.js';
 import { policiesRouter } from '../modules/policies/index.js';
 import { reportsRouter } from '../modules/reports/index.js';
 import { lifecycleRouter } from '../modules/lifecycle/index.js';
+import { auditRouter } from '../modules/audit/index.js';
+import { assetsRouter } from '../modules/assets/index.js';
+import { helpdeskRouter } from '../modules/helpdesk/index.js';
+import { engagementRouter } from '../modules/engagement/index.js';
 
 export const appRouter = {
   system: systemRouter,
@@ -38,6 +42,10 @@ export const appRouter = {
   policies: policiesRouter,
   reports: reportsRouter,
   lifecycle: lifecycleRouter,
+  audit: auditRouter,
+  assets: assetsRouter,
+  helpdesk: helpdeskRouter,
+  engagement: engagementRouter,
 };
 
 export type AppRouter = typeof appRouter;
