@@ -175,22 +175,56 @@ route needs that decision before it can be built.
    Added `scopeForPermission()` so a read is narrowed by `employee.read` — the permission that actually
    governs seeing facts about a person — regardless of which permission gates the route.
 
-### Stage W0.5 — Bound `admin.roles`   `[ ☐ ]`
+### Stage W0.5 — Bound `admin.roles`   `[ ☑ done 5 Sep 2026 ]`
 **Goal:** an administrator cannot grant itself power it does not have, and cannot lock everyone out.
 **Depends on:** W0.2.
 **Tasks**
-- [ ] `W0-T22` (M, backend) Role lattice: a grantor may never grant a permission it does not hold, nor
+- [x] `W0-T22` (M, backend) Role lattice: a grantor may never grant a permission it does not hold, nor
       assign a role whose grant-set exceeds its own.
-- [ ] `W0-T23` (S, backend) Reject self-targeted role assign/remove.
-- [ ] `W0-T24` (S, backend) `withStepUp('admin.roles')` on all four RBAC mutation endpoints.
-- [ ] `W0-T25` (S, db) A trigger refusing any delete that would leave zero active `super_admin`
+- [x] `W0-T23` (S, backend) Reject self-targeted role assign/remove.
+- [x] `W0-T24` (S, backend) `withStepUp('admin.roles')` on all four RBAC mutation endpoints.
+- [x] `W0-T25` (S, db) A trigger refusing any delete that would leave zero active `super_admin`
       assignments.
-- [ ] `W0-T26` (S, backend) Emit a high-priority notification on every `core.role_permissions` change —
+- [x] `W0-T26` (S, backend) Emit a high-priority notification on every `core.role_permissions` change —
       the audit row is already written; nobody is watching it.
 **Tests required:** it_admin attempting each of the four escalations ⇒ 403 · last-super_admin removal ⇒
 DB error.
 **Exit criteria:** the §3 exploit is refused at step one.
 **Finding:** [D3]
+
+**EVIDENCE (5 Sep 2026) — §3 exploit re-run live, same account, session already elevated:**
+```
+step 1  grant itself employee.compensation.read  was {"changed":true}
+                                                 now 403 "…because you do not hold it"
+step 1b grant itself employee.statutory_ids.read was {"changed":true}   now 403
+step 2  assign itself super_admin                was {"ok":true}
+                                                 now 403 "You cannot change your own roles"
+step 2b assign super_admin to someone ELSE       now 403 "it carries 44 permission(s) you do not hold"
+step 3  read a peer's statutory IDs              was pan/aadhaar/bank in clear
+                                                 now statutoryMasked=true, all null,
+                                                     canViewCompensation=false
+```
+`tests/rbac-ceiling.integration.test.ts` — **8 cases green**, including a control proving it_admin can
+still grant a permission it *does* hold (the ceiling is not a blanket deny) and that the DATABASE refuses
+to be left with no active super_admin. `npm run verify` → **EXIT 0, 518/518**.
+
+**The rule.** docs/08 §1 says roles are *additive*, not ranked, so there is no hierarchy to compare
+against. "Grant ≤ own level" is therefore implemented as a comparison of permission SETS: **you cannot
+hand out what you do not hold.** Revocation is included — letting IT strip `payroll.reports` from
+payroll_admin is not escalation, but it is unilateral control over a domain docs/08 puts outside IT's
+authority, and it is how a self-inflicted outage starts on a payroll day.
+
+**Three adjustments the work forced, each recorded:**
+1. **Step-up on writes only.** Applying it to the matrix READ broke docs/08 §3's it_admin "Users & Roles"
+   landing page (`role-access` caught it) and would train people to re-enter their password more often,
+   not less. Reads keep `withPermission`; grant/revoke/assign/remove get `withStepUp`.
+2. **The DB guard needed transition tables.** The first version fired on every `is_active` update and
+   refused ordinary exit-day deactivation in any database with no super_admin — a guard causing the
+   outage it prevents. It now uses `REFERENCING OLD TABLE`, so it only looks when the statement actually
+   touched a super_admin. Proven both ways: normal deactivation succeeds, both lockout routes refuse.
+3. **The integration DB needed a permanent super_admin anchor** (`tests/global-setup.ts`). Suites that
+   created a temporary super_admin were deleting it in cleanup and being correctly refused. Production
+   always has one; the test environment now models that invariant instead of contradicting it.
 
 ### Stage W0.6 — Turn the system on   `[ ☐ ]`
 **Goal:** the things that are built actually run in production.

@@ -52,6 +52,32 @@ export default async function setup(): Promise<void> {
       })))
       .execute();
 
+    /**
+     * A permanent, non-loginable super_admin anchor.
+     *
+     * Production always has at least one active super_admin, and migration
+     * 1752200000000 makes the database refuse to be left without one (audit
+     * W0-T25). Suites that create a temporary super_admin previously deleted it
+     * in cleanup and, being the only one, were correctly refused — the guard
+     * doing its job, in an environment that did not model the invariant.
+     *
+     * The password hash is deliberately not a valid bcrypt digest, so this
+     * account can never authenticate; it exists only to hold the invariant.
+     */
+    const anchor = await db
+      .insertInto('core.users')
+      .values({ email: 'integration-anchor@hrms.invalid', password_hash: '!not-a-valid-bcrypt-hash!' })
+      .onConflict((conflict) => conflict.column('email').doUpdateSet({ is_active: true }))
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    const superRole = await db
+      .selectFrom('core.roles').select('id').where('code', '=', 'super_admin').executeTakeFirstOrThrow();
+    await db
+      .insertInto('core.user_roles')
+      .values({ user_id: anchor.id, role_id: superRole.id, scope_org_unit_id: null })
+      .onConflict((conflict) => conflict.columns(['user_id', 'role_id', 'scope_org_unit_id']).doNothing())
+      .execute();
+
     await db.insertInto('wf.definitions')
       .values(WORKFLOW_DEFINITIONS.map((definition) => ({
         code: definition.code,

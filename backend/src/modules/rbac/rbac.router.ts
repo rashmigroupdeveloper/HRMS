@@ -9,7 +9,13 @@
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { withPermission } from '../../api/orpc.js';
+import { withPermission, withStepUp } from '../../api/orpc.js';
+import {
+  assertMayAssignRole,
+  assertMayChangeGrant,
+  assertNotSelf,
+} from './rbac.guard.js';
+import { enqueueEvent } from '../notifications/index.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import {
   assignRoleToUser,
@@ -24,9 +30,22 @@ import {
   searchUsersWithRoles,
 } from './rbac.repository.js';
 
-const guard = () => withPermission('admin.roles');
+/**
+ * READS of the grid need the permission only. docs/08 §3 gives it_admin a
+ * "Users & Roles" screen, and making its landing page demand a password
+ * re-entry would train people to type their password more often, not less.
+ */
+const readGuard = () => withPermission('admin.roles');
 
-const matrixProcedure = guard()
+/**
+ * WRITES need the permission AND step-up (SEC-04, audit W0-T24). Holding the
+ * permission answers "may this person ever do this"; step-up answers "is it
+ * this person, right now, at this keyboard". Handing out a role is precisely
+ * the unattended-laptop case the mechanism exists for.
+ */
+const guard = () => withStepUp('admin.roles');
+
+const matrixProcedure = readGuard()
   .route({ method: 'GET', path: '/rbac/matrix', summary: 'The live role×permission access matrix' })
   .output(
     z.object({
@@ -73,8 +92,16 @@ const grantProcedure = guard()
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
     if (!permission) throw new ORPCError('NOT_FOUND', { message: `Unknown permission: ${input.permission}` });
 
+    await assertMayChangeGrant(db, context.user.id, input.permission);
+
     const changed = await insertGrant(db, role.id, permission.id, input.scope);
     if (changed) {
+      await enqueueEvent(db, 'rbac.grant_changed', 'rbac_grant_changed', {
+        actorUserId: context.user.id,
+        role: input.role,
+        permission: input.permission,
+        change: 'granted',
+      });
       await writeAudit(db, {
         actorUserId: context.user.id,
         action: 'grant',
@@ -99,8 +126,16 @@ const revokeProcedure = guard()
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
     if (!permission) throw new ORPCError('NOT_FOUND', { message: `Unknown permission: ${input.permission}` });
 
+    await assertMayChangeGrant(db, context.user.id, input.permission);
+
     const changed = await deleteGrant(db, role.id, permission.id);
     if (changed) {
+      await enqueueEvent(db, 'rbac.grant_changed', 'rbac_grant_changed', {
+        actorUserId: context.user.id,
+        role: input.role,
+        permission: input.permission,
+        change: 'revoked',
+      });
       await writeAudit(db, {
         actorUserId: context.user.id,
         action: 'revoke',
@@ -130,6 +165,9 @@ const assignRoleProcedure = guard()
     const role = await findRoleByCode(db, input.role);
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
 
+    assertNotSelf(context.user.id, input.userId);
+    await assertMayAssignRole(db, context.user.id, role.id, input.role);
+
     await assignRoleToUser(db, input.userId, role.id, input.scopeOrgUnitId ?? null);
     await writeAudit(db, {
       actorUserId: context.user.id,
@@ -153,6 +191,9 @@ const removeRoleProcedure = guard()
     const role = await findRoleByCode(db, input.role);
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
 
+    assertNotSelf(context.user.id, input.userId);
+    await assertMayAssignRole(db, context.user.id, role.id, input.role);
+
     const changed = await removeRoleFromUser(db, input.userId, role.id);
     if (changed) {
       await writeAudit(db, {
@@ -170,7 +211,7 @@ const removeRoleProcedure = guard()
   });
 
 /** Who can be given a role — the picker behind the access console. */
-const usersProcedure = guard()
+const usersProcedure = readGuard()
   .route({ method: 'GET', path: '/rbac/users', summary: 'Search users (with their current roles)' })
   .input(z.object({ q: z.string().optional(), limit: z.coerce.number().int().min(1).max(100).default(25) }))
   .output(

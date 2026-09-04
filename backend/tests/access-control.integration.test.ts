@@ -73,6 +73,22 @@ run('central access control (live Postgres)', () => {
     return (res.body as { accessToken: string }).accessToken;
   }
 
+  /**
+   * RBAC mutations are step-up gated (SEC-04, audit W0-T24): holding
+   * `admin.roles` answers "may this person ever do this"; step-up answers "is it
+   * this person, right now". Handing out super_admin is the unattended-laptop
+   * case the mechanism exists for.
+   */
+  async function elevatedToken(email: string): Promise<string> {
+    const token = await loginToken(email);
+    const step = await request(app)
+      .post('/api/security/step-up')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ password });
+    expect(step.status).toBe(200);
+    return token;
+  }
+
   function putSetting(token: string) {
     return request(app)
       .put(`/api/settings/${settingKey}`)
@@ -117,7 +133,7 @@ run('central access control (live Postgres)', () => {
   });
 
   it('2. assigning a role via the RBAC API makes the same call pass — no restart', async () => {
-    const adminToken = await loginToken(adminEmail);
+    const adminToken = await elevatedToken(adminEmail);
 
     const assign = await request(app)
       .post('/api/rbac/user-roles')
@@ -130,7 +146,7 @@ run('central access control (live Postgres)', () => {
   });
 
   it('3. REVOKING the permission from the role flips the same API to 403 on the next request', async () => {
-    const adminToken = await loginToken(adminEmail);
+    const adminToken = await elevatedToken(adminEmail);
     const opsToken = await loginToken(opsEmail);
 
     const revoke = await request(app)
@@ -164,7 +180,7 @@ run('central access control (live Postgres)', () => {
   });
 
   it('5. the matrix endpoint exposes the live grid (the admin access matrix)', async () => {
-    const adminToken = await loginToken(adminEmail);
+    const adminToken = await elevatedToken(adminEmail);
     const res = await request(app).get('/api/rbac/matrix').set('Authorization', `Bearer ${adminToken}`);
     expect(res.status).toBe(200);
     const body = res.body as { roles: unknown[]; permissions: string[]; grants: unknown[] };
