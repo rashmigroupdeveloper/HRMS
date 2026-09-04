@@ -18,9 +18,10 @@ import { z } from 'zod';
 import type { Kysely, Selectable, Transaction } from 'kysely';
 import type { Database, WfRequestsTable, WfRequestStepsTable } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
-import { enqueue } from '../notifications/index.js';
+import { enqueue, enqueueEvent } from '../notifications/index.js';
 import { getUserRoleCodes } from '../../core/rbac/permissions.service.js';
 import { istDateString } from '../../core/dates.js';
+import { getTypedSetting } from '../settings/index.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 
@@ -239,9 +240,9 @@ async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definition_code
     .orderBy('id')
     .execute();
   const lastSendBack = priorSteps.map((s) => s.action).lastIndexOf('sent_back');
+  const stepsThisCycle = priorSteps.slice(lastSendBack + 1);
   const alreadyOnChain = new Set(
-    priorSteps
-      .slice(lastSendBack + 1)
+    stepsThisCycle
       .filter((step) => step.action === 'approved')
       .map((step) => step.approver_user_id),
   );
@@ -251,6 +252,9 @@ async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definition_code
 
     if (approver?.userId === subjectUser?.id && approver !== null) {
       await writeAudit(db, {
+        // The engine, not a person, took this decision. NULL read as "unknown
+        // actor"; this says "the system" explicitly (audit W0-T18).
+        actorUserId: null,
         action: 'update',
         entity: 'wf.requests',
         entityId: request.id,
@@ -282,6 +286,83 @@ async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definition_code
       field: `step_${spec.step}`,
       newValue: `skipped — approver '${spec.approver}' vacant`,
     });
+  }
+
+  /**
+   * THE FLOOR (audit W0-T17, finding [E1]).
+   *
+   * Falling out of the loop means one of two very different things:
+   *   · every step was decided by a real person and there is nothing left to
+   *     ask — a genuine completion; or
+   *   · every step was SKIPPED (vacant approver, or the spec resolved to the
+   *     requester) and nobody has decided anything at all.
+   *
+   * The second case used to end here as `approved`. The audit raised a
+   * resignation against another employee and watched it self-approve with zero
+   * `wf.request_steps` rows: all three specs — reporting_manager, role:hr_head,
+   * role:hr_ops — resolved to nobody, so the chain "completed". CLAUDE.md rule 8
+   * says an un-notified approval must be impossible; it was satisfied only
+   * vacuously, because there were no steps to carry a receipt.
+   *
+   * The test is "was anyone ever ASKED?", not "did anyone approve?". That
+   * distinction matters: an SLA `auto_approve` breach (Restricted Holiday —
+   * silence is consent at the cutoff, docs/08 §4) also arrives here with no
+   * approval recorded, and it is legitimate precisely because a real approver
+   * WAS notified and let the window pass. A chain where no step ever opened is
+   * the opposite: nobody was asked, so nobody let anything pass.
+   *
+   * So: zero step rows in the current cycle → route to the fallback instead of
+   * approving. It stays `pending` and it gets a real step row, so the receipt
+   * invariant finally means something.
+   */
+  if (stepsThisCycle.length === 0) {
+    // The literal IS the shipped default and tests/settings-seed.test.ts S2
+    // asserts it equals the seeded row, so seed and code cannot drift apart.
+    // HR head is the approver-of-record docs/08 §4 already puts at the end of
+    // the resignation, confirmation and separation chains — a chain that
+    // resolves to nobody lands with the person who would have seen it anyway.
+    const fallbackSpec = await getTypedSetting(
+      db,
+      'wf.vacant_chain_fallback_approver',
+      'string',
+      'role:hr_head',
+    );
+    const fallback = await resolveApprover(db, fallbackSpec, request.subject_employee_id);
+    const fallbackStepNo = Math.max(0, ...steps.map((sp) => sp.step)) + 1;
+
+    if (fallback && fallback.userId !== subjectUser?.id) {
+      await db.updateTable('wf.requests').set({ current_step: fallbackStepNo }).where('id', '=', request.id).execute();
+      await openStep(db, request.id, fallbackStepNo, fallbackSpec, fallback, VACANT_FALLBACK_SLA_HOURS, request.definition_code);
+      await writeAudit(db, {
+        actorUserId: null,
+        action: 'update',
+        entity: 'wf.requests',
+        entityId: request.id,
+        field: 'chain_fallback',
+        newValue: `every step vacant — routed to '${fallbackSpec}' rather than auto-approving`,
+      });
+      return;
+    }
+
+    /**
+     * The fallback is vacant too. The request must still never approve itself,
+     * so it is parked as pending and made loud. A stuck request is a visible
+     * operational problem; a silently approved resignation is not.
+     */
+    await writeAudit(db, {
+      actorUserId: null,
+      action: 'update',
+      entity: 'wf.requests',
+      entityId: request.id,
+      field: 'chain_stalled',
+      newValue: `every step AND the fallback '${fallbackSpec}' are vacant — request left pending for HR`,
+    });
+    await enqueueEvent(db, 'workflow.chain_stalled', 'workflow_chain_stalled', {
+      requestId: request.id,
+      definitionCode: request.definition_code,
+      subjectEmployeeId: request.subject_employee_id,
+    });
+    return;
   }
 
   await db.updateTable('wf.requests').set({ status: 'approved', decided_at: new Date() }).where('id', '=', request.id).execute();
@@ -321,6 +402,9 @@ export async function createRequest(
     return request.id;
   });
 }
+
+/** SLA for the vacant-chain fallback step — the resignation/confirmation cadence. */
+const VACANT_FALLBACK_SLA_HOURS = 72;
 
 export type ActOutcome = 'advanced' | 'approved' | 'rejected' | 'sent_back';
 

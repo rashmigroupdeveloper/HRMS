@@ -290,6 +290,56 @@ run('access matrix — data scope is enforced, not merely computed', () => {
     expect(denied.status).toBeGreaterThanOrEqual(400);
   });
 
+  /* ── workflow subject spoofing — 05-SECURITY-REVIEW §2 ───────────────── */
+
+  it('ESS cannot raise a workflow request naming another employee', async () => {
+    const res = await request(app)
+      .post('/api/workflows/requests')
+      .set(auth(essToken))
+      .send({
+        definitionCode: 'resignation',
+        payload: { reason: 'forged by another employee' },
+        subjectEmployeeId: empB,
+      });
+    expect(res.status).toBe(403);
+
+    const rows = await db
+      .selectFrom('wf.requests').select('id').where('subject_employee_id', '=', empB).execute();
+    expect(rows).toHaveLength(0);
+  });
+
+  it('ESS CAN still raise a request about itself — and it does not self-approve', async () => {
+    const res = await request(app)
+      .post('/api/workflows/requests')
+      .set(auth(essToken))
+      .send({ definitionCode: 'resignation', payload: { reason: 'legitimate self-service' } });
+    expect(res.status).toBe(200);
+
+    const requestId = (res.body as { requestId: number }).requestId;
+    const row = await db
+      .selectFrom('wf.requests').select('status').where('id', '=', requestId).executeTakeFirstOrThrow();
+    // empA has no reporting manager and this fixture seeds no hr_head, so every
+    // step is vacant. Before the fix that meant `approved` with zero steps.
+    expect(row.status).not.toBe('approved');
+  });
+
+  it('a chain preview for another employee is scoped by employee.read, not by participation', async () => {
+    // The gate on this route is `workflow.participate`, which every role holds
+    // at scope `all`. Scoping the preview by THAT would restrict nothing — the
+    // live re-run of the §2 exploit caught exactly that.
+    const denied = await request(app)
+      .get('/api/workflows/preview')
+      .query({ definitionCode: 'leave', subjectEmployeeId: empB })
+      .set(auth(essToken));
+    expect(denied.status).toBe(404);
+
+    const own = await request(app)
+      .get('/api/workflows/preview')
+      .query({ definitionCode: 'leave' })
+      .set(auth(essToken));
+    expect(own.status).toBe(200);
+  });
+
   /* ── the control: an all-scope caller still sees everything ──────────── */
 
   it('hr_head (scope all) still reaches both companies — scoping is not a blanket deny', async () => {

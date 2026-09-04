@@ -118,25 +118,62 @@ assets — with an hr_head control case proving scoping is not a blanket deny.
    the right posture. Those cases assert facet *arithmetic*, so they need a caller who can legitimately
    see the fixtures. Scope itself is covered by the matrix test.
 
-### Stage W0.4 — Workflow authorization and the vacant-chain floor   `[ ☐ ]`
+### Stage W0.4 — Workflow authorization and the vacant-chain floor   `[ ☑ done 5 Sep 2026 — safety floor shipped; D21 still open for the POLICY ]`
 **Goal:** nobody can raise a request for someone else, and nothing approves without an approver.
 **Depends on:** W0.3 (`assertEmployeesInScope`). **Needs decision:** **D21**.
 **Tasks**
-- [ ] `W0-T16` (M, backend) `createRequest`: require `subjectEmployeeId === caller.employee_id` unless the
+- [x] `W0-T16` (M, backend) `createRequest`: require `subjectEmployeeId === caller.employee_id` unless the
       caller holds a per-definition raise-on-behalf permission, scope-checked.
-- [ ] `W0-T17` (M, backend) **Chain floor.** If no step resolved to a real approver, route to a fallback
+- [x] `W0-T17` (M, backend) **Chain floor.** If no step resolved to a real approver, route to a fallback
       (`role:hr_head`, then `super_admin`) in status `pending` — never `approved`. Write a real
       `wf.request_steps` row so the `notified_at` receipt invariant carries meaning. Emit an alert.
-- [ ] `W0-T18` (S, backend) Attribute skip audit rows to a system actor instead of `actor_user_id = NULL`.
-- [ ] `W0-T19` (S, backend) Give `workflows.{create,act,resubmit,timeline,preview,setDelegation}` real
+- [x] `W0-T18` (S, backend) Attribute skip audit rows to a system actor instead of `actor_user_id = NULL`.
+- [x] `W0-T19` (S, backend) Give `workflows.{create,act,resubmit,timeline,preview,setDelegation}` real
       permission codes and seed them; keep the current-approver check as the second layer.
-- [ ] `W0-T20` (S, backend) Scope `GET /workflows/preview` to subjects the caller may see.
-- [ ] `W0-T21` (S, db) Data probe before deploying: list every existing `wf.requests` row that reached a
+- [x] `W0-T20` (S, backend) Scope `GET /workflows/preview` to subjects the caller may see.
+- [x] `W0-T21` (S, db) Data probe before deploying: list every existing `wf.requests` row that reached a
       terminal status with **zero** steps (query in `03-DATA-ISSUES.md` §5.3) and triage each one.
 **Tests required:** all-vacant chain ⇒ `pending` + one fallback step · non-subject raising for another
 employee ⇒ 403 · existing delegation/send_back/escalation tests still green.
 **Exit criteria:** the §2 exploit is refused · no terminal request can exist with zero steps.
 **Findings:** [B2] [E1] [E12] [I2]
+
+**EVIDENCE (5 Sep 2026) — §2 exploit re-run live, same account and payload as the audit:**
+```
+POST /api/workflows/requests {"definitionCode":"resignation","subjectEmployeeId":2,...}
+  was : {"requestId":1}  → wf.requests status=approved, wf.request_steps 0 rows
+  now : 403 {"code":"FORBIDDEN","message":"You can only raise a request about yourself"}
+
+control — the same user raising about THEMSELVES still works:
+  {"requestId":2} → status=pending  (not approved: every step vacant, so the floor held)
+```
+W0-T21 data probe on the audit DB found the audit's own forged row as the only
+terminal-with-zero-steps request; it was removed. The unscoped probe stays in
+`03-DATA-ISSUES.md` §5.3 as the pre-go-live check against production.
+`npm run verify` → **EXIT 0, 510/510** backend; frontend **EXIT 0**.
+
+**What was decided vs. what still needs D21.** The floor — *never approve a request nobody was asked
+about* — was implemented without waiting, because it is not a policy choice: docs/04 §5 authorises
+"auto-skip-to-next … never a dead end" and says nothing about approving an undecided chain, and
+CLAUDE.md rule 8 forbids an un-notified approval. The *fallback approver* is `core.settings`
+(`wf.vacant_chain_fallback_approver`, shipped `role:hr_head`), not a value invented in code.
+**Still open for the sponsor (D21):** who, if anyone, may raise a request on another employee's behalf.
+Today the answer is nobody — `workflow.request.raise_on_behalf` is seeded and granted to no role, so the
+documented ESS-initiated model (docs/04 §1.3, LC-06) is the only path. The LC-06 HR-initiated absconder
+route needs that decision before it can be built.
+
+**Three corrections made under evidence during the stage:**
+1. **The floor's first condition was wrong and a test caught it.** Testing "did anyone approve?" also
+   blocked the legitimate SLA `auto_approve` breach (Restricted Holiday: silence is consent at the
+   cutoff, docs/08 §4). The right question is **"was anyone ever asked?"** — zero step rows in the
+   current cycle. A notified approver who lets the window pass has been asked.
+2. **`tests/stage13-workflows` contained a test asserting the defect** — *"empty chain → auto-approved"*,
+   matching the Stage 1.3 plan record. It is rewritten to assert the corrected behaviour, and the change
+   is recorded here and in the test's own comment rather than made silently.
+3. **Scoping the chain preview by `workflow.participate` restricted nothing**, because participation is
+   `all` for every role. The live re-run caught it still answering 200 for another company's employee.
+   Added `scopeForPermission()` so a read is narrowed by `employee.read` — the permission that actually
+   governs seeing facts about a person — regardless of which permission gates the route.
 
 ### Stage W0.5 — Bound `admin.roles`   `[ ☐ ]`
 **Goal:** an administrator cannot grant itself power it does not have, and cannot lock everyone out.

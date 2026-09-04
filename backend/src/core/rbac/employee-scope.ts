@@ -1,7 +1,8 @@
 /** Query-time employee scoping for CORE-10 protected data. */
 import { sql, type Kysely, type RawBuilder } from 'kysely';
 import type { Database } from '../db/types.js';
-import type { PermissionAccess } from './permissions.service.js';
+import { getUserPermissionAccess, type PermissionAccess } from './permissions.service.js';
+import type { PermissionCode } from './seed-data.js';
 
 export interface EmployeeScope extends PermissionAccess {
   actorEmployeeId: number | null;
@@ -21,6 +22,29 @@ export function scopeFromContext(context: {
   user: { employee_id: number | null };
 }): EmployeeScope {
   return { ...context.permissionAccess, actorEmployeeId: context.user.employee_id };
+}
+
+/**
+ * The caller's scope for a DIFFERENT permission than the one gating the route.
+ *
+ * Needed where the gate and the data are not the same question. Workflow
+ * participation, for instance, is `all` for every role — everyone takes part in
+ * workflows — so scoping an employee-facing read by it restricts nothing. What
+ * governs "may I see facts about this employee" is `employee.read`, and that is
+ * what such a read must be narrowed by.
+ */
+export async function scopeForPermission(
+  db: Kysely<Database>,
+  userId: number,
+  actorEmployeeId: number | null,
+  permission: PermissionCode,
+): Promise<EmployeeScope> {
+  const access = await getUserPermissionAccess(db, userId, permission);
+  return access === null
+    // Holding nothing means seeing nothing — employeeScopeSql fails closed on
+    // this shape, and assertEmployeesInScope refuses.
+    ? { all: false, own: false, subtree: false, orgUnitIds: [], actorEmployeeId }
+    : { ...access, actorEmployeeId };
 }
 
 export function employeeScopeSql(

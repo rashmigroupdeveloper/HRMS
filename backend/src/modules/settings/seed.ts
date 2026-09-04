@@ -106,6 +106,15 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
     description: 'ATT-08: the hard 48-hour overtime decision window — unapproved OT lapses',
   },
 
+  // ── Workflows: the vacant-chain floor (WF-01, audit W0-T17) ───────────────
+  {
+    key: 'wf.vacant_chain_fallback_approver',
+    value: 'role:hr_head',
+    valueType: 'string',
+    description:
+      'WF-01: who receives a request whose every configured step resolved to nobody. Such a request is NEVER auto-approved (audit finding E1) — it is routed here, and if this is vacant too it stays pending and alerts. Same spec grammar as a chain step.',
+  },
+
   // ── Attendance: absence escalation (ATT-14) ───────────────────────────────
   {
     key: 'att.absence_watch_days',

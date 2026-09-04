@@ -5,7 +5,8 @@
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { authed, withPermission } from '../../api/orpc.js';
+import { withPermission } from '../../api/orpc.js';
+import { assertEmployeesInScope, scopeForPermission } from '../../core/rbac/employee-scope.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import {
   act,
@@ -18,7 +19,7 @@ import {
   timeline,
 } from './workflow.service.js';
 
-const createProcedure = authed
+const createProcedure = withPermission('workflow.participate')
   .route({ method: 'POST', path: '/workflows/requests', summary: 'Raise a request (subject defaults to yourself)' })
   .input(
     z.object({
@@ -34,6 +35,32 @@ const createProcedure = authed
     if (subjectEmployeeId === null) {
       throw new ORPCError('BAD_REQUEST', { message: 'No employee record linked to your account — pass subjectEmployeeId' });
     }
+
+    /**
+     * W0-T16 (finding [B2]). `subjectEmployeeId` used to be taken from the body
+     * and inserted unchecked, so any of 1,066 employees could raise a
+     * resignation, transfer or confirmation naming anyone else. The audit did
+     * exactly that and the request then auto-approved.
+     *
+     * Default: you may only raise a request about YOURSELF. Raising on behalf
+     * of someone else needs `workflow.request.raise_on_behalf`, which is
+     * currently granted to no role pending sponsor decision D21, and is scoped
+     * even then — HR raising for their own plant is a different thing from HR
+     * raising for the group.
+     */
+    if (subjectEmployeeId !== context.user.employee_id) {
+      if (!context.permissions.has('workflow.request.raise_on_behalf')) {
+        throw new ORPCError('FORBIDDEN', {
+          message: 'You can only raise a request about yourself',
+        });
+      }
+      await assertEmployeesInScope(
+        db,
+        await scopeForPermission(db, context.user.id, context.user.employee_id, 'employee.read'),
+        [subjectEmployeeId],
+      );
+    }
+
     try {
       const requestId = await createRequest(db, {
         definitionCode: input.definitionCode,
@@ -47,7 +74,7 @@ const createProcedure = authed
     }
   });
 
-const inboxProcedure = authed
+const inboxProcedure = withPermission('workflow.participate')
   .route({ method: 'GET', path: '/workflows/inbox', summary: 'Everything waiting on YOUR approval, SLA-sorted' })
   .output(
     z.array(
@@ -80,7 +107,7 @@ const inboxProcedure = authed
     }));
   });
 
-const actProcedure = authed
+const actProcedure = withPermission('workflow.participate')
   .route({ method: 'POST', path: '/workflows/requests/{requestId}/act', summary: 'Approve / reject / send back (current approver only)' })
   .input(
     z.object({
@@ -107,7 +134,7 @@ const actProcedure = authed
     }
   });
 
-const resubmitProcedure = authed
+const resubmitProcedure = withPermission('workflow.participate')
   .route({ method: 'POST', path: '/workflows/requests/{requestId}/resubmit', summary: 'Fix and resubmit a sent-back request' })
   .input(z.object({ requestId: z.coerce.number().int().positive(), payload: z.record(z.unknown()) }))
   .output(z.object({ ok: z.literal(true) }))
@@ -121,7 +148,7 @@ const resubmitProcedure = authed
     }
   });
 
-const timelineProcedure = authed
+const timelineProcedure = withPermission('workflow.participate')
   .route({ method: 'GET', path: '/workflows/requests/{requestId}', summary: 'Request timeline with notification receipts (WF-04)' })
   .input(z.object({ requestId: z.coerce.number().int().positive() }))
   .output(
@@ -177,7 +204,7 @@ const timelineProcedure = authed
     };
   });
 
-const previewProcedure = authed
+const previewProcedure = withPermission('workflow.participate')
   .route({ method: 'GET', path: '/workflows/preview', summary: 'Who will approve this, in this order (SHF-16)' })
   .input(
     z.object({
@@ -204,6 +231,20 @@ const previewProcedure = authed
     if (subjectEmployeeId === null) {
       throw new ORPCError('BAD_REQUEST', { message: 'No employee record linked — pass subjectEmployeeId' });
     }
+    /**
+     * W0-T20 — a chain preview names people, so it is an employee read and is
+     * narrowed by `employee.read`, NOT by the `workflow.participate` gate on
+     * this route. Participation is `all` for every role; using it here would
+     * have restricted nothing, which the live re-run of the audit's §2 exploit
+     * caught: the preview still answered 200 for another company's employee.
+     */
+    if (subjectEmployeeId !== context.user.employee_id) {
+      await assertEmployeesInScope(
+        context.db,
+        await scopeForPermission(context.db, context.user.id, context.user.employee_id, 'employee.read'),
+        [subjectEmployeeId],
+      );
+    }
     try {
       return await previewChain(context.db, {
         definitionCode: input.definitionCode,
@@ -214,7 +255,7 @@ const previewProcedure = authed
     }
   });
 
-const setDelegation = authed
+const setDelegation = withPermission('workflow.participate')
   .route({ method: 'PUT', path: '/workflows/delegations', summary: 'Delegate YOUR approvals for a date window' })
   .input(
     z.object({

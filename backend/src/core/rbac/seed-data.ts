@@ -93,6 +93,17 @@ export const PERMISSIONS = [
   'admin.devices',
   'admin.integrations',
   'audit.read',
+  // ── Audit W0.4 — workflow participation (WF-01) ───────────────────────────
+  // `workflow.participate` is held by every role: raising and approving is what
+  // an employee DOES. It is a permission rather than an implicit right so that
+  // revoking it — suspension, an exit-day cut, a compromised account — actually
+  // stops the person approving, on the next request, without a deploy.
+  'workflow.participate',
+  // Granted to NO role pending sponsor decision D21. docs/04 §5 and docs/08 §4
+  // describe ESS-initiated requests; LC-06 also contemplates an HR-initiated
+  // absconder path. Until that is settled, only the subject may raise a request
+  // about the subject, and this code is the seam that will carry the answer.
+  'workflow.request.raise_on_behalf',
   // ── Phase 5 Stage 5.2 — identity hardening (SEC-01..11) ───────────────────
   // Held by IT, NOT by HR: these govern how people authenticate, not what HR
   // data they may see. `sec.mfa.manage` can reset someone's second factor, so
@@ -144,6 +155,7 @@ function grants(perms: readonly PermissionCode[], scope: Scope, note?: string): 
 /** docs/08 §2 — the permission grid, row-faithful. */
 export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
   employee: [
+    { permission: 'workflow.participate', scope: 'all' },
     { permission: 'employee.read', scope: 'own' },
     { permission: 'employee.compensation.read', scope: 'own', note: 'own payslip only' },
     { permission: 'employee.statutory_ids.read', scope: 'own' },
@@ -153,6 +165,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'claims.own', scope: 'all' },
   ],
   manager: [
+    { permission: 'workflow.participate', scope: 'all' },
     { permission: 'employee.read', scope: 'subtree' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
@@ -167,6 +180,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'doc.vault.own', scope: 'own' },
   ],
   senior_manager: [
+    { permission: 'workflow.participate', scope: 'all' },
     { permission: 'employee.read', scope: 'subtree' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
@@ -181,6 +195,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'doc.vault.own', scope: 'own' },
   ],
   hr_ops: [
+    { permission: 'workflow.participate', scope: 'all' },
     { permission: 'employee.read', scope: 'org_unit' },
     { permission: 'employee.write', scope: 'org_unit' },
     { permission: 'attendance.own', scope: 'all' },
@@ -205,6 +220,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'doc.vault.manage', scope: 'org_unit' },
   ],
   hr_head: [
+    { permission: 'workflow.participate', scope: 'all' },
     { permission: 'employee.read', scope: 'all' },
     { permission: 'employee.write', scope: 'all' },
     { permission: 'employee.compensation.read', scope: 'all' },
@@ -244,6 +260,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'doc.vault.manage', scope: 'all' },
   ],
   payroll_admin: [
+    { permission: 'workflow.participate', scope: 'all' },
     { permission: 'employee.read', scope: 'all' },
     { permission: 'employee.compensation.read', scope: 'all' },
     { permission: 'employee.statutory_ids.read', scope: 'all', note: 'the only unmasked role besides super_admin' },
@@ -263,6 +280,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'audit.read', scope: 'org_unit', note: 'payroll domain only' },
   ],
   plant_head: [
+    { permission: 'workflow.participate', scope: 'all' },
     { permission: 'employee.read', scope: 'org_unit', note: 'read-only' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
@@ -271,6 +289,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'reports.bu', scope: 'org_unit' },
   ],
   ceo_cell: [
+    { permission: 'workflow.participate', scope: 'all' },
     { permission: 'employee.read', scope: 'readonly' },
     { permission: 'employee.compensation.read', scope: 'readonly', note: 'aggregates only — never individual salaries' },
     { permission: 'attendance.own', scope: 'all' },
@@ -280,6 +299,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'reports.ceo', scope: 'all' },
   ],
   it_admin: [
+    { permission: 'workflow.participate', scope: 'all' },
     { permission: 'employee.read', scope: 'readonly', note: 'directory basics; NO salary/statutory visibility' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
@@ -295,6 +315,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'sec.mfa.manage', scope: 'all', note: 'reset only — step-up + audit required' },
   ],
   compliance_officer: [
+    { permission: 'workflow.participate', scope: 'all' },
     { permission: 'employee.read', scope: 'readonly' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
@@ -306,6 +327,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'doc.vault.manage', scope: 'all' },
   ],
   dpo: [
+    { permission: 'workflow.participate', scope: 'all' },
     { permission: 'employee.read', scope: 'readonly' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
