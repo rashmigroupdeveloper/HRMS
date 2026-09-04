@@ -274,9 +274,12 @@ run('Stage 1.11 — shift micro + scheduling (SHF-01..16)', () => {
     });
     const impact = await evaluateLeaveCoverage(db, { employeeId: empB, from: '2026-12-14', to: '2026-12-14' });
     expect(impact.blocked).toBe(false);
-    expect(impact.warnings.some((w) => w.includes('2026-12-14') && w.includes('would leave 0 against the sanctioned 1'))).toBe(
-      true,
-    );
+    // The warning renders the date as `DD MMM YYYY` — the ONLY date format this
+    // system shows a human (docs/05 §10, NFR-09). Asserting the whole sentence
+    // rather than two fragments also pins the shortfall arithmetic.
+    expect(impact.warnings).toEqual([
+      `${code}GEN on 14 Dec 2026 would leave 0 against the sanctioned 1 (shortfall 1). Your manager can still approve.`,
+    ]);
   });
 
   it('SHF-08 does not warn when remaining headcount still meets the minimum', async () => {

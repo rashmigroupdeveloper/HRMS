@@ -145,12 +145,10 @@ export async function exportR2Excel(
 
 export async function exportR3Excel(
   db: Kysely<Database>,
-  params: {
-    companyId: number;
-    kind?: string | undefined;
-    status?: string | undefined;
-    scope?: EmployeeScope | undefined;
-  },
+  // Derived from the report itself so the `kind`/`status` unions can never
+  // drift apart from the query that consumes them (they did — the hand-written
+  // copy had widened to `string`).
+  params: Parameters<typeof reportR3Regularizations>[1],
 ): Promise<Buffer> {
   const rows = await reportR3Regularizations(db, params);
   return rowsToExcelBuffer('R3 AR OD', R3_COLS, rows.map((row) => ({
@@ -185,12 +183,7 @@ export async function exportR5Excel(
 
 export async function exportR6Excel(
   db: Kysely<Database>,
-  params: {
-    companyId: number;
-    stage?: string | undefined;
-    openOnly?: boolean | undefined;
-    scope?: EmployeeScope | undefined;
-  },
+  params: Parameters<typeof reportR6AbsenceCases>[1],
 ): Promise<Buffer> {
   return rowsToExcelBuffer('R6 Absence', R6_COLS, await reportR6AbsenceCases(db, params));
 }

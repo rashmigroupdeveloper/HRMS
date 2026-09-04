@@ -2,7 +2,7 @@
  * ESS + HR Ops home payloads (docs/05 §4.1 / §4.9) — real queries, never fake KPIs.
  */
 import { sql, type Kysely } from 'kysely';
-import type { Database } from '../../core/db/types.js';
+import type { Database, DayStatus } from '../../core/db/types.js';
 import { formatDbDate, istDateString } from '../../core/dates.js';
 import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { getTypedSetting } from '../settings/index.js';
@@ -305,7 +305,7 @@ export async function teamMonthGrid(
 
   return emps.map((e) => {
     const myDays = days.filter((d) => d.employee_id === e.id);
-    const dayStatuses: Record<string, { status: string; firstIn: string | null; lastOut: string | null }> = {};
+    const dayStatuses: Record<string, { status: DayStatus; firstIn: string | null; lastOut: string | null }> = {};
     for (const d of myDays) {
       dayStatuses[formatDbDate(d.work_date)] = {
         status: d.status,

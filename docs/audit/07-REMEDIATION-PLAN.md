@@ -17,37 +17,56 @@ first** because everything else edits files that are currently uncommitted.
 re-run and refused · the worker runs the 13 scheduled jobs on a staging box · a notification is
 provably delivered end-to-end.
 
-### Stage W0.1 — Commit the working tree   `[ ☐ ]`
+### Stage W0.1 — Commit the working tree   `[ ◐ 5 Sep 2026 — W0-T02 blocked on push permission ]`
 **Goal:** get 238 uncommitted paths under version control and review before anyone edits them.
 **Depends on:** nothing. **Blocks:** everything.
 **Tasks**
-- [ ] `W0-T01` (S, backend) Commit in requirement-tagged slices, smallest first: the 13 untracked
+- [x] `W0-T01` (S, backend) Commit in requirement-tagged slices, smallest first: the 13 untracked
       migrations as one commit per phase-5 stage; the 32 untracked tests with the code they test;
       frontend pages by feature. Follow CLAUDE.md §1.1 — every commit names a requirement ID.
 - [ ] `W0-T02` (S, ops) Push to the remote. Confirm CI runs (it will fail — that is W0.2).
-- [ ] `W0-T03` (S, ops) Delete `.impeccable/live/server.json` deliberately or restore it; it is currently
+      **BLOCKED 5 Sep 2026:** `git push -u origin remediation/wave-0` denied by the environment's
+      permission classifier. 19 requirement-tagged commits exist locally on `remediation/wave-0`.
+      Needs the user to run the push (or grant the permission); CI has not executed.
+- [x] `W0-T03` (S, ops) Delete `.impeccable/live/server.json` deliberately or restore it; it is currently
       staged as deleted with no explanation.
 **Exit criteria:** `git status --short` is empty · CI has executed at least once on the pushed branch.
 **Finding:** [H1]
 
-### Stage W0.2 — Green the build   `[ ☐ ]`
+### Stage W0.2 — Green the build   `[ ☑ done 5 Sep 2026 ]`
 **Goal:** `npm run verify` exits 0 in both projects.
 **Depends on:** W0.1.
 **Tasks**
-- [ ] `W0-T04` (S, backend) `modules/leave/coverage-check.service.ts:210` — build `LeaveSpanHalves` with
+- [x] `W0-T04` (S, backend) `modules/leave/coverage-check.service.ts:210` — build `LeaveSpanHalves` with
       explicit booleans rather than passing `boolean | undefined` under `exactOptionalPropertyTypes`.
-- [ ] `W0-T05` (S, backend) `modules/reports/reports-export.service.ts:155,195` — parse `kind` and
+- [x] `W0-T05` (S, backend) `modules/reports/reports-export.service.ts:155,195` — parse `kind` and
       `stage` through their zod enums at the boundary so the narrowed union survives to the service.
-- [ ] `W0-T06` (S, backend) `modules/reports/reports.router.ts:712` — type the `day_records.status` read
+- [x] `W0-T06` (S, backend) `modules/reports/reports.router.ts:712` — type the `day_records.status` read
       as `DayStatus` end-to-end so `teamMonthGrid` satisfies the output schema. **RPT-01 muster.**
-- [ ] `W0-T07` (S, backend) `tests/stage17-supporting-reports.integration.test.ts:357` — remove the
+- [x] `W0-T07` (S, backend) `tests/stage17-supporting-reports.integration.test.ts:357` — remove the
       tautological `"active" === "active"` assertion.
-- [ ] `W0-T08` (M, backend) Fix SHF-08: count the applicant as absent before the application row exists
+- [x] `W0-T08` (M, backend) Fix SHF-08: count the applicant as absent before the application row exists
       in `evaluateLeaveCoverage`, so the coverage warning fires. **This is the guard that stops a plant
       running below minimum headcount** — fix the logic, not the test.
 **Tests required:** the existing suite, plus a regression test for the SHF-08 branch.
 **Exit criteria:** `cd backend && npm run verify` exit 0 · `cd frontend && npm run verify` exit 0.
-**Findings:** [E2] [E3]
+**Findings:** [E2] [E3] [E13]
+
+**EVIDENCE (5 Sep 2026):**
+```
+backend  : typecheck ok · lint ok · knip ok · depcruise ✔ 192 modules, 753 deps, 0 violations
+           Test Files 64 passed (64) · Tests 483 passed (483) · build ok   EXIT 0
+frontend : typecheck ok · lint ok · knip ok · 290 tests · build ok          EXIT 0
+```
+**Two diagnoses changed under evidence, and both are recorded rather than quietly adjusted:**
+1. **W0-T08 / [E3] — the logic was never broken.** Instrumenting the test showed
+   `evaluateLeaveCoverage` produces exactly the right warning; the assertion searched for `2026-12-14`
+   while the message correctly renders `14 Dec 2026` per docs/05 §10. The assertion was corrected and
+   **strengthened** to the full sentence. This is not weakening a test to pass a gate — the original
+   two-fragment `.includes` check was weaker than what now stands.
+2. **A new P1 surfaced: [E13].** `tests/compliance-calendar.integration.test.ts` built fixture dates in
+   UTC against IST logic, so the suite passed by day and failed between 00:00 and 05:30 IST. The
+   production code was correct; the test bypassed `core/dates.ts`. Fixed at the helper.
 
 ### Stage W0.3 — Make data scope structurally unavoidable   `[ ☐ ]`  🔒 the big one
 **Goal:** no query returns employee data outside the caller's scope, and it becomes a compile error to

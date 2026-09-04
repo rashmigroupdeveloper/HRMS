@@ -26,8 +26,14 @@ export interface LeaveSpanHalves {
   employeeId: number;
   from: string;
   to: string;
-  fromHalf?: boolean;
-  toHalf?: boolean;
+  /**
+   * `exactOptionalPropertyTypes` distinguishes "absent" from "present but
+   * undefined". For a half-day edge flag those mean the same thing — the day is
+   * whole unless someone says otherwise — so both are admitted explicitly
+   * rather than forcing every caller to build the object conditionally.
+   */
+  fromHalf?: boolean | undefined;
+  toHalf?: boolean | undefined;
 }
 
 /** 0.5 on a half-day edge, 1 on a full day inside the span, else 0. */

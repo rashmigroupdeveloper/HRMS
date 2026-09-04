@@ -354,7 +354,11 @@ run('Stage 1.7 — supporting reports R2–R6/R24/R27', () => {
 
   it('R27 supports point-in-time and monthly trend demographic dimensions', async () => {
     const rows = await reportR27Headcount(db, { companyId, asOf: today });
-    expect(rows.some((r) => r.status === 'active' && r.count >= 1)).toBe(true);
+    // R27Row.status is the literal 'active' by construction, so comparing it is
+    // a type-level tautology. Assert the substance instead: the report returned
+    // rows, and every row is a positive headcount.
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.count >= 1)).toBe(true);
     expect(rows.some((r) => r.gender === 'Male' && r.ageBand !== 'Unknown')).toBe(true);
     const trend = await reportR27Headcount(db, {
       companyId,

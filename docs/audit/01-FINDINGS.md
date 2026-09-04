@@ -8,11 +8,12 @@ Where I could not verify something, it is marked **UNVERIFIED** and says why.
 **Severity:** **P0** blocks production (money wrong · data loss · auth bypass · red gate) ·
 **P1** must fix before go-live · **P2** should fix · **P3** polish.
 
-**Counts:** **P0 = 13 · P1 = 35 · P2 = 28 · P3 = 7 · total 83**
+**Counts:** **P0 = 13 · P1 = 36 · P2 = 28 · P3 = 7 · total 84**
+*(+1 on 5 Sep 2026: [E13], found during remediation W0.2. [E3]'s diagnosis corrected — see the entry.)*
 
 | Dim | A | B | C | D | E | F | G | H | I |
 |---|---|---|---|---|---|---|---|---|---|
-| findings | 6 | 6 | 12 | 18 | 12 | 7 | 6 | 9 | 7 |
+| findings | 6 | 6 | 12 | 18 | 13 | 7 | 6 | 9 | 7 |
 
 ---
 
@@ -579,12 +580,22 @@ artifact can be produced. The muster/team-grid error is on **RPT-01**, the repor
 ### [E3] [P1] [E] One integration test fails: leave-coverage warning for a same-day applicant
 **Evidence:** `npm run test` → `Test Files 1 failed | 63 passed (64)`, `Tests 1 failed | 482 passed (483)`.
 `tests/shift-micro-scheduling.integration.test.ts:277` —
-*"SHF-08 counts the applicant as absent before the application row exists"*, `expected false to be true`:
-the warning list does not contain the `2026-12-14` coverage message.
-**Impact:** SHF-08 is the guard that stops a manager approving leave that leaves a shift below minimum
-headcount. The failing branch is precisely the one where the applicant must be counted as already absent —
-i.e. the off-by-one that lets a plant run understaffed.
-**Fix:** treat the pending application as an absence in `evaluateLeaveCoverage` before the row exists.
+*"SHF-08 counts the applicant as absent before the application row exists"*, `expected false to be true`.
+
+> **CORRECTED 5 Sep 2026 during remediation W0-T08.** This entry originally inferred, from the test's
+> name, that the coverage logic failed to count the applicant. Instrumenting the test disproved that:
+> `evaluateLeaveCoverage` returns exactly the right warning —
+> `"HMTNDJPGEN on 14 Dec 2026 would leave 0 against the sanctioned 1 (shortfall 1). Your manager can
+> still approve."` The **assertion** was wrong: it searched for `2026-12-14` while the message correctly
+> renders `14 Dec 2026`, the only date format this system shows a human (docs/05 §10, NFR-09).
+>
+> **The logic was never broken.** SHF-08 does count the applicant as absent before the row exists.
+> Fixed by asserting the whole sentence — stronger than the original two-fragment `.includes` check,
+> and it now pins the shortfall arithmetic too.
+
+**Impact as re-assessed:** a false-negative test, not a coverage defect. The plant was never at risk of
+running understaffed through this path; the suite was reporting a failure that did not exist.
+**Fix applied:** `tests/shift-micro-scheduling.integration.test.ts` asserts the exact rendered warning.
 
 ### [E4] [P1] [E] There is no employee-master write path at all
 **Evidence:** `employee.write` is seeded (`seed-data.ts:57`, granted to hr_ops `org_unit` and hr_head
@@ -657,6 +668,29 @@ money)"*; the implementation is
 **Evidence:** `workflows.router.ts:180-215` — `authed`, accepts any `subjectEmployeeId`.
 **Live proof:** Asha retrieved Bikram's chain for `definitionCode=leave`.
 **Impact:** org-structure disclosure (approver names). Low, but it is the same missing check as [B2].
+
+### [E13] [P1] [E] A test built its fixture dates in UTC against IST logic — green by day, red at night
+**Discovered:** 5 Sep 2026, 01:28 IST, during remediation W0.2. **Not present in the 4 Sep audit run**,
+which executed at ~23:00 IST and passed.
+**Evidence:** `tests/compliance-calendar.integration.test.ts:45-49` built fixture dates with
+```ts
+const d = new Date(); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10);
+```
+while the code under test measures from **IST** midnight — `src/modules/compliance/expiry.ts:53-64`
+`atStartOfDay()` uses local getters, deliberately, with a comment citing NFR-09 and the exact hazard
+(*"on the day a plant's licence actually lapses, is a day of production blocked for nothing"*).
+
+Between **00:00 and 05:30 IST** the UTC calendar date is still yesterday, so every fixture was one day
+short: `expected 19 to be 20` on `daysRemaining`.
+**Impact:** a suite that passes all day and fails overnight — the worst kind, because it trains people to
+re-run rather than investigate, and it would have fired on any CI job scheduled after midnight IST.
+**The production code is correct;** the test bypassed `core/dates.ts`, which exists to prevent exactly
+this. A sweep found no other test deriving from `new Date()` with UTC getters, and the one production
+occurrence (`attendance/shift-windows.ts:42-48` `mondayOf`) anchors to an ISO string at `T00:00:00Z`,
+which is timezone-independent and correct.
+**Fix applied:** the helper now uses the shared `istDateString()` + `addDaysIso()`.
+**Test that would have caught it:** CI running at a fixed non-IST-business hour, or a clock-freezing
+harness that pins "now" to 02:00 IST.
 
 **Verified good (dimension E):** **policy values are genuinely configuration, not code.**
 `getTypedSetting(db, key, type, default)` is used at ~70 call sites across attendance, leave, compliance,

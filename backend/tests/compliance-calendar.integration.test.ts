@@ -19,6 +19,7 @@ import type { Kysely } from 'kysely';
 import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
+import { addDaysIso, istDateString } from '../src/core/dates.js';
 import { hashPassword } from '../src/modules/auth/index.js';
 
 const DB_URL = process.env['DATABASE_URL'];
@@ -42,10 +43,16 @@ interface PostureBody {
 }
 
 /** YYYY-MM-DD, N days from today — the calendar deals in dates, not instants. */
+/**
+ * Fixture dates must be built on the SAME calendar the code under test uses.
+ * `expiryState` measures days from IST midnight (compliance/expiry.ts
+ * `atStartOfDay`, docs/01 NFR-09). Deriving fixtures from `new Date()` with UTC
+ * getters made every assertion here off by one between 00:00 and 05:30 IST,
+ * when the UTC date is still yesterday — a green suite by day, red at night.
+ * `core/dates.ts` exists precisely so nobody hand-rolls this twice.
+ */
 function dayOffset(days: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
+  return addDaysIso(istDateString(), days);
 }
 
 run('Stage 5.7 — compliance registrations & calendar (live Postgres)', () => {
