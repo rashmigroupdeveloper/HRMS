@@ -5,9 +5,10 @@
  * invalidate a manager's month approval. Replaying the same assignment is a
  * no-op, which also makes retrying a partially completed client batch safe.
  */
-import { sql, type Kysely } from 'kysely';
+import { sql, type Kysely, type Transaction } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
+import { assertRosterSaveAllowed, recordPublishedRevisions } from './roster-guard.service.js';
 
 export interface RosterPersistenceEntry {
   employeeId: number;
@@ -20,13 +21,28 @@ interface ApplyRosterEntriesOptions {
   actorUserId: number;
   entries: RosterPersistenceEntry[];
   ip: string | null;
+  reason?: string | null;
 }
 
+type Db = Kysely<Database> | Transaction<Database>;
+
 export async function applyRosterEntries(
-  db: Kysely<Database>,
+  db: Db,
   options: ApplyRosterEntriesOptions,
 ): Promise<number> {
   return db.transaction().execute(async (trx) => {
+    const reason = paramsReason(options.reason);
+    await assertRosterSaveAllowed(trx, {
+      actorUserId: options.actorUserId,
+      entries: options.entries,
+      reason,
+    });
+    await recordPublishedRevisions(trx, {
+      actorUserId: options.actorUserId,
+      entries: options.entries,
+      reason,
+    });
+
     let changed = 0;
 
     for (const entry of options.entries) {
@@ -81,4 +97,10 @@ export async function applyRosterEntries(
 
     return changed;
   });
+}
+
+function paramsReason(reason: string | null | undefined): string | null {
+  if (reason === undefined || reason === null) return null;
+  const trimmed = reason.trim();
+  return trimmed.length === 0 ? null : trimmed;
 }

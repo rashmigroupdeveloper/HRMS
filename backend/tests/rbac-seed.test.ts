@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { PERMISSIONS, ROLES, ROLE_GRANTS } from '../src/core/rbac/seed-data.js';
 
 describe('RBAC seed integrity', () => {
-  it('has exactly the ten roles of docs/08 §1', () => {
+  it('has the docs/08 §1 ten roles plus Phase 5 operational roles', () => {
     expect(ROLES.map((r) => r.code)).toEqual([
       'employee',
       'manager',
@@ -17,6 +17,8 @@ describe('RBAC seed integrity', () => {
       'ceo_cell',
       'it_admin',
       'super_admin',
+      'compliance_officer',
+      'dpo',
     ]);
   });
 
@@ -72,6 +74,14 @@ describe('RBAC seed integrity', () => {
       for (const role of ROLES.map((r) => r.code)) {
         expect(has(role, 'attendance.own'), role).toBe(true);
       }
+    });
+
+    it('POSH handle is hr_head (+ super_admin via blanket) — never a fake IC role', () => {
+      expect(has('hr_head', 'ird.posh.handle')).toBe(true);
+      expect(has('hr_ops', 'ird.posh.handle')).toBe(false);
+      expect(has('employee', 'ird.posh.handle')).toBe(false);
+      expect(has('it_admin', 'ird.posh.handle')).toBe(false);
+      expect(has('compliance_officer', 'ird.posh.handle')).toBe(false);
     });
   });
 });

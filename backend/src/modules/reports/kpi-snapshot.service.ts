@@ -16,6 +16,14 @@ import type { Database } from '../../core/db/types.js';
 import { formatDbDate, istDateString } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
 
+const EMPLOYMENT_CATEGORIES = [
+  'white_collar',
+  'trainee',
+  'blue_collar',
+  'contract',
+  'consultant',
+] as const;
+
 /** Reason strings are stable so the UI can key off them. */
 const NEEDS_PAYROLL = 'Requires the Phase-2 payroll tables (pay.*)';
 const NEEDS_OUTPUT = 'Requires monthly production output (core.settings: reporting.monthly_output_units)';
@@ -56,33 +64,44 @@ export async function buildKpiSnapshot(
   const rows: MetricRow[] = [];
 
   // ── Manpower count — "active employees at date, by category" ──────────────
+  const activeAtDate = (alias: string) => sql<boolean>`
+    ${sql.ref(`${alias}.doj`)} IS NOT NULL
+    AND ${sql.ref(`${alias}.doj`)} <= ${date}::date
+    AND (
+      ${sql.ref(`${alias}.dol`)} IS NULL
+      OR ${sql.ref(`${alias}.dol`)} > ${date}::date
+    )
+  `;
+
   const headcount = await db
-    .selectFrom('core.employees')
-    .select(['category'])
+    .selectFrom('core.employees as e')
+    .select(['e.category as category'])
     .select((eb) => eb.fn.countAll<string>().as('n'))
-    .where('status', 'in', ['active', 'on_notice'])
-    .groupBy('category')
+    .where(activeAtDate('e'))
+    .groupBy('e.category')
     .execute();
 
   const totalActive = headcount.reduce((sum, r) => sum + Number(r.n), 0);
   rows.push({ companyId: null, category: 'total', metric: 'manpower_count', value: totalActive });
-  for (const r of headcount) {
+  for (const category of EMPLOYMENT_CATEGORIES) {
+    const categoryCount = headcount.find((row) => row.category === category);
     rows.push({
       companyId: null,
-      category: r.category ?? 'unspecified',
+      category,
       metric: 'manpower_count',
-      value: Number(r.n),
+      value: Number(categoryCount?.n ?? 0),
     });
   }
 
   // ── Average age — "AVG(age(dob)) by category" ─────────────────────────────
   const ages = await db
-    .selectFrom('core.employees')
-    .select(['category'])
-    .select(sql<string | null>`AVG(EXTRACT(YEAR FROM age(dob)))`.as('avg_years'))
-    .where('status', 'in', ['active', 'on_notice'])
-    .where('dob', 'is not', null)
-    .groupBy('category')
+    .selectFrom('core.employees as e')
+    .select(['e.category as category'])
+    .select(sql<string | null>`AVG(EXTRACT(YEAR FROM age(${date}::date, e.dob)))`.as('avg_years'))
+    .select((eb) => eb.fn.countAll<string>().as('n'))
+    .where(activeAtDate('e'))
+    .where('e.dob', 'is not', null)
+    .groupBy('e.category')
     .execute();
   for (const r of ages) {
     rows.push({
@@ -92,15 +111,27 @@ export async function buildKpiSnapshot(
       value: r.avg_years === null ? null : Number(r.avg_years),
     });
   }
+  const ageCount = ages.reduce((sum, row) => sum + Number(row.n), 0);
+  const ageSum = ages.reduce(
+    (sum, row) => sum + Number(row.avg_years ?? 0) * Number(row.n),
+    0,
+  );
+  rows.push({
+    companyId: null,
+    category: 'total',
+    metric: 'average_age',
+    value: ageCount === 0 ? null : ageSum / ageCount,
+    unavailableReason: ageCount === 0 ? 'No active employees have a date of birth' : null,
+  });
 
   // ── Tenure — "AVG(age(doj)) of active, by category" ───────────────────────
   const tenure = await db
-    .selectFrom('core.employees')
-    .select(['category'])
-    .select(sql<string | null>`AVG(EXTRACT(YEAR FROM age(doj)))`.as('avg_years'))
-    .where('status', 'in', ['active', 'on_notice'])
-    .where('doj', 'is not', null)
-    .groupBy('category')
+    .selectFrom('core.employees as e')
+    .select(['e.category as category'])
+    .select(sql<string | null>`AVG(EXTRACT(YEAR FROM age(${date}::date, e.doj)))`.as('avg_years'))
+    .select((eb) => eb.fn.countAll<string>().as('n'))
+    .where(activeAtDate('e'))
+    .groupBy('e.category')
     .execute();
   for (const r of tenure) {
     rows.push({
@@ -110,13 +141,25 @@ export async function buildKpiSnapshot(
       value: r.avg_years === null ? null : Number(r.avg_years),
     });
   }
+  const tenureCount = tenure.reduce((sum, row) => sum + Number(row.n), 0);
+  const tenureSum = tenure.reduce(
+    (sum, row) => sum + Number(row.avg_years ?? 0) * Number(row.n),
+    0,
+  );
+  rows.push({
+    companyId: null,
+    category: 'total',
+    metric: 'tenure_years',
+    value: tenureCount === 0 ? null : tenureSum / tenureCount,
+    unavailableReason: tenureCount === 0 ? 'No active employees have a joining date' : null,
+  });
 
   // ── Leadership % — "active with grade.rank >= cutoff ÷ active" ────────────
   const leaders = await db
     .selectFrom('core.employees as e')
     .innerJoin('core.grades as g', 'g.id', 'e.grade_id')
     .select((eb) => eb.fn.countAll<string>().as('n'))
-    .where('e.status', 'in', ['active', 'on_notice'])
+    .where(activeAtDate('e'))
     .where('g.rank', '>=', leadershipRank)
     .executeTakeFirst();
   rows.push({
@@ -147,13 +190,23 @@ export async function buildKpiSnapshot(
     .where('dol', '<=', sql<Date>`${date}::date`)
     .executeTakeFirst();
   const leaverCount = Number(leavers?.n ?? 0);
+  const headcountAtMonthStart = await db
+    .selectFrom('core.employees as e')
+    .select((eb) => eb.fn.countAll<string>().as('n'))
+    .where('e.doj', 'is not', null)
+    .where('e.doj', '<=', sql<Date>`${monthStart}::date`)
+    .where((eb) =>
+      eb.or([eb('e.dol', 'is', null), eb('e.dol', '>', sql<Date>`${monthStart}::date`)]),
+    )
+    .executeTakeFirst();
+  const averageHeadcount = (Number(headcountAtMonthStart?.n ?? 0) + totalActive) / 2;
   rows.push({ companyId: null, category: 'total', metric: 'leavers_mtd', value: leaverCount });
   rows.push({
     companyId: null,
     category: 'total',
     metric: 'attrition_rate_annualised_pct',
-    // Monthly leavers ÷ average headcount, annualised ×12.
-    value: totalActive === 0 ? null : (leaverCount / totalActive) * 12 * 100,
+    // Monthly leavers ÷ average(start-of-month, snapshot-date headcount), annualised ×12.
+    value: averageHeadcount === 0 ? null : (leaverCount / averageHeadcount) * 12 * 100,
   });
 
   // ── New-hire attrition 3/6/12 mo (pptx slide 2) ───────────────────────────
@@ -177,6 +230,7 @@ export async function buildKpiSnapshot(
       .where('doj', '<', sql<Date>`(${date}::date - ${days} * INTERVAL '1 day')`)
       .where('status', '=', 'exited')
       .where('dol', 'is not', null)
+      .where('dol', '<=', sql<Date>`${date}::date`)
       .where(sql<boolean>`(dol - doj) <= ${days}`)
       .executeTakeFirst();
     const cohortSize = Number(cohort?.n ?? 0);
@@ -208,10 +262,11 @@ export async function buildKpiSnapshot(
 
   // ── Overtime hours — "Σ approved OT minutes / 60" ─────────────────────────
   const ot = await db
-    .selectFrom('att.day_records')
-    .select(sql<string>`COALESCE(SUM(ot_minutes), 0)`.as('minutes'))
+    .selectFrom('att.overtime_entries')
+    .select(sql<string>`COALESCE(SUM(approved_minutes), 0)`.as('minutes'))
     .where('work_date', '>=', sql<Date>`${monthStart}::date`)
     .where('work_date', '<=', sql<Date>`${date}::date`)
+    .where('status', '=', 'approved')
     .executeTakeFirst();
   const otHours = Number(ot?.minutes ?? 0) / 60;
   rows.push({ companyId: null, category: 'total', metric: 'overtime_hours', value: otHours });

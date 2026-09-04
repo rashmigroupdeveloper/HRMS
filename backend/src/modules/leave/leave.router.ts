@@ -13,8 +13,13 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
 import { adjustBalance, getBalances, runCompOffExpiry, runMonthlyAccrual, runYearEndCarryForward } from './leave-core.service.js';
 import { applyForLeave, requestCancellation, requestEncashment, selectRestrictedHoliday } from './leave-apply.service.js';
+import { previewLeaveApply } from './leave-preview.service.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
+const queryBool = z
+  .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
+  .optional()
+  .transform((value): boolean => value === true || value === 'true' || value === '1');
 
 function asBadRequest(err: unknown): never {
   throw new ORPCError('BAD_REQUEST', { message: err instanceof Error ? err.message : 'Invalid request' });
@@ -124,6 +129,43 @@ const employeeBalances = withPermission('leave.admin')
   .input(z.object({ employeeId: z.coerce.number().int().positive() }))
   .output(z.array(balanceShape))
   .handler(async ({ input, context }) => balancesDto(context.db, input.employeeId));
+
+const preview = withPermission('leave.own')
+  .route({ method: 'GET', path: '/leave/preview', summary: 'Live apply math — sandwich, blackout, coverage (LV-03, SHF-08)' })
+  .input(
+    z.object({
+      leaveType: z.string().min(1),
+      from: isoDate,
+      to: isoDate,
+      fromHalf: queryBool,
+      toHalf: queryBool,
+    }),
+  )
+  .output(
+    z.object({
+      days: z.number(),
+      available: z.number(),
+      remaining: z.number(),
+      skipped: z.array(z.object({ date: isoDate, reason: z.enum(['holiday', 'week_off']) })),
+      blackouts: z.array(z.object({ date: isoDate, name: z.string() })),
+      coverage: z.object({ blocked: z.boolean(), warnings: z.array(z.string()) }),
+      blocked: z.boolean(),
+    }),
+  )
+  .handler(async ({ input, context }) => {
+    try {
+      return await previewLeaveApply(context.db, {
+        employeeId: requireEmployeeId(context.user),
+        leaveTypeCode: input.leaveType,
+        from: input.from,
+        to: input.to,
+        fromHalf: input.fromHalf,
+        toHalf: input.toHalf,
+      });
+    } catch (err) {
+      asBadRequest(err);
+    }
+  });
 
 const apply = withPermission('leave.own')
   .route({ method: 'POST', path: '/leave/applications', summary: 'Apply for leave (LV-03; CO applies against comp-off balance)' })
@@ -363,6 +405,7 @@ export const leaveRouter = {
   upsertType,
   myBalances,
   employeeBalances,
+  preview,
   apply,
   myApplications,
   myLedger,

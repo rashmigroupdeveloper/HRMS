@@ -4,8 +4,55 @@
  * vice versa) is a bug.
  */
 import type { ColumnType, Generated } from 'kysely';
+import type {
+  CmpCalendarItemsTable,
+  CmpFilingEvidenceTable,
+  CmpRegistrationsTable,
+} from './types.cmp.js';
+import type { DocTypesTable } from './types.doc.js';
+import type {
+  IrdGrievancesTable,
+  IrdIcMembersTable,
+  IrdPoshCaseAccessLogTable,
+  IrdPoshCasesTable,
+  IrdWhistleblowerReportsTable,
+} from './types.ird.js';
+import type { CoreMisCodesTable, CorePlantsTable, PayGlAccountsTable } from './types.org.js';
+import type {
+  PayBudgetCategoriesTable,
+  PayBudgetsTable,
+  PayClaimLinesTable,
+  PayClaimReservationsTable,
+  PayClaimTypesTable,
+  PayClaimsTable,
+} from './types.pay-claims.js';
+import type {
+  CorePasswordResetTokensTable,
+  CoreProfileChangeRequestsTable,
+  PrvBreachRegisterTable,
+  PrvConsentEventsTable,
+  PrvConsentsTable,
+  PrvLegalHoldsTable,
+  PrvNoticeAcksTable,
+  PrvNoticesTable,
+  PrvProcessorsTable,
+  PrvProcessingRegisterTable,
+  PrvPurgeLogTable,
+  PrvPurgeProposalsTable,
+  PrvRetentionRulesTable,
+  PrvRightsRequestsTable,
+} from './types.prv.js';
 
 type Timestamp = ColumnType<Date, Date | string, Date | string>;
+
+/**
+ * A DB-defaulted timestamp. `Generated<Timestamp>` nests two ColumnTypes, so
+ * its select type stays a ColumnType wrapper rather than a real `Date` — which
+ * is why older tables need a local `iso(value: unknown)` helper to read them.
+ * This alias selects as `Date`, stays optional on insert, and is what new
+ * tables use.
+ */
+type DefaultedTimestamp = ColumnType<Date, Date | string | undefined, Date | string>;
 
 /** core.users — auth accounts (docs/03 §1). */
 export interface UsersTable {
@@ -72,6 +119,12 @@ export interface AuditLogTable {
   scope_org_unit_id: number | null;
   /** V1 predates scoped audit rows; V2 commits scope_org_unit_id into row_hash. */
   hash_version: Generated<1 | 2>;
+  /**
+   * Hashing order, assigned INSIDE the chain trigger's advisory lock. `id`
+   * comes from a sequence evaluated before that lock, so under concurrency the
+   * two disagree — the chain is ordered by this, never by id.
+   */
+  chain_seq: Generated<number>;
   /** Set by the DB trigger — never write from the app. */
   prev_hash: Generated<string>;
   /** Set by the DB trigger — never write from the app. */
@@ -184,6 +237,7 @@ export interface CompaniesTable {
   pt_registration_no: string | null;
   tan: string | null;
   address: string | null;
+  sap_company_code: string | null;
   created_at: Generated<Timestamp>;
   updated_at: Generated<Timestamp>;
 }
@@ -203,6 +257,7 @@ export interface CostCentersTable {
   company_id: number;
   code: string;
   name: string;
+  plant_id: number | null;
   created_at: Generated<Timestamp>;
   updated_at: Generated<Timestamp>;
 }
@@ -210,6 +265,7 @@ export interface CostCentersTable {
 export interface DepartmentsTable {
   id: Generated<number>;
   name: string;
+  mis_code_id: number | null;
   created_at: Generated<Timestamp>;
   updated_at: Generated<Timestamp>;
 }
@@ -274,9 +330,12 @@ export interface EmployeesTable {
   org_unit_id: number | null;
   location_id: number | null;
   cost_center_id: number | null;
+  plant_id: number | null;
   grade_id: number | null;
   reporting_manager_id: number | null;
   functional_manager_id: number | null;
+  /** Head of Department — the SECOND approver on claims, budgets and advances. */
+  hod_employee_id: number | null;
   probation_months: number | null;
   probation_salary_pct: number | null;
   probation_due_date: Timestamp | null;
@@ -336,15 +395,22 @@ export interface EmployeeFamilyTable {
   updated_at: Generated<Timestamp>;
 }
 
+/** Vault lifecycle on the shared file registry (DOC-02). Letters/policies stay `active`. */
+export type DocumentVaultStatus = 'active' | 'superseded' | 'withdrawn';
+
 export interface DocumentsTable {
   id: Generated<number>;
   owner_employee_id: number | null;
+  /** Document type code — vault kinds match `doc.types.code`; letters use their own. */
   kind: string;
   path: string;
   original_name: string;
   mime: string;
   size_bytes: number;
   uploaded_by: number | null;
+  /** NULL = no expiry (PAN / appointment letter). DOC-03 colour language. */
+  expires_on: Date | null;
+  status: Generated<DocumentVaultStatus>;
   created_at: Generated<Timestamp>;
   updated_at: Generated<Timestamp>;
 }
@@ -455,6 +521,13 @@ export interface AttShiftsTable {
   min_half_day_hours: string; // NUMERIC comes back as string
   min_full_day_hours: string;
   break_minutes: Generated<number>;
+  break_paid: Generated<boolean>;
+  ot_start_offset_minutes: Generated<number>;
+  late_slabs: Generated<unknown>;
+  early_exit_slabs: Generated<unknown>;
+  allowance_component_code: string | null;
+  session2_start: string | null;
+  session2_end: string | null;
   is_active: Generated<boolean>;
   created_at: Generated<Timestamp>;
   updated_at: Generated<Timestamp>;
@@ -479,6 +552,74 @@ export interface AttRostersTable {
   set_by: number | null;
   created_at: Generated<Timestamp>;
   updated_at: Generated<Timestamp>;
+}
+
+export interface AttShiftPatternsTable {
+  id: Generated<number>;
+  code: string;
+  name: string;
+  cycle: unknown;
+  created_by: number | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface AttRosterPublicationsTable {
+  id: Generated<number>;
+  manager_employee_id: number;
+  period_from: Timestamp;
+  period_to: Timestamp;
+  published_at: Timestamp;
+  published_by: number;
+  revision: Generated<number>;
+  reason: string | null;
+}
+
+export interface AttRosterRevisionsTable {
+  id: Generated<number>;
+  employee_id: number;
+  work_date: Timestamp;
+  old_shift_id: number | null;
+  new_shift_id: number | null;
+  old_week_off: boolean;
+  new_week_off: boolean;
+  reason: string;
+  changed_by: number;
+  changed_at: Generated<Timestamp>;
+}
+
+export interface AttCoverageTargetsTable {
+  id: Generated<number>;
+  location_id: number;
+  department_id: number | null;
+  shift_id: number;
+  weekday: number;
+  sanctioned: number;
+  updated_by: number | null;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface AttLeaveBlackoutsTable {
+  id: Generated<number>;
+  blackout_date: Timestamp;
+  location_id: number | null;
+  name: string;
+  created_at: Generated<Timestamp>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface AttShiftSwapsTable {
+  id: Generated<number>;
+  requester_employee_id: number;
+  counterpart_employee_id: number | null;
+  work_date: Timestamp;
+  requester_shift_id: number | null;
+  counterpart_shift_id: number | null;
+  kind: 'swap' | 'bid';
+  workflow_request_id: number;
+  applied: Generated<boolean>;
+  created_at: Generated<Timestamp>;
 }
 
 export interface AttHolidaysTable {
@@ -908,6 +1049,72 @@ export interface KpiDailyTable {
   computed_at: Generated<Timestamp>;
 }
 
+/* ── sec — identity hardening (Phase 5 Stage 5.2, SEC-01..11) ───────────── */
+
+/** sec.sessions — a session is a ROW, so revoke takes effect next request. */
+export interface SecSessionsTable {
+  id: Generated<number>;
+  sid: Generated<string>;
+  user_id: number;
+  created_at: DefaultedTimestamp;
+  last_seen_at: DefaultedTimestamp;
+  expires_at: Timestamp;
+  revoked_at: Timestamp | null;
+  revoked_by_user_id: number | null;
+  revoke_reason: string | null;
+  ip: string | null;
+  user_agent: string | null;
+  device_label: string | null;
+  stepped_up_at: Timestamp | null;
+  stepped_up_until: Timestamp | null;
+}
+
+/** sec.mfa_enrolments — one active TOTP enrolment per user (SEC-02/03). */
+export interface SecMfaEnrolmentsTable {
+  id: Generated<number>;
+  user_id: number;
+  secret: string;
+  confirmed_at: Timestamp | null;
+  disabled_at: Timestamp | null;
+  disabled_by_user_id: number | null;
+  /** Replay guard — a TOTP step may be spent exactly once. */
+  last_used_step: number | null;
+  created_at: DefaultedTimestamp;
+  updated_at: DefaultedTimestamp;
+}
+
+/** sec.mfa_recovery_codes — hashed, single-use. */
+export interface SecMfaRecoveryCodesTable {
+  id: Generated<number>;
+  enrolment_id: number;
+  code_hash: string;
+  used_at: Timestamp | null;
+  created_at: DefaultedTimestamp;
+}
+
+/** sec.password_history — hashes only, so reuse is refusable (SEC-01). */
+export interface SecPasswordHistoryTable {
+  id: Generated<number>;
+  user_id: number;
+  password_hash: string;
+  changed_at: DefaultedTimestamp;
+  changed_by_user_id: number | null;
+}
+
+/** sec.access_events — who read whose sensitive data and WHY (SEC-10/11). */
+export interface SecAccessEventsTable {
+  id: Generated<number>;
+  occurred_at: DefaultedTimestamp;
+  actor_user_id: number;
+  session_sid: string | null;
+  subject_employee_id: number | null;
+  resource: string;
+  field_class: string;
+  purpose: string;
+  record_count: Generated<number>;
+  ip: string | null;
+}
+
 export interface Database {
   'core.users': UsersTable;
   'core.roles': RolesTable;
@@ -928,6 +1135,8 @@ export interface Database {
   'core.settings': SettingsTable;
   'core.companies': CompaniesTable;
   'core.locations': LocationsTable;
+  'core.plants': CorePlantsTable;
+  'core.mis_codes': CoreMisCodesTable;
   'core.cost_centers': CostCentersTable;
   'core.departments': DepartmentsTable;
   'core.org_units': OrgUnitsTable;
@@ -952,6 +1161,12 @@ export interface Database {
   'att.shifts': AttShiftsTable;
   'att.employee_shifts': AttEmployeeShiftsTable;
   'att.rosters': AttRostersTable;
+  'att.shift_patterns': AttShiftPatternsTable;
+  'att.roster_publications': AttRosterPublicationsTable;
+  'att.roster_revisions': AttRosterRevisionsTable;
+  'att.coverage_targets': AttCoverageTargetsTable;
+  'att.leave_blackouts': AttLeaveBlackoutsTable;
+  'att.shift_swaps': AttShiftSwapsTable;
   'att.holidays': AttHolidaysTable;
   'att.day_records': AttDayRecordsTable;
   'att.recompute_queue': AttRecomputeQueueTable;
@@ -970,4 +1185,39 @@ export interface Database {
   'core.letters': LettersTable;
   'core.policies': PoliciesTable;
   'core.policy_acknowledgments': PolicyAcknowledgmentsTable;
+  'sec.sessions': SecSessionsTable;
+  'sec.mfa_enrolments': SecMfaEnrolmentsTable;
+  'sec.mfa_recovery_codes': SecMfaRecoveryCodesTable;
+  'sec.password_history': SecPasswordHistoryTable;
+  'sec.access_events': SecAccessEventsTable;
+  'cmp.registrations': CmpRegistrationsTable;
+  'cmp.calendar_items': CmpCalendarItemsTable;
+  'cmp.filing_evidence': CmpFilingEvidenceTable;
+  'ird.ic_members': IrdIcMembersTable;
+  'ird.posh_cases': IrdPoshCasesTable;
+  'ird.posh_case_access_log': IrdPoshCaseAccessLogTable;
+  'ird.grievances': IrdGrievancesTable;
+  'ird.whistleblower_reports': IrdWhistleblowerReportsTable;
+  'doc.types': DocTypesTable;
+  'pay.gl_accounts': PayGlAccountsTable;
+  'pay.claim_types': PayClaimTypesTable;
+  'pay.budgets': PayBudgetsTable;
+  'pay.budget_categories': PayBudgetCategoriesTable;
+  'pay.claims': PayClaimsTable;
+  'pay.claim_lines': PayClaimLinesTable;
+  'pay.claim_reservations': PayClaimReservationsTable;
+  'prv.notices': PrvNoticesTable;
+  'prv.notice_acks': PrvNoticeAcksTable;
+  'prv.processing_register': PrvProcessingRegisterTable;
+  'prv.consents': PrvConsentsTable;
+  'prv.consent_events': PrvConsentEventsTable;
+  'prv.rights_requests': PrvRightsRequestsTable;
+  'prv.retention_rules': PrvRetentionRulesTable;
+  'prv.legal_holds': PrvLegalHoldsTable;
+  'prv.purge_proposals': PrvPurgeProposalsTable;
+  'prv.purge_log': PrvPurgeLogTable;
+  'prv.processors': PrvProcessorsTable;
+  'prv.breach_register': PrvBreachRegisterTable;
+  'core.password_reset_tokens': CorePasswordResetTokensTable;
+  'core.profile_change_requests': CoreProfileChangeRequestsTable;
 }

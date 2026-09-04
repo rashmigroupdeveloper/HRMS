@@ -49,6 +49,10 @@ const listProcedure = guard()
           z.enum(['white_collar', 'blue_collar', 'trainee', 'consultant', 'contract']),
         ).optional(),
         reportingManagerId: z.coerce.number().int().positive().optional(),
+        // ORG-05 — same plant / MIS / cost-centre predicate as every report.
+        plantCode: csvList(z.string().min(1)).optional(),
+        misCode: csvList(z.string().min(1)).optional(),
+        costCenterCode: csvList(z.string().min(1)).optional(),
         activeOnly: booleanQuery().optional(),
         page: z.coerce.number().int().min(1).optional(),
         pageSize: z.coerce.number().int().min(1).max(200).optional(),

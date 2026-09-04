@@ -12,11 +12,15 @@ type Db = Kysely<Database> | Transaction<Database>;
 
 export interface CreateDocumentInput {
   ownerEmployeeId: number | null;
-  kind: string; // 'letter' | 'policy' | 'payslip' | ... (docs/03 §3)
+  kind: string; // 'letter' | 'policy' | 'payslip' | vault types from doc.types (docs/03 §3)
   originalName: string;
   mime: string;
   content: Buffer | string;
   uploadedBy: number | null;
+  /** Vault DOC-03 — omit/null for perpetual kinds (PAN, appointment). */
+  expiresOn?: Date | null;
+  /** Vault lifecycle; letters/policies leave the DB default (`active`). */
+  status?: 'active' | 'superseded' | 'withdrawn';
 }
 
 /** Store bytes + register the row; returns the document id. */
@@ -38,6 +42,8 @@ export async function createDocument(db: Db, input: CreateDocumentInput): Promis
       mime: input.mime,
       size_bytes: Buffer.byteLength(input.content),
       uploaded_by: input.uploadedBy,
+      expires_on: input.expiresOn === undefined ? null : input.expiresOn,
+      ...(input.status === undefined ? {} : { status: input.status }),
     })
     .returning('id')
     .executeTakeFirstOrThrow();

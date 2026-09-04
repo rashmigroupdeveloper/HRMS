@@ -16,6 +16,29 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { POLICY_SETTINGS } from '../src/modules/settings/seed.js';
+import { DEFAULT_PASSWORD_POLICY } from '../src/core/auth/password-policy.js';
+
+/**
+ * A fallback may be a literal (`30`, `'GEN'`, `true`) OR a reference to a named
+ * default object — which is BETTER practice, because it stops two copies of the
+ * same number drifting apart. So the resolver below understands both; a named
+ * constant that this test cannot resolve is reported rather than silently
+ * skipped, so the guarantee never quietly weakens.
+ */
+const NAMED_DEFAULTS: Record<string, Record<string, unknown>> = {
+  DEFAULT_PASSWORD_POLICY: DEFAULT_PASSWORD_POLICY as unknown as Record<string, unknown>,
+};
+
+function resolveFallback(expression: string): { text: string } | { unresolved: true } {
+  const dotted = /^([A-Z][A-Z0-9_]*)\.([A-Za-z0-9_]+)$/.exec(expression);
+  if (dotted) {
+    const object = NAMED_DEFAULTS[dotted[1] ?? ''];
+    const value = object?.[dotted[2] ?? ''];
+    if (object === undefined || value === undefined) return { unresolved: true };
+    return { text: typeof value === 'string' ? value : JSON.stringify(value) };
+  }
+  return { text: expression.replace(/^'(.*)'$/, '$1') };
+}
 
 const SRC = new URL('../src', import.meta.url).pathname;
 
@@ -71,12 +94,15 @@ describe('policy settings seed', () => {
     for (const read of reads) {
       const policy = seeded.get(read.key);
       if (!policy) continue;
-      // The fallback is a literal: 30, 0.5, 'GEN', true.
-      const literal = read.fallback.replace(/^'(.*)'$/, '$1');
+      const resolved = resolveFallback(read.fallback);
+      if ('unresolved' in resolved) {
+        mismatched.push(`${read.key}: fallback ${read.fallback} could not be resolved by this test`);
+        continue;
+      }
       const seededAsText =
         typeof policy.value === 'string' ? policy.value : JSON.stringify(policy.value);
-      if (seededAsText !== literal) {
-        mismatched.push(`${read.key}: seed=${seededAsText} fallback=${literal}`);
+      if (seededAsText !== resolved.text) {
+        mismatched.push(`${read.key}: seed=${seededAsText} fallback=${resolved.text}`);
       }
       expect(policy.valueType).toBe(read.type);
     }

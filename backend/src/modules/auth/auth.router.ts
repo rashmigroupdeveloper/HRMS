@@ -1,5 +1,5 @@
 /**
- * Auth procedures: login / refresh / logout / me.
+ * Auth procedures: login / refresh / logout / me / ESS-01 forgot-reset.
  * Refresh token travels ONLY as an httpOnly cookie scoped to /api/auth —
  * JavaScript can never read it (docs/02 §1: 15 min access + 7 d refresh).
  */
@@ -11,7 +11,13 @@ import {
   getUserPermissions,
   getUserRoleCodes,
 } from '../../core/rbac/permissions.service.js';
+import { verifyToken } from '../../core/auth/jwt.js';
+import { getMfaStatus } from '../security/index.js';
+import { getMfaPolicy } from '../../core/auth/security-policy.js';
+import { revokeSession } from '../../core/auth/session.js';
 import { login, refresh } from './auth.service.js';
+import { requestPasswordReset, resetPasswordWithToken } from './auth.password-reset.js';
+import { VIOLATION_MESSAGES } from '../../core/auth/password-policy.js';
 
 const REFRESH_COOKIE = 'hrms_refresh';
 const REFRESH_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -48,7 +54,14 @@ const loginProcedure = base
   .handler(async ({ input, context }) => {
     if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
 
-    const result = await login(context.db, context.jwtSecret, input.identifier, input.password, context.req.ip ?? null);
+    const result = await login(
+      context.db,
+      context.jwtSecret,
+      input.identifier,
+      input.password,
+      context.req.ip ?? null,
+      context.req.headers['user-agent'] ?? null,
+    );
 
     if (!result.ok) {
       if (result.reason === 'locked') {
@@ -84,9 +97,22 @@ const refreshProcedure = base
   });
 
 const logoutProcedure = base
-  .route({ method: 'POST', path: '/auth/logout', summary: 'Clear the refresh cookie' })
+  .route({
+    method: 'POST',
+    path: '/auth/logout',
+    summary: 'Clear the refresh cookie AND revoke the session server-side',
+  })
   .output(z.object({ ok: z.literal(true) }))
-  .handler(({ context }) => {
+  .handler(async ({ context }) => {
+    // Clearing a cookie a browser may ignore is not a logout. Revoking the
+    // session row is (SEC-05) — so a token already in flight stops working too.
+    const token = readRefreshCookie(context.req.cookies);
+    if (token !== undefined && context.db) {
+      const claims = await verifyToken(token, context.jwtSecret);
+      if (claims?.sid !== undefined) {
+        await revokeSession(context.db, claims.sid, claims.userId, 'signed out');
+      }
+    }
     context.res.clearCookie(REFRESH_COOKIE, { path: '/api/auth' });
     return { ok: true as const };
   });
@@ -97,6 +123,14 @@ const meOutput = z.object({
   employeeId: z.number().int().nullable(),
   roles: z.array(z.string()),
   permissions: z.array(z.string()),
+  /** SEC-03 — drives the enrolment home card and the blocking interstitial. */
+  mfa: z.object({
+    enrolled: z.boolean(),
+    required: z.boolean(),
+    enforcement: z.enum(['off', 'grace', 'required']),
+  }),
+  /** SEC-04 — the shell knows whether a step-up modal is still needed. */
+  steppedUpUntil: z.string().nullable(),
 });
 
 const meProcedure = authed
@@ -107,9 +141,11 @@ const meProcedure = authed
   })
   .output(meOutput)
   .handler(async ({ context }) => {
-    const [roles, permissions] = await Promise.all([
+    const [roles, permissions, mfaStatus, mfaPolicy] = await Promise.all([
       getUserRoleCodes(context.db, context.user.id),
       getUserPermissions(context.db, context.user.id),
+      getMfaStatus(context.db, context.user.id),
+      getMfaPolicy(context.db),
     ]);
     return {
       id: context.user.id,
@@ -117,7 +153,70 @@ const meProcedure = authed
       employeeId: context.user.employee_id,
       roles: [...roles].sort(),
       permissions: [...permissions].sort(),
+      mfa: {
+        enrolled: mfaStatus.enrolled,
+        required: mfaPolicy.requiredRoles.some((role) => roles.has(role)),
+        enforcement: mfaPolicy.enforcement,
+      },
+      steppedUpUntil: context.session.stepped_up_until?.toISOString() ?? null,
     };
+  });
+
+const forgotPasswordProcedure = base
+  .route({
+    method: 'POST',
+    path: '/auth/password/forgot',
+    summary: 'ESS-01 — request a password-reset link (always ok; no user enumeration)',
+  })
+  .input(z.object({ identifier: z.string().min(4) }))
+  .output(z.object({ ok: z.literal(true) }))
+  .handler(async ({ input, context }) => {
+    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
+    return requestPasswordReset(context.db, input.identifier, context.req.ip ?? null);
+  });
+
+const resetPasswordProcedure = base
+  .route({
+    method: 'POST',
+    path: '/auth/password/reset',
+    summary: 'ESS-01 — set a new password with a single-use reset token',
+  })
+  .input(z.object({ token: z.string().min(1), newPassword: z.string().min(1) }))
+  .output(z.object({ ok: z.literal(true) }))
+  .handler(async ({ input, context }) => {
+    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
+
+    const result = await resetPasswordWithToken(
+      context.db,
+      input.token,
+      input.newPassword,
+      context.req.ip ?? null,
+    );
+
+    if (!result.ok) {
+      if (result.reason === 'expired') {
+        throw new ORPCError('BAD_REQUEST', {
+          message: 'This reset link has expired. Request a new one from the sign-in page.',
+        });
+      }
+      if (result.reason === 'reused') {
+        throw new ORPCError('BAD_REQUEST', {
+          message: 'You have used this password before. Choose one you have not used.',
+        });
+      }
+      if (result.reason === 'policy') {
+        const messages = (result.violations ?? []).map((v) => VIOLATION_MESSAGES[v]);
+        throw new ORPCError('BAD_REQUEST', {
+          message: messages.length > 0 ? messages.join(' · ') : 'Password does not meet the policy.',
+          data: { violations: result.violations ?? [] },
+        });
+      }
+      throw new ORPCError('BAD_REQUEST', {
+        message: 'This reset link is invalid or has already been used.',
+      });
+    }
+
+    return { ok: true as const };
   });
 
 export const authRouter = {
@@ -125,4 +224,6 @@ export const authRouter = {
   refresh: refreshProcedure,
   logout: logoutProcedure,
   me: meProcedure,
+  forgotPassword: forgotPasswordProcedure,
+  resetPassword: resetPasswordProcedure,
 };

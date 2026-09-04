@@ -7,6 +7,7 @@
 import { onWorkflowFinal } from '../workflows/index.js';
 import { applyRegularizationOnFinal } from './regularization.service.js';
 import { applyOvertimeOnFinal } from './overtime.service.js';
+import { applyShiftSwapOnFinal } from './shift-swap.service.js';
 
 let registered = false;
 
@@ -16,4 +17,5 @@ export function registerAttendanceWorkflowHooks(): void {
   onWorkflowFinal('regularization', applyRegularizationOnFinal);
   onWorkflowFinal('od', applyRegularizationOnFinal);
   onWorkflowFinal('overtime', applyOvertimeOnFinal);
+  onWorkflowFinal('shift_swap', applyShiftSwapOnFinal);
 }

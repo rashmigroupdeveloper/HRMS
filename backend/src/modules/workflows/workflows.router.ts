@@ -11,6 +11,7 @@ import {
   act,
   createRequest,
   inbox,
+  previewChain,
   resubmit,
   runEscalations,
   stepsSchema,
@@ -176,6 +177,43 @@ const timelineProcedure = authed
     };
   });
 
+const previewProcedure = authed
+  .route({ method: 'GET', path: '/workflows/preview', summary: 'Who will approve this, in this order (SHF-16)' })
+  .input(
+    z.object({
+      definitionCode: z.string().min(1),
+      subjectEmployeeId: z.coerce.number().int().positive().optional(),
+    }),
+  )
+  .output(
+    z.array(
+      z.object({
+        step: z.number(),
+        approverSpec: z.string(),
+        slaHours: z.number(),
+        vacant: z.boolean(),
+        userId: z.number().nullable(),
+        displayName: z.string().nullable(),
+        delegatedFromUserId: z.number().nullable(),
+        delegatedFromName: z.string().nullable(),
+      }),
+    ),
+  )
+  .handler(async ({ input, context }) => {
+    const subjectEmployeeId = input.subjectEmployeeId ?? context.user.employee_id;
+    if (subjectEmployeeId === null) {
+      throw new ORPCError('BAD_REQUEST', { message: 'No employee record linked — pass subjectEmployeeId' });
+    }
+    try {
+      return await previewChain(context.db, {
+        definitionCode: input.definitionCode,
+        subjectEmployeeId,
+      });
+    } catch (err) {
+      throw new ORPCError('BAD_REQUEST', { message: err instanceof Error ? err.message : 'Cannot preview chain' });
+    }
+  });
+
 const setDelegation = authed
   .route({ method: 'PUT', path: '/workflows/delegations', summary: 'Delegate YOUR approvals for a date window' })
   .input(
@@ -264,6 +302,7 @@ export const workflowsRouter = {
   act: actProcedure,
   resubmit: resubmitProcedure,
   timeline: timelineProcedure,
+  preview: previewProcedure,
   setDelegation,
   listDefinitions,
   upsertDefinition,

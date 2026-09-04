@@ -42,18 +42,37 @@ export const WORKFLOW_DEFINITIONS: readonly DefinitionSeed[] = [
   },
   { code: 'regularization', name: 'Regularization & Permission', steps: [rm()] },
   { code: 'od', name: 'On Duty', steps: [rm()] },
+  { code: 'overtime', name: 'Overtime (48h hard rule)', steps: [{ step: 1, approver: 'reporting_manager', slaHours: 48, onBreach: 'lapse' }] },
+  { code: 'shift_swap', name: 'Shift swap / bid', steps: [rm()] },
   {
-    code: 'overtime',
-    name: 'Overtime (48h hard rule)',
-    steps: [{ step: 1, approver: 'reporting_manager', slaHours: 48, onBreach: 'lapse' }],
-  },
-  {
+    // Ported from the live EMS: reporting manager -> head of department ->
+    // final approver (docs/recon/ems-claims-live-schema.md §3). The engine
+    // skips a vacant step, skips an approver who IS the requester, and skips
+    // anyone already on the chain — so an RM who also heads the department
+    // collapses to one step rather than approving twice.
+    //
+    // The final step is a ROLE, not a named person: the live system routes
+    // every claim in the group through ONE admin account, which is the
+    // availability and audit single point of failure recorded as docs/15
+    // GAP-D01. A role queue keeps the rule and removes the bottleneck.
     code: 'claim',
     name: 'Expense Claim',
     steps: [
       { step: 1, approver: 'reporting_manager', slaHours: 72, onBreach: 'escalate' },
-      { step: 2, approver: 'role:hr_ops', slaHours: 72, onBreach: 'escalate' },
-      { step: 3, approver: 'role:payroll_admin', slaHours: 72, onBreach: 'escalate' },
+      { step: 2, approver: 'hod', slaHours: 72, onBreach: 'escalate' },
+      { step: 3, approver: 'role:hr_head', slaHours: 72, onBreach: 'escalate' },
+    ],
+  },
+  {
+    // A budget must be approved before anything can be claimed against it, so
+    // it carries the same chain — the money is committed at the same three
+    // desks that will later see the claim.
+    code: 'travel_budget',
+    name: 'Travel Budget',
+    steps: [
+      { step: 1, approver: 'reporting_manager', slaHours: 72, onBreach: 'escalate' },
+      { step: 2, approver: 'hod', slaHours: 72, onBreach: 'escalate' },
+      { step: 3, approver: 'role:hr_head', slaHours: 72, onBreach: 'escalate' },
     ],
   },
   {
@@ -105,5 +124,15 @@ export const WORKFLOW_DEFINITIONS: readonly DefinitionSeed[] = [
       { step: 1, approver: 'role:hr_ops', slaHours: 48, onBreach: 'escalate' },
       { step: 2, approver: 'role:hr_head', slaHours: 48, onBreach: 'escalate' },
     ],
+  },
+  {
+    code: 'privacy_rights',
+    name: 'DPDP rights request',
+    steps: [{ step: 1, approver: 'role:dpo', slaHours: 360, onBreach: 'escalate' }],
+  },
+  {
+    code: 'profile_change',
+    name: 'Profile change',
+    steps: [{ step: 1, approver: 'role:hr_ops', slaHours: 72, onBreach: 'escalate' }],
   },
 ] as const;

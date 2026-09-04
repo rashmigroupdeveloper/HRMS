@@ -20,5 +20,11 @@ export {
   exportR24Excel,
   exportR27Excel,
 } from './reports-export.service.js';
-export { hrOpsDashboard, essHome, myAttendanceMonth, teamMonthGrid } from './dashboard.service.js';
+export {
+  hrOpsDashboard,
+  essHome,
+  myAttendanceMonth,
+  teamMonthGrid,
+  businessUnitDashboard,
+} from './dashboard.service.js';
 export { buildKpiSnapshot, readKpiSnapshot } from './kpi-snapshot.service.js';

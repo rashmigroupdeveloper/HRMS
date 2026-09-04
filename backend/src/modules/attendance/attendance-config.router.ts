@@ -17,7 +17,7 @@ import { withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
-import { assertEmployeesInScope } from '../../core/rbac/employee-scope.js';
+import { assertEmployeesInScope, employeeScopeSql } from '../../core/rbac/employee-scope.js';
 import {
   closeWeek,
   drainRecomputeQueue,
@@ -25,22 +25,73 @@ import {
   setManualStatus,
 } from './day-status.service.js';
 import { applyRosterEntries } from './roster.service.js';
+import { parseTimeSlabs, RosterRuleError } from './shift-windows.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
+const dayStatus = z.enum(['P', 'A', 'HD', 'WO', 'H', 'L', 'OD', 'CO', 'UAB']);
+const sessionStatus = z.object({
+  session: z.number().int().min(1).max(2),
+  status: z.enum(['P', 'A']),
+});
+
+const timeSlab = z.object({
+  fromMin: z.number().int().min(0),
+  toMin: z.number().int().min(0).nullable(),
+  effect: z.enum(['none', 'late', 'half_day']),
+});
+const hhmm = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'HH:MM');
 
 const shiftShape = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/),
+  startTime: hhmm,
+  endTime: hhmm,
   crossesMidnight: z.boolean().default(false),
-  sessionSplit: z.string().regex(/^\d{2}:\d{2}$/).nullish(),
-  graceInMinutes: z.number().int().min(0).max(120).default(0),
-  graceOutMinutes: z.number().int().min(0).max(120).default(0),
+  sessionSplit: hhmm.nullish(),
+  session2Start: hhmm.nullish(),
+  session2End: hhmm.nullish(),
+  graceInMinutes: z.number().int().min(0).max(120),
+  graceOutMinutes: z.number().int().min(0).max(120),
   minHalfDayHours: z.number().min(0).max(12),
   minFullDayHours: z.number().min(0).max(16),
-  breakMinutes: z.number().int().min(0).max(180).default(0),
+  breakMinutes: z.number().int().min(0).max(180),
+  breakPaid: z.boolean(),
+  otStartOffsetMinutes: z.number().int().min(0).max(240),
+  lateSlabs: z.array(timeSlab),
+  earlyExitSlabs: z.array(timeSlab),
+  allowanceComponentCode: z.string().min(1).max(32).nullish(),
   isActive: z.boolean().default(true),
+});
+
+function timeMinutes(value: string): number {
+  const [hour = 0, minute = 0] = value.split(':').map(Number);
+  return hour * 60 + minute;
+}
+
+const shiftInput = shiftShape.superRefine((shift, ctx) => {
+  const start = timeMinutes(shift.startTime);
+  const end = timeMinutes(shift.endTime);
+  if (start === end || (shift.crossesMidnight ? end >= start : end <= start)) {
+    ctx.addIssue({ code: 'custom', path: ['endTime'], message: 'Shift end must follow start using the crosses-midnight setting' });
+  }
+  if (shift.sessionSplit !== null && shift.sessionSplit !== undefined) {
+    const split = timeMinutes(shift.sessionSplit);
+    if (shift.crossesMidnight || split <= start || split >= end) {
+      ctx.addIssue({ code: 'custom', path: ['sessionSplit'], message: 'Session split must fall inside a same-day shift' });
+    }
+    if (shift.session2Start !== null && shift.session2Start !== undefined) {
+      ctx.addIssue({ code: 'custom', path: ['session2Start'], message: 'Use either a half-day split or a separate second session, not both' });
+    }
+  }
+  const secondStart = shift.session2Start ?? null;
+  const secondEnd = shift.session2End ?? null;
+  if ((secondStart === null) !== (secondEnd === null)) {
+    ctx.addIssue({ code: 'custom', path: ['session2End'], message: 'Second session requires both start and end' });
+  } else if (secondStart !== null && secondEnd !== null) {
+    if (shift.crossesMidnight || timeMinutes(secondStart) < end || timeMinutes(secondEnd) <= timeMinutes(secondStart)) {
+      ctx.addIssue({ code: 'custom', path: ['session2Start'], message: 'Second session must be a later, non-overlapping same-day window' });
+    }
+  }
 });
 
 function mapShiftRow(r: {
@@ -51,11 +102,18 @@ function mapShiftRow(r: {
   end_time: string;
   crosses_midnight: boolean;
   session_split: string | null;
+  session2_start: string | null;
+  session2_end: string | null;
   grace_in_minutes: number;
   grace_out_minutes: number;
   min_half_day_hours: string;
   min_full_day_hours: string;
   break_minutes: number;
+  break_paid: boolean;
+  ot_start_offset_minutes: number;
+  late_slabs: unknown;
+  early_exit_slabs: unknown;
+  allowance_component_code: string | null;
   is_active: boolean;
 }) {
   return {
@@ -66,11 +124,18 @@ function mapShiftRow(r: {
     endTime: r.end_time.slice(0, 5),
     crossesMidnight: r.crosses_midnight,
     sessionSplit: r.session_split?.slice(0, 5) ?? null,
+    session2Start: r.session2_start?.slice(0, 5) ?? null,
+    session2End: r.session2_end?.slice(0, 5) ?? null,
     graceInMinutes: r.grace_in_minutes,
     graceOutMinutes: r.grace_out_minutes,
     minHalfDayHours: Number(r.min_half_day_hours),
     minFullDayHours: Number(r.min_full_day_hours),
     breakMinutes: r.break_minutes,
+    breakPaid: r.break_paid,
+    otStartOffsetMinutes: r.ot_start_offset_minutes,
+    lateSlabs: parseTimeSlabs(r.late_slabs),
+    earlyExitSlabs: parseTimeSlabs(r.early_exit_slabs),
+    allowanceComponentCode: r.allowance_component_code,
     isActive: r.is_active,
   };
 }
@@ -119,7 +184,7 @@ const listShiftsForRoster = withPermission('attendance.roster.write')
 
 const upsertShift = withPermission('admin.settings')
   .route({ method: 'PUT', path: '/attendance/config/shifts/{code}', summary: 'Create/update a shift (audited)' })
-  .input(shiftShape)
+  .input(shiftInput)
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
     const values = {
@@ -129,25 +194,45 @@ const upsertShift = withPermission('admin.settings')
       end_time: input.endTime,
       crosses_midnight: input.crossesMidnight,
       session_split: input.sessionSplit ?? null,
+      session2_start: input.session2Start ?? null,
+      session2_end: input.session2End ?? null,
       grace_in_minutes: input.graceInMinutes,
       grace_out_minutes: input.graceOutMinutes,
       min_half_day_hours: String(input.minHalfDayHours),
       min_full_day_hours: String(input.minFullDayHours),
       break_minutes: input.breakMinutes,
+      break_paid: input.breakPaid,
+      ot_start_offset_minutes: input.otStartOffsetMinutes,
+      late_slabs: JSON.stringify(input.lateSlabs),
+      early_exit_slabs: JSON.stringify(input.earlyExitSlabs),
+      allowance_component_code: input.allowanceComponentCode ?? null,
       is_active: input.isActive,
     };
-    await context.db
-      .insertInto('att.shifts')
-      .values(values)
-      .onConflict((oc) => oc.column('code').doUpdateSet(values))
-      .execute();
-    await writeAudit(context.db, {
-      actorUserId: context.user.id,
-      action: 'update',
-      entity: 'att.shifts',
-      field: input.code,
-      newValue: JSON.stringify(input),
-      ip: context.req.ip ?? null,
+    await context.db.transaction().execute(async (trx) => {
+      const saved = await trx
+        .insertInto('att.shifts')
+        .values(values)
+        .onConflict((oc) => oc.column('code').doUpdateSet(values))
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      await sql`
+        INSERT INTO att.recompute_queue (employee_id, work_date)
+        SELECT employee_id, work_date
+          FROM att.day_records
+         WHERE shift_id = ${saved.id}
+           AND source = 'auto'
+           AND is_locked = false
+        ON CONFLICT (employee_id, work_date)
+        DO UPDATE SET queued_at = now()
+      `.execute(trx);
+      await writeAudit(trx, {
+        actorUserId: context.user.id,
+        action: 'update',
+        entity: 'att.shifts',
+        field: input.code,
+        newValue: JSON.stringify(input),
+        ip: context.req.ip ?? null,
+      });
     });
     return { ok: true as const };
   });
@@ -157,7 +242,23 @@ const listHolidays = withPermission('attendance.own')
   .input(z.object({ year: z.number().int() }).optional())
   .output(z.array(z.object({ date: z.string(), name: z.string(), locationId: z.number().nullable() })))
   .handler(async ({ input, context }) => {
+    if (context.user.employee_id === null) {
+      throw new ORPCError('BAD_REQUEST', { message: 'No employee profile linked' });
+    }
+    const employee = await context.db
+      .selectFrom('core.employees')
+      .select('location_id')
+      .where('id', '=', context.user.employee_id)
+      .executeTakeFirstOrThrow();
     let q = context.db.selectFrom('att.holidays').selectAll().orderBy('holiday_date');
+    q = q.where((eb) =>
+      employee.location_id === null
+        ? eb('location_id', 'is', null)
+        : eb.or([
+            eb('location_id', 'is', null),
+            eb('location_id', '=', employee.location_id),
+          ]),
+    );
     if (input?.year) {
       q = q
         .where('holiday_date', '>=', sql<Date>`${`${input.year}-01-01`}::date`)
@@ -171,27 +272,79 @@ const listHolidays = withPermission('attendance.own')
     }));
   });
 
+const listHolidaysAdmin = withPermission('admin.settings')
+  .route({
+    method: 'GET',
+    path: '/attendance/config/holidays/admin',
+    summary: 'Holiday calendar across locations (admin master)',
+  })
+  .input(z.object({ year: z.number().int() }).optional())
+  .output(z.array(z.object({ date: z.string(), name: z.string(), locationId: z.number().nullable() })))
+  .handler(async ({ input, context }) => {
+    let q = context.db.selectFrom('att.holidays').selectAll().orderBy('holiday_date');
+    if (input?.year) {
+      q = q
+        .where('holiday_date', '>=', sql<Date>`${`${input.year}-01-01`}::date`)
+        .where('holiday_date', '<=', sql<Date>`${`${input.year}-12-31`}::date`);
+    }
+    const rows = await q.execute();
+    return rows.map((row) => ({
+      date: formatDbDate(row.holiday_date),
+      name: row.name,
+      locationId: row.location_id,
+    }));
+  });
+
 const upsertHoliday = withPermission('admin.settings')
   .route({ method: 'PUT', path: '/attendance/config/holidays', summary: 'Add/update a holiday (audited)' })
   .input(z.object({ date: isoDate, name: z.string().min(1), locationId: z.number().int().nullish() }))
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    await context.db
-      .insertInto('att.holidays')
-      .values({
-        holiday_date: sql<Date>`${input.date}::date` as unknown as Date,
-        name: input.name,
-        location_id: input.locationId ?? null,
-      })
-      .onConflict((oc) => oc.columns(['location_id', 'holiday_date']).doUpdateSet({ name: input.name }))
-      .execute();
-    await writeAudit(context.db, {
-      actorUserId: context.user.id,
-      action: 'update',
-      entity: 'att.holidays',
-      field: input.date,
-      newValue: input.name,
-      ip: context.req.ip ?? null,
+    await context.db.transaction().execute(async (trx) => {
+      const locationId = input.locationId ?? null;
+      const insert = trx
+        .insertInto('att.holidays')
+        .values({
+          holiday_date: sql<Date>`${input.date}::date` as unknown as Date,
+          name: input.name,
+          location_id: locationId,
+        });
+      if (locationId === null) {
+        await insert
+          .onConflict((oc) =>
+            oc.column('holiday_date').where('location_id', 'is', null).doUpdateSet({ name: input.name }),
+          )
+          .execute();
+      } else {
+        await insert
+          .onConflict((oc) =>
+            oc
+              .columns(['location_id', 'holiday_date'])
+              .where('location_id', 'is not', null)
+              .doUpdateSet({ name: input.name }),
+          )
+          .execute();
+      }
+      await sql`
+        INSERT INTO att.recompute_queue (employee_id, work_date)
+        SELECT day.employee_id, day.work_date
+          FROM att.day_records day
+          JOIN core.employees employee ON employee.id = day.employee_id
+         WHERE day.work_date = ${input.date}::date
+           AND day.source = 'auto'
+           AND day.is_locked = false
+           AND (${locationId}::bigint IS NULL OR employee.location_id = ${locationId})
+        ON CONFLICT (employee_id, work_date)
+        DO UPDATE SET queued_at = now()
+      `.execute(trx);
+      await writeAudit(trx, {
+        actorUserId: context.user.id,
+        action: 'update',
+        entity: 'att.holidays',
+        field: `${locationId === null ? 'global' : String(locationId)}:${input.date}`,
+        newValue: input.name,
+        ip: context.req.ip ?? null,
+      });
     });
     return { ok: true as const };
   });
@@ -207,6 +360,17 @@ const setScheme = withPermission('attendance.roster.write')
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
+    try {
+      await assertEmployeesInScope(
+        context.db,
+        { ...context.permissionAccess, actorEmployeeId: context.user.employee_id },
+        [input.employeeId],
+      );
+    } catch (error) {
+      throw new ORPCError('FORBIDDEN', {
+        message: error instanceof Error ? error.message : 'Employee outside permitted scope',
+      });
+    }
     const weekday = await context.db.selectFrom('att.shifts').select('id').where('code', '=', input.weekdayShiftCode).executeTakeFirst();
     if (!weekday) throw new ORPCError('NOT_FOUND', { message: `Unknown shift: ${input.weekdayShiftCode}` });
     let saturdayId: number | null = null;
@@ -215,13 +379,38 @@ const setScheme = withPermission('attendance.roster.write')
       if (!sat) throw new ORPCError('NOT_FOUND', { message: `Unknown shift: ${input.saturdayShiftCode}` });
       saturdayId = sat.id;
     }
-    await context.db
-      .insertInto('att.employee_shifts')
-      .values({ employee_id: input.employeeId, weekday_shift_id: weekday.id, saturday_shift_id: saturdayId, updated_by: context.user.id })
-      .onConflict((oc) =>
-        oc.column('employee_id').doUpdateSet({ weekday_shift_id: weekday.id, saturday_shift_id: saturdayId, updated_by: context.user.id }),
-      )
-      .execute();
+    await context.db.transaction().execute(async (trx) => {
+      await trx
+        .insertInto('att.employee_shifts')
+        .values({ employee_id: input.employeeId, weekday_shift_id: weekday.id, saturday_shift_id: saturdayId, updated_by: context.user.id })
+        .onConflict((oc) =>
+          oc.column('employee_id').doUpdateSet({ weekday_shift_id: weekday.id, saturday_shift_id: saturdayId, updated_by: context.user.id }),
+        )
+        .execute();
+      await sql`
+        INSERT INTO att.recompute_queue (employee_id, work_date)
+        SELECT employee_id, work_date
+          FROM att.day_records
+         WHERE employee_id = ${input.employeeId}
+           AND source = 'auto'
+           AND is_locked = false
+        ON CONFLICT (employee_id, work_date)
+        DO UPDATE SET queued_at = now()
+      `.execute(trx);
+      await writeAudit(trx, {
+        actorUserId: context.user.id,
+        action: 'update',
+        entity: 'att.employee_shifts',
+        entityId: input.employeeId,
+        subjectEmployeeId: input.employeeId,
+        field: 'scheme',
+        newValue: JSON.stringify({
+          weekdayShiftCode: input.weekdayShiftCode,
+          saturdayShiftCode: input.saturdayShiftCode ?? null,
+        }),
+        ip: context.req.ip ?? null,
+      });
+    });
     return { ok: true as const };
   });
 
@@ -257,9 +446,6 @@ const getTeamRoster = withPermission('attendance.roster.write')
   )
   .handler(async ({ input, context }) => {
     const managerId = context.user.employee_id;
-    if (managerId === null) {
-      throw new ORPCError('BAD_REQUEST', { message: 'No employee profile linked' });
-    }
     const month = input.month.length === 7 ? `${input.month}-01` : input.month;
     const [y = 0, mo = 1] = month.split('-').map(Number);
     const daysInMonth = new Date(Date.UTC(y, mo, 0)).getUTCDate();
@@ -268,15 +454,21 @@ const getTeamRoster = withPermission('attendance.roster.write')
     let teamQuery = context.db
       .selectFrom('core.employees as e')
       .select(['e.id', 'e.ecode', 'e.first_name', 'e.last_name'])
-      .where('e.status', 'in', ['active', 'on_notice']);
-
-    if (input.subtree === true) {
-      teamQuery = teamQuery.where(
-        'e.id',
-        'in',
-        sql<number>`(SELECT rt.employee_id FROM core.reporting_tree rt WHERE rt.manager_id = ${managerId})`,
+      .where('e.status', 'in', ['active', 'on_notice'])
+      .where(
+        employeeScopeSql(
+          { ...context.permissionAccess, actorEmployeeId: managerId },
+          'e',
+        ),
       );
-    } else {
+
+    if (
+      input.subtree !== true &&
+      context.permissionAccess.subtree &&
+      !context.permissionAccess.all &&
+      context.permissionAccess.orgUnitIds.length === 0 &&
+      managerId !== null
+    ) {
       teamQuery = teamQuery.where('e.reporting_manager_id', '=', managerId);
     }
 
@@ -321,12 +513,13 @@ const setRoster = withPermission('attendance.roster.write')
           z.object({
             employeeId: z.number().int().positive(),
             date: isoDate,
-            shiftCode: z.string().min(1).nullish(), // null + weekOff=true = week-off
+            shiftCode: z.string().min(1).nullish(),
             weekOff: z.boolean().default(false),
           }),
         )
         .min(1)
         .max(500),
+      reason: z.string().min(5).optional(),
     }),
   )
   .output(z.object({ upserted: z.number() }))
@@ -377,12 +570,20 @@ const setRoster = withPermission('attendance.roster.write')
         weekOff: entry.weekOff,
       };
     });
-    const upserted = await applyRosterEntries(db, {
-      actorUserId: context.user.id,
-      entries,
-      ip: context.req.ip ?? null,
-    });
-    return { upserted };
+    try {
+      const upserted = await applyRosterEntries(db, {
+        actorUserId: context.user.id,
+        entries,
+        ip: context.req.ip ?? null,
+        reason: input.reason ?? null,
+      });
+      return { upserted };
+    } catch (err) {
+      if (err instanceof RosterRuleError) {
+        throw new ORPCError('BAD_REQUEST', { message: err.message });
+      }
+      throw err;
+    }
   });
 
 const dayRecords = withPermission('attendance.team.read')
@@ -392,20 +593,31 @@ const dayRecords = withPermission('attendance.team.read')
     z.array(
       z.object({
         date: z.string(),
-        status: z.string(),
+        status: dayStatus,
         scheme: z.string().nullable(),
         firstIn: z.string().nullable(),
         lastOut: z.string().nullable(),
         workedMinutes: z.number().nullable(),
         lateMinutes: z.number(),
         earlyExitMinutes: z.number(),
-        sessionStatuses: z.unknown().nullable(),
+        sessionStatuses: z.array(sessionStatus).nullable(),
         weekoffPaid: z.boolean().nullable(),
         source: z.string(),
       }),
     ),
   )
   .handler(async ({ input, context }) => {
+    try {
+      await assertEmployeesInScope(
+        context.db,
+        { ...context.permissionAccess, actorEmployeeId: context.user.employee_id },
+        [input.employeeId],
+      );
+    } catch (error) {
+      throw new ORPCError('FORBIDDEN', {
+        message: error instanceof Error ? error.message : 'Employee outside permitted scope',
+      });
+    }
     const rows = await context.db
       .selectFrom('att.day_records')
       .selectAll()
@@ -423,7 +635,7 @@ const dayRecords = withPermission('attendance.team.read')
       workedMinutes: r.worked_minutes,
       lateMinutes: r.late_minutes,
       earlyExitMinutes: r.early_exit_minutes,
-      sessionStatuses: r.session_statuses,
+      sessionStatuses: r.session_statuses === null ? null : z.array(sessionStatus).parse(r.session_statuses),
       weekoffPaid: r.weekoff_paid,
       source: r.source,
     }));
@@ -441,6 +653,17 @@ const overrideDay = withPermission('attendance.manual_override')
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
+    try {
+      await assertEmployeesInScope(
+        context.db,
+        { ...context.permissionAccess, actorEmployeeId: context.user.employee_id },
+        [input.employeeId],
+      );
+    } catch (error) {
+      throw new ORPCError('FORBIDDEN', {
+        message: error instanceof Error ? error.message : 'Employee outside permitted scope',
+      });
+    }
     await setManualStatus(context.db, {
       employeeId: input.employeeId,
       isoDate: input.date,
@@ -481,6 +704,7 @@ export const attendanceConfigRouter = {
   listShiftsForRoster,
   upsertShift,
   listHolidays,
+  listHolidaysAdmin,
   upsertHoliday,
   setScheme,
   getTeamRoster,

@@ -12,8 +12,11 @@ import type { Request, Response } from 'express';
 import type { Kysely, Selectable } from 'kysely';
 import type { Database, UsersTable } from '../core/db/types.js';
 import { verifyToken } from '../core/auth/jwt.js';
+import { healEmployeeLinkIfNeeded } from '../modules/auth/auth.service.js';
 import { getUserPermissionAccess, getUserPermissions } from '../core/rbac/permissions.service.js';
 import type { PermissionCode } from '../core/rbac/seed-data.js';
+import { findLiveSession, isSteppedUp, touchSession } from '../core/auth/session.js';
+import { getSessionPolicy } from '../core/auth/security-policy.js';
 
 /** Per-request context assembled by the Express middleware (handler.ts). */
 export interface AppContext {
@@ -60,9 +63,25 @@ export const authed = base.use(async ({ context, next }) => {
     throw new ORPCError('UNAUTHORIZED', { message: 'Account not found or deactivated' });
   }
 
+  // SEC-05 — the token is only half the credential; `sec.sessions` is the
+  // other half. This is what makes "sign out everywhere", an admin revoke and
+  // the exit-day access cut take effect on the NEXT request rather than
+  // whenever the token happens to expire.
+  if (claims.sid === undefined) {
+    throw new ORPCError('UNAUTHORIZED', { message: 'Session ended — please sign in again' });
+  }
+  const sessionPolicy = await getSessionPolicy(context.db);
+  const session = await findLiveSession(context.db, claims.sid, sessionPolicy.idleMinutes);
+  if (session?.user_id !== user.id) {
+    throw new ORPCError('UNAUTHORIZED', { message: 'Session ended — please sign in again' });
+  }
+  await touchSession(context.db, session);
+
+  const linkedUser = await healEmployeeLinkIfNeeded(context.db, user);
+
   // Inject the now-verified user AND a NON-NULL db, so downstream handlers use
   // context.db directly without re-checking (kills the ~27 duplicated guards).
-  return next({ context: { user, db: context.db } });
+  return next({ context: { user: linkedUser, db: context.db, session } });
 });
 
 /**
@@ -124,5 +143,40 @@ export function withPermission(permission: PermissionCode) {
       throw new ORPCError('FORBIDDEN', { message: `Missing permission: ${permission}` });
     }
     return next({ context: { permissions, permissionAccess } });
+  });
+}
+
+/**
+ * SEC-04 — step-up re-authentication.
+ *
+ * Use it on anything that reveals or moves money, statutory identifiers, or
+ * someone's case file:
+ *
+ *   withStepUp('employee.statutory_ids.read')
+ *
+ * Holding the permission answers "may this person ever do this". Step-up
+ * answers "is it this person, right now, at this keyboard" — the question an
+ * unattended laptop makes urgent.
+ */
+const STEP_UP_ERROR = {
+  message: 'Step-up required',
+  data: { code: 'STEP_UP_REQUIRED' },
+} as const;
+
+/** Step-up on an authenticated (non-permission-gated) procedure. */
+export const authedWithStepUp = authed.use(({ context, next }) => {
+  if (!isSteppedUp(context.session)) throw new ORPCError('FORBIDDEN', STEP_UP_ERROR);
+  return next();
+});
+
+/**
+ * Permission AND step-up. The permission is checked first so a caller who may
+ * never do this at all is told that, rather than being sent to re-authenticate
+ * for something they will still be refused.
+ */
+export function withStepUp(permission: PermissionCode) {
+  return withPermission(permission).use(({ context, next }) => {
+    if (!isSteppedUp(context.session)) throw new ORPCError('FORBIDDEN', STEP_UP_ERROR);
+    return next();
   });
 }

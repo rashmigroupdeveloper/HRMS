@@ -25,8 +25,9 @@ export interface MonthLockChecklist {
 }
 
 function monthStart(month: string): string {
-  // accept YYYY-MM or YYYY-MM-01
-  return month.length === 7 ? `${month}-01` : month;
+  if (/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return `${month}-01`;
+  if (/^\d{4}-(0[1-9]|1[0-2])-01$/.test(month)) return month;
+  throw new Error('Month must be YYYY-MM (or the canonical first day YYYY-MM-01)');
 }
 
 function nextMonthStart(monthIso: string): string {

@@ -140,6 +140,44 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
     description: 'ATT-12: managers must approve team attendance before month lock',
   },
 
+  // ── Attendance: shift micro / scheduling (Stage 1.11 · SHF-01..08) ──────
+  {
+    key: 'att.weekly_hours_cap',
+    value: 48,
+    valueType: 'number',
+    description: 'SHF-03 / CMP-06: weekly planned-hours cap at roster save (until Labour Codes sign-off)',
+  },
+  {
+    key: 'att.quarterly_hours_cap',
+    value: 624,
+    valueType: 'number',
+    description: 'SHF-03 / CMP-06: quarterly planned-hours cap at roster save (48h × 13 weeks)',
+  },
+  {
+    key: 'att.roster_refuse_over_cap',
+    value: true,
+    valueType: 'boolean',
+    description: 'SHF-03: refuse a roster save that would breach weekly/quarterly hours',
+  },
+  {
+    key: 'att.min_rest_hours',
+    value: 11,
+    valueType: 'number',
+    description: 'SHF-03 / FAT-01 lite: minimum rest hours between consecutive rostered shifts',
+  },
+  {
+    key: 'att.coverage_min_headcount',
+    value: 1,
+    valueType: 'number',
+    description: 'SHF-06: default sanctioned headcount per shift when no coverage target row exists',
+  },
+  {
+    key: 'att.leave_coverage_hard_block',
+    value: false,
+    valueType: 'boolean',
+    description: 'SHF-08: when true, leave that would create a coverage shortfall is refused (warning-only when false)',
+  },
+
   // ── Reporting / CEO dashboard (RPT-03, docs/06 §4) ────────────────────────
   {
     key: 'reporting.leadership_rank_cutoff',
@@ -178,6 +216,141 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
     value: 2,
     valueType: 'number',
     description: 'LV-04: restricted holidays an employee may take per calendar year',
+  },
+  // ── Security: identity hardening (Phase 5 Stage 5.2 · SEC-01..11) ─────────
+  {
+    key: 'sec.password_min_length',
+    value: 10,
+    valueType: 'number',
+    description: 'SEC-01: minimum password length',
+  },
+  {
+    key: 'sec.password_require_upper',
+    value: true,
+    valueType: 'boolean',
+    description: 'SEC-01: a capital letter is required',
+  },
+  {
+    key: 'sec.password_require_lower',
+    value: true,
+    valueType: 'boolean',
+    description: 'SEC-01: a small letter is required',
+  },
+  {
+    key: 'sec.password_require_digit',
+    value: true,
+    valueType: 'boolean',
+    description: 'SEC-01: a number is required',
+  },
+  {
+    key: 'sec.password_require_symbol',
+    value: false,
+    valueType: 'boolean',
+    description: 'SEC-01: a symbol is required (off by default — length beats symbols)',
+  },
+  {
+    key: 'sec.password_max_repeat_run',
+    value: 3,
+    valueType: 'number',
+    description: 'SEC-01: longest run of one repeated character still allowed',
+  },
+  {
+    key: 'sec.password_history_depth',
+    value: 5,
+    valueType: 'number',
+    description: 'SEC-01: how many previous passwords are refused on reuse',
+  },
+  {
+    key: 'sec.password_block_common',
+    value: true,
+    valueType: 'boolean',
+    description: 'SEC-01: refuse guessable base words (password, welcome, qwerty…)',
+  },
+  {
+    key: 'sec.session_idle_minutes',
+    value: 720,
+    valueType: 'number',
+    description: 'SEC-05: no request for this long ends the session (0 disables idle timeout)',
+  },
+  {
+    key: 'sec.session_absolute_hours',
+    value: 168,
+    valueType: 'number',
+    description: 'SEC-05: hard session lifetime regardless of activity',
+  },
+  {
+    key: 'sec.stepup_window_minutes',
+    value: 10,
+    valueType: 'number',
+    description: 'SEC-04: how long a proven step-up keeps a session elevated',
+  },
+  {
+    key: 'sec.mfa_enforcement',
+    value: 'grace',
+    valueType: 'string',
+    description: 'SEC-03: off | grace | required — the product escalates, it does not ambush',
+  },
+  {
+    key: 'sec.mfa_required_roles',
+    value: 'payroll_admin,hr_head,super_admin,it_admin,dpo,compliance_officer',
+    valueType: 'string',
+    description: 'SEC-03: comma-separated roles that must hold a second factor',
+  },
+  {
+    key: 'sec.mfa_grace_days',
+    value: 14,
+    valueType: 'number',
+    description: 'SEC-03: days a required role may work before enrolment blocks',
+  },
+  // ── Compliance: registrations, licences, calendar (Stage 5.7 · CMP-16/17) ─
+  {
+    key: 'cmp.licence_alert_stages',
+    value: '90,30,15,7',
+    valueType: 'string',
+    description:
+      'CMP-16: days-before-expiry ladder for licence alerts, tightest stage wins',
+  },
+  {
+    key: 'cmp.calendar_lookahead_days',
+    value: 60,
+    valueType: 'number',
+    description: 'CMP-17: how far ahead the compliance calendar looks by default (overdue items always show)',
+  },
+  {
+    key: 'prv.rights_sla_days',
+    value: 15,
+    valueType: 'number',
+    description: 'PRV-04: statutory response clock for access/correction/erasure requests',
+  },
+  {
+    key: 'wages.basic_da_min_pct',
+    value: 50,
+    valueType: 'number',
+    description: 'CMP-01: Basic+DA must be at least this % of CTC (Labour Codes default until P0-T06 signs)',
+  },
+  {
+    key: 'wages.excluded_components',
+    value: '',
+    valueType: 'string',
+    description: 'CMP-01: comma-separated component codes excluded from the CTC denominator',
+  },
+  {
+    key: 'fnf.tat_working_days',
+    value: 3,
+    valueType: 'number',
+    description: 'CMP-03: F&F working-day TAT (doc 10 default 3 until payroll admin confirms the Code clock)',
+  },
+  {
+    key: 'sec.password_reset_ttl_minutes',
+    value: 30,
+    valueType: 'number',
+    description: 'ESS-01: password-reset token lifetime',
+  },
+  {
+    key: 'sec.password_reset_rate_per_hour',
+    value: 3,
+    valueType: 'number',
+    description: 'ESS-01: max reset emails per account per hour',
   },
 ];
 

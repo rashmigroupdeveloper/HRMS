@@ -6,6 +6,7 @@
 import type { Kysely } from 'kysely';
 import type { Selectable } from 'kysely';
 import type { Database, EmploymentCategory, UsersTable } from '../../core/db/types.js';
+import { formatDbDate } from '../../core/dates.js';
 import {
   countDirectory,
   findByEcode,
@@ -114,7 +115,9 @@ function displayName(first: string, last: string | null): string {
 
 function isoDate(value: Date | null): string | null {
   if (value === null) return null;
-  return value.toISOString().slice(0, 10);
+  // Local getters, not toISOString — a DATE column is local midnight
+  // (core/dates.ts, the F6 bug).
+  return formatDbDate(value);
 }
 
 function toDirectoryItem(row: DirectoryRow): DirectoryItem {
@@ -142,6 +145,10 @@ export async function listEmployees(
     locationIds?: number[] | undefined;
     categories?: EmploymentCategory[] | undefined;
     reportingManagerId?: number | undefined;
+    /** ORG-05 shared filter contract. */
+    plantCode?: string[] | undefined;
+    misCode?: string[] | undefined;
+    costCenterCode?: string[] | undefined;
     activeOnly?: boolean | undefined;
     page?: number | undefined;
     pageSize?: number | undefined;
@@ -159,6 +166,9 @@ export async function listEmployees(
     locationIds: input.locationIds,
     categories: input.categories,
     reportingManagerId: input.reportingManagerId,
+    plantCode: input.plantCode,
+    misCode: input.misCode,
+    costCenterCode: input.costCenterCode,
     activeOnly: input.activeOnly ?? true,
     limit: pageSize,
     offset: (page - 1) * pageSize,

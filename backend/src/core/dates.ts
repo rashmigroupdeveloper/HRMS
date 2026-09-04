@@ -35,6 +35,35 @@ export function formatDbDate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
+/** `2026-07-08` → `08 Jul 2026` (docs/05 §10). Falls through bad input as-is. */
+export function formatDisplayDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  if (y === undefined || m === undefined || d === undefined) return iso;
+  const month = MONTHS_SHORT[m - 1];
+  if (month === undefined || !Number.isInteger(y) || !Number.isInteger(d) || d < 1 || d > 31) return iso;
+  return `${String(d).padStart(2, '0')} ${month} ${String(y)}`;
+}
+
+/**
+ * `(2026, 6)` → `Jun 2026` — the R7 register's `PAYROLL MONTH` column.
+ *
+ * The live sheet stores this as TEXT, not an Excel date serial (docs/06 §2.1),
+ * so finance's month filter is a string match. Throws rather than emitting
+ * `undefined 2026`: a mislabelled payroll month is a reconciliation incident.
+ */
+export function formatPayrollMonth(year: number, month: number): string {
+  const name = MONTHS_SHORT[month - 1];
+  if (!Number.isInteger(month) || name === undefined) {
+    throw new RangeError(`formatPayrollMonth: month must be 1-12, got ${String(month)}`);
+  }
+  if (!Number.isInteger(year) || year < 1900 || year > 2999) {
+    throw new RangeError(`formatPayrollMonth: implausible year ${String(year)}`);
+  }
+  return `${name} ${String(year)}`;
+}
+
 /** Add whole days to a 'YYYY-MM-DD' string (calendar-safe, TZ-independent). */
 export function addDaysIso(isoDate: string, days: number): string {
   const d = new Date(`${isoDate}T00:00:00Z`);

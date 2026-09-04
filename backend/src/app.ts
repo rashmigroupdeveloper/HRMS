@@ -2,6 +2,7 @@ import express, { type Express } from 'express';
 import cookieParser from 'cookie-parser';
 import { getOpenApiSpec, orpcMiddleware, type AppDeps } from './api/handler.js';
 import { registerAttendanceWorkflowHooks } from './modules/attendance/index.js';
+import { registerClaimsWorkflowHooks } from './modules/claims/index.js';
 import { registerLeaveWorkflowHooks } from './modules/leave/index.js';
 import { registerLettersWorkflowHooks } from './modules/letters/index.js';
 
@@ -24,6 +25,7 @@ export function createApp(deps?: Partial<AppDeps>): Express {
   // Domain reactions to workflow finals (approve → write-back) must be live
   // in every process that can finalize a request.
   registerAttendanceWorkflowHooks();
+  registerClaimsWorkflowHooks();
   registerLeaveWorkflowHooks();
   registerLettersWorkflowHooks();
 

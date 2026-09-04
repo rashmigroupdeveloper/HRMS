@@ -401,8 +401,7 @@ export async function exportMusterExcel(
       width: 10,
     })),
   ];
-  for (const r of rows) {
-    ws.addRow({
+  ws.addRows(rows.map((r) => ({
       ecode: r.ecode,
       employeeName: r.employeeName,
       reportingManager: r.reportingManager ?? '',
@@ -434,8 +433,11 @@ export async function exportMusterExcel(
       ...Object.fromEntries(
         Object.entries(r.leaveByType).map(([code, days]) => [`leave_${code}`, days]),
       ),
-    });
-  }
-  const buf = await wb.xlsx.writeBuffer();
+    })));
+  // Level 1 keeps the generated workbook standards-compliant while avoiding
+  // CPU-heavy default compression on the 3,000 × 31 statutory muster matrix.
+  const buf = await wb.xlsx.writeBuffer({
+    zip: { compression: 'DEFLATE', compressionOptions: { level: 1 } },
+  });
   return Buffer.from(buf);
 }

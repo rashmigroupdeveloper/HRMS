@@ -36,6 +36,8 @@ describe('oRPC API layer', () => {
     expect(spec.openapi).toMatch(/^3\./);
     expect(spec.info.title).toBe('Rashmi HRMS API');
     expect(spec.paths).toHaveProperty('/system/health');
+    expect(spec.paths).toHaveProperty('/org/departments');
+    expect(spec.paths).toHaveProperty('/org/departments/{departmentId}/mis-code');
   });
 
   it('unknown /api paths fall through to 404, not a crash', async () => {

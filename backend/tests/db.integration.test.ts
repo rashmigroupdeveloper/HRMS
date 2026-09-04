@@ -3,7 +3,7 @@
  * Skipped entirely when no DATABASE_URL is configured (e.g. bare CI).
  *
  * Proves the Stage-0.4 safety rails for real:
- *  - RBAC seed landed (10 roles / every seeded permission; super_admin holds all)
+ *  - RBAC seed landed (catalog roles / every seeded permission; super_admin holds all)
  *  - audit log is append-only (UPDATE/DELETE rejected BY THE DATABASE)
  *  - hash chain detects tampering (trigger-off forgery is caught)
  *  - auth: login, wrong-password lockout with backoff, refresh rotation, /me
@@ -18,7 +18,7 @@ import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { writeAudit, verifyAuditChain } from '../src/core/audit/audit.service.js';
-import { PERMISSIONS } from '../src/core/rbac/seed-data.js';
+import { PERMISSIONS, ROLES } from '../src/core/rbac/seed-data.js';
 import { hashPassword } from '../src/modules/auth/index.js';
 import { getTypedSetting, setSetting } from '../src/modules/settings/index.js';
 
@@ -54,10 +54,10 @@ run('database integration (live Postgres)', () => {
   });
 
   // ---------------------------------------------------------------- RBAC seed
-  it('RBAC seed landed: 10 roles, the full permission grid, super_admin holds all', async () => {
+  it('RBAC seed landed: catalog roles, the full permission grid, super_admin holds all', async () => {
     const roles = await db.selectFrom('core.roles').select(db.fn.countAll().as('n')).executeTakeFirstOrThrow();
     const perms = await db.selectFrom('core.permissions').select(db.fn.countAll().as('n')).executeTakeFirstOrThrow();
-    expect(Number(roles.n)).toBe(10);
+    expect(Number(roles.n)).toBe(ROLES.length);
     expect(Number(perms.n)).toBe(PERMISSIONS.length);
 
     const superAdmin = await db

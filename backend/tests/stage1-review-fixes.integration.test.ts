@@ -126,7 +126,7 @@ run('Phase-1 review fixes (live Postgres)', () => {
       .values({ email: `fix-hr-${stamp}@hrms.test`, password_hash: await hashPassword(password), employee_id: empId })
       .returning('id')
       .executeTakeFirstOrThrow();
-    const role = await db.selectFrom('core.roles').select('id').where('code', '=', 'hr_ops').executeTakeFirstOrThrow();
+    const role = await db.selectFrom('core.roles').select('id').where('code', '=', 'hr_head').executeTakeFirstOrThrow();
     await db.insertInto('core.user_roles').values({ user_id: hr.id, role_id: role.id, scope_org_unit_id: null }).execute();
 
     const login = await request(app).post('/api/auth/login').send({ identifier: `fix-hr-${stamp}@hrms.test`, password });

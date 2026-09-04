@@ -11,6 +11,7 @@ import {
   attendanceConfigRouter,
   attendanceRequestsRouter,
   absenceRouter,
+  schedulingRouter,
 } from '../modules/attendance/index.js';
 import { workflowsRouter } from '../modules/workflows/index.js';
 import { employeesRouter } from '../modules/employees/index.js';
@@ -23,6 +24,13 @@ import { auditRouter } from '../modules/audit/index.js';
 import { assetsRouter } from '../modules/assets/index.js';
 import { helpdeskRouter } from '../modules/helpdesk/index.js';
 import { engagementRouter } from '../modules/engagement/index.js';
+import { securityRouter } from '../modules/security/index.js';
+import { complianceRouter } from '../modules/compliance/index.js';
+import { claimsRouter } from '../modules/claims/index.js';
+import { orgRouter } from '../modules/org/index.js';
+import { documentsRouter } from '../modules/documents/index.js';
+import { privacyRouter } from '../modules/privacy/index.js';
+import { irdRouter } from '../modules/ird/index.js';
 
 export const appRouter = {
   system: systemRouter,
@@ -33,7 +41,8 @@ export const appRouter = {
     ...attendanceRouter,
     ...attendanceConfigRouter,
     ...attendanceRequestsRouter,
-    ...absenceRouter
+    ...absenceRouter,
+    ...schedulingRouter,
   },
   workflows: workflowsRouter,
   employees: employeesRouter,
@@ -46,6 +55,13 @@ export const appRouter = {
   assets: assetsRouter,
   helpdesk: helpdeskRouter,
   engagement: engagementRouter,
+  security: securityRouter,
+  compliance: complianceRouter,
+  claims: claimsRouter,
+  org: orgRouter,
+  documents: documentsRouter,
+  privacy: privacyRouter,
+  ird: irdRouter,
 };
 
 export type AppRouter = typeof appRouter;

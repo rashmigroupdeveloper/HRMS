@@ -21,6 +21,7 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { getTypedSetting } from '../settings/index.js';
 import { addDaysIso, formatDbDate, istDateTime } from '../../core/dates.js';
 import { recordDetectedOvertime } from './overtime.service.js';
+import { applyAttendanceSlabs, parseTimeSlabs } from './shift-windows.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 type ShiftRow = Selectable<AttShiftsTable>;
@@ -47,6 +48,11 @@ export async function loadAttendancePolicy(db: Kysely<Database>): Promise<Attend
   const sessionPresentFraction = await getTypedSetting(db, 'att.session_present_fraction', 'number', 0.5);
   const otMinMinutes = await getTypedSetting(db, 'att.ot_min_minutes', 'number', 30);
   const otDecisionHours = await getTypedSetting(db, 'att.ot_decision_hours', 'number', 48);
+  if (earlyHours < 0 || lateHours < 0) throw new Error('Attendance swipe-window settings cannot be negative');
+  if (sessionPresentFraction <= 0 || sessionPresentFraction > 1) {
+    throw new Error('att.session_present_fraction must be greater than 0 and at most 1');
+  }
+  if (otMinMinutes < 0 || otDecisionHours <= 0) throw new Error('Attendance overtime settings are invalid');
   return {
     earlyMarginMs: earlyHours * 3600_000,
     lateMarginMs: lateHours * 3600_000,
@@ -133,6 +139,40 @@ interface ShiftInterval {
   end: number;
 }
 
+interface SwipePoint {
+  swipeTs: Date;
+  direction: string | null;
+}
+
+export type AttendanceSwipe = Date | SwipePoint;
+
+function selectFilo(swipes: SwipePoint[]): { firstIn: Date | null; lastOut: Date | null } {
+  const sorted = [...swipes].sort((a, b) => a.swipeTs.getTime() - b.swipeTs.getTime());
+  const explicitIn = sorted.find((swipe) => swipe.direction === 'in');
+  const explicitOut = [...sorted].reverse().find((swipe) => swipe.direction === 'out');
+  const firstIn = explicitIn?.swipeTs ?? sorted[0]?.swipeTs ?? null;
+  const lastCandidate = explicitOut?.swipeTs ?? sorted[sorted.length - 1]?.swipeTs ?? null;
+  const lastOut =
+    firstIn !== null && lastCandidate !== null && lastCandidate.getTime() > firstIn.getTime()
+      ? lastCandidate
+      : null;
+  return { firstIn, lastOut };
+}
+
+function scheduledShiftIntervals(shift: ShiftRow, isoDate: string): ShiftInterval[] {
+  const start = istDateTime(isoDate, shift.start_time).getTime();
+  const end = istDateTime(isoDate, shift.end_time).getTime() + (shift.crosses_midnight ? 86_400_000 : 0);
+  const intervals: ShiftInterval[] = [{ start, end }];
+  if (shift.session2_start !== null && shift.session2_end !== null) {
+    const secondStart = istDateTime(isoDate, shift.session2_start).getTime();
+    const secondEnd =
+      istDateTime(isoDate, shift.session2_end).getTime() +
+      (shift.session2_end <= shift.session2_start ? 86_400_000 : 0);
+    intervals.push({ start: secondStart, end: secondEnd });
+  }
+  return intervals;
+}
+
 export type FinalizationHoldReason =
   | 'location_not_mapped'
   | 'no_active_devices'
@@ -158,10 +198,11 @@ export interface FinalizationHold {
 /** The working [start, end] instants (ms) for a resolved shift, or null (WO/holiday). */
 function shiftInterval(resolved: ResolvedShift, isoDate: string): ShiftInterval | null {
   if (resolved.isHoliday || resolved.isWeekOff || !resolved.shift) return null;
-  const s = resolved.shift;
-  const start = istDateTime(isoDate, s.start_time).getTime();
-  const end = istDateTime(isoDate, s.end_time).getTime() + (s.crosses_midnight ? 86_400_000 : 0);
-  return { start, end };
+  const intervals = scheduledShiftIntervals(resolved.shift, isoDate);
+  return {
+    start: Math.min(...intervals.map((interval) => interval.start)),
+    end: Math.max(...intervals.map((interval) => interval.end)),
+  };
 }
 
 /**
@@ -245,14 +286,14 @@ async function attributeOwnedSwipes(
   employeeId: number,
   isoDate: string,
   cur: ShiftInterval,
-  swipeTimes: Date[],
-): Promise<Date[]> {
+  swipes: SwipePoint[],
+): Promise<SwipePoint[]> {
   let prevIv: ShiftInterval | null | undefined;
   let nextIv: ShiftInterval | null | undefined;
-  const owned: Date[] = [];
+  const owned: SwipePoint[] = [];
 
-  for (const swipe of swipeTimes) {
-    const t = swipe.getTime();
+  for (const swipe of swipes) {
+    const t = swipe.swipeTs.getTime();
     if (t >= cur.start && t <= cur.end) {
       owned.push(swipe); // inside the core interval → unambiguously ours
       continue;
@@ -302,15 +343,18 @@ export interface ComputedDay {
 export function computeDayStatus(
   resolved: ResolvedShift,
   isoDate: string,
-  swipeTimes: Date[],
+  swipeTimes: AttendanceSwipe[],
   policy: AttendancePolicy,
 ): ComputedDay {
-  if (resolved.isHoliday || resolved.isWeekOff || !resolved.shift) {
+  const swipes: SwipePoint[] = swipeTimes.map((swipe) =>
+    swipe instanceof Date
+      ? { swipeTs: swipe, direction: null }
+      : { swipeTs: swipe.swipeTs, direction: swipe.direction?.toLowerCase() ?? null },
+  );
+  if (resolved.isHoliday || resolved.isWeekOff) {
     // WO/H day: no shift interval, but swipes still mean WORK — FILO minutes
     // become detected OT (docs/04 §1.4: week-off/holiday work is OT-eligible).
-    const sorted = [...swipeTimes].sort((a, b) => a.getTime() - b.getTime());
-    const firstIn = sorted[0] ?? null;
-    const lastOut = sorted.length > 1 ? (sorted[sorted.length - 1] ?? null) : null;
+    const { firstIn, lastOut } = selectFilo(swipes);
     const worked = firstIn && lastOut ? Math.floor((lastOut.getTime() - firstIn.getTime()) / 60_000) : null;
     return {
       status: resolved.isHoliday ? 'H' : 'WO',
@@ -326,49 +370,88 @@ export function computeDayStatus(
     };
   }
 
+  if (!resolved.shift) {
+    throw new Error('No active shift could be resolved for this working day');
+  }
+
   const shift = resolved.shift;
-  const start = istDateTime(isoDate, shift.start_time);
-  const end = new Date(istDateTime(isoDate, shift.end_time).getTime() + (shift.crosses_midnight ? 86_400_000 : 0));
+  const plannedIntervals = scheduledShiftIntervals(shift, isoDate);
+  const start = new Date(Math.min(...plannedIntervals.map((interval) => interval.start)));
+  const end = new Date(Math.max(...plannedIntervals.map((interval) => interval.end)));
+  const sessionIntervals: ShiftInterval[] | null = plannedIntervals.length === 2
+    ? plannedIntervals
+    : shift.session_split !== null
+      ? [
+          { start: start.getTime(), end: istDateTime(isoDate, shift.session_split).getTime() },
+          { start: istDateTime(isoDate, shift.session_split).getTime() + 60_000, end: end.getTime() },
+        ]
+      : null;
   const windowStart = new Date(start.getTime() - policy.earlyMarginMs);
   const windowEnd = new Date(end.getTime() + policy.lateMarginMs);
 
-  const inWindow = swipeTimes.filter((t) => t >= windowStart && t <= windowEnd).sort((a, b) => a.getTime() - b.getTime());
+  const inWindow = swipes
+    .filter((swipe) => swipe.swipeTs >= windowStart && swipe.swipeTs <= windowEnd)
+    .sort((a, b) => a.swipeTs.getTime() - b.swipeTs.getTime());
   const base = { schemeCode: shift.code, shiftId: shift.id };
 
   if (inWindow.length === 0) {
-    return { ...base, status: 'A', firstIn: null, lastOut: null, workedMinutes: 0, lateMinutes: 0, earlyExitMinutes: 0, sessionStatuses: null, otMinutes: 0 };
+    return {
+      ...base,
+      status: 'UAB',
+      firstIn: null,
+      lastOut: null,
+      workedMinutes: 0,
+      lateMinutes: 0,
+      earlyExitMinutes: 0,
+      sessionStatuses: sessionIntervals?.map((_, index) => ({ session: index + 1, status: 'A' as const })) ?? null,
+      otMinutes: 0,
+    };
   }
 
   // FILO — first in, last out (ATT-18, PP-v2-2).
-  const firstIn = inWindow[0] ?? null;
-  const lastOut = inWindow.length > 1 ? (inWindow[inWindow.length - 1] ?? null) : null;
+  const { firstIn, lastOut } = selectFilo(inWindow);
 
-  const rawMinutes = firstIn && lastOut ? Math.floor((lastOut.getTime() - firstIn.getTime()) / 60_000) : 0;
-  const workedMinutes = Math.max(0, rawMinutes - shift.break_minutes);
+  const rawMinutes = firstIn && lastOut
+    ? shift.session2_start !== null && shift.session2_end !== null
+      ? plannedIntervals.reduce((total, interval) => {
+          const overlap = Math.max(
+            0,
+            Math.min(lastOut.getTime(), interval.end) - Math.max(firstIn.getTime(), interval.start),
+          );
+          return total + Math.floor(overlap / 60_000);
+        }, 0)
+      : Math.floor((lastOut.getTime() - firstIn.getTime()) / 60_000)
+    : 0;
+  const unpaidBreak = shift.break_paid ? 0 : shift.break_minutes;
+  const workedMinutes = Math.max(0, rawMinutes - unpaidBreak);
 
   const graceIn = shift.grace_in_minutes * 60_000;
   const graceOut = shift.grace_out_minutes * 60_000;
   const lateMinutes =
-    firstIn && firstIn.getTime() > start.getTime() + graceIn ? Math.floor((firstIn.getTime() - start.getTime()) / 60_000) : 0;
+    firstIn && firstIn.getTime() > start.getTime() + graceIn
+      ? Math.floor((firstIn.getTime() - start.getTime() - graceIn) / 60_000)
+      : 0;
   const earlyExitMinutes =
-    lastOut && lastOut.getTime() < end.getTime() - graceOut ? Math.floor((end.getTime() - lastOut.getTime()) / 60_000) : 0;
+    lastOut && lastOut.getTime() < end.getTime() - graceOut
+      ? Math.floor((end.getTime() - graceOut - lastOut.getTime()) / 60_000)
+      : 0;
 
   const fullMin = Number(shift.min_full_day_hours) * 60;
   const halfMin = Number(shift.min_half_day_hours) * 60;
 
-  let status: DayStatus;
+  let status: 'P' | 'HD' | 'A';
   let sessionStatuses: SessionStatus[] | null = null;
 
-  if (shift.session_split !== null && firstIn && lastOut) {
+  if (sessionIntervals !== null) {
     // Two-session day (09 §4): a session is Present when coverage ≥ the policy fraction.
-    const split = istDateTime(isoDate, shift.session_split);
-    const sessions: [Date, Date][] = [
-      [start, split],
-      [split, end],
-    ];
-    sessionStatuses = sessions.map(([s, e], i): SessionStatus => {
-      const overlap = Math.min(lastOut.getTime(), e.getTime()) - Math.max(firstIn.getTime(), s.getTime());
-      const need = (e.getTime() - s.getTime()) * policy.sessionPresentFraction;
+    sessionStatuses = sessionIntervals.map((session, i): SessionStatus => {
+      const overlap = firstIn !== null && lastOut !== null
+        ? Math.max(
+            0,
+            Math.min(lastOut.getTime(), session.end) - Math.max(firstIn.getTime(), session.start),
+          )
+        : 0;
+      const need = (session.end - session.start) * policy.sessionPresentFraction;
       return { session: i + 1, status: overlap >= need ? 'P' : 'A' };
     });
     const present = sessionStatuses.filter((s) => s.status === 'P').length;
@@ -377,9 +460,18 @@ export function computeDayStatus(
     status = workedMinutes >= fullMin ? 'P' : workedMinutes >= halfMin ? 'HD' : 'A';
   }
 
-  // OT = time past shift end (ATT-08); grace-out is a penalty concept, not an
-  // OT one, so it does not shave detected minutes.
-  const otMinutes = lastOut && lastOut.getTime() > end.getTime() ? Math.floor((lastOut.getTime() - end.getTime()) / 60_000) : 0;
+  status = applyAttendanceSlabs(
+    status,
+    lateMinutes,
+    earlyExitMinutes,
+    parseTimeSlabs(shift.late_slabs),
+    parseTimeSlabs(shift.early_exit_slabs),
+  );
+
+  // OT = time past shift end + OT-start offset (SHF-01); grace-out is a penalty
+  // concept, not an OT one, so it does not shave detected minutes.
+  const otStart = end.getTime() + shift.ot_start_offset_minutes * 60_000;
+  const otMinutes = lastOut && lastOut.getTime() > otStart ? Math.floor((lastOut.getTime() - otStart) / 60_000) : 0;
 
   return { ...base, status, firstIn, lastOut, workedMinutes, lateMinutes, earlyExitMinutes, sessionStatuses, otMinutes };
 }
@@ -407,36 +499,42 @@ export async function recomputeDay(
   const resolved = await resolveDay(db, employeeId, isoDate);
   const cur = shiftInterval(resolved, isoDate);
 
-  let owned: Date[] = [];
+  let owned: SwipePoint[] = [];
   if (cur) {
     const from = new Date(cur.start - pol.earlyMarginMs);
     const to = new Date(cur.end + pol.lateMarginMs);
     const swipes = await db
       .selectFrom('att.swipe_events')
-      .select('swipe_ts')
+      .select(['swipe_ts', 'direction'])
       .where('employee_id', '=', employeeId)
       .where('swipe_ts', '>=', from)
       .where('swipe_ts', '<=', to)
       .orderBy('swipe_ts')
       .execute();
-    owned = await attributeOwnedSwipes(db, employeeId, isoDate, cur, swipes.map((s) => s.swipe_ts));
+    owned = await attributeOwnedSwipes(
+      db,
+      employeeId,
+      isoDate,
+      cur,
+      swipes.map((swipe) => ({ swipeTs: swipe.swipe_ts, direction: swipe.direction })),
+    );
   } else {
     // WO/holiday: no shift interval — any swipe inside the IST calendar day is
     // week-off/holiday WORK and feeds OT detection (docs/04 §1.4).
     const dayStart = istDateTime(isoDate, '00:00');
     const swipes = await db
       .selectFrom('att.swipe_events')
-      .select('swipe_ts')
+      .select(['swipe_ts', 'direction'])
       .where('employee_id', '=', employeeId)
       .where('swipe_ts', '>=', dayStart)
       .where('swipe_ts', '<', new Date(dayStart.getTime() + 86_400_000))
       .orderBy('swipe_ts')
       .execute();
-    owned = swipes.map((s) => s.swipe_ts);
+    owned = swipes.map((swipe) => ({ swipeTs: swipe.swipe_ts, direction: swipe.direction }));
   }
 
   const computed = computeDayStatus(resolved, isoDate, owned, pol);
-  if (computed.status === 'A') {
+  if (computed.status === 'A' || computed.status === 'UAB') {
     const readiness = await getAbsenceFinalizationReadiness(
       db,
       employeeId,
@@ -586,43 +684,45 @@ export async function setManualStatus(
   db: Kysely<Database>,
   params: { employeeId: number; isoDate: string; status: DayStatus; reason: string; actorUserId: number },
 ): Promise<void> {
-  const previous = await db
-    .selectFrom('att.day_records')
-    .select(['status'])
-    .where('employee_id', '=', params.employeeId)
-    .where('work_date', '=', sql<Date>`${params.isoDate}::date`)
-    .executeTakeFirst();
+  await db.transaction().execute(async (trx) => {
+    const previous = await trx
+      .selectFrom('att.day_records')
+      .select(['status'])
+      .where('employee_id', '=', params.employeeId)
+      .where('work_date', '=', sql<Date>`${params.isoDate}::date`)
+      .executeTakeFirst();
 
-  const row = {
-    status: params.status,
-    source: 'manual' as const,
-    override_reason: params.reason,
-    first_in: null,
-    last_out: null,
-    worked_minutes: null,
-    late_minutes: 0,
-    early_exit_minutes: 0,
-    session_statuses: null,
-    computed_at: new Date(),
-  };
+    const row = {
+      status: params.status,
+      source: 'manual' as const,
+      override_reason: params.reason,
+      first_in: null,
+      last_out: null,
+      worked_minutes: null,
+      late_minutes: 0,
+      early_exit_minutes: 0,
+      session_statuses: null,
+      computed_at: new Date(),
+    };
 
-  await db
-    .insertInto('att.day_records')
-    .values({ employee_id: params.employeeId, work_date: sql<Date>`${params.isoDate}::date` as unknown as Date, ...row })
-    .onConflict((oc) =>
-      oc.columns(['employee_id', 'work_date']).doUpdateSet(row).where('att.day_records.is_locked', '=', false),
-    )
-    .execute();
+    await trx
+      .insertInto('att.day_records')
+      .values({ employee_id: params.employeeId, work_date: sql<Date>`${params.isoDate}::date` as unknown as Date, ...row })
+      .onConflict((oc) =>
+        oc.columns(['employee_id', 'work_date']).doUpdateSet(row).where('att.day_records.is_locked', '=', false),
+      )
+      .execute();
 
-  await writeAudit(db, {
-    actorUserId: params.actorUserId,
-    action: 'update',
-    entity: 'att.day_records',
-    entityId: params.employeeId,
-    subjectEmployeeId: params.employeeId,
-    field: `manual_override:${params.isoDate}`,
-    oldValue: previous?.status ?? null,
-    newValue: `${params.status} — ${params.reason}`,
+    await writeAudit(trx, {
+      actorUserId: params.actorUserId,
+      action: 'update',
+      entity: 'att.day_records',
+      entityId: params.employeeId,
+      subjectEmployeeId: params.employeeId,
+      field: `manual_override:${params.isoDate}`,
+      oldValue: previous?.status ?? null,
+      newValue: `${params.status} — ${params.reason}`,
+    });
   });
 }
 

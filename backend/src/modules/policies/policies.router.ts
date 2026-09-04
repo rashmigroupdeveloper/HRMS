@@ -153,7 +153,12 @@ const ackStatus = withPermission('reports.hr')
       }),
     ),
   )
-  .handler(({ context }) => policyAckStatus(context.db));
+  .handler(({ context }) =>
+    policyAckStatus(context.db, {
+      ...context.permissionAccess,
+      actorEmployeeId: context.user.employee_id,
+    }),
+  );
 
 const nag = withPermission('admin.integrations')
   .route({ method: 'POST', path: '/policies/nag', summary: 'Remind non-acknowledgers now (also runs weekly)' })

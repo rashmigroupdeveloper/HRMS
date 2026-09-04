@@ -31,6 +31,7 @@ import { runEscalations } from '../modules/workflows/index.js';
 import { buildKpiSnapshot } from '../modules/reports/index.js';
 import { escalateBreachedTickets } from '../modules/helpdesk/index.js';
 import { istDateString, previousWeekStartIso } from '../core/dates.js';
+import { registerClaimsWorkflowHooks } from '../modules/claims/index.js';
 
 const KENT_SYNC_QUEUE = 'kent-sync';
 const RECOMPUTE_QUEUE = 'attendance-recompute';
@@ -54,6 +55,7 @@ async function main(): Promise<void> {
   // leave chains — the hooks that mirror finals onto domain rows must be
   // registered in this process too.
   registerAttendanceWorkflowHooks();
+  registerClaimsWorkflowHooks();
   registerLeaveWorkflowHooks();
   registerLettersWorkflowHooks();
 

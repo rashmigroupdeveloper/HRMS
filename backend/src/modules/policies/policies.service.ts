@@ -10,6 +10,7 @@ import { sql, type Kysely, type Transaction } from 'kysely';
 import type { Database, EmploymentCategory } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
+import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { createDocument } from '../../core/storage/index.js';
 import { enqueue, enqueueEvent } from '../notifications/index.js';
 
@@ -155,7 +156,7 @@ export async function acknowledgePolicy(db: Kysely<Database>, policyId: number, 
 }
 
 /** The HR tile (CORE-13): per policy — targeted, acknowledged, %. Live query. */
-export async function policyAckStatus(db: Kysely<Database>) {
+export async function policyAckStatus(db: Kysely<Database>, scope?: EmployeeScope) {
   const policies = await db
     .selectFrom('core.policies')
     .selectAll()
@@ -168,6 +169,7 @@ export async function policyAckStatus(db: Kysely<Database>) {
   for (const p of policies) {
     const audience = p.audience as PolicyAudience | null;
     const targeted = await targetedEmployees(db, audience)
+      .where(employeeScopeSql(scope, 'core.employees'))
       .clearSelect()
       .select(({ fn }) => fn.countAll<string>().as('n'))
       .executeTakeFirstOrThrow();
@@ -176,6 +178,7 @@ export async function policyAckStatus(db: Kysely<Database>) {
       .innerJoin('core.employees as e', 'e.id', 'a.employee_id')
       .where('a.policy_id', '=', p.id)
       .where('e.status', 'in', ['active', 'on_notice'])
+      .where(employeeScopeSql(scope, 'e'))
       .select(({ fn }) => fn.countAll<string>().as('n'))
       .executeTakeFirstOrThrow();
     const total = Number(targeted.n);

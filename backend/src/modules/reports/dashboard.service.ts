@@ -4,36 +4,64 @@
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { formatDbDate, istDateString } from '../../core/dates.js';
+import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { getTypedSetting } from '../settings/index.js';
 import { policyAckStatus } from '../policies/index.js';
 import { getBalances } from '../leave/index.js';
+import { resolveDay } from '../attendance/index.js';
 
-export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
+interface CalendarSessionStatus {
+  session: number;
+  status: 'P' | 'A';
+}
+
+function calendarSessionStatuses(value: unknown): CalendarSessionStatus[] | null {
+  if (!Array.isArray(value)) return null;
+  const sessions: CalendarSessionStatus[] = [];
+  for (const item of value) {
+    if (typeof item !== 'object' || item === null) return null;
+    const row = item as Record<string, unknown>;
+    if ((row['session'] !== 1 && row['session'] !== 2) || (row['status'] !== 'P' && row['status'] !== 'A')) {
+      return null;
+    }
+    sessions.push({ session: row['session'], status: row['status'] });
+  }
+  return sessions.length === 2 ? sessions : null;
+}
+
+export async function hrOpsDashboard(
+  db: Kysely<Database>,
+  companyId?: number,
+  scope?: EmployeeScope,
+) {
   const today = istDateString();
   const monthStart = `${today.slice(0, 7)}-01`;
 
   let empQ = db
-    .selectFrom('core.employees')
-    .select((eb) => ['category', eb.fn.countAll<number>().as('n')])
-    .where('status', 'in', ['active', 'on_notice'])
-    .groupBy('category');
-  if (companyId !== undefined) empQ = empQ.where('company_id', '=', companyId);
+    .selectFrom('core.employees as e')
+    .select((eb) => ['e.category as category', eb.fn.countAll<number>().as('n')])
+    .where('e.status', 'in', ['active', 'on_notice'])
+    .where(employeeScopeSql(scope, 'e'))
+    .groupBy('e.category');
+  if (companyId !== undefined) empQ = empQ.where('e.company_id', '=', companyId);
   const byCategory = await empQ.execute();
 
   let joinQ = db
-    .selectFrom('core.employees')
+    .selectFrom('core.employees as e')
     .select(({ fn }) => fn.countAll<number>().as('n'))
-    .where('doj', '>=', sql<Date>`${monthStart}::date`)
-    .where('doj', '<=', sql<Date>`${today}::date`);
-  if (companyId !== undefined) joinQ = joinQ.where('company_id', '=', companyId);
+    .where('e.doj', '>=', sql<Date>`${monthStart}::date`)
+    .where('e.doj', '<=', sql<Date>`${today}::date`)
+    .where(employeeScopeSql(scope, 'e'));
+  if (companyId !== undefined) joinQ = joinQ.where('e.company_id', '=', companyId);
   const joinersMtd = (await joinQ.executeTakeFirstOrThrow()).n;
 
   let exitQ = db
-    .selectFrom('core.employees')
+    .selectFrom('core.employees as e')
     .select(({ fn }) => fn.countAll<number>().as('n'))
-    .where('dol', '>=', sql<Date>`${monthStart}::date`)
-    .where('dol', '<=', sql<Date>`${today}::date`);
-  if (companyId !== undefined) exitQ = exitQ.where('company_id', '=', companyId);
+    .where('e.dol', '>=', sql<Date>`${monthStart}::date`)
+    .where('e.dol', '<=', sql<Date>`${today}::date`)
+    .where(employeeScopeSql(scope, 'e'));
+  if (companyId !== undefined) exitQ = exitQ.where('e.company_id', '=', companyId);
   const exitsMtd = (await exitQ.executeTakeFirstOrThrow()).n;
 
   let absentQ = db
@@ -41,7 +69,8 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
     .innerJoin('core.employees as e', 'e.id', 'd.employee_id')
     .select(({ fn }) => fn.countAll<number>().as('n'))
     .where('d.work_date', '=', sql<Date>`${today}::date`)
-    .where('d.status', 'in', ['A', 'UAB']);
+    .where('d.status', 'in', ['A', 'UAB'])
+    .where(employeeScopeSql(scope, 'e'));
   if (companyId !== undefined) absentQ = absentQ.where('e.company_id', '=', companyId);
   const absentToday = (await absentQ.executeTakeFirstOrThrow()).n;
 
@@ -50,7 +79,8 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
       .innerJoin('wf.requests as request', 'request.id', 'step.request_id')
       .innerJoin('core.employees as employee', 'employee.id', 'request.subject_employee_id')
       .select(({ fn }) => fn.countAll<number>().as('n'))
-      .where('step.action', 'is', null);
+      .where('step.action', 'is', null)
+      .where(employeeScopeSql(scope, 'employee'));
   if (companyId !== undefined) {
     pendingApprovalsQuery = pendingApprovalsQuery.where('employee.company_id', '=', companyId);
   }
@@ -61,6 +91,7 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
     .innerJoin('core.employees as employee', 'employee.id', 'absence.employee_id')
     .select((eb) => ['absence.stage', eb.fn.countAll<number>().as('n')])
     .where('absence.closed_at', 'is', null)
+    .where(employeeScopeSql(scope, 'employee'))
     .groupBy('absence.stage');
   if (companyId !== undefined) {
     openAbsenceQuery = openAbsenceQuery.where('employee.company_id', '=', companyId);
@@ -71,7 +102,8 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
       .selectFrom('att.overtime_entries as overtime')
       .innerJoin('core.employees as employee', 'employee.id', 'overtime.employee_id')
       .select(({ fn }) => fn.countAll<number>().as('n'))
-      .where('overtime.status', '=', 'pending');
+      .where('overtime.status', '=', 'pending')
+      .where(employeeScopeSql(scope, 'employee'));
   if (companyId !== undefined) {
     pendingOtQuery = pendingOtQuery.where('employee.company_id', '=', companyId);
   }
@@ -86,6 +118,14 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
       .where('device.is_active', '=', true)
       .where((eb) =>
         eb.or([eb('device.last_seen_at', 'is', null), eb('device.last_seen_at', '<', cutoff)]),
+      )
+      .$if(scope !== undefined && !scope.all, (query) =>
+        query.where(sql<boolean>`EXISTS (
+          SELECT 1
+            FROM core.employees scoped_employee
+           WHERE scoped_employee.location_id = device.location_id
+             AND ${employeeScopeSql(scope, 'scoped_employee')}
+        )`),
       );
   if (companyId !== undefined) {
     silentDevicesQuery = silentDevicesQuery.where('location.company_id', '=', companyId);
@@ -94,7 +134,7 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
 
   // Overall ack % = acked/targeted across every live policy (audience-aware;
   // company scoping folds in when policies grow a company dimension).
-  const perPolicy = await policyAckStatus(db);
+  const perPolicy = await policyAckStatus(db, scope);
   const ackTotals = perPolicy.reduce((acc, p) => ({ targeted: acc.targeted + p.targeted, acked: acc.acked + p.acknowledged }), { targeted: 0, acked: 0 });
   const policyAck = { percent: ackTotals.targeted === 0 ? 100 : Math.round((ackTotals.acked / ackTotals.targeted) * 100) };
 
@@ -127,12 +167,8 @@ export async function essHome(db: Kysely<Database>, employeeId: number) {
     .where('work_date', '=', sql<Date>`${today}::date`)
     .executeTakeFirst();
 
-  const scheme = await db
-    .selectFrom('att.employee_shifts as es')
-    .innerJoin('att.shifts as s', 's.id', 'es.weekday_shift_id')
-    .select(['s.code', 's.name', 's.start_time', 's.end_time'])
-    .where('es.employee_id', '=', employeeId)
-    .executeTakeFirst();
+  const resolvedToday = await resolveDay(db, employeeId, today);
+  const shift = resolvedToday.shift;
 
   const balanceRows = await getBalances(db, employeeId);
   const balances = balanceRows.map((row) => ({
@@ -146,7 +182,7 @@ export async function essHome(db: Kysely<Database>, employeeId: number) {
   const pendingRequests = (
     await db
       .selectFrom('wf.requests')
-      .select(({ fn }) => fn.countAll<number>().as('n'))
+      .select((eb) => eb.fn.countAll<number>().as('n'))
       .where('subject_employee_id', '=', employeeId)
       .where('status', 'in', ['pending', 'sent_back'])
       .executeTakeFirstOrThrow()
@@ -156,12 +192,12 @@ export async function essHome(db: Kysely<Database>, employeeId: number) {
     greetingName: emp.first_name,
     ecode: emp.ecode,
     today,
-    shift: scheme
+    shift: shift
       ? {
-          code: scheme.code,
-          name: scheme.name,
-          startTime: scheme.start_time.slice(0, 5),
-          endTime: scheme.end_time.slice(0, 5),
+          code: shift.code,
+          name: shift.name,
+          startTime: shift.start_time.slice(0, 5),
+          endTime: shift.end_time.slice(0, 5),
         }
       : null,
     todayStatus: day
@@ -188,7 +224,18 @@ export async function myAttendanceMonth(
     mo === 12 ? `${y + 1}-01-01` : `${y}-${String(mo + 1).padStart(2, '0')}-01`;
   const rows = await db
     .selectFrom('att.day_records')
-    .select(['work_date', 'status', 'first_in', 'last_out', 'ot_minutes', 'late_minutes'])
+    .select([
+      'work_date',
+      'status',
+      'scheme_code',
+      'first_in',
+      'last_out',
+      'worked_minutes',
+      'ot_minutes',
+      'late_minutes',
+      'early_exit_minutes',
+      'session_statuses',
+    ])
     .where('employee_id', '=', employeeId)
     .where('work_date', '>=', sql<Date>`${m}::date`)
     .where('work_date', '<', sql<Date>`${mEnd}::date`)
@@ -197,10 +244,14 @@ export async function myAttendanceMonth(
   return rows.map((r) => ({
     date: formatDbDate(r.work_date),
     status: r.status,
+    scheme: r.scheme_code,
     firstIn: r.first_in?.toISOString() ?? null,
     lastOut: r.last_out?.toISOString() ?? null,
+    workedMinutes: r.worked_minutes,
     otMinutes: r.ot_minutes,
     lateMinutes: r.late_minutes,
+    earlyExitMinutes: r.early_exit_minutes,
+    sessionStatuses: calendarSessionStatuses(r.session_statuses),
   }));
 }
 
@@ -210,6 +261,7 @@ export async function teamMonthGrid(
   managerEmployeeId: number,
   month: string,
   subtree: boolean,
+  scope?: EmployeeScope,
 ) {
   const m = month.length === 7 ? `${month}-01` : month;
   const [y = 0, mo = 0] = m.split('-').map(Number);
@@ -236,9 +288,11 @@ export async function teamMonthGrid(
   if (teamIds.length === 0) return [];
 
   const emps = await db
-    .selectFrom('core.employees')
-    .select(['id', 'ecode', 'first_name', 'last_name'])
-    .where('id', 'in', teamIds)
+    .selectFrom('core.employees as e')
+    .select(['e.id', 'e.ecode', 'e.first_name', 'e.last_name'])
+    .where('e.id', 'in', teamIds)
+    .where('e.status', 'in', ['active', 'on_notice'])
+    .where(employeeScopeSql(scope, 'e'))
     .execute();
 
   const days = await db
@@ -295,7 +349,11 @@ export interface BusinessUnitDashboard {
 
 export async function businessUnitDashboard(
   db: Kysely<Database>,
-  scope: { companyId?: number | undefined; locationId?: number | undefined },
+  filters: {
+    companyId?: number | undefined;
+    locationId?: number | undefined;
+    scope?: EmployeeScope | undefined;
+  },
 ): Promise<BusinessUnitDashboard> {
   const today = istDateString();
   const monthStart = `${today.slice(0, 7)}-01`;
@@ -304,8 +362,9 @@ export async function businessUnitDashboard(
     .selectFrom('core.employees as e')
     .select((eb) => ['e.category as category', eb.fn.countAll<string>().as('n')])
     .where('e.status', 'in', ['active', 'on_notice'])
-    .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
-    .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .where(employeeScopeSql(filters.scope, 'e'))
+    .$if(filters.companyId !== undefined, (qb) => qb.where('e.company_id', '=', filters.companyId ?? 0))
+    .$if(filters.locationId !== undefined, (qb) => qb.where('e.location_id', '=', filters.locationId ?? 0))
     .groupBy('e.category')
     .orderBy('e.category')
     .execute();
@@ -322,21 +381,24 @@ export async function businessUnitDashboard(
     .select(sql<string>`COUNT(*) FILTER (WHERE d.status IN ('A','UAB'))`.as('absent'))
     .select(sql<string>`COUNT(*) FILTER (WHERE d.status NOT IN ('WO','H'))`.as('scheduled'))
     .where('d.work_date', '=', sql<Date>`${today}::date`)
-    .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
-    .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .where(employeeScopeSql(filters.scope, 'e'))
+    .$if(filters.companyId !== undefined, (qb) => qb.where('e.company_id', '=', filters.companyId ?? 0))
+    .$if(filters.locationId !== undefined, (qb) => qb.where('e.location_id', '=', filters.locationId ?? 0))
     .executeTakeFirst();
 
   const absentToday = Number(dayRow?.absent ?? 0);
   const scheduledToday = Number(dayRow?.scheduled ?? 0);
 
   const otRow = await db
-    .selectFrom('att.day_records as d')
-    .innerJoin('core.employees as e', 'e.id', 'd.employee_id')
-    .select(sql<string>`COALESCE(SUM(d.ot_minutes), 0)`.as('minutes'))
-    .where('d.work_date', '>=', sql<Date>`${monthStart}::date`)
-    .where('d.work_date', '<=', sql<Date>`${today}::date`)
-    .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
-    .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .selectFrom('att.overtime_entries as o')
+    .innerJoin('core.employees as e', 'e.id', 'o.employee_id')
+    .select(sql<string>`COALESCE(SUM(o.approved_minutes), 0)`.as('minutes'))
+    .where('o.work_date', '>=', sql<Date>`${monthStart}::date`)
+    .where('o.work_date', '<=', sql<Date>`${today}::date`)
+    .where('o.status', '=', 'approved')
+    .where(employeeScopeSql(filters.scope, 'e'))
+    .$if(filters.companyId !== undefined, (qb) => qb.where('e.company_id', '=', filters.companyId ?? 0))
+    .$if(filters.locationId !== undefined, (qb) => qb.where('e.location_id', '=', filters.locationId ?? 0))
     .executeTakeFirst();
 
   const movement = await db
@@ -351,8 +413,9 @@ export async function businessUnitDashboard(
         'exits',
       ),
     )
-    .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
-    .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .where(employeeScopeSql(filters.scope, 'e'))
+    .$if(filters.companyId !== undefined, (qb) => qb.where('e.company_id', '=', filters.companyId ?? 0))
+    .$if(filters.locationId !== undefined, (qb) => qb.where('e.location_id', '=', filters.locationId ?? 0))
     .executeTakeFirst();
 
   const cases = await db
@@ -360,17 +423,20 @@ export async function businessUnitDashboard(
     .innerJoin('core.employees as e', 'e.id', 'c.employee_id')
     .select((eb) => ['c.stage as stage', eb.fn.countAll<string>().as('n')])
     .where('c.closed_at', 'is', null)
-    .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
-    .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .where(employeeScopeSql(filters.scope, 'e'))
+    .$if(filters.companyId !== undefined, (qb) => qb.where('e.company_id', '=', filters.companyId ?? 0))
+    .$if(filters.locationId !== undefined, (qb) => qb.where('e.location_id', '=', filters.locationId ?? 0))
     .groupBy('c.stage')
     .execute();
 
   const scopeLabel =
-    scope.locationId !== undefined
-      ? `Location #${String(scope.locationId)}`
-      : scope.companyId !== undefined
-        ? `Entity #${String(scope.companyId)}`
-        : 'All entities';
+    filters.locationId !== undefined
+      ? `Location #${String(filters.locationId)}`
+      : filters.companyId !== undefined
+        ? `Entity #${String(filters.companyId)}`
+        : filters.scope !== undefined && !filters.scope.all
+          ? 'Your permitted scope'
+          : 'All entities';
 
   return {
     scopeLabel,

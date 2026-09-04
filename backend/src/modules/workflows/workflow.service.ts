@@ -30,7 +30,7 @@ const DEFAULT_STEP_SLA_HOURS = 48;
 
 export const stepSpecSchema = z.object({
   step: z.number().int().positive(),
-  /** 'reporting_manager' | 'functional_manager' | 'role:<code>' | 'user:<id>' */
+  /** 'reporting_manager' | 'hod' | 'functional_manager' | 'role:<code>' | 'user:<id>' */
   approver: z.string().min(1),
   slaHours: z.number().positive().default(DEFAULT_STEP_SLA_HOURS),
   onBreach: z.enum(['escalate', 'auto_reject', 'lapse', 'auto_approve']).default('escalate'),
@@ -85,10 +85,20 @@ interface ResolvedApprover {
 async function resolveApprover(db: Db, spec: string, subjectEmployeeId: number): Promise<ResolvedApprover | null> {
   let userId: number | null = null;
 
-  if (spec === 'reporting_manager' || spec === 'functional_manager') {
-    const col = spec === 'reporting_manager' ? 'reporting_manager_id' : 'functional_manager_id';
-    const subject = await db.selectFrom('core.employees').select([col]).where('id', '=', subjectEmployeeId).executeTakeFirst();
-    const managerEmployeeId = subject?.[col] ?? null;
+  if (spec === 'reporting_manager' || spec === 'functional_manager' || spec === 'hod') {
+    const subject = await db
+      .selectFrom('core.employees')
+      .select(['reporting_manager_id', 'functional_manager_id', 'hod_employee_id'])
+      .where('id', '=', subjectEmployeeId)
+      .executeTakeFirst();
+    const managerEmployeeId =
+      subject === undefined
+        ? null
+        : spec === 'reporting_manager'
+          ? subject.reporting_manager_id
+          : spec === 'functional_manager'
+            ? subject.functional_manager_id
+            : subject.hod_employee_id;
     if (managerEmployeeId !== null) {
       const user = await db
         .selectFrom('core.users')
@@ -201,8 +211,65 @@ async function openStep(
 async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definition_code' | 'subject_employee_id'>, fromStepNo: number): Promise<void> {
   const steps = await getSteps(db, request.definition_code);
 
+  /**
+   * Who must never be offered this request:
+   *  · the subject themselves — someone who is their own reporting manager, or
+   *    heads their own department, must not approve their own claim;
+   *  · anyone already on the chain — one person is never asked twice, so an RM
+   *    who is also the HOD collapses to a single step.
+   * Both rules are ported from the live EMS `buildApprovalChain` and apply to
+   * EVERY request type, not only claims (docs/recon/ems-claims-live-schema.md §3).
+   */
+  const subjectUser = await db
+    .selectFrom('core.users')
+    .select('id')
+    .where('employee_id', '=', request.subject_employee_id)
+    .executeTakeFirst();
+  /**
+   * Scoped to the CURRENT cycle only. `resubmit` restarts the chain from step 0
+   * without deleting the earlier rows, so a person who approved before a
+   * send-back must be asked again — their approval was of a different version
+   * of the request. Counting those stale rows would silently skip the very
+   * approver the send-back was meant to route back through.
+   */
+  const priorSteps = await db
+    .selectFrom('wf.request_steps')
+    .select(['approver_user_id', 'action'])
+    .where('request_id', '=', request.id)
+    .orderBy('id')
+    .execute();
+  const lastSendBack = priorSteps.map((s) => s.action).lastIndexOf('sent_back');
+  const alreadyOnChain = new Set(
+    priorSteps
+      .slice(lastSendBack + 1)
+      .filter((step) => step.action === 'approved')
+      .map((step) => step.approver_user_id),
+  );
+
   for (const spec of steps.filter((s) => s.step > fromStepNo).sort((a, b) => a.step - b.step)) {
     const approver = await resolveApprover(db, spec.approver, request.subject_employee_id);
+
+    if (approver?.userId === subjectUser?.id && approver !== null) {
+      await writeAudit(db, {
+        action: 'update',
+        entity: 'wf.requests',
+        entityId: request.id,
+        field: `step_${spec.step}`,
+        newValue: `skipped — '${spec.approver}' resolves to the requester`,
+      });
+      continue;
+    }
+    if (approver && alreadyOnChain.has(approver.userId)) {
+      await writeAudit(db, {
+        action: 'update',
+        entity: 'wf.requests',
+        entityId: request.id,
+        field: `step_${spec.step}`,
+        newValue: `skipped — '${spec.approver}' already approved earlier in this chain`,
+      });
+      continue;
+    }
+
     if (approver) {
       await db.updateTable('wf.requests').set({ current_step: spec.step }).where('id', '=', request.id).execute();
       await openStep(db, request.id, spec.step, spec.approver, approver, spec.slaHours, request.definition_code);
@@ -462,4 +529,55 @@ export async function inbox(db: Kysely<Database>, userId: number) {
 /** The request timeline (WF-04) — every touch with its receipts. */
 export async function timeline(db: Kysely<Database>, requestId: number) {
   return db.selectFrom('wf.request_steps').selectAll().where('request_id', '=', requestId).orderBy('id').execute();
+}
+
+export interface ChainPreviewStep {
+  step: number;
+  approverSpec: string;
+  slaHours: number;
+  vacant: boolean;
+  userId: number | null;
+  displayName: string | null;
+  delegatedFromUserId: number | null;
+  delegatedFromName: string | null;
+}
+
+async function userDisplayName(db: Db, userId: number): Promise<string | null> {
+  const row = await db
+    .selectFrom('core.users as u')
+    .leftJoin('core.employees as e', 'e.id', 'u.employee_id')
+    .select(['u.email', 'e.first_name', 'e.last_name'])
+    .where('u.id', '=', userId)
+    .executeTakeFirst();
+  if (!row) return null;
+  const name = [row.first_name, row.last_name].filter((part): part is string => Boolean(part)).join(' ');
+  return name !== '' ? name : row.email;
+}
+
+/** SHF-16: the same resolver the engine uses, without opening a request. */
+export async function previewChain(
+  db: Kysely<Database>,
+  params: { definitionCode: string; subjectEmployeeId: number },
+): Promise<ChainPreviewStep[]> {
+  const steps = await getSteps(db, params.definitionCode);
+  const out: ChainPreviewStep[] = [];
+  for (const spec of [...steps].sort((a, b) => a.step - b.step)) {
+    const approver = await resolveApprover(db, spec.approver, params.subjectEmployeeId);
+    const displayName = approver ? await userDisplayName(db, approver.userId) : null;
+    const delegatedFromName =
+      approver?.delegatedFrom !== null && approver?.delegatedFrom !== undefined
+        ? await userDisplayName(db, approver.delegatedFrom)
+        : null;
+    out.push({
+      step: spec.step,
+      approverSpec: spec.approver,
+      slaHours: spec.slaHours,
+      vacant: approver === null,
+      userId: approver?.userId ?? null,
+      displayName,
+      delegatedFromUserId: approver?.delegatedFrom ?? null,
+      delegatedFromName,
+    });
+  }
+  return out;
 }

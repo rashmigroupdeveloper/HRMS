@@ -4,6 +4,8 @@
  */
 import { sql, type Kysely, type ExpressionBuilder } from 'kysely';
 import type { Database, EmployeeStatus, EmploymentCategory } from '../../core/db/types.js';
+import { emptyOrgScope } from '../../core/org/scope.js';
+import { orgScopeWhere } from '../org/index.js';
 
 export interface DirectoryFilters {
   q?: string | undefined;
@@ -20,9 +22,21 @@ export interface DirectoryFilters {
   locationIds?: number[] | undefined;
   categories?: EmploymentCategory[] | undefined;
   reportingManagerId?: number | undefined;
+  /** ORG-05 — plant / MIS / cost-centre slices (empty = no extra predicate). */
+  plantCode?: string[] | undefined;
+  misCode?: string[] | undefined;
+  costCenterCode?: string[] | undefined;
   activeOnly: boolean;
   limit: number;
   offset: number;
+}
+
+function directoryOrgScope(filters: DirectoryFilters) {
+  const scope = emptyOrgScope();
+  scope.plantCode = filters.plantCode ?? [];
+  scope.misCode = filters.misCode ?? [];
+  scope.costCenterCode = filters.costCenterCode ?? [];
+  return scope;
 }
 
 export interface DirectoryRow {
@@ -146,6 +160,7 @@ export async function countDirectory(
     .leftJoin('core.departments as dep', 'dep.id', 'e.department_id')
     .select((eb) => eb.fn.countAll<string>().as('n'))
     .where((eb) => applyFilters(eb as unknown as DirEB, filters))
+    .where(orgScopeWhere(directoryOrgScope(filters), 'e'))
     .executeTakeFirstOrThrow();
   return Number(row.n);
 }
@@ -172,6 +187,7 @@ export async function listDirectory(
       'dep.name as department',
     ])
     .where((eb) => applyFilters(eb as unknown as DirEB, filters))
+    .where(orgScopeWhere(directoryOrgScope(filters), 'e'))
     .orderBy('e.ecode', 'asc')
     .limit(filters.limit)
     .offset(filters.offset)

@@ -78,6 +78,15 @@ async function inferSubjectEmployeeId(
       WHEN 'att.rosters' THEN (
         SELECT employee_id FROM att.rosters WHERE id = ${entityId}
       )
+      WHEN 'att.shift_swaps' THEN (
+        SELECT requester_employee_id FROM att.shift_swaps WHERE id = ${entityId}
+      )
+      WHEN 'att.roster_publications' THEN (
+        SELECT manager_employee_id FROM att.roster_publications WHERE id = ${entityId}
+      )
+      WHEN 'att.roster_revisions' THEN (
+        SELECT employee_id FROM att.roster_revisions WHERE id = ${entityId}
+      )
       WHEN 'att.day_records' THEN (
         SELECT employee_id FROM att.day_records WHERE id = ${entityId}
       )

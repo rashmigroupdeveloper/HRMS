@@ -84,6 +84,46 @@ run('Stage 1.2 — day-status processor golden fixtures (live Postgres)', () => 
     adminUserId = admin.id;
 
     // Scheme: weekday G5 (two-session), Saturday GCS — the live RML shape (09 §4).
+    // Pin seed values: Stage 1.11 made these rows admin-editable; goldens must
+    // not inherit a mutated grace / slab from a previous ShiftEditor save.
+    await db
+      .updateTable('att.shifts')
+      .set({
+        start_time: '09:00',
+        end_time: '18:00',
+        crosses_midnight: false,
+        session_split: '13:30',
+        grace_in_minutes: 10,
+        grace_out_minutes: 10,
+        min_half_day_hours: '4.0',
+        min_full_day_hours: '7.0',
+        break_minutes: 30,
+        break_paid: false,
+        ot_start_offset_minutes: 0,
+        late_slabs: [],
+        early_exit_slabs: [],
+      })
+      .where('code', '=', 'G5')
+      .execute();
+    await db
+      .updateTable('att.shifts')
+      .set({
+        start_time: '09:00',
+        end_time: '13:30',
+        crosses_midnight: false,
+        session_split: null,
+        grace_in_minutes: 10,
+        grace_out_minutes: 10,
+        min_half_day_hours: '2.0',
+        min_full_day_hours: '4.0',
+        break_minutes: 0,
+        break_paid: false,
+        ot_start_offset_minutes: 0,
+        late_slabs: [],
+        early_exit_slabs: [],
+      })
+      .where('code', '=', 'GCS')
+      .execute();
     const g5 = await db.selectFrom('att.shifts').select('id').where('code', '=', 'G5').executeTakeFirstOrThrow();
     const gcs = await db.selectFrom('att.shifts').select('id').where('code', '=', 'GCS').executeTakeFirstOrThrow();
     for (const e of [emp1, emp2]) {
@@ -118,14 +158,14 @@ run('Stage 1.2 — day-status processor golden fixtures (live Postgres)', () => 
     expect(sessions.map((s) => s.status)).toEqual(['P', 'P']);
   });
 
-  it('TUE late arrival 09:25 (grace 10) → P with late_minutes 25', async () => {
+  it('TUE late arrival 09:25 (grace 10) → P with 15 late minutes after grace', async () => {
     const d = addDays(MON, 1);
     await swipe(emp1, ist(d, '09:25'));
     await swipe(emp1, ist(d, '18:00'));
     await recomputeDay(db, emp1, d);
     const r = await day(emp1, d);
     expect(r.status).toBe('P');
-    expect(r.late_minutes).toBe(25);
+    expect(r.late_minutes).toBe(15);
   });
 
   it('WED 09:00–13:30 → HD via sessions [P, A] (the live A:P dual-status shape)', async () => {
@@ -140,7 +180,7 @@ run('Stage 1.2 — day-status processor golden fixtures (live Postgres)', () => 
       { session: 1, status: 'P' },
       { session: 2, status: 'A' },
     ]);
-    expect(r.early_exit_minutes).toBe(270); // magnitude vs shift END 18:00 (grace only gates whether it counts)
+    expect(r.early_exit_minutes).toBe(260); // 18:00 − 10-minute grace − 13:30
   });
 
   it('THU one short hour → A (below both session halves)', async () => {
@@ -151,10 +191,10 @@ run('Stage 1.2 — day-status processor golden fixtures (live Postgres)', () => 
     expect((await day(emp1, d)).status).toBe('A');
   });
 
-  it('FRI no swipes → A', async () => {
+  it('FRI no swipes and no approved absence → UAB', async () => {
     const d = addDays(MON, 4);
     await recomputeDay(db, emp1, d);
-    expect((await day(emp1, d)).status).toBe('A');
+    expect((await day(emp1, d)).status).toBe('UAB');
   });
 
   it('SAT runs the GCS scheme: 09:02–13:32 → P on the half-day shift (09 §4)', async () => {
@@ -222,7 +262,7 @@ run('Stage 1.2 — day-status processor golden fixtures (live Postgres)', () => 
 
   it('locked rows are untouchable: recompute skips, direct UPDATE rejected by the DB (ATT-15)', async () => {
     const d = addDays(MON, 10);
-    await recomputeDay(db, emp1, d); // A (no swipes)
+    await recomputeDay(db, emp1, d); // UAB (no swipes)
     await db
       .updateTable('att.day_records')
       .set({ is_locked: true })
@@ -252,7 +292,7 @@ run('Stage 1.2 — day-status processor golden fixtures (live Postgres)', () => 
   });
 
   it('week-off eligibility (ATT-09, PI-PAY-1/2): a zero-work week earns an UNPAID week-off; a worked week earns a paid one', async () => {
-    // emp2: absent all week (recompute Mon–Sat = A, Sun = WO).
+    // emp2: absent all week (recompute Mon–Sat = UAB, Sun = WO).
     for (let i = 0; i < 7; i++) await recomputeDay(db, emp2, addDays(MON, i));
 
     const updated = await closeWeek(db, MON);

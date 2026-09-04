@@ -2,10 +2,17 @@
  * Phase-1 reports R2–R6, R24, R27 (docs/06) — list queries shared by API + Excel.
  */
 import { sql, type Kysely } from 'kysely';
-import type { Database } from '../../core/db/types.js';
+import type {
+  Database,
+  DayStatus,
+  WfRequestStatus,
+  WfStepAction,
+} from '../../core/db/types.js';
 import { formatDbDate } from '../../core/dates.js';
+import type { OrgScopeFilter } from '../../core/org/scope.js';
 import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { monthStart, nextMonthStart } from '../attendance/index.js';
+import { orgScopeWhere } from '../org/index.js';
 
 function fullName(first: string, last: string | null): string {
   return last ? `${first} ${last}` : first;
@@ -22,20 +29,25 @@ export interface R2Row {
   ecode: string;
   employeeName: string;
   workDate: string;
-  status: string;
+  status: DayStatus | null;
   firstIn: string | null;
   lastOut: string | null;
   workedMinutes: number | null;
-  lateMinutes: number;
-  earlyExitMinutes: number;
-  otMinutes: number;
+  lateMinutes: number | null;
+  earlyExitMinutes: number | null;
+  otMinutes: number | null;
   firstDoor: string | null;
   lastDoor: string | null;
   mappedLocation: string | null;
   majoritySwipeLocation: string | null;
   crossPlantFlag: boolean;
   rawSwipeCount: number;
-  statusVsSwipes: 'match' | 'status_without_swipes' | 'swipes_without_presence' | 'both_absent';
+  statusVsSwipes:
+    | 'match'
+    | 'status_without_swipes'
+    | 'swipes_without_presence'
+    | 'missing_day_record'
+    | 'both_absent';
 }
 
 export async function reportR2Swipes(
@@ -94,8 +106,7 @@ export async function reportR2Swipes(
                AND se.swipe_ts >= d.first_in
                AND se.swipe_ts <= COALESCE(d.last_out, d.first_in))
              OR
-             (d.first_in IS NULL
-               AND (se.swipe_ts AT TIME ZONE 'Asia/Kolkata')::date = d.work_date
+            ((se.swipe_ts AT TIME ZONE 'Asia/Kolkata')::date = d.work_date
                AND NOT EXISTS (
                  SELECT 1
                    FROM att.day_records owner_day
@@ -116,8 +127,7 @@ export async function reportR2Swipes(
                AND se.swipe_ts >= d.first_in
                AND se.swipe_ts <= COALESCE(d.last_out, d.first_in))
              OR
-             (d.first_in IS NULL
-               AND (se.swipe_ts AT TIME ZONE 'Asia/Kolkata')::date = d.work_date
+            ((se.swipe_ts AT TIME ZONE 'Asia/Kolkata')::date = d.work_date
                AND NOT EXISTS (
                  SELECT 1 FROM att.day_records owner_day
                   WHERE owner_day.employee_id = d.employee_id
@@ -139,8 +149,7 @@ export async function reportR2Swipes(
                AND se.swipe_ts >= d.first_in
                AND se.swipe_ts <= COALESCE(d.last_out, d.first_in))
              OR
-             (d.first_in IS NULL
-               AND (se.swipe_ts AT TIME ZONE 'Asia/Kolkata')::date = d.work_date
+            ((se.swipe_ts AT TIME ZONE 'Asia/Kolkata')::date = d.work_date
                AND NOT EXISTS (
                  SELECT 1 FROM att.day_records owner_day
                   WHERE owner_day.employee_id = d.employee_id
@@ -163,7 +172,7 @@ export async function reportR2Swipes(
 
   const days = await q.execute();
 
-  return days.map((d) => {
+  const processedRows: R2Row[] = days.map((d) => {
     const workDate = formatDbDate(d.work_date);
     const rawSwipeCount = d.raw_swipe_count;
     const presentLike = d.status === 'P' || d.status === 'HD' || d.status === 'OD' || d.status === 'CO';
@@ -195,6 +204,98 @@ export async function reportR2Swipes(
       statusVsSwipes,
     };
   });
+
+  // A reconciliation report must also expose swipes for which the processor
+  // failed to create any day row. Otherwise R2 can only compare records that
+  // already made it through processing—the precise PP-9 blind spot.
+  const orphanSwipeDays = await db
+    .selectFrom('att.swipe_events as se')
+    .innerJoin('core.employees as e', 'e.id', 'se.employee_id')
+    .leftJoin('core.locations as mapped_loc', 'mapped_loc.id', 'e.location_id')
+    .leftJoin('att.devices as swipe_device', 'swipe_device.door_code', 'se.door_code')
+    .leftJoin('core.locations as swipe_loc', 'swipe_loc.id', 'swipe_device.location_id')
+    .where('e.company_id', '=', params.companyId)
+    .where(employeeScopeSql(params.scope, 'e'))
+    .where(
+      'se.swipe_ts',
+      '>=',
+      sql<Date>`(${m}::date::timestamp AT TIME ZONE 'Asia/Kolkata')`,
+    )
+    .where(
+      'se.swipe_ts',
+      '<',
+      sql<Date>`(${mEnd}::date::timestamp AT TIME ZONE 'Asia/Kolkata')`,
+    )
+    .where(sql<boolean>`NOT EXISTS (
+      SELECT 1
+        FROM att.day_records owner_day
+       WHERE owner_day.employee_id = e.id
+         AND (
+           owner_day.work_date = (se.swipe_ts AT TIME ZONE 'Asia/Kolkata')::date
+           OR (
+             owner_day.first_in IS NOT NULL
+             AND se.swipe_ts >= owner_day.first_in
+             AND se.swipe_ts <= COALESCE(owner_day.last_out, owner_day.first_in)
+           )
+         )
+    )`)
+    .$if(params.ecode !== undefined && params.ecode !== '', (query) =>
+      query.where('e.ecode', '=', params.ecode ?? ''),
+    )
+    .select([
+      'e.ecode',
+      'e.first_name',
+      'e.last_name',
+      'mapped_loc.name as mapped_location',
+      sql<Date>`(se.swipe_ts AT TIME ZONE 'Asia/Kolkata')::date`.as('work_date'),
+      sql<number>`count(*)::int`.as('raw_swipe_count'),
+      sql<string | null>`(array_agg(se.door_code ORDER BY se.swipe_ts ASC))[1]`.as(
+        'first_door',
+      ),
+      sql<string | null>`(array_agg(se.door_code ORDER BY se.swipe_ts DESC))[1]`.as(
+        'last_door',
+      ),
+      sql<string | null>`mode() WITHIN GROUP (ORDER BY swipe_loc.name)`.as(
+        'majority_swipe_location',
+      ),
+    ])
+    .groupBy([
+      'e.id',
+      'e.ecode',
+      'e.first_name',
+      'e.last_name',
+      'mapped_loc.name',
+      sql`(se.swipe_ts AT TIME ZONE 'Asia/Kolkata')::date`,
+    ])
+    .execute();
+
+  const missingRows: R2Row[] = orphanSwipeDays.map((row) => ({
+    ecode: row.ecode,
+    employeeName: fullName(row.first_name, row.last_name),
+    workDate: formatDbDate(row.work_date),
+    status: null,
+    firstIn: null,
+    lastOut: null,
+    workedMinutes: null,
+    lateMinutes: null,
+    earlyExitMinutes: null,
+    otMinutes: null,
+    firstDoor: row.first_door,
+    lastDoor: row.last_door,
+    mappedLocation: row.mapped_location,
+    majoritySwipeLocation: row.majority_swipe_location,
+    crossPlantFlag:
+      row.mapped_location !== null &&
+      row.majority_swipe_location !== null &&
+      row.mapped_location !== row.majority_swipe_location,
+    rawSwipeCount: row.raw_swipe_count,
+    statusVsSwipes: 'missing_day_record',
+  }));
+
+  return [...processedRows, ...missingRows].sort(
+    (left, right) =>
+      left.ecode.localeCompare(right.ecode) || left.workDate.localeCompare(right.workDate),
+  );
 }
 
 export interface R2RawSwipeRow {
@@ -225,7 +326,7 @@ export async function reportR2RawSwipes(
   const rows = await db
     .selectFrom('att.swipe_events as se')
     .innerJoin('core.employees as e', 'e.id', 'se.employee_id')
-    .innerJoin('att.day_records as d', (join) =>
+    .leftJoin('att.day_records as d', (join) =>
       join.onRef('d.employee_id', '=', 'e.id').on('d.work_date', '=', sql<Date>`${params.workDate}::date`),
     )
     .where('e.ecode', '=', params.ecode)
@@ -233,12 +334,11 @@ export async function reportR2RawSwipes(
     .where(sql<boolean>`(
       (d.first_in IS NOT NULL AND se.swipe_ts >= d.first_in AND se.swipe_ts <= COALESCE(d.last_out, d.first_in))
       OR
-      (d.first_in IS NULL
-        AND (se.swipe_ts AT TIME ZONE 'Asia/Kolkata')::date = d.work_date
+      ((se.swipe_ts AT TIME ZONE 'Asia/Kolkata')::date = ${params.workDate}::date
         AND NOT EXISTS (
           SELECT 1 FROM att.day_records owner_day
-           WHERE owner_day.employee_id = d.employee_id
-             AND owner_day.id <> d.id
+           WHERE owner_day.employee_id = e.id
+             AND (d.id IS NULL OR owner_day.id <> d.id)
              AND owner_day.first_in IS NOT NULL
              AND se.swipe_ts >= owner_day.first_in
              AND se.swipe_ts <= COALESCE(owner_day.last_out, owner_day.first_in)
@@ -280,15 +380,15 @@ export interface R3Row {
   id: number;
   ecode: string;
   employeeName: string;
-  kind: string;
+  kind: 'AR' | 'OD' | 'PERMISSION';
   fromDate: string;
   toDate: string;
   fromTime: string | null;
   toTime: string | null;
   reason: string;
-  requestedStatus: string;
+  requestedStatus: DayStatus;
   applied: boolean;
-  workflowStatus: string;
+  workflowStatus: WfRequestStatus;
   currentStep: number;
   decidedAt: string | null;
   timeline: R3TimelineStep[];
@@ -298,7 +398,7 @@ export interface R3TimelineStep {
   stepNo: number;
   approverName: string;
   delegatedFromName: string | null;
-  action: string | null;
+  action: WfStepAction | null;
   comment: string | null;
   notifiedAt: string;
   actedAt: string | null;
@@ -309,8 +409,8 @@ export async function reportR3Regularizations(
   db: Kysely<Database>,
   params: {
     companyId: number;
-    kind?: string | undefined;
-    status?: string | undefined;
+    kind?: 'AR' | 'OD' | 'PERMISSION' | undefined;
+    status?: WfRequestStatus | undefined;
     scope?: EmployeeScope | undefined;
   },
 ): Promise<R3Row[]> {
@@ -422,7 +522,7 @@ export interface R4Row {
   ecode: string;
   employeeName: string;
   workDate: string;
-  status: string;
+  status: DayStatus;
   lateMinutes: number;
   earlyExitMinutes: number;
   monthlyExceptionCount: number;
@@ -492,7 +592,7 @@ export interface R5Row {
   detectedMinutes: number;
   claimedMinutes: number;
   approvedMinutes: number | null;
-  status: string;
+  status: 'pending' | 'approved' | 'rejected' | 'lapsed' | 'converted_comp_off';
   managerEcode: string | null;
   managerName: string | null;
   deadlineAt: string;
@@ -605,10 +705,10 @@ export interface R6Row {
   employeeName: string;
   startDate: string;
   daysAbsent: number;
-  stage: string;
+  stage: 'watch' | 'show_cause' | 'warning' | 'termination_review';
   ownerName: string | null;
   letterId: number | null;
-  letterStatus: string | null;
+  letterStatus: 'draft' | 'pending_signature' | 'issued' | null;
   letterContentPath: string | null;
   resolution: string | null;
   closedAt: string | null;
@@ -618,7 +718,7 @@ export async function reportR6AbsenceCases(
   db: Kysely<Database>,
   params: {
     companyId: number;
-    stage?: string | undefined;
+    stage?: 'watch' | 'show_cause' | 'warning' | 'termination_review' | undefined;
     openOnly?: boolean | undefined;
     scope?: EmployeeScope | undefined;
   },
@@ -761,7 +861,7 @@ export async function reportR24Boarding(
 
 export interface R27Row {
   snapshotDate: string;
-  status: string;
+  status: 'active';
   company: string;
   location: string | null;
   category: string | null;
@@ -781,6 +881,8 @@ export async function reportR27Headcount(
     fromMonth?: string | undefined;
     toMonth?: string | undefined;
     scope?: EmployeeScope | undefined;
+    /** ORG-05 — same plant / MIS / cost-centre predicate as the directory. */
+    orgScope?: OrgScopeFilter | undefined;
   } = {},
 ): Promise<R27Row[]> {
   let q = db
@@ -794,7 +896,8 @@ export async function reportR27Headcount(
       'company.name as company', 'dep.name as department',
       'location.name as location', 'grade.code as grade',
     ])
-    .where(employeeScopeSql(params.scope, 'e'));
+    .where(employeeScopeSql(params.scope, 'e'))
+    .where(orgScopeWhere(params.orgScope, 'e'));
 
   if (params.companyId !== undefined) {
     q = q.where('e.company_id', '=', params.companyId);

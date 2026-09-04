@@ -22,6 +22,9 @@ export {
 } from './manager-approval.service.js';
 export { registerAttendanceWorkflowHooks } from './workflow-hooks.js';
 export { applyRosterEntries, type RosterPersistenceEntry } from './roster.service.js';
+export { RosterRuleError } from './shift-windows.js';
+export { coverageView, rosterMeters } from './coverage.service.js';
+export { schedulingRouter } from './scheduling.router.js';
 export { createRegularization, listRegularizations } from './regularization.service.js';
 export {
   recordDetectedOvertime,
@@ -33,6 +36,7 @@ export {
 } from './overtime.service.js';
 export {
   computeDayStatus,
+  resolveDay,
   recomputeDay,
   drainRecomputeQueue,
   setManualStatus,

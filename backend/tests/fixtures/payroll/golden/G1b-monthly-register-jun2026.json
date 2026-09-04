@@ -1,0 +1,148 @@
+{
+  "$comment": [
+    "G1b — RML STAFF_STANDARD full monthly Final Pay Register row (R7), live parity.",
+    "Source: sponsor-supplied 'MONTHLY SALARY REPORT.xlsx', Jun 2026, verified to the rupee.",
+    "Spec: docs/10 §13 G1b · docs/06 §2.1 · docs/recon/greythr-monthly-salary-register.md",
+    "Identifiers are MASKED — the real workbook is NOT committed (PII: name, UAN, bank account, IFSC).",
+    "Expected values are hand-computed from the live register, never produced by running our engine."
+  ],
+  "id": "G1b",
+  "name": "RML staff baseline — full register row (Jun 2026)",
+  "requirementIds": ["PAY-01", "PAY-03", "PAY-05", "PAY-09", "PAY-11"],
+
+  "input": {
+    "period": { "month": 6, "year": 2026, "label": "Jun 2026" },
+    "employee": {
+      "ecode": "RML0336XX",
+      "name": "<masked>",
+      "joinDate": "2024-09-20",
+      "leavingDate": null,
+      "grade": "Junior Grade",
+      "designation": "Junior Graduate Engineer",
+      "company": { "code": "RML", "name": "Rashmi Metaliks Limited", "isIndiaPayroll": true },
+      "ou": "RML",
+      "ouMis": "RML1",
+      "$ouMisNote": "OUMIS is the COST CENTRE (core.cost_centers.code) and is the JV/GL key. The 'costCenter' field below is greytHR's misleadingly-named column P, which carries a department label.",
+      "deptMis": "ERP-CELL",
+      "department": "ERP-CELL",
+      "costCenter": "ERP-CELL",
+      "workLocation": "Kharagpur",
+      "ptLocation": "West Bengal",
+      "uan": "<masked>",
+      "esiNumber": null,
+      "bank": { "name": "<masked>", "accountNo": "<masked>", "ifsc": "<masked>" }
+    },
+    "structure": {
+      "template": "STAFF_STANDARD",
+      "fixedMonthlyGross": 6457300,
+      "components": {
+        "BASIC": 3228600,
+        "STIPEND": 0,
+        "HRA": 1614300,
+        "EDUCATION_ALLOW": 20000,
+        "MEDICAL_ALLOW": 125000,
+        "STATUTORY_BONUS": 268900,
+        "SPECIAL_ALLOW": 1200500,
+        "PROJECT_ALLOW": 0
+      }
+    },
+    "days": { "monthDays": 30, "lop": 0, "paidDays": 30 },
+    "variableInputs": { "CANTEEN_RECOVERY": 137500 },
+    "policyFlags": {
+      "pfWageBase": "ACTUAL",
+      "hraPayPct": 0.5,
+      "statutoryBonusPct": 0.0833,
+      "esicGrossCeiling": 2100000
+    }
+  },
+
+  "$moneyUnit": "paise (integer) — docs/14 §6; the register prints whole rupees",
+
+  "expected": {
+    "earnings": {
+      "BASIC": 3228600,
+      "STIPEND": 0,
+      "HRA": 1614300,
+      "EDUCATION_ALLOW": 20000,
+      "MEDICAL_ALLOW": 125000,
+      "STATUTORY_BONUS": 268900,
+      "SPECIAL_ALLOW": 1200500,
+      "PROJECT_ALLOW": 0,
+      "INCENTIVE": 0,
+      "OTHER_EARNINGS": 0,
+      "GRATUITY": 0,
+      "LEAVE_ENCASHMENT": 0,
+      "OVERTIME": 0,
+      "EX_GRATIA": 0,
+      "HOLD_SALARY": 0,
+      "PERFORMANCE_LINKED": 0
+    },
+    "fixedMonthlyGross": 6457300,
+    "gross": 6457300,
+    "esiGrossSalary": 6457300,
+    "deductions": {
+      "PF_EE": 387400,
+      "ESI_EE": 0,
+      "PT": 20000,
+      "TDS": 0,
+      "LOAN": 0,
+      "LOAN2": 0,
+      "MISC_RECOVERY": 0,
+      "CANTEEN_RECOVERY": 137500,
+      "GUEST_HOUSE_DEDUCTION": 0,
+      "TRAVEL_ADVANCE_RECOVERY": 0,
+      "NOTICE_PERIOD_RECOVERY": 0
+    },
+    "totalDeductions": 544900,
+    "totalDeductionsAsPrinted": -544900,
+    "netPay": 5912400
+  },
+
+  "assertions": [
+    { "line": "BASIC", "rule": "floor(fixedMonthlyGross / 2)", "note": "64,573 / 2 = 32,286.50 -> 32,286. FLOOR, not round-half-up." },
+    { "line": "HRA", "rule": "BASIC * hraPayPct", "note": "exact, no rounding needed" },
+    { "line": "STATUTORY_BONUS", "rule": "floor(BASIC * 0.0833)", "note": "2,689.42 -> 2,689" },
+    { "line": "SPECIAL_ALLOW", "rule": "fixedMonthlyGross - sum(other fixed earnings)", "note": "balancing component, computed last" },
+    { "line": "PF_EE", "rule": "round(0.12 * BASIC)", "note": "3,874.32 -> 3,874. Full basic; the Rs 15,000 ceiling is NOT applied (docs/10 §2.3, policy decision 1)." },
+    { "line": "ESI_EE", "rule": "0 when gross > esicGrossCeiling", "note": "64,573 > 21,000; ESI Number column is blank" },
+    { "line": "PT", "rule": "WB slab keyed on ptLocation, not workLocation", "note": "top slab = Rs 200" },
+    { "line": "totalDeductions", "rule": "sum(deductions)", "note": "printed NEGATIVE on the register; stored positive in the ledger" },
+    { "line": "netPay", "rule": "gross - totalDeductions", "note": "equivalently gross + totalDeductionsAsPrinted" }
+  ],
+
+  "reportShape": {
+    "$comment": "R7 must emit exactly these 64 headers in this order — spelling and case verbatim (docs/06 §2.1).",
+    "grandTotalRow": {
+      "labelColumn": "IFSC Code",
+      "labelText": "Grand Total",
+      "sumsColumnsFrom": "FULL BASIC",
+      "sumsColumnsTo": "NET PAY"
+    },
+    "headers": [
+      "Sl No", "EmployeeNo", "Name", "Join Date", "Leaving Date", "PAYROLL MONTH",
+      "DEPTMIS", "OUMIS", "OU", "Company", "PT Location", "Department", "Designation",
+      "Grade", "WorkLocation", "Cost Center", "UAN", "ESI Number", "BankName",
+      "BANK ACCOUNT NO", "IFSC Code",
+      "FULL BASIC", "FULL STIPEND", "FULL HRA", "FULL EDUCATION ALLOWANCE",
+      "FULL MEDICAL ALLOWANCE", "FULL BONUS", "FULL SPECIAL ALLOWANCE",
+      "FULL PROJECT ALLOWANCE", "FIXED MONTHLY GROSS",
+      "MONH DAYS", "LOP", "PAID DAYS",
+      "BASIC", "STIPEND", "HRA", "EDUCATION ALLOWANCE", "MEDICAL ALLOWANCE", "BONUS",
+      "SPECIAL ALLOWANCE", "PROJECT ALLOWANCE", "INCENTIVE", "OTHER EARNINGS",
+      "GRATUITY", "LEAVE ENCASHMENT", "OVERTIME", "EX-GRATIA", "HOLD SALARY",
+      "Performance-Linked Earnings",
+      "GROSS", "ESI GROSS SALARY",
+      "PF", "ESI", "PROF TAX", "INCOME TAX", "LOAN", "LOAN2",
+      "MISCELLANEOUS RECOVERY", "CANTEEN RECOVERY", "GUEST HOUSE DEDUCTION",
+      "TRAVEL ADVANCE RECOVERY", "NOTICE PERIOD RECOVERY", "TOTAL DEDUCTIONS",
+      "NET PAY"
+    ]
+  },
+
+  "unresolved": [
+    "HOLD SALARY semantics (release vs withhold) — blocks PAY-08",
+    "LOP divisor: June has 30 days, so CALENDAR vs FIXED_30 is undetermined — need a Feb or 31-day month",
+    "Per-component proration rounding — LOP is 0 in this row, so it is unexercised",
+    "ESI GROSS SALARY definition — equals GROSS only because every excludable line is zero here"
+  ]
+}

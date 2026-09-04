@@ -52,7 +52,16 @@ import {
 const reportGuard = () => withAnyPermission('reports.hr', 'reports.bu', 'reports.ceo');
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const monthStr = z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/);
+const monthStr = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'YYYY-MM');
+const dayStatus = z.enum(['P', 'A', 'HD', 'WO', 'H', 'L', 'OD', 'CO', 'UAB']);
+const calendarSessionStatus = z.object({
+  session: z.number().int().min(1).max(2),
+  status: z.enum(['P', 'A']),
+});
+const workflowStatus = z.enum(['pending', 'approved', 'rejected', 'cancelled', 'lapsed', 'sent_back']);
+const workflowAction = z.enum(['approved', 'rejected', 'sent_back', 'escalated', 'skipped']);
+const regularizationKind = z.enum(['AR', 'OD', 'PERMISSION']);
+const absenceStage = z.enum(['watch', 'show_cause', 'warning', 'termination_review']);
 const fileOut = z.object({ filename: z.string(), base64: z.string() });
 
 function asBadRequest(err: unknown): never {
@@ -101,7 +110,7 @@ async function auditedFilePayload(
 
 const monthLockChecklist = withPermission('attendance.month_lock')
   .route({ method: 'GET', path: '/attendance/month-lock/checklist', summary: 'ATT-15 pre-lock checklist' })
-  .input(z.object({ companyId: z.number().int().positive(), month: monthStr }))
+  .input(z.object({ companyId: z.coerce.number().int().positive(), month: monthStr }))
   .output(
     z.object({
       companyId: z.number(),
@@ -122,7 +131,7 @@ const monthLockChecklist = withPermission('attendance.month_lock')
 
 const monthLock = withPermission('attendance.month_lock')
   .route({ method: 'POST', path: '/attendance/month-lock', summary: 'Lock attendance month (typed confirm on UI)' })
-  .input(z.object({ companyId: z.number().int().positive(), month: monthStr }))
+  .input(z.object({ companyId: z.coerce.number().int().positive(), month: monthStr }))
   .output(z.object({ id: z.number() }))
   .handler(async ({ input, context }) => {
     try {
@@ -154,7 +163,7 @@ const managerApprovalLedger = withPermission('attendance.month_lock')
     path: '/attendance/manager-approvals',
     summary: 'Manager attendance-approval ledger for a company×month (ATT-12)',
   })
-  .input(z.object({ companyId: z.number().int().positive(), month: monthStr }))
+  .input(z.object({ companyId: z.coerce.number().int().positive(), month: monthStr }))
   .output(z.array(managerApprovalRow))
   .handler(async ({ input, context }) =>
     getManagerApprovalLedger(context.db, input.companyId, input.month),
@@ -173,7 +182,7 @@ const approveManagerAttendance = withPermission('attendance.team.read')
   })
   .input(
     z.object({
-      companyId: z.number().int().positive(),
+      companyId: z.coerce.number().int().positive(),
       month: monthStr,
       /** Defaults to the caller's employee_id when omitted. */
       managerEmployeeId: z.number().int().positive().optional(),
@@ -211,7 +220,7 @@ const approveManagerAttendance = withPermission('attendance.team.read')
 
 const musterBuild = withPermission('attendance.muster.export')
   .route({ method: 'POST', path: '/reports/muster/build', summary: 'Rebuild R1 muster snapshot for company×month' })
-  .input(z.object({ companyId: z.number().int().positive(), month: monthStr }))
+  .input(z.object({ companyId: z.coerce.number().int().positive(), month: monthStr }))
   .output(z.object({ rows: z.number() }))
   .handler(async ({ input, context }) => ({
     rows: await buildMusterMonth(context.db, input.companyId, input.month),
@@ -246,7 +255,7 @@ const musterRowOut = z.object({
 
 /** Shared R1 filter contract — list and export must stay identical (RPT-06). */
 const musterFilterInput = z.object({
-  companyId: z.number().int().positive(),
+  companyId: z.coerce.number().int().positive(),
   month: monthStr,
   department: z.string().min(1).optional(),
   costCenter: z.string().min(1).optional(),
@@ -256,7 +265,7 @@ const musterFilterInput = z.object({
     .enum(['white_collar', 'blue_collar', 'trainee', 'consultant', 'contract'])
     .optional(),
   employeeStatus: z.enum(['active', 'on_notice', 'exited', 'onboarding']).optional(),
-  reportingManagerId: z.number().int().positive().optional(),
+  reportingManagerId: z.coerce.number().int().positive().optional(),
   subtree: z.boolean().optional(),
   ecode: z.string().min(1).optional(),
 });
@@ -293,13 +302,13 @@ const r2Row = z.object({
   ecode: z.string(),
   employeeName: z.string(),
   workDate: z.string(),
-  status: z.string(),
+  status: dayStatus.nullable(),
   firstIn: z.string().nullable(),
   lastOut: z.string().nullable(),
   workedMinutes: z.number().nullable(),
-  lateMinutes: z.number(),
-  earlyExitMinutes: z.number(),
-  otMinutes: z.number(),
+  lateMinutes: z.number().nullable(),
+  earlyExitMinutes: z.number().nullable(),
+  otMinutes: z.number().nullable(),
   firstDoor: z.string().nullable(),
   lastDoor: z.string().nullable(),
   mappedLocation: z.string().nullable(),
@@ -310,12 +319,13 @@ const r2Row = z.object({
     'match',
     'status_without_swipes',
     'swipes_without_presence',
+    'missing_day_record',
     'both_absent',
   ]),
 });
 
 const r2Input = z.object({
-  companyId: z.number().int().positive(),
+  companyId: z.coerce.number().int().positive(),
   month: monthStr,
   ecode: z.string().min(1).optional(),
 });
@@ -369,22 +379,22 @@ const r3Row = z.object({
   id: z.number(),
   ecode: z.string(),
   employeeName: z.string(),
-  kind: z.string(),
+  kind: regularizationKind,
   fromDate: z.string(),
   toDate: z.string(),
   fromTime: z.string().nullable(),
   toTime: z.string().nullable(),
   reason: z.string(),
-  requestedStatus: z.string(),
+  requestedStatus: dayStatus,
   applied: z.boolean(),
-  workflowStatus: z.string(),
+  workflowStatus,
   currentStep: z.number(),
   decidedAt: z.string().nullable(),
   timeline: z.array(z.object({
     stepNo: z.number(),
     approverName: z.string(),
     delegatedFromName: z.string().nullable(),
-    action: z.string().nullable(),
+    action: workflowAction.nullable(),
     comment: z.string().nullable(),
     notifiedAt: z.string(),
     actedAt: z.string().nullable(),
@@ -393,9 +403,9 @@ const r3Row = z.object({
 });
 
 const r3Input = z.object({
-  companyId: z.number().int().positive(),
-  kind: z.string().optional(),
-  status: z.string().optional(),
+  companyId: z.coerce.number().int().positive(),
+  kind: regularizationKind.optional(),
+  status: workflowStatus.optional(),
 });
 
 const r3 = withPermission('attendance.muster.export')
@@ -419,7 +429,7 @@ const r4Row = z.object({
   ecode: z.string(),
   employeeName: z.string(),
   workDate: z.string(),
-  status: z.string(),
+  status: dayStatus,
   lateMinutes: z.number(),
   earlyExitMinutes: z.number(),
   monthlyExceptionCount: z.number(),
@@ -428,7 +438,7 @@ const r4Row = z.object({
   monthlyUabDays: z.number(),
 });
 
-const r4Input = z.object({ companyId: z.number().int().positive(), month: monthStr });
+const r4Input = z.object({ companyId: z.coerce.number().int().positive(), month: monthStr });
 
 const r4 = withPermission('attendance.muster.export')
   .route({ method: 'GET', path: '/reports/r4-exceptions', summary: 'R4 late/early/UAB' })
@@ -454,7 +464,7 @@ const r5Row = z.object({
   detectedMinutes: z.number(),
   claimedMinutes: z.number(),
   approvedMinutes: z.number().nullable(),
-  status: z.string(),
+  status: z.enum(['pending', 'approved', 'rejected', 'lapsed', 'converted_comp_off']),
   managerEcode: z.string().nullable(),
   managerName: z.string().nullable(),
   deadlineAt: z.string(),
@@ -468,7 +478,7 @@ const r5Row = z.object({
   managerAverageLatencyHours: z.number().nullable(),
 });
 
-const r5Input = z.object({ companyId: z.number().int().positive(), month: monthStr });
+const r5Input = z.object({ companyId: z.coerce.number().int().positive(), month: monthStr });
 
 // The manager-latency league table is explicitly HR-only (docs/06 R5).
 const r5 = reportGuard()
@@ -494,18 +504,18 @@ const r6Row = z.object({
   employeeName: z.string(),
   startDate: z.string(),
   daysAbsent: z.number(),
-  stage: z.string(),
+  stage: absenceStage,
   ownerName: z.string().nullable(),
   letterId: z.number().nullable(),
-  letterStatus: z.string().nullable(),
+  letterStatus: z.enum(['draft', 'pending_signature', 'issued']).nullable(),
   letterContentPath: z.string().nullable(),
   resolution: z.string().nullable(),
   closedAt: z.string().nullable(),
 });
 
 const r6Input = z.object({
-  companyId: z.number().int().positive(),
-  stage: z.string().optional(),
+  companyId: z.coerce.number().int().positive(),
+  stage: absenceStage.optional(),
   openOnly: z.boolean().optional(),
 });
 
@@ -541,7 +551,7 @@ const boardingRow = z.object({
 });
 
 const r24Input = z.object({
-  companyId: z.number().int().positive(),
+  companyId: z.coerce.number().int().positive(),
   fromDate: isoDate,
   toDate: isoDate,
 }).refine((value) => value.fromDate <= value.toDate, {
@@ -568,7 +578,7 @@ const r24Export = reportGuard()
 
 const r27Row = z.object({
   snapshotDate: z.string(),
-  status: z.string(),
+  status: z.literal('active'),
   company: z.string(),
   location: z.string().nullable(),
   category: z.string().nullable(),
@@ -581,7 +591,7 @@ const r27Row = z.object({
 });
 
 const r27Input = z.object({
-  companyId: z.number().int().positive().optional(),
+  companyId: z.coerce.number().int().positive().optional(),
   asOf: isoDate.optional(),
   fromMonth: z.string().regex(/^\d{4}-\d{2}$/).optional(),
   toMonth: z.string().regex(/^\d{4}-\d{2}$/).optional(),
@@ -621,7 +631,7 @@ const r27Export = reportGuard()
 // explicit that ceo_cell gets "no operational screens".
 const hrDashboard = withPermission('reports.hr')
   .route({ method: 'GET', path: '/dashboards/hr-ops', summary: 'HR Ops home KPIs (05 §4.1)' })
-  .input(z.object({ companyId: z.number().int().positive().optional() }).optional())
+  .input(z.object({ companyId: z.coerce.number().int().positive().optional() }).optional())
   .output(z.object({
     asOf: z.string(),
     headcountByCategory: z.array(z.object({ category: z.string().nullable(), count: z.number() })),
@@ -634,7 +644,9 @@ const hrDashboard = withPermission('reports.hr')
     silentDevices: z.number(),
     policyAckPercent: z.number(),
   }))
-  .handler(async ({ input, context }) => hrOpsDashboard(context.db, input?.companyId));
+  .handler(async ({ input, context }) =>
+    hrOpsDashboard(context.db, input?.companyId, employeeScope(context)),
+  );
 
 const ess = withPermission('attendance.own')
   .route({ method: 'GET', path: '/dashboards/ess', summary: 'ESS home (05 §4.9)' })
@@ -649,7 +661,7 @@ const ess = withPermission('attendance.own')
       endTime: z.string(),
     }).nullable(),
     todayStatus: z.object({
-      status: z.string(),
+      status: dayStatus,
       firstIn: z.string().nullable(),
       lastOut: z.string().nullable(),
     }).nullable(),
@@ -670,11 +682,15 @@ const myAttendance = withPermission('attendance.own')
   .input(z.object({ month: monthStr }))
   .output(z.array(z.object({
     date: z.string(),
-    status: z.string(),
+    status: dayStatus,
+    scheme: z.string().nullable(),
     firstIn: z.string().nullable(),
     lastOut: z.string().nullable(),
+    workedMinutes: z.number().nullable(),
     otMinutes: z.number(),
     lateMinutes: z.number(),
+    earlyExitMinutes: z.number(),
+    sessionStatuses: z.array(calendarSessionStatus).nullable(),
   })))
   .handler(async ({ input, context }) =>
     myAttendanceMonth(context.db, requireEmployeeId(context.user), input.month),
@@ -688,14 +704,20 @@ const teamGrid = withPermission('attendance.team.read')
     ecode: z.string(),
     name: z.string(),
     days: z.record(z.object({
-      status: z.string(),
+      status: dayStatus,
       firstIn: z.string().nullable(),
       lastOut: z.string().nullable(),
     })),
   })))
   .handler(async ({ input, context }) => {
     const managerId = requireEmployeeId(context.user);
-    return teamMonthGrid(context.db, managerId, input.month, input.subtree ?? false);
+    return teamMonthGrid(
+      context.db,
+      managerId,
+      input.month,
+      input.subtree ?? false,
+      employeeScope(context),
+    );
   });
 
 /**
@@ -763,11 +785,12 @@ const businessUnit = withAnyPermission('reports.bu', 'reports.hr')
     businessUnitDashboard(context.db, {
       companyId: input?.companyId,
       locationId: input?.locationId,
+      scope: employeeScope(context),
     }),
   );
 
 /** Trend series for the dashboard charts — reads snapshots, never aggregates. */
-const executiveTrend = reportGuard()
+const executiveTrend = withPermission('reports.ceo')
   .route({ method: 'GET', path: '/reports/executive/trend', summary: 'KPI trend from the daily snapshots' })
   .input(
     z.object({

@@ -24,6 +24,49 @@ export function findUserById(db: Kysely<Database>, id: number): Promise<UserRow 
   return db.selectFrom('core.users').selectAll().where('id', '=', id).executeTakeFirst();
 }
 
+/**
+ * CORE-01 heal: a login created by email can miss `employee_id` even when an
+ * active employee with the same `work_email` exists. Attach only when the
+ * employee is unused — never steal a link another account already holds.
+ */
+export async function findHealCandidateEmployeeId(
+  db: Kysely<Database>,
+  userId: number,
+  email: string,
+): Promise<number | undefined> {
+  const row = await db
+    .selectFrom('core.employees as e')
+    .select('e.id')
+    .where('e.work_email', '=', email)
+    .where('e.status', 'in', ['active', 'on_notice', 'onboarding'])
+    .where((eb) =>
+      eb.not(
+        eb.exists(
+          eb
+            .selectFrom('core.users as u')
+            .select('u.id')
+            .whereRef('u.employee_id', '=', 'e.id')
+            .where('u.id', '!=', userId),
+        ),
+      ),
+    )
+    .executeTakeFirst();
+  return row?.id;
+}
+
+export async function attachEmployeeToUser(
+  db: Kysely<Database>,
+  userId: number,
+  employeeId: number,
+): Promise<void> {
+  await db
+    .updateTable('core.users')
+    .set({ employee_id: employeeId })
+    .where('id', '=', userId)
+    .where('employee_id', 'is', null)
+    .execute();
+}
+
 /** Reset the failure counter and stamp the login. */
 export async function recordLoginSuccess(db: Kysely<Database>, userId: number): Promise<void> {
   await db

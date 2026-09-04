@@ -24,7 +24,9 @@ export type RoleCode =
   | 'plant_head'
   | 'ceo_cell'
   | 'it_admin'
-  | 'super_admin';
+  | 'super_admin'
+  | 'compliance_officer'
+  | 'dpo';
 
 export type Scope = 'all' | 'subtree' | 'own' | 'org_unit' | 'readonly';
 
@@ -46,6 +48,8 @@ export const ROLES: readonly RoleSeed[] = [
   { code: 'ceo_cell', name: 'CEO Cell / Executive' },
   { code: 'it_admin', name: 'IT / System Administrator' },
   { code: 'super_admin', name: 'Super Administrator (break-glass)' },
+  { code: 'compliance_officer', name: 'Compliance Officer' },
+  { code: 'dpo', name: 'Data Protection Officer' },
 ] as const;
 
 export const PERMISSIONS = [
@@ -64,6 +68,7 @@ export const PERMISSIONS = [
   'ar.approve',
   'od.approve',
   'ot.approve',
+  'claims.own',
   'claims.approve',
   'leave.admin',
   'payroll.run.view',
@@ -88,6 +93,33 @@ export const PERMISSIONS = [
   'admin.devices',
   'admin.integrations',
   'audit.read',
+  // ── Phase 5 Stage 5.2 — identity hardening (SEC-01..11) ───────────────────
+  // Held by IT, NOT by HR: these govern how people authenticate, not what HR
+  // data they may see. `sec.mfa.manage` can reset someone's second factor, so
+  // its own use is step-up gated and audited.
+  'sec.session.revoke',
+  'sec.mfa.manage',
+  // ── Phase 5 Stage 5.7 — statutory registrations, licences, calendar ───────
+  // Statutory obligations, NOT system settings: these sit with HR/compliance,
+  // never with IT. Evidence upload is separable so recording a challan can be
+  // delegated without handing over the ability to rewrite the calendar.
+  'cmp.licence.manage',
+  'cmp.calendar.manage',
+  'cmp.evidence.upload',
+  'cmp.register.generate',
+  // ── Phase 5 Stage 5.5 — POSH / grievance / whistleblower (skeleton) ────────
+  // POSH handlers are hr_head + super_admin for v1 — NOT a fake IC role.
+  // IC membership is a sponsor appointment; empty committee is the honest state.
+  'ird.posh.handle',
+  'ird.grievance.handle',
+  'ird.whistle.intake',
+  'prv.notice.manage',
+  'prv.consent.read',
+  'prv.rights.handle',
+  'prv.retention.manage',
+  'prv.breach.manage',
+  'doc.vault.own',
+  'doc.vault.manage',
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number];
@@ -117,6 +149,8 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'employee.statutory_ids.read', scope: 'own' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
+    { permission: 'doc.vault.own', scope: 'own' },
+    { permission: 'claims.own', scope: 'all' },
   ],
   manager: [
     { permission: 'employee.read', scope: 'subtree' },
@@ -130,6 +164,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'lifecycle.confirmation.approve', scope: 'subtree', note: 'step 1' },
     { permission: 'lifecycle.separation.approve', scope: 'subtree', note: 'step 1' },
     { permission: 'reports.hr', scope: 'subtree' },
+    { permission: 'doc.vault.own', scope: 'own' },
   ],
   senior_manager: [
     { permission: 'employee.read', scope: 'subtree' },
@@ -143,6 +178,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'lifecycle.confirmation.approve', scope: 'subtree' },
     { permission: 'lifecycle.separation.approve', scope: 'subtree' },
     { permission: 'reports.hr', scope: 'subtree' },
+    { permission: 'doc.vault.own', scope: 'own' },
   ],
   hr_ops: [
     { permission: 'employee.read', scope: 'org_unit' },
@@ -163,6 +199,10 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'helpdesk.agent', scope: 'all' },
     { permission: 'engagement.publish', scope: 'org_unit' },
     { permission: 'reports.hr', scope: 'org_unit' },
+    { permission: 'cmp.calendar.manage', scope: 'org_unit' },
+    { permission: 'cmp.evidence.upload', scope: 'org_unit' },
+    { permission: 'doc.vault.own', scope: 'own' },
+    { permission: 'doc.vault.manage', scope: 'org_unit' },
   ],
   hr_head: [
     { permission: 'employee.read', scope: 'all' },
@@ -193,6 +233,15 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'reports.bu', scope: 'all' },
     { permission: 'admin.settings', scope: 'all', note: 'HR policy values only' },
     { permission: 'audit.read', scope: 'org_unit' },
+    { permission: 'cmp.licence.manage', scope: 'all' },
+    { permission: 'cmp.calendar.manage', scope: 'all' },
+    { permission: 'cmp.evidence.upload', scope: 'all' },
+    { permission: 'cmp.register.generate', scope: 'all' },
+    { permission: 'ird.posh.handle', scope: 'all', note: 'v1 skeleton — IC role deferred to sponsor' },
+    { permission: 'ird.grievance.handle', scope: 'all' },
+    { permission: 'ird.whistle.intake', scope: 'all' },
+    { permission: 'doc.vault.own', scope: 'own' },
+    { permission: 'doc.vault.manage', scope: 'all' },
   ],
   payroll_admin: [
     { permission: 'employee.read', scope: 'all' },
@@ -242,6 +291,30 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'admin.devices', scope: 'all' },
     { permission: 'admin.integrations', scope: 'all' },
     { permission: 'audit.read', scope: 'all' },
+    { permission: 'sec.session.revoke', scope: 'all' },
+    { permission: 'sec.mfa.manage', scope: 'all', note: 'reset only — step-up + audit required' },
+  ],
+  compliance_officer: [
+    { permission: 'employee.read', scope: 'readonly' },
+    { permission: 'attendance.own', scope: 'all' },
+    { permission: 'leave.own', scope: 'all' },
+    { permission: 'cmp.licence.manage', scope: 'all' },
+    { permission: 'cmp.calendar.manage', scope: 'all' },
+    { permission: 'cmp.evidence.upload', scope: 'all' },
+    { permission: 'cmp.register.generate', scope: 'all' },
+    { permission: 'doc.vault.own', scope: 'own' },
+    { permission: 'doc.vault.manage', scope: 'all' },
+  ],
+  dpo: [
+    { permission: 'employee.read', scope: 'readonly' },
+    { permission: 'attendance.own', scope: 'all' },
+    { permission: 'leave.own', scope: 'all' },
+    { permission: 'prv.notice.manage', scope: 'all' },
+    { permission: 'prv.consent.read', scope: 'all' },
+    { permission: 'prv.rights.handle', scope: 'all' },
+    { permission: 'prv.retention.manage', scope: 'all' },
+    { permission: 'prv.breach.manage', scope: 'all' },
+    { permission: 'doc.vault.own', scope: 'own' },
   ],
   super_admin: [
     // Everything, incl. the two powers no one else has. All actions audit-logged;

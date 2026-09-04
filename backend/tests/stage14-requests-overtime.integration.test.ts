@@ -191,7 +191,7 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
   });
 
   it('R1: AR approved by the manager flips the absent day to P and survives recompute', async () => {
-    expect(await recomputeDay(db, empId, arDay)).toBe('A'); // no swipes that day
+    expect(await recomputeDay(db, empId, arDay)).toBe('UAB'); // no swipes or approved absence that day
 
     const res = await request(app)
       .post('/api/attendance/requests')

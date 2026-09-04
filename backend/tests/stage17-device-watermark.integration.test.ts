@@ -186,14 +186,14 @@ run('Stage 1.7 — per-device absence finalization watermark', () => {
       ]),
       source,
     );
-    expect(await recomputeDay(db, employeeId, workDate)).toBe('A');
+    expect(await recomputeDay(db, employeeId, workDate)).toBe('UAB');
     const finalized = await db
       .selectFrom('att.day_records')
       .select(['status', 'source'])
       .where('employee_id', '=', employeeId)
       .where('work_date', '=', sql<Date>`${workDate}::date`)
       .executeTakeFirstOrThrow();
-    expect(finalized).toEqual({ status: 'A', source: 'auto' });
+    expect(finalized).toEqual({ status: 'UAB', source: 'auto' });
     expect(await listFinalizationHolds(db, companyId, workDate)).toEqual([]);
 
     const watermarks = await db
