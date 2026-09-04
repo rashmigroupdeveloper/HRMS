@@ -30,3 +30,8 @@ coverage/
 
 # local object-storage dev root (SeaweedFS stand-in — docs/14 §4)
 backend/var/
+
+# local agent-tool runtime state — `.impeccable/live/server.json` carried a live
+# session token into git history (removed 5 Sep 2026, audit W0-T03). Tool state
+# is never project source; `.claude/` is ignored for the same reason.
+.impeccable/live/
