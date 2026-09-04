@@ -26,7 +26,7 @@ import { registerLeaveWorkflowHooks, runCompOffExpiry, runMonthlyAccrual } from 
 import { registerLettersWorkflowHooks } from '../modules/letters/index.js';
 import { runPolicyAckNag } from '../modules/policies/index.js';
 import { sendBoardingExitEmail } from '../modules/lifecycle/index.js';
-import { enqueueEvent } from '../modules/notifications/index.js';
+import { countDeadNotifications, drainNotifications, enqueueEvent } from '../modules/notifications/index.js';
 import { runEscalations } from '../modules/workflows/index.js';
 import { buildKpiSnapshot } from '../modules/reports/index.js';
 import { escalateBreachedTickets } from '../modules/helpdesk/index.js';
@@ -46,6 +46,18 @@ const ABSENCE_SCAN_QUEUE = 'absence-scan';
 const POLICY_NAG_QUEUE = 'policy-ack-nag';
 const KPI_SNAPSHOT_QUEUE = 'kpi-daily-snapshot';
 const HELPDESK_ESCALATION_QUEUE = 'helpdesk-escalation';
+const NOTIFICATION_DRAIN_QUEUE = 'notification-drain';
+
+/**
+ * pg-boss v12 requires a queue to exist before `schedule()` or `work()` names
+ * it. Two queues were scheduled without being created, and the worker did not
+ * merely misbehave — it threw `Queue kpi-daily-snapshot not found` on boot and
+ * took ALL THIRTEEN jobs down with it (audit finding [E9], upgraded from
+ * UNVERIFIED to confirmed on 5 Sep 2026 by actually starting it).
+ *
+ * One list, asserted at startup, so the next queue cannot be added to only half
+ * of it.
+ */
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -77,10 +89,35 @@ async function main(): Promise<void> {
     BOARDING_EXIT_QUEUE,
     ABSENCE_SCAN_QUEUE,
     POLICY_NAG_QUEUE,
+    KPI_SNAPSHOT_QUEUE,
+    HELPDESK_ESCALATION_QUEUE,
+    NOTIFICATION_DRAIN_QUEUE,
   ];
   for (const q of queues) {
     await boss.createQueue(q);
   }
+
+  /**
+   * WF-02: drain the notification queue every minute.
+   *
+   * Everything else in this file ENQUEUES. Nothing dequeued: `processQueue` had
+   * no production caller at all, so `wf.notifications` accumulated rows that
+   * were never delivered — not even to a log (audit finding [A2]). This is the
+   * job that makes "the approver was notified" true rather than merely recorded.
+   */
+  await boss.schedule(NOTIFICATION_DRAIN_QUEUE, '* * * * *');
+  await boss.work(NOTIFICATION_DRAIN_QUEUE, async () => {
+    const result = await drainNotifications(db);
+    if (result.sent > 0 || result.failed > 0) {
+      logger.info(result, 'notifications drained');
+    }
+    if (result.failed > 0) {
+      // Dead-letter rows are an operational signal, not a statistic: something
+      // a person was supposed to be told never reached them.
+      const dead = await countDeadNotifications(db);
+      if (dead > 0) logger.error({ dead }, 'notifications in dead-letter — nobody was told');
+    }
+  });
 
   // LC-03: the daily boarding/exit email at 07:00 IST (01:30 UTC) — queued
   // even on an empty day ("runs without exception", PP-6/26).
@@ -159,14 +196,18 @@ async function main(): Promise<void> {
   });
 
   // Week-off eligibility for the JUST-FINISHED week, Monday 02:00 IST (ATT-09).
-  await boss.schedule(WEEK_CLOSE_QUEUE, '0 2 * * 1');
+  // pg-boss crons are UTC, so 02:00 IST is 20:30 UTC on SUNDAY. The comment
+  // said IST and the expression said UTC, which ran this 5.5 h late every week
+  // (audit finding [E8]).
+  await boss.schedule(WEEK_CLOSE_QUEUE, '30 20 * * 0');
   await boss.work(WEEK_CLOSE_QUEUE, async () => {
     await closeWeek(db, previousWeekStartIso(new Date()));
   });
 
   // Monthly roster deadline nag on the 5th, 09:00 (ATT-04 / Agreement 4.1a) —
   // recipients live in wf.event_subscriptions ('attendance.roster_deadline').
-  await boss.schedule(ROSTER_REMINDER_QUEUE, '0 9 5 * *');
+  // 09:00 IST on the 5th = 03:30 UTC on the 5th. Was firing at 14:30 IST.
+  await boss.schedule(ROSTER_REMINDER_QUEUE, '30 3 5 * *');
   await boss.work(ROSTER_REMINDER_QUEUE, async () => {
     await enqueueEvent(db, 'attendance.roster_deadline', 'roster_deadline', {
       month: new Date().toISOString().slice(0, 7),
@@ -176,7 +217,19 @@ async function main(): Promise<void> {
   // One immediate cycle on boot so a fresh environment has data instantly.
   await boss.send(KENT_SYNC_QUEUE, {});
 
-  logger.info({ queues }, 'hrms-worker running');
+  /**
+   * Prove the schedules actually landed. The worker previously died on boot and
+   * the only evidence was a log line nobody was reading; a deployment that
+   * silently runs zero jobs looks exactly like a healthy one from outside.
+   */
+  const scheduled = await boss.getSchedules();
+  const missing = queues.filter(
+    (q) => q !== NOTIFICATION_DRAIN_QUEUE && !scheduled.some((sch) => sch.name === q),
+  );
+  if (missing.length > 0) {
+    logger.error({ missing }, 'queues registered but NOT scheduled — jobs will never fire');
+  }
+  logger.info({ queues: queues.length, scheduled: scheduled.length }, 'hrms-worker running');
 }
 
 main().catch((err: unknown) => {

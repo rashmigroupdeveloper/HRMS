@@ -203,7 +203,8 @@ export interface NotificationsTable {
   channel: 'in_app' | 'email';
   template_code: string;
   payload: unknown;
-  status: Generated<'queued' | 'sent' | 'failed' | 'dead'>;
+  /** `sending` = claimed by a drain worker, not yet delivered (migration 1752210000000). */
+  status: Generated<'queued' | 'sending' | 'sent' | 'failed' | 'dead'>;
   attempts: Generated<number>;
   last_error: string | null;
   sent_at: Timestamp | null;

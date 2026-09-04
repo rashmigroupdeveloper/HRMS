@@ -21,22 +21,37 @@ module.exports = {
       merge_logs: true,
       time: true,
     },
-    // Uncomment when Phase 1 lands the job system (docs/02 §6 job catalog):
-    // {
-    //   name: 'hrms-worker',
-    //   cwd: './backend',
-    //   script: 'dist/worker.js',
-    //   instances: 1,
-    //   exec_mode: 'fork',
-    //   env: { NODE_ENV: 'production' },
-    // },
-    // {
-    //   name: 'hrms-scheduler',
-    //   cwd: './backend',
-    //   script: 'dist/scheduler.js',
-    //   instances: 1, // NEVER more than 1 — cron leader
-    //   exec_mode: 'fork',
-    //   env: { NODE_ENV: 'production' },
-    // },
+    /**
+     * ENABLED 5 Sep 2026 (audit W0-T27, finding [H2]).
+     *
+     * This block sat commented as "uncomment when Phase 1 lands the job system"
+     * long after Phase 1 Stages 1.1-1.11 had landed. The consequence of the
+     * omission was total: deployed as configured, the platform ran NO Kent sync,
+     * no attendance recompute, no OT 48-hour lapse, no week-off close, no leave
+     * accrual (LV-02 — the PP-1 pain point), no comp-off expiry, no absence
+     * scan, no 07:00 boarding/exit email, no SLA escalation, no KPI snapshot,
+     * no helpdesk escalation, no policy nag and no notification delivery.
+     * Attendance and leave would simply stop being maintained, silently.
+     *
+     * The path was wrong too: `tsconfig.build.json` sets rootDir `src`, so
+     * `src/jobs/worker.ts` emits to `dist/jobs/worker.js`, not `dist/worker.js`.
+     *
+     * There is deliberately no separate `hrms-scheduler`: no such entrypoint
+     * exists, and pg-boss keeps schedules in the database, so this single
+     * `instances: 1` worker IS the cron leader. Never scale it above one.
+     */
+    {
+      name: 'hrms-worker',
+      cwd: './backend',
+      script: 'dist/jobs/worker.js',
+      instances: 1,
+      exec_mode: 'fork',
+      env: { NODE_ENV: 'production' },
+      max_memory_restart: '512M',
+      out_file: '/var/log/hrms/worker.out.log',
+      error_file: '/var/log/hrms/worker.err.log',
+      merge_logs: true,
+      time: true,
+    },
   ],
 };

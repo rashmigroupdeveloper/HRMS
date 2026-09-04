@@ -3,6 +3,10 @@ export {
   enqueue,
   enqueueEvent,
   processQueue,
+  drainNotifications,
+  resolveTransport,
+  resetTransport,
   devLogTransport,
   type NotificationTransport,
 } from './notifications.service.js';
+export { countDeadNotifications } from './notifications.repository.js';

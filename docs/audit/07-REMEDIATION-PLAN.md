@@ -226,27 +226,64 @@ authority, and it is how a self-inflicted outage starts on a payroll day.
    created a temporary super_admin were deleting it in cleanup and being correctly refused. Production
    always has one; the test environment now models that invariant instead of contradicting it.
 
-### Stage W0.6 — Turn the system on   `[ ☐ ]`
+### Stage W0.6 — Turn the system on   `[ ◐ 5 Sep 2026 — code complete; exit criterion needs D17 + a staging box ]`
 **Goal:** the things that are built actually run in production.
 **Depends on:** W0.2. **Needs decision:** **D17** (SMTP).
 **Tasks**
-- [ ] `W0-T27` (S, ops) `ecosystem.config.cjs`: enable `hrms-worker` pointing at **`dist/jobs/worker.js`**
+- [x] `W0-T27` (S, ops) `ecosystem.config.cjs`: enable `hrms-worker` pointing at **`dist/jobs/worker.js`**
       (not `dist/worker.js`), `instances: 1`. Decide whether the scheduler is a separate app or the
       worker is the cron leader — there is no `dist/scheduler.js`.
-- [ ] `W0-T28` (S, backend) Add `KPI_SNAPSHOT_QUEUE` and `HELPDESK_ESCALATION_QUEUE` to the `createQueue`
+- [x] `W0-T28` (S, backend) Add `KPI_SNAPSHOT_QUEUE` and `HELPDESK_ESCALATION_QUEUE` to the `createQueue`
       list; then **actually start the worker** and confirm all 13 jobs register.
-- [ ] `W0-T29` (M, backend) Add a `notification-drain` queue (every 1–2 min) calling `processQueue`.
+- [x] `W0-T29` (M, backend) Add a `notification-drain` queue (every 1–2 min) calling `processQueue`.
       Restructure it to claim in one short transaction, then send and mark **per message**, so a late
       failure cannot roll back earlier `markSent` calls.
-- [ ] `W0-T30` (M, backend) Implement `SmtpTransport` behind `NotificationTransport`; select by env;
+- [x] `W0-T30` (M, backend) Implement `SmtpTransport` behind `NotificationTransport`; select by env;
       keep `devLogTransport` for development. Add `SMTP_*` to the env schema.
-- [ ] `W0-T31` (S, ops) Alert on `wf.notifications.status = 'dead'` and on queue depth.
-- [ ] `W0-T32` (S, backend) Fix the two UTC/IST cron bugs: week close and roster nag.
-- [ ] `W0-T33` (S, backend) Startup assertion that the expected pg-boss schedules exist.
+- [x] `W0-T31` (S, ops) Alert on `wf.notifications.status = 'dead'` and on queue depth.
+- [x] `W0-T32` (S, backend) Fix the two UTC/IST cron bugs: week close and roster nag.
+- [x] `W0-T33` (S, backend) Startup assertion that the expected pg-boss schedules exist.
 **Tests required:** integration test — enqueue → drain → `status='sent'`; a worker smoke test asserting
 all 13 queues register.
 **Exit criteria:** on staging, a real email arrives from an approval and from the 07:00 boarding/exit job.
 **Findings:** [A2] [H2] [E8] [E9] [E10]
+
+**EVIDENCE (5 Sep 2026):**
+
+**[E9] was UNVERIFIED in the audit and is worse than it recorded.** The audit said two queues were
+scheduled without being created and noted it had not started the worker. Starting it:
+```
+{"level":50,"err":{"message":"Queue kpi-daily-snapshot not found"},
+ "stack":"… at async main (src/jobs/worker.ts:101:3)","msg":"hrms-worker failed to start"}
+```
+The worker did not misbehave — it **died on boot and took all thirteen jobs with it**. Combined with
+[H2] (the worker commented out of the PM2 topology) the platform would have run **no** Kent sync, no
+attendance recompute, no OT 48-hour lapse, no leave accrual, no daily emails and no escalations, while
+looking healthy from outside. After the fix:
+```
+{"level":30,"queues":14,"scheduled":14,"msg":"hrms-worker running"}
+```
+
+`tests/notification-delivery.integration.test.ts` — **4 cases green**: a queued row drains to `sent`; a
+failing transport retries and **dead-letters instead of vanishing**; and the SMTP transport puts a real
+message on the wire, asserted against a **socket-level SMTP receiver** rather than a mock — a mocked
+transport would have passed happily throughout the period the system delivered nothing.
+`npm run verify` → **EXIT 0, 522/522**.
+
+**BLOCKED on D17 — what is left and why it cannot be closed here.** The pipeline, the transport and the
+schedule are done and proven. The exit criterion says *a real email arrives on staging*, which needs an
+SMTP host, credentials and a staging box. None can be synthesised safely: inventing a relay would prove
+nothing and pointing at a real one without authorisation would send mail to real people.
+**Needed from the sponsor:** `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, and a
+staging environment to run them in. `loadEnv` now **refuses to boot in production** without
+`SMTP_HOST`/`SMTP_FROM`/`CORS_ORIGIN`, so the silent-no-mail state cannot recur.
+
+**Also fixed here, beyond the task list:** a `no-circular` violation the new transport introduced
+(`notifications.service → smtp.transport → notifications.service`). The interface moved to its own
+`transport.ts` rather than the rule being relaxed. And the split of claim-from-send needed a `sending`
+state the DB CHECK did not allow — migration `1752210000000` adds it **with a reclaim path**, because a
+worker that dies mid-send would otherwise strand rows in `sending` forever, which is silent loss: exactly
+the failure this whole area is being fixed for.
 
 ### Stage W0.7 — Guard the mock connector   `[ ☐ ]`
 **Goal:** the system cannot invent attendance.

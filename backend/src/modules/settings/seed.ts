@@ -106,6 +106,15 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
     description: 'ATT-08: the hard 48-hour overtime decision window — unapproved OT lapses',
   },
 
+  // ── Notifications: delivery (WF-02, audit W0-T29) ─────────────────────────
+  {
+    key: 'wf.notification_stale_sending_minutes',
+    value: 15,
+    valueType: 'number',
+    description:
+      'WF-02: how long a notification may sit in `sending` before a drain worker is assumed dead and the row is returned to the queue. Reclaiming may deliver twice; not reclaiming delivers zero times, and only one of those is recoverable by the person waiting.',
+  },
+
   // ── Workflows: the vacant-chain floor (WF-01, audit W0-T17) ───────────────
   {
     key: 'wf.vacant_chain_fallback_approver',

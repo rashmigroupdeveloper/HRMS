@@ -41,6 +41,52 @@ export async function claimDeliverable(db: Kysely<Database>, limit: number): Pro
     .execute();
 }
 
+/**
+ * Move claimed rows out of the deliverable set before the transport is called.
+ * `claimDeliverable` takes FOR UPDATE SKIP LOCKED, but those locks end with the
+ * short claim transaction — without this flip a second worker would see the
+ * same rows the moment it commits.
+ */
+/**
+ * Return rows a dead worker left in `sending` to the deliverable set.
+ *
+ * Without this a crash mid-send loses the message silently, which is the exact
+ * failure mode this module exists to make impossible (PP-14). Reclaiming can at
+ * worst deliver twice; not reclaiming delivers zero times, and only one of
+ * those is recoverable by the person waiting for the mail.
+ */
+export async function reclaimStalledSending(
+  db: Kysely<Database>,
+  staleMinutes: number,
+): Promise<number> {
+  const res = await db
+    .updateTable('wf.notifications')
+    .set({ status: 'queued' })
+    .where('status', '=', 'sending')
+    .where(sql<boolean>`created_at < now() - make_interval(mins => ${staleMinutes})`)
+    .executeTakeFirst();
+  return Number(res.numUpdatedRows);
+}
+
+/** Dead-letter depth — the number that means somebody was never told. */
+export async function countDeadNotifications(db: Kysely<Database>): Promise<number> {
+  const row = await db
+    .selectFrom('wf.notifications')
+    .select((eb) => eb.fn.countAll<string>().as('n'))
+    .where('status', '=', 'dead')
+    .executeTakeFirstOrThrow();
+  return Number(row.n);
+}
+
+export async function markClaimed(db: Kysely<Database>, ids: readonly number[]): Promise<void> {
+  if (ids.length === 0) return;
+  await db
+    .updateTable('wf.notifications')
+    .set({ status: 'sending' })
+    .where('id', 'in', [...ids])
+    .execute();
+}
+
 export async function markSent(db: Kysely<Database>, id: number): Promise<void> {
   await db
     .updateTable('wf.notifications')
