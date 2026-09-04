@@ -15,12 +15,14 @@ import {
   formatDateIN,
   todayISOIST,
 } from '../../ui';
-import type { AttendanceDay, AttendanceDayState, StatusTone } from '../../ui';
+import type { AttendanceDay, StatusTone } from '../../ui';
 import { attendanceLabel, currentMonthIST, formatTime } from '../home/dashboard-format';
 import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
 import { useDashboardResource } from '../home/useDashboardResource';
 import { AttendanceRequestDrawer } from './AttendanceRequestDrawer';
 import type { AttendanceMonthRow, AttendanceRequest, OvertimeEntry } from './attendance-types';
+import { attendanceState, formatAttendanceMinutes, sessionLabel } from './attendance-display';
+import { AttendanceHolidayCard, type HolidayRow } from './AttendanceHolidayCard';
 
 const MONTH_TITLE_IST = new Intl.DateTimeFormat('en-IN', {
   month: 'long',
@@ -44,17 +46,8 @@ function addDaysIso(iso: string, delta: number): string {
   return `${String(date.getUTCFullYear())}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 }
 
-function stateFor(status: string): AttendanceDayState {
-  if (status === 'P') return 'present';
-  if (status === 'A' || status === 'UAB') return 'absent';
-  if (status === 'L') return 'leave';
-  if (status === 'HD') return 'halfday';
-  if (status === 'H') return 'holiday';
-  return 'weekoff';
-}
-
 function statusTone(status: string): StatusTone {
-  if (status === 'P') return 'positive';
+  if (status === 'P' || status === 'OD' || status === 'CO') return 'positive';
   if (status === 'A' || status === 'UAB') return 'negative';
   if (status === 'HD' || status === 'L') return 'warning';
   return 'neutral';
@@ -89,47 +82,6 @@ function deadlineLabel(iso: string): string {
   }).format(date);
 }
 
-interface HolidayRow {
-  date: string;
-  name: string;
-  locationId: number | null;
-}
-
-function HolidayYearCard({ year, today, rows }: { year: number; today: string; rows: readonly HolidayRow[] }) {
-  const upcoming = rows.filter((row) => row.date >= today);
-  const observed = rows.filter((row) => row.date < today);
-  const line = (row: HolidayRow) => `${formatDateIN(row.date)} — ${row.name}`;
-  return (
-    <Card>
-      <CardHeader
-        title={`${String(year)} holidays`}
-        subtitle="These days are already off — you do not apply leave for them."
-      />
-      {upcoming.length > 0 ? (
-        <ul className="space-y-2">
-          {upcoming.map((row) => (
-            <li key={`${row.date}:${row.name}`} className="rounded-row bg-surface-2 px-4 py-3 text-sm font-semibold text-ink">
-              {line(row)}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm leading-6 text-ink-muted">No further holidays this year.</p>
-      )}
-      {observed.length > 0 ? (
-        <details className="mt-4 text-sm text-ink-muted">
-          <summary className="cursor-pointer font-medium text-ink">Already observed · {String(observed.length)}</summary>
-          <ul className="mt-2 space-y-1">
-            {observed.map((row) => (
-              <li key={`${row.date}:${row.name}`}>{line(row)}</li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
-    </Card>
-  );
-}
-
 export function MyAttendancePage() {
   const [month, setMonth] = useState(() => currentMonthIST());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -157,8 +109,8 @@ export function MyAttendancePage() {
     const value: Partial<Record<number, AttendanceDay>> = {};
     for (const row of attendance.data ?? []) {
       value[Number(row.date.slice(-2))] = {
-        state: stateFor(row.status),
-        note: `${attendanceLabel(row.status)} · In ${formatTime(row.firstIn)} · Out ${formatTime(row.lastOut)}`,
+        state: attendanceState(row.status),
+        note: `${attendanceLabel(row.status)} · ${row.scheme ?? 'No shift'} · ${formatAttendanceMinutes(row.workedMinutes)} · In ${formatTime(row.firstIn)} · Out ${formatTime(row.lastOut)}`,
       };
     }
     return value;
@@ -168,7 +120,7 @@ export function MyAttendancePage() {
   if (attendance.error)
     return <DashboardError message={attendance.error} onRetry={attendance.reload} />;
 
-  const present = rows.filter((row) => row.status === 'P').length;
+  const present = rows.filter((row) => row.status === 'P' || row.status === 'OD' || row.status === 'CO').length;
   const exceptions = rows.filter((row) => row.status === 'A' || row.status === 'UAB').length;
   const processed = rows.length;
   const yesterdayRow = rows.find((row) => row.date === yesterday);
@@ -203,17 +155,31 @@ export function MyAttendancePage() {
         }
       />
 
+      {/* Each figure carries the ruler it should be read against: "18 of 22 days
+          processed" is a month nearly done, where a bare "18" is nothing at all.
+          `processed` is the count the system actually holds — no comparator here
+          is invented to flatter the number. */}
       <KpiPillRow
         pills={[
-          { label: 'Already present', value: present, state: 'outline' },
-          { label: 'Need a look', value: exceptions, state: 'hatched' },
+          {
+            label: 'Already present',
+            value: present,
+            state: 'outline',
+            anchor: { value: processed, label: 'of', suffix: ' days' },
+          },
+          {
+            label: 'Need a look',
+            value: exceptions,
+            state: 'hatched',
+            anchor: { value: processed, label: 'of', suffix: ' days' },
+          },
           { label: 'Requests sent', value: requests.data?.length ?? 0, state: 'outline' },
           { label: 'Overtime rows', value: overtime.data?.length ?? 0, state: 'outline' },
         ]}
       />
 
       {holidays.error || holidays.data === null || holidays.data.length === 0 ? null : (
-        <HolidayYearCard year={holidayYear} today={today} rows={holidays.data} />
+        <AttendanceHolidayCard year={holidayYear} today={today} rows={holidays.data} />
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
@@ -250,7 +216,7 @@ export function MyAttendancePage() {
         </Card>
 
         <DarkCard>
-          <p className="text-xs font-medium tracking-tight text-hero-muted">This day</p>
+          <p className="text-xs font-medium text-hero-muted">This day</p>
           {selected ? (
             <div className="mt-4">
               <StatusBadge tone={statusTone(selected.status)}>
@@ -258,6 +224,14 @@ export function MyAttendancePage() {
               </StatusBadge>
               <p className="mt-4 text-3xl font-light">{formatDateIN(selected.date)}</p>
               <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <dt className="text-hero-muted">Shift</dt>
+                  <dd className="mt-1 tabular-nums">{selected.scheme ?? 'Not assigned'}</dd>
+                </div>
+                <div>
+                  <dt className="text-hero-muted">Worked</dt>
+                  <dd className="mt-1 tabular-nums">{formatAttendanceMinutes(selected.workedMinutes)}</dd>
+                </div>
                 <div>
                   <dt className="text-hero-muted">First in</dt>
                   <dd className="mt-1 tabular-nums">{formatTime(selected.firstIn)}</dd>
@@ -268,13 +242,33 @@ export function MyAttendancePage() {
                 </div>
                 <div>
                   <dt className="text-hero-muted">Late</dt>
-                  <dd className="mt-1 tabular-nums">{selected.lateMinutes} min</dd>
+                  <dd className="mt-1 tabular-nums">{formatAttendanceMinutes(selected.lateMinutes)}</dd>
+                </div>
+                <div>
+                  <dt className="text-hero-muted">Early exit</dt>
+                  <dd className="mt-1 tabular-nums">{formatAttendanceMinutes(selected.earlyExitMinutes)}</dd>
                 </div>
                 <div>
                   <dt className="text-hero-muted">Overtime</dt>
-                  <dd className="mt-1 tabular-nums">{selected.otMinutes} min</dd>
+                  <dd className="mt-1 tabular-nums">{formatAttendanceMinutes(selected.otMinutes)}</dd>
                 </div>
               </dl>
+              {selected.sessionStatuses !== null && (
+                <div className="mt-5 space-y-2" aria-label="Half-day attendance">
+                  {selected.sessionStatuses.map((session) => (
+                    <div
+                      key={session.session}
+                      className="flex items-center justify-between gap-3 text-sm"
+                      aria-label={sessionLabel(session)}
+                    >
+                      <span className="text-hero-muted">{session.session === 1 ? 'First half' : 'Second half'}</span>
+                      <StatusBadge tone={session.status === 'P' ? 'positive' : 'negative'}>
+                        {session.status === 'P' ? 'Present' : 'Absent'}
+                      </StatusBadge>
+                    </div>
+                  ))}
+                </div>
+              )}
               {needsLook(selected) && (
                 <p className="mt-4 text-sm leading-6 text-hero-muted">
                   {selected.firstIn === null

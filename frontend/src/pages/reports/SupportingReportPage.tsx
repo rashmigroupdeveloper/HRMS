@@ -21,6 +21,7 @@ import {
   qs,
   rememberCompanyId,
 } from './report-utils';
+import { CompanySelect } from '../_shared/CompanySelect';
 
 type ReportCode = 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R24' | 'R27';
 
@@ -113,7 +114,7 @@ export function SupportingReportPage<T extends object>({
 
   const load = useCallback(async () => {
     if (requireCompany && !/^\d+$/.test(filters.companyId)) {
-      setError('Enter a valid company ID.');
+      setError('Select a legal entity.');
       return;
     }
     setLoading(true);
@@ -139,7 +140,7 @@ export function SupportingReportPage<T extends object>({
 
   const onExport = async () => {
     if (requireCompany && !/^\d+$/.test(filters.companyId)) {
-      setError('Enter a valid company ID.');
+      setError('Select a legal entity.');
       return;
     }
     setLoading(true);
@@ -157,12 +158,12 @@ export function SupportingReportPage<T extends object>({
 
       <Card>
         <div className="grid gap-4 md:grid-cols-[repeat(auto-fit,minmax(140px,1fr))_auto_auto] md:items-end">
-          <TextField
-            label="Company ID"
+          <CompanySelect
             value={filters.companyId}
-            onChange={(e) => {
-              set({ companyId: e.currentTarget.value });
+            onChange={(value) => {
+              set({ companyId: value });
             }}
+            optional={!requireCompany}
             error={error && !companyOk ? error : undefined}
           />
           {mode === 'month' && (

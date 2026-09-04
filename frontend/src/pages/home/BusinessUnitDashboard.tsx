@@ -16,15 +16,12 @@ import {
   Card,
   CardHeader,
   DarkCard,
-  DataTable,
   EmptyState,
   KpiNumber,
   PageHeader,
   Pill,
   StatusBadge,
-  TrendChart,
 } from '../../ui';
-import type { Column } from '../../ui';
 import { todayLongIST } from '../../lib/date';
 import { DashboardError, DashboardSkeleton } from './DashboardFeedback';
 import { useDashboardResource } from './useDashboardResource';
@@ -42,12 +39,6 @@ interface BuDashboard {
   openAbsenceCases: { stage: string; count: number }[];
 }
 
-interface TrendPoint {
-  label: string;
-  date: string;
-  value: number | null;
-}
-
 const CATEGORY_LABEL: Record<string, string> = {
   white_collar: 'White collar',
   blue_collar: 'Blue collar',
@@ -62,33 +53,8 @@ const STAGE_TONE: Record<string, 'warning' | 'negative' | 'neutral'> = {
   show_cause: 'negative',
 };
 
-function TrendTable({ points, unit }: { points: TrendPoint[]; unit: string }) {
-  const columns: Column<TrendPoint>[] = [
-    { key: 'm', header: 'Month', width: '110px', render: (r) => r.label },
-    {
-      key: 'v',
-      header: `Value (${unit})`,
-      width: '130px',
-      numeric: true,
-      render: (r) =>
-        r.value === null ? (
-          <span className="text-ink-faint">not measured</span>
-        ) : (
-          <span>{r.value.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</span>
-        ),
-    },
-  ];
-  return <DataTable rows={points} columns={columns} rowKey={(r) => r.date} maxHeight={220} />;
-}
-
 export function BusinessUnitDashboard() {
   const bu = useDashboardResource<BuDashboard>('/api/dashboards/business-unit');
-  const absenteeism = useDashboardResource<TrendPoint[]>(
-    '/api/reports/executive/trend?metric=absenteeism_pct&months=6',
-  );
-  const overtime = useDashboardResource<TrendPoint[]>(
-    '/api/reports/executive/trend?metric=overtime_hours&months=6',
-  );
 
   if (bu.loading) return <DashboardSkeleton />;
   if (bu.error !== null) return <DashboardError message={bu.error} onRetry={bu.reload} />;
@@ -154,33 +120,13 @@ export function BusinessUnitDashboard() {
         </dl>
       </DarkCard>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader
-            title="Absenteeism trend"
-            subtitle="(UAB + A) ÷ scheduled working days, by month"
-          />
-          <TrendChart
-            points={absenteeism.data ?? []}
-            seriesLabel="Absenteeism %"
-            unit="%"
-            precision={1}
-            emptyMessage="No monthly snapshots yet — the nightly job builds these."
-            tableAlternative={<TrendTable points={absenteeism.data ?? []} unit="%" />}
-          />
-        </Card>
-
-        <Card>
-          <CardHeader title="Overtime hours" subtitle="Σ approved OT minutes ÷ 60, by month" />
-          <TrendChart
-            points={overtime.data ?? []}
-            seriesLabel="OT hours"
-            unit=" h"
-            emptyMessage="No monthly snapshots yet — the nightly job builds these."
-            tableAlternative={<TrendTable points={overtime.data ?? []} unit="hours" />}
-          />
-        </Card>
-      </div>
+      <Card>
+        <CardHeader title="Historical trends" subtitle="Scoped snapshot coverage" />
+        <EmptyState
+          title="Scoped history is not available yet"
+          description="Current headcount, absence and approved overtime above are restricted to your permitted unit. Group-wide executive snapshots are deliberately not shown here as plant data."
+        />
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <Card>

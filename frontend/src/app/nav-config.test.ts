@@ -14,7 +14,15 @@ import { mobileTabs, navForUser, splitNav } from './nav-config';
 import type { SessionUser } from '../lib/session';
 
 function user(roles: string[], permissions: string[]): SessionUser {
-  return { id: 1, email: 'a@b.test', employeeId: 1, roles, permissions };
+  return {
+    id: 1,
+    email: 'a@b.test',
+    employeeId: 1,
+    roles,
+    permissions,
+    mfa: { enrolled: false, required: false, enforcement: 'grace' },
+    steppedUpUntil: null,
+  };
 }
 
 const paths = (u: SessionUser): string[] => navForUser(u).map((item) => item.to);
@@ -32,6 +40,7 @@ describe('navForUser', () => {
       '/admin/settings',
       '/admin/workflows',
       '/admin/masters',
+      '/admin/org',
       '/admin/audit',
       '/payroll',
       '/leave',
@@ -81,11 +90,13 @@ describe('navForUser', () => {
     expect(withoutSettings).toContain('/admin/users');
     expect(withoutSettings).not.toContain('/admin/workflows');
     expect(withoutSettings).not.toContain('/admin/masters');
+    expect(withoutSettings).not.toContain('/admin/org');
     expect(withoutSettings).not.toContain('/admin/settings');
 
     const withSettings = paths(user(['it_admin'], ['admin.users', 'admin.settings']));
     expect(withSettings).toContain('/admin/workflows');
     expect(withSettings).toContain('/admin/masters');
+    expect(withSettings).not.toContain('/admin/org');
     expect(withSettings).toContain('/admin/settings');
   });
 
@@ -237,5 +248,170 @@ describe('splitNav — Crextio pill strip (docs/05 §3, 08 §3)', () => {
     const tabs = mobileTabs(pills);
     expect(tabs.map((item) => item.to)).toEqual(['/', '/my/attendance', '/my/leave', '/my/pay']);
     expect(more.length).toBeGreaterThan(0);
+  });
+});
+
+describe('Stage 5.2 — security & privacy placement', () => {
+  it('gives every signed-in person their own privacy surface', () => {
+    const nav = navForUser(user(['employee'], ['attendance.own']));
+    expect(nav.map((item) => item.to)).toContain('/my/privacy');
+  });
+
+  it('keeps privacy OUT of the pill strip — a daily action must not be displaced', () => {
+    const catalog = navForUser(user(['employee'], ['attendance.own', 'leave.own', 'employee.read']));
+    const { pills, more } = splitNav(catalog);
+    expect(pills.map((item) => item.to)).not.toContain('/my/privacy');
+    expect(more.map((item) => item.to)).toContain('/my/privacy');
+    expect(pills.length).toBeLessThanOrEqual(8);
+  });
+
+  it('shows the IT security console only to a holder of a sec.* permission', () => {
+    const withoutIt = navForUser(user(['hr_ops'], ['employee.read', 'leave.admin']));
+    expect(withoutIt.map((item) => item.to)).not.toContain('/admin/security');
+
+    const withIt = navForUser(
+      user(['it_admin'], ['admin.users', 'sec.mfa.manage', 'sec.session.revoke']),
+    );
+    expect(withIt.map((item) => item.to)).toContain('/admin/security');
+  });
+
+  it('groups the security console under Admin, never in the pill strip', () => {
+    const catalog = navForUser(
+      user(['it_admin'], ['admin.users', 'admin.roles', 'sec.mfa.manage', 'audit.read']),
+    );
+    const item = catalog.find((entry) => entry.to === '/admin/security');
+    expect(item?.label).toBe('Sign-in & access');
+    const { pills } = splitNav(catalog);
+    expect(pills.map((entry) => entry.to)).not.toContain('/admin/security');
+  });
+
+  it('never puts a fifth tab in the thumb zone', () => {
+    const catalog = navForUser(
+      user(['employee'], ['attendance.own', 'leave.own', 'employee.read']),
+    );
+    const { pills } = splitNav(catalog);
+    expect(mobileTabs(pills).length).toBeLessThanOrEqual(4);
+  });
+});
+
+describe('Stage 5.7 — compliance placement', () => {
+  it('shows Compliance to a holder of a cmp.* permission', () => {
+    const nav = navForUser(user(['hr_head'], ['employee.read', 'cmp.licence.manage']));
+    expect(nav.map((item) => item.to)).toContain('/compliance');
+  });
+
+  it('hides it from IT — statutory obligations are HR authority, not system settings', () => {
+    const nav = navForUser(
+      user(['it_admin'], ['admin.users', 'admin.settings', 'sec.mfa.manage', 'audit.read']),
+    );
+    expect(nav.map((item) => item.to)).not.toContain('/compliance');
+  });
+
+  it('groups it under Compliance and keeps it out of the pill strip', () => {
+    const catalog = navForUser(
+      user(['hr_head'], ['employee.read', 'leave.admin', 'cmp.calendar.manage', 'reports.hr']),
+    );
+    const item = catalog.find((entry) => entry.to === '/compliance');
+    expect(item?.group).toBe('Compliance');
+    const { pills, more } = splitNav(catalog);
+    expect(pills.map((entry) => entry.to)).not.toContain('/compliance');
+    expect(more.map((entry) => entry.to)).toContain('/compliance');
+    expect(pills.length).toBeLessThanOrEqual(8);
+  });
+});
+
+describe('Stage 5.5 — POSH / IRD hub placement', () => {
+  it('opens /compliance in More for an ird.posh.handle holder (no new pill)', () => {
+    const catalog = navForUser(user(['hr_head'], ['employee.read', 'ird.posh.handle']));
+    const { pills, more } = splitNav(catalog);
+    expect(more.map((item) => item.to)).toContain('/compliance');
+    expect(pills.map((item) => item.to)).not.toContain('/compliance');
+    expect(pills.map((item) => item.to)).not.toContain('/ird');
+  });
+
+  it('never invents a dedicated /ird pill', () => {
+    const catalog = navForUser(
+      user(['hr_head'], [
+        'employee.read',
+        'ird.posh.handle',
+        'ird.grievance.handle',
+        'leave.admin',
+        'reports.hr',
+      ]),
+    );
+    expect(catalog.map((item) => item.to)).not.toContain('/ird');
+    const { pills } = splitNav(catalog);
+    expect(pills.length).toBeLessThanOrEqual(8);
+  });
+});
+
+describe('Stage 5.4 — document vault placement', () => {
+  it('puts My documents in More for anyone with doc.vault.own', () => {
+    const catalog = navForUser(user(['employee'], ['attendance.own', 'doc.vault.own']));
+    expect(catalog.map((item) => item.to)).toContain('/my/documents');
+    const { pills, more } = splitNav(catalog);
+    expect(pills.map((item) => item.to)).not.toContain('/my/documents');
+    expect(more.map((item) => item.to)).toContain('/my/documents');
+  });
+
+  it('shows the ops Documents surface only with doc.vault.manage', () => {
+    const without = navForUser(user(['employee'], ['attendance.own', 'doc.vault.own']));
+    expect(without.map((item) => item.to)).not.toContain('/documents');
+
+    const withManage = navForUser(
+      user(['hr_ops'], ['employee.read', 'doc.vault.own', 'doc.vault.manage']),
+    );
+    expect(withManage.map((item) => item.to)).toContain('/documents');
+    const item = withManage.find((entry) => entry.to === '/documents');
+    expect(item?.group).toBe('People');
+    const { pills } = splitNav(withManage);
+    expect(pills.map((entry) => entry.to)).not.toContain('/documents');
+  });
+});
+
+describe('Stage 5.3 — DPDP privacy ops placement', () => {
+  it('shows /privacy in More for a holder of prv.rights.handle', () => {
+    const catalog = navForUser(user(['dpo'], ['prv.rights.handle']));
+    const { pills, more } = splitNav(catalog);
+    expect(pills.map((item) => item.to)).not.toContain('/privacy');
+    expect(more.map((item) => item.to)).toContain('/privacy');
+    expect(catalog.find((item) => item.to === '/privacy')?.group).toBe('Compliance');
+  });
+
+  it('also opens for prv.notice.manage and groups under Compliance for ops', () => {
+    const catalog = navForUser(
+      user(['hr_head'], ['employee.read', 'prv.notice.manage', 'leave.admin']),
+    );
+    const item = catalog.find((entry) => entry.to === '/privacy');
+    expect(item?.label).toBe('Privacy');
+    expect(item?.group).toBe('Compliance');
+    const { pills, more } = splitNav(catalog);
+    expect(pills.map((entry) => entry.to)).not.toContain('/privacy');
+    expect(more.map((entry) => entry.to)).toContain('/privacy');
+  });
+
+  it('hides /privacy from people without DPO permissions', () => {
+    const nav = navForUser(user(['employee'], ['attendance.own', 'employee.read']));
+    expect(nav.map((item) => item.to)).not.toContain('/privacy');
+    expect(nav.map((item) => item.to)).toContain('/my/privacy');
+  });
+
+  it('never spends a pill on /privacy', () => {
+    const catalog = navForUser(
+      user(
+        ['hr_ops', 'dpo'],
+        [
+          'employee.read',
+          'attendance.muster.export',
+          'leave.admin',
+          'prv.rights.handle',
+          'prv.notice.manage',
+          'reports.hr',
+        ],
+      ),
+    );
+    const { pills } = splitNav(catalog);
+    expect(pills.map((item) => item.to)).not.toContain('/privacy');
+    expect(pills.length).toBeLessThanOrEqual(8);
   });
 });

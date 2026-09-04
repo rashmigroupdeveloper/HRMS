@@ -14,20 +14,25 @@ interface R2Row {
   ecode: string;
   employeeName: string;
   workDate: string;
-  status: string;
+  status: 'P' | 'A' | 'HD' | 'WO' | 'H' | 'L' | 'OD' | 'CO' | 'UAB' | null;
   firstIn: string | null;
   lastOut: string | null;
   workedMinutes: number | null;
-  lateMinutes: number;
-  earlyExitMinutes: number;
-  otMinutes: number;
+  lateMinutes: number | null;
+  earlyExitMinutes: number | null;
+  otMinutes: number | null;
   firstDoor: string | null;
   lastDoor: string | null;
   mappedLocation: string | null;
   majoritySwipeLocation: string | null;
   crossPlantFlag: boolean;
   rawSwipeCount: number;
-  statusVsSwipes: string;
+  statusVsSwipes:
+    | 'match'
+    | 'status_without_swipes'
+    | 'swipes_without_presence'
+    | 'missing_day_record'
+    | 'both_absent';
 }
 
 const r2Columns: Column<R2Row>[] = [
@@ -37,8 +42,8 @@ const r2Columns: Column<R2Row>[] = [
     width: 'minmax(160px,1fr)',
     render: (r) => (
       <div className="text-xs">
-        <StatusBadge tone={r.crossPlantFlag ? 'warning' : 'positive'}>
-          {r.crossPlantFlag ? 'Cross-plant' : 'Mapped'}
+        <StatusBadge tone={r.mappedLocation === null ? 'neutral' : r.crossPlantFlag ? 'warning' : 'positive'}>
+          {r.mappedLocation === null ? 'Unmapped' : r.crossPlantFlag ? 'Cross-plant' : 'Mapped'}
         </StatusBadge>
         <p className="mt-1 text-ink-muted">
           {(r.mappedLocation ?? 'Unmapped') + ' · majority ' + (r.majoritySwipeLocation ?? '—')}
@@ -62,28 +67,32 @@ const r2Columns: Column<R2Row>[] = [
     key: 'status',
     header: 'Status',
     width: '72px',
-    render: (r) => <StatusBadge tone="neutral">{r.status}</StatusBadge>,
+    render: (r) => (
+      <StatusBadge tone={r.status === null ? 'negative' : 'neutral'}>
+        {r.status ?? 'Not processed'}
+      </StatusBadge>
+    ),
   },
   {
     key: 'late',
     header: 'Late',
     width: '72px',
     numeric: true,
-    render: (r) => r.lateMinutes,
+    render: (r) => r.lateMinutes ?? '—',
   },
   {
     key: 'early',
     header: 'Early',
     width: '72px',
     numeric: true,
-    render: (r) => r.earlyExitMinutes,
+    render: (r) => r.earlyExitMinutes ?? '—',
   },
   {
     key: 'ot',
     header: 'OT',
     width: '64px',
     numeric: true,
-    render: (r) => r.otMinutes,
+    render: (r) => r.otMinutes ?? '—',
   },
   {
     key: 'doors',
@@ -102,7 +111,9 @@ const r2Columns: Column<R2Row>[] = [
     render: (r) => (
       <StatusBadge
         tone={
-          r.statusVsSwipes === 'match'
+          r.statusVsSwipes === 'missing_day_record'
+            ? 'negative'
+            : r.statusVsSwipes === 'match'
             ? 'positive'
             : r.statusVsSwipes === 'both_absent'
               ? 'neutral'

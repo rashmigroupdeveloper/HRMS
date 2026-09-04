@@ -23,7 +23,6 @@ import {
   EmptyState,
   Pill,
   StatusBadge,
-  Switch,
   TextField,
   toast,
 } from '../../ui';
@@ -31,22 +30,10 @@ import type { Column } from '../../ui';
 import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
 import { useDashboardResource } from '../home/useDashboardResource';
 import { formatDateIN } from '../../ui';
-
-interface Shift {
-  id: number;
-  code: string;
-  name: string;
-  startTime: string;
-  endTime: string;
-  crossesMidnight: boolean;
-  sessionSplit: string | null;
-  graceInMinutes: number;
-  graceOutMinutes: number;
-  minHalfDayHours: number;
-  minFullDayHours: number;
-  breakMinutes: number;
-  isActive: boolean;
-}
+import { BLANK_SHIFT, ShiftEditor, normalizeShift, type ShiftRecord } from './ShiftEditor';
+import { DepartmentsPanel } from './DepartmentsPanel';
+import { CompaniesPanel, PlantsPanel } from './OrgMastersPage';
+import { CostCentersPanel, MisPanel } from './OrgMisCostCenterPanels';
 
 interface Holiday {
   date: string;
@@ -54,74 +41,82 @@ interface Holiday {
   locationId: number | null;
 }
 
-const BLANK_SHIFT: Shift = {
-  id: 0,
-  code: '',
-  name: '',
-  startTime: '09:00',
-  endTime: '18:00',
-  crossesMidnight: false,
-  sessionSplit: null,
-  graceInMinutes: 0,
-  graceOutMinutes: 0,
-  minHalfDayHours: 4,
-  minFullDayHours: 8,
-  breakMinutes: 0,
-  isActive: true,
-};
+type MasterTab =
+  | 'shifts'
+  | 'holidays'
+  | 'companies'
+  | 'plants'
+  | 'mis'
+  | 'costCenters'
+  | 'departments';
+
+const MASTER_TABS: { id: MasterTab; label: string }[] = [
+  { id: 'shifts', label: 'Shifts' },
+  { id: 'holidays', label: 'Holidays' },
+  { id: 'companies', label: 'Companies' },
+  { id: 'plants', label: 'Plants' },
+  { id: 'mis', label: 'MIS codes' },
+  { id: 'costCenters', label: 'Cost centres' },
+  { id: 'departments', label: 'Departments' },
+];
 
 export function AttendanceMastersPage({ user }: { user: SessionUser }) {
-  const [tab, setTab] = useState<'shifts' | 'holidays'>('shifts');
+  const [tab, setTab] = useState<MasterTab>('shifts');
   const canEdit = hasPermission(user, 'admin.settings');
 
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-ink-muted">Master control · attendance</p>
+          <p className="text-sm text-ink-muted">Master control</p>
           <h1 className="mt-1 text-4xl font-light tracking-tight text-ink">
-            Attendance masters
+            Master data
           </h1>
           <p className="mt-1 text-sm text-ink-muted">
-            Shifts define what late, half-day and full-day mean. Holidays decide which days are
-            non-working. Both are data — no deploy needed.
+            Attendance rules and Finance-owned organisation codes in one controlled, audited place.
           </p>
         </div>
-        <div className="flex rounded-full bg-surface-2 p-1">
-          <Button
-            size="sm"
-            variant={tab === 'shifts' ? 'primary' : 'ghost'}
-            onClick={() => {
-              setTab('shifts');
-            }}
-          >
-            Shifts
-          </Button>
-          <Button
-            size="sm"
-            variant={tab === 'holidays' ? 'primary' : 'ghost'}
-            onClick={() => {
-              setTab('holidays');
-            }}
-          >
-            Holidays
-          </Button>
+        <div
+          className="flex max-w-full gap-1 overflow-x-auto rounded-full bg-surface-2 p-1"
+          role="tablist"
+          aria-label="Master data sections"
+        >
+          {MASTER_TABS.map((entry) => (
+            <Button
+              key={entry.id}
+              size="sm"
+              role="tab"
+              aria-selected={tab === entry.id}
+              variant={tab === entry.id ? 'primary' : 'ghost'}
+              onClick={() => {
+                setTab(entry.id);
+              }}
+            >
+              {entry.label}
+            </Button>
+          ))}
         </div>
       </header>
 
-      {tab === 'shifts' ? <ShiftsPanel canEdit={canEdit} /> : <HolidaysPanel canEdit={canEdit} />}
+      {tab === 'shifts' ? <ShiftsPanel canEdit={canEdit} /> : null}
+      {tab === 'holidays' ? <HolidaysPanel canEdit={canEdit} /> : null}
+      {tab === 'companies' ? <CompaniesPanel canEdit={canEdit} /> : null}
+      {tab === 'plants' ? <PlantsPanel canEdit={canEdit} /> : null}
+      {tab === 'mis' ? <MisPanel canEdit={canEdit} /> : null}
+      {tab === 'costCenters' ? <CostCentersPanel canEdit={canEdit} /> : null}
+      {tab === 'departments' ? <DepartmentsPanel canEdit={canEdit} /> : null}
     </div>
   );
 }
 
 function ShiftsPanel({ canEdit }: { canEdit: boolean }) {
-  const shifts = useDashboardResource<Shift[]>('/api/attendance/config/shifts');
-  const [editing, setEditing] = useState<Shift | null>(null);
+  const shifts = useDashboardResource<ShiftRecord[]>('/api/attendance/config/shifts');
+  const [editing, setEditing] = useState<ShiftRecord | null>(null);
 
   if (shifts.loading) return <DashboardSkeleton />;
   if (shifts.error) return <DashboardError message={shifts.error} onRetry={shifts.reload} />;
 
-  const columns: Column<Shift>[] = [
+  const columns: Column<ShiftRecord>[] = [
     {
       key: 'code',
       header: 'Shift',
@@ -190,7 +185,7 @@ function ShiftsPanel({ canEdit }: { canEdit: boolean }) {
             size="sm"
             variant="ghost"
             onClick={() => {
-              setEditing(row);
+              setEditing(normalizeShift(row));
             }}
           >
             Edit
@@ -246,210 +241,11 @@ function ShiftsPanel({ canEdit }: { canEdit: boolean }) {
   );
 }
 
-function ShiftEditor({
-  shift,
-  onClose,
-  onSaved,
-}: {
-  shift: Shift | null;
-  onClose: () => void;
-  onSaved: () => void;
-}) {
-  const [draft, setDraft] = useState<Shift>(BLANK_SHIFT);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loadedFor, setLoadedFor] = useState<string | null>(null);
-
-  const identity = shift === null ? null : `${String(shift.id)}:${shift.code}`;
-  if (shift !== null && loadedFor !== identity) {
-    setLoadedFor(identity);
-    setDraft(shift);
-    setError(null);
-  }
-
-  const isNew = shift?.id === 0;
-  const set = (patch: Partial<Shift>) => {
-    setDraft((prev) => ({ ...prev, ...patch }));
-  };
-
-  const save = async () => {
-    if (draft.code.trim() === '' || draft.name.trim() === '') {
-      setError('Code and name are required.');
-      return;
-    }
-    if (draft.minHalfDayHours > draft.minFullDayHours) {
-      setError('Half-day hours cannot exceed full-day hours.');
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      await apiFetch(`/api/attendance/config/shifts/${encodeURIComponent(draft.code.trim())}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          code: draft.code.trim(),
-          name: draft.name.trim(),
-          startTime: draft.startTime,
-          endTime: draft.endTime,
-          crossesMidnight: draft.crossesMidnight,
-          sessionSplit: draft.sessionSplit,
-          graceInMinutes: draft.graceInMinutes,
-          graceOutMinutes: draft.graceOutMinutes,
-          minHalfDayHours: draft.minHalfDayHours,
-          minFullDayHours: draft.minFullDayHours,
-          breakMinutes: draft.breakMinutes,
-          isActive: draft.isActive,
-        }),
-      });
-      toast.success(isNew ? 'Shift created' : 'Shift updated', {
-        description: 'Future day processing uses the new definition; closed months stay frozen.',
-      });
-      onSaved();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not save the shift.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Drawer
-      open={shift !== null}
-      onClose={onClose}
-      title={isNew ? 'New shift' : `Shift ${draft.code}`}
-      subtitle="att.shifts · audited"
-      width={560}
-      footer={
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="primary" loading={saving} onClick={() => void save()}>
-            {isNew ? 'Create shift' : 'Save shift'}
-          </Button>
-        </div>
-      }
-    >
-      <div className="space-y-5">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <TextField
-            label="Code"
-            value={draft.code}
-            disabled={!isNew}
-            hint={isNew ? 'e.g. GEN, A, B, C' : 'Code is the identity — create a new shift to change it.'}
-            onChange={(e) => {
-              set({ code: e.currentTarget.value.toUpperCase() });
-            }}
-          />
-          <TextField
-            label="Name"
-            value={draft.name}
-            onChange={(e) => {
-              set({ name: e.currentTarget.value });
-            }}
-          />
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <TextField
-            label="Start time"
-            type="time"
-            value={draft.startTime}
-            onChange={(e) => {
-              set({ startTime: e.currentTarget.value });
-            }}
-          />
-          <TextField
-            label="End time"
-            type="time"
-            value={draft.endTime}
-            onChange={(e) => {
-              set({ endTime: e.currentTarget.value });
-            }}
-          />
-        </div>
-
-        <Switch
-          label="Crosses midnight"
-          description="Night shift — the out-punch lands on the next calendar day."
-          checked={draft.crossesMidnight}
-          onChange={(e) => {
-            set({ crossesMidnight: e.currentTarget.checked });
-          }}
-        />
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <TextField
-            label="Grace in (min)"
-            type="number"
-            value={String(draft.graceInMinutes)}
-            hint="Late only after this."
-            onChange={(e) => {
-              set({ graceInMinutes: Number(e.currentTarget.value) });
-            }}
-          />
-          <TextField
-            label="Grace out (min)"
-            type="number"
-            value={String(draft.graceOutMinutes)}
-            onChange={(e) => {
-              set({ graceOutMinutes: Number(e.currentTarget.value) });
-            }}
-          />
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <TextField
-            label="Min half-day hours"
-            type="number"
-            value={String(draft.minHalfDayHours)}
-            onChange={(e) => {
-              set({ minHalfDayHours: Number(e.currentTarget.value) });
-            }}
-          />
-          <TextField
-            label="Min full-day hours"
-            type="number"
-            value={String(draft.minFullDayHours)}
-            onChange={(e) => {
-              set({ minFullDayHours: Number(e.currentTarget.value) });
-            }}
-          />
-        </div>
-
-        <TextField
-          label="Break (min)"
-          type="number"
-          value={String(draft.breakMinutes)}
-          hint="Deducted from worked minutes before the half/full-day test."
-          onChange={(e) => {
-            set({ breakMinutes: Number(e.currentTarget.value) });
-          }}
-        />
-
-        <Switch
-          label="Active"
-          description="Retired shifts stay on historical rosters but cannot be newly assigned."
-          checked={draft.isActive}
-          onChange={(e) => {
-            set({ isActive: e.currentTarget.checked });
-          }}
-        />
-
-        {error !== null && (
-          <p className="text-sm text-negative" role="alert">
-            {error}
-          </p>
-        )}
-      </div>
-    </Drawer>
-  );
-}
 
 function HolidaysPanel({ canEdit }: { canEdit: boolean }) {
   const thisYear = new Date().getFullYear();
   const [year, setYear] = useState(thisYear);
-  const holidays = useDashboardResource<Holiday[]>(`/api/attendance/config/holidays?year=${String(year)}`);
+  const holidays = useDashboardResource<Holiday[]>(`/api/attendance/config/holidays/admin?year=${String(year)}`);
   const [adding, setAdding] = useState(false);
   const [date, setDate] = useState('');
   const [name, setName] = useState('');

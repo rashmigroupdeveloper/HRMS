@@ -8,6 +8,8 @@ const ATTENDANCE_LABELS: Record<string, string> = {
   WO: 'Week off',
   H: 'Holiday',
   HD: 'Half day',
+  OD: 'Official duty',
+  CO: 'Comp off',
 };
 
 const TIME_IST = new Intl.DateTimeFormat('en-IN', {

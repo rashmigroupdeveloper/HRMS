@@ -62,6 +62,66 @@ describe('summarizeRequest', () => {
     expect(summary.consequence).toContain('Approving grants this request');
   });
 
+  it('names a coverage warning and a shift swap', () => {
+    const leave = summarizeRequest('leave', {
+      leaveType: 'CL',
+      fromDate: '2026-09-08',
+      toDate: '2026-09-08',
+      days: 1,
+      coverageWarning: 'GEN on 08 Sep would leave 3 against sanctioned 4',
+    });
+    expect(leave.rows.some((row) => row.label === 'Coverage')).toBe(true);
+
+    const swap = summarizeRequest('shift_swap', {
+      kind: 'swap',
+      workDate: '2026-11-10',
+      counterpartEmployeeId: 41,
+      reason: 'Trade the night',
+    });
+    expect(swap.rows[0]).toEqual({ label: 'Kind', value: 'Shift swap' });
+    expect(swap.consequence).toContain('swaps the rostered day');
+  });
+
+  it('shows a claim as money, its budget, and the lines it is made of', () => {
+    // The manager decides on the LINES, not the total. A total-only view is
+    // how a ₹6,000 claim with a fabricated hotel bill gets waved through.
+    const claim = summarizeRequest('claim', {
+      claimId: 12,
+      reference: 'CLM-2026-0012',
+      amount: '6000.00',
+      budgetTitle: 'Kolkata plant visit',
+      budgetAllowance: '25000.00',
+      budgetRemaining: '19000.00',
+      periodFrom: '2026-09-10',
+      periodTo: '2026-09-12',
+      lines: [
+        { type: 'Hotel', description: 'Taj', spentOn: '2026-09-10', billNo: 'H/991', amount: '4000.00' },
+        { type: 'Local travel', description: null, spentOn: '2026-09-11', billNo: null, amount: '2000.00' },
+      ],
+    });
+
+    // Money reads in rupees with Indian grouping, never as a bare NUMERIC.
+    expect(claim.rows[0]).toEqual({ label: 'Claim', value: 'CLM-2026-0012' });
+    expect(claim.rows[1]).toEqual({ label: 'Amount', value: '₹6,000' });
+    expect(claim.rows.some((r) => r.label === 'Left on budget' && r.value === '₹19,000')).toBe(true);
+    // Internal ids never surface as rows.
+    expect(claim.rows.some((r) => r.label === 'Claim id')).toBe(false);
+
+    expect(claim.lines).toHaveLength(2);
+    expect(claim.lines[0]?.billNo).toBe('H/991');
+    expect(claim.lines[1]?.description).toBeNull();
+
+    // The commitment already exists; approving confirms it, rejecting returns it.
+    expect(claim.consequence).toContain('₹6,000');
+    expect(claim.consequence).toContain('Kolkata plant visit');
+    expect(claim.consequence).toContain('already committed');
+  });
+
+  it('leaves lines empty for every request type that has none', () => {
+    expect(summarizeRequest('leave', { days: 1 }).lines).toEqual([]);
+    expect(summarizeRequest('claim', { amount: '10.00', lines: 'not-an-array' }).lines).toEqual([]);
+  });
+
   it('handles empty or non-object payloads without throwing', () => {
     expect(summarizeRequest('leave', null).rows).toEqual([]);
     expect(summarizeRequest('leave', 'oops').rows).toEqual([]);

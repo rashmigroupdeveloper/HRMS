@@ -23,7 +23,7 @@ export function DarkCard({
     <div
       className={cn(
         'u-grain u-shadow-float rounded-card bg-hero text-hero-ink',
-        padded && 'p-6',
+        padded && 'p-7',
         className,
       )}
       {...rest}

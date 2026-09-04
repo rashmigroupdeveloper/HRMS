@@ -12,7 +12,15 @@ import { renderRouted } from '../test/render';
 import { CommandPalette, filterExtras } from './CommandPalette';
 
 function session(permissions: string[], roles: string[] = ['employee']): SessionUser {
-  return { id: 1, email: 'a@b.test', employeeId: 1, roles, permissions };
+  return {
+    id: 1,
+    email: 'a@b.test',
+    employeeId: 1,
+    roles,
+    permissions,
+    mfa: { enrolled: false, required: false, enforcement: 'grace' },
+    steppedUpUntil: null,
+  };
 }
 
 function extrasTos(permissions: string[]): string[] {

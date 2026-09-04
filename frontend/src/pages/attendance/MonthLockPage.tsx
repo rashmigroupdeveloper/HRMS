@@ -17,6 +17,7 @@ import {
   toast,
 } from '../../ui';
 import type { Column } from '../../ui';
+import { CompanySelect } from '../_shared/CompanySelect';
 import { currentMonthIST } from '../home/dashboard-format';
 import { defaultCompanyId, rememberCompanyId } from '../reports/report-utils';
 
@@ -59,7 +60,7 @@ export function MonthLockPage() {
 
   const load = useCallback(async () => {
     if (!/^\d+$/.test(companyId)) {
-      setError('Enter a valid company ID.');
+      setError('Select a legal entity.');
       return;
     }
     rememberCompanyId(companyId);
@@ -156,13 +157,11 @@ export function MonthLockPage() {
 
       <Card>
         <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
-          <TextField
-            label="Company ID"
+          <CompanySelect
             value={companyId}
-            onChange={(event) => {
-              setCompanyId(event.currentTarget.value);
+            onChange={(value) => {
+              setCompanyId(value);
             }}
-            placeholder="e.g. 1"
             error={error ?? undefined}
           />
           <TextField
@@ -183,7 +182,7 @@ export function MonthLockPage() {
         <Card>
           <CardHeader
             title={`${checklist.month} pre-lock checklist`}
-            subtitle={`Company ${String(checklist.companyId)} · ${String(met)} of ${String(total)} already done`}
+            subtitle={`Selected legal entity · ${String(met)} of ${String(total)} already done`}
           />
           <SegmentedProgress label="Gates already met" primary={met} total={total} />
           <div className="mt-4 space-y-2">

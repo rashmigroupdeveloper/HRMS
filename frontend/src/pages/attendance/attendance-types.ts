@@ -1,10 +1,21 @@
+export type AttendanceStatus = 'P' | 'A' | 'HD' | 'WO' | 'H' | 'L' | 'OD' | 'CO' | 'UAB';
+
+export interface AttendanceSessionStatus {
+  session: number;
+  status: 'P' | 'A';
+}
+
 export interface AttendanceMonthRow {
   date: string;
-  status: string;
+  status: AttendanceStatus;
+  scheme: string | null;
   firstIn: string | null;
   lastOut: string | null;
+  workedMinutes: number | null;
   otMinutes: number;
   lateMinutes: number;
+  earlyExitMinutes: number;
+  sessionStatuses: AttendanceSessionStatus[] | null;
 }
 
 export interface AttendanceRequest {

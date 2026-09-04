@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { apiFetch } from '../../lib/api';
 import { Button, Checkbox, DatePicker, Drawer, Select, Textarea, formatDateIN, toast, todayISOIST } from '../../ui';
+import { ChainPreview } from '../workflows/ChainPreview';
+import { sandwichPreviewCopy, type LeaveSkip } from './leave-preview';
 
 const LEAVE_DRAFT_KEY = 'rashmi.draft.leave';
 const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -73,29 +75,14 @@ export interface LeaveTypeOption {
   sandwichRule: 'include' | 'exclude';
 }
 
-function previewDays(
-  from: string,
-  to: string,
-  sandwich: 'include' | 'exclude',
-  halfDay: boolean,
-): { counted: number; skippedSundays: number } {
-  const start = Date.parse(`${from}T00:00:00Z`);
-  const end = Date.parse(`${to}T00:00:00Z`);
-  if (Number.isNaN(start) || Number.isNaN(end) || end < start) {
-    return { counted: 0, skippedSundays: 0 };
-  }
-  let counted = 0;
-  let skippedSundays = 0;
-  for (let time = start; time <= end; time += 86_400_000) {
-    const sunday = new Date(time).getUTCDay() === 0;
-    if (sandwich === 'exclude' && sunday) {
-      skippedSundays += 1;
-      continue;
-    }
-    counted += 1;
-  }
-  if (halfDay && counted > 0) counted -= 0.5;
-  return { counted, skippedSundays };
+interface LeaveApplyPreview {
+  days: number;
+  available: number;
+  remaining: number;
+  skipped: LeaveSkip[];
+  blackouts: { date: string; name: string }[];
+  coverage: { blocked: boolean; warnings: string[] };
+  blocked: boolean;
 }
 
 export function LeaveApplyDrawer({
@@ -114,14 +101,13 @@ export function LeaveApplyDrawer({
   const [to, setTo] = useState<string | null>(null);
   const [halfDay, setHalfDay] = useState(false);
   const [reason, setReason] = useState('');
+  const [preview, setPreview] = useState<LeaveApplyPreview | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const skipPersistRef = useRef(true);
   const draftAppliedRef = useRef(false);
   const selected = leaveTypes.find((type) => type.code === typeCode);
-  const span = from && to && selected ? previewDays(from, to, selected.sandwichRule, halfDay) : null;
-  const remaining =
-    selected && span ? Math.round((selected.available - span.counted) * 10) / 10 : null;
 
   useEffect(() => {
     if (!open) {
@@ -159,9 +145,44 @@ export function LeaveApplyDrawer({
     writeLeaveDraft({ typeCode, from, to, halfDay, reason });
   }, [open, typeCode, from, to, halfDay, reason]);
 
+  useEffect(() => {
+    if (!open || !from || !to || !typeCode) {
+      setPreview(null);
+      setPreviewError(null);
+      return;
+    }
+    let cancelled = false;
+    const fromHalf = halfDay ? 'true' : 'false';
+    const path = `/api/leave/preview?leaveType=${encodeURIComponent(typeCode)}&from=${from}&to=${to}&fromHalf=${fromHalf}&toHalf=false`;
+    void apiFetch<LeaveApplyPreview>(path)
+      .then((result) => {
+        if (!cancelled) {
+          setPreview(result);
+          setPreviewError(null);
+        }
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) {
+          setPreview(null);
+          setPreviewError(cause instanceof Error ? cause.message : 'Could not preview this leave.');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, typeCode, from, to, halfDay]);
+
   const submit = async () => {
     if (!typeCode || !from || !to || reason.trim().length < 3) {
       setError('Choose a leave type and dates, then add a short reason.');
+      return;
+    }
+    if (preview?.blocked) {
+      setError(
+        preview.blackouts[0]
+          ? `Leave is blocked on ${formatDateIN(preview.blackouts[0].date)} (${preview.blackouts[0].name}).`
+          : (preview.coverage.warnings[0] ?? 'Coverage policy is blocking this leave.'),
+      );
       return;
     }
     setLoading(true);
@@ -247,38 +268,56 @@ export function LeaveApplyDrawer({
             }}
           />
         )}
-        {span && selected && from && to && (
+        {preview && selected && from && to && (
           <div className="rounded-row bg-surface-2 px-4 py-3 text-sm">
             <p className="font-semibold text-ink">
-              Preview · {span.counted.toLocaleString('en-IN')} day
-              {span.counted === 1 ? '' : 's'} of {selected.name}
+              Preview · {preview.days.toLocaleString('en-IN')} day
+              {preview.days === 1 ? '' : 's'} of {selected.name}
             </p>
             <p className="mt-1 text-ink-muted">
               {formatDateIN(from)}
               {from === to ? '' : ` – ${formatDateIN(to)}`}
-              {selected.sandwichRule === 'exclude'
-                ? span.skippedSundays > 0
-                  ? ` · ${String(span.skippedSundays)} Sunday${span.skippedSundays === 1 ? '' : 's'} skipped (sandwich exclude)`
-                  : ' · Sundays inside the span are skipped'
-                : ' · Sundays inside the span count (sandwich include)'}
-              . Payroll confirms the exact debit.
+              {` · ${sandwichPreviewCopy(selected.sandwichRule, preview.skipped)}`}
+              . This is the debit that will be submitted.
             </p>
-            {remaining !== null && (
-              <p className="mt-2 tabular-nums text-ink">
-                {remaining >= 0
-                  ? `${remaining.toLocaleString('en-IN')} of ${selected.available.toLocaleString('en-IN')} days would remain`
-                  : `This preview is ${Math.abs(remaining).toLocaleString('en-IN')} days over the ${selected.available.toLocaleString('en-IN')} available`}
-              </p>
-            )}
+            <p className="mt-2 tabular-nums text-ink">
+              {preview.remaining >= 0
+                ? `${preview.remaining.toLocaleString('en-IN')} of ${preview.available.toLocaleString('en-IN')} days would remain`
+                : `This preview is ${Math.abs(preview.remaining).toLocaleString('en-IN')} days over the ${preview.available.toLocaleString('en-IN')} available`}
+            </p>
             <p className="mt-2 text-ink-muted">
               Applying now reserves the days so they are not treated as unauthorised absence.
             </p>
           </div>
         )}
+        {previewError !== null && (
+          <p className="rounded-row bg-surface-2 px-4 py-3 text-sm text-ink" role="status">
+            {previewError}
+          </p>
+        )}
         {selected?.maxPerRequest !== null && selected?.maxPerRequest !== undefined && (
           <p className="rounded-row bg-surface-2 px-4 py-3 text-sm text-ink">
             Policy cap: {selected.maxPerRequest.toLocaleString('en-IN')} days per request
           </p>
+        )}
+        {preview && preview.blackouts.length > 0 && (
+          <div className="rounded-row bg-surface-2 px-4 py-3 text-sm text-ink" role="alert">
+            {preview.blackouts.map((hit) => (
+              <p key={`${hit.date}-${hit.name}`}>
+                Leave is blocked on {formatDateIN(hit.date)} ({hit.name}).
+              </p>
+            ))}
+          </div>
+        )}
+        {preview && preview.coverage.warnings.length > 0 && (
+          <div
+            className="rounded-row bg-surface-2 px-4 py-3 text-sm text-ink"
+            role={preview.coverage.blocked ? 'alert' : 'status'}
+          >
+            {preview.coverage.warnings.map((warning) => (
+              <p key={warning}>{warning}</p>
+            ))}
+          </div>
         )}
         <Textarea
           label="Why are you taking this time?"
@@ -291,6 +330,7 @@ export function LeaveApplyDrawer({
           hint="Visible to everyone in the approval chain."
           error={error ?? undefined}
         />
+        <ChainPreview definitionCode={typeCode === 'CO' ? 'comp_off' : 'leave'} />
       </div>
     </Drawer>
   );

@@ -42,9 +42,16 @@ import { SettingsPage } from '../pages/admin/SettingsPage';
 import { AuditLogPage } from '../pages/admin/AuditLogPage';
 import { WorkflowsPage } from '../pages/admin/WorkflowsPage';
 import { AttendanceMastersPage } from '../pages/admin/AttendanceMastersPage';
+import { SecurityPage } from '../pages/admin/SecurityPage';
+import { PrivacyPage } from '../pages/my/PrivacyPage';
+import { MyDocumentsPage } from '../pages/my/MyDocumentsPage';
+import { DocumentsPage } from '../pages/documents/DocumentsPage';
+import { PrivacyOpsPage } from '../pages/privacy/PrivacyOpsPage';
+import { CompliancePage } from '../pages/compliance/CompliancePage';
 import { PayrollPage } from '../pages/payroll/PayrollPage';
 import { MyPayPage } from '../pages/payroll/MyPayPage';
 import { ClaimsPage } from '../pages/payroll/ClaimsPage';
+import { MyClaimsPage } from '../pages/payroll/MyClaimsPage';
 import { LoansPage } from '../pages/payroll/LoansPage';
 import { LifecyclePage } from '../pages/lifecycle/LifecyclePage';
 import { AssetsPage } from '../pages/workplace/AssetsPage';
@@ -57,12 +64,14 @@ import { RecruitmentPage } from '../pages/recruitment/RecruitmentPage';
 interface AppRouterProps {
   user: SessionUser;
   onSignedOut: () => void;
+  /** Re-reads /auth/me after step-up, MFA or password changes (SEC-04). */
+  onSessionChanged: () => void;
 }
 
-export function AppRouter({ user, onSignedOut }: AppRouterProps) {
+export function AppRouter({ user, onSignedOut, onSessionChanged }: AppRouterProps) {
   return (
     <Routes>
-      <Route element={<AppShell user={user} onSignedOut={onSignedOut} />}>
+      <Route element={<AppShell user={user} onSignedOut={onSignedOut} onSessionChanged={onSessionChanged} />}>
         <Route index element={<RoleHomePage user={user} />} />
         <Route path="me" element={<ProfilePage self />} />
         <Route path="people" element={<DirectoryPage />} />
@@ -74,12 +83,18 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="my/attendance" element={<MyAttendancePage />} />
         <Route path="my/leave" element={<MyLeavePage />} />
         <Route path="my/pay" element={<MyPayPage />} />
-        <Route path="my/claims" element={<ClaimsPage />} />
+        <Route path="my/claims" element={<MyClaimsPage />} />
         <Route path="my/team" element={<TeamPage user={user} />} />
+        <Route
+          path="my/privacy"
+          element={<PrivacyPage user={user} onSessionChanged={onSessionChanged} />}
+        />
+        <Route path="my/documents" element={<MyDocumentsPage />} />
         <Route path="my/team/overtime" element={<OtDecisionsPage />} />
         <Route path="my/letters" element={<MyLettersPage />} />
         <Route path="policies" element={<PoliciesPage user={user} />} />
         <Route path="letters" element={<LettersPage />} />
+        <Route path="documents" element={<DocumentsPage />} />
 
         <Route path="attendance" element={<AttendanceOpsPage user={user} />} />
         <Route path="attendance/muster" element={<MusterPage />} />
@@ -111,6 +126,14 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="admin/audit" element={<AuditLogPage />} />
         <Route path="admin/workflows" element={<WorkflowsPage user={user} />} />
         <Route path="admin/masters" element={<AttendanceMastersPage user={user} />} />
+        <Route path="admin/org" element={<Navigate to="/admin/masters" replace />} />
+        <Route
+          path="admin/security"
+          element={<SecurityPage user={user} onSessionChanged={onSessionChanged} />}
+        />
+
+        <Route path="compliance" element={<CompliancePage />} />
+        <Route path="privacy" element={<PrivacyOpsPage />} />
 
         <Route path="travel/*" element={<TravelPage />} />
         <Route path="recruitment/*" element={<RecruitmentPage />} />

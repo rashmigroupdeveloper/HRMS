@@ -17,11 +17,12 @@ import { HatchFill } from './HatchFill';
 import { IconButton } from './IconButton';
 import { KpiNumber } from './KpiNumber';
 import { PageHeader } from './PageHeader';
+import { MetricMark } from './MetricMark';
 import { Skeleton } from './Skeleton';
 import { Timeline } from './Timeline';
 import type { TimelineStep } from './Timeline';
 import { Tooltip } from './Tooltip';
-import { renderThemed, THEMES } from '../test/render';
+import { renderThemed, renderRouted, THEMES } from '../test/render';
 import { runAxe } from '../test/axe';
 
 describe('KpiNumber', () => {
@@ -179,6 +180,12 @@ describe('layout primitives', () => {
   it('PageHeader serif is reserved for the ESS greeting', () => {
     renderThemed(<PageHeader title="Hello Rachna" tone="greeting" />);
     expect(screen.getByRole('heading', { name: 'Hello Rachna' })).toHaveClass('font-serif');
+  });
+
+  it('MetricMark pairs a serif count with a quiet label', () => {
+    renderRouted(<MetricMark value={91} label="Employees" icon={<span />} />);
+    expect(screen.getByText('91')).toBeInTheDocument();
+    expect(screen.getByText('Employees')).toBeInTheDocument();
   });
 
   it('DarkCard renders its children on the hero surface', () => {

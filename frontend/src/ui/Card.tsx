@@ -31,7 +31,7 @@ export function Card({
         'rounded-card',
         rail ? 'bg-surface-2' : 'bg-surface',
         'u-shadow-card',
-        padded && 'p-6',
+        padded && 'p-7',
         interactive &&
           'u-press cursor-pointer transition-shadow duration-[var(--motion-short)] ease-[var(--ease-out-strong)] hover:u-shadow-float',
         className,

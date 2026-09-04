@@ -9,7 +9,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DashboardError, DashboardSkeleton } from './DashboardFeedback';
+import { DashboardError, DashboardSkeleton, UnlinkedEmployee } from './DashboardFeedback';
 import { renderThemed, THEMES } from '../../test/render';
 import { runAxe } from '../../test/axe';
 
@@ -31,6 +31,19 @@ describe('DashboardError', () => {
   it('reassures that nothing was lost — filters and session survive an error', () => {
     renderThemed(<DashboardError message="Timeout." onRetry={vi.fn()} />);
     expect(screen.getByText(/filters are unchanged/i)).toBeInTheDocument();
+  });
+
+  it('explains an unlinked login instead of inventing an employee', () => {
+    renderThemed(<UnlinkedEmployee />);
+    expect(screen.getByText(/No employee profile on this login/)).toBeInTheDocument();
+  });
+
+  it('does not paint Dashboard unavailable when the API says the login has no employee', () => {
+    renderThemed(
+      <DashboardError message="No employee profile linked" onRetry={vi.fn()} />,
+    );
+    expect(screen.queryByText(/Dashboard unavailable/)).not.toBeInTheDocument();
+    expect(screen.getByText(/No employee profile on this login/)).toBeInTheDocument();
   });
 
   it.each(THEMES)('has no axe violations in the %s theme', async (theme) => {

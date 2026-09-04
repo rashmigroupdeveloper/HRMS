@@ -18,7 +18,15 @@ beforeAll(() => {
 });
 
 function session(roles: string[], permissions: string[]): SessionUser {
-  return { id: 1, email: 'a@b.test', employeeId: 1, roles, permissions };
+  return {
+    id: 1,
+    email: 'a@b.test',
+    employeeId: 1,
+    roles,
+    permissions,
+    mfa: { enrolled: false, required: false, enforcement: 'grace' },
+    steppedUpUntil: null,
+  };
 }
 
 function renderShell(user: SessionUser, path = '/'): ReturnType<typeof render> {
@@ -50,6 +58,12 @@ describe('AppShell', () => {
     renderShell(ESS);
     expect(screen.getByRole('heading', { name: 'Page body' })).toBeInTheDocument();
     expect(within(screen.getByRole('banner')).queryByRole('heading')).not.toBeInTheDocument();
+  });
+
+  it('centers the pill cluster on the canvas, not in leftover flex space', () => {
+    renderShell(ESS);
+    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    expect(nav.parentElement).toHaveClass('left-1/2');
   });
 
   it('floats the pill cluster on the cream canvas, not inside a filled admin bar', () => {

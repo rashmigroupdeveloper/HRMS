@@ -10,7 +10,6 @@ import {
   formatDateIN,
   KpiPillRow,
   PageHeader,
-  Pill,
   StatusBadge,
 } from '../../ui';
 import type { TeamMemberMonth } from './dashboard-types';
@@ -53,7 +52,6 @@ export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; tod
   const todayRows = data.map((member) => ({ member, day: member.days[today] }));
   const present = todayRows.filter(({ day }) => day?.status === 'P' || day?.status === 'HD').length;
   const absent = todayRows.filter(({ day }) => day?.status === 'A' || day?.status === 'UAB').length;
-  const onLeave = todayRows.filter(({ day }) => day?.status === 'L').length;
   const awaiting = todayRows.filter(({ day }) => day === undefined).length;
   const absentIsTheJob = absent > 0;
   const goldOnCta = !absentIsTheJob;
@@ -63,15 +61,15 @@ export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; tod
   const weekSunday = week[6];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-      <PageHeader
-        eyebrow={todayLongIST()}
-        title="Your team today"
-        description="Direct-report attendance from the current processed month. Names open the person; the gold path opens the month you sign."
-      />
+        <PageHeader
+          eyebrow={todayLongIST()}
+          title="Your team today"
+          description="Direct-report attendance from the current processed month. Names open the person; the gold path opens the month you sign."
+        />
 
-      <KpiPillRow
+        <KpiPillRow
         pills={[
           {
             label: 'Team members',
@@ -105,22 +103,122 @@ export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; tod
       />
       </div>
 
-      <DarkCard className="grid gap-8 md:grid-cols-[1.25fr_1fr]">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
-            Team attendance
-          </p>
-          <h2 className="mt-3 text-4xl font-light">
-            {data.length === 0
-              ? 'No direct reports'
-              : `${String(present)} of ${String(data.length)} present`}
-          </h2>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-hero-muted">
-            {absent + awaiting > 0
-              ? `${String(absent + awaiting)} people still need a mark or a regularisation before month lock.`
-              : 'Everyone in view has a processed mark for today.'}
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+      <div className="grid items-stretch gap-6 lg:grid-cols-12">
+        {weekMonday && weekSunday ? (
+          <Card className="lg:col-span-3">
+            <CardHeader
+              title="On leave this week"
+              subtitle={`${formatDateIN(weekMonday)} – ${formatDateIN(weekSunday)}`}
+            />
+            {onLeaveWeek.length === 0 ? (
+              <p className="text-sm leading-6 text-ink-muted">
+                Nobody on your team is on leave this week
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {onLeaveWeek.map(({ member, dates }) => (
+                  <li
+                    key={member.employeeId}
+                    className="rounded-tile bg-surface-2 px-4 py-3"
+                  >
+                    <Link
+                      to={`/people/${member.ecode}`}
+                      className="min-w-0 rounded-row outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      <p className="truncate text-sm font-semibold text-ink">{member.name}</p>
+                      <p className="text-xs text-ink-muted">{member.ecode}</p>
+                    </Link>
+                    <p className="mt-1 text-xs tabular-nums text-ink-muted">
+                      {dates.map((iso) => formatDateIN(iso)).join(' · ')}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        ) : null}
+
+        <Card className={weekMonday && weekSunday ? 'lg:col-span-5' : 'lg:col-span-8'}>
+          <CardHeader title="Team pulse" subtitle="Today’s processed attendance by employee" />
+          {data.length === 0 ? (
+            <EmptyState
+              icon={<Users />}
+              title="No team members in scope"
+              description="Direct reports appear here after the reporting relationship becomes effective."
+            />
+          ) : (
+            <div className="grid gap-3">
+              {todayRows.map(({ member, day }) => (
+                <Link
+                  key={member.employeeId}
+                  to={`/people/${member.ecode}`}
+                  className="rounded-tile bg-surface-2 p-4 transition-colors hover:bg-accent-soft"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-ink">{member.name}</p>
+                      <p className="mt-0.5 text-xs text-ink-muted">{member.ecode}</p>
+                    </div>
+                    <StatusBadge
+                      tone={
+                        day?.status === 'P'
+                          ? 'positive'
+                          : day?.status === 'A' || day?.status === 'UAB'
+                            ? 'negative'
+                            : 'neutral'
+                      }
+                    >
+                      {attendanceLabel(day?.status)}
+                    </StatusBadge>
+                  </div>
+                  <div className="mt-4 flex items-end justify-between gap-4">
+                    <div className="text-xs leading-5 text-ink-muted">
+                      <p>
+                        In:{' '}
+                        <span className="tabular-nums text-ink">
+                          {formatTime(day?.firstIn ?? null)}
+                        </span>
+                      </p>
+                      <p>
+                        Out:{' '}
+                        <span className="tabular-nums text-ink">
+                          {formatTime(day?.lastOut ?? null)}
+                        </span>
+                      </p>
+                    </div>
+                    <DotMatrix
+                      size="sm"
+                      columns={7}
+                      dots={Object.entries(member.days)
+                        .slice(-14)
+                        .map(([date, value]) => ({
+                          key: date,
+                          state: attendanceDot(value.status),
+                          title: `${date}: ${attendanceLabel(value.status)}`,
+                        }))}
+                    />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <DarkCard className="flex flex-col justify-between lg:col-span-4">
+          <div>
+            <p className="text-xs font-medium text-hero-muted">Team attendance</p>
+            <h2 className="mt-3 font-serif text-4xl font-light">
+              {data.length === 0
+                ? 'No direct reports'
+                : `${String(present)} of ${String(data.length)} present`}
+            </h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-hero-muted">
+              {absent + awaiting > 0
+                ? `${String(absent + awaiting)} people still need a mark or a regularisation before month lock.`
+                : 'Everyone in view has a processed mark for today.'}
+            </p>
+          </div>
+          <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/my/team" className={goldOnCta ? GOLD : CREAM}>
               Open team month grid <ArrowRight className="size-4" />
             </Link>
@@ -128,123 +226,8 @@ export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; tod
               Review approvals
             </Link>
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3 self-end">
-          <div className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)] p-4">
-            <p className="text-xs text-hero-muted">On leave</p>
-            <p className="mt-1 text-3xl font-semibold tabular-nums">{onLeave}</p>
-          </div>
-          <div className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)] p-4">
-            <p className="text-xs text-hero-muted">Needs attention</p>
-            <p className="mt-1 text-3xl font-semibold tabular-nums">{absent + awaiting}</p>
-          </div>
-        </div>
-      </DarkCard>
-
-      {data.length > 0 && weekMonday && weekSunday && (
-        <Card>
-          <CardHeader
-            title="On leave this week"
-            subtitle={`${formatDateIN(weekMonday)} – ${formatDateIN(weekSunday)} · approved days marked L, not pending requests`}
-          />
-          {onLeaveWeek.length === 0 ? (
-            <p className="text-sm leading-6 text-ink-muted">
-              Nobody on your team is on leave this week
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {onLeaveWeek.map(({ member, dates }) => (
-                <li
-                  key={member.employeeId}
-                  className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-tile bg-surface-2 px-4 py-3"
-                >
-                  <Link
-                    to={`/people/${member.ecode}`}
-                    className="min-w-0 rounded-row outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                  >
-                    <p className="truncate text-sm font-semibold text-ink">{member.name}</p>
-                    <p className="text-xs text-ink-muted">{member.ecode}</p>
-                  </Link>
-                  <p className="text-sm tabular-nums text-ink-muted">
-                    {dates.map((iso) => formatDateIN(iso)).join(' · ')}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader title="Team pulse" subtitle="Today’s processed attendance by employee" />
-        {data.length === 0 ? (
-          <EmptyState
-            icon={<Users />}
-            title="No team members in scope"
-            description="Direct reports appear here after the reporting relationship becomes effective."
-          />
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {todayRows.map(({ member, day }) => (
-              <Link
-                key={member.employeeId}
-                to={`/people/${member.ecode}`}
-                className="rounded-tile bg-surface-2 p-4 transition-colors hover:bg-accent-soft"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-ink">{member.name}</p>
-                    <p className="mt-0.5 text-xs text-ink-muted">{member.ecode}</p>
-                  </div>
-                  <StatusBadge
-                    tone={
-                      day?.status === 'P'
-                        ? 'positive'
-                        : day?.status === 'A' || day?.status === 'UAB'
-                          ? 'negative'
-                          : 'neutral'
-                    }
-                  >
-                    {attendanceLabel(day?.status)}
-                  </StatusBadge>
-                </div>
-                <div className="mt-4 flex items-end justify-between gap-4">
-                  <div className="text-xs leading-5 text-ink-muted">
-                    <p>
-                      In:{' '}
-                      <span className="tabular-nums text-ink">
-                        {formatTime(day?.firstIn ?? null)}
-                      </span>
-                    </p>
-                    <p>
-                      Out:{' '}
-                      <span className="tabular-nums text-ink">
-                        {formatTime(day?.lastOut ?? null)}
-                      </span>
-                    </p>
-                  </div>
-                  <DotMatrix
-                    size="sm"
-                    columns={7}
-                    dots={Object.entries(member.days)
-                      .slice(-14)
-                      .map(([date, value]) => ({
-                        key: date,
-                        state: attendanceDot(value.status),
-                        title: `${date}: ${attendanceLabel(value.status)}`,
-                      }))}
-                  />
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Pill>Present {present}</Pill>
-          <Pill>Leave {onLeave}</Pill>
-          <Pill>Absent / UAB {absent}</Pill>
-        </div>
-      </Card>
+        </DarkCard>
+      </div>
     </div>
   );
 }

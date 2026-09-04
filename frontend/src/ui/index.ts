@@ -23,6 +23,7 @@ export { DarkCard } from './DarkCard';
 export { StatusBadge, Pill } from './StatusBadge';
 export type { StatusTone } from './StatusBadge';
 export { KpiNumber } from './KpiNumber';
+export { MetricMark } from './MetricMark';
 
 export { HatchFill } from './HatchFill';
 export { KpiPillRow } from './KpiPillRow';

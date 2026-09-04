@@ -8,7 +8,7 @@
  * the user sees "something went wrong" instead of the real reason.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, apiFetch } from './api';
+import { ApiError, StepUpRequiredError, apiFetch } from './api';
 import { getAccessToken, setAccessToken, clearAccessToken } from './session';
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -121,5 +121,38 @@ describe('apiFetch', () => {
   it('returns undefined for 204 rather than trying to parse an empty body', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
     await expect(apiFetch('/api/settings/x')).resolves.toBeUndefined();
+  });
+});
+
+describe('StepUpRequiredError (SEC-04)', () => {
+  it('is thrown — distinctly — when the server asks for a step-up', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({ message: 'Step-up required', data: { code: 'STEP_UP_REQUIRED' } }),
+            { status: 403 },
+          ),
+        ),
+      ),
+    );
+    await expect(apiFetch('/api/anything')).rejects.toBeInstanceOf(StepUpRequiredError);
+  });
+
+  it('leaves an ordinary 403 as a plain ApiError, so pages do not prompt wrongly', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ message: 'Missing permission: payroll.run.manage' }), {
+            status: 403,
+          }),
+        ),
+      ),
+    );
+    const error = await apiFetch('/api/anything').catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).not.toBeInstanceOf(StepUpRequiredError);
   });
 });

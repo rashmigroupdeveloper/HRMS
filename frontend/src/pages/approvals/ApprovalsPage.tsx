@@ -15,9 +15,10 @@ import {
   Textarea,
   toast,
 } from '../../ui';
+import { formatDateIN } from '../../ui/calendar';
 import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
 import { useDashboardResource } from '../home/useDashboardResource';
-import { payloadAsJson, summarizeRequest } from './request-summary';
+import { formatClaimMoney, payloadAsJson, summarizeRequest } from './request-summary';
 
 interface InboxItem {
   requestId: number;
@@ -264,6 +265,45 @@ export function ApprovalsPage() {
                   {timeRemaining(item.slaDueAt).label}
                 </StatusBadge>
               </div>
+              {summary.lines.length === 0 ? null : (
+                /* A claim is decided on its lines, not its total. Shown inside
+                   the same card as the amount so the approver never has to open
+                   another screen to see what they are approving (docs/05 §9.7). */
+                <div className="mt-6 overflow-x-auto rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)]">
+                  <table className="w-full text-left text-sm">
+                    <caption className="sr-only">Claim line items</caption>
+                    <thead>
+                      <tr className="text-xs text-hero-muted">
+                        <th scope="col" className="px-4 pt-3 pb-2 font-medium">What</th>
+                        <th scope="col" className="px-4 pt-3 pb-2 font-medium">When</th>
+                        <th scope="col" className="px-4 pt-3 pb-2 font-medium">Bill</th>
+                        <th scope="col" className="px-4 pt-3 pb-2 text-right font-medium">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {summary.lines.map((line, index) => (
+                        <tr
+                          key={`${line.spentOn}-${line.type}-${String(index)}`}
+                          className="border-t border-[color-mix(in_srgb,var(--surface)_14%,transparent)]"
+                        >
+                          <td className="px-4 py-2 text-hero-ink">
+                            {line.type}
+                            {line.description === null || line.description === '' ? null : (
+                              <span className="text-hero-muted"> · {line.description}</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2 text-hero-muted">{formatDateIN(line.spentOn)}</td>
+                          <td className="px-4 py-2 text-hero-muted">{line.billNo ?? '—'}</td>
+                          <td className="px-4 py-2 text-right tabular-nums text-hero-ink">
+                            {formatClaimMoney(line.amount)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
               {summary.rows.length === 0 ? (
                 <p className="mt-6 text-sm text-hero-muted">No extra details on this request.</p>
               ) : (

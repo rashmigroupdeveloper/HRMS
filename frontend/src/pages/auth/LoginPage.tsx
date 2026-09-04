@@ -17,6 +17,7 @@ import type { CSSProperties, SyntheticEvent } from 'react';
 import { IdCard, Lock, ShieldCheck } from 'lucide-react';
 import { Button, Checkbox, StatusBadge, TextField, ThemeToggle } from '../../ui';
 import { type SessionUser } from '../../lib/session';
+import { ForgotPasswordPanel } from './ForgotPasswordPanel';
 
 interface LoginPageProps {
   /** Called with the authenticated user once the server accepts the login. */
@@ -83,6 +84,7 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
   });
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [panel, setPanel] = useState<'login' | 'forgot'>('login');
 
   const idRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -212,12 +214,21 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
           </div>
 
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-            Employee sign-in
+            {panel === 'login' ? 'Employee sign-in' : 'Password reset'}
           </p>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight text-ink">
-            Sign in to your account
+            {panel === 'login' ? 'Sign in to your account' : 'Forgot your password?'}
           </h2>
 
+          {panel === 'forgot' ? (
+            <ForgotPasswordPanel
+              initialIdentifier={employeeId || remembered}
+              validateIdentifier={validateEmployeeId}
+              onBack={() => {
+                setPanel('login');
+              }}
+            />
+          ) : (
           <form
             aria-label="Employee sign-in"
             onSubmit={(e) => {
@@ -283,12 +294,15 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
                   setRememberIdentifier(event.target.checked);
                 }}
               />
-              <a
-                href="mailto:hrms-support@rashmigroup.com?subject=Password%20reset"
+              <button
+                type="button"
                 className="rounded text-sm font-medium text-ink underline-offset-4 hover:underline"
+                onClick={() => {
+                  setPanel('forgot');
+                }}
               >
-                Forgot password? Email HR Ops
-              </a>
+                Forgot password?
+              </button>
             </div>
 
             <Button
@@ -301,6 +315,7 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
               {submitting ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
+          )}
 
           <p className="mt-8 text-xs leading-relaxed text-ink-muted">
             Trouble signing in? Contact HR Ops at{' '}

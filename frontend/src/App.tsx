@@ -1,13 +1,18 @@
 /**
  * App root — session gate + router (docs/05 deep links).
  * Product chrome lives in AppShell; design-system gallery at /dev/gallery.
+ *
+ * Logged-out visitors still need a Router: ESS-01 reset lives at
+ * /reset-password?token= outside AppShell, while every other path shows login.
  */
 import { useEffect, useState } from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { LoginPage } from './pages/auth/LoginPage';
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { AppRouter } from './app/router';
 import {
   loadSession,
+  reloadSession,
   restoreSession,
   type SessionUser,
 } from './lib/session';
@@ -34,12 +39,22 @@ export function App() {
 
   if (session === null) {
     return (
-      <LoginPage
-        onSuccess={(user) => {
-          setSession(user);
-        }}
-        loadSession={loadSession}
-      />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route
+            path="*"
+            element={
+              <LoginPage
+                onSuccess={(user) => {
+                  setSession(user);
+                }}
+                loadSession={loadSession}
+              />
+            }
+          />
+        </Routes>
+      </BrowserRouter>
     );
   }
 
@@ -49,6 +64,13 @@ export function App() {
         user={session}
         onSignedOut={() => {
           setSession(null);
+        }}
+        onSessionChanged={() => {
+          // Step-up, MFA changes and password changes all alter what /auth/me
+          // reports, and the shell reads that for nav + the step-up window.
+          void reloadSession().then((refreshed) => {
+            if (refreshed !== null) setSession(refreshed);
+          });
         }}
       />
     </BrowserRouter>

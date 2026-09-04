@@ -33,7 +33,7 @@ export function PageHeader({
           className={cn(
             'mt-1 font-light leading-[1.08] tracking-tight text-ink',
             tone === 'greeting'
-              ? 'font-serif text-[2.35rem] sm:text-5xl'
+              ? 'font-serif text-5xl sm:text-6xl'
               : 'text-4xl sm:text-5xl',
           )}
         >

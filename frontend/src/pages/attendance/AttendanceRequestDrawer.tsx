@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { apiFetch } from '../../lib/api';
-import { Button, DatePicker, Drawer, Select, Textarea, formatDateIN, toast, todayISOIST } from '../../ui';
+import { Button, DatePicker, Drawer, Select, Textarea, TextField, formatDateIN, toast, todayISOIST } from '../../ui';
+import { ChainPreview } from '../workflows/ChainPreview';
 
 const AR_DRAFT_KEY = 'rashmi.draft.ar';
 const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -77,6 +78,11 @@ const KIND_COPY: Record<string, { title: string; help: string; inaction: string 
     help: 'A short, approved gap — your manager sees the reason before it hits payroll.',
     inaction: 'Without this, a short gap has no approved record.',
   },
+  SWAP: {
+    title: 'Swap a shift',
+    help: 'Trade a rostered day with a colleague. Overlap, rest and hours caps run on the result.',
+    inaction: 'Without this, the published roster stays as your manager set it.',
+  },
 };
 
 const KIND_FALLBACK = {
@@ -111,6 +117,7 @@ export function AttendanceRequestDrawer({
   const [fromDate, setFromDate] = useState<string | null>(null);
   const [toDate, setToDate] = useState<string | null>(null);
   const [reason, setReason] = useState('');
+  const [counterpartId, setCounterpartId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const skipPersistRef = useRef(true);
@@ -151,17 +158,34 @@ export function AttendanceRequestDrawer({
   }, [open, kind, fromDate, toDate, reason]);
 
   const submit = async () => {
-    if (!fromDate || !toDate || reason.trim().length < 5) {
+    if (reason.trim().length < 5 || !fromDate || (kind !== 'SWAP' && !toDate)) {
       setError('Choose the dates and add a short reason your manager can act on.');
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      await apiFetch('/api/attendance/requests', {
-        method: 'POST',
-        body: JSON.stringify({ kind, fromDate, toDate, reason: reason.trim() }),
-      });
+      if (kind === 'SWAP') {
+        if (!fromDate || !/^\d+$/.test(counterpartId)) {
+          setError('Pick the day and your colleague’s employee ID from the team roster.');
+          setLoading(false);
+          return;
+        }
+        await apiFetch('/api/attendance/swaps', {
+          method: 'POST',
+          body: JSON.stringify({
+            counterpartEmployeeId: Number(counterpartId),
+            workDate: fromDate,
+            kind: 'swap',
+            reason: reason.trim(),
+          }),
+        });
+      } else {
+        await apiFetch('/api/attendance/requests', {
+          method: 'POST',
+          body: JSON.stringify({ kind, fromDate, toDate, reason: reason.trim() }),
+        });
+      }
       toast.success(`${copy.title} sent`, {
         description: 'Your reporting manager has been notified.',
       });
@@ -215,19 +239,41 @@ export function AttendanceRequestDrawer({
               label: 'Short permission',
               description: 'A short approved gap in the day',
             },
+            {
+              value: 'SWAP',
+              label: 'Shift swap',
+              description: 'Trade a rostered day with a colleague',
+            },
           ]}
         />
-        <div className="grid grid-cols-2 gap-3">
-          <DatePicker label="From" required value={fromDate} onChange={setFromDate} />
-          <DatePicker
-            label="To"
-            required
-            value={toDate}
-            min={fromDate ?? undefined}
-            onChange={setToDate}
+        {kind === 'SWAP' && (
+          <TextField
+            label="Colleague employee ID"
+            value={counterpartId}
+            hint="The number on the team roster next to their name."
+            onChange={(event) => {
+              setCounterpartId(event.currentTarget.value);
+            }}
           />
+        )}
+        <div className="grid grid-cols-2 gap-3">
+          <DatePicker
+            label={kind === 'SWAP' ? 'Day to swap' : 'From'}
+            required
+            value={fromDate}
+            onChange={setFromDate}
+          />
+          {kind !== 'SWAP' && (
+            <DatePicker
+              label="To"
+              required
+              value={toDate}
+              min={fromDate ?? undefined}
+              onChange={setToDate}
+            />
+          )}
         </div>
-        {days > 0 && fromDate && toDate && (
+        {kind !== 'SWAP' && days > 0 && fromDate && toDate && (
           <div className="rounded-row bg-surface-2 px-4 py-3">
             <p className="text-sm font-semibold text-ink">
               You are requesting {String(days)} day{days === 1 ? '' : 's'}
@@ -250,6 +296,9 @@ export function AttendanceRequestDrawer({
           }}
           hint="Your manager reads this — a short, specific why is enough."
           error={error ?? undefined}
+        />
+        <ChainPreview
+          definitionCode={kind === 'OD' ? 'od' : kind === 'SWAP' ? 'shift_swap' : 'regularization'}
         />
       </div>
     </Drawer>

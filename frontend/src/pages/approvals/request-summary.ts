@@ -12,13 +12,27 @@ interface SummaryRow {
   value: string;
 }
 
+/** A claim's line items, shown as a table rather than flattened into rows. */
+interface ClaimLine {
+  type: string;
+  description: string | null;
+  spentOn: string;
+  billNo: string | null;
+  amount: string;
+}
+
 interface RequestSummary {
   rows: SummaryRow[];
   preview: string;
   consequence: string;
+  /** Present only for claims — the detail an approver decides from. */
+  lines: ClaimLine[];
 }
 
 const SKIP = new Set([
+  'lines', // rendered as a table, not as a flattened row
+  'claimId',
+  'budgetAllowance', // folded into the Amount row as its anchor
   'id',
   'requestId',
   'applicationId',
@@ -49,15 +63,38 @@ const LABEL: Record<string, string> = {
   name: 'Name',
   deadline: 'Decide by',
   templateCode: 'Template',
+  coverageWarning: 'Coverage',
+  counterpartEmployeeId: 'Colleague',
+  reference: 'Claim',
+  amount: 'Amount',
+  budgetTitle: 'Budget',
+  budgetRemaining: 'Left on budget',
+  spentOn: 'Spent on',
+  billNo: 'Bill no.',
 };
+
+/** NUMERIC strings arrive as '6000.00'; money is shown in lakh grouping. */
+const MONEY_KEYS = new Set(['amount', 'budgetRemaining', 'budgetAllowance']);
+
+function formatMoney(value: string | number): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return String(value);
+  return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+}
 
 const KIND_LABEL: Record<string, string> = {
   AR: 'Attendance regularisation',
   OD: 'On duty',
   PERMISSION: 'Permission',
+  swap: 'Shift swap',
+  bid: 'Shift bid',
 };
 
 const KEY_ORDER = [
+  'reference',
+  'amount',
+  'budgetTitle',
+  'budgetRemaining',
   'leaveType',
   'type',
   'kind',
@@ -77,6 +114,8 @@ const KEY_ORDER = [
   'name',
   'deadline',
   'templateCode',
+  'coverageWarning',
+  'counterpartEmployeeId',
 ] as const;
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -119,6 +158,9 @@ function formatInstant(iso: string): string {
 
 function formatScalar(key: string, value: unknown): string | null {
   if (value === null || value === undefined || value === '') return null;
+  if (MONEY_KEYS.has(key) && (typeof value === 'string' || typeof value === 'number')) {
+    return formatMoney(value);
+  }
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (typeof value === 'number') {
     if (MINUTE_KEYS.has(key)) return formatMinutes(value);
@@ -193,12 +235,35 @@ function consequence(type: string, payload: unknown): string {
       ? 'Approving marks the requested days as present.'
       : `Approving marks ${span} as present.`;
   }
+  if (type === 'shift_swap' || kind === KIND_LABEL['swap'] || kind === KIND_LABEL['bid']) {
+    return span === null
+      ? 'Approving swaps the rostered day after overlap, rest and hours-cap checks.'
+      : `Approving swaps the rostered day on ${span} after overlap, rest and hours-cap checks.`;
+  }
   if (type === 'leave' || type === 'comp_off' || leave !== null) {
     const daysBit = days === null ? 'leave' : `${days} day${days === '1' ? '' : 's'}`;
     const typeBit = leave ?? 'leave';
     return span === null
       ? `Approving grants ${daysBit} of ${typeBit}.`
       : `Approving grants ${daysBit} of ${typeBit} (${span}).`;
+  }
+  if (type === 'claim') {
+    const amount = formatScalar('amount', payload['amount']);
+    const left = formatScalar('budgetRemaining', payload['budgetRemaining']);
+    const budget = typeof payload['budgetTitle'] === 'string' ? payload['budgetTitle'] : null;
+    // §9.7 — the facts of the commitment, stated where the decision is made.
+    // The money is ALREADY held against the budget; approving confirms it is
+    // owed, and only a rejection gives it back. Saying so prevents the common
+    // mistake of assuming approval is what spends it.
+    const head =
+      amount === null
+        ? 'Approving confirms this claim as owed.'
+        : `Approving confirms ${amount} as owed${budget === null ? '' : ` against ${budget}`}.`;
+    const tail =
+      left === null
+        ? ' The amount is already committed; rejecting returns it to the budget.'
+        : ` The amount is already committed — ${left} is left on that budget. Rejecting returns it.`;
+    return head + tail;
   }
   if (type === 'leave_cancel') {
     return 'Approving cancels the leave and returns the days to the ledger.';
@@ -209,6 +274,33 @@ function consequence(type: string, payload: unknown): string {
       : `Approving encashes ${days} day${days === '1' ? '' : 's'}.`;
   }
   return 'Approving grants this request as submitted. Rejecting or sending it back needs a note.';
+}
+
+function linesFromPayload(payload: unknown): ClaimLine[] {
+  if (!isRecord(payload)) return [];
+  const raw = payload['lines'];
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry): ClaimLine[] => {
+    if (!isRecord(entry)) return [];
+    return [
+      {
+        type: typeof entry['type'] === 'string' ? entry['type'] : 'Expense',
+        description: typeof entry['description'] === 'string' ? entry['description'] : null,
+        spentOn: typeof entry['spentOn'] === 'string' ? entry['spentOn'] : '',
+        billNo: typeof entry['billNo'] === 'string' ? entry['billNo'] : null,
+        amount:
+          typeof entry['amount'] === 'string'
+            ? entry['amount']
+            : typeof entry['amount'] === 'number'
+              ? String(entry['amount'])
+              : '',
+      },
+    ];
+  });
+}
+
+export function formatClaimMoney(value: string): string {
+  return formatMoney(value);
 }
 
 export function summarizeRequest(type: string, payload: unknown): RequestSummary {
@@ -223,6 +315,7 @@ export function summarizeRequest(type: string, payload: unknown): RequestSummary
     rows,
     preview: previewParts.join(' · '),
     consequence: consequence(type, payload),
+    lines: linesFromPayload(payload),
   };
 }
 

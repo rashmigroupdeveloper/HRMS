@@ -7,7 +7,11 @@ export function defaultCompanyId(): string {
 }
 
 export function rememberCompanyId(value: string): void {
-  if (/^\d+$/.test(value)) localStorage.setItem('hrms.reportCompanyId', value);
+  if (/^\d+$/.test(value)) {
+    localStorage.setItem('hrms.reportCompanyId', value);
+  } else if (value === '') {
+    localStorage.removeItem('hrms.reportCompanyId');
+  }
 }
 
 export function defaultMonth(): string {

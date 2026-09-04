@@ -69,7 +69,7 @@ export function PillNav({ pills, moreCount, moreOpen, moreActive, onToggleMore }
           end={item.to === '/'}
           className={({ isActive }) =>
             cn(
-              'relative z-10 u-press rounded-full px-4 py-2 text-sm font-medium',
+              'relative z-10 u-press whitespace-nowrap rounded-full px-3.5 py-2 text-[13px] font-medium',
               'transition-colors duration-(--motion-micro)',
               isActive ? 'text-hero-ink' : 'text-ink-muted hover:text-ink',
             )
@@ -85,7 +85,7 @@ export function PillNav({ pills, moreCount, moreOpen, moreActive, onToggleMore }
           aria-haspopup="menu"
           onClick={onToggleMore}
           className={cn(
-            'relative z-10 u-press rounded-full px-4 py-2 text-sm font-medium',
+            'relative z-10 u-press whitespace-nowrap rounded-full px-3.5 py-2 text-[13px] font-medium',
             'transition-colors duration-(--motion-micro)',
             thumbOnMore ? 'text-hero-ink' : 'text-ink-muted hover:text-ink',
           )}

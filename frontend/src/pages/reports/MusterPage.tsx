@@ -19,6 +19,7 @@ import {
   toast,
 } from '../../ui';
 import type { Column } from '../../ui';
+import { CompanySelect } from '../_shared/CompanySelect';
 import { currentMonthIST } from '../home/dashboard-format';
 import { defaultCompanyId, qs, rememberCompanyId } from './report-utils';
 
@@ -186,7 +187,7 @@ export function MusterPage() {
   const load = useCallback(
     async (rebuild: boolean) => {
       if (!valid) {
-        setError('Enter a valid company ID.');
+        setError('Select a legal entity.');
         return;
       }
       setLoading(true);
@@ -219,7 +220,7 @@ export function MusterPage() {
 
   const download = async () => {
     if (!valid) {
-      setError('Enter a valid company ID.');
+      setError('Select a legal entity.');
       return;
     }
     setLoading(true);
@@ -316,11 +317,10 @@ export function MusterPage() {
 
       <Card>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 md:items-end">
-          <TextField
-            label="Company ID"
+          <CompanySelect
             value={filters.companyId}
-            onChange={(event) => {
-              patch({ companyId: event.currentTarget.value });
+            onChange={(value) => {
+              patch({ companyId: value });
             }}
             error={error && !valid ? error : undefined}
           />

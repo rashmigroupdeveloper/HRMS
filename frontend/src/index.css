@@ -63,10 +63,11 @@ body {
   /* Crextio signature: warm bottom-right gradient corner, not a flat cream fill
      (docs/05 §5). The glow is a token so it flips light↔dark. */
   background:
+    radial-gradient(80% 70% at 92% 108%, var(--canvas-glow) 0%, transparent 58%),
     radial-gradient(
-      120% 120% at 100% 100%,
-      var(--canvas-glow) 0%,
-      transparent 42%
+      45% 40% at 100% 100%,
+      color-mix(in srgb, var(--canvas-glow) 55%, transparent) 0%,
+      transparent 70%
     ),
     var(--canvas);
   background-attachment: fixed;

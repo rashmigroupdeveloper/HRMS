@@ -4,7 +4,7 @@ import { hasPermission, hasRole } from '../../lib/session';
 import { todayLongIST } from '../../lib/date';
 import { Card, CardHeader, Pill, PageHeader } from '../../ui';
 import { BusinessUnitDashboard } from './BusinessUnitDashboard';
-import { DashboardError, DashboardSkeleton } from './DashboardFeedback';
+import { DashboardError, DashboardSkeleton, UnlinkedEmployee } from './DashboardFeedback';
 import { DeviceHealthDashboard } from './DeviceHealthDashboard';
 import { EssDashboard } from './EssDashboard';
 import { HrOpsDashboard } from './HrOpsDashboard';
@@ -64,7 +64,7 @@ function homeBlurb(user: SessionUser): { title: string; body: string } {
   if (hasRole(user, 'hr_ops') || hasRole(user, 'hr_head') || hasRole(user, 'super_admin')) {
     return {
       title: 'HR operations',
-      body: 'Muster, absence cases and the people directory are live. Use the rail to open today’s queue.',
+      body: 'Muster, absence cases and the people directory are live. Use the masthead to open today’s queue.',
     };
   }
   if (hasRole(user, 'it_admin')) {
@@ -86,6 +86,7 @@ function DeferredDashboard({ user }: RoleHomePageProps) {
   return (
     <div className="space-y-8">
       <PageHeader
+        tone="greeting"
         eyebrow={todayLongIST()}
         title={`Hello ${name}`}
         description={blurb.body}
@@ -145,6 +146,19 @@ export function RoleHomePage({ user }: RoleHomePageProps) {
     return <BusinessUnitDashboard />;
   }
   if (hasPermission(user, 'reports.hr')) return <HrHome />;
+  if (user.employeeId === null && (hasPermission(user, 'attendance.team.read') || hasPermission(user, 'attendance.own'))) {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          tone="greeting"
+          eyebrow={todayLongIST()}
+          title={`Hello ${greetingFromEmail(user.email)}`}
+          description="This login is not linked to an employee record, so today’s attendance cannot be shown."
+        />
+        <UnlinkedEmployee />
+      </div>
+    );
+  }
   if (hasPermission(user, 'attendance.team.read')) {
     return <ManagerHome subtree={hasRole(user, 'senior_manager')} />;
   }

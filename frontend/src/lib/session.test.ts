@@ -27,6 +27,8 @@ const USER: SessionUser = {
   employeeId: 7,
   roles: ['hr_ops'],
   permissions: ['employee.read', 'attendance.team.read'],
+  mfa: { enrolled: false, required: false, enforcement: 'grace' },
+  steppedUpUntil: null,
 };
 
 function jsonResponse(body: unknown, status = 200): Response {

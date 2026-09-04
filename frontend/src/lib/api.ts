@@ -14,6 +14,21 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * SEC-04 — the server refused because this session is not elevated.
+ *
+ * A distinct error type, not a status check scattered through pages: a caller
+ * catches THIS, opens the step-up dialog, and retries the exact action. The
+ * user never loses what they were doing (docs/05 §6 kill-list — state
+ * preservation).
+ */
+export class StepUpRequiredError extends ApiError {
+  constructor(message: string) {
+    super(message, 403);
+    this.name = 'StepUpRequiredError';
+  }
+}
+
 async function tryRefresh(): Promise<string | null> {
   try {
     const res = await fetch('/api/auth/refresh', {
@@ -54,8 +69,18 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    const body = (await res.json().catch(() => null)) as { message?: string } | null;
-    throw new ApiError(body?.message ?? `Request failed (${String(res.status)})`, res.status);
+    const raw = await res.text().catch(() => '');
+    let message = `Request failed (${String(res.status)})`;
+    try {
+      const parsed = JSON.parse(raw) as { message?: string };
+      if (typeof parsed.message === 'string' && parsed.message !== '') message = parsed.message;
+    } catch {
+      // A non-JSON error body is still worth surfacing as a status.
+    }
+    if (res.status === 403 && raw.includes('STEP_UP_REQUIRED')) {
+      throw new StepUpRequiredError(message);
+    }
+    throw new ApiError(message, res.status);
   }
 
   if (res.status === 204) return undefined as T;

@@ -8,10 +8,10 @@ interface ResourceState<T> {
   reload: () => void;
 }
 
-export function useDashboardResource<T>(path: string): ResourceState<T> {
+export function useDashboardResource<T>(path: string, enabled = true): ResourceState<T> {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [request, setRequest] = useState(0);
 
   const reload = useCallback(() => {
@@ -19,6 +19,13 @@ export function useDashboardResource<T>(path: string): ResourceState<T> {
   }, []);
 
   useEffect(() => {
+    if (!enabled) {
+      setData(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -38,7 +45,7 @@ export function useDashboardResource<T>(path: string): ResourceState<T> {
     return () => {
       cancelled = true;
     };
-  }, [path, request]);
+  }, [path, request, enabled]);
 
   return { data, error, loading, reload };
 }

@@ -5,6 +5,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { SessionUser } from '../../lib/session';
 import { LoginPage } from './LoginPage';
 import { renderThemed, THEMES } from '../../test/render';
@@ -16,6 +17,8 @@ const SESSION: SessionUser = {
   employeeId: 1,
   roles: [],
   permissions: [],
+  mfa: { enrolled: false, required: false, enforcement: 'grace' },
+  steppedUpUntil: null,
 };
 
 function renderLogin() {
@@ -49,5 +52,12 @@ describe('LoginPage', () => {
     renderLogin();
     expect(document.querySelector('.u-gold-sweep')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/people, attendance and payroll/i);
+  });
+
+  it('opens the forgot-password form on the same page', async () => {
+    renderLogin();
+    await userEvent.click(screen.getByRole('button', { name: 'Forgot password?' }));
+    expect(screen.getByRole('form', { name: 'Forgot password' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Send reset link' })).toBeInTheDocument();
   });
 });

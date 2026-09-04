@@ -1,4 +1,4 @@
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, UserRound } from 'lucide-react';
 import { Button, Card, EmptyState, Skeleton } from '../../ui';
 
 export function DashboardSkeleton() {
@@ -26,6 +26,9 @@ export function DashboardSkeleton() {
 }
 
 export function DashboardError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  if (/no employee profile/i.test(message)) {
+    return <UnlinkedEmployee />;
+  }
   return (
     // role="alert" + aria-live: a failure must be ANNOUNCED, not just drawn
     // (docs/05 §7 `aria-live-errors`). This is the shared error surface for
@@ -45,6 +48,19 @@ export function DashboardError({ message, onRetry }: { message: string; onRetry:
             Try again
           </Button>
         }
+      />
+    </Card>
+  );
+}
+
+/** Login exists, but IT has not attached an employee master row (CORE-01). */
+export function UnlinkedEmployee() {
+  return (
+    <Card>
+      <EmptyState
+        icon={<UserRound />}
+        title="No employee profile on this login"
+        description="IT attaches your employee record at onboarding. Attendance, leave and team views stay empty until that link exists — nothing is invented in the meantime."
       />
     </Card>
   );

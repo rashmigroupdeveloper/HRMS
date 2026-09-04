@@ -14,6 +14,15 @@ export interface SessionUser {
   employeeId: number | null;
   roles: string[];
   permissions: string[];
+  /** SEC-03 — drives the enrolment card and, past grace, the interstitial. */
+  mfa: { enrolled: boolean; required: boolean; enforcement: 'off' | 'grace' | 'required' };
+  /** SEC-04 — ISO instant this session stays elevated until, or null. */
+  steppedUpUntil: string | null;
+}
+
+/** True while the session is elevated, so a screen can skip a second challenge. */
+export function isSteppedUp(user: SessionUser, now = Date.now()): boolean {
+  return user.steppedUpUntil !== null && new Date(user.steppedUpUntil).getTime() > now;
 }
 
 const TOKEN_KEY = 'hrms.accessToken';
@@ -67,6 +76,21 @@ export async function restoreSession(): Promise<SessionUser | null> {
 export async function loadSession(accessToken: string): Promise<SessionUser> {
   setAccessToken(accessToken);
   return fetchMe(accessToken);
+}
+
+/**
+ * Re-read /auth/me for the CURRENT token. Used after step-up, MFA enrolment or
+ * a password change — all of which alter what the shell must know without
+ * changing who is signed in. Returns null if there is no usable token.
+ */
+export async function reloadSession(): Promise<SessionUser | null> {
+  const token = getAccessToken();
+  if (token === null) return null;
+  try {
+    return await fetchMe(token);
+  } catch {
+    return null;
+  }
 }
 
 /** Clears the refresh cookie server-side and the local access token. */

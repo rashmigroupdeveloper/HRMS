@@ -1,4 +1,4 @@
-import { ArrowRight, FileClock, Palmtree } from 'lucide-react';
+import { ArrowRight, BookOpen, FileClock, Palmtree } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { todayLongIST } from '../../lib/date';
 import {
@@ -17,6 +17,7 @@ import type { AttendanceRequest } from '../attendance/attendance-types';
 import type { EssDashboardData } from './dashboard-types';
 import { attendanceLabel, formatTime } from './dashboard-format';
 import { useDashboardResource } from './useDashboardResource';
+import { EssTodayRail } from './ess-today';
 
 const CREAM =
   'u-press mt-6 inline-flex items-center gap-2 rounded-full bg-[color-mix(in_srgb,var(--surface)_12%,transparent)] px-5 py-2.5 text-sm font-semibold text-hero-ink';
@@ -103,13 +104,6 @@ function buildPendingRows(
   return { rows: rows.slice(0, 5), openCount: rows.length };
 }
 
-function statusTone(status: string | undefined) {
-  if (status === 'P') return 'positive' as const;
-  if (status === 'A' || status === 'UAB') return 'negative' as const;
-  if (status === 'HD' || status === 'L') return 'warning' as const;
-  return 'neutral' as const;
-}
-
 function todayCopy(data: EssDashboardData): string {
   const status = data.todayStatus?.status;
   if (status === 'A' || status === 'UAB') {
@@ -160,7 +154,7 @@ function PolicyAckBanner({
 function PendingRequestList({ rows, total }: { rows: PendingRow[]; total: number }) {
   if (rows.length === 0 && total === 0) return null;
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader
         title="Waiting on a manager"
         subtitle={`${String(total)} request${total === 1 ? '' : 's'} already submitted — leaving now would abandon that work.`}
@@ -227,42 +221,52 @@ export function EssDashboard({ data }: { data: EssDashboardData }) {
   const attendanceGold = !policyBlocking && (needsRegularise || !pendingIsTheJob);
   const statusWords = attendanceLabel(data.todayStatus?.status);
   const attendanceLabelText = needsRegularise ? 'Request regularisation' : 'Open my attendance';
+  const kpiPills = [
+    {
+      label: 'Leave available',
+      value: totalAvailable,
+      suffix: ' days',
+      state: 'filled' as const,
+      precision: totalAvailable % 1 === 0 ? 0 : 1,
+      icon: <Palmtree />,
+      to: '/my/leave',
+    },
+    {
+      label: 'Pending requests',
+      value: pendingTotal,
+      state: pendingIsTheJob ? ('accent' as const) : pendingTotal > 0 ? ('hatched' as const) : ('outline' as const),
+      icon: <FileClock />,
+      to: '/my/leave',
+    },
+    ...(policyBlocking
+      ? [
+          {
+            label: 'Policies to read',
+            value: pending.length,
+            state: 'hatched' as const,
+            icon: <BookOpen />,
+            to: '/policies',
+          },
+        ]
+      : []),
+  ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-      <PageHeader
-        tone="greeting"
-        eyebrow={todayLongIST()}
-        title={`Hello ${data.greetingName}`}
-        actions={
-          data.shift ? (
-            <Pill>
-              {data.shift.name} · {data.shift.startTime}–{data.shift.endTime}
-            </Pill>
-          ) : undefined
-        }
-      />
-      <KpiPillRow
-        pills={[
-          {
-            label: 'Leave available',
-            value: totalAvailable,
-            suffix: ' days',
-            state: 'filled',
-            precision: totalAvailable % 1 === 0 ? 0 : 1,
-            icon: <Palmtree />,
-            to: '/my/leave',
-          },
-          {
-            label: 'Pending requests',
-            value: pendingTotal,
-            state: pendingIsTheJob ? 'accent' : pendingTotal > 0 ? 'hatched' : 'outline',
-            icon: <FileClock />,
-            to: '/my/leave',
-          },
-        ]}
-      />
+        <PageHeader
+          tone="greeting"
+          eyebrow={todayLongIST()}
+          title={`Hello ${data.greetingName}`}
+          actions={
+            data.shift ? (
+              <Pill>
+                {data.shift.name} · {data.shift.startTime}–{data.shift.endTime}
+              </Pill>
+            ) : undefined
+          }
+        />
+        <KpiPillRow pills={kpiPills} />
       </div>
 
       {policyBlocking && (
@@ -275,55 +279,14 @@ export function EssDashboard({ data }: { data: EssDashboardData }) {
         />
       )}
 
-      <div className="grid gap-6 lg:grid-cols-12">
-        <DarkCard className="grid gap-8 lg:col-span-5 md:grid-cols-[1.3fr_1fr] lg:grid-cols-1 xl:grid-cols-[1.3fr_1fr]">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
-            Today’s attendance
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <h2 className="text-3xl font-light">{statusWords}</h2>
-            <StatusBadge tone={statusTone(data.todayStatus?.status)}>{statusWords}</StatusBadge>
-          </div>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-hero-muted">{todayCopy(data)}</p>
-          {attendanceGold ? (
-            <Button
-              className="mt-6"
-              variant="primary"
-              trailingIcon={<ArrowRight className="size-4" />}
-              onClick={() => {
-                void navigate('/my/attendance');
-              }}
-            >
-              {attendanceLabelText}
-            </Button>
-          ) : (
-            <Link to="/my/attendance" className={CREAM}>
-              {attendanceLabelText} <ArrowRight className="size-4" />
-            </Link>
-          )}
-        </div>
-        <dl className="grid grid-cols-2 gap-3 self-end">
-          <div className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)] p-4">
-            <dt className="text-xs text-hero-muted">First in</dt>
-            <dd className="mt-1 tabular-nums text-xl font-semibold">
-              {formatTime(data.todayStatus?.firstIn ?? null)}
-            </dd>
-          </div>
-          <div className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)] p-4">
-            <dt className="text-xs text-hero-muted">Last out</dt>
-            <dd className="mt-1 tabular-nums text-xl font-semibold">
-              {formatTime(data.todayStatus?.lastOut ?? null)}
-            </dd>
-          </div>
-        </dl>
-      </DarkCard>
+      <div className="grid items-stretch gap-6 lg:grid-cols-12">
+        <EssTodayRail data={data} statusWords={statusWords} />
 
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-5">
           {pendingTotal > 0 ? (
             <PendingRequestList rows={pendingList.rows} total={pendingTotal} />
           ) : (
-            <Card>
+            <Card className="h-full">
               <CardHeader
                 title="This month’s pay"
                 subtitle="Opens the payslip when payroll has run. Nothing invented in the meantime."
@@ -340,48 +303,72 @@ export function EssDashboard({ data }: { data: EssDashboardData }) {
           )}
         </div>
 
-        <div className="lg:col-span-12">
-      <Card>
-        <CardHeader
-          title="Leave balances"
-          subtitle="Ledger-derived available days by type — already yours before you apply."
-          action={
-            <div className="flex flex-wrap gap-3">
-              <Link to="/my/pay" className="text-sm font-medium text-ink hover:underline">
-                This month’s pay
-              </Link>
-              <Link to="/my/leave" className="text-sm font-medium text-ink hover:underline">
-                Apply for a day off
-              </Link>
-            </div>
-          }
-        />
-        {data.leaveBalances.length === 0 ? (
-          <EmptyState
-            icon={<Palmtree />}
-            title="No leave balances yet"
-            description="Balances appear here after the applicable leave policy is assigned."
-          />
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {data.leaveBalances.map((leave) => (
-              <div key={leave.leaveTypeId} className="rounded-tile bg-surface-2 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-ink">{leave.name}</p>
-                    <p className="mt-0.5 text-xs text-ink-muted">{leave.code}</p>
-                  </div>
-                  <Pill>{leave.isPaid ? 'Paid' : 'Unpaid'}</Pill>
-                </div>
-                <p className="mt-6 text-3xl font-light tabular-nums text-ink">
-                  {leave.available.toLocaleString('en-IN')}
-                </p>
-                <p className="text-xs text-ink-muted">days available</p>
-              </div>
-            ))}
+        <DarkCard className="flex flex-col justify-between lg:col-span-4">
+          <div>
+            <p className="text-xs font-medium text-hero-muted">Attendance</p>
+            <h2 className="mt-3 font-serif text-4xl font-light">{statusWords}</h2>
+            <p className="mt-3 max-w-sm text-sm leading-6 text-hero-muted">{todayCopy(data)}</p>
           </div>
-        )}
-      </Card>
+          {attendanceGold ? (
+            <Button
+              className="mt-8 self-start"
+              variant="primary"
+              trailingIcon={<ArrowRight className="size-4" />}
+              onClick={() => {
+                void navigate('/my/attendance');
+              }}
+            >
+              {attendanceLabelText}
+            </Button>
+          ) : (
+            <Link to="/my/attendance" className={CREAM}>
+              {attendanceLabelText} <ArrowRight className="size-4" />
+            </Link>
+          )}
+        </DarkCard>
+
+        <div className="lg:col-span-12">
+          <Card className="h-full">
+            <CardHeader
+              title="Leave balances"
+              subtitle="Ledger-derived available days by type — already yours before you apply."
+              action={
+                <div className="flex flex-wrap gap-3">
+                  <Link to="/my/pay" className="text-sm font-medium text-ink hover:underline">
+                    This month’s pay
+                  </Link>
+                  <Link to="/my/leave" className="text-sm font-medium text-ink hover:underline">
+                    Apply for a day off
+                  </Link>
+                </div>
+              }
+            />
+            {data.leaveBalances.length === 0 ? (
+              <EmptyState
+                icon={<Palmtree />}
+                title="No leave balances yet"
+                description="Balances appear here after the applicable leave policy is assigned."
+              />
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {data.leaveBalances.map((leave) => (
+                  <div key={leave.leaveTypeId} className="rounded-tile bg-surface-2 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-ink">{leave.name}</p>
+                        <p className="mt-0.5 text-xs text-ink-muted">{leave.code}</p>
+                      </div>
+                      <Pill>{leave.isPaid ? 'Paid' : 'Unpaid'}</Pill>
+                    </div>
+                    <p className="mt-6 font-serif text-3xl font-light tabular-nums text-ink">
+                      {leave.available.toLocaleString('en-IN')}
+                    </p>
+                    <p className="text-xs text-ink-muted">days available</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </div>
       </div>
     </div>

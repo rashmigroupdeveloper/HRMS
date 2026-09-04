@@ -29,6 +29,11 @@ import {
   LifeBuoy,
   Mail,
   Megaphone,
+  KeyRound,
+  Lock,
+  FolderLock,
+  FolderOpen,
+  ShieldAlert,
   Palette,
   Palmtree,
   Plane,
@@ -142,6 +147,18 @@ export function navForUser(user: SessionUser): NavItem[] {
   } else if (!isCeo) {
     push(grouped('People', { label: 'My Letters', to: '/my/letters', icon: Mail }));
   }
+  // DOC-02 — vault. ESS own copy sits in More; HR manage is the ops surface.
+  if (hasPermission(user, 'doc.vault.manage')) {
+    push(grouped('People', { label: 'Documents', to: '/documents', icon: FolderLock }));
+  }
+  if (hasPermission(user, 'doc.vault.own')) {
+    push({
+      label: 'My documents',
+      to: '/my/documents',
+      icon: FolderOpen,
+      section: 'secondary',
+    });
+  }
   if (
     hasPermission(user, 'lifecycle.onboard.convert') ||
     hasPermission(user, 'lifecycle.separation.approve')
@@ -208,6 +225,38 @@ export function navForUser(user: SessionUser): NavItem[] {
     push({ label: 'Reports', to: '/reports', icon: BarChart3 });
   }
 
+  // Compliance — statutory obligations + Stage 5.5 POSH/grievance hub (More only).
+  if (
+    hasAnyPermission(user, [
+      'cmp.licence.manage',
+      'cmp.calendar.manage',
+      'ird.posh.handle',
+      'ird.grievance.handle',
+      'ird.whistle.intake',
+    ])
+  ) {
+    push(
+      grouped('Compliance', {
+        label: 'Compliance',
+        to: '/compliance',
+        match: '/compliance',
+        icon: ShieldAlert,
+      }),
+    );
+  }
+  // DPDP ops — rights queue, retention/purge, processors (Stage 5.3). More only.
+  // Always labelled Compliance: the dpo role is not in the ops-role set, but this
+  // surface is never an ESS daily action.
+  if (hasAnyPermission(user, ['prv.rights.handle', 'prv.notice.manage'])) {
+    push({
+      label: 'Privacy',
+      to: '/privacy',
+      match: '/privacy',
+      icon: Lock,
+      group: 'Compliance',
+    });
+  }
+
   // Workplace
   push(grouped('Workplace', { label: 'Policies', to: '/policies', icon: ScrollText }));
   if (hasPermission(user, 'assets.manage')) {
@@ -240,7 +289,7 @@ export function navForUser(user: SessionUser): NavItem[] {
     );
     push(
       grouped('Admin', {
-        label: 'Attendance masters',
+        label: 'Master data',
         to: '/admin/masters',
         icon: SlidersHorizontal,
       }),
@@ -249,9 +298,18 @@ export function navForUser(user: SessionUser): NavItem[] {
   if (hasPermission(user, 'audit.read')) {
     push(grouped('Admin', { label: 'Audit log', to: '/admin/audit', icon: FileClock }));
   }
+  // SEC-05/10 — how people sign in, never what HR data they see. IT holds it.
+  if (hasAnyPermission(user, ['sec.mfa.manage', 'sec.session.revoke'])) {
+    push(grouped('Admin', { label: 'Sign-in & access', to: '/admin/security', icon: KeyRound }));
+  }
   if (hasPermission(user, 'admin.settings')) {
     push({ label: 'Settings', to: '/admin/settings', icon: Settings, section: 'secondary' });
   }
+
+  // Every signed-in person can see their own sessions, second factor and the
+  // record of who looked at their data. It sits in More AND in the account
+  // menu — a privacy link that is hard to find is not a privacy link.
+  push({ label: 'Security & privacy', to: '/my/privacy', icon: Lock, section: 'secondary' });
 
   // Design-system gallery (break-glass / local)
   if (hasRole(user, 'super_admin')) {

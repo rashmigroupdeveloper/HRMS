@@ -158,6 +158,50 @@ describe('KpiPillRow', () => {
     expect(screen.getByRole('link', { name: /headcount/i })).toHaveAttribute('href', '/people');
   });
 
+  /**
+   * Anchoring (docs/05 §9): the first number the eye lands on becomes the scale
+   * for every number after it, so a figure with nothing beside it is not
+   * neutral — the reader invents a comparison, usually the wrong one.
+   */
+  it('renders the ruler beside the figure when an anchor is given', () => {
+    renderThemed(
+      <KpiPillRow
+        pills={[
+          {
+            label: 'Already present',
+            value: 18,
+            state: 'outline',
+            anchor: { value: 22, label: 'of', suffix: ' days' },
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText(/of\s*22\s*days/)).toBeInTheDocument();
+  });
+
+  it('renders a bare figure when no anchor is given — the ruler is never invented', () => {
+    renderThemed(<KpiPillRow pills={[{ label: 'Requests sent', value: 3, state: 'outline' }]} />);
+    expect(screen.queryByText(/\bof\b/)).not.toBeInTheDocument();
+  });
+
+  it('formats the anchor in the Indian locale, like the figure it qualifies', () => {
+    renderThemed(
+      <KpiPillRow
+        pills={[
+          {
+            label: 'Claimed',
+            value: 4_200,
+            state: 'outline',
+            prefix: '₹',
+            anchor: { value: 150_000, prefix: '₹' },
+          },
+        ]}
+      />,
+    );
+    // 1,50,000 — lakh grouping, not 150,000 (docs/01 NFR-09).
+    expect(screen.getByText(/₹1,50,000/)).toBeInTheDocument();
+  });
+
   it.each(THEMES)('has no axe violations in the %s theme', async (theme) => {
     const { container } = renderThemed(<KpiPillRow pills={pills} />, theme);
     await expect(runAxe(container)).resolves.toHaveNoViolations();

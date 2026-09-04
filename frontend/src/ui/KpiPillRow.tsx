@@ -28,6 +28,20 @@ export interface KpiPill {
   icon?: ReactNode;
   /** When set, the pill is the list behind the number (docs/05 §8). */
   to?: string;
+  /**
+   * The ruler this number is read against — 18 **of 22 working days**,
+   * 6h **of 8h detected**, ₹4,200 **of ₹15,000 entitlement**.
+   *
+   * The first number the eye lands on becomes the scale for every number after
+   * it, so a figure with nothing beside it is not neutral: the reader invents a
+   * comparison, and usually the wrong one. "18" alone is meaningless; "18 of 22"
+   * is a month nearly done.
+   *
+   * **This must be a real quantity the system already knows.** Never invent a
+   * prior period to manufacture a flattering delta — that is the point at which
+   * anchoring stops being clarity and becomes a dark pattern.
+   */
+  anchor?: { value: number; label?: string; prefix?: string; suffix?: string; precision?: number };
 }
 
 const STATE_SHELL: Record<PillState, string> = {
@@ -54,13 +68,26 @@ function PillBody({ p }: { p: KpiPill }) {
         </span>
         {p.icon && <span className="[&_svg]:size-4">{p.icon}</span>}
       </div>
-      <div className="mt-1 text-xl font-semibold leading-none">
+      <div className="mt-1 flex items-baseline gap-1.5 text-[1.35rem] font-light leading-none">
         <KpiNumber
           value={p.value}
           prefix={p.prefix}
           suffix={p.suffix}
           precision={p.precision ?? 0}
         />
+        {p.anchor === undefined ? null : (
+          // Deliberately quieter than the figure it qualifies: it is the ruler,
+          // not a second metric competing for the same glance.
+          <span className={cn('text-sm tabular-nums', STATE_LABEL[p.state])}>
+            {p.anchor.label ?? 'of'}{' '}
+            {p.anchor.prefix ?? ''}
+            {p.anchor.value.toLocaleString('en-IN', {
+              minimumFractionDigits: p.anchor.precision ?? 0,
+              maximumFractionDigits: p.anchor.precision ?? 0,
+            })}
+            {p.anchor.suffix ?? ''}
+          </span>
+        )}
       </div>
     </>
   );
@@ -71,7 +98,7 @@ export function KpiPillRow({ pills }: { pills: KpiPill[] }) {
     <div className="flex flex-wrap gap-3">
       {pills.map((p) => {
         const shell = cn(
-          'min-w-[8.5rem] rounded-full px-5 py-2.5',
+          'min-w-[9rem] rounded-full px-6 py-3',
           STATE_SHELL[p.state],
         );
         if (p.to !== undefined) {

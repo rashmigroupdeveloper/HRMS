@@ -2,13 +2,16 @@
  * Top-bar account menu — the signed-in user in the top-right corner (the
  * conventional place), with a self-service dropdown (docs/05 §3 identity +
  * §6 ≤2-click). Every item is scoped to the account holder: "View my info"
- * opens their own profile (/me). Warm Editorial only (§0.1): charcoal avatar,
- * warm surfaces, right-aligned menu, no glass.
+ * opens their own profile (/me). Privacy and DPO contact are permanent here
+ * (PRV-10 — a privacy link that is hard to find is not a privacy link).
+ * Warm Editorial only (§0.1): charcoal avatar, warm surfaces, right-aligned
+ * menu, no glass.
  */
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, LogOut, UserRound } from 'lucide-react';
+import { FileText, Lock, LogOut, Mail, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { ApiError, apiFetch } from '../lib/api';
 import type { SessionUser } from '../lib/session';
 import { logout } from '../lib/session';
 import { accountInitials, primaryRoleLabel } from './user-display';
@@ -24,14 +27,24 @@ interface MenuLink {
   icon: LucideIcon;
 }
 
-// Self-service, account-holder-only. Both routes already exist (router.tsx).
+interface DpoContact {
+  name: string;
+  email: string;
+  phone?: string | null;
+  responseSlaDays?: number | null;
+}
+
+// Self-service, account-holder-only. Privacy sits with View my info — never
+// buried under "More" alone (Stage 5.3 UI contract).
 const MENU: MenuLink[] = [
   { to: '/me', label: 'View my info', icon: UserRound },
+  { to: '/my/privacy', label: 'Privacy', icon: Lock },
   { to: '/my/letters', label: 'My documents', icon: FileText },
 ];
 
 export function AccountMenu({ user, onSignedOut }: AccountMenuProps) {
   const [open, setOpen] = useState(false);
+  const [dpo, setDpo] = useState<DpoContact | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,6 +63,19 @@ export function AccountMenu({ user, onSignedOut }: AccountMenuProps) {
     };
   }, [open]);
 
+  // Fetch once — DPO contact is published org-wide and changes rarely.
+  useEffect(() => {
+    void apiFetch<DpoContact>('/api/privacy/dpo')
+      .then(setDpo)
+      .catch((caught: unknown) => {
+        if (caught instanceof ApiError && caught.status === 404) {
+          setDpo(null);
+          return;
+        }
+        setDpo(null);
+      });
+  }, []);
+
   const role = primaryRoleLabel(user.roles);
 
   return (
@@ -59,7 +85,7 @@ export function AccountMenu({ user, onSignedOut }: AccountMenuProps) {
         onClick={() => {
           setOpen((value) => !value);
         }}
-        className="u-press u-shadow-card grid size-9 place-items-center rounded-full bg-hero text-xs font-bold text-hero-ink transition-transform hover:brightness-110"
+        className="u-press u-shadow-card grid size-10 place-items-center rounded-full bg-hero text-xs font-bold text-hero-ink transition-transform hover:brightness-110"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account menu"
@@ -93,6 +119,30 @@ export function AccountMenu({ user, onSignedOut }: AccountMenuProps) {
                 {item.label}
               </Link>
             ))}
+
+            {/* PRV-10 — DPO contact is never buried; always visible when published. */}
+            {dpo === null ? null : (
+              <>
+                <div className="my-1 h-px bg-line/60" />
+                <a
+                  href={`mailto:${dpo.email}`}
+                  role="menuitem"
+                  className="u-press flex items-start gap-2.5 rounded-row px-3 py-2 text-left text-sm font-medium text-ink hover:bg-surface-2"
+                  onClick={() => {
+                    setOpen(false);
+                  }}
+                >
+                  <Mail className="mt-0.5 size-4 shrink-0 text-ink-muted" aria-hidden />
+                  <span className="min-w-0">
+                    <span className="block">Data Protection Officer</span>
+                    <span className="mt-0.5 block truncate text-xs font-normal text-ink-muted">
+                      {dpo.name} · {dpo.email}
+                    </span>
+                  </span>
+                </a>
+              </>
+            )}
+
             <div className="my-1 h-px bg-line/60" />
             <button
               type="button"
