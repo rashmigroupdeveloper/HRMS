@@ -40,6 +40,15 @@ don't silently pick one. If something isn't in the docs, ask; don't guess.
 | `12-VISUAL-REFERENCE-CREXTIO` | The design *feel* (Nixtio/Crextio); §7 real-screen signature patterns | UI work (with 05) |
 | `13-MASTER-BUILD-PLAN` | **Executable step-by-step**: order, task IDs, "done", 3k→10k scale | Before building anything |
 | `14-TECH-STACK-AND-RELIABILITY` | **Locked tech decisions + the reliability program**; amends 02 | Before building anything |
+| `15-FEATURE-GAP-AUDIT` | **What a complete HRMS has that we don't** — 116 gap IDs (A statutory · B modules · C platform · D plant ops · E depth), with priority + owner | Scoping, roadmap, any "should we build X?" question |
+| `16-MICROFEATURE-INVENTORY` | **Every capability at micro-feature granularity** (~507 rows) per module *and* per role, each marked built/specced/partial/gap | Before starting any module; when writing a new requirement |
+
+**Scope settled 3 Sep 2026 (sponsor) — three products, not one:**
+- **ATS stays a separate product.** HRMS integrates (hire handoff, SSO, requisition, cross-system R21/R22) — it does not absorb or retire it. `plans/phase-4-ats-integration.md`.
+- **Contract labour (CLMS) is a separate product.** HRMS builds no contractor master, licences, muster, wages or billing gate. It consumes a headcount feed, raises contractor licence expiry through its own compliance calendar, and references contract workers by `external_worker_ref` — never a foreign key.
+- **Travel & Expense AND claims stay IN scope**, rebuilt in the HRMS design system. The reason is coupling, not preference: both settle **through payroll** (advance recovery, reimbursement, deduction), so they cannot live outside the system that runs payroll. Recruitment and contract labour have no such coupling — which is exactly why they can.
+
+**Docs 15–16 are an audit, not a spec.** They record gaps and decisions still to be made; they do **not** authorize work. A gap becomes buildable only once it is promoted into `01` (requirement ID), `07` (phase) and `13` (task).
 
 **Live execution tracker:** [`plans/`](plans/) — one file per phase, stages with checkboxes and gates.
 The docs are the *spec*; tick progress in `plans/`. Update `plans/` as you complete work.

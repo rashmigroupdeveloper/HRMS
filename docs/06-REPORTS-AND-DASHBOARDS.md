@@ -39,7 +39,7 @@ Open/closed cases: employee, start date, days, stage, letter issued (link), owne
 
 | # | Report | Contents |
 |---|---|---|
-| R7 | Final Pay Register | employee × all component lines + days + net (SOW-5.1.4); Excel |
+| R7 | Final Pay Register | employee × all component lines + days + net (SOW-5.1.4); Excel. **The live 64-column format is captured — reproduce it exactly, see §2.1 below** |
 | R8 | Bank Transfer File | bank's bulk format; excludes holds; totals row (PAY-05) |
 | R9 | JV / Journal Report | GL code × cost center aggregation from `pay.gl_accounts` — SAP-consumable |
 | R10 | Variance Report | per employee Δ vs previous month per component, threshold-highlighted with drill-down reason (SOW-5.1.5) |
@@ -54,6 +54,31 @@ Open/closed cases: employee, start date, days, stage, letter issued (link), owne
 | R19 | Salary Hold Register | active holds by type with reason and age (PAY-08) |
 | R20 | Parallel-Run Comparison | HRMS vs Protiviti register, per component Δ (transition only, §04-6.8) |
 | R31 | Reimbursement Register | claims by type/status/employee: claimed vs approved vs paid, bill verification status, entitlement utilization %, unsubstantiated taxable amounts (SOW-6; CLM-06) |
+
+### 2.1 R7 Final Pay Register — the exact live format (locked)
+
+Transcribed from the real monthly register in [`recon/greythr-monthly-salary-register.md`](recon/greythr-monthly-salary-register.md); golden fixture **G1b** (docs/10 §13). **Column order, header spelling and sign conventions are part of the spec** — Finance diffs this sheet against the incumbent system.
+
+**64 columns, in order:**
+
+1. `Sl No` · `EmployeeNo` · `Name` · `Join Date` · `Leaving Date` · `PAYROLL MONTH`
+2. Posting keys: `DEPTMIS` · `OUMIS` · `OU` · `Company` · `PT Location` · `Department` · `Designation` · `Grade` · `WorkLocation` · `Cost Center`
+   > **`OUMIS` is the cost centre** (`core.cost_centers.code`, e.g. `RML1`) — the column literally named `Cost Center` is a department label and is **not** the accounting cost centre. The JV (R9) keys on `OUMIS`.
+3. Statutory & bank: `UAN` · `ESI Number` · `BankName` · `BANK ACCOUNT NO` · `IFSC Code` *(permission-masked per CORE-07)*
+4. Full structure: `FULL BASIC` · `FULL STIPEND` · `FULL HRA` · `FULL EDUCATION ALLOWANCE` · `FULL MEDICAL ALLOWANCE` · `FULL BONUS` · `FULL SPECIAL ALLOWANCE` · `FULL PROJECT ALLOWANCE` · `FIXED MONTHLY GROSS`
+5. Days: `MONH DAYS` *(misspelling is verbatim from the live file)* · `LOP` · `PAID DAYS`
+6. Earned: `BASIC` · `STIPEND` · `HRA` · `EDUCATION ALLOWANCE` · `MEDICAL ALLOWANCE` · `BONUS` · `SPECIAL ALLOWANCE` · `PROJECT ALLOWANCE` · `INCENTIVE` · `OTHER EARNINGS` · `GRATUITY` · `LEAVE ENCASHMENT` · `OVERTIME` · `EX-GRATIA` · `HOLD SALARY` · `Performance-Linked Earnings` *(mixed case, verbatim)*
+7. Gross: `GROSS` · `ESI GROSS SALARY` *(separate base, not a duplicate)*
+8. Deductions: `PF` · `ESI` · `PROF TAX` · `INCOME TAX` · `LOAN` · `LOAN2` · `MISCELLANEOUS RECOVERY` · `CANTEEN RECOVERY` · `GUEST HOUSE DEDUCTION` · `TRAVEL ADVANCE RECOVERY` · `NOTICE PERIOD RECOVERY` · `TOTAL DEDUCTIONS`
+9. `NET PAY`
+
+**Non-obvious rules the generator must honour:**
+
+- **`TOTAL DEDUCTIONS` is negative** while every individual deduction column is positive; `NET PAY = GROSS + TOTAL DEDUCTIONS`.
+- **Grand-Total row** at the bottom: the literal `Grand Total` in the **`IFSC Code`** column, and `=SUM()` over every numeric column from `FULL BASIC` to `NET PAY` — including the meaningless `MONH DAYS` / `PAID DAYS` totals. Emit them anyway.
+- `Join Date` / `Leaving Date` are **text** `DD MMM YYYY`; `PAYROLL MONTH` is text `MMM YYYY`.
+- Deduction slots are a **fixed catalog** — the column set does not vary by month or by which recoveries are non-zero.
+
 
 ## 3. HR / lifecycle reports
 

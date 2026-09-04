@@ -4,6 +4,35 @@
 
 **Headline:** RML's team has **already built and deployed** a substantial Travel & Expense / Claims system ("Yatra Avedan" = "travel application"). It is live (`pm2` process `ems-backend`, 28h uptime). It **overlaps and exceeds** the HRMS M11 (advances) and M12 (claims/reimbursement) specs, and it is on a **different stack** than both the ATS and this HRMS plan. This forces an architecture decision (see §5).
 
+> ## ⚠️ Correction — 3 Sep 2026: this document over-weights travel
+>
+> A sponsor-supplied operational brief for the live system (now branded **EMS / "ASTF Claim Portal"**,
+> `ems.rashmimetaliks.com`, deployed by GitHub Actions as `ems-backend-gha`) corrects the framing below
+> on two points. **Where this document and the correction disagree, the correction wins.**
+>
+> **1. It is a CLAIM system in production, not a travel system.** `budgets`, `claims`, `advances`,
+> `approvals`, `finance` and `dashboard` are in real use. `trips`, `mmt`, `wallet` and the location
+> masters (airports / hotelcities / carcities / trainstations) are **built but never rolled out — 0
+> records in every one**. §0.4 and §4 below describe the wallet/settlement engine as the system's
+> clever part; production has never written a row to it. Build M13's trip surface because M13 asks
+> for it, not as a port.
+>
+> **2. Approval routing is a dynamic org walk, not a fixed chain.** Not `RM → Travel Admin → CEO`.
+> `escalationHelper.ts` walks the submitter's own `reporting_manager_id → hod_id → Admin`, with four
+> rules that are the real specification: missing RM skips to HOD · missing HOD skips to Admin ·
+> submitter-is-Admin auto-approves · submitter-is-HOD skips the RM step. The named `CHANDAN_MODI`
+> approver role referenced below is a *configuration* of that walk, not its shape.
+>
+> **Also newly established:** the live flow reserves a claim's amount from its budget **at
+> submission** (refunded on rejection), a budget must be `Approved` before a claim can attach, EMS
+> bcrypt is **cost 10** so the 1,066 password hashes are portable to HRMS unchanged, and the entire
+> group runs on a **single admin account** — a single point of failure HRMS should not inherit.
+>
+> Full corrected plan: [`plans/phase-3.5-travel-expense.md`](../plans/phase-3.5-travel-expense.md).
+>
+> **Credentials note:** server, MongoDB, MinIO and Twilio credentials for this system have been
+> shared in chat and **must be rotated** (CLAUDE.md §5). None are recorded in this repository.
+
 ---
 
 ## 1. What it is

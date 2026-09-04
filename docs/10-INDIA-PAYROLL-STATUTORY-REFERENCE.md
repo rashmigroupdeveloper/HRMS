@@ -342,29 +342,54 @@ cap: ₹20,00,000 (private sector, 2018 amendment)
 
 ## 10. Salary structure design (RML + industry)
 
-### 10.1 RML live template — STAFF_STANDARD (09-RECON §2)
+### 10.1 RML live template — STAFF_STANDARD (09-RECON §2 + the live monthly register)
 
-**Earnings (evaluation order):**
+Source of truth for the component catalog and its order: [`docs/recon/greythr-monthly-salary-register.md`](recon/greythr-monthly-salary-register.md) (real Jun-2026 register, 64 columns).
 
-| Code | Formula / amount | Flags |
-|---|---|---|
-| `BASIC` | CTC anchor (~50% of gross) | `part_of_pf_wages`, `part_of_gross`, `prorate_on_lop` |
-| `HRA` | `BASIC × hra_pay_pct` (0.50) | `part_of_gross`, taxable |
-| `MEDICAL_ALLOW` | Fixed **₹1,250**/mo | Taxable (exemption removed Budget 2018) |
-| `SPECIAL_ALLOW` | Balancing: CTC − sum(other) | `part_of_gross` |
-| `EDUCATION_ALLOW` | min(children × limit, cap); limit **₹100** (→ **₹3,000** from FY 2026-27 old regime) | Old-regime exempt |
-| `STATUTORY_BONUS` | `BASIC × 0.0833` | `part_of_gross`, monthly advance |
+**Fixed earnings — the eight that prorate on LOP.** These and only these carry a `FULL <component>` twin on the register; `prorate_on_lop = true` is exactly this set.
 
-**Deductions:**
+| Order | Code | Formula / amount | Flags |
+|---|---|---|---|
+| 1 | `BASIC` | grade anchor — live: `floor(gross / 2)` (₹64,573 → **₹32,286**, floored not rounded) | `part_of_pf_wages`, `part_of_gross`, `prorate_on_lop` |
+| 2 | `STIPEND` | apprentice/trainee grades (§9); mutually exclusive with `BASIC` | `part_of_gross`, `prorate_on_lop` |
+| 3 | `HRA` | `BASIC × hra_pay_pct` (0.50) | `part_of_gross`, taxable, `prorate_on_lop` |
+| 4 | `EDUCATION_ALLOW` | min(children × limit, cap); limit **₹100** (→ **₹3,000** from FY 2026-27 old regime) — live **₹200** | Old-regime exempt, `prorate_on_lop` |
+| 5 | `MEDICAL_ALLOW` | Fixed **₹1,250**/mo | Taxable (exemption removed Budget 2018), `prorate_on_lop` |
+| 6 | `STATUTORY_BONUS` | `BASIC × 0.0833` | `part_of_gross`, monthly advance, `prorate_on_lop` |
+| 7 | `SPECIAL_ALLOW` | **Balancing:** fixed gross − Σ(all other fixed) | `part_of_gross`, `prorate_on_lop` |
+| 8 | `PROJECT_ALLOW` | Per-assignment fixed amount | `part_of_gross`, `prorate_on_lop` |
+
+`FIXED_MONTHLY_GROSS` = Σ of the eight at full value (pre-LOP). It is a **printed register column**, not a derived view.
+
+**Variable earnings — `pay.inputs`, never prorated** (no `FULL` twin exists for any of them):
+
+| Code | Note |
+|---|---|
+| `INCENTIVE` | |
+| `OTHER_EARNINGS` | |
+| `GRATUITY` | F&F gratuity is paid **through the monthly register**, not only a separate F&F document (PAY-15) |
+| `LEAVE_ENCASHMENT` | encashment settles on the register (workflow per 09 §10.2) |
+| `OVERTIME` | register line **and** separate OT payslip (§11) |
+| `EX_GRATIA` | |
+| `HOLD_SALARY` | semantics unconfirmed — see the recon doc §5.1; blocks PAY-08 |
+| `PERFORMANCE_LINKED` | header on the live sheet is `Performance-Linked Earnings` |
+
+**Deductions — a fixed catalog with reserved register columns (not free-form `RECOVERY_*`):**
 
 | Code | Rule |
 |---|---|
-| `PF_EE` | 12% × pf_wage_base (see §2.3) |
-| `PT` | WB slab on gross |
-| `TDS` | Monthly projection (§6.3) |
-| `RECOVERY_*` | Per-employee via `pay.inputs` (e.g. GUEST_HOUSE ₹2,500) |
+| `PF_EE` | 12% × pf_wage_base (see §2.3) — live: **on full basic**, ceiling not applied |
+| `ESI_EE` | §3; zero and blank ESI number when above ceiling |
+| `PT` | WB slab — keyed on the employee's **PT Location** (a distinct field from work location) |
+| `TDS` | Monthly projection (§6.3); register header `INCOME TAX` |
+| `LOAN`, **`LOAN2`** | **two concurrent loan slots** — M11 must support ≥2 parallel EMIs |
+| `MISC_RECOVERY` | |
+| `CANTEEN_RECOVERY` | |
+| `GUEST_HOUSE_DEDUCTION` | live ₹2,500 (09 §2) |
+| `TRAVEL_ADVANCE_RECOVERY` | the T&E → payroll settlement coupling |
+| `NOTICE_PERIOD_RECOVERY` | F&F |
 
-**Employer contributions (CTC / JV only — not employee payslip deductions):**
+**Employer contributions (CTC / JV only — not employee payslip deductions, and not register columns):**
 
 `PF_ER`, `ESI_ER`, `GRATUITY_ACCRUAL` (~4.81% of Basic), `EDLI`, `PF_ADMIN`.
 
@@ -390,6 +415,8 @@ cap: ₹20,00,000 (private sector, 2018 amendment)
 | `pay.lop_divisor` | `CALENDAR` → gross × (payable_days / days_in_month) | **Confirm with payroll** |
 | | `FIXED_30` → gross × (payable_days / 30) | |
 | | `WORKING_DAYS` → gross × (payable_days / working_days) | |
+
+> **Live evidence (Jun 2026 register) does not settle this.** The register shows `MONH DAYS = 30` — but **June has 30 calendar days**, so `CALENDAR` and `FIXED_30` are indistinguishable. Ask payroll for a **February or a 31-day month**: `28` proves `CALENDAR`, `30` in a 31-day month proves `FIXED_30`. Decision 3 of §15 stays open. Per-component proration **rounding** is also unexercised (the sample row has LOP 0).
 
 **OT hourly rate (separate from LOP):** use **26 × 8 = 208** divisor per Factories Act practice:
 
@@ -466,6 +493,41 @@ Every fixture asserts **to-the-rupee** outputs. Store as JSON under `backend/tes
 | Guest house recovery | ₹2,500 |
 | **Net (excl. TDS)** | **₹57,999** |
 | ESIC | ₹0 (above ceiling) |
+
+### G1b — Full monthly register row (live Jun-2026 parity)
+
+The R7 register row for the same STAFF_STANDARD grade, verified to the rupee against the sponsor-supplied
+`MONTHLY SALARY REPORT.xlsx` (transcribed in `09-RECON`'s [register recon](recon/greythr-monthly-salary-register.md)).
+Fixture: `backend/tests/fixtures/payroll/golden/G1b-monthly-register-jun2026.json`.
+
+Grade *Junior Grade* · PT location West Bengal · Jun 2026 · **MONH DAYS 30 · LOP 0 · PAID DAYS 30**.
+
+| Register column | ₹ | Assertion |
+|---|---:|---|
+| FULL BASIC / BASIC | 32,286 | `floor(64,573 / 2)` — **floor**, not round-half-up |
+| FULL HRA / HRA | 16,143 | `BASIC × 0.50` |
+| EDUCATION ALLOWANCE | 200 | fixed |
+| MEDICAL ALLOWANCE | 1,250 | fixed |
+| BONUS | 2,689 | `floor(BASIC × 0.0833)` = ⌊2,689.42⌋ |
+| SPECIAL ALLOWANCE | 12,005 | balancing |
+| STIPEND / PROJECT ALLOWANCE | 0 | |
+| **FIXED MONTHLY GROSS** | **64,573** | Σ of the eight FULL columns |
+| **GROSS** | **64,573** | LOP 0 |
+| ESI GROSS SALARY | 64,573 | separate column, own base |
+| PF | 3,874 | `12% × 32,286 = 3,874.32` → 3,874 — **full basic, no ₹15k ceiling** |
+| ESI | 0 | gross > ₹21,000 |
+| PROF TAX | 200 | WB top slab |
+| INCOME TAX | 0 | |
+| CANTEEN RECOVERY | 1,375 | |
+
+> **Cost-centre key:** the fixture's `ouMis` (`RML1`) is the **cost centre** for JV/GL purposes; the `costCenter` field (`ERP-CELL`) is a department label. See the register recon §2a.
+| **TOTAL DEDUCTIONS** | **−5,449** | **negative by convention** — `−(3,874 + 200 + 1,375)` |
+| **NET PAY** | **59,124** | `GROSS + TOTAL DEDUCTIONS` |
+
+**This fixture also asserts the report shape**, not just the arithmetic: 64 columns in the recon-doc order,
+the misspelled `MONH DAYS` header verbatim, `Performance-Linked Earnings` in mixed case, deduction columns
+positive while `TOTAL DEDUCTIONS` is negative, and a `Grand Total` row labelled in the **IFSC** column
+summing every numeric column V→BL.
 
 ### G2 — PF ceiling crosser (`CEILING_15000` mode)
 
@@ -582,5 +644,6 @@ From 09-RECON §8 + this research. **Do not code statutory logic until signed of
 |---|---|
 | 3 Jul 2026 | Initial document from statutory research + greytHR recon cross-check |
 | 6 Jul 2026 | **G8 gratuity fixture corrected** (₹1,67,007.69 → ₹1,67,638.85/₹1,67,639) — arithmetic slip caught by the Money-module test suite |
+| 4 Sep 2026 | **Live monthly Final Pay Register received** (sponsor). §10.1 component catalog expanded to the real 64-column register (8 proratable fixed earnings incl. STIPEND/PROJECT, 8 variable incl. GRATUITY/LEAVE_ENCASHMENT/HOLD_SALARY, 11 named deduction slots incl. **LOAN2**, CANTEEN, TRAVEL ADVANCE, NOTICE PERIOD). New fixture **G1b**. PF-on-full-basic re-confirmed on a second employee/month. §10.4 notes the divisor is **still** undetermined (June = 30 days). |
 
 **Review trigger:** Union Budget each February; EPFO/ESIC notifications; WB PT/LWF amendments; RML policy sign-off on §15 items.

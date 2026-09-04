@@ -293,3 +293,53 @@ Being *pleasing* and being *un-leavable* are different achievements. Pleasing co
 - Every AI-free number is explainable: payslip lines carry calc notes; KPI tiles link to their underlying list.
 - Never lose typed data: forms autosave drafts (leave/resignation/AR text preserved on navigation).
 - Loading: skeletons for content-shaped regions (tables, cards); spinners for short unpredictable waits — matched to the wait, not dogma.
+
+---
+
+## 9. Behavioural design — honest persuasion (added 3 Sep 2026)
+
+Six principles about how people actually decide, each paired with the line it must not cross. The
+pairing is the point: **every one of these becomes a dark pattern the moment it is faked.** In a
+payroll and attendance system that is not a style violation, it is a lie about someone's money or
+their attendance record.
+
+**The governing test:** if applying a principle honestly would require inventing data, drop the
+principle — never the truth.
+
+| # | Principle | Honest here | Never |
+|---|---|---|---|
+| 9.1 | **Smart defaults** — every empty field is a decision, and a default reads as advice | Pre-select the 70–90% path: this month, today, the missing day, last e-code, the leave type that has a balance, the full detected OT rather than zero | Default **Approve** on an inbox · pre-tick a deduction · hide the real choice behind a pre-ticked box |
+| 9.2 | **Goal gradient** — 0% feels like standing still; people finish what looks begun | Count work already done: a swipe already recorded is step one; "1 of 3 remaining", not "0 of 3"; gates already met stay ticked | A fake 20% bar · progress that corresponds to nothing the person did · confetti on a daily path |
+| 9.3 | **Reciprocity** — value before the ask | Show first-in/last-out, leave balance, the holiday list or the real report *before* the form | A "preview" built from fake data · offering SSO, or any capability, that does not exist |
+| 9.4 | **Endowment (IKEA)** — labour plus the thing equals ownership | Live preview of the roster they filled or the sandwich days they picked; autosave so closing is a pause, not a loss | "You will lose everything" on a blank form they never invested in |
+| 9.5 | **Loss aversion** — a loss moves people ~2× a matching gain | Only real stakes: OT lapses in N hours · the month locks and editability ends · unauthorised absence follows · a policy deadline that exists | Countdown timers on screens with no SLA · manufactured scarcity · "I'll risk it" dismissals — categorically banned in payroll and attendance |
+| 9.6 | **Anchoring** — the first number seen becomes the ruler for the next | Every figure carries the quantity it should be read against: claimed **of** detected · remaining **of** available · 18 **of** 22 days · a claim **against** its entitlement | Inventing a prior period to manufacture a flattering delta · a "was" figure that never existed |
+
+**Implemented:** `KpiPill.anchor` (`frontend/src/ui/KpiPillRow.tsx`) renders the ruler beside the
+figure, quieter than the number it qualifies. It is optional and never defaulted — a pill with no
+honest comparator renders bare rather than inventing one, which `pickers.test.tsx` pins.
+
+### 9.7 The product and the buy button
+
+Every screen has one thing the person came to act on, and one valuable or irreversible action on it —
+Approve, Apply, Lock, Sign in. Two rules follow:
+
+- **The facts of the commitment sit with the action.** Days with Apply, net with Download, note with
+  Approve. If the number someone is committing to is at the top and the button is at the bottom, they
+  hesitate — and hesitation on an attendance approval is a manager who does not clear their inbox.
+- **The primary action survives scrolling.** Sticky is for the one job, never a second toolbar.
+
+### 9.8 What we deliberately reject
+
+Sources for §9 include landing-page craft, which optimises for a page a stranger scrolls once. This
+is an eight-hour tool for the same people every day. Adopted: real product in the hero, crop to the
+job, copy that says how it helps, motion as quality not quantity, content made for its space.
+
+**Rejected outright:** mega menus · bento grids · glass/blur primary buttons · marketing-site
+patterns in operational screens · copying another product's pixels into a generator (it yields a
+second aesthetic inside a firewall that exists to prevent exactly that — §0.1) · confetti and
+blocking tours (delight is reserved for rare ceremonies: payday, month lock, inbox zero) · raw JSON
+as a decision surface — nobody can approve what they cannot read.
+
+**Level 4 here is not a beautiful page.** It is the hunter finding the day, the rupee or the person
+in under two clicks while the chrome disappears.

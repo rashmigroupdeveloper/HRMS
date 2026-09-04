@@ -43,6 +43,8 @@ Derived configuration rules (now baked into `pay.salary_components` seed):
 
 **Three payslip types confirmed** (tabs): **Payslip · Reimbursement Payslip · Overtime Payslip** — validates the M12 reimbursement-payslip (CLM-04) and the separate OT payslip design. Our system must produce all three.
 
+> **Superseded in width by the live register (4 Sep 2026).** The sponsor supplied the real monthly *Final Pay Register* — **64 columns, 8 proratable fixed earnings, 8 variable earnings, 11 named deduction slots** — transcribed in [`recon/greythr-monthly-salary-register.md`](recon/greythr-monthly-salary-register.md). The six components above are correct but are a **subset**; the register adds STIPEND, PROJECT ALLOWANCE, INCENTIVE, OTHER EARNINGS, GRATUITY, LEAVE ENCASHMENT, OVERTIME, EX-GRATIA, HOLD SALARY, Performance-Linked Earnings, and deductions INCOME TAX, LOAN, **LOAN2**, MISCELLANEOUS / CANTEEN / TRAVEL ADVANCE / NOTICE PERIOD RECOVERY. It also independently re-confirms **PF on full basic** (₹3,874 on ₹32,286) for a second employee in a second month.
+
 ## 3. Confirmed TDS / IT-statement structure (validates §04-6.5 exactly)
 
 Live IT-Statement is a labelled A→R computation, **new regime** default, which our TDS engine must reproduce line-for-line:
@@ -121,7 +123,7 @@ Applied to the docs:
 
 An ESS account cannot reach these; get them via a dedicated read-only admin user (or exports):
 1. **Salary structures per grade** (component master + formulas) — confirm PF-on-full-basic policy and all grades.
-2. **Payroll admin: one month's Final Pay Register + Bank Transfer File + JV** — exact column formats (R7/R8/R9).
+2. **Payroll admin: one month's Final Pay Register + Bank Transfer File + JV** — exact column formats (R7/R8/R9). *(Register: **received 4 Sep 2026** — see [`recon/greythr-monthly-salary-register.md`](recon/greythr-monthly-salary-register.md). **Bank file and JV still outstanding.**)*
 3. **Statutory files:** PF ECR text, ESIC return, PT register, Form 24Q data (R11–R15 formats).
 4. **Workflow configs** (leave/resignation/confirmation/OT approval chains) — even though Request Hub is empty, leave/attendance approval chains exist in admin.
 5. **Attendance policy:** grace minutes, half-day thresholds, penalty-day rules, GCS Saturday scheme definition, OT rates.
