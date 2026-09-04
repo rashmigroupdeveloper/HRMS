@@ -5,11 +5,35 @@ This folder is the **live execution tracker** for the Rashmi HRMS build. The spe
 | Phase file | Scope | Duration | Gate |
 |---|---|---|---|
 | [phase-0-foundations.md](phase-0-foundations.md) | Repo, tooling, auth/RBAC, employee master, de-risk spikes | 3 wk | G0 |
-| [phase-1-attendance-leave-workflows.md](phase-1-attendance-leave-workflows.md) | Biometric ingestion, attendance, leave, approvals, core reports, ESS | 6–8 wk | G1 |
-| [phase-2-payroll-statutory.md](phase-2-payroll-statutory.md) | Full India payroll engine, statutory outputs, loans, claims, parallel run | 8–10 wk | G2 |
+| [phase-1-attendance-leave-workflows.md](phase-1-attendance-leave-workflows.md) | Biometric ingestion, attendance, leave, approvals, core reports, ESS · **Stage 1.11 shift micro / scheduling** | 6–8 wk | G1 |
+| [phase-2-payroll-statutory.md](phase-2-payroll-statutory.md) | Full India payroll · **2.0 org/MIS spine · 2.7 completeness · 2.8 foreign (D14)** | 8–10 wk | G2 |
 | [phase-3-lifecycle-assets-executive.md](phase-3-lifecycle-assets-executive.md) | Onboarding, separation/F&F, transfers, assets, helpdesk, engagement, CEO dashboard | 5–6 wk | G3 |
 | [phase-3.5-travel-expense.md](phase-3.5-travel-expense.md) | T&E module (M13) — absorb & supersede Yatra Avedan | 4–6 wk | G3.5 |
-| [phase-4-ats-absorption.md](phase-4-ats-absorption.md) | ATS absorption, contract workers, PWA rollout | scoped later | — |
+| [phase-4-ats-integration.md](phase-4-ats-integration.md) | **ATS stays a separate product** — hire handoff, SSO, requisition, cross-system reporting | 3–4 wk | G4 |
+
+### Extension — Phases 5–8 (proposed, closing the doc-15 gap register)
+
+| Phase file | Scope | Duration | Gate |
+|---|---|---|---|
+| [extended-roadmap.md](extended-roadmap.md) | **Architecture of the extension** — new ID prefixes, schemas, roles, **navigation placement**, UX contract, test program, gate model. **Read before any Phase 5–8 work.** | — | — |
+| [phase-5-compliance-and-trust.md](phase-5-compliance-and-trust.md) | Labour Codes, DPDP, POSH/grievance, statutory registers, licences, identity hardening, document vault + e-sign, sandbox | 7–9 wk | **G5a** 🔒 then G5b |
+| [phase-6-plant-operations.md](phase-6-plant-operations.md) | Gate pass, canteen, transport, PPE, EHS/safety, IR & discipline · **CLMS integration only** (contract labour is a separate product) | 7–9 wk | G6 |
+| [phase-7-talent-and-growth.md](phase-7-talent-and-growth.md) | Performance, training matrix & skills, compensation review, benefits, recruitment depth, exit intelligence | 8–10 wk | G7 |
+| [phase-8-frontline-and-intelligence.md](phase-8-frontline-and-intelligence.md) | Native mobile + offline punch, push/WhatsApp/SMS, localisation, report builder, integrations, AI | 7–9 wk | G8 |
+| [amendments-existing-phases.md](amendments-existing-phases.md) | The 30 depth gaps folded back into Phases 1–4 — **Section B is blocking for Phase 2** | inline | existing gates |
+| [coverage-closeout.md](coverage-closeout.md) | **Holes from the 5–8 review, now tasked:** org/MIS spine, payroll completeness, foreign entity (D14), shift micro-controls, SCIM, ESS daily, fatigue, NAPS, R&R/eNPS, smart features | inline | host phase gates |
+| [agent-operating-model.md](agent-operating-model.md) | **How agents execute a stage** — squad, factory, UX/logging gates, Wave 0 human blockers, later-wave playbooks | — | — |
+
+> **Scope settled 3 Sep 2026 (sponsor):** the **ATS stays a separate product** (integration, not absorption —
+> `phase-4-ats-integration.md`), **contract labour / CLMS is a separate product** (former Phase 6 Stages 6.1 and
+> 6.3 cancelled), and **Travel & Expense stays IN scope** (Phase 3.5), as does **claims** — both rebuilt in the
+> HRMS design system rather than merged as-is.
+>
+> 🔒 **Sequencing exception.** Phases run in order *except* **Phase 5 Stages 5.1–5.4 (Gate G5a), which must land
+> before Phase 2 payroll starts.** Wage-definition conformance, MFA + step-up, the DPDP retention/consent baseline
+> and a masked sandbox are all cheaper before payroll exists and two of them change the engine's arithmetic.
+> **Stage 2.0 (company / plant / MIS spine) also blocks 2.2.** Phases 5–8 are **proposed** and await sponsor
+> decisions **D8–D14** (docs/15 §9.3 + coverage-closeout D14 foreign payroll).
 
 ## How these plans work
 
