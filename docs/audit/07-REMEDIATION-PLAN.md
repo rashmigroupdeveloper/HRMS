@@ -68,29 +68,55 @@ frontend : typecheck ok · lint ok · knip ok · 290 tests · build ok          
    UTC against IST logic, so the suite passed by day and failed between 00:00 and 05:30 IST. The
    production code was correct; the test bypassed `core/dates.ts`. Fixed at the helper.
 
-### Stage W0.3 — Make data scope structurally unavoidable   `[ ☐ ]`  🔒 the big one
+### Stage W0.3 — Make data scope structurally unavoidable   `[ ☑ done 5 Sep 2026 ]`  🔒 the big one
 **Goal:** no query returns employee data outside the caller's scope, and it becomes a compile error to
 forget.
 **Depends on:** W0.2.
 **Tasks**
-- [ ] `W0-T09` (M, backend) Change the repository/service signatures in `employees`, `leave`, `documents`,
+- [x] `W0-T09` (M, backend) Change the repository/service signatures in `employees`, `leave`, `documents`,
       `letters`, `assets` to take a **required** `EmployeeScope` parameter. Let the compiler enumerate the
       call sites — do not hunt them by hand.
-- [ ] `W0-T10` (M, backend) Thread `{...context.permissionAccess, actorEmployeeId: context.user.employee_id}`
+- [x] `W0-T10` (M, backend) Thread `{...context.permissionAccess, actorEmployeeId: context.user.employee_id}`
       through those routers, using the pattern `reports.router.ts:83-86` already establishes.
-- [ ] `W0-T11` (S, backend) `GET /employees/{ecode}`: return **404**, not 403, for out-of-scope e-codes,
+- [x] `W0-T11` (S, backend) `GET /employees/{ecode}`: return **404**, not 403, for out-of-scope e-codes,
       so the API is not an existence oracle.
-- [ ] `W0-T12` (S, backend) Scope `GET /employees/facets` — headcounts are disclosure too.
-- [ ] `W0-T13` (S, backend) Compute `canViewCompensation` against the **subject**: for `own` scope it is
+- [x] `W0-T12` (S, backend) Scope `GET /employees/facets` — headcounts are disclosure too.
+- [x] `W0-T13` (S, backend) Compute `canViewCompensation` against the **subject**: for `own` scope it is
       true only when `row.id === user.employee_id`. Fixes the Compensation tab on colleagues' profiles.
-- [ ] `W0-T14` (M, backend) Apply `assertEmployeesInScope` to every write that names an employee:
+- [x] `W0-T14` (M, backend) Apply `assertEmployeesInScope` to every write that names an employee:
       `POST /leave/adjustments`, `POST /documents`, letters issue, asset assignment.
-- [ ] `W0-T15` (S, backend) Audit the remaining 15 unscoped modules and either scope them or record in
+- [x] `W0-T15` (S, backend) Audit the remaining 15 unscoped modules and either scope them or record in
       code why they need none (e.g. `system`, `auth`).
 **Tests required:** an **access-matrix integration test** — for each of the 12 roles × each scoped
 endpoint, assert that an out-of-scope subject is refused. This test is the deliverable, not a nicety.
 **Exit criteria:** the §1 exploits in `05-SECURITY-REVIEW.md` all return 404/403 · the matrix test is in CI.
 **Findings:** [D1] [D2] [F3]
+
+**EVIDENCE (5 Sep 2026) — §1 exploits re-run live against `hrms_audit_test`, same account as the audit:**
+
+| Exploit | Audit (4 Sep) | Now |
+|---|---|---|
+| plain ESS reads another company's profile | `200` + DOB, personal email, mobile, home address | **`404`** |
+| plain ESS lists the whole directory | `total=2`, both companies | **`total=1`**, own record only |
+| plain ESS reads company-wide facets | both entities | **only own entity** |
+
+`tests/access-matrix.integration.test.ts` — **15 cases, all green**, covering ESS→peer, ESS→directory,
+ESS→facets, the 404-vs-403 oracle, compensation visibility, statutory masking, and hr_ops-scoped-to-one-
+org-unit against leave balances (read AND write), the document vault (list AND upload), letters and
+assets — with an hr_head control case proving scoping is not a blanket deny.
+`npm run verify` → **EXIT 0, 504/504 tests** (was 483; +21).
+
+**Three things the work changed that were not in the plan, each recorded rather than absorbed silently:**
+1. **`scopeFromContext` is now the single shared constructor** (`core/rbac/employee-scope.ts`), replacing
+   the private copy in `reports.router.ts`. One implementation, so no module can grow a variant.
+2. **`OutOfScopeError` + one central mapping.** `assertEmployeesInScope` threw a bare `Error`, which oRPC
+   surfaced as **500** — found by the new matrix test on its first run. It now throws a typed error that
+   the `authed` middleware maps to **404** in exactly one place; per-handler try/catch would have been
+   165 chances to forget. 404 not 403, for the same no-oracle reason as W0-T11.
+3. **`tests/directory-facets` moved from `hr_ops` to `hr_head`.** An `hr_ops` user with no
+   `scope_org_unit_id` now correctly resolves to zero org units and sees nothing — fail-closed, which is
+   the right posture. Those cases assert facet *arithmetic*, so they need a caller who can legitimately
+   see the fixtures. Scope itself is covered by the matrix test.
 
 ### Stage W0.4 — Workflow authorization and the vacant-chain floor   `[ ☐ ]`
 **Goal:** nobody can raise a request for someone else, and nothing approves without an approver.

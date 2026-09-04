@@ -17,6 +17,7 @@ import { getUserPermissionAccess, getUserPermissions } from '../core/rbac/permis
 import type { PermissionCode } from '../core/rbac/seed-data.js';
 import { findLiveSession, isSteppedUp, touchSession } from '../core/auth/session.js';
 import { getSessionPolicy } from '../core/auth/security-policy.js';
+import { OutOfScopeError } from '../core/rbac/employee-scope.js';
 
 /** Per-request context assembled by the Express middleware (handler.ts). */
 export interface AppContext {
@@ -81,7 +82,18 @@ export const authed = base.use(async ({ context, next }) => {
 
   // Inject the now-verified user AND a NON-NULL db, so downstream handlers use
   // context.db directly without re-checking (kills the ~27 duplicated guards).
-  return next({ context: { user: linkedUser, db: context.db, session } });
+  //
+  // The try/catch is the ONE place a scope refusal becomes a status. Doing it
+  // per-handler would mean 165 chances to forget, and forgetting turns a
+  // correct denial into a 500 (found by tests/access-matrix.integration.test.ts).
+  try {
+    return await next({ context: { user: linkedUser, db: context.db, session } });
+  } catch (err) {
+    if (err instanceof OutOfScopeError) {
+      throw new ORPCError('NOT_FOUND', { message: err.message });
+    }
+    throw err;
+  }
 });
 
 /**

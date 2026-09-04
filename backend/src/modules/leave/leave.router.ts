@@ -14,6 +14,7 @@ import { formatDbDate } from '../../core/dates.js';
 import { adjustBalance, getBalances, runCompOffExpiry, runMonthlyAccrual, runYearEndCarryForward } from './leave-core.service.js';
 import { applyForLeave, requestCancellation, requestEncashment, selectRestrictedHoliday } from './leave-apply.service.js';
 import { previewLeaveApply } from './leave-preview.service.js';
+import { assertEmployeesInScope, scopeFromContext } from '../../core/rbac/employee-scope.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
 const queryBool = z
@@ -128,7 +129,13 @@ const employeeBalances = withPermission('leave.admin')
   .route({ method: 'GET', path: '/leave/balances/{employeeId}', summary: 'An employee’s balances (HR)' })
   .input(z.object({ employeeId: z.coerce.number().int().positive() }))
   .output(z.array(balanceShape))
-  .handler(async ({ input, context }) => balancesDto(context.db, input.employeeId));
+  .handler(async ({ input, context }) => {
+    // `leave.admin` is granted to hr_ops at org_unit scope (docs/08 §2). Without
+    // this check an HR user scoped to one plant could read — and below, ADJUST —
+    // balances anywhere in the group.
+    await assertEmployeesInScope(context.db, scopeFromContext(context), [input.employeeId]);
+    return balancesDto(context.db, input.employeeId);
+  });
 
 const preview = withPermission('leave.own')
   .route({ method: 'GET', path: '/leave/preview', summary: 'Live apply math — sandwich, blackout, coverage (LV-03, SHF-08)' })
@@ -369,6 +376,7 @@ const adjust = withPermission('leave.admin')
   .input(z.object({ employeeId: z.number().int().positive(), leaveType: z.string().min(1), delta: z.number(), note: z.string().min(5) }))
   .output(z.object({ ledgerTxnId: z.number() }))
   .handler(async ({ input, context }) => {
+    await assertEmployeesInScope(context.db, scopeFromContext(context), [input.employeeId]);
     try {
       const ledgerTxnId = await adjustBalance(context.db, {
         employeeId: input.employeeId,

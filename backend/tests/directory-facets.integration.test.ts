@@ -108,10 +108,16 @@ run('Directory facets and filters (live Postgres)', () => {
       .values({ email, password_hash: await hashPassword(password), employee_id: null })
       .returning('id')
       .executeTakeFirstOrThrow();
+    // hr_head, not hr_ops: these cases assert facet ARITHMETIC (counts match a
+    // direct query), so the caller must be able to see the fixture employees.
+    // hr_ops holds employee.read at `org_unit` (docs/08 §2), and an hr_ops user
+    // with no scope_org_unit_id now correctly resolves to zero org units and
+    // therefore sees nothing — fail-closed, which is the desired posture and is
+    // asserted in tests/access-matrix.integration.test.ts.
     const role = await db
       .selectFrom('core.roles')
       .select('id')
-      .where('code', '=', 'hr_ops')
+      .where('code', '=', 'hr_head')
       .executeTakeFirstOrThrow();
     await db
       .insertInto('core.user_roles')

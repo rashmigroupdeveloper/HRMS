@@ -11,6 +11,15 @@ import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { listEmployees } from '../src/modules/employees/index.js';
 import { listMisCodes, listPlants, upsertPlant } from '../src/modules/org/index.js';
+import type { EmployeeScope } from '../src/core/rbac/employee-scope.js';
+
+/**
+ * These cases exercise the ORG-05 *filter* predicate, not RBAC scoping, so they
+ * run as an all-scope caller. Scope enforcement itself is covered end-to-end in
+ * tests/access-matrix.integration.test.ts.
+ */
+const ALL_SCOPE: EmployeeScope = { all: true, own: false, subtree: false, orgUnitIds: [], actorEmployeeId: null };
+
 
 const DB_URL = process.env['DATABASE_URL'];
 const run = describe.skipIf(!DB_URL);
@@ -116,14 +125,14 @@ run('Stage 2.0 — org plants + directory plant filter (live Postgres)', () => {
       plantCode: [plantCode],
       activeOnly: true,
       pageSize: 50,
-    });
+    }, ALL_SCOPE);
     expect(hit.items.some((row) => row.ecode === ecode)).toBe(true);
 
     const miss = await listEmployees(db, {
       plantCode: [otherPlantCode],
       activeOnly: true,
       pageSize: 50,
-    });
+    }, ALL_SCOPE);
     expect(miss.items.some((row) => row.ecode === ecode)).toBe(false);
 
     const unfiltered = await listEmployees(db, {
@@ -131,7 +140,7 @@ run('Stage 2.0 — org plants + directory plant filter (live Postgres)', () => {
       q: ecode,
       activeOnly: true,
       pageSize: 10,
-    });
+    }, ALL_SCOPE);
     expect(unfiltered.items.some((row) => row.ecode === ecode)).toBe(true);
   });
 });

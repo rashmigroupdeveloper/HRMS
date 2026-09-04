@@ -7,8 +7,7 @@ import { withAnyPermission, withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import type { Database } from '../../core/db/types.js';
-import type { EmployeeScope } from '../../core/rbac/employee-scope.js';
-import type { PermissionAccess } from '../../core/rbac/permissions.service.js';
+import { scopeFromContext } from '../../core/rbac/employee-scope.js';
 import type { Kysely } from 'kysely';
 import {
   approveManagerMonth,
@@ -79,12 +78,8 @@ function filePayload(filename: string, buf: Buffer) {
   return { filename, base64: buf.toString('base64') };
 }
 
-function employeeScope(context: {
-  permissionAccess: PermissionAccess;
-  user: { employee_id: number | null };
-}): EmployeeScope {
-  return { ...context.permissionAccess, actorEmployeeId: context.user.employee_id };
-}
+/** The one shared constructor — see core/rbac/employee-scope.ts. */
+const employeeScope = scopeFromContext;
 
 async function auditedFilePayload(
   db: Kysely<Database>,

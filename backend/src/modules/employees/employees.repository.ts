@@ -6,6 +6,7 @@ import { sql, type Kysely, type ExpressionBuilder } from 'kysely';
 import type { Database, EmployeeStatus, EmploymentCategory } from '../../core/db/types.js';
 import { emptyOrgScope } from '../../core/org/scope.js';
 import { orgScopeWhere } from '../org/index.js';
+import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 
 export interface DirectoryFilters {
   q?: string | undefined;
@@ -152,6 +153,7 @@ function applyFilters(eb: DirEB, filters: DirectoryFilters) {
 export async function countDirectory(
   db: Kysely<Database>,
   filters: DirectoryFilters,
+  scope: EmployeeScope,
 ): Promise<number> {
   const row = await db
     .selectFrom('core.employees as e')
@@ -161,6 +163,9 @@ export async function countDirectory(
     .select((eb) => eb.fn.countAll<string>().as('n'))
     .where((eb) => applyFilters(eb as unknown as DirEB, filters))
     .where(orgScopeWhere(directoryOrgScope(filters), 'e'))
+    // The caller's RBAC scope, applied to the COUNT as well as the page — a
+    // total that includes rows the caller may not see is itself a disclosure.
+    .where(employeeScopeSql(scope, 'e'))
     .executeTakeFirstOrThrow();
   return Number(row.n);
 }
@@ -168,6 +173,7 @@ export async function countDirectory(
 export async function listDirectory(
   db: Kysely<Database>,
   filters: DirectoryFilters,
+  scope: EmployeeScope,
 ): Promise<DirectoryRow[]> {
   return db
     .selectFrom('core.employees as e')
@@ -188,6 +194,7 @@ export async function listDirectory(
     ])
     .where((eb) => applyFilters(eb as unknown as DirEB, filters))
     .where(orgScopeWhere(directoryOrgScope(filters), 'e'))
+    .where(employeeScopeSql(scope, 'e'))
     .orderBy('e.ecode', 'asc')
     .limit(filters.limit)
     .offset(filters.offset)
@@ -257,14 +264,27 @@ function selectProfile(db: Kysely<Database>) {
     );
 }
 
+/**
+ * Profile by e-code, narrowed to the caller's scope. Out of scope resolves to
+ * `undefined` and the router answers 404 — not 403, which would confirm that
+ * the e-code exists and turn this endpoint into an existence oracle.
+ */
 export async function findByEcode(
   db: Kysely<Database>,
   ecode: string,
+  scope: EmployeeScope,
 ): Promise<EmployeeProfileRow | undefined> {
-  return selectProfile(db).where('e.ecode', '=', ecode).executeTakeFirst();
+  return selectProfile(db)
+    .where('e.ecode', '=', ecode)
+    .where(employeeScopeSql(scope, 'e'))
+    .executeTakeFirst();
 }
 
-/** Profile by internal id — the self-service (`/employees/me`) resolution path. */
+/**
+ * Profile by internal id — the self-service (`/employees/me`) path ONLY.
+ * Deliberately unscoped because the id is the caller's own `user.employee_id`,
+ * never client input. Do not call it with anything else.
+ */
 export async function findById(
   db: Kysely<Database>,
   id: number,

@@ -11,6 +11,7 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { createDocument } from '../../core/storage/index.js';
 import { getTypedSetting } from '../../core/settings/read.js';
 import { documentExpiry, parseAlertStages, type ExpiryView } from './expiry.js';
+import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 
@@ -95,11 +96,19 @@ interface ListFilter {
   needsAttentionOnly?: boolean;
 }
 
+/**
+ * The HR vault list, narrowed to the caller's scope.
+ *
+ * `scope` is REQUIRED rather than optional: `doc.vault.manage` is granted to
+ * hr_ops at org_unit scope (docs/08 §2), and an employee vault holds scanned
+ * PAN and Aadhaar. Making the argument optional is how it came to be omitted.
+ */
 export async function listVaultDocuments(
   db: Db,
   filter: ListFilter,
   today: Date,
   stages: readonly number[],
+  scope: EmployeeScope,
 ): Promise<VaultDocumentRow[]> {
   let query = db
     .selectFrom('core.documents as d')
@@ -122,7 +131,8 @@ export async function listVaultDocuments(
     ])
     .where('t.is_active', '=', true)
     .where('d.owner_employee_id', 'is not', null)
-    .where('d.status', '!=', 'withdrawn');
+    .where('d.status', '!=', 'withdrawn')
+    .where(employeeScopeSql(scope, 'e'));
 
   if (filter.employeeId !== undefined) {
     query = query.where('d.owner_employee_id', '=', filter.employeeId);

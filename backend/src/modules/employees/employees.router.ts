@@ -1,10 +1,16 @@
 /**
  * Employees read API — directory + profile shell (P0-T33 / CORE-01, docs/05 §4.2).
- * Guarded by `employee.read`. Statutory fields masked in the service layer.
+ *
+ * Guarded by `employee.read`, and SCOPED by the access that permission carries
+ * (docs/08 §2: O for employee, S for manager, P for hr_ops/plant_head). Every
+ * read here passes `scopeFromContext(context)` into the service, which is a
+ * required argument — forgetting it is a compile error, not a silent leak.
+ * Statutory fields are additionally masked in the service layer.
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
+import { scopeFromContext } from '../../core/rbac/employee-scope.js';
 import { booleanQuery, csvList } from '../../api/zod.js';
 import {
   getEmployeeByEcode,
@@ -68,7 +74,7 @@ const listProcedure = guard()
     }),
   )
   .handler(async ({ input, context }) => {
-    return listEmployees(context.db, input ?? {});
+    return listEmployees(context.db, input ?? {}, scopeFromContext(context));
   });
 
 const profileOutput = z.object({
@@ -147,7 +153,11 @@ const getByEcodeProcedure = guard()
       input.ecode,
       context.user,
       context.permissions,
+      scopeFromContext(context),
     );
+    // W0-T11 — 404, never 403. An out-of-scope e-code and a non-existent one
+    // must be indistinguishable, or this endpoint becomes an existence oracle
+    // for the whole 1,066-person master.
     if (!profile) {
       throw new ORPCError('NOT_FOUND', { message: `Employee ${input.ecode} not found` });
     }
@@ -179,7 +189,7 @@ const facetsProcedure = guard()
     }),
   )
   .handler(async ({ input, context }) => {
-    return listDirectoryFacets(context.db, { activeOnly: input?.activeOnly });
+    return listDirectoryFacets(context.db, { activeOnly: input?.activeOnly }, scopeFromContext(context));
   });
 
 export const employeesRouter = {

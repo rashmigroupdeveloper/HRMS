@@ -9,6 +9,7 @@ import { withPermission } from '../../api/orpc.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { readDocument } from '../../core/storage/index.js';
 import { issueLetter, listLetters, type LetterRow } from './letters.service.js';
+import { assertEmployeesInScope, scopeFromContext } from '../../core/rbac/employee-scope.js';
 
 function asBadRequest(err: unknown): never {
   throw new ORPCError('BAD_REQUEST', { message: err instanceof Error ? err.message : 'Invalid request' });
@@ -116,7 +117,12 @@ const employeeLetters = withPermission('letters.issue')
   .route({ method: 'GET', path: '/letters/employee/{employeeId}', summary: 'All letters on an employee record, drafts included (HR)' })
   .input(z.object({ employeeId: z.coerce.number().int().positive() }))
   .output(z.array(letterShape))
-  .handler(async ({ input, context }) => (await listLetters(context.db, input.employeeId, true)).map(toDto));
+  .handler(async ({ input, context }) => {
+    // `letters.issue` is org_unit-scoped for hr_ops (docs/08 §2). A letter names
+    // salary, designation and exit reason — it is not a cross-entity read.
+    await assertEmployeesInScope(context.db, scopeFromContext(context), [input.employeeId]);
+    return (await listLetters(context.db, input.employeeId, true)).map(toDto);
+  });
 
 const letterContent = withPermission('employee.read')
   .route({ method: 'GET', path: '/letters/{id}/content', summary: 'Rendered letter body (owner, or any holder of letters.issue)' })

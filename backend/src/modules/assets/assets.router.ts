@@ -13,6 +13,7 @@ import { withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { rowsToExcelBuffer } from '../../core/excel/workbook.js';
+import { assertEmployeesInScope, scopeFromContext } from '../../core/rbac/employee-scope.js';
 import {
   assetMaintenance,
   assetsHeldByEmployee,
@@ -163,6 +164,8 @@ const heldByEmployee = guard()
     ),
   )
   .handler(async ({ input, context }) => {
+    // `assets.manage` is org_unit-scoped for hr_ops (docs/08 §2).
+    await assertEmployeesInScope(context.db, scopeFromContext(context), [input.employeeId]);
     return assetsHeldByEmployee(context.db, input.employeeId);
   });
 

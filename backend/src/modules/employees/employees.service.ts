@@ -16,6 +16,7 @@ import {
   type DirectoryRow,
   type EmployeeProfileRow,
 } from './employees.repository.js';
+import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 
 export type AuthedUser = Selectable<UsersTable>;
 
@@ -91,6 +92,27 @@ export interface EmployeeProfile {
  * (docs/08 §2 — payroll_admin + super_admin). Scope engine lands later; this
  * keeps employee-role holders from reading peers' PAN/Aadhaar.
  */
+/**
+ * W0-T13 — `employee.compensation.read` is held by the `employee` role at scope
+ * `own` (docs/08 §2), so asking only "does the caller hold it?" answered yes on
+ * a COLLEAGUE's profile and the UI showed a Compensation tab there. The tab is
+ * empty only because pay.* does not exist yet; it would fill the day Phase 2
+ * lands. Visibility is therefore decided against the subject, not the caller.
+ *
+ * `all` (hr_head, payroll_admin) sees any subject; anyone else sees only their
+ * own record. `subtree`/`org_unit` holders are deliberately NOT granted
+ * compensation by docs/08, so they never reach the true branch.
+ */
+export function canViewCompensation(
+  scope: EmployeeScope,
+  permissions: ReadonlySet<string>,
+  targetEmployeeId: number,
+): boolean {
+  if (!permissions.has('employee.compensation.read')) return false;
+  if (scope.all) return true;
+  return scope.actorEmployeeId === targetEmployeeId;
+}
+
 export function canViewStatutoryIds(
   user: AuthedUser,
   permissions: ReadonlySet<string>,
@@ -153,6 +175,7 @@ export async function listEmployees(
     page?: number | undefined;
     pageSize?: number | undefined;
   },
+  scope: EmployeeScope,
 ): Promise<DirectoryResult> {
   const page = input.page ?? 1;
   const pageSize = Math.min(input.pageSize ?? 50, 200);
@@ -175,8 +198,8 @@ export async function listEmployees(
   };
 
   const [total, rows] = await Promise.all([
-    countDirectory(db, filters),
-    listDirectory(db, filters),
+    countDirectory(db, filters, scope),
+    listDirectory(db, filters, scope),
   ]);
 
   return {
@@ -238,19 +261,27 @@ function toProfile(
   };
 }
 
+/**
+ * Profile by e-code, narrowed to the caller's scope (CORE-10).
+ *
+ * Returns null both when the e-code does not exist and when it exists outside
+ * the caller's scope, so the router's 404 cannot be used to prove that an
+ * employee exists.
+ */
 export async function getEmployeeByEcode(
   db: Kysely<Database>,
   ecode: string,
   user: AuthedUser,
   permissions: ReadonlySet<string>,
+  scope: EmployeeScope,
 ): Promise<EmployeeProfile | null> {
-  const row = await findByEcode(db, ecode);
+  const row = await findByEcode(db, ecode, scope);
   if (!row) return null;
 
   const unmask = canViewStatutoryIds(user, permissions, row.id);
   return toProfile(row, {
     statutoryMasked: !unmask,
-    canViewCompensation: permissions.has('employee.compensation.read'),
+    canViewCompensation: canViewCompensation(scope, permissions, row.id),
   });
 }
 
@@ -275,6 +306,7 @@ export async function getOwnProfile(
   const unmask = canViewStatutoryIds(user, permissions, row.id);
   return toProfile(row, {
     statutoryMasked: !unmask,
+    // Own record: `own` scope is satisfied by construction here.
     canViewCompensation: permissions.has('employee.compensation.read'),
   });
 }
@@ -312,11 +344,15 @@ const STATUS_LABELS: Record<string, string> = {
 export async function listDirectoryFacets(
   db: Kysely<Database>,
   input: { activeOnly?: boolean | undefined },
+  scope: EmployeeScope,
 ): Promise<DirectoryFacets> {
   const activeOnly = input.activeOnly ?? true;
 
+  // Facet counts are headcounts. An unscoped count tells a plant head how many
+  // people the other plants employ, which is the same disclosure as the list.
   const base = db
     .selectFrom('core.employees as e')
+    .where(employeeScopeSql(scope, 'e'))
     .$if(activeOnly, (qb) => qb.where('e.status', 'in', ['active', 'on_notice']));
 
   const [entities, departments, categories, locations, statuses, totalRow] = await Promise.all([

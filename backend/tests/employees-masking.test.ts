@@ -4,10 +4,46 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  canViewCompensation,
   canViewStatutoryIds,
   getOwnProfile,
   statusLabel,
 } from '../src/modules/employees/employees.service.js';
+import type { EmployeeScope } from '../src/core/rbac/employee-scope.js';
+
+describe('canViewCompensation (W0-T13)', () => {
+  const COMP = new Set(['employee.compensation.read']);
+  const scope = (over: Partial<EmployeeScope>): EmployeeScope => ({
+    all: false, own: false, subtree: false, orgUnitIds: [], actorEmployeeId: null, ...over,
+  });
+
+  it('denies when the permission is absent, whatever the scope', () => {
+    expect(canViewCompensation(scope({ all: true, actorEmployeeId: 42 }), new Set(), 42)).toBe(false);
+  });
+
+  it('allows an all-scope holder (hr_head, payroll_admin) any subject', () => {
+    expect(canViewCompensation(scope({ all: true, actorEmployeeId: 7 }), COMP, 42)).toBe(true);
+  });
+
+  it('allows an own-scope holder their OWN record', () => {
+    expect(canViewCompensation(scope({ own: true, actorEmployeeId: 42 }), COMP, 42)).toBe(true);
+  });
+
+  it('denies an own-scope holder a COLLEAGUE — the audit’s F3 defect', () => {
+    // docs/08 §2 grants the `employee` role compensation.read at scope `own`.
+    // Asking only "does the caller hold it?" answered yes here, and the UI put a
+    // Compensation tab on someone else's profile.
+    expect(canViewCompensation(scope({ own: true, actorEmployeeId: 99 }), COMP, 42)).toBe(false);
+  });
+
+  it('denies a subtree holder (manager) — docs/08 grants managers no compensation', () => {
+    expect(canViewCompensation(scope({ subtree: true, actorEmployeeId: 7 }), COMP, 42)).toBe(false);
+  });
+
+  it('denies an org_unit holder with no employee link', () => {
+    expect(canViewCompensation(scope({ orgUnitIds: [1] }), COMP, 42)).toBe(false);
+  });
+});
 
 describe('canViewStatutoryIds', () => {
   const userOwn = { employee_id: 42 } as { employee_id: number | null };

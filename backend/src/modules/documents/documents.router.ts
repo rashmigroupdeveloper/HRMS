@@ -8,6 +8,7 @@ import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
+import { assertEmployeesInScope, scopeFromContext } from '../../core/rbac/employee-scope.js';
 import {
   listDocTypes,
   listVaultDocuments,
@@ -97,6 +98,7 @@ const listMine = withPermission('doc.vault.own')
       },
       new Date(),
       await vaultAlertStages(context.db),
+      scopeFromContext(context),
     );
     return { rows };
   });
@@ -127,6 +129,7 @@ const listManaged = withPermission('doc.vault.manage')
       },
       new Date(),
       await vaultAlertStages(context.db),
+      scopeFromContext(context),
     );
     return { rows };
   });
@@ -186,6 +189,7 @@ const uploadForEmployee = withPermission('doc.vault.manage')
   )
   .output(z.object({ id: z.number().int() }))
   .handler(async ({ input, context }) => {
+    await assertEmployeesInScope(context.db, scopeFromContext(context), [input.employeeId]);
     try {
       return await uploadVaultDocument(context.db, {
         employeeId: input.employeeId,

@@ -7,6 +7,22 @@ export interface EmployeeScope extends PermissionAccess {
   actorEmployeeId: number | null;
 }
 
+/**
+ * THE way a router turns its request context into a data scope. It exists once
+ * so that no module can quietly grow its own variant, and so that the type of
+ * every scoped repository function points back here.
+ *
+ * `withPermission()` has already resolved `permissionAccess` for the permission
+ * the caller actually holds; this only pairs it with the caller's employee
+ * identity, which `own`/`subtree` need.
+ */
+export function scopeFromContext(context: {
+  permissionAccess: PermissionAccess;
+  user: { employee_id: number | null };
+}): EmployeeScope {
+  return { ...context.permissionAccess, actorEmployeeId: context.user.employee_id };
+}
+
 export function employeeScopeSql(
   scope: EmployeeScope | undefined,
   employeeAlias = 'e',
@@ -36,6 +52,20 @@ export function employeeScopeSql(
     : sql<boolean>`false`;
 }
 
+/**
+ * Raised when a caller addresses an employee outside their data scope.
+ *
+ * A distinct class, not a bare Error, because the API layer has to turn it into
+ * the RIGHT status exactly once: a bare Error surfaced as 500, which is both a
+ * broken client contract and a hint that something interesting is there.
+ */
+export class OutOfScopeError extends Error {
+  constructor(message = 'Not found') {
+    super(message);
+    this.name = 'OutOfScopeError';
+  }
+}
+
 export async function assertEmployeesInScope(
   db: Kysely<Database>,
   scope: EmployeeScope,
@@ -51,6 +81,10 @@ export async function assertEmployeesInScope(
     .executeTakeFirstOrThrow();
   const allowed = typeof row.n === 'number' ? row.n : Number(row.n);
   if (allowed !== ids.length) {
-    throw new Error('One or more employees are outside your permitted data scope');
+    // Deliberately the same answer as "no such employee". Telling an
+    // out-of-scope caller that the record EXISTS is the oracle W0-T11 closes
+    // on the profile endpoint; the same reasoning applies to every subject-
+    // addressed endpoint.
+    throw new OutOfScopeError();
   }
 }
