@@ -22,6 +22,7 @@ import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { hashPassword } from '../src/modules/auth/index.js';
+import { TEST_RATE_LIMITS } from './helpers/rate-limits.js';
 
 const DB_URL = process.env['DATABASE_URL'];
 const JWT_SECRET = process.env['JWT_SECRET'] ?? 'integration-test-secret-at-least-32-chars!';
@@ -82,7 +83,7 @@ run('Exports — R28 / R30 / audit (live Postgres)', () => {
 
   beforeAll(async () => {
     db = createDatabase(DB_URL ?? '');
-    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false });
+    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false, rateLimits: TEST_RATE_LIMITS });
 
     companyId = (
       await db.selectFrom('core.companies').select('id').where('code', '=', 'RML').executeTakeFirstOrThrow()

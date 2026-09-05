@@ -285,18 +285,24 @@ export async function fileGrievance(
  * Rate-limit stub for public whistleblower intake. Real limits land with the
  * full Stage 5.5 build; this always allows so the channel is exercisable now.
  */
-export function whistleRateLimitOk(ip: string | null): boolean {
-  void ip;
-  return true;
-}
+/**
+ * REMOVED 5 Sep 2026 (audit W0-T38, finding [B4]).
+ *
+ * This was `void ip; return true;` — a stub whose route summary said
+ * "(rate-limit stub)" and whose unit test asserted that it returned `true`,
+ * i.e. a green test for an unimplemented control. Anonymous POSH and
+ * whistleblower intake were therefore unthrottled, and abuse there does not
+ * merely waste CPU: it poisons a statutory register an IC must then triage.
+ *
+ * Throttling now happens where throttling belongs — as HTTP middleware in
+ * `src/app.ts` (`intakeLimiter`, 10 per hour per address), in front of the
+ * route, rather than as a domain function the domain cannot enforce.
+ */
 
 export async function fileWhistleblower(
   db: Kysely<Database>,
   input: { summary: string; ip: string | null },
 ): Promise<{ id: number; claimToken: string }> {
-  if (!whistleRateLimitOk(input.ip)) {
-    throw new Error('RATE_LIMITED');
-  }
   const { token, hash } = mintClaimToken();
   const inserted = await db
     .insertInto('ird.whistleblower_reports')

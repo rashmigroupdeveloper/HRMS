@@ -285,35 +285,75 @@ state the DB CHECK did not allow — migration `1752210000000` adds it **with a 
 worker that dies mid-send would otherwise strand rows in `sending` forever, which is silent loss: exactly
 the failure this whole area is being fixed for.
 
-### Stage W0.7 — Guard the mock connector   `[ ☐ ]`
+### Stage W0.7 — Guard the mock connector   `[ ☑ done 5 Sep 2026 ]`
 **Goal:** the system cannot invent attendance.
 **Depends on:** W0.2.
 **Tasks**
-- [ ] `W0-T34` (S, backend) `connectorFor()` throws when `NODE_ENV === 'production'` unless an explicit
+- [x] `W0-T34` (S, backend) `connectorFor()` throws when `NODE_ENV === 'production'` unless an explicit
       real connector is configured. Add `ATT_CONNECTOR` to the validated env schema.
-- [ ] `W0-T35` (S, ops) Document loudly, in the deploy runbook, that attendance is synthetic until D15.
+- [x] `W0-T35` (S, ops) Document loudly, in the deploy runbook, that attendance is synthetic until D15.
 **Tests required:** `connectorFor()` under `NODE_ENV=production` with no real connector ⇒ throws.
 **Exit criteria:** it is impossible to deploy the mock by accident.
 **Finding:** [A1]
 
-### Stage W0.8 — Baseline HTTP hardening   `[ ☐ ]`
+**EVIDENCE (5 Sep 2026):** two independent locks, because the mistake is irreversible — synthetic punches
+land in the **append-only** `att.swipe_events` and drive OT and pay, and by design can never be deleted.
+`loadEnv` refuses to boot production with `ATT_CONNECTOR=mock` (or with it unset, since the default is
+`mock`), and `connectorFor()` refuses again at the point of use.
+`tests/production-guards.test.ts` — **7 cases green**, including that development is left alone: the mock
+is the point of a dev box.
+
+### Stage W0.8 — Baseline HTTP hardening   `[ ☑ done 5 Sep 2026 ]`
 **Goal:** the API stops being trivially abusable.
 **Depends on:** W0.2. **Needs decision:** **D22** for the CORS origin.
 **Tasks**
-- [ ] `W0-T36` (S, backend) `helmet` with an explicit CSP; `app.disable('x-powered-by')`.
-- [ ] `W0-T37` (M, backend) Rate limiting: IP + account buckets on `/auth/*`, a global limiter on
+- [x] `W0-T36` (S, backend) `helmet` with an explicit CSP; `app.disable('x-powered-by')`.
+- [x] `W0-T37` (M, backend) Rate limiting: IP + account buckets on `/auth/*`, a global limiter on
       `/api/*`, strict limits on anonymous IRD intake. `app.set('trust proxy', …)` so `req.ip` is real.
-- [ ] `W0-T38` (S, backend) Replace the `whistleRateLimitOk` stub with the real limiter; **delete the
+- [x] `W0-T38` (S, backend) Replace the `whistleRateLimitOk` stub with the real limiter; **delete the
       vacuous test** that asserts the stub's return value.
-- [ ] `W0-T39` (S, backend) A terminal error middleware: log with a traceId, return the JSON envelope,
+- [x] `W0-T39` (S, backend) A terminal error middleware: log with a traceId, return the JSON envelope,
       never a stack.
-- [ ] `W0-T40` (S, backend) Explicit CORS allowlist from validated env.
-- [ ] `W0-T41` (S, backend) Raise the JSON body limit deliberately for upload routes so DOC-02, CORE-13
+- [x] `W0-T40` (S, backend) Explicit CORS allowlist from validated env.
+- [x] `W0-T41` (S, backend) Raise the JSON body limit deliberately for upload routes so DOC-02, CORE-13
       and CORE-09 work with real files; cap per document type in the validator.
-- [ ] `W0-T42` (S, backend) Guard the default JWT secret behind `NODE_ENV !== 'production'`.
+- [x] `W0-T42` (S, backend) Guard the default JWT secret behind `NODE_ENV !== 'production'`.
 **Tests required:** a supertest asserting the security headers are present; a rate-limit test.
 **Exit criteria:** 30 rapid logins ⇒ 429 · a 413 returns JSON, not HTML · `curl -i` shows CSP + HSTS.
 **Findings:** [D4] [D5] [D6] [D7] [D8] [D10] [D14] [B4] [G4]
+
+**EVIDENCE (5 Sep 2026) — live re-run of §§4-6:**
+```
+headers   was: X-Powered-By: Express, and nothing else
+          now: Content-Security-Policy (frame-ancestors 'none'), X-Content-Type-Options,
+               Referrer-Policy, Cross-Origin-{Opener,Resource}-Policy, X-Frame-Options,
+               X-Permitted-Cross-Domain-Policies … and no X-Powered-By
+
+logins    was: 401 x30 in one second, all processed
+          now: 401 401 401 401 401 401 401 401 401 401 429 429 429 429 429 429
+
+250 kB    was: 413 + an Express HTML page containing a stack trace and /Users/... paths
+upload    now: 200 {"id":2}
+
+malformed was: HTML error page
+body      now: {"success":false,"data":null,"error":"Unterminated string in JSON …","meta":null}
+               — JSON envelope, no filesystem path anywhere in it
+```
+`tests/http-hardening.integration.test.ts` — **5 cases green**. `npm run verify` → **EXIT 0, 533/533**.
+
+**The rate limiter was redesigned mid-stage, and the reason matters.** The first version was a flat
+30 per 15 minutes per address. It broke a legitimate suite — and that failure was telling the truth about
+production, not about tests: Rashmi's ~1,066 employees sit behind a handful of office and plant egress
+addresses, so a tight per-address login ceiling would throttle the 09:00 rush. That is the limiter causing
+the outage it exists to prevent. It is now **two layers**: tight per (address + identifier), which is what
+actually stops brute force on one account, and generous per address. Ceilings are environment
+configuration (`RATE_LIMIT_*`), not `core.settings` — a limiter must decide before any database read.
+Integration suites run permissive via one shared helper; `http-hardening` passes tight values so the
+limiter is still genuinely proven.
+
+**Also corrected:** [B4]'s `whistleRateLimitOk` stub (`void ip; return true;`) is deleted along with the
+unit test that asserted it returned `true` — a green test for an unimplemented control [G4]. Throttling
+now lives in HTTP middleware in front of the route, which is where it can actually be enforced.
 
 ---
 

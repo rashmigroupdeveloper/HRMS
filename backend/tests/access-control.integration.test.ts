@@ -22,6 +22,7 @@ import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { hashPassword } from '../src/modules/auth/index.js';
 import { PERMISSIONS, ROLES } from '../src/core/rbac/seed-data.js';
+import { TEST_RATE_LIMITS } from './helpers/rate-limits.js';
 import {
   devLogTransport,
   enqueueEvent,
@@ -98,7 +99,7 @@ run('central access control (live Postgres)', () => {
 
   beforeAll(async () => {
     db = createDatabase(DB_URL ?? '');
-    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false });
+    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false, rateLimits: TEST_RATE_LIMITS });
     adminId = await makeUser(adminEmail);
     opsId = await makeUser(opsEmail);
     await giveRole(adminId, 'super_admin');

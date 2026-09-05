@@ -27,12 +27,35 @@ const envSchema = z
     /** CORS origin allowlist, comma-separated. Required in production. */
     CORS_ORIGIN: z.string().min(1).optional(),
 
+    /**
+     * Which biometric feed to run. `mock` generates deterministic synthetic
+     * punches for every active employee — invaluable in development, and
+     * catastrophic in production, where those punches land in the append-only
+     * att.swipe_events and drive OT and pay (audit finding [A1]).
+     *
+     * Defaulting to `mock` is what made it dangerous: it was the only
+     * implementation and nothing said so. It is now an explicit choice, and the
+     * refinement below refuses `mock` in production.
+     */
+    ATT_CONNECTOR: z.enum(['mock', 'kent']).default('mock'),
+
     /** Local-disk storage root; the S3/SeaweedFS adapter lands in W1.4. */
     STORAGE_DIR: z.string().min(1).optional(),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;
+
+    if (env.ATT_CONNECTOR === 'mock') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ATT_CONNECTOR'],
+        message:
+          'refusing to run the MOCK biometric feed in production — it would fabricate attendance ' +
+          'into the append-only att.swipe_events and drive OT and pay. Set ATT_CONNECTOR=kent once ' +
+          'the real feed is configured (P0-T01 / sponsor decision D15).',
+      });
+    }
     // Fail at BOOT, not at the first unsent payslip notification.
     for (const key of ['SMTP_HOST', 'SMTP_FROM', 'CORS_ORIGIN'] as const) {
       if (env[key] === undefined) {

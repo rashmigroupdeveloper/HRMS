@@ -63,7 +63,7 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
 
   beforeAll(async () => {
     db = createDatabase(DB_URL ?? '');
-    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false });
+    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false, rateLimits: TEST_RATE_LIMITS });
 
     const rml = await db.selectFrom('core.companies').select('id').where('code', '=', 'RML').executeTakeFirstOrThrow();
     const mgr = await db
@@ -390,6 +390,7 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
  * A chain that nobody decided must never end in `approved`.
  */
 import { sql as vacantSql } from 'kysely';
+import { TEST_RATE_LIMITS } from './helpers/rate-limits.js';
 
 describe.skipIf(!process.env['DATABASE_URL'])('vacant-chain floor (WF-01, finding E1)', () => {
   const db = createDatabase(process.env['DATABASE_URL'] ?? '');

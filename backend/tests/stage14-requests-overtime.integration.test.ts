@@ -28,6 +28,7 @@ import {
 } from '../src/modules/attendance/index.js';
 import { act, inbox, runEscalations, WORKFLOW_DEFINITIONS } from '../src/modules/workflows/index.js';
 import { addDaysIso, istDateString } from '../src/core/dates.js';
+import { TEST_RATE_LIMITS } from './helpers/rate-limits.js';
 
 const DB_URL = process.env['DATABASE_URL'];
 const JWT_SECRET = process.env['JWT_SECRET'] ?? 'integration-test-secret-at-least-32-chars!';
@@ -123,7 +124,7 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
 
   beforeAll(async () => {
     db = createDatabase(DB_URL ?? '');
-    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false });
+    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false, rateLimits: TEST_RATE_LIMITS });
     registerAttendanceWorkflowHooks();
 
     // The three Stage-1.4 chains must exist (idempotent — runtime edits survive).

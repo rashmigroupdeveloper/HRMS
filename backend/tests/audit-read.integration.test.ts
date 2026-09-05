@@ -17,6 +17,7 @@ import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { hashPassword } from '../src/modules/auth/index.js';
 import { writeAudit } from '../src/core/audit/audit.service.js';
+import { TEST_RATE_LIMITS } from './helpers/rate-limits.js';
 
 const DB_URL = process.env['DATABASE_URL'];
 const JWT_SECRET = process.env['JWT_SECRET'] ?? 'integration-test-secret-at-least-32-chars!';
@@ -69,7 +70,7 @@ run('Audit read API (live Postgres)', () => {
 
   beforeAll(async () => {
     db = createDatabase(DB_URL ?? '');
-    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false });
+    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false, rateLimits: TEST_RATE_LIMITS });
 
     const rml = await db.selectFrom('core.companies').select('id').where('code', '=', 'RML').executeTakeFirstOrThrow();
     const [scopeA, scopeB] = await Promise.all([

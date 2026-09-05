@@ -17,6 +17,23 @@ import { drainRecomputeQueue } from './day-status.service.js';
 export const KENT_SOURCE = 'kent';
 
 async function connectorFor(db: Kysely<Database>): Promise<KentConnector> {
+  /**
+   * The second lock (audit W0-T34, finding [A1]).
+   *
+   * `loadEnv` already refuses to boot a production process with
+   * ATT_CONNECTOR=mock. This is the same refusal at the point of use, because
+   * the consequence is not a bad response to one request — it is synthetic
+   * punches written into an append-only table that feeds OT and pay, and which
+   * by design can never be deleted. Two locks is proportionate to a mistake
+   * that cannot be undone.
+   */
+  if (process.env['NODE_ENV'] === 'production' && process.env['ATT_CONNECTOR'] !== 'kent') {
+    throw new Error(
+      'refusing to run the MOCK Kent connector in production — it would fabricate attendance ' +
+        'into the append-only att.swipe_events (audit finding A1; sponsor decision D15)',
+    );
+  }
+
   // Mock feed: today's simulated punches for every active employee, seeded by
   // the date so repeated cycles within a day are consistent (and idempotent).
   const employees = await db

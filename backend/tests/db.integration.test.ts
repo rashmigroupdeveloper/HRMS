@@ -21,6 +21,7 @@ import { writeAudit, verifyAuditChain } from '../src/core/audit/audit.service.js
 import { PERMISSIONS, ROLES } from '../src/core/rbac/seed-data.js';
 import { hashPassword } from '../src/modules/auth/index.js';
 import { getTypedSetting, setSetting } from '../src/modules/settings/index.js';
+import { TEST_RATE_LIMITS } from './helpers/rate-limits.js';
 
 const DB_URL = process.env['DATABASE_URL'];
 const JWT_SECRET = process.env['JWT_SECRET'] ?? 'integration-test-secret-at-least-32-chars!';
@@ -36,7 +37,7 @@ run('database integration (live Postgres)', () => {
 
   beforeAll(async () => {
     db = createDatabase(DB_URL ?? '');
-    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false });
+    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false, rateLimits: TEST_RATE_LIMITS });
 
     const inserted = await db
       .insertInto('core.users')

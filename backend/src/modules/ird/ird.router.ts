@@ -191,7 +191,7 @@ const fileWhistle = base
   .route({
     method: 'POST',
     path: '/ird/whistle/file',
-    summary: 'Anonymous whistleblower intake (rate-limit stub)',
+    summary: 'Anonymous whistleblower intake (IP-rate-limited in app.ts)',
   })
   .input(z.object({ summary: SUMMARY }))
   .output(z.object({ id: z.number().int(), claimToken: z.string() }))
@@ -199,17 +199,12 @@ const fileWhistle = base
     if (!context.db) {
       throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
     }
-    try {
-      return await fileWhistleblower(context.db, {
-        summary: input.summary,
-        ip: context.req.ip ?? null,
-      });
-    } catch (err) {
-      if (err instanceof Error && err.message === 'RATE_LIMITED') {
-        throw new ORPCError('TOO_MANY_REQUESTS', { message: 'Too many submissions — try later' });
-      }
-      throw err;
-    }
+    // Throttling is HTTP middleware (app.ts `intakeLimiter`), in front of this
+    // route — not a domain check the domain cannot enforce.
+    return fileWhistleblower(context.db, {
+      summary: input.summary,
+      ip: context.req.ip ?? null,
+    });
   });
 
 export const irdRouter = {

@@ -17,6 +17,7 @@ import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { hashPassword } from '../src/modules/auth/index.js';
 import { importEmsSeed, importGreythrEnrich } from '../src/modules/employees/index.js';
+import { TEST_RATE_LIMITS } from './helpers/rate-limits.js';
 
 const DB_URL = process.env['DATABASE_URL'];
 const JWT_SECRET = process.env['JWT_SECRET'] ?? 'integration-test-secret-at-least-32-chars!';
@@ -35,7 +36,7 @@ run('employee master + two-source import (live Postgres)', () => {
 
   beforeAll(async () => {
     db = createDatabase(DB_URL ?? '');
-    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false });
+    app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false, rateLimits: TEST_RATE_LIMITS });
 
     // Clean slate for THE FIXTURE employees only (other suites own their own
     // employees — e.g. Stage 1.2 keeps a permanently locked day record).

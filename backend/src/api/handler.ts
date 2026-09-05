@@ -10,6 +10,7 @@ import { OpenAPIGenerator } from '@orpc/openapi';
 import { ZodSmartCoercionPlugin, ZodToJsonSchemaConverter } from '@orpc/zod';
 import { appRouter } from './router.js';
 import type { Database } from '../core/db/types.js';
+import type { RateLimits } from './rate-limits.js';
 
 // Query and path params arrive as STRINGS. The smart-coercion plugin converts
 // them to each procedure's zod input type (number, boolean, date) BEFORE
@@ -23,6 +24,13 @@ export interface AppDeps {
   db: Kysely<Database> | null;
   jwtSecret: string;
   secureCookies: boolean;
+  /**
+   * Rate-limit ceilings. Production reads them from the environment; tests
+   * override so that a suite making dozens of legitimate logins is not
+   * throttled, while `tests/http-hardening.integration.test.ts` passes tight
+   * values to prove the limiter actually bites.
+   */
+  rateLimits?: RateLimits | undefined;
 }
 
 /** Mounts the whole router under /api; falls through to Express otherwise. */
