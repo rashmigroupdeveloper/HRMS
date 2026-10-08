@@ -25,6 +25,7 @@ import {
   setManualStatus,
 } from './day-status.service.js';
 import { applyRosterEntries } from './roster.service.js';
+import { readSessionStatuses, sessionStatusesSchema, validateSessionSummary } from './session-status.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
 
@@ -399,7 +400,7 @@ const dayRecords = withPermission('attendance.team.read')
         workedMinutes: z.number().nullable(),
         lateMinutes: z.number(),
         earlyExitMinutes: z.number(),
-        sessionStatuses: z.unknown().nullable(),
+        sessionStatuses: sessionStatusesSchema.nullable(),
         weekoffPaid: z.boolean().nullable(),
         source: z.string(),
       }),
@@ -423,7 +424,7 @@ const dayRecords = withPermission('attendance.team.read')
       workedMinutes: r.worked_minutes,
       lateMinutes: r.late_minutes,
       earlyExitMinutes: r.early_exit_minutes,
-      sessionStatuses: r.session_statuses,
+      sessionStatuses: readSessionStatuses(r.session_statuses),
       weekoffPaid: r.weekoff_paid,
       source: r.source,
     }));
@@ -436,15 +437,22 @@ const overrideDay = withPermission('attendance.manual_override')
       employeeId: z.number().int().positive(),
       date: isoDate,
       status: z.enum(['P', 'A', 'HD', 'WO', 'H', 'UAB']),
+      sessionStatuses: sessionStatusesSchema.nullish(),
       reason: z.string().min(5, 'A meaningful reason is mandatory'),
     }),
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
+    try {
+      validateSessionSummary(input.status, input.sessionStatuses ?? null);
+    } catch (error) {
+      throw new ORPCError('BAD_REQUEST', { message: error instanceof Error ? error.message : 'Invalid session results' });
+    }
     await setManualStatus(context.db, {
       employeeId: input.employeeId,
       isoDate: input.date,
       status: input.status,
+      sessionStatuses: input.sessionStatuses ?? null,
       reason: input.reason,
       actorUserId: context.user.id,
     });

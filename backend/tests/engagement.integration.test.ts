@@ -115,14 +115,15 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
       .executeTakeFirstOrThrow();
     companyId = company.id;
 
-    const depts = await db
-      .selectFrom('core.departments')
-      .select('id')
-      .orderBy('id')
-      .limit(2)
-      .execute();
-    inDeptId = depts[0]?.id ?? 1;
-    outDeptId = depts[1]?.id ?? 2;
+    // Own the audience fixtures; a clean database has no departments 1 and 2.
+    const inDept = await db.insertInto('core.departments')
+      .values({ name: `${tag}-audience-in` })
+      .returning('id').executeTakeFirstOrThrow();
+    const outDept = await db.insertInto('core.departments')
+      .values({ name: `${tag}-audience-out` })
+      .returning('id').executeTakeFirstOrThrow();
+    inDeptId = inDept.id;
+    outDeptId = outDept.id;
 
     // hr_head holds engagement.publish at scope 'all' (docs/08 §2 grid).
     await mkEmployeeUser(hrEmail, 'hr_head', 'HR', inDeptId);
@@ -149,6 +150,7 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
       .where('email', 'in', [hrEmail, inEmail, outEmail])
       .execute();
     await db.deleteFrom('core.employees').where('ecode', 'like', `${tag}%`).execute();
+    await db.deleteFrom('core.departments').where('name', 'like', `${tag}-audience-%`).execute();
     await db.destroy();
   });
 

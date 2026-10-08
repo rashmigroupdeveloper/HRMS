@@ -3,6 +3,7 @@
  * Statutory ID masking: never return PAN/Aadhaar/UAN/PF/ESIC/bank unless the
  * caller may see them (docs/08 — permission-masked; never logged).
  */
+import { formatDbDate } from '../../core/dates.js';
 import type { Kysely } from 'kysely';
 import type { Selectable } from 'kysely';
 import type { Database, EmploymentCategory, UsersTable } from '../../core/db/types.js';
@@ -114,7 +115,7 @@ function displayName(first: string, last: string | null): string {
 
 function isoDate(value: Date | null): string | null {
   if (value === null) return null;
-  return value.toISOString().slice(0, 10);
+  return formatDbDate(value);
 }
 
 function toDirectoryItem(row: DirectoryRow): DirectoryItem {

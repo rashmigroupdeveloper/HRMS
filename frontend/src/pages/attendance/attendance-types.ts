@@ -1,6 +1,12 @@
+export interface AttendanceSession {
+  session: number;
+  status: 'P' | 'A' | 'O';
+}
+
 export interface AttendanceMonthRow {
   date: string;
   status: string;
+  sessionStatuses: AttendanceSession[] | null;
   firstIn: string | null;
   lastOut: string | null;
   otMinutes: number;

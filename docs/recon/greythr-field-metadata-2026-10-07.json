@@ -1,0 +1,1356 @@
+[
+  {
+    "section": "Personal",
+    "endpoint": "/v3/api/empinfo/personal/fields",
+    "status": 200,
+    "fields": [
+      {
+        "name": "basicInformation$emp1$employeephoto",
+        "title": "employeephoto",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": false,
+        "controlType": "photo"
+      },
+      {
+        "name": "basicInformation$emp1$name",
+        "title": "Name",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$employeeno",
+        "title": "EmployeeNo",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$email",
+        "title": "Email",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "emaillink"
+      },
+      {
+        "name": "currentTransitions$extEmpInfo$c_location",
+        "title": "c_location",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$mobile",
+        "title": "Mobile",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$bloodgroup",
+        "title": "bloodgroup",
+        "dataType": "NUMBER",
+        "mandatory": false,
+        "enabled": false,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$dob",
+        "title": "dob",
+        "dataType": "DATE",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$nationality",
+        "title": "Nationality",
+        "dataType": "NUMBER",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$maritalstatus",
+        "title": "maritalstatus",
+        "dataType": "NUMBER",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$marriagedate",
+        "title": "MarriageDate",
+        "dataType": "DATE",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$spousename",
+        "title": "spousename",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$birthplace",
+        "title": "birthplace",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$residentialStatus",
+        "title": "ResidentialStatus",
+        "dataType": "NUMBER",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$fathername",
+        "title": "FatherName",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$religion",
+        "title": "religion",
+        "dataType": "NUMBER",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$isphyschallanged",
+        "title": "isphyschallanged",
+        "dataType": "BOOLEAN",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$emp1$isinternationalemp",
+        "title": "isinternationalemp",
+        "dataType": "BOOLEAN",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$employeedetails$height",
+        "title": "height",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$employeedetails$weight",
+        "title": "weight",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$employeedetails$identificationmark",
+        "title": "identificationmark",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "nocategory$emp1$hobby",
+        "title": "hobby",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "nocategory$emp1$caste",
+        "title": "caste",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$name",
+        "title": "addrname",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$email",
+        "title": "email",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "emaillink"
+      },
+      {
+        "name": "allAddress$addr$phone1",
+        "title": "phone1",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$phone2",
+        "title": "phone2",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$mobile",
+        "title": "mobile",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$extnno",
+        "title": "extnno",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$fax",
+        "title": "fax",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$relation",
+        "title": "relation",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$addr_type",
+        "title": "addr_type",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$address1",
+        "title": "address1",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$address2",
+        "title": "address2",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$address3",
+        "title": "address3",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$city",
+        "title": "city",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$district",
+        "title": "district",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$state",
+        "title": "state",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$country",
+        "title": "country",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "allAddress$addr$pin",
+        "title": "pin",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empQualification$empQualification$qualdescription",
+        "title": "qualdescription",
+        "dataType": "NUMBER",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empQualification$empQualification$institute",
+        "title": "institute",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empQualification$empQualification$grade",
+        "title": "grade",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empQualification$empQualification$ishighestqualification",
+        "title": "ishighestqualification",
+        "dataType": "BOOLEAN",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empQualification$empQualification$qual_year",
+        "title": "qual_year",
+        "dataType": "NUMBER",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empQualification$empQualification$qual_year_to",
+        "title": "qual_year_to",
+        "dataType": "NUMBER",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      }
+    ]
+  },
+  {
+    "section": "Accounts and statutory",
+    "endpoint": "/v3/api/empinfo/accounts/fields",
+    "status": 200,
+    "fields": [
+      {
+        "name": "bankDetails$empBank$bankname",
+        "title": "bankname",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "bankDetails$empBank$bankaccno",
+        "title": "bankaccno",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "bankDetails$empBank$bankbranch",
+        "title": "bankbranch",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "bankDetails$empBank$ifsccode",
+        "title": "ifsccode",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "bankDetails$empBank$bankacctype",
+        "title": "bankacctype",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "bankDetails$empBank$paytype",
+        "title": "paytype",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "bankDetails$empBank$ddpayableat",
+        "title": "ddpayableat",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "bankDetails$empBank$nameAsPerBank",
+        "title": "NamePerBank",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$employeedetails$iflwfeligible",
+        "title": "iflwfeligible",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "tag"
+      },
+      {
+        "name": "basicInformation$empPF$pfnumber",
+        "title": "pfnumber",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$empPF$ifpfeligible",
+        "title": "ifpfeligible",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "tag"
+      },
+      {
+        "name": "basicInformation$empPF$uan",
+        "title": "uan",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$empPF$pfjoindate",
+        "title": "pfjoindate",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empIdentities$tblEmpIdentities$idtype",
+        "title": "idtype",
+        "dataType": "STRING",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$empPF$ispf_kycid",
+        "title": "ispf_kycid",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$empPF$ifpf_kycid",
+        "title": "ifpf_kycid",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$empPF$pf_kyclinkeddate",
+        "title": "pf_kyclinkeddate",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$empPF$fpfnumber",
+        "title": "fpfnumber",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$empPF$ifconthigherwageseps",
+        "title": "ifconthigherwageseps",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$empPF$ifconthigherwagesepf",
+        "title": "ifconthigherwagesepf",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$empPF$pfexistingmember",
+        "title": "pfexistingmember",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$empPF$ifconthigherwagesepsdesc",
+        "title": "ifconthigherwagesepsdesc",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$empPF$ifconthigherwagesepfdesc",
+        "title": "ifconthigherwagesepfdesc",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "basicInformation$empPF$pfexistingmemberdesc",
+        "title": "pfexistingmemberdesc",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$passportno",
+        "title": "Passport",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$expirydate",
+        "title": "Expirydate",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "datelabel"
+      },
+      {
+        "name": "custom$emppassport$familyempmber",
+        "title": "Family Member",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$passporttype",
+        "title": "Passport Type",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$givenname",
+        "title": "First name",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$middlename",
+        "title": "Middle Name",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$surname",
+        "title": "Surname",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$address",
+        "title": "Address",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empPassport$currentlywith",
+        "title": "Currently With",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empPassport$country",
+        "title": "Country",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empPassport$issuedate",
+        "title": "Issue Date",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empPassport$issuecity",
+        "title": "Issue City",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empPassport$issueplace",
+        "title": "Issue City",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$visanotype",
+        "title": "visanotype",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$visano",
+        "title": "visano",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$validity",
+        "title": "validity",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "datelabel"
+      },
+      {
+        "name": "custom$empVisa$family",
+        "title": "family",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$visatype",
+        "title": "visatype",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$visaname",
+        "title": "visaname",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$country",
+        "title": "country",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$issuedate",
+        "title": "issueDate",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empIdentities$tblEmpIdentities$expirydate",
+        "title": "expirydate",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empIdentities$tblEmpIdentities$docverified",
+        "title": "docverified",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empIdentities$tblEmpIdentities$verifiedcolor",
+        "title": "isverified",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      }
+    ]
+  },
+  {
+    "section": "Family and nomination",
+    "endpoint": "/v3/api/empinfo/family/fields",
+    "status": 200,
+    "fields": [
+      {
+        "name": "custom$family$name",
+        "title": "Name",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$family$dob",
+        "title": "Date of birth",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "string"
+      },
+      {
+        "name": "custom$family$age",
+        "title": "Age",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "string"
+      },
+      {
+        "name": "custom$family$bloodgroup",
+        "title": "Blood Group",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$family$gender",
+        "title": "Gender",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$family$nationality",
+        "title": "Nationality",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$passportno",
+        "title": "Passport",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$expirydate",
+        "title": "Expirydate",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "datelabel"
+      },
+      {
+        "name": "custom$emppassport$familyempmber",
+        "title": "Family Member",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$passporttype",
+        "title": "Passport Type",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$givenname",
+        "title": "First name",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$middlename",
+        "title": "Middle Name",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$surname",
+        "title": "Surname",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$emppassport$address",
+        "title": "Address",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empPassport$currentlywith",
+        "title": "Currently With",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empPassport$country",
+        "title": "Country",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empPassport$issuedate",
+        "title": "Issue Date",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empPassport$issuecity",
+        "title": "Issue City",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empPassport$issueplace",
+        "title": "Issue City",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$visanotype",
+        "title": "visanotype",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$visano",
+        "title": "visano",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$validity",
+        "title": "validity",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "datelabel"
+      },
+      {
+        "name": "custom$empVisa$family",
+        "title": "family",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$visatype",
+        "title": "visatype",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$visaname",
+        "title": "visaname",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$country",
+        "title": "country",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$empVisa$issuedate",
+        "title": "issueDate",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$nom$for",
+        "title": "for",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$nom$amount",
+        "title": "amount",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$nom$allminor",
+        "title": "allminor",
+        "dataType": "COMPOUND",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "checkboxlabeldetail"
+      },
+      {
+        "name": "custom$nom$allmental",
+        "title": "allmental",
+        "dataType": "COMPOUND",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "checkboxlabeldetail"
+      },
+      {
+        "name": "custom$nom$isminor",
+        "title": "isminor",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$nom$islunatic",
+        "title": "islunatic",
+        "dataType": "BOOLEAN",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$nom$minor",
+        "title": "minor",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$nom$mental",
+        "title": "mental",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$nom$address",
+        "title": "address",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$nom$phone",
+        "title": "phone",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$nom$mobile",
+        "title": "mobile",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$nom$email",
+        "title": "email",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$nom$guardnamerelation",
+        "title": "name",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "nomination$empNomination1$sharepercent",
+        "title": "sharepercent",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "nomination$empFamily$namerelation",
+        "title": "namerelation",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      }
+    ]
+  },
+  {
+    "section": "Assets and access cards",
+    "endpoint": "/v3/api/empinfo/assets/fields",
+    "status": 200,
+    "fields": [
+      {
+        "name": "custom$accesscard$accesscardno",
+        "title": "Accesscardno",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$accesscard$fromdate",
+        "title": "FromDate",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$accesscard$todate",
+        "title": "ToDate",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$accesscard$validity",
+        "title": "Validity",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$assettype",
+        "title": "assettype",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$model",
+        "title": "model",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$serialno",
+        "title": "serialno",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$assetdesc",
+        "title": "assetdesc",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$issuedate",
+        "title": "issuedate",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$status",
+        "title": "status",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$assetid",
+        "title": "assetid",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$assetno",
+        "title": "assetno",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$originalvalue",
+        "title": "originalvalue",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$value",
+        "title": "value",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$returndate",
+        "title": "returndate",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$remarks",
+        "title": "remarks",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "assetsalloc$assetallocation$remarks_return",
+        "title": "remarks_return",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      }
+    ]
+  },
+  {
+    "section": "Insurance",
+    "endpoint": "/v3/api/empinfo/insurance/fields",
+    "status": 200,
+    "fields": [
+      {
+        "name": "id",
+        "title": "Id",
+        "dataType": "NUMBER",
+        "mandatory": false,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "policyno",
+        "title": "Policy Number",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "number"
+      },
+      {
+        "name": "insuredsum",
+        "title": "Sum Insured",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "number"
+      },
+      {
+        "name": "issuedate",
+        "title": "Issue Date",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "expirydate",
+        "title": "Expiry Date",
+        "dataType": "DATE",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empInsuranceInfo$insuranceTypeInfo$insurancetype",
+        "title": "insurancetypedescription",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empInsuranceInfo$insuranceProvInfo$insuranceprovider",
+        "title": "insuranceprovider",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "empFamilyInfo$familyInfo$family",
+        "title": "familydescription",
+        "dataType": "NUMBER",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      }
+    ]
+  },
+  {
+    "section": "Employment and job",
+    "endpoint": "/core-hr/v1/empandjob/fields",
+    "status": 200,
+    "fields": [
+      {
+        "name": "custom$work_history$company_name",
+        "title": "company_name",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$work_history$period",
+        "title": "duration",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      },
+      {
+        "name": "custom$work_history$designation",
+        "title": "designation",
+        "dataType": "STRING",
+        "mandatory": true,
+        "enabled": true,
+        "controlType": "text"
+      }
+    ]
+  }
+]

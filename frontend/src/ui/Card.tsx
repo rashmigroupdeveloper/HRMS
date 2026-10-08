@@ -48,15 +48,18 @@ export function CardHeader({
   title,
   subtitle,
   action,
+  headingLevel = 3,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
   action?: ReactNode;
+  headingLevel?: 2 | 3;
 }) {
+  const Heading = headingLevel === 2 ? 'h2' : 'h3';
   return (
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
-        <h3 className="text-lg font-light text-ink">{title}</h3>
+        <Heading className="text-lg font-light text-ink">{title}</Heading>
         {subtitle && (
           <p className="mt-0.5 text-sm text-ink-muted">{subtitle}</p>
         )}

@@ -7,6 +7,7 @@
  *
  * Guarded by 'admin.roles' (it_admin, super_admin per docs/08 §2).
  */
+import { assertDelegationCeiling, assertRoleDelegation } from './rbac.guard.js';
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
@@ -66,13 +67,14 @@ const grantProcedure = guard()
   .input(grantInput)
   .output(z.object({ changed: z.boolean() }))
   .handler(async ({ input, context }) => {
-    const db = context.db;
+    return context.db.transaction().execute(async (db) => {
 
     const role = await findRoleByCode(db, input.role);
     const permission = await findPermissionByCode(db, input.permission);
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
     if (!permission) throw new ORPCError('NOT_FOUND', { message: `Unknown permission: ${input.permission}` });
 
+    await assertDelegationCeiling(db, context.user.id, [permission.id]);
     const changed = await insertGrant(db, role.id, permission.id, input.scope);
     if (changed) {
       await writeAudit(db, {
@@ -85,6 +87,7 @@ const grantProcedure = guard()
       });
     }
     return { changed };
+    });
   });
 
 const revokeProcedure = guard()
@@ -92,13 +95,14 @@ const revokeProcedure = guard()
   .input(grantInput)
   .output(z.object({ changed: z.boolean() }))
   .handler(async ({ input, context }) => {
-    const db = context.db;
+    return context.db.transaction().execute(async (db) => {
 
     const role = await findRoleByCode(db, input.role);
     const permission = await findPermissionByCode(db, input.permission);
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
     if (!permission) throw new ORPCError('NOT_FOUND', { message: `Unknown permission: ${input.permission}` });
 
+    await assertDelegationCeiling(db, context.user.id, [permission.id]);
     const changed = await deleteGrant(db, role.id, permission.id);
     if (changed) {
       await writeAudit(db, {
@@ -112,6 +116,7 @@ const revokeProcedure = guard()
       });
     }
     return { changed };
+    });
   });
 
 const assignRoleProcedure = guard()
@@ -125,11 +130,12 @@ const assignRoleProcedure = guard()
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    const db = context.db;
+    return context.db.transaction().execute(async (db) => {
 
     const role = await findRoleByCode(db, input.role);
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
 
+    await assertRoleDelegation(db, context.user.id, input.userId, role.id);
     await assignRoleToUser(db, input.userId, role.id, input.scopeOrgUnitId ?? null);
     await writeAudit(db, {
       actorUserId: context.user.id,
@@ -141,6 +147,7 @@ const assignRoleProcedure = guard()
       ip: context.req.ip ?? null,
     });
     return { ok: true as const };
+    });
   });
 
 const removeRoleProcedure = guard()
@@ -148,11 +155,12 @@ const removeRoleProcedure = guard()
   .input(z.object({ userId: z.number().int().positive(), role: z.string().min(1) }))
   .output(z.object({ changed: z.boolean() }))
   .handler(async ({ input, context }) => {
-    const db = context.db;
+    return context.db.transaction().execute(async (db) => {
 
     const role = await findRoleByCode(db, input.role);
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
 
+    await assertRoleDelegation(db, context.user.id, input.userId, role.id);
     const changed = await removeRoleFromUser(db, input.userId, role.id);
     if (changed) {
       await writeAudit(db, {
@@ -167,6 +175,7 @@ const removeRoleProcedure = guard()
       });
     }
     return { changed };
+    });
   });
 
 /** Who can be given a role — the picker behind the access console. */

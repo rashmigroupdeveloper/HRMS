@@ -7,7 +7,7 @@ import { sql, type Insertable, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { formatDbDate } from '../../core/dates.js';
 import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
-import { monthStart, nextMonthStart } from '../attendance/index.js';
+import { attendanceGlyph, monthStart, nextMonthStart } from '../attendance/index.js';
 
 function fullName(first: string, last: string | null): string {
   return last ? `${first} ${last}` : first;
@@ -117,6 +117,7 @@ export async function buildMusterMonth(
           'dr.employee_id',
           'dr.work_date',
           'dr.status',
+          'dr.session_statuses',
           'dr.ot_minutes',
           'dr.weekoff_paid',
           'lt.code as leave_code',
@@ -154,7 +155,7 @@ export async function buildMusterMonth(
     for (const d of employeeDays) {
       const dd = formatDbDate(d.work_date).slice(8, 10);
       const st = d.status;
-      dayStatuses[dd] = st === 'L' && d.leave_code ? d.leave_code : st;
+      dayStatuses[dd] = attendanceGlyph(st, d.session_statuses, d.leave_code);
       otMinutes += d.ot_minutes;
       switch (st) {
         case 'P':
@@ -223,7 +224,7 @@ export async function buildMusterMonth(
       });
   }
 
-  await db.transaction().execute(async (trx) => {
+  const saveSnapshot = async (trx: Kysely<Database>) => {
     await trx
       .deleteFrom('reporting.muster_month')
       .where('company_id', '=', companyId)
@@ -237,7 +238,9 @@ export async function buildMusterMonth(
         .values(values.slice(offset, offset + batchSize))
         .execute();
     }
-  });
+  };
+  if (db.isTransaction) await saveSnapshot(db);
+  else await db.transaction().execute(saveSnapshot);
   return values.length;
 }
 
@@ -253,9 +256,9 @@ function containsPattern(value: string): string {
 
 function leaveTypeCounts(dayStatuses: Record<string, string>): Record<string, number> {
   const leaveByType: Record<string, number> = {};
-  const attendanceCodes = new Set(['P', 'A', 'HD', 'WO', 'H', 'OD', 'CO', 'UAB']);
+  const attendanceCodes = new Set(['P', 'A', 'O', 'HD', 'WO', 'H', 'OD', 'CO', 'UAB']);
   for (const status of Object.values(dayStatuses)) {
-    if (!attendanceCodes.has(status)) {
+    if (!attendanceCodes.has(status) && !status.includes(':')) {
       leaveByType[status] = (leaveByType[status] ?? 0) + 1;
     }
   }

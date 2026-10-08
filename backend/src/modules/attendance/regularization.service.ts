@@ -161,6 +161,7 @@ export async function applyRegularizationOnFinal(db: Db, request: RequestRow, st
   const toIso = formatDbDate(reg.to_date);
   const row = {
     status: reg.requested_status,
+    session_statuses: null,
     source: 'regularized' as const,
     computed_at: new Date(),
   };

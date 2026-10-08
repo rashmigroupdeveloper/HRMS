@@ -42,6 +42,8 @@ Cross-plant swipes (ATT-16): any door counts toward attendance — an employee m
 
 Manual override (ATT-17): `day_records.source='manual'` writes require the `attendance.manual_override` permission (HR ops+, never managers), a mandatory reason, and an audit row. Managers influence attendance only by approving employee-initiated requests.
 
+**Session representation (ATT-05, sponsor confirmation 07 Oct 2026):** retain ordered Session 1 / Session 2 results with `P` (present), `A` (absent) or `O` (off). Employee calendar/drill-down and muster/Excel preserve `A:P`, `P:A` and `P:O`; equal results display as one glyph with both sessions available in the drill-down. The daily summary remains separate: P/P → P, one P plus one A → HD, A/A → A (or an explicit UAB override). For mixed off results, HR must supply the daily summary according to the approved scheme; this representation does not introduce a new payable-day formula or automatically assign session off-days. An HR override may carry both session results, with reason and audit. Whole-day regularization/leave writes clear old swipe-session labels instead of leaving contradictory results. A session-level A is held for incomplete device sync just like whole-day A. Exact greytHR thresholds remain a recon item; the existing configured computation policy is unchanged by this representation update.
+
 ### 1.2 Week-off eligibility (ATT-09 — PI-PAY-1/2, exactly as RML stated)
 
 At each week close (per employee, Mon–Sun or roster week):

@@ -15,6 +15,7 @@ import {
   getManagerApprovalLedger,
   getMonthLockChecklist,
   lockMonth,
+  sessionStatusesSchema,
 } from '../attendance/index.js';
 import { buildMusterMonth, exportMusterExcel, listMuster } from './muster.service.js';
 import { buildKpiSnapshot, kpiTrend, readKpiSnapshot } from './kpi-snapshot.service.js';
@@ -671,6 +672,7 @@ const myAttendance = withPermission('attendance.own')
   .output(z.array(z.object({
     date: z.string(),
     status: z.string(),
+    sessionStatuses: sessionStatusesSchema.nullable(),
     firstIn: z.string().nullable(),
     lastOut: z.string().nullable(),
     otMinutes: z.number(),

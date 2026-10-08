@@ -43,6 +43,16 @@ This folder is the **live execution tracker** for the Rashmi HRMS build. The spe
 
 ## Key spec references
 
+**Read-only database audit, 07 Oct 2026:** [evidence and repair order](../docs/recon/database-audit-2026-10-07.md). Confirmed shared-database test contamination, an unrestricted user/employee unlink in test cleanup, future device watermarks, missing applied migration sources, deployed audit hash-scope drift, and a red backend verify gate from existing merge conflicts. These are outstanding findings; no stage or gate was advanced.
+
+**Schema/connection follow-up:** the actual Kysely factory connects successfully. All 61 typed tables/declared columns exist, but 43 business relations and 15 columns are unrepresented in the current types. Temporal exclusions and processed-attendance partitioning remain absent; backend HTTP on port 5100 was unavailable at inspection. See the follow-up section in the audit evidence above.
+
+**Relationship review, 07 Oct 2026:** [complete table/field map and design assessment](../docs/recon/database-relationships-2026-10-07.md) covers 104 business tables, 1,028 fields and 192 parent/base-table FK constraints. Confirmed 119 dangling swipe employee IDs and missing budget/claim workflow FKs; company alignment composite FKs are a strength. Findings remain open; no implementation stage was advanced.
+
+**Additional greytHR field recon, 07 Oct 2026 (P0-T02 evidence):** [sanitized inventory and HRMS comparison](../docs/recon/greythr-additional-fields-2026-10-07.md) captures 164 field-definition appearances / 143 unique technical names across six authenticated metadata sections. Education and previous-employment tables are specified in doc 03 but absent from the inspected live schema. Further fields require a scope decision; no records were imported, schema changed, or gate advanced.
+
+**Attendance/access recon follow-up (P0-T02, ATT-03/05):** [session model, supported API access and unresolved parity gaps](../docs/recon/greythr-attendance-and-access-2026-10-07.md). Live attendance config reads returned 403 and the current-period endpoint returned 500. Source review flags assumed session thresholds, partial-absence watermark handling and stale session labels after regularization. No persistent integration was configured or gate advanced.
+
 - `docs/13-MASTER-BUILD-PLAN.md` — the master plan these files decompose (task IDs P0-T01…P2-T12)
 - `docs/14-TECH-STACK-AND-RELIABILITY.md` — stack decision record + reliability program (wins over doc 02 on conflict)
 - `docs/03-DATABASE-SCHEMA.md` — every table/column · `docs/04-MODULE-SPECS.md` — exact behavior

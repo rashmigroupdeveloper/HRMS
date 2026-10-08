@@ -21,6 +21,7 @@ import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
 import { useDashboardResource } from '../home/useDashboardResource';
 import { AttendanceRequestDrawer } from './AttendanceRequestDrawer';
 import type { AttendanceMonthRow, AttendanceRequest, OvertimeEntry } from './attendance-types';
+import { attendanceSessionDescription, attendanceSessionGlyph } from './attendance-session-format';
 
 const MONTH_TITLE_IST = new Intl.DateTimeFormat('en-IN', {
   month: 'long',
@@ -67,7 +68,7 @@ function shiftMonth(month: string, delta: number): string {
 }
 
 function needsLook(row: AttendanceMonthRow): boolean {
-  return row.status === 'A' || row.status === 'UAB';
+  return row.status === 'A' || row.status === 'UAB' || row.sessionStatuses?.some((s) => s.status === 'A') === true;
 }
 
 function statusCopy(status: string): string {
@@ -102,6 +103,7 @@ function HolidayYearCard({ year, today, rows }: { year: number; today: string; r
   return (
     <Card>
       <CardHeader
+        headingLevel={2}
         title={`${String(year)} holidays`}
         subtitle="These days are already off — you do not apply leave for them."
       />
@@ -158,7 +160,8 @@ export function MyAttendancePage() {
     for (const row of attendance.data ?? []) {
       value[Number(row.date.slice(-2))] = {
         state: stateFor(row.status),
-        note: `${attendanceLabel(row.status)} · In ${formatTime(row.firstIn)} · Out ${formatTime(row.lastOut)}`,
+        label: row.sessionStatuses ? attendanceSessionGlyph(row.status, row.sessionStatuses) : undefined,
+        note: `${attendanceSessionDescription(row.sessionStatuses) || attendanceLabel(row.status)} · In ${formatTime(row.firstIn)} · Out ${formatTime(row.lastOut)}`,
       };
     }
     return value;
@@ -219,6 +222,7 @@ export function MyAttendancePage() {
       <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
         <Card>
           <CardHeader
+            headingLevel={2}
             title={MONTH_TITLE_IST.format(new Date(`${month}-01T00:00:00+05:30`))}
             subtitle={
               exceptions > 0
@@ -254,8 +258,18 @@ export function MyAttendancePage() {
           {selected ? (
             <div className="mt-4">
               <StatusBadge tone={statusTone(selected.status)}>
-                {attendanceLabel(selected.status)}
+                {selected.sessionStatuses ? attendanceSessionGlyph(selected.status, selected.sessionStatuses) : attendanceLabel(selected.status)}
               </StatusBadge>
+              {selected.sessionStatuses && (
+                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm" aria-label="Attendance sessions">
+                  {selected.sessionStatuses.map((session) => (
+                    <div key={session.session}>
+                      <dt className="text-hero-muted">Session {session.session}</dt>
+                      <dd className="mt-1">{session.status === 'O' ? 'Off' : attendanceLabel(session.status)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
               <p className="mt-4 text-3xl font-light">{formatDateIN(selected.date)}</p>
               <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -307,7 +321,7 @@ export function MyAttendancePage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Requests you have already sent" subtitle="Regularisation, official duty and short permission" />
+          <CardHeader headingLevel={2} title="Requests you have already sent" subtitle="Regularisation, official duty and short permission" />
           {requests.data?.length ? (
             <div className="space-y-2">
               {requests.data.slice(0, 6).map((request) => (
@@ -343,7 +357,7 @@ export function MyAttendancePage() {
           )}
         </Card>
         <Card>
-          <CardHeader title="Overtime already detected" subtitle="Claimed minutes against the 48-hour window" />
+          <CardHeader headingLevel={2} title="Overtime already detected" subtitle="Claimed minutes against the 48-hour window" />
           {overtime.data?.length ? (
             <div className="space-y-2">
               {overtime.data.slice(0, 6).map((entry) => (

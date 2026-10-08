@@ -507,7 +507,7 @@ export interface AttDayRecordsTable {
   early_exit_minutes: Generated<number>;
   ot_minutes: Generated<number>;
   weekoff_paid: boolean | null;
-  session_statuses: unknown;
+  session_statuses: unknown; // JSONB: ordered sessions 1/2 with P, A or O; boundary-validated (ATT-05).
   scheme_code: string | null;
   penalty_flag: Generated<boolean>;
   source: Generated<'auto' | 'regularized' | 'manual'>;

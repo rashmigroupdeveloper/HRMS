@@ -8,7 +8,7 @@ import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import type { Express } from 'express';
-import type { Kysely } from 'kysely';
+import { sql, type Kysely } from 'kysely';
 import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
@@ -37,16 +37,14 @@ run('employees self-service — GET /employees/me (live Postgres)', () => {
     db = createDatabase(DB_URL ?? '');
     app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false });
 
-    // An employee not already linked to a user — so linking our test user is safe.
-    const emp = await db
-      .selectFrom('core.employees as e')
-      .leftJoin('core.users as u', 'u.employee_id', 'e.id')
-      .where('u.id', 'is', null)
-      .select(['e.id as id', 'e.ecode as ecode'])
-      .limit(1)
-      .executeTakeFirst();
-    if (!emp) return; // no unlinked employee available — the test no-ops
-
+    const company = await db.selectFrom('core.companies').select('id')
+      .where('code', '=', 'RML').executeTakeFirstOrThrow();
+    const emp = await db.insertInto('core.employees').values({
+      ecode: `SELF${String(stamp)}`, company_id: company.id,
+      first_name: 'Calendar', last_name: 'Fixture', status: 'active',
+      dob: sql<Date>`'1994-03-17'::date`, doj: sql<Date>`'2020-01-15'::date`,
+      confirmation_date: sql<Date>`'2020-07-15'::date`,
+    }).returning(['id', 'ecode']).executeTakeFirstOrThrow();
     ownEcode = emp.ecode;
     const user = await db
       .insertInto('core.users')
@@ -72,7 +70,7 @@ run('employees self-service — GET /employees/me (live Postgres)', () => {
   });
 
   it('returns the caller’s OWN profile (not shadowed by /employees/{ecode})', async () => {
-    if (ownEcode === null) return; // environment had no unlinked employee to bind
+    expect(ownEcode).not.toBeNull();
     const token = await loginToken(email);
     const res = await request(app)
       .get('/api/employees/me')
@@ -80,6 +78,7 @@ run('employees self-service — GET /employees/me (live Postgres)', () => {
 
     expect(res.status).toBe(200);
     expect((res.body as { ecode: string }).ecode).toBe(ownEcode);
+    expect(res.body).toMatchObject({ dob: '1994-03-17', doj: '2020-01-15', confirmationDate: '2020-07-15' });
   });
 
   it('rejects an unauthenticated caller with 401', async () => {

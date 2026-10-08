@@ -22,6 +22,7 @@ export {
 } from './manager-approval.service.js';
 export { registerAttendanceWorkflowHooks } from './workflow-hooks.js';
 export { applyRosterEntries, type RosterPersistenceEntry } from './roster.service.js';
+export { attendanceGlyph, readSessionStatuses, sessionStatusesSchema } from './session-status.js';
 export { createRegularization, listRegularizations } from './regularization.service.js';
 export {
   recordDetectedOvertime,

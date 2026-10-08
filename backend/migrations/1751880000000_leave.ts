@@ -143,6 +143,7 @@ export function up(pgm: MigrationBuilder): void {
 }
 
 export function down(pgm: MigrationBuilder): void {
+  pgm.sql(`SET lock_timeout = '5s';`);
   pgm.sql(`
     ALTER TABLE att.overtime_entries DROP CONSTRAINT IF EXISTS overtime_entries_comp_off_credit_fk;
     ALTER TABLE att.day_records DROP CONSTRAINT IF EXISTS day_records_leave_type_fk;
@@ -150,6 +151,7 @@ export function down(pgm: MigrationBuilder): void {
     DROP TABLE IF EXISTS lv.restricted_holidays;
     DROP TABLE IF EXISTS lv.applications;
     DROP TABLE IF EXISTS lv.ledger;
+    DROP FUNCTION IF EXISTS lv.ledger_immutable();
     DROP TABLE IF EXISTS lv.leave_types;
     DROP SCHEMA IF EXISTS lv;
   `);

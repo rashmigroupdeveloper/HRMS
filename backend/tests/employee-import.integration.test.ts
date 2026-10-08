@@ -42,7 +42,8 @@ run('employee master + two-source import (live Postgres)', () => {
     // Users with audit history can never be hard-deleted (append-only FK — by
     // design); detach + delete audit-free ones; survivors relink via upsert.
     const fixtureEcodes = (loadFixture('ems-users.sample.json') as { userid: string }[]).map((r) => r.userid);
-    await db.updateTable('core.users').set({ employee_id: null }).where('employee_id', 'is not', null).execute();
+    const fixtureEmployees = db.selectFrom('core.employees').select('id').where('ecode', 'in', fixtureEcodes);
+    await db.updateTable('core.users').set({ employee_id: null }).where('employee_id', 'in', fixtureEmployees).execute();
     // Skip users referenced by audit (append-only) OR notifications (workflow/leave
     // receipts) — hard-delete is impossible for both by design.
     await sql`

@@ -32,6 +32,7 @@ interface MusterRow {
   orgUnit: string | null;
   costCenter: string | null;
   category: string | null;
+  dayStatuses: Record<string, string>;
   present: number;
   absent: number;
   halfDays: number;
@@ -163,6 +164,20 @@ export function MusterPage() {
   const [hasLoaded, setHasLoaded] = useState(false);
   const valid = /^\d+$/.test(filters.companyId);
   const queryString = useMemo(() => qs(buildMusterQuery(filters)), [filters]);
+  const monthColumns = useMemo(() => {
+    const [year = 0, month = 1] = filters.month.split('-').map(Number);
+    const dayCount = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const days: Column<MusterRow>[] = Array.from({ length: dayCount }, (_, index) => {
+      const day = String(index + 1).padStart(2, '0');
+      return {
+        key: `day${day}`,
+        header: day,
+        width: '56px',
+        render: (row) => <span className="text-xs tabular-nums">{row.dayStatuses[day] ?? '—'}</span>,
+      };
+    });
+    return [...columns.slice(0, 5), ...days, ...columns.slice(5)];
+  }, [filters.month]);
   const totals = useMemo(() => {
     let present = 0;
     let uab = 0;
@@ -436,7 +451,7 @@ export function MusterPage() {
 
       <DataTable
         rows={rows}
-        columns={columns}
+        columns={monthColumns}
         rowKey={(row) => row.ecode}
         maxHeight={620}
         empty={

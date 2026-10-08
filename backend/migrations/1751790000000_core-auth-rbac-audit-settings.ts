@@ -184,6 +184,9 @@ export function down(pgm: MigrationBuilder): void {
   pgm.sql(`
     DROP TABLE IF EXISTS core.settings;
     DROP TABLE IF EXISTS core.audit_log;
+    -- The forward-only chain repair keeps its sequence on partial rollback.
+    -- A full teardown removes it only after the owning audit table is gone.
+    DROP SEQUENCE IF EXISTS core.audit_log_chain_seq;
     DROP FUNCTION IF EXISTS core.verify_audit_chain();
     DROP FUNCTION IF EXISTS core.audit_log_immutable();
     DROP FUNCTION IF EXISTS core.audit_log_chain();

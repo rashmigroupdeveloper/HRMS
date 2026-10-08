@@ -9,6 +9,7 @@ import { OpenAPIHandler } from '@orpc/openapi/node';
 import { OpenAPIGenerator } from '@orpc/openapi';
 import { ZodSmartCoercionPlugin, ZodToJsonSchemaConverter } from '@orpc/zod';
 import { appRouter } from './router.js';
+import type { RateLimits } from './rate-limits.js';
 import type { Database } from '../core/db/types.js';
 
 // Query and path params arrive as STRINGS. The smart-coercion plugin converts
@@ -23,6 +24,7 @@ export interface AppDeps {
   db: Kysely<Database> | null;
   jwtSecret: string;
   secureCookies: boolean;
+  rateLimits?: RateLimits;
 }
 
 /** Mounts the whole router under /api; falls through to Express otherwise. */

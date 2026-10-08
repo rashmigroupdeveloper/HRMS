@@ -7,6 +7,7 @@ import { formatDbDate, istDateString } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
 import { policyAckStatus } from '../policies/index.js';
 import { getBalances } from '../leave/index.js';
+import { readSessionStatuses } from '../attendance/index.js';
 
 export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
   const today = istDateString();
@@ -188,7 +189,7 @@ export async function myAttendanceMonth(
     mo === 12 ? `${y + 1}-01-01` : `${y}-${String(mo + 1).padStart(2, '0')}-01`;
   const rows = await db
     .selectFrom('att.day_records')
-    .select(['work_date', 'status', 'first_in', 'last_out', 'ot_minutes', 'late_minutes'])
+    .select(['work_date', 'status', 'session_statuses', 'first_in', 'last_out', 'ot_minutes', 'late_minutes'])
     .where('employee_id', '=', employeeId)
     .where('work_date', '>=', sql<Date>`${m}::date`)
     .where('work_date', '<', sql<Date>`${mEnd}::date`)
@@ -197,6 +198,7 @@ export async function myAttendanceMonth(
   return rows.map((r) => ({
     date: formatDbDate(r.work_date),
     status: r.status,
+    sessionStatuses: readSessionStatuses(r.session_statuses),
     firstIn: r.first_in?.toISOString() ?? null,
     lastOut: r.last_out?.toISOString() ?? null,
     otMinutes: r.ot_minutes,

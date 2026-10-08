@@ -14,6 +14,12 @@ if [[ -f "$FREEZE_FILE" ]]; then
   exit 1
 fi
 
+# W1-T04: fail before pulling, installing or touching the database.
+if [[ "$(node -p 'process.versions.node.split(".")[0]')" != "24" ]]; then
+  echo "Node 24 is required (.nvmrc / docs/14). Activate it before deploying." >&2
+  exit 1
+fi
+
 echo "── Pulling latest main…"
 git -C "$REPO_ROOT" pull --ff-only origin main
 

@@ -341,7 +341,7 @@ CREATE TABLE att.day_records (      -- PROCESSED attendance; recomputable from r
   weekoff_paid BOOLEAN,                            -- week-off eligibility outcome (ATT-09): computed at week close
   source TEXT NOT NULL DEFAULT 'auto',             -- 'auto'|'regularized'|'manual' — manual requires HR permission + audit
   is_locked BOOLEAN NOT NULL DEFAULT false,        -- month lock (ATT-15); locked rows immutable by trigger
-  session_statuses JSONB,                          -- optional dual-session breakdown [{session:1,status:'A'},{session:2,status:'P'}] for split shifts (09-RECON §4); NULL = single-status day
+  session_statuses JSONB,                          -- ordered sessions 1/2 with P/A/O; A:P, P:A, P:O (09-RECON §4); NULL = single-status day. Daily status remains the explicit summary; O is off, not absent.
   scheme_code TEXT,                                -- effective attendance scheme that day (e.g. 'GCS' Saturday scheme vs weekday 'G5')
   penalty_flag BOOLEAN NOT NULL DEFAULT false,     -- attendance-penalty policy outcome ("Penalty Days" live metric)
   computed_at TIMESTAMPTZ,

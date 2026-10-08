@@ -21,6 +21,7 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { getTypedSetting } from '../settings/index.js';
 import { addDaysIso, formatDbDate, istDateTime } from '../../core/dates.js';
 import { recordDetectedOvertime } from './overtime.service.js';
+import { readSessionStatuses, validateSessionSummary, type SessionStatuses } from './session-status.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 type ShiftRow = Selectable<AttShiftsTable>;
@@ -336,7 +337,7 @@ export function computeDayStatus(
   const base = { schemeCode: shift.code, shiftId: shift.id };
 
   if (inWindow.length === 0) {
-    return { ...base, status: 'A', firstIn: null, lastOut: null, workedMinutes: 0, lateMinutes: 0, earlyExitMinutes: 0, sessionStatuses: null, otMinutes: 0 };
+    return { ...base, status: 'A', firstIn: null, lastOut: null, workedMinutes: 0, lateMinutes: 0, earlyExitMinutes: 0, sessionStatuses: shift.session_split === null ? null : [{ session: 1, status: 'A' }, { session: 2, status: 'A' }], otMinutes: 0 };
   }
 
   // FILO — first in, last out (ATT-18, PP-v2-2).
@@ -359,7 +360,7 @@ export function computeDayStatus(
   let status: DayStatus;
   let sessionStatuses: SessionStatus[] | null = null;
 
-  if (shift.session_split !== null && firstIn && lastOut) {
+  if (shift.session_split !== null) {
     // Two-session day (09 §4): a session is Present when coverage ≥ the policy fraction.
     const split = istDateTime(isoDate, shift.session_split);
     const sessions: [Date, Date][] = [
@@ -367,7 +368,7 @@ export function computeDayStatus(
       [split, end],
     ];
     sessionStatuses = sessions.map(([s, e], i): SessionStatus => {
-      const overlap = Math.min(lastOut.getTime(), e.getTime()) - Math.max(firstIn.getTime(), s.getTime());
+      const overlap = firstIn && lastOut ? Math.min(lastOut.getTime(), e.getTime()) - Math.max(firstIn.getTime(), s.getTime()) : 0;
       const need = (e.getTime() - s.getTime()) * policy.sessionPresentFraction;
       return { session: i + 1, status: overlap >= need ? 'P' : 'A' };
     });
@@ -436,7 +437,7 @@ export async function recomputeDay(
   }
 
   const computed = computeDayStatus(resolved, isoDate, owned, pol);
-  if (computed.status === 'A') {
+  if (computed.status === 'A' || computed.sessionStatuses?.some((session) => session.status === 'A')) {
     const readiness = await getAbsenceFinalizationReadiness(
       db,
       employeeId,
@@ -584,11 +585,13 @@ export async function drainRecomputeQueue(db: Kysely<Database>, batch = 500): Pr
  *  next to an overridden status (review att5). */
 export async function setManualStatus(
   db: Kysely<Database>,
-  params: { employeeId: number; isoDate: string; status: DayStatus; reason: string; actorUserId: number },
+  params: { employeeId: number; isoDate: string; status: DayStatus; sessionStatuses?: SessionStatuses | null; reason: string; actorUserId: number },
 ): Promise<void> {
+  const sessions = readSessionStatuses(params.sessionStatuses);
+  validateSessionSummary(params.status, sessions);
   const previous = await db
     .selectFrom('att.day_records')
-    .select(['status'])
+    .select(['status', 'session_statuses'])
     .where('employee_id', '=', params.employeeId)
     .where('work_date', '=', sql<Date>`${params.isoDate}::date`)
     .executeTakeFirst();
@@ -602,7 +605,7 @@ export async function setManualStatus(
     worked_minutes: null,
     late_minutes: 0,
     early_exit_minutes: 0,
-    session_statuses: null,
+    session_statuses: sessions ? JSON.stringify(sessions) : null,
     computed_at: new Date(),
   };
 
@@ -621,8 +624,8 @@ export async function setManualStatus(
     entityId: params.employeeId,
     subjectEmployeeId: params.employeeId,
     field: `manual_override:${params.isoDate}`,
-    oldValue: previous?.status ?? null,
-    newValue: `${params.status} — ${params.reason}`,
+    oldValue: previous ? JSON.stringify({ status: previous.status, sessionStatuses: previous.session_statuses }) : null,
+    newValue: JSON.stringify({ status: params.status, sessionStatuses: sessions, reason: params.reason }),
   });
 }
 
