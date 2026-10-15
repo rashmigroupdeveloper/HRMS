@@ -8,6 +8,7 @@ export {
   inbox,
   timeline,
   onWorkflowFinal,
+  onWorkflowResubmit,
   clearWorkflowFinalHooks,
   type WorkflowFinalStatus,
   type RequestRow,

@@ -8,6 +8,8 @@ export {
   ZERO,
   paise,
   fromRupees,
+  parseRupees,
+  decimalRupees,
   toRupees,
   add,
   subtract,

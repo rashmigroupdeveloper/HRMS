@@ -1,0 +1,23 @@
+{
+  "targeted_tests": 14,
+  "targeted_result": "passed",
+  "backend_verify": {
+    "exit_code": 1,
+    "typecheck": "passed at invocation",
+    "lint": "failed with 6 errors in payroll-core",
+    "later_gates": "not reached"
+  },
+  "frontend": "not rerun for backend schema follow-up; historical 09 Oct result retained",
+  "changed_tooling_files_eslint": {
+    "exit_code": 0,
+    "result": "passed",
+    "scope": [
+      "tests/test-database-target.ts",
+      "tests/test-database-target.test.ts",
+      "tests/seed-import.test.ts",
+      "tests/setup-database.ts",
+      "tests/global-database.ts",
+      "src/modules/settings/seed.ts"
+    ]
+  }
+}

@@ -17,6 +17,7 @@ export interface AnnouncementRow {
   id: number;
   title: string;
   body: string;
+  attachmentDocumentId: number | null;
   publishedAt: string;
   expiresAt: string | null;
   isActive: boolean;
@@ -26,6 +27,7 @@ export interface AnnouncementRow {
 export interface PublishAnnouncementParams {
   title: string;
   body: string;
+  attachmentDocumentId?: number | null | undefined;
   audience?: EngagementAudience | undefined;
   expiresAt?: string | undefined;
   actorUserId: number;
@@ -40,6 +42,7 @@ export async function publishAnnouncement(
     .values({
       title: params.title,
       body: params.body,
+      attachment_document_id: params.attachmentDocumentId ?? null,
       audience: JSON.stringify(params.audience ?? {}),
       published_by: params.actorUserId,
       expires_at:
@@ -68,6 +71,7 @@ export async function listAllAnnouncements(db: Db): Promise<AnnouncementRow[]> {
       'a.id',
       'a.title',
       'a.body',
+      'a.attachment_document_id',
       'a.published_at',
       'a.expires_at',
       'a.is_active',
@@ -91,6 +95,7 @@ export async function listAnnouncementsForUser(
       'a.title',
       'a.body',
       'a.audience',
+      'a.attachment_document_id',
       'a.published_at',
       'a.expires_at',
       'a.is_active',
@@ -141,9 +146,10 @@ function iso(value: unknown): string | null {
 }
 
 interface RawAnnouncement {
-  id: number;
+  id: number | string;
   title: string;
   body: string;
+  attachment_document_id: number | string | null;
   published_at: unknown;
   expires_at: unknown;
   is_active: boolean;
@@ -152,9 +158,13 @@ interface RawAnnouncement {
 
 function toRow(r: RawAnnouncement): AnnouncementRow {
   return {
-    id: r.id,
+    id: Number(r.id),
     title: r.title,
     body: r.body,
+    attachmentDocumentId:
+      r.attachment_document_id === null
+        ? null
+        : Number(r.attachment_document_id),
     publishedAt: iso(r.published_at) ?? '',
     expiresAt: iso(r.expires_at),
     isActive: r.is_active,

@@ -1,0 +1,84 @@
+{
+  "scope": "Read-only local SQL EXPLAIN/config existence and pure in-memory synthetic calculations; no business records read or schema writes",
+  "probes": [
+    {
+      "name": "attendance_date",
+      "passed": false,
+      "error": "column \"date\" does not exist"
+    },
+    {
+      "name": "attendance_status",
+      "passed": false,
+      "error": "invalid input value for enum att.day_status: \"paid_wo\""
+    },
+    {
+      "name": "half_day_count",
+      "result": [
+        {
+          "counted_days": 2,
+          "summed_days": "1.5"
+        }
+      ]
+    },
+    {
+      "name": "component_fk_targets",
+      "result": [
+        {
+          "ot_pay_exists": false,
+          "ot_exists": true,
+          "reimb_exists": false
+        }
+      ]
+    },
+    {
+      "name": "deduction_input_ignored",
+      "inputRecoveryPaise": 250000,
+      "result": {
+        "employeeId": 1,
+        "daysInMonth": 31,
+        "payableDays": 31,
+        "lopDays": 0,
+        "lopReversalDays": 0,
+        "otMinutes": 0,
+        "grossPaise": 1000000,
+        "totalDeductionsPaise": 120000,
+        "netPayPaise": 880000,
+        "paymentStatus": "payable",
+        "isNegativeNet": false,
+        "lines": [
+          {
+            "componentCode": "BASIC",
+            "amountPaise": 1000000,
+            "calcNote": "Full attendance (31/31 days)",
+            "displayOrder": 1
+          },
+          {
+            "componentCode": "GUEST_HOUSE",
+            "amountPaise": 250000,
+            "calcNote": "Independent review input",
+            "displayOrder": 90
+          },
+          {
+            "componentCode": "PF_EE",
+            "amountPaise": 120000,
+            "calcNote": "PF Employee: 12% on PF wages ₹10000.00",
+            "displayOrder": 100
+          }
+        ]
+      },
+      "explanation": "Recovery line is emitted, but total deductions omit it"
+    },
+    {
+      "name": "maker_missing_accepted",
+      "result": {
+        "valid": true
+      }
+    },
+    {
+      "name": "reconciliation_missing_accepted",
+      "result": {
+        "valid": true
+      }
+    }
+  ]
+}

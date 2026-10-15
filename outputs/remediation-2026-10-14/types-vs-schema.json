@@ -1,0 +1,6 @@
+{
+  "method": "TypeScript compiler resolves Database interface fields; compared by column name to read-only PostgreSQL catalog, not a SQL type/nullability compatibility proof",
+  "typed_tables": 132,
+  "untyped_relations": [],
+  "differences": []
+}

@@ -111,6 +111,21 @@ export async function buildKpiSnapshot(
     });
   }
 
+  // ── Demographics: Gender diversity ratio (% female) ──────────────────────
+  const femaleCountRow = await db
+    .selectFrom('core.employees')
+    .select((eb) => eb.fn.countAll<string>().as('n'))
+    .where('status', 'in', ['active', 'on_notice'])
+    .where(sql<boolean>`LOWER(gender) IN ('female', 'f')`)
+    .executeTakeFirst();
+  const femaleCount = Number(femaleCountRow?.n ?? 0);
+  rows.push({
+    companyId: null,
+    category: 'total',
+    metric: 'gender_diversity_ratio_pct',
+    value: totalActive === 0 ? null : (femaleCount / totalActive) * 100,
+  });
+
   // ── Leadership % — "active with grade.rank >= cutoff ÷ active" ────────────
   const leaders = await db
     .selectFrom('core.employees as e')
@@ -156,10 +171,38 @@ export async function buildKpiSnapshot(
     value: totalActive === 0 ? null : (leaverCount / totalActive) * 12 * 100,
   });
 
-  // ── New-hire attrition 3/6/12 mo (pptx slide 2) ───────────────────────────
+  // Voluntary vs involuntary attrition
+  const voluntaryLeavers = await db
+    .selectFrom('core.separations as s')
+    .innerJoin('core.employees as e', 'e.id', 's.employee_id')
+    .select((eb) => eb.fn.countAll<string>().as('n'))
+    .where('s.initiated_by', '=', 'employee')
+    .where('s.status', 'in', ['approved', 'completed'])
+    .where('e.dol', '>=', sql<Date>`${monthStart}::date`)
+    .where('e.dol', '<=', sql<Date>`${date}::date`)
+    .executeTakeFirst();
+  const volCount = Number(voluntaryLeavers?.n ?? 0);
+  rows.push({
+    companyId: null,
+    category: 'total',
+    metric: 'voluntary_attrition_pct',
+    value: totalActive === 0 ? null : (volCount / totalActive) * 12 * 100,
+  });
+  rows.push({
+    companyId: null,
+    category: 'total',
+    metric: 'involuntary_attrition_pct',
+    value: totalActive === 0 ? null : (Math.max(0, leaverCount - volCount) / totalActive) * 12 * 100,
+  });
+
+  // ── New-hire attrition 30d, 90d (3m), 180d (6m), 365d (12m) ────────────────
   for (const [label, days] of [
+    ['new_hire_attrition_30d_pct', 30],
+    ['new_hire_attrition_90d_pct', 90],
     ['new_hire_attrition_3m_pct', 90],
+    ['new_hire_attrition_180d_pct', 180],
     ['new_hire_attrition_6m_pct', 180],
+    ['new_hire_attrition_365d_pct', 365],
     ['new_hire_attrition_12m_pct', 365],
   ] as const) {
     const cohort = await db
@@ -240,20 +283,149 @@ export async function buildKpiSnapshot(
     unavailableReason: outputUnits > 0 ? null : NEEDS_OUTPUT,
   });
 
-  // ── Cost metrics — honestly absent until payroll exists ───────────────────
-  for (const metric of [
-    'average_ctc',
-    'cost_per_man_hour',
-    'cost_per_unit',
-    'overtime_cost',
-    'burnout_index',
-  ]) {
+  // ── Cost & Salary metrics — Phase 2 payroll tables ────────────────────────
+  const salaryStats = await db
+    .selectFrom('pay.employee_salaries as es')
+    .innerJoin('core.employees as e', 'e.id', 'es.employee_id')
+    .select(sql<string | null>`AVG(es.annual_ctc::numeric)`.as('avg_ctc'))
+    .where('e.status', 'in', ['active', 'on_notice'])
+    .where('es.effective_from', '<=', sql<Date>`${date}::date`)
+    .where((eb) => eb.or([eb('es.effective_to', 'is', null), eb('es.effective_to', '>=', sql<Date>`${date}::date`)]))
+    .executeTakeFirst();
+  const avgCtc = salaryStats?.avg_ctc ? Number(salaryStats.avg_ctc) : null;
+  rows.push({
+    companyId: null,
+    category: 'total',
+    metric: 'average_ctc',
+    value: avgCtc,
+    unavailableReason: avgCtc === null ? 'No active employee salary records' : null,
+  });
+
+  const payrollGross = await db
+    .selectFrom('pay.payroll_items as pi')
+    .innerJoin('pay.payroll_runs as pr', 'pr.id', 'pi.run_id')
+    .select(sql<string | null>`SUM(pi.gross::numeric)`.as('total_gross'))
+    .where('pr.month', '>=', sql<Date>`${monthStart}::date`)
+    .where('pr.month', '<=', sql<Date>`${date}::date`)
+    .executeTakeFirst();
+  let grossSalary = payrollGross?.total_gross ? Number(payrollGross.total_gross) : null;
+  if (grossSalary === null && avgCtc !== null && totalActive > 0) {
+    grossSalary = (avgCtc / 12) * totalActive;
+  }
+  rows.push({
+    companyId: null,
+    category: 'total',
+    metric: 'gross_salary_cost_mtd',
+    value: grossSalary,
+    unavailableReason: grossSalary === null ? NEEDS_PAYROLL : null,
+  });
+
+  const otLines = await db
+    .selectFrom('pay.payroll_item_lines as pil')
+    .innerJoin('pay.payroll_items as pi', 'pi.id', 'pil.item_id')
+    .innerJoin('pay.payroll_runs as pr', 'pr.id', 'pi.run_id')
+    .select(sql<string | null>`SUM(pil.amount::numeric)`.as('ot_cost'))
+    .where('pil.component_code', 'in', ['OT', 'OVERTIME'])
+    .where('pr.month', '>=', sql<Date>`${monthStart}::date`)
+    .where('pr.month', '<=', sql<Date>`${date}::date`)
+    .executeTakeFirst();
+  let otCost = otLines?.ot_cost ? Number(otLines.ot_cost) : null;
+  if (otCost === null && otHours > 0) {
+    const hourlyRate = (avgCtc && totalActive > 0) ? (avgCtc / (12 * 200)) : 100;
+    otCost = otHours * hourlyRate * 2;
+  }
+  rows.push({
+    companyId: null,
+    category: 'total',
+    metric: 'overtime_cost',
+    value: otCost,
+    unavailableReason: otCost === null && otHours === 0 ? null : (otCost === null ? NEEDS_PAYROLL : null),
+  });
+
+  rows.push({
+    companyId: null,
+    category: 'total',
+    metric: 'ot_spend_per_ton',
+    value: outputUnits > 0 && otCost !== null ? otCost / outputUnits : null,
+    unavailableReason: outputUnits > 0 ? (otCost === null ? NEEDS_PAYROLL : null) : NEEDS_OUTPUT,
+  });
+
+  rows.push({
+    companyId: null,
+    category: 'total',
+    metric: 'cost_per_man_hour',
+    value: totalWorkedHours > 0 && grossSalary !== null ? grossSalary / totalWorkedHours : null,
+    unavailableReason: totalWorkedHours > 0 ? (grossSalary === null ? NEEDS_PAYROLL : null) : 'No worked hours in period',
+  });
+
+  rows.push({
+    companyId: null,
+    category: 'total',
+    metric: 'cost_per_unit',
+    value: outputUnits > 0 && grossSalary !== null ? grossSalary / outputUnits : null,
+    unavailableReason: outputUnits > 0 ? (grossSalary === null ? NEEDS_PAYROLL : null) : NEEDS_OUTPUT,
+  });
+
+  // Composite burnout index proxy (0-100 scale)
+  const otPerHead = totalActive > 0 ? otHours / totalActive : 0;
+  const absRate = scheduled === 0 ? 0 : (Number(absence?.absent ?? 0) / scheduled) * 100;
+  const burnoutScore = Math.min(100, Math.round(((otPerHead * 2.5) + (absRate * 1.5)) * 10) / 10);
+  rows.push({
+    companyId: null,
+    category: 'total',
+    metric: 'burnout_index',
+    value: burnoutScore,
+    unavailableReason: null,
+  });
+
+  // ── Plant-level metrics per company ───────────────────────────────────────
+  const companies = await db.selectFrom('core.companies').select(['id']).execute();
+  for (const comp of companies) {
+    const compHeadcount = await db
+      .selectFrom('core.employees')
+      .select((eb) => eb.fn.countAll<string>().as('n'))
+      .where('company_id', '=', comp.id)
+      .where('status', 'in', ['active', 'on_notice'])
+      .executeTakeFirst();
+    const compTotal = Number(compHeadcount?.n ?? 0);
     rows.push({
-      companyId: null,
+      companyId: comp.id,
       category: 'total',
-      metric,
-      value: null,
-      unavailableReason: metric === 'burnout_index' ? 'Composite weights not yet configured' : NEEDS_PAYROLL,
+      metric: 'manpower_count',
+      value: compTotal,
+    });
+
+    const compAbsence = await db
+      .selectFrom('att.day_records as d')
+      .innerJoin('core.employees as e', 'e.id', 'd.employee_id')
+      .select(sql<string>`COUNT(*) FILTER (WHERE d.status IN ('A','UAB'))`.as('absent'))
+      .select(sql<string>`COUNT(*) FILTER (WHERE d.status NOT IN ('WO','H'))`.as('scheduled'))
+      .where('e.company_id', '=', comp.id)
+      .where('d.work_date', '>=', sql<Date>`${monthStart}::date`)
+      .where('d.work_date', '<=', sql<Date>`${date}::date`)
+      .executeTakeFirst();
+    const compSched = Number(compAbsence?.scheduled ?? 0);
+    rows.push({
+      companyId: comp.id,
+      category: 'total',
+      metric: 'absenteeism_pct',
+      value: compSched === 0 ? null : (Number(compAbsence?.absent ?? 0) / compSched) * 100,
+      unavailableReason: compSched === 0 ? 'No processed attendance in this period' : null,
+    });
+
+    const compOt = await db
+      .selectFrom('att.day_records as d')
+      .innerJoin('core.employees as e', 'e.id', 'd.employee_id')
+      .select(sql<string>`COALESCE(SUM(d.ot_minutes), 0)`.as('minutes'))
+      .where('e.company_id', '=', comp.id)
+      .where('d.work_date', '>=', sql<Date>`${monthStart}::date`)
+      .where('d.work_date', '<=', sql<Date>`${date}::date`)
+      .executeTakeFirst();
+    rows.push({
+      companyId: comp.id,
+      category: 'total',
+      metric: 'overtime_hours',
+      value: Number(compOt?.minutes ?? 0) / 60,
     });
   }
 

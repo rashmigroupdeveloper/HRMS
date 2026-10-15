@@ -1,0 +1,349 @@
+{
+  "routes_without_input": [
+    {
+      "path": "/attendance/config/shifts",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 79
+    },
+    {
+      "path": "/attendance/config/shifts/active",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 88
+    },
+    {
+      "path": "/attendance/requests/mine",
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 77
+    },
+    {
+      "path": "/attendance/ot/mine",
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 139
+    },
+    {
+      "path": "/attendance/ot/pending",
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 147
+    },
+    {
+      "path": "/attendance/ot/lapse-sweep",
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 181
+    },
+    {
+      "path": "/attendance/devices",
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 17
+    },
+    {
+      "path": "/attendance/sync",
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 163
+    },
+    {
+      "path": "/audit/facets",
+      "file": "backend/src/modules/audit/audit.router.ts",
+      "line": 65
+    },
+    {
+      "path": "/audit/verify",
+      "file": "backend/src/modules/audit/audit.router.ts",
+      "line": 78
+    },
+    {
+      "path": "/auth/refresh",
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 70
+    },
+    {
+      "path": "/auth/logout",
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 86
+    },
+    {
+      "path": "/auth/me",
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 102
+    },
+    {
+      "path": "/employees/me",
+      "file": "backend/src/modules/employees/employees.router.ts",
+      "line": 115
+    },
+    {
+      "path": "/engagement/announcements",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 78
+    },
+    {
+      "path": "/engagement/announcements/all",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 87
+    },
+    {
+      "path": "/engagement/polls",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 138
+    },
+    {
+      "path": "/helpdesk/categories",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 54
+    },
+    {
+      "path": "/helpdesk/escalate",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 197
+    },
+    {
+      "path": "/leave/types",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 44
+    },
+    {
+      "path": "/leave/balances",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 117
+    },
+    {
+      "path": "/leave/applications/mine",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 158
+    },
+    {
+      "path": "/leave/ledger",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 193
+    },
+    {
+      "path": "/leave/restricted-holidays",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 272
+    },
+    {
+      "path": "/leave/comp-off/expire",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 350
+    },
+    {
+      "path": "/letters/templates",
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 35
+    },
+    {
+      "path": "/letters/mine",
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 107
+    },
+    {
+      "path": "/policies",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 88
+    },
+    {
+      "path": "/policies/pending",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 93
+    },
+    {
+      "path": "/policies/catalog",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 98
+    },
+    {
+      "path": "/policies/ack-status",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 142
+    },
+    {
+      "path": "/policies/nag",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 158
+    },
+    {
+      "path": "/rbac/matrix",
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 30
+    },
+    {
+      "path": "/dashboards/ess",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 640
+    },
+    {
+      "path": "/settings",
+      "file": "backend/src/modules/settings/settings.router.ts",
+      "line": 29
+    },
+    {
+      "path": "/system/health",
+      "file": "backend/src/modules/system/system.router.ts",
+      "line": 14
+    },
+    {
+      "path": "/workflows/inbox",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 49
+    },
+    {
+      "path": "/workflows/definitions",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 211
+    },
+    {
+      "path": "/workflows/escalate",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 253
+    }
+  ],
+  "routes_without_output": [],
+  "authed_or_base": [
+    {
+      "method": "POST",
+      "path_literal": "/auth/login",
+      "permission_locator": "base",
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 41
+    },
+    {
+      "method": "POST",
+      "path_literal": "/auth/refresh",
+      "permission_locator": "base",
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 71
+    },
+    {
+      "method": "POST",
+      "path_literal": "/auth/logout",
+      "permission_locator": "base",
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 87
+    },
+    {
+      "method": "GET",
+      "path_literal": "/auth/me",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 103
+    },
+    {
+      "method": "GET",
+      "path_literal": "/engagement/announcements",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 79
+    },
+    {
+      "method": "GET",
+      "path_literal": "/engagement/polls",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 139
+    },
+    {
+      "method": "POST",
+      "path_literal": "/engagement/polls/{id}/respond",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 168
+    },
+    {
+      "method": "GET",
+      "path_literal": "/helpdesk/categories",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 55
+    },
+    {
+      "method": "POST",
+      "path_literal": "/helpdesk/tickets",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 71
+    },
+    {
+      "method": "GET",
+      "path_literal": "/helpdesk/tickets/mine",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 94
+    },
+    {
+      "method": "GET",
+      "path_literal": "/helpdesk/tickets/{ticketId}/thread",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 126
+    },
+    {
+      "method": "POST",
+      "path_literal": "/helpdesk/tickets/{ticketId}/reply",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 149
+    },
+    {
+      "method": "GET",
+      "path_literal": "/settings/{key}",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/settings/settings.router.ts",
+      "line": 20
+    },
+    {
+      "method": "GET",
+      "path_literal": "/settings",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/settings/settings.router.ts",
+      "line": 30
+    },
+    {
+      "method": "GET",
+      "path_literal": "/system/health",
+      "permission_locator": "base",
+      "file": "backend/src/modules/system/system.router.ts",
+      "line": 15
+    },
+    {
+      "method": "POST",
+      "path_literal": "/workflows/requests",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 21
+    },
+    {
+      "method": "GET",
+      "path_literal": "/workflows/inbox",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 50
+    },
+    {
+      "method": "POST",
+      "path_literal": "/workflows/requests/{requestId}/act",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 83
+    },
+    {
+      "method": "POST",
+      "path_literal": "/workflows/requests/{requestId}/resubmit",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 110
+    },
+    {
+      "method": "GET",
+      "path_literal": "/workflows/requests/{requestId}",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 124
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/workflows/delegations",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 180
+    }
+  ]
+}

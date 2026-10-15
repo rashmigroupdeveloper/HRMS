@@ -1,0 +1,1004 @@
+{
+  "scope": "Supplement to existing R01\u2013R46 review; findings may overlap and are not added to original workbook counts.",
+  "findings": [
+    {
+      "id": "S01",
+      "title": "Two independent bill-required flags on one claim type",
+      "requirements": [
+        "CLM-01",
+        "CLM-02",
+        "CLM-03"
+      ],
+      "prior_findings": [
+        "R25",
+        "R27"
+      ],
+      "fields": [
+        "pay.claim_types.requires_bill",
+        "pay.claim_types.bill_required",
+        "pay.claim_types.is_taxable",
+        "pay.claim_types.taxable_if_unsubstantiated"
+      ],
+      "evidence": [
+        "backend/migrations/1752150000000_pay-budgets-claims.ts:43",
+        "backend/migrations/1752270000000_claims-reconciliation.ts:16",
+        "backend/src/modules/claims/entitlement.service.ts:161"
+      ],
+      "problem": "requires_bill and bill_required express the same bill-required decision but are stored independently without an equality constraint or reconciliation. The current entitlement reader uses bill_required; the earlier taxonomy seeded requires_bill. Submission always requires a bill regardless of either value. is_taxable and taxable_if_unsubstantiated are different concepts and must not be merged just because both are booleans.",
+      "decision": "Canonicalize the bill policy after comparing existing values and the two workflows; expose one authoritative value. Keep current-claim taxability separate from year-end taxability on unsubstantiated entitlement. Use expand/contract compatibility before retiring a proven duplicate. No column was dropped.",
+      "status": "Open; audit only, no source/schema repair in this pass",
+      "sow_rows": [
+        {
+          "id": "SOW-027",
+          "item": "Management of flexi-basket benefits and reimbursements."
+        },
+        {
+          "id": "SOW-028",
+          "item": "Employee investment declarations for tax planning."
+        },
+        {
+          "id": "SOW-029",
+          "item": "Employee loan processing on ESS portal and approval workflow ."
+        },
+        {
+          "id": "SOW-030",
+          "item": "Payslip and tax sheet generation for onboarding employees."
+        },
+        {
+          "id": "SOW-181",
+          "item": "providing Employee Access:\n  Payslips, tax computation slips, Form 16.\n  Investment declarations & reimbursement claims.\n  Tax calculator & helpdesk ticketing"
+        },
+        {
+          "id": "SOW-187",
+          "item": "Protiviti team should provide the following:\n> Reimbursement bank transfer\n> Reimbursement Register\n> Submission of reimbursement pay slip to employees via the Platform.\n> Calculation of TDS on the unclaimed entitlement at the year end or as per the Client policy\n> Assistance for management and resolution of desk queries raised by employees."
+        },
+        {
+          "id": "SOW-221",
+          "item": "Settlement Input in Excel Format as shared by Protiviti viz \u2013 Number of days payable, Salary hold release, Leave Encashment days/Notice Pay recovery, Other Payments& Deductions, Gratuity, LTA claimed in previous employment"
+        },
+        {
+          "id": "SOW-223",
+          "item": "Rashmi Metaliks Limited Employees to update investment proofs in ESS portal and submit any pending reimbursement claims"
+        },
+        {
+          "id": "SOW-224",
+          "item": "Protiviti should process payroll based on clarifications received (post verification of investment proofs and reimbursement claims submitted) and share the Final Settlement workings for confirmation"
+        },
+        {
+          "id": "SOW-225",
+          "item": "On receipt of confirmation, the following deliverables to be shared with the Rashmi Metaliks Limited SPOC"
+        },
+        {
+          "id": "SOW-227",
+          "item": "Protiviti should offers 2 Full and Final cycle."
+        },
+        {
+          "id": "SOW-228",
+          "item": "The turnaround time to process Full and Final is 3 working days."
+        },
+        {
+          "id": "SOW-230",
+          "item": "\u201cAlumni portal\u201d access to exit employees need to be\nconfirmedly Rashmi Metaliks Limited for RML to download"
+        }
+      ]
+    },
+    {
+      "id": "S02",
+      "title": "Raw pre-join token persists alongside its hash",
+      "requirements": [
+        "LC-01",
+        "NFR-03"
+      ],
+      "prior_findings": [
+        "R35"
+      ],
+      "fields": [
+        "core.onboarding_candidates.prejoin_link_token",
+        "core.onboarding_candidates.prejoin_token_hash",
+        "core.onboarding_candidates.prejoin_token_expires_at",
+        "core.onboarding_candidates.prejoin_completed_at",
+        "core.onboarding_candidates.prejoin_link_sent_at"
+      ],
+      "evidence": [
+        "backend/src/modules/lifecycle/onboarding/onboarding.service.ts:117",
+        "backend/src/modules/lifecycle/onboarding/prejoin.service.ts:63",
+        "backend/src/modules/lifecycle/onboarding/prejoin.service.ts:104"
+      ],
+      "problem": "Creation stores both rawToken and tokenHash; lookup uses the hash. Raw credential retention defeats the benefit of hashing. Validation and completion update are separate operations. link_sent and sent_at are written during creation without a demonstrated delivery receipt.",
+      "decision": "Retain hash/expiry/consumption evidence, keep raw token transient, and reconcile legacy invitations before retiring raw-token storage. Consume under one locked/conditional transaction. Link notification/delivery evidence rather than treating row creation as successful delivery.",
+      "status": "Open; audit only, no source/schema repair in this pass",
+      "sow_rows": [
+        {
+          "id": "SOW-009",
+          "item": "Providing secure access controls based on roles and permissions"
+        },
+        {
+          "id": "SOW-010",
+          "item": "Integration with other Systems, as necessary."
+        },
+        {
+          "id": "SOW-022",
+          "item": "Generation of offer letter and approvals."
+        },
+        {
+          "id": "SOW-025",
+          "item": "Updation of candidate information by capturing through personal email."
+        },
+        {
+          "id": "SOW-031",
+          "item": "capturing previous employment details."
+        },
+        {
+          "id": "SOW-127",
+          "item": "Throughout the month through Client portal"
+        },
+        {
+          "id": "SOW-129",
+          "item": "Through HR connector if integration is in scope"
+        },
+        {
+          "id": "SOW-132",
+          "item": "When client approves new joiner inputs via client portal"
+        },
+        {
+          "id": "SOW-133",
+          "item": "After first month payroll is processed if inputs are provided through excel format"
+        },
+        {
+          "id": "SOW-134",
+          "item": "At agreed interval if new joiner information is provided via HR connector"
+        },
+        {
+          "id": "SOW-182",
+          "item": "providing HR & Payroll SPOC Access:\n  Bulk download of payroll & compliance reports.\n  Employee onboarding & document management.\n Payroll discrepancy tracking & query resolution"
+        }
+      ]
+    },
+    {
+      "id": "S03",
+      "title": "Claims DB, Kysely types and output schema disagree about states",
+      "requirements": [
+        "CLM-03",
+        "TE-11",
+        "WF-01"
+      ],
+      "prior_findings": [
+        "R02",
+        "R43"
+      ],
+      "fields": [
+        "pay.claims.status",
+        "pay.claims.reference",
+        "pay.claims.budget_id",
+        "pay.claims.funding_kind"
+      ],
+      "evidence": [
+        "backend/src/core/db/types.ts:1377",
+        "backend/src/core/db/types.pay-claims.ts:91",
+        "backend/src/modules/claims/claims.router.ts:14",
+        "backend/migrations/1752270000000_claims-reconciliation.ts:36"
+      ],
+      "problem": "DB allows nine claim states; the authoritative Database ClaimStatus allows only pending/verified/approved/rejected/paid. It cannot represent draft/submitted/sent_back/settled. The output zod enum is also five-state. A separate exported PayClaimsTable has the opposite narrower travel vocabulary and declares budget/reference non-null, while DB permits NULL. These are conflicting contracts, not extra DB columns.",
+      "decision": "Define one canonical DB row type and explicit supported workflow transitions; align input/output contracts with the intended flow. Filter/route distinct funding flows explicitly; broadening an enum alone does not make the claims API work.",
+      "status": "Open; audit only, no source/schema repair in this pass",
+      "sow_rows": [
+        {
+          "id": "SOW-022",
+          "item": "Generation of offer letter and approvals."
+        },
+        {
+          "id": "SOW-027",
+          "item": "Management of flexi-basket benefits and reimbursements."
+        },
+        {
+          "id": "SOW-028",
+          "item": "Employee investment declarations for tax planning."
+        },
+        {
+          "id": "SOW-029",
+          "item": "Employee loan processing on ESS portal and approval workflow ."
+        },
+        {
+          "id": "SOW-030",
+          "item": "Payslip and tax sheet generation for onboarding employees."
+        },
+        {
+          "id": "SOW-058",
+          "item": "\u2022 leave request and approval workflows with multi-level authorizations."
+        },
+        {
+          "id": "SOW-064",
+          "item": "approval workflows for overtime requests."
+        },
+        {
+          "id": "SOW-187",
+          "item": "Protiviti team should provide the following:\n> Reimbursement bank transfer\n> Reimbursement Register\n> Submission of reimbursement pay slip to employees via the Platform.\n> Calculation of TDS on the unclaimed entitlement at the year end or as per the Client policy\n> Assistance for management and resolution of desk queries raised by employees."
+        }
+      ]
+    },
+    {
+      "id": "S04",
+      "title": "Recovered migrations still lack corresponding current runtime/source context",
+      "requirements": [
+        "NFR-03",
+        "CORE-10",
+        "CORE-12",
+        "ATT-04",
+        "CLM-03",
+        "TE-05",
+        "TE-06",
+        "TE-10",
+        "TE-11"
+      ],
+      "prior_findings": [
+        "R01",
+        "R02",
+        "R25",
+        "R45"
+      ],
+      "fields": [],
+      "evidence": [
+        "missing-historical-context.json",
+        "historical-spec-locations.json",
+        "source-evidence.json"
+      ],
+      "problem": "88 backend source/test paths exist at historical commit 5c16de6776853943148005d9382e539b3e6d06c3 but are absent here. Missing implementations include security, privacy, compliance, document vault, scheduling and the travel claim reservation/settlement helpers. Five specification/tracker files cited by these migrations are also missing here but recoverable from Git. Schema-only tables have historical purpose; missing consumers do not prove random invented columns.",
+      "decision": "Review and recover the missing source/spec context in a separate announced repair stage, preserving current changes and adapting shared claims/auth contracts. Do not transplant a whole historical branch or its checked completion labels. Historical legal/policy claims require current verification before use. No external recon or data mutation occurred.",
+      "status": "Open; audit only, no source/schema repair in this pass",
+      "sow_rows": [
+        {
+          "id": "SOW-003",
+          "item": "perform changes on software as per client policies and requirements."
+        },
+        {
+          "id": "SOW-004",
+          "item": "Setup of client, employees and compensation master"
+        },
+        {
+          "id": "SOW-005",
+          "item": "Transfer of data for the previous months of the current financial year, the previous financial year any prior financial year before that as required in good faith."
+        },
+        {
+          "id": "SOW-009",
+          "item": "Providing secure access controls based on roles and permissions"
+        },
+        {
+          "id": "SOW-010",
+          "item": "Integration with other Systems, as necessary."
+        },
+        {
+          "id": "SOW-027",
+          "item": "Management of flexi-basket benefits and reimbursements."
+        },
+        {
+          "id": "SOW-028",
+          "item": "Employee investment declarations for tax planning."
+        },
+        {
+          "id": "SOW-029",
+          "item": "Employee loan processing on ESS portal and approval workflow ."
+        },
+        {
+          "id": "SOW-030",
+          "item": "Payslip and tax sheet generation for onboarding employees."
+        },
+        {
+          "id": "SOW-047",
+          "item": "Defining and configuring multiple shift types (fixed, rotational, flexible, night shifts, etc.)."
+        },
+        {
+          "id": "SOW-048",
+          "item": "Platform automated shift scheduling and roster management."
+        },
+        {
+          "id": "SOW-128",
+          "item": "As part of monthly input through the excel format"
+        },
+        {
+          "id": "SOW-132",
+          "item": "When client approves new joiner inputs via client portal"
+        },
+        {
+          "id": "SOW-133",
+          "item": "After first month payroll is processed if inputs are provided through excel format"
+        },
+        {
+          "id": "SOW-134",
+          "item": "At agreed interval if new joiner information is provided via HR connector"
+        },
+        {
+          "id": "SOW-187",
+          "item": "Protiviti team should provide the following:\n> Reimbursement bank transfer\n> Reimbursement Register\n> Submission of reimbursement pay slip to employees via the Platform.\n> Calculation of TDS on the unclaimed entitlement at the year end or as per the Client policy\n> Assistance for management and resolution of desk queries raised by employees."
+        },
+        {
+          "id": "SOW-213",
+          "item": "Real-time tracking of open, pending, and resolved tickets."
+        }
+      ]
+    },
+    {
+      "id": "S05",
+      "title": "Financial facts still permit competing or mutable truth",
+      "requirements": [
+        "LN-03",
+        "CLM-04",
+        "CLM-07",
+        "PAY-18",
+        "NFR-04"
+      ],
+      "prior_findings": [
+        "R10",
+        "R24",
+        "R26"
+      ],
+      "fields": [
+        "pay.loans.outstanding",
+        "pay.loan_postings.principal_part",
+        "pay.loan_postings.run_id",
+        "pay.payroll_item_lines.amount",
+        "pay.payroll_item_lines.calc_note",
+        "pay.claims.paid_in_run_id",
+        "pay.claims.paid_in_batch_id",
+        "pay.claims.status"
+      ],
+      "evidence": [
+        "backend/src/modules/loans/loans.service.ts:306",
+        "backend/src/modules/claims/claims.service.ts:328",
+        "backend/src/modules/claims/claims.service.ts:354",
+        "backend/migrations/1752220000000_pay-schema-init.ts:168"
+      ],
+      "problem": "loan_postings has no UPDATE/DELETE rejecting trigger and no unique loan/run key. Claims settlement directly changes loans.outstanding without a posting. payroll_item_lines lacks a closed-run immutability trigger; the header/item guard covers only UPDATE/DELETE. paid_in_run_id and paid_in_batch_id lack the documented payout exclusivity CHECK; a linked obligation is currently labelled paid before actual payment evidence.",
+      "decision": "The principal, ledger and payout references are legitimate fields. Make immutable postings/payment events authoritative, retain a cache only if explicitly derived and reconcilable, enforce once-only source consumption and closed-result inserts/updates/deletes, and distinguish routed/approved/paid states.",
+      "status": "Open; audit only, no source/schema repair in this pass",
+      "sow_rows": [
+        {
+          "id": "SOW-003",
+          "item": "perform changes on software as per client policies and requirements."
+        },
+        {
+          "id": "SOW-010",
+          "item": "Integration with other Systems, as necessary."
+        },
+        {
+          "id": "SOW-027",
+          "item": "Management of flexi-basket benefits and reimbursements."
+        },
+        {
+          "id": "SOW-028",
+          "item": "Employee investment declarations for tax planning."
+        },
+        {
+          "id": "SOW-029",
+          "item": "Employee loan processing on ESS portal and approval workflow ."
+        },
+        {
+          "id": "SOW-030",
+          "item": "Payslip and tax sheet generation for onboarding employees."
+        },
+        {
+          "id": "SOW-118",
+          "item": "Vendor would handle the Loan scheduler with the following options:"
+        },
+        {
+          "id": "SOW-119",
+          "item": "Diminishing"
+        },
+        {
+          "id": "SOW-120",
+          "item": "Flat"
+        },
+        {
+          "id": "SOW-121",
+          "item": "Only EMI without Interest"
+        },
+        {
+          "id": "SOW-122",
+          "item": "vendor would calculate perquisites as per SBI lending rates. This is applicable only if the client provides the loan input to be recovered using vendor loan scheduler. If the client is giving the loan recovery amount month on month, then the client should provide the perquisite value."
+        },
+        {
+          "id": "SOW-124",
+          "item": "Deductions against Salary advance should be provided as monthly inputs."
+        },
+        {
+          "id": "SOW-139",
+          "item": "Vendor would provide documentation support for any internal Audits and third-party requirements"
+        },
+        {
+          "id": "SOW-187",
+          "item": "Protiviti team should provide the following:\n> Reimbursement bank transfer\n> Reimbursement Register\n> Submission of reimbursement pay slip to employees via the Platform.\n> Calculation of TDS on the unclaimed entitlement at the year end or as per the Client policy\n> Assistance for management and resolution of desk queries raised by employees."
+        }
+      ]
+    },
+    {
+      "id": "S06",
+      "title": "Known relational/date/money invariants are missing",
+      "requirements": [
+        "LC-06",
+        "PAY-15",
+        "PAY-08",
+        "CLM-01",
+        "WF-01",
+        "ATT-08"
+      ],
+      "prior_findings": [
+        "R10",
+        "R17",
+        "R19",
+        "R25"
+      ],
+      "fields": [
+        "core.separations.workflow_request_id",
+        "core.separations.fnf_id",
+        "pay.fnf_settlements.separation_id",
+        "pay.loans.workflow_request_id",
+        "pay.claims.workflow_request_id",
+        "pay.budgets.workflow_request_id",
+        "att.overtime_entries.payroll_item_id",
+        "pay.salary_holds.start_month",
+        "pay.salary_holds.released_month",
+        "pay.claim_entitlements.amount",
+        "pay.claim_entitlements.effective_from"
+      ],
+      "evidence": [
+        "local-schema.json",
+        "field-catalog.json",
+        "docs/14-TECH-STACK-AND-RELIABILITY.md:65"
+      ],
+      "problem": "Several known same-database relations are only BIGINT fields without FK enforcement, including settlement-to-separation and the indicated workflow references. salary_holds has no date-order CHECK. claim_entitlements has neither a nonnegative amount CHECK nor an effective bucket uniqueness/overlap invariant. These omissions leave legitimate fields weakly connected.",
+      "decision": "Reconcile invalid existing references first, then introduce safe forward constraints and semantic same-owner checks. Choose approved effective-entitlement interval semantics. Polymorphic reference_id/entity_id, external ATS IDs and textual mobile device IDs are not automatically missing-FK defects.",
+      "status": "Open; audit only, no source/schema repair in this pass",
+      "sow_rows": [
+        {
+          "id": "SOW-003",
+          "item": "perform changes on software as per client policies and requirements."
+        },
+        {
+          "id": "SOW-022",
+          "item": "Generation of offer letter and approvals."
+        },
+        {
+          "id": "SOW-027",
+          "item": "Management of flexi-basket benefits and reimbursements."
+        },
+        {
+          "id": "SOW-028",
+          "item": "Employee investment declarations for tax planning."
+        },
+        {
+          "id": "SOW-029",
+          "item": "Employee loan processing on ESS portal and approval workflow ."
+        },
+        {
+          "id": "SOW-030",
+          "item": "Payslip and tax sheet generation for onboarding employees."
+        },
+        {
+          "id": "SOW-040",
+          "item": "\u2022 Resignation initiation, tracking, and approval workflows."
+        },
+        {
+          "id": "SOW-041",
+          "item": "\u2022 Digital clearance process across departments (IT, Admin, Finance)"
+        },
+        {
+          "id": "SOW-042",
+          "item": "\u2022 Final settlement and compliance with statutory requirements."
+        },
+        {
+          "id": "SOW-044",
+          "item": "\u2022 Generation of various employee-related letters, including:\n o Experience letters\n o Relieving letters\n o Salary certificates"
+        },
+        {
+          "id": "SOW-058",
+          "item": "\u2022 leave request and approval workflows with multi-level authorizations."
+        },
+        {
+          "id": "SOW-060",
+          "item": "Leave encashment and carry-forward policies"
+        },
+        {
+          "id": "SOW-062",
+          "item": "\u2022 overtime tracking based on pre-approved policies."
+        },
+        {
+          "id": "SOW-063",
+          "item": "Platform auto-calculation of compensatory offs and extra working hours."
+        },
+        {
+          "id": "SOW-064",
+          "item": "approval workflows for overtime requests."
+        },
+        {
+          "id": "SOW-065",
+          "item": "integration with payroll for overtime"
+        },
+        {
+          "id": "SOW-136",
+          "item": "Scenario 1 (Payment hold) - To hold payment of any specific salary(s) vendor will process salary as instructed by the Rashmi Metaliks Limited. The salary transfer details in bank file will be removed. All statutory payments (PF, PT, ESI, LWF) would be remitted normally. In order to release the salary, Protiviti implant should add the net pay value of the employee as part of respective month's input"
+        },
+        {
+          "id": "SOW-137",
+          "item": "Scenario 2 (Process hold) - To hold processing of any specific salary(s) for absconding employees, etc., the Protiviti should include full month LOP input for this employee until the defined date. If the defined date is not known, Protiviti to give LOP input month on month. In order to release the salary, Protiviti should provide LOP reversal inputs in the respective month of release."
+        },
+        {
+          "id": "SOW-187",
+          "item": "Protiviti team should provide the following:\n> Reimbursement bank transfer\n> Reimbursement Register\n> Submission of reimbursement pay slip to employees via the Platform.\n> Calculation of TDS on the unclaimed entitlement at the year end or as per the Client policy\n> Assistance for management and resolution of desk queries raised by employees."
+        },
+        {
+          "id": "SOW-204",
+          "item": "Platform for Clearance Workflows"
+        },
+        {
+          "id": "SOW-218",
+          "item": "Employee & Case Management"
+        },
+        {
+          "id": "SOW-221",
+          "item": "Settlement Input in Excel Format as shared by Protiviti viz \u2013 Number of days payable, Salary hold release, Leave Encashment days/Notice Pay recovery, Other Payments& Deductions, Gratuity, LTA claimed in previous employment"
+        },
+        {
+          "id": "SOW-222",
+          "item": "Communication Protocol: SFTP/ Protiviti\u2019s CRM/ Rashmi Metaliks Limited Portal"
+        },
+        {
+          "id": "SOW-223",
+          "item": "Rashmi Metaliks Limited Employees to update investment proofs in ESS portal and submit any pending reimbursement claims"
+        },
+        {
+          "id": "SOW-224",
+          "item": "Protiviti should process payroll based on clarifications received (post verification of investment proofs and reimbursement claims submitted) and share the Final Settlement workings for confirmation"
+        },
+        {
+          "id": "SOW-225",
+          "item": "On receipt of confirmation, the following deliverables to be shared with the Rashmi Metaliks Limited SPOC"
+        },
+        {
+          "id": "SOW-227",
+          "item": "Protiviti should offers 2 Full and Final cycle."
+        },
+        {
+          "id": "SOW-228",
+          "item": "The turnaround time to process Full and Final is 3 working days."
+        },
+        {
+          "id": "SOW-230",
+          "item": "\u201cAlumni portal\u201d access to exit employees need to be\nconfirmedly Rashmi Metaliks Limited for RML to download"
+        }
+      ]
+    },
+    {
+      "id": "S07",
+      "title": "Claim funding and component ownership remain incomplete",
+      "requirements": [
+        "CLM-01",
+        "CLM-02",
+        "CLM-04",
+        "TE-06",
+        "PAY-01"
+      ],
+      "prior_findings": [
+        "R25",
+        "R26",
+        "R27"
+      ],
+      "fields": [
+        "pay.claims.funding_kind",
+        "pay.claims.budget_id",
+        "pay.claims.claim_type_id",
+        "pay.claim_types.payout_component_code",
+        "pay.claim_bills.document_id",
+        "pay.claim_lines.document_path"
+      ],
+      "evidence": [
+        "backend/src/modules/claims/claims.service.ts:141",
+        "backend/migrations/1752270000000_claims-reconciliation.ts:18",
+        "backend/migrations/1752280000000_pay-budget-claim-contract.ts",
+        "backend/src/modules/claims/claims.service.ts:342"
+      ],
+      "problem": "General claim submission omits funding_kind, so the local budget default conflicts with the required budget_id check when no budget is supplied. payout_component_code defaults to REIMB with no FK on that taxonomy field; no REIMB seed exists in the checked payroll code. claim_lines and claim_bills represent travel line items and general bill verification differently; their ownership/payout linkage is not unified.",
+      "decision": "Preserve both documented funding modes and define required keys per mode. Configure and FK the actual payout component; do not invent a fallback component. Preserve multi-line/multi-currency receipt facts and document ownership, then prove each mode through approval, settlement and one real payout.",
+      "status": "Open; audit only, no source/schema repair in this pass",
+      "sow_rows": [
+        {
+          "id": "SOW-003",
+          "item": "perform changes on software as per client policies and requirements."
+        },
+        {
+          "id": "SOW-004",
+          "item": "Setup of client, employees and compensation master"
+        },
+        {
+          "id": "SOW-012",
+          "item": "Defining multiple pay structures based on grades, job levels, and locations."
+        },
+        {
+          "id": "SOW-013",
+          "item": "handling basic pay, allowances, deductions, reimbursements, and performance-linked incentives."
+        },
+        {
+          "id": "SOW-014",
+          "item": "customization for CTC breakup, flexi-benefits, and perquisites"
+        },
+        {
+          "id": "SOW-026",
+          "item": "Platform auto CTC structuring based on predefined templates."
+        },
+        {
+          "id": "SOW-027",
+          "item": "Management of flexi-basket benefits and reimbursements."
+        },
+        {
+          "id": "SOW-028",
+          "item": "Employee investment declarations for tax planning."
+        },
+        {
+          "id": "SOW-029",
+          "item": "Employee loan processing on ESS portal and approval workflow ."
+        },
+        {
+          "id": "SOW-030",
+          "item": "Payslip and tax sheet generation for onboarding employees."
+        },
+        {
+          "id": "SOW-082",
+          "item": "Effective date of salary revision."
+        },
+        {
+          "id": "SOW-090",
+          "item": "Check that the CTC matches with break up shared by the Rashmi Metaliks Limited"
+        },
+        {
+          "id": "SOW-181",
+          "item": "providing Employee Access:\n  Payslips, tax computation slips, Form 16.\n  Investment declarations & reimbursement claims.\n  Tax calculator & helpdesk ticketing"
+        },
+        {
+          "id": "SOW-187",
+          "item": "Protiviti team should provide the following:\n> Reimbursement bank transfer\n> Reimbursement Register\n> Submission of reimbursement pay slip to employees via the Platform.\n> Calculation of TDS on the unclaimed entitlement at the year end or as per the Client policy\n> Assistance for management and resolution of desk queries raised by employees."
+        },
+        {
+          "id": "SOW-221",
+          "item": "Settlement Input in Excel Format as shared by Protiviti viz \u2013 Number of days payable, Salary hold release, Leave Encashment days/Notice Pay recovery, Other Payments& Deductions, Gratuity, LTA claimed in previous employment"
+        },
+        {
+          "id": "SOW-223",
+          "item": "Rashmi Metaliks Limited Employees to update investment proofs in ESS portal and submit any pending reimbursement claims"
+        },
+        {
+          "id": "SOW-224",
+          "item": "Protiviti should process payroll based on clarifications received (post verification of investment proofs and reimbursement claims submitted) and share the Final Settlement workings for confirmation"
+        },
+        {
+          "id": "SOW-225",
+          "item": "On receipt of confirmation, the following deliverables to be shared with the Rashmi Metaliks Limited SPOC"
+        },
+        {
+          "id": "SOW-227",
+          "item": "Protiviti should offers 2 Full and Final cycle."
+        },
+        {
+          "id": "SOW-228",
+          "item": "The turnaround time to process Full and Final is 3 working days."
+        },
+        {
+          "id": "SOW-230",
+          "item": "\u201cAlumni portal\u201d access to exit employees need to be\nconfirmedly Rashmi Metaliks Limited for RML to download"
+        }
+      ]
+    },
+    {
+      "id": "S08",
+      "title": "The remaining schema plan has not been implemented or proven as an equivalent contract",
+      "requirements": [
+        "PAY-03",
+        "PAY-13",
+        "PAY-16",
+        "PAY-18",
+        "LC-05",
+        "WF-04",
+        "TE-08",
+        "TE-09"
+      ],
+      "prior_findings": [
+        "R05",
+        "R08",
+        "R09",
+        "R10",
+        "R22",
+        "R29",
+        "R30"
+      ],
+      "fields": [],
+      "evidence": [
+        "plans/sow-completion/backend-schema-plan.json",
+        "proposed-model-comparison.json",
+        "plans/remediation-2026-10-14.md"
+      ],
+      "problem": "None of the 46 proposed model names is present exactly in this catalog. This is not proof of 46 missing features: alternate names/merged objects can satisfy a requirement. However frozen run inputs, immutable source consumption/payment obligations, persisted YTD facts, historical assignments and wallet settlement still lack accepted equivalent contracts and have concrete reviewed gaps.",
+      "decision": "Use the per-card connections and acceptance tests, not table-count completion. Reconcile current transfers with proposed effective assignments and historical Budget-as-trip recon with the earlier separate-trip docs. Do not create another Trip or duplicate model blindly.",
+      "status": "Open; audit only, no source/schema repair in this pass",
+      "sow_rows": [
+        {
+          "id": "SOW-003",
+          "item": "perform changes on software as per client policies and requirements."
+        },
+        {
+          "id": "SOW-027",
+          "item": "Management of flexi-basket benefits and reimbursements."
+        },
+        {
+          "id": "SOW-028",
+          "item": "Employee investment declarations for tax planning."
+        },
+        {
+          "id": "SOW-029",
+          "item": "Employee loan processing on ESS portal and approval workflow ."
+        },
+        {
+          "id": "SOW-030",
+          "item": "Payslip and tax sheet generation for onboarding employees."
+        },
+        {
+          "id": "SOW-036",
+          "item": "Platform automated workflow for internal department/location transfers."
+        },
+        {
+          "id": "SOW-037",
+          "item": "Platform-driven approvals and documentation updates."
+        },
+        {
+          "id": "SOW-038",
+          "item": "compensation and role change updates in HRMS."
+        },
+        {
+          "id": "SOW-065",
+          "item": "integration with payroll for overtime"
+        },
+        {
+          "id": "SOW-068",
+          "item": "Platform automated deductions and penalties for attendance violations."
+        },
+        {
+          "id": "SOW-072",
+          "item": "Payroll Inputs Collection & Validation: Protiviti manages payroll inputs (new joiners, salary revisions, variable pay, deductions, loss of pay, etc.) in a predefined format."
+        },
+        {
+          "id": "SOW-073",
+          "item": "Investment & flexi declarations: Tax computation based on employee declarations via ESS portal"
+        },
+        {
+          "id": "SOW-074",
+          "item": "\u2022 Payroll processing & review:\n o Salary calculations with deductions and allowances.\n o Draft payroll reports for approval.\n o Final payroll processing after client confirmation"
+        },
+        {
+          "id": "SOW-075",
+          "item": "Performing Payroll deliverables:\n o Final Pay Register.\n o Bank Transfer File.\n o Journal Voucher Report.\n o Payslip & Tax computation slip via ESS.\n o Reimbursement & variance reports."
+        },
+        {
+          "id": "SOW-076",
+          "item": "Preparation of standard & customized Reports:\n o Standard: TDS report, PF report, PT report, ESIC report, LWF report, Variance report, CTC report.\n o Customized: Cost Centre, Location, Department-wise reports."
+        },
+        {
+          "id": "SOW-077",
+          "item": "\u2022 Calculation of OT(Over Time) charges and cross verifying with the attendance system and validate the OT charge"
+        },
+        {
+          "id": "SOW-079",
+          "item": "Protiviti should Validate attendance by verifying data or biometric records"
+        },
+        {
+          "id": "SOW-081",
+          "item": "\u2022 The Protiviti should handle the end-to-end payroll process, from collecting inputs to preparing the final register"
+        },
+        {
+          "id": "SOW-082",
+          "item": "Effective date of salary revision."
+        },
+        {
+          "id": "SOW-091",
+          "item": "Identification of duplicate inputs."
+        },
+        {
+          "id": "SOW-093",
+          "item": "Check whether an employee is in Active or Inactive statusfor variable inputs."
+        },
+        {
+          "id": "SOW-095",
+          "item": "Payroll Input"
+        },
+        {
+          "id": "SOW-096",
+          "item": "Draft Pay sheet"
+        },
+        {
+          "id": "SOW-097",
+          "item": "Observations if any"
+        },
+        {
+          "id": "SOW-098",
+          "item": "Finaly pay Register"
+        },
+        {
+          "id": "SOW-099",
+          "item": "Bank Transfer File"
+        },
+        {
+          "id": "SOW-100",
+          "item": "Payslip and Tax planner"
+        },
+        {
+          "id": "SOW-101",
+          "item": "JV report, Standard report and Customised Reports"
+        },
+        {
+          "id": "SOW-103",
+          "item": "Mid-month new joiner"
+        },
+        {
+          "id": "SOW-104",
+          "item": "Mid-month leaver"
+        },
+        {
+          "id": "SOW-105",
+          "item": "Loss of Pay calculations"
+        },
+        {
+          "id": "SOW-106",
+          "item": "Loss of Pay reversals"
+        },
+        {
+          "id": "SOW-107",
+          "item": "Previous month Loss of Pay"
+        },
+        {
+          "id": "SOW-109",
+          "item": "Actual calendar days in the month"
+        },
+        {
+          "id": "SOW-110",
+          "item": "Actual calendar days in the month less weekends"
+        },
+        {
+          "id": "SOW-111",
+          "item": "Fixed days like 30, 31 (this cannot change between months) without decimals."
+        },
+        {
+          "id": "SOW-116",
+          "item": "If the period for which salary is pro rated pertains to the period prior to go live with vendor, then the client would need provide arrear break up component wise to enable vendor to include in the current month payroll."
+        },
+        {
+          "id": "SOW-118",
+          "item": "Vendor would handle the Loan scheduler with the following options:"
+        },
+        {
+          "id": "SOW-119",
+          "item": "Diminishing"
+        },
+        {
+          "id": "SOW-120",
+          "item": "Flat"
+        },
+        {
+          "id": "SOW-121",
+          "item": "Only EMI without Interest"
+        },
+        {
+          "id": "SOW-122",
+          "item": "vendor would calculate perquisites as per SBI lending rates. This is applicable only if the client provides the loan input to be recovered using vendor loan scheduler. If the client is giving the loan recovery amount month on month, then the client should provide the perquisite value."
+        },
+        {
+          "id": "SOW-123",
+          "item": "In order to claim tax exemption for Home Loan & Interest employees would need to submit relevant proof to claim under Section 24 during end of year process."
+        },
+        {
+          "id": "SOW-124",
+          "item": "Deductions against Salary advance should be provided as monthly inputs."
+        },
+        {
+          "id": "SOW-139",
+          "item": "Vendor would provide documentation support for any internal Audits and third-party requirements"
+        },
+        {
+          "id": "SOW-145",
+          "item": "Monthly Income TDS deductions and tax reporting"
+        },
+        {
+          "id": "SOW-146",
+          "item": "Quarterly filings (Form 24Q) & Annual Form 16 generation"
+        },
+        {
+          "id": "SOW-147",
+          "item": "Reconciliation of tax deductions vs. paid challans"
+        },
+        {
+          "id": "SOW-181",
+          "item": "providing Employee Access:\n  Payslips, tax computation slips, Form 16.\n  Investment declarations & reimbursement claims.\n  Tax calculator & helpdesk ticketing"
+        },
+        {
+          "id": "SOW-184",
+          "item": "Annual Bonus & Increment Processing:"
+        },
+        {
+          "id": "SOW-185",
+          "item": "Tax Deduction & Year-End Adjustments"
+        },
+        {
+          "id": "SOW-187",
+          "item": "Protiviti team should provide the following:\n> Reimbursement bank transfer\n> Reimbursement Register\n> Submission of reimbursement pay slip to employees via the Platform.\n> Calculation of TDS on the unclaimed entitlement at the year end or as per the Client policy\n> Assistance for management and resolution of desk queries raised by employees."
+        },
+        {
+          "id": "SOW-221",
+          "item": "Settlement Input in Excel Format as shared by Protiviti viz \u2013 Number of days payable, Salary hold release, Leave Encashment days/Notice Pay recovery, Other Payments& Deductions, Gratuity, LTA claimed in previous employment"
+        },
+        {
+          "id": "SOW-223",
+          "item": "Rashmi Metaliks Limited Employees to update investment proofs in ESS portal and submit any pending reimbursement claims"
+        },
+        {
+          "id": "SOW-224",
+          "item": "Protiviti should process payroll based on clarifications received (post verification of investment proofs and reimbursement claims submitted) and share the Final Settlement workings for confirmation"
+        },
+        {
+          "id": "SOW-225",
+          "item": "On receipt of confirmation, the following deliverables to be shared with the Rashmi Metaliks Limited SPOC"
+        },
+        {
+          "id": "SOW-227",
+          "item": "Protiviti should offers 2 Full and Final cycle."
+        },
+        {
+          "id": "SOW-228",
+          "item": "The turnaround time to process Full and Final is 3 working days."
+        },
+        {
+          "id": "SOW-230",
+          "item": "\u201cAlumni portal\u201d access to exit employees need to be\nconfirmedly Rashmi Metaliks Limited for RML to download"
+        }
+      ]
+    },
+    {
+      "id": "S09",
+      "title": "Future test partitions explain physical growth, not new business fields",
+      "requirements": [
+        "ATT-01",
+        "NFR-02",
+        "NFR-08"
+      ],
+      "prior_findings": [],
+      "fields": [],
+      "evidence": [
+        "freshness.json",
+        "backend/tests/kent-ingestion.integration.test.ts:26",
+        "backend/src/modules/attendance/ingest.service.ts:116"
+      ],
+      "problem": "Compared with the 13 Oct catalog, 12 new swipe partitions exist, including dates in 2032\u20132081. Business column definitions are unchanged. Tests use random future dates and the ingestion service creates month partitions; exact causation for each new partition was not traced. This is local test schema growth, not 12 new business models.",
+      "decision": "Keep test-only provenance clear and bound fixtures/isolate destructive test setup. No production concern is inferred from this user-authorized local test DB. Do not remove append-only evidence or partitions without a reviewed retention/fixture cleanup procedure.",
+      "status": "Open; audit only, no source/schema repair in this pass",
+      "sow_rows": [
+        {
+          "id": "SOW-005",
+          "item": "Transfer of data for the previous months of the current financial year, the previous financial year any prior financial year before that as required in good faith."
+        },
+        {
+          "id": "SOW-010",
+          "item": "Integration with other Systems, as necessary."
+        },
+        {
+          "id": "SOW-049",
+          "item": "Integration with biometric systems."
+        },
+        {
+          "id": "SOW-051",
+          "item": "management of real-time biometric attendance integration in system."
+        },
+        {
+          "id": "SOW-052",
+          "item": "integration with access control systems for seamless tracking."
+        },
+        {
+          "id": "SOW-079",
+          "item": "Protiviti should Validate attendance by verifying data or biometric records"
+        }
+      ]
+    }
+  ]
+}

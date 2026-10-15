@@ -1,0 +1,42 @@
+{
+  "id": "G3",
+  "name": "ESIC Boundary & Contribution Period State Machine",
+  "cases": [
+    {
+      "caseId": "G3a",
+      "description": "Gross at period start <= 21,000; covered for all 6 months",
+      "period": "H1_2025",
+      "month": "2025-04",
+      "grossPaise": 2099900,
+      "expected": {
+        "isEligible": true,
+        "eeEsicPaise": 15800,
+        "erEsicPaise": 68300
+      }
+    },
+    {
+      "caseId": "G3b",
+      "description": "Gross at period start > 21,000; not covered",
+      "period": "H1_2025",
+      "month": "2025-04",
+      "grossPaise": 2100100,
+      "expected": {
+        "isEligible": false,
+        "eeEsicPaise": 0,
+        "erEsicPaise": 0
+      }
+    },
+    {
+      "caseId": "G3c",
+      "description": "Enters period at <= 21,000, receives mid-period increment to 25,000 in month 2; stays covered until period end",
+      "period": "H1_2025",
+      "startGrossPaise": 2050000,
+      "month2GrossPaise": 2500000,
+      "expectedMonth2": {
+        "isEligible": true,
+        "eeEsicPaise": 18800,
+        "erEsicPaise": 81300
+      }
+    }
+  ]
+}

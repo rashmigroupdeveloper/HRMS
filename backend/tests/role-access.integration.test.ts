@@ -12,7 +12,7 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
 import type { Kysely } from 'kysely';
 import type { Express } from 'express';
 import { createApp } from '../src/app.js';
@@ -77,7 +77,7 @@ run('Per-role access matrix (docs/08)', () => {
         .values({ user_id: user.id, role_id: roleRow.id, scope_org_unit_id: null })
         .execute();
 
-      const login = await request(app).post('/api/auth/login').send({ identifier: email, password });
+      const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
       const token = (login.body as { accessToken?: string }).accessToken;
       // Fail HERE with a clear message rather than letting an undefined token
       // surface as an unexplained 401 inside an unrelated assertion.
@@ -93,7 +93,7 @@ run('Per-role access matrix (docs/08)', () => {
   });
 
   const get = async (role: Role, path: string): Promise<number> => {
-    const res = await request(app).get(path).set('Authorization', `Bearer ${tokens.get(role) ?? ''}`);
+    const res = await (await httpRequest(app)).get(path).set('Authorization', `Bearer ${tokens.get(role) ?? ''}`);
     return res.status;
   };
 
@@ -178,7 +178,7 @@ run('Per-role access matrix (docs/08)', () => {
   it('managers never hold attendance.manual_override (PP-v2-18, explicit RML instruction)', async () => {
     // greytHR let managers mark absent employees "Present"; that must be impossible here.
     for (const role of ['manager', 'senior_manager'] as Role[]) {
-      const res = await request(app)
+      const res = await (await httpRequest(app))
         .put('/api/attendance/days/override')
         .set('Authorization', `Bearer ${tokens.get(role) ?? ''}`)
         .send({ employeeId: 1, workDate: '2026-09-01', status: 'P', reason: 'test' });

@@ -11,6 +11,11 @@ export interface AttendanceMonthRow {
   lastOut: string | null;
   otMinutes: number;
   lateMinutes: number;
+  source?: 'auto' | 'regularized' | 'manual';
+  isLocked?: boolean;
+  leaveTypeCode?: string | null;
+  leaveTypeName?: string | null;
+  leaveIsPaid?: boolean | null;
 }
 
 export interface AttendanceRequest {

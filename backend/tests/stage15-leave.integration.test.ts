@@ -12,7 +12,8 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
+import { expectHttpStatus } from './http-assertions.js';
 import { sql, type Kysely } from 'kysely';
 import type { Express } from 'express';
 import { createApp } from '../src/app.js';
@@ -32,7 +33,7 @@ import {
   runMonthlyAccrual,
   selectRestrictedHoliday,
 } from '../src/modules/leave/index.js';
-import { act, WORKFLOW_DEFINITIONS } from '../src/modules/workflows/index.js';
+import { act, resubmit, WORKFLOW_DEFINITIONS } from '../src/modules/workflows/index.js';
 import { addDaysIso, istDateString } from '../src/core/dates.js';
 
 const DB_URL = process.env['DATABASE_URL'];
@@ -130,7 +131,7 @@ run('Stage 1.5 — leave module (live Postgres)', () => {
     emp2Id = await mkEmployee('F', mgrId, '2029-11-01');
     emp3Id = await mkEmployee('G', mgrId, '2010-01-01'); // deliberately NO user
 
-    const login = await request(app).post('/api/auth/login').send({ identifier: `s15-emp-${stamp}@hrms.test`, password });
+    const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: `s15-emp-${stamp}@hrms.test`, password });
     empToken = (login.body as { accessToken: string }).accessToken;
     expect(empToken).toBeTruthy();
   });
@@ -189,11 +190,11 @@ run('Stage 1.5 — leave module (live Postgres)', () => {
   it('A3: apply → RM approves → ledger debit + L day-records, atomic with the decision', async () => {
     await adjustBalance(db, { employeeId: empId, leaveTypeCode: 'CL', delta: 5, note: 'test grant', actorUserId: mgrUserId });
 
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post('/api/leave/applications')
       .set('Authorization', `Bearer ${empToken}`)
       .send({ leaveType: 'CL', fromDate: FRI, toDate: MON, reason: 'family function' });
-    expect(res.status).toBe(200);
+    expectHttpStatus(res, 200);
     const { id, workflowRequestId, days } = res.body as { id: number; workflowRequestId: number; days: number };
     expect(days).toBe(3);
 
@@ -213,8 +214,8 @@ run('Stage 1.5 — leave module (live Postgres)', () => {
     }
     expect((await day(empId, '2032-05-02'))?.status).not.toBe('L'); // the excluded Sunday
 
-    const balances = await request(app).get('/api/leave/balances').set('Authorization', `Bearer ${empToken}`);
-    expect(balances.status).toBe(200);
+    const balances = await (await httpRequest(app)).get('/api/leave/balances').set('Authorization', `Bearer ${empToken}`);
+    expectHttpStatus(balances, 200);
     const clRow = (balances.body as { leaveType: string; available: number }[]).find((b) => b.leaveType === 'CL');
     expect(clRow?.available).toBe(2.75);
   });
@@ -239,11 +240,11 @@ run('Stage 1.5 — leave module (live Postgres)', () => {
       .where('status', '=', 'approved')
       .executeTakeFirstOrThrow();
 
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post(`/api/leave/applications/${appRow.id}/cancel`)
       .set('Authorization', `Bearer ${empToken}`)
       .send({});
-    expect(res.status).toBe(200);
+    expectHttpStatus(res, 200);
     const { workflowRequestId } = res.body as { workflowRequestId: number };
 
     expect(await act(db, { requestId: workflowRequestId, actorUserId: mgrUserId, action: 'approve' })).toBe('approved');
@@ -444,5 +445,47 @@ run('Stage 1.5 — leave module (live Postgres)', () => {
     expect(bal.balance).toBe(5);
     expect(bal.pending).toBe(4);
     expect(bal.available).toBe(1);
+  });
+
+  it('resubmitted sick leave recomputes its days and debits only the revised dates', async () => {
+    await adjustBalance(db, { employeeId: empId, leaveTypeCode: 'SL', delta: 5, note: 'Sick leave revision fixture', actorUserId: mgrUserId });
+    const before = await balanceOf(empId, 'SL');
+    const request = await applyForLeave(db, { employeeId: empId, requestedByUserId: (await db.selectFrom('core.users').select('id')
+      .where('employee_id', '=', empId).executeTakeFirstOrThrow()).id,
+      leaveTypeCode: 'SL', fromDate: '2032-05-11', toDate: '2032-05-11', reason: 'Initial sick leave date' });
+    await act(db, { requestId: request.workflowRequestId, actorUserId: mgrUserId, action: 'send_back', comment: 'Please correct the dates' });
+    const mine = await (await httpRequest(app)).get('/api/leave/applications/mine').set('Authorization', `Bearer ${empToken}`);
+    expectHttpStatus(mine, 200);
+    expect((mine.body as { id: number; status: string; workflowStatus: string }[]).find(item => item.id === request.id))
+      .toMatchObject({ status: 'pending', workflowStatus: 'sent_back' });
+    const owner = await db.selectFrom('wf.requests').select('requested_by').where('id', '=', request.workflowRequestId).executeTakeFirstOrThrow();
+    await resubmit(db, { requestId: request.workflowRequestId, requesterUserId: owner.requested_by,
+      payload: { leaveType: 'SL', fromDate: '2032-05-12', toDate: '2032-05-13', days: 999, reason: 'Revised sick leave dates' } });
+    const application = await db.selectFrom('lv.applications').select(['days', 'from_date']).where('id', '=', request.id).executeTakeFirstOrThrow();
+    expect(Number(application.days)).toBe(2);
+    expect(await act(db, { requestId: request.workflowRequestId, actorUserId: mgrUserId, action: 'approve' })).toBe('approved');
+    expect(await balanceOf(empId, 'SL')).toBe(before - 2);
+    expect(await day(empId, '2032-05-11')).toBeUndefined();
+    expect((await day(empId, '2032-05-12'))?.status).toBe('L');
+    const calendar = await (await httpRequest(app)).get('/api/my/attendance?month=2032-05')
+      .set('Authorization', `Bearer ${empToken}`);
+    expectHttpStatus(calendar, 200);
+    expect((calendar.body as { date: string; leaveTypeCode: string; source: string }[]).find(row => row.date === '2032-05-12'))
+      .toMatchObject({ leaveTypeCode: 'SL', source: 'regularized' });
+  });
+  it('a later HR override prevents sick-leave approval and ledger debit in the same transaction', async () => {
+    const owner = await db.selectFrom('core.users').select('id').where('employee_id', '=', empId).executeTakeFirstOrThrow();
+    const before = await balanceOf(empId, 'SL');
+    const request = await applyForLeave(db, { employeeId: empId, requestedByUserId: owner.id,
+      leaveTypeCode: 'SL', fromDate: '2032-05-19', toDate: '2032-05-19', reason: 'Protected sick-leave fixture' });
+    await db.insertInto('att.day_records').values({ employee_id: empId, work_date: sql<Date>`'2032-05-19'::date`,
+      status: 'A', source: 'manual', override_reason: 'HR-reviewed fixture conflict',
+    }).execute();
+    await expect(act(db, { requestId: request.workflowRequestId, actorUserId: mgrUserId, action: 'approve' })).rejects.toThrow(/HR override/);
+    expect(await balanceOf(empId, 'SL')).toBe(before);
+    const application = await db.selectFrom('lv.applications').select(['status', 'ledger_txn_id']).where('id', '=', request.id).executeTakeFirstOrThrow();
+    expect(application).toEqual({ status: 'pending', ledger_txn_id: null });
+    const workflow = await db.selectFrom('wf.requests').select('status').where('id', '=', request.workflowRequestId).executeTakeFirstOrThrow();
+    expect(workflow.status).toBe('pending');
   });
 });

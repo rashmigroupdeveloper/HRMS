@@ -40,6 +40,10 @@ interface BuDashboard {
   joinersMtd: number;
   exitsMtd: number;
   openAbsenceCases: { stage: string; count: number }[];
+  presenceTodayPct?: number | null;
+  shiftScheduleCompliancePct?: number | null;
+  activeOvertimeHours?: number | null;
+  pendingApprovalsCount?: number | null;
 }
 
 interface TrendPoint {
@@ -153,6 +157,69 @@ export function BusinessUnitDashboard() {
           ))}
         </dl>
       </DarkCard>
+
+      {/* ── Operational Health & Shift Compliance ───────────────────────── */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+            Plant presence today
+          </p>
+          <p className="mt-2 text-3xl font-light tabular-nums text-ink">
+            {data.presenceTodayPct !== null && data.presenceTodayPct !== undefined ? (
+              <KpiNumber value={data.presenceTodayPct} precision={1} suffix="%" />
+            ) : (
+              <span className="text-ink-faint">—</span>
+            )}
+          </p>
+          <p className="mt-1 text-xs text-ink-muted">Active attendance vs scheduled</p>
+        </Card>
+
+        <Card className="p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+            Shift compliance
+          </p>
+          <p className="mt-2 text-3xl font-light tabular-nums text-ink">
+            {data.shiftScheduleCompliancePct !== null && data.shiftScheduleCompliancePct !== undefined ? (
+              <KpiNumber value={data.shiftScheduleCompliancePct} precision={1} suffix="%" />
+            ) : (
+              <span className="text-ink-faint">—</span>
+            )}
+          </p>
+          <p className="mt-1 text-xs text-ink-muted">Roster assignment adherence</p>
+        </Card>
+
+        <Card className="p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+            Active OT hours
+          </p>
+          <p className="mt-2 text-3xl font-light tabular-nums text-ink">
+            {data.activeOvertimeHours !== null && data.activeOvertimeHours !== undefined ? (
+              <KpiNumber value={data.activeOvertimeHours} precision={1} suffix=" h" />
+            ) : (
+              <span className="text-ink-faint">—</span>
+            )}
+          </p>
+          <p className="mt-1 text-xs text-ink-muted">Recorded overtime across unit</p>
+        </Card>
+
+        <Card className="p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+            Pending approvals
+          </p>
+          <div className="mt-2 flex items-baseline justify-between">
+            <p className="text-3xl font-light tabular-nums text-ink">
+              <KpiNumber value={data.pendingApprovalsCount ?? 0} />
+            </p>
+            <Link
+              to="/attendance/exceptions"
+              className="text-xs font-medium text-accent hover:underline"
+            >
+              Review queue →
+            </Link>
+          </div>
+          <p className="mt-1 text-xs text-ink-muted">AR & overtime requests</p>
+        </Card>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

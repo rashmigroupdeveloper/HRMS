@@ -1,0 +1,35 @@
+{
+  "id": "G1",
+  "name": "RML Staff Baseline (Live greytHR Parity)",
+  "description": "Standard live staff employee with full basic PF and WB PT",
+  "employee": {
+    "employeeId": 1001,
+    "category": "staff",
+    "contractType": "regular",
+    "state": "WB",
+    "regime": "new"
+  },
+  "monthlySalary": {
+    "BASIC": 3228600,
+    "HRA": 1614300,
+    "MEDICAL_ALLOW": 125000,
+    "SPECIAL_ALLOW": 1200500,
+    "EDUCATION_ALLOW": 20000,
+    "STATUTORY_BONUS": 268900
+  },
+  "deductions": {
+    "GUEST_HOUSE": 250000
+  },
+  "expected": {
+    "grossPaise": 6457300,
+    "pfEePaise": 387400,
+    "erEpsPaise": 125000,
+    "erEpfPaise": 262400,
+    "edliPaise": 7500,
+    "pfAdminPaise": 16100,
+    "esicEePaise": 0,
+    "esicErPaise": 0,
+    "ptPaise": 20000,
+    "netExclTdsPaise": 5799900
+  }
+}

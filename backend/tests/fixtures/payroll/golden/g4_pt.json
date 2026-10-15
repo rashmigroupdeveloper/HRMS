@@ -1,0 +1,12 @@
+{
+  "id": "G4",
+  "name": "West Bengal Professional Tax Slabs",
+  "state": "WB",
+  "slabs": [
+    { "grossPaise": 999900, "expectedPtPaise": 0 },
+    { "grossPaise": 1200000, "expectedPtPaise": 11000 },
+    { "grossPaise": 2000000, "expectedPtPaise": 13000 },
+    { "grossPaise": 3500000, "expectedPtPaise": 15000 },
+    { "grossPaise": 4500000, "expectedPtPaise": 20000 }
+  ]
+}

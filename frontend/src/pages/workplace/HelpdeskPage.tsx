@@ -53,6 +53,10 @@ interface Ticket {
   slaDueAt: string;
   breached: boolean;
   escalatedLevel: number;
+  escalatedToUserId?: number | null;
+  firstResponseAt?: string | null;
+  reopenCount?: number;
+  resolution?: string | null;
   resolvedAt: string | null;
   createdAt: string;
 }
@@ -72,6 +76,9 @@ interface Performance {
   resolved: number;
   breached: number;
   avgResolutionHours: number | null;
+  avgFirstResponseHours: number | null;
+  reopenedCount: number;
+  resolutionRatePercent: number;
 }
 
 const STATUS_TONE: Record<string, 'positive' | 'info' | 'warning' | 'neutral'> = {
@@ -252,10 +259,20 @@ function TicketList({
     {
       key: 'ticket',
       header: 'Ticket',
-      width: 'minmax(220px,1.4fr)',
+      width: 'minmax(240px,1.4fr)',
       render: (r) => (
         <div>
-          <span className="font-semibold text-ink">{r.subject}</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-semibold text-ink">{r.subject}</span>
+            {r.priority !== 'normal' && (
+              <StatusBadge tone={r.priority === 'urgent' ? 'negative' : r.priority === 'high' ? 'warning' : 'neutral'}>
+                {r.priority}
+              </StatusBadge>
+            )}
+            {(r.reopenCount ?? 0) > 0 && (
+              <StatusBadge tone="warning">Reopened ×{r.reopenCount}</StatusBadge>
+            )}
+          </div>
           <p className="mt-0.5 text-xs text-ink-muted">
             {r.ticketNo} · {r.categoryName}
           </p>
@@ -296,10 +313,14 @@ function TicketList({
     {
       key: 'esc',
       header: 'Escalations',
-      width: '110px',
+      width: '130px',
       numeric: true,
       render: (r) =>
-        r.escalatedLevel > 0 ? <Pill>{r.escalatedLevel}</Pill> : <span className="text-ink-faint">—</span>,
+        r.escalatedLevel > 0 ? (
+          <StatusBadge tone="warning">Escalated L{r.escalatedLevel}</StatusBadge>
+        ) : (
+          <span className="text-ink-faint">—</span>
+        ),
     },
     {
       key: 'created',
@@ -457,12 +478,29 @@ function RaiseDrawer({
     >
       <div className="space-y-5">
         <Select label="Category" value={categoryCode} options={options} onChange={setCategoryCode} />
-        {chosen && (
-          <p className="rounded-row bg-surface-2 px-4 py-3 text-xs leading-5 text-ink-muted">
-            This category is answered within <strong className="text-ink">{chosen.slaHours} hours</strong>.
-            The clock starts as soon as you raise it.
-          </p>
-        )}
+        {chosen && (() => {
+          const targetHours =
+            priority === 'urgent'
+              ? Math.max(2, Math.round(chosen.slaHours * 0.25))
+              : priority === 'high'
+                ? Math.max(4, Math.round(chosen.slaHours * 0.5))
+                : priority === 'low'
+                  ? chosen.slaHours * 2
+                  : chosen.slaHours;
+          return (
+            <div className="rounded-row bg-surface-2 px-4 py-3 text-xs leading-5 text-ink-muted space-y-1">
+              <p>
+                Base SLA: <strong className="text-ink">{chosen.slaHours} hours</strong> · Priority SLA target:{' '}
+                <strong className="text-ink">{targetHours} hours</strong>.
+              </p>
+              <p className="text-ink-faint">
+                {priority === 'urgent' || priority === 'high'
+                  ? 'Urgent tickets alert designated management hierarchy immediately upon SLA breach.'
+                  : 'The clock starts ticking as soon as the ticket is submitted.'}
+              </p>
+            </div>
+          );
+        })()}
         <TextField
           label="Subject"
           value={subject}
@@ -570,6 +608,32 @@ function TicketDrawer({
     }
   };
 
+  const [reopenReason, setReopenReason] = useState('');
+
+  const reopen = async () => {
+    if (ticket === null) return;
+    if (reopenReason.trim() === '') {
+      setError('State the reason for reopening this ticket.');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/helpdesk/tickets/${String(ticket.id)}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ ticketId: ticket.id, status: 'open', resolution: reopenReason.trim() }),
+      });
+      toast.success('Ticket reopened', { description: 'The support queue has been alerted.' });
+      setReopenReason('');
+      onChanged();
+      onClose();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not reopen the ticket.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Drawer
       open={ticket !== null}
@@ -590,8 +654,26 @@ function TicketDrawer({
                 <Pill>SLA {sla.text}</Pill>
               );
             })()}
-            {ticket.escalatedLevel > 0 && <Pill>Escalated ×{ticket.escalatedLevel}</Pill>}
+            {ticket.priority !== 'normal' && (
+              <StatusBadge tone={ticket.priority === 'urgent' ? 'negative' : ticket.priority === 'high' ? 'warning' : 'neutral'}>
+                {ticket.priority}
+              </StatusBadge>
+            )}
+            {(ticket.reopenCount ?? 0) > 0 && <StatusBadge tone="warning">Reopened ×{ticket.reopenCount}</StatusBadge>}
+            {ticket.firstResponseAt && (
+              <StatusBadge tone="info">1st response: {stamp(ticket.firstResponseAt)}</StatusBadge>
+            )}
+            {ticket.escalatedLevel > 0 && (
+              <StatusBadge tone="warning">Escalated L{ticket.escalatedLevel}</StatusBadge>
+            )}
           </div>
+
+          {ticket.resolution && (
+            <div className="rounded-row bg-surface-2 p-4 text-xs leading-5">
+              <span className="font-semibold text-ink">Resolution:</span>{' '}
+              <span className="text-ink-muted">{ticket.resolution}</span>
+            </div>
+          )}
 
           <div className="space-y-3">
             {thread.length === 0 ? (
@@ -617,40 +699,44 @@ function TicketDrawer({
             )}
           </div>
 
-          <Textarea
-            label="Reply"
-            rows={4}
-            value={reply}
-            onChange={(e) => {
-              setReply(e.currentTarget.value);
-            }}
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            {isAgent && (
-              <Button
-                size="sm"
-                variant={internal ? 'primary' : 'ghost'}
-                onClick={() => {
-                  setInternal((v) => !v);
+          {ticket.status !== 'closed' && (
+            <>
+              <Textarea
+                label="Reply"
+                rows={4}
+                value={reply}
+                onChange={(e) => {
+                  setReply(e.currentTarget.value);
                 }}
-              >
-                {internal ? 'Internal note' : 'Visible to raiser'}
-              </Button>
-            )}
-            <Button
-              variant="secondary"
-              loading={busy}
-              leadingIcon={<Send className="size-4" />}
-              onClick={() => void send()}
-            >
-              Send reply
-            </Button>
-          </div>
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                {isAgent && (
+                  <Button
+                    size="sm"
+                    variant={internal ? 'primary' : 'ghost'}
+                    onClick={() => {
+                      setInternal((v) => !v);
+                    }}
+                  >
+                    {internal ? 'Internal note' : 'Visible to raiser'}
+                  </Button>
+                )}
+                <Button
+                  variant="secondary"
+                  loading={busy}
+                  leadingIcon={<Send className="size-4" />}
+                  onClick={() => void send()}
+                >
+                  Send reply
+                </Button>
+              </div>
+            </>
+          )}
 
           {isAgent && ticket.status !== 'resolved' && ticket.status !== 'closed' && (
             <div className="space-y-3 rounded-row bg-surface-2 p-4">
               <Textarea
-                label="Resolution"
+                label="Resolution (mandatory for closing)"
                 rows={3}
                 value={resolution}
                 onChange={(e) => {
@@ -659,6 +745,23 @@ function TicketDrawer({
               />
               <Button variant="primary" loading={busy} onClick={() => void resolve()}>
                 Resolve ticket
+              </Button>
+            </div>
+          )}
+
+          {(ticket.status === 'resolved' || ticket.status === 'closed') && (
+            <div className="space-y-3 rounded-row bg-surface-2 p-4">
+              <p className="text-xs font-semibold text-ink">Need further assistance? Reopen ticket</p>
+              <Textarea
+                label="Reason for reopening (mandatory)"
+                rows={2}
+                value={reopenReason}
+                onChange={(e) => {
+                  setReopenReason(e.currentTarget.value);
+                }}
+              />
+              <Button variant="secondary" loading={busy} onClick={() => void reopen()}>
+                Reopen ticket
               </Button>
             </div>
           )}
@@ -698,27 +801,62 @@ function PerformancePanel() {
   }, [load]);
 
   const columns: Column<Performance>[] = [
-    { key: 'cat', header: 'Category', width: 'minmax(200px,1.4fr)', render: (r) => r.categoryName },
-    { key: 'raised', header: 'Raised', width: '100px', numeric: true, render: (r) => r.raised },
-    { key: 'resolved', header: 'Resolved', width: '110px', numeric: true, render: (r) => r.resolved },
+    { key: 'cat', header: 'Category', width: 'minmax(180px,1.3fr)', render: (r) => r.categoryName },
+    { key: 'raised', header: 'Raised', width: '90px', numeric: true, render: (r) => r.raised },
+    { key: 'resolved', header: 'Resolved', width: '90px', numeric: true, render: (r) => r.resolved },
+    {
+      key: 'rate',
+      header: 'Resolution rate',
+      width: '130px',
+      numeric: true,
+      render: (r) => (
+        <span className="tabular-nums font-semibold text-ink">
+          {r.resolutionRatePercent.toFixed(1)}%
+        </span>
+      ),
+    },
     {
       key: 'breached',
       header: 'SLA breached',
-      width: '130px',
+      width: '120px',
       numeric: true,
       render: (r) =>
         r.breached > 0 ? <StatusBadge tone="negative">{r.breached}</StatusBadge> : <span>0</span>,
     },
     {
+      key: 'firstResponse',
+      header: 'Avg 1st response',
+      width: '130px',
+      numeric: true,
+      render: (r) =>
+        r.avgFirstResponseHours === null ? (
+          <span className="text-ink-faint">—</span>
+        ) : (
+          <span className="tabular-nums">{r.avgFirstResponseHours.toFixed(1)} h</span>
+        ),
+    },
+    {
       key: 'avg',
       header: 'Avg resolution',
-      width: '150px',
+      width: '130px',
       numeric: true,
       render: (r) =>
         r.avgResolutionHours === null ? (
           <span className="text-ink-faint">—</span>
         ) : (
           <span className="tabular-nums">{r.avgResolutionHours.toFixed(1)} h</span>
+        ),
+    },
+    {
+      key: 'reopened',
+      header: 'Reopened',
+      width: '100px',
+      numeric: true,
+      render: (r) =>
+        r.reopenedCount > 0 ? (
+          <StatusBadge tone="warning">{r.reopenedCount}</StatusBadge>
+        ) : (
+          <span>0</span>
         ),
     },
   ];

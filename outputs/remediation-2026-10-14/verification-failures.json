@@ -1,0 +1,32 @@
+{
+  "prepared": "2026-10-14",
+  "runtime": "Node24.21.0",
+  "latest_full_run": {
+    "passed": 423,
+    "failed": 13,
+    "skipped": 5
+  },
+  "failure_locations": [
+    "FAIL  tests/audit-read.integration.test.ts > Audit read API (live Postgres)",
+    "FAIL  tests/assets.integration.test.ts > M8 Assets \u2014 AST-01..06 (live Postgres) > A5 AST-05 surfaces kit still held by someone who has already left",
+    "FAIL  tests/assets.integration.test.ts > M8 Assets \u2014 AST-01..06 (live Postgres) > A6 AST-01 searches by asset number, serial and holder name",
+    "FAIL  tests/directory-facets.integration.test.ts > Directory facets and filters (live Postgres) > D1 entity facet count equals a direct count of the same employees",
+    "FAIL  tests/directory-facets.integration.test.ts > Directory facets and filters (live Postgres) > D2 every facet code offered is a code the list API accepts",
+    "FAIL  tests/directory-facets.integration.test.ts > Directory facets and filters (live Postgres) > D3 multi-select unions instead of silently dropping the second value",
+    "FAIL  tests/directory-facets.integration.test.ts > Directory facets and filters (live Postgres) > D4 status facets remain discoverable under the active-only default",
+    "FAIL  tests/employee-import.integration.test.ts > employee master + two-source import (live Postgres) > login also works with the EMPLOYEE E-CODE as the identifier (the login-page field)",
+    "FAIL  tests/engagement.integration.test.ts > M10 Engagement \u2014 EN-01..03 (live Postgres) > E1 an announcement reaches its audience and nobody else (EN-01)",
+    "FAIL  tests/engagement.integration.test.ts > M10 Engagement \u2014 EN-01..03 (live Postgres) > E3 an anonymous poll stores and returns no identity (EN-02/03)",
+    "FAIL  tests/stage13-workflows.integration.test.ts > Stage 1.3 \u2014 workflow engine (live Postgres) > leave request: step 1 lands on the RM with a notification RECEIPT (PP-14)",
+    "FAIL  tests/stage13-workflows.integration.test.ts > Stage 1.3 \u2014 workflow engine (live Postgres) > send_back \u2192 requester fixes \u2192 resubmit restarts the chain (doc 11 \u00a74b)",
+    "FAIL  tests/stage15-leave.integration.test.ts > Stage 1.5 \u2014 leave module (live Postgres) > A3: apply \u2192 RM approves \u2192 ledger debit + L day-records, atomic with the decision",
+    "FAIL  tests/stage15-leave.integration.test.ts > Stage 1.5 \u2014 leave module (live Postgres) > A5: cancelling approved leave is a re-approval that reverses the exact debit"
+  ],
+  "full_verify": "fails lint597; coverage below80",
+  "coverage": {
+    "lines": 75.08,
+    "statements": 75.08,
+    "branches": 70.53,
+    "functions": 78.24
+  }
+}

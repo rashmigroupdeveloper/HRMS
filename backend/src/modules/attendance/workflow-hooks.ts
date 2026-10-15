@@ -4,8 +4,8 @@
  * Called once from app assembly (app.ts) and the worker (jobs/worker.ts) —
  * both processes finalize requests (API acts, escalation sweeps).
  */
-import { onWorkflowFinal } from '../workflows/index.js';
-import { applyRegularizationOnFinal } from './regularization.service.js';
+import { onWorkflowFinal, onWorkflowResubmit } from '../workflows/index.js';
+import { applyRegularizationOnFinal, resubmitRegularization } from './regularization.service.js';
 import { applyOvertimeOnFinal } from './overtime.service.js';
 
 let registered = false;
@@ -15,5 +15,7 @@ export function registerAttendanceWorkflowHooks(): void {
   registered = true;
   onWorkflowFinal('regularization', applyRegularizationOnFinal);
   onWorkflowFinal('od', applyRegularizationOnFinal);
+  onWorkflowResubmit('regularization', resubmitRegularization);
+  onWorkflowResubmit('od', resubmitRegularization);
   onWorkflowFinal('overtime', applyOvertimeOnFinal);
 }

@@ -1,0 +1,31 @@
+{
+  "id": "G5",
+  "name": "TDS New Regime (FY 2025-26 Budget 2025)",
+  "standardDeductionPaise": 7500000,
+  "cases": [
+    {
+      "caseId": "G5a",
+      "description": "Taxable income ₹7,00,000 (after SD): 0 tax",
+      "taxableIncomePaise": 70000000,
+      "expectedTaxPaise": 0
+    },
+    {
+      "caseId": "G5b",
+      "description": "Taxable income ₹12,00,000 (after SD): full 87A rebate (₹60,000) -> 0 tax",
+      "taxableIncomePaise": 120000000,
+      "expectedTaxPaise": 0
+    },
+    {
+      "caseId": "G5c",
+      "description": "Taxable income ₹12,50,000 (after SD): marginal relief caps base tax at excess over ₹12L (₹50,000), total tax incl 4% cess is ₹52,000",
+      "taxableIncomePaise": 125000000,
+      "expectedTaxPaise": 5200000
+    },
+    {
+      "caseId": "G5d",
+      "description": "Taxable income ₹18,00,000 (after SD): base tax ₹1,60,000 + 4% cess ₹6,400 = ₹1,66,400",
+      "taxableIncomePaise": 180000000,
+      "expectedTaxPaise": 16640000
+    }
+  ]
+}

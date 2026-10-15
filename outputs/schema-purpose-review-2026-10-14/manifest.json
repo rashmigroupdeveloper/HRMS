@@ -1,0 +1,90 @@
+{
+  "scope": "Catalog/source metadata only; no .env, DB rows, credentials or sensitive recon datasets. Audit helpers included for reproducibility. This supplement does not replace the source-context handoff ZIP.",
+  "files": [
+    {
+      "file": "REVIEW.md",
+      "sha256": "81d985a74d6cabbe5f210037a9906b552fdcca1da979d152b0eb37b764610694",
+      "bytes": 17531
+    },
+    {
+      "file": "build-field-catalog.py",
+      "sha256": "d3e98bb7630182928a666684fa2b65e9f5fbd58b66de5d67ce416f34892b68fd",
+      "bytes": 8424
+    },
+    {
+      "file": "build-review.py",
+      "sha256": "0a6fb20d8ee000f10124107de336b0e537fc28b037d152fa14d9a737d44071eb",
+      "bytes": 19932
+    },
+    {
+      "file": "collect-source-evidence.mjs",
+      "sha256": "17eabc4789502f738f87b85daf2a78329554d62001d9440fdd7840c4c75fb27a",
+      "bytes": 4875
+    },
+    {
+      "file": "domain-compatibility.json",
+      "sha256": "f41f9b045b0281d025118e5cfb5a3767ece6d5ecaf362fc6f0937d0cc48ae4e2",
+      "bytes": 875
+    },
+    {
+      "file": "field-catalog.csv",
+      "sha256": "e8ac2d69d733e3f2652c4ec65f36817d43af6e853cd2643e0a6bd1b14be55242",
+      "bytes": 785932
+    },
+    {
+      "file": "field-catalog.json",
+      "sha256": "816a38b66c7f7ed254cb2c2f10c083265bc07f479a36fe1f2a150b1eaa6aa385",
+      "bytes": 5209111
+    },
+    {
+      "file": "findings.json",
+      "sha256": "61b078d548801980aa6b319af8ae2cbf31402ea3a8a773ff879a6df4f6e8caa9",
+      "bytes": 42718
+    },
+    {
+      "file": "freshness.json",
+      "sha256": "90d5eb43ea875e1c66dbd30f9aa945d6342d8189c616f6093cf319c7a48ea7d1",
+      "bytes": 2058
+    },
+    {
+      "file": "historical-spec-locations.json",
+      "sha256": "66f34d9ee3dc8aad2cf1d14515e939ccc1cb0d7b5d2acde2e7f8d3c3409ce37f",
+      "bytes": 3270
+    },
+    {
+      "file": "local-schema.json",
+      "sha256": "9d9902c3b7e9cea93019c0aa2443821c1f214917c6b5690d9b36c43219087413",
+      "bytes": 1965581
+    },
+    {
+      "file": "missing-historical-context.json",
+      "sha256": "9066b94c3bfdcfe54e23ad340970096141d01e511058d58b03d476a5808c5529",
+      "bytes": 6153
+    },
+    {
+      "file": "proposed-model-comparison.json",
+      "sha256": "53efeb4f73c40567fa807182bcb7fbb4355fe258105aca1c5ebf25aa72f36cdd",
+      "bytes": 16246
+    },
+    {
+      "file": "source-evidence.json",
+      "sha256": "27b1a7fffbb52ba111944af6d83ce1d23cd540a29dcec15e97a9be3bd1f42bdb",
+      "bytes": 3746979
+    },
+    {
+      "file": "summary.json",
+      "sha256": "34c25a4f1a01bee2811e1041eeed869dd116cefa2059566751d246b1f02fd8d3",
+      "bytes": 1429
+    },
+    {
+      "file": "validation.json",
+      "sha256": "56624aa423017def81475498a92a9ef4d60429ea2fb41b625333c36deead1e20",
+      "bytes": 278
+    },
+    {
+      "file": "verification.json",
+      "sha256": "b9b0be90029d2fc787760b604f37294231a0f45368715250907998abf9e8de25",
+      "bytes": 414
+    }
+  ]
+}

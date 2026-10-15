@@ -1,0 +1,64 @@
+{
+  "prepared": "2026-10-09",
+  "frontend": {
+    "command": "npm run verify",
+    "exit_code": 0,
+    "test_files_passed": 23,
+    "tests_passed": 233,
+    "limitations": [
+      "build chunk size warning",
+      "no full browser/UAT/performance/all-screen accessibility proof"
+    ]
+  },
+  "backend": {
+    "command": "TEST_DATABASE_URL='' DATABASE_URL='' npm run verify",
+    "exit_code": 1,
+    "static_checks": "typecheck/lint/knip/dependency-cruiser passed",
+    "test_files_passed": 10,
+    "tests_passed": 88,
+    "test_files_skipped": 29,
+    "tests_skipped": 164,
+    "coverage": {
+      "lines": {
+        "total": 12432,
+        "covered": 3728,
+        "skipped": 0,
+        "pct": 29.98
+      },
+      "statements": {
+        "total": 12432,
+        "covered": 3728,
+        "skipped": 0,
+        "pct": 29.98
+      },
+      "functions": {
+        "total": 339,
+        "covered": 65,
+        "skipped": 0,
+        "pct": 19.17
+      },
+      "branches": {
+        "total": 229,
+        "covered": 200,
+        "skipped": 0,
+        "pct": 87.33
+      },
+      "branchesTrue": {
+        "total": 0,
+        "covered": 0,
+        "skipped": 0,
+        "pct": 100
+      }
+    },
+    "failure": "coverage statements/functions/lines below80; dedicated DB suites intentionally unavailable/skipped",
+    "separate_build": {
+      "command": "npm run build",
+      "exit_code": 0
+    }
+  },
+  "business_database_accessed": false,
+  "source_findings": 37,
+  "canonical_requirements": 119,
+  "master_build_tasks": 60,
+  "all_sow_rows": 176
+}

@@ -114,6 +114,14 @@ const assign = guard()
   )
   .output(z.object({ assignmentId: z.number() }))
   .handler(async ({ input, context }) => {
+    if (input.employeeId !== undefined && input.employeeId !== null) {
+      const { assertEmployeesInScope } = await import('../../core/rbac/employee-scope.js');
+      await assertEmployeesInScope(
+        context.db,
+        { ...context.permissionAccess, actorEmployeeId: context.user.employee_id },
+        [input.employeeId],
+      );
+    }
     try {
       return await assignAsset(context.db, {
         ...input,
@@ -163,6 +171,12 @@ const heldByEmployee = guard()
     ),
   )
   .handler(async ({ input, context }) => {
+    const { assertEmployeesInScope } = await import('../../core/rbac/employee-scope.js');
+    await assertEmployeesInScope(
+      context.db,
+      { ...context.permissionAccess, actorEmployeeId: context.user.employee_id },
+      [input.employeeId],
+    );
     return assetsHeldByEmployee(context.db, input.employeeId);
   });
 

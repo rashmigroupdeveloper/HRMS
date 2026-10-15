@@ -12,8 +12,16 @@ import {
   reportR4Exceptions,
   reportR5Ot,
   reportR6AbsenceCases,
+  reportR21Offers,
+  reportR23Transfers,
   reportR24Boarding,
+  reportR25Probation,
+  reportR26Attrition,
   reportR27Headcount,
+  reportR28Assets,
+  reportR29Helpdesk,
+  reportR30Policies,
+  reportR31Claims,
 } from './reports.service.js';
 
 const R2_COLS: ExcelColumn[] = [
@@ -131,6 +139,126 @@ const R27_COLS: ExcelColumn[] = [
   { header: 'Count', key: 'count', width: 10 },
 ];
 
+const R21_COLS: ExcelColumn[] = [
+  { header: 'ID', key: 'id', width: 8 },
+  { header: 'Candidate Name', key: 'candidateName', width: 24 },
+  { header: 'Org Unit', key: 'orgUnit', width: 20 },
+  { header: 'Designation Offered', key: 'designationOffered', width: 22 },
+  { header: 'Proposed DOJ', key: 'doj', width: 14 },
+  { header: 'Offer Date', key: 'offerDate', width: 14 },
+  { header: 'Offered Salary', key: 'offeredSalary', width: 16 },
+  { header: 'Probation %', key: 'probationPercentage', width: 12 },
+  { header: 'LOI Status', key: 'loiStatus', width: 16 },
+  { header: 'Work Location', key: 'workLocation', width: 18 },
+  { header: 'Onboarding Status', key: 'status', width: 16 },
+];
+
+const R23_COLS: ExcelColumn[] = [
+  { header: 'ID', key: 'id', width: 8 },
+  { header: 'Emp ID', key: 'ecode', width: 12 },
+  { header: 'Employee Name', key: 'employeeName', width: 22 },
+  { header: 'From Entity', key: 'fromCompany', width: 20 },
+  { header: 'To Entity', key: 'toCompany', width: 20 },
+  { header: 'From Dept', key: 'fromDepartment', width: 18 },
+  { header: 'To Dept', key: 'toDepartment', width: 18 },
+  { header: 'From Location', key: 'fromLocation', width: 18 },
+  { header: 'To Location', key: 'toLocation', width: 18 },
+  { header: 'Transfer Type', key: 'transferType', width: 16 },
+  { header: 'Effective Date', key: 'effectiveDate', width: 14 },
+  { header: 'Status', key: 'status', width: 12 },
+  { header: 'Approved By', key: 'approverName', width: 20 },
+];
+
+const R25_COLS: ExcelColumn[] = [
+  { header: 'ID', key: 'id', width: 8 },
+  { header: 'Emp ID', key: 'ecode', width: 12 },
+  { header: 'Employee Name', key: 'employeeName', width: 22 },
+  { header: 'Department', key: 'department', width: 18 },
+  { header: 'Designation', key: 'designation', width: 20 },
+  { header: 'DOJ', key: 'doj', width: 12 },
+  { header: 'Probation Due Date', key: 'dueDate', width: 18 },
+  { header: 'Status', key: 'status', width: 14 },
+  { header: 'Outcome', key: 'outcome', width: 14 },
+  { header: 'Extension (Months)', key: 'extensionMonths', width: 18 },
+  { header: 'Decided By', key: 'decidedBy', width: 20 },
+  { header: 'Overdue?', key: 'isOverdue', width: 10 },
+];
+
+const R26_COLS: ExcelColumn[] = [
+  { header: 'ID', key: 'id', width: 8 },
+  { header: 'Emp ID', key: 'ecode', width: 12 },
+  { header: 'Employee Name', key: 'employeeName', width: 22 },
+  { header: 'Entity', key: 'company', width: 20 },
+  { header: 'Department', key: 'department', width: 18 },
+  { header: 'Location', key: 'location', width: 18 },
+  { header: 'Category', key: 'category', width: 14 },
+  { header: 'DOJ', key: 'doj', width: 12 },
+  { header: 'DOL / LWD', key: 'dol', width: 12 },
+  { header: 'Tenure Band', key: 'tenureBand', width: 14 },
+  { header: 'Reason', key: 'reason', width: 24 },
+  { header: 'Resignation Date', key: 'resignationDate', width: 16 },
+  { header: 'Notice Days', key: 'noticePeriodDays', width: 12 },
+  { header: 'Shortfall Days', key: 'shortfallDays', width: 14 },
+  { header: 'Exit Type', key: 'exitType', width: 14 },
+  { header: 'Status', key: 'status', width: 12 },
+];
+
+const R28_COLS: ExcelColumn[] = [
+  { header: 'Asset ID', key: 'assetId', width: 10 },
+  { header: 'Asset No', key: 'assetNo', width: 14 },
+  { header: 'Category', key: 'category', width: 16 },
+  { header: 'Description', key: 'description', width: 24 },
+  { header: 'Serial No', key: 'serialNo', width: 18 },
+  { header: 'Status', key: 'status', width: 14 },
+  { header: 'Entity', key: 'company', width: 20 },
+  { header: 'Location', key: 'location', width: 18 },
+  { header: 'Holder Name', key: 'holderName', width: 22 },
+  { header: 'Holder Emp ID', key: 'holderEcode', width: 14 },
+  { header: 'Holder Kind', key: 'holderKind', width: 14 },
+  { header: 'Assigned Date', key: 'assignedAt', width: 14 },
+  { header: 'Warranty Till', key: 'warrantyTill', width: 14 },
+];
+
+const R29_COLS: ExcelColumn[] = [
+  { header: 'Month', key: 'month', width: 12 },
+  { header: 'Category', key: 'category', width: 20 },
+  { header: 'Total Tickets', key: 'totalTickets', width: 14 },
+  { header: 'Resolved', key: 'resolvedTickets', width: 12 },
+  { header: 'Resolution Rate %', key: 'resolutionRatePct', width: 18 },
+  { header: 'SLA Breached', key: 'breachedCount', width: 14 },
+  { header: 'Escalated', key: 'escalatedCount', width: 12 },
+  { header: 'Avg 1st Response (h)', key: 'avgFirstResponseHours', width: 20 },
+  { header: 'Avg Resolution (h)', key: 'avgResolutionHours', width: 18 },
+];
+
+const R30_COLS: ExcelColumn[] = [
+  { header: 'Policy ID', key: 'policyId', width: 10 },
+  { header: 'Title', key: 'title', width: 28 },
+  { header: 'Effective Date', key: 'effectiveDate', width: 14 },
+  { header: 'Requires Acknowledgment', key: 'requiresAcknowledgment', width: 24 },
+  { header: 'Targeted Headcount', key: 'targetedCount', width: 18 },
+  { header: 'Acknowledged', key: 'acknowledgedCount', width: 16 },
+  { header: 'Pending (Laggards)', key: 'pendingCount', width: 18 },
+  { header: 'Compliance %', key: 'compliancePct', width: 14 },
+];
+
+const R31_COLS: ExcelColumn[] = [
+  { header: 'Claim ID', key: 'claimId', width: 10 },
+  { header: 'Emp ID', key: 'ecode', width: 12 },
+  { header: 'Employee Name', key: 'employeeName', width: 22 },
+  { header: 'Department', key: 'department', width: 18 },
+  { header: 'Claim Type', key: 'claimType', width: 18 },
+  { header: 'Period From', key: 'periodFrom', width: 12 },
+  { header: 'Period To', key: 'periodTo', width: 12 },
+  { header: 'Claimed (₹)', key: 'claimedAmount', width: 14 },
+  { header: 'Approved (₹)', key: 'approvedAmount', width: 14 },
+  { header: 'Status', key: 'status', width: 12 },
+  { header: 'Bills Count', key: 'billsCount', width: 12 },
+  { header: 'Verified Bills', key: 'verifiedBillsCount', width: 14 },
+  { header: 'Paid in Run ID', key: 'paidInRunId', width: 14 },
+  { header: 'Rejection Reason', key: 'rejectionReason', width: 24 },
+];
+
 export async function exportR2Excel(
   db: Kysely<Database>,
   params: {
@@ -221,4 +349,92 @@ export async function exportR27Excel(
     R27_COLS,
     await reportR27Headcount(db, params),
   );
+}
+
+export async function exportR21Excel(
+  db: Kysely<Database>,
+  params: {
+    companyId?: number | undefined;
+    fromDate?: string | undefined;
+    toDate?: string | undefined;
+    status?: string | undefined;
+    scope?: EmployeeScope | undefined;
+  } = {},
+): Promise<Buffer> {
+  return rowsToExcelBuffer('R21 Offers', R21_COLS, await reportR21Offers(db, params));
+}
+
+export async function exportR23Excel(
+  db: Kysely<Database>,
+  params: {
+    companyId?: number | undefined;
+    fromDate?: string | undefined;
+    toDate?: string | undefined;
+    scope?: EmployeeScope | undefined;
+  } = {},
+): Promise<Buffer> {
+  return rowsToExcelBuffer('R23 Transfers', R23_COLS, await reportR23Transfers(db, params));
+}
+
+export async function exportR25Excel(
+  db: Kysely<Database>,
+  params: {
+    companyId?: number | undefined;
+    status?: string | undefined;
+    scope?: EmployeeScope | undefined;
+  } = {},
+): Promise<Buffer> {
+  return rowsToExcelBuffer('R25 Probation', R25_COLS, await reportR25Probation(db, params));
+}
+
+export async function exportR26Excel(
+  db: Kysely<Database>,
+  params: {
+    companyId?: number | undefined;
+    fromDate?: string | undefined;
+    toDate?: string | undefined;
+    scope?: EmployeeScope | undefined;
+  } = {},
+): Promise<Buffer> {
+  return rowsToExcelBuffer('R26 Attrition', R26_COLS, await reportR26Attrition(db, params));
+}
+
+export async function exportR28Excel(
+  db: Kysely<Database>,
+  params: {
+    companyId?: number | undefined;
+    status?: string | undefined;
+    category?: string | undefined;
+    scope?: EmployeeScope | undefined;
+  } = {},
+): Promise<Buffer> {
+  return rowsToExcelBuffer('R28 Asset Register', R28_COLS, await reportR28Assets(db, params));
+}
+
+export async function exportR29Excel(
+  db: Kysely<Database>,
+  params: {
+    month?: string | undefined;
+  } = {},
+): Promise<Buffer> {
+  return rowsToExcelBuffer('R29 Helpdesk SLA', R29_COLS, await reportR29Helpdesk(db, params));
+}
+
+export async function exportR30Excel(
+  db: Kysely<Database>,
+): Promise<Buffer> {
+  return rowsToExcelBuffer('R30 Policy Compliance', R30_COLS, await reportR30Policies(db));
+}
+
+export async function exportR31Excel(
+  db: Kysely<Database>,
+  params: {
+    companyId?: number | undefined;
+    fromDate?: string | undefined;
+    toDate?: string | undefined;
+    status?: string | undefined;
+    scope?: EmployeeScope | undefined;
+  } = {},
+): Promise<Buffer> {
+  return rowsToExcelBuffer('R31 Reimbursements', R31_COLS, await reportR31Claims(db, params));
 }

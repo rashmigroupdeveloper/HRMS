@@ -1,0 +1,6024 @@
+{
+  "prepared": "2026-10-09",
+  "git_head": "82f59253d34f8f9c5a2fd872b073de34737ae9b6",
+  "snapshot_note": "Selected source inventory and locators, complemented by deep-code-index.json (342 files), packs10/11/12 and verification-2026-10-09.json. Hashes match the current checkout on 09 Oct 2026. Full checkout and sanctioned external sources required; source hashes are not DB/deployment proof.",
+  "files": [
+    {
+      "path": "backend/src/api/handler.ts",
+      "sha256": "06a9031cc955f93863a90696c63498f45b10e517b180c4ad652a49c09d5db654",
+      "lines": 65,
+      "exports": [
+        {
+          "line": 23,
+          "symbol": "AppDeps"
+        },
+        {
+          "line": 31,
+          "symbol": "orpcMiddleware"
+        },
+        {
+          "line": 54,
+          "symbol": "getOpenApiSpec"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/api/orpc.ts",
+      "sha256": "68724f7a02ff188ee242f3476cf6e83fbdbfd5e511b65a7c5f2e29d99cd5c5a2",
+      "lines": 128,
+      "exports": [
+        {
+          "line": 19,
+          "symbol": "AppContext"
+        },
+        {
+          "line": 27,
+          "symbol": "base"
+        },
+        {
+          "line": 29,
+          "symbol": "AuthedUser"
+        },
+        {
+          "line": 36,
+          "symbol": "authed"
+        },
+        {
+          "line": 93,
+          "symbol": "withAnyPermission"
+        },
+        {
+          "line": 111,
+          "symbol": "withPermission"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/api/rate-limits.ts",
+      "sha256": "a88fabe08d8a788b81f3acc03da4ea96e1d47f03185a6df4b963fe0109912cef",
+      "lines": 23,
+      "exports": [
+        {
+          "line": 2,
+          "symbol": "RateLimits"
+        },
+        {
+          "line": 8,
+          "symbol": "rateLimitsFromEnv"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/api/router.ts",
+      "sha256": "6b54335b9095728eac31679ec91f62ba17390ea4f43f8ef45dae46f8788c9185",
+      "lines": 51,
+      "exports": [
+        {
+          "line": 27,
+          "symbol": "appRouter"
+        },
+        {
+          "line": 51,
+          "symbol": "AppRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/api/zod.ts",
+      "sha256": "a6cc37b67b4761e01610900c523febd988cb6b593c29202031966248e562c4c8",
+      "lines": 42,
+      "exports": [
+        {
+          "line": 13,
+          "symbol": "booleanQuery"
+        },
+        {
+          "line": 32,
+          "symbol": "csvList"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/app.ts",
+      "sha256": "2588e6dc37ec9c99eb37b91c79afde56fdeee9e23d926c1b994d24fbe191b8f6",
+      "lines": 232,
+      "exports": [
+        {
+          "line": 72,
+          "symbol": "createApp"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/audit/audit.service.ts",
+      "sha256": "bcf5f849cc7698555031aa6301da03070a631ec7a04a6686df199d8e38313913",
+      "lines": 143,
+      "exports": [
+        {
+          "line": 9,
+          "symbol": "AuditEntry"
+        },
+        {
+          "line": 25,
+          "symbol": "writeAudit"
+        },
+        {
+          "line": 138,
+          "symbol": "verifyAuditChain"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/auth/jwt.ts",
+      "sha256": "a164ca9d171f63c13fd0f515b1f1d53fea00f3ba8cd0fd90aff9a7b43098276f",
+      "lines": 65,
+      "exports": [
+        {
+          "line": 19,
+          "symbol": "TokenClaims"
+        },
+        {
+          "line": 45,
+          "symbol": "signAccessToken"
+        },
+        {
+          "line": 49,
+          "symbol": "signRefreshToken"
+        },
+        {
+          "line": 54,
+          "symbol": "verifyToken"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/config/env.ts",
+      "sha256": "1219225663be4d28d70f898954f40db5e912150fffb47377c7857f7e428af3f6",
+      "lines": 24,
+      "exports": [
+        {
+          "line": 15,
+          "symbol": "Env"
+        },
+        {
+          "line": 17,
+          "symbol": "loadEnv"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/dates.ts",
+      "sha256": "b074817c002563827d77c9c814ca054174193172afef7d7231dcd0f4a8c8de67",
+      "lines": 51,
+      "exports": [
+        {
+          "line": 17,
+          "symbol": "istDateTime"
+        },
+        {
+          "line": 23,
+          "symbol": "istDateString"
+        },
+        {
+          "line": 31,
+          "symbol": "formatDbDate"
+        },
+        {
+          "line": 39,
+          "symbol": "addDaysIso"
+        },
+        {
+          "line": 46,
+          "symbol": "previousWeekStartIso"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/db/database.ts",
+      "sha256": "3a8f1133dfc1d43c906d409d2c83ea68c8a13f46ad2728956f6cc97cd1d1812d",
+      "lines": 26,
+      "exports": [
+        {
+          "line": 17,
+          "symbol": "createDatabase"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/db/types.ts",
+      "sha256": "8a766e44e98930cb0625b52dd0575f381d4cb5addaf91f6a23b8f2808ccfdb06",
+      "lines": 973,
+      "exports": [
+        {
+          "line": 11,
+          "symbol": "UsersTable"
+        },
+        {
+          "line": 25,
+          "symbol": "RolesTable"
+        },
+        {
+          "line": 34,
+          "symbol": "PermissionsTable"
+        },
+        {
+          "line": 41,
+          "symbol": "RolePermissionsTable"
+        },
+        {
+          "line": 50,
+          "symbol": "UserRolesTable"
+        },
+        {
+          "line": 60,
+          "symbol": "AuditLogTable"
+        },
+        {
+          "line": 82,
+          "symbol": "SettingsTable"
+        },
+        {
+          "line": 93,
+          "symbol": "WfDefinitionsTable"
+        },
+        {
+          "line": 102,
+          "symbol": "WfRequestStatus"
+        },
+        {
+          "line": 104,
+          "symbol": "WfRequestsTable"
+        },
+        {
+          "line": 117,
+          "symbol": "WfStepAction"
+        },
+        {
+          "line": 120,
+          "symbol": "WfRequestStepsTable"
+        },
+        {
+          "line": 135,
+          "symbol": "WfDelegationsTable"
+        },
+        {
+          "line": 146,
+          "symbol": "NotificationsTable"
+        },
+        {
+          "line": 163,
+          "symbol": "EventSubscriptionsTable"
+        },
+        {
+          "line": 173,
+          "symbol": "CompaniesTable"
+        },
+        {
+          "line": 191,
+          "symbol": "LocationsTable"
+        },
+        {
+          "line": 201,
+          "symbol": "CostCentersTable"
+        },
+        {
+          "line": 210,
+          "symbol": "DepartmentsTable"
+        },
+        {
+          "line": 217,
+          "symbol": "OrgUnitsTable"
+        },
+        {
+          "line": 226,
+          "symbol": "DesignationsTable"
+        },
+        {
+          "line": 233,
+          "symbol": "GradesTable"
+        },
+        {
+          "line": 242,
+          "symbol": "EmploymentCategory"
+        },
+        {
+          "line": 243,
+          "symbol": "EmployeeStatus"
+        },
+        {
+          "line": 244,
+          "symbol": "ContractType"
+        },
+        {
+          "line": 247,
+          "symbol": "EmployeesTable"
+        },
+        {
+          "line": 306,
+          "symbol": "ReportingTreeTable"
+        },
+        {
+          "line": 312,
+          "symbol": "EmployeeHistoryTable"
+        },
+        {
+          "line": 325,
+          "symbol": "EmployeeFamilyTable"
+        },
+        {
+          "line": 339,
+          "symbol": "DocumentsTable"
+        },
+        {
+          "line": 353,
+          "symbol": "LetterTemplatesTable"
+        },
+        {
+          "line": 366,
+          "symbol": "LettersTable"
+        },
+        {
+          "line": 381,
+          "symbol": "PoliciesTable"
+        },
+        {
+          "line": 395,
+          "symbol": "PolicyAcknowledgmentsTable"
+        },
+        {
+          "line": 403,
+          "symbol": "AttAbsenceCasesTable"
+        },
+        {
+          "line": 418,
+          "symbol": "AttDevicesTable"
+        },
+        {
+          "line": 431,
+          "symbol": "AttIngestWatermarksTable"
+        },
+        {
+          "line": 438,
+          "symbol": "AttDeviceWatermarksTable"
+        },
+        {
+          "line": 445,
+          "symbol": "AttShiftsTable"
+        },
+        {
+          "line": 464,
+          "symbol": "AttEmployeeShiftsTable"
+        },
+        {
+          "line": 473,
+          "symbol": "AttRostersTable"
+        },
+        {
+          "line": 484,
+          "symbol": "AttHolidaysTable"
+        },
+        {
+          "line": 493,
+          "symbol": "DayStatus"
+        },
+        {
+          "line": 496,
+          "symbol": "AttDayRecordsTable"
+        },
+        {
+          "line": 521,
+          "symbol": "AttRecomputeQueueTable"
+        },
+        {
+          "line": 528,
+          "symbol": "AttRegularizationsTable"
+        },
+        {
+          "line": 545,
+          "symbol": "AttOvertimeEntriesTable"
+        },
+        {
+          "line": 564,
+          "symbol": "AttMonthLocksTable"
+        },
+        {
+          "line": 575,
+          "symbol": "AttManagerMonthApprovalsTable"
+        },
+        {
+          "line": 588,
+          "symbol": "ReportingMusterMonthTable"
+        },
+        {
+          "line": 624,
+          "symbol": "LeaveTxnType"
+        },
+        {
+          "line": 634,
+          "symbol": "LeaveApplicationStatus"
+        },
+        {
+          "line": 635,
+          "symbol": "SandwichRule"
+        },
+        {
+          "line": 638,
+          "symbol": "LvLeaveTypesTable"
+        },
+        {
+          "line": 658,
+          "symbol": "LvLedgerTable"
+        },
+        {
+          "line": 673,
+          "symbol": "LvApplicationsTable"
+        },
+        {
+          "line": 692,
+          "symbol": "LvRestrictedHolidaysTable"
+        },
+        {
+          "line": 700,
+          "symbol": "LvRhSelectionsTable"
+        },
+        {
+          "line": 711,
+          "symbol": "AttQuarantinedSwipesTable"
+        },
+        {
+          "line": 726,
+          "symbol": "AttSwipeEventsTable"
+        },
+        {
+          "line": 751,
+          "symbol": "AssetStatus"
+        },
+        {
+          "line": 752,
+          "symbol": "HolderKind"
+        },
+        {
+          "line": 753,
+          "symbol": "ReturnCondition"
+        },
+        {
+          "line": 754,
+          "symbol": "MaintenanceKind"
+        },
+        {
+          "line": 757,
+          "symbol": "AssetsTable"
+        },
+        {
+          "line": 774,
+          "symbol": "AssetAssignmentsTable"
+        },
+        {
+          "line": 791,
+          "symbol": "AssetMaintenanceTable"
+        },
+        {
+          "line": 807,
+          "symbol": "TicketStatus"
+        },
+        {
+          "line": 808,
+          "symbol": "TicketPriority"
+        },
+        {
+          "line": 811,
+          "symbol": "HdCategoriesTable"
+        },
+        {
+          "line": 824,
+          "symbol": "HdTicketsTable"
+        },
+        {
+          "line": 845,
+          "symbol": "HdTicketMessagesTable"
+        },
+        {
+          "line": 857,
+          "symbol": "EngAnnouncementsTable"
+        },
+        {
+          "line": 870,
+          "symbol": "EngPollsTable"
+        },
+        {
+          "line": 885,
+          "symbol": "EngPollResponsesTable"
+        },
+        {
+          "line": 899,
+          "symbol": "KpiDailyTable"
+        },
+        {
+          "line": 911,
+          "symbol": "Database"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/excel/workbook.ts",
+      "sha256": "d79835eb8cb0d02d5740eb074b756e7e7a9d7624dc0a9d227009d1a4a0d3a565",
+      "lines": 55,
+      "exports": [
+        {
+          "line": 16,
+          "symbol": "ExcelColumn"
+        },
+        {
+          "line": 33,
+          "symbol": "rowsToExcelBuffer"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/logger.ts",
+      "sha256": "12b9bbeecd9cccb9c5703cbbc9f681e962d10586e39233edb7b12c7c63a63dd1",
+      "lines": 14,
+      "exports": [
+        {
+          "line": 7,
+          "symbol": "logger"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/money/index.ts",
+      "sha256": "5dd65cd59c1730b11594b647e7b4be7dfaff6f8d182be3031190fdce59f36f7b",
+      "lines": 31,
+      "exports": []
+    },
+    {
+      "path": "backend/src/core/money/money.ts",
+      "sha256": "1be94c33013f3f25c0ca8be12f277b4b78dec102dfb190b5a8075f94f56fc140",
+      "lines": 131,
+      "exports": [
+        {
+          "line": 17,
+          "symbol": "Paise"
+        },
+        {
+          "line": 20,
+          "symbol": "RoundingMode"
+        },
+        {
+          "line": 30,
+          "symbol": "paise"
+        },
+        {
+          "line": 36,
+          "symbol": "ZERO"
+        },
+        {
+          "line": 42,
+          "symbol": "fromRupees"
+        },
+        {
+          "line": 54,
+          "symbol": "toRupees"
+        },
+        {
+          "line": 58,
+          "symbol": "add"
+        },
+        {
+          "line": 62,
+          "symbol": "subtract"
+        },
+        {
+          "line": 66,
+          "symbol": "sum"
+        },
+        {
+          "line": 70,
+          "symbol": "isNegative"
+        },
+        {
+          "line": 90,
+          "symbol": "percentBp"
+        },
+        {
+          "line": 99,
+          "symbol": "mulDiv"
+        },
+        {
+          "line": 109,
+          "symbol": "roundToRupee"
+        },
+        {
+          "line": 113,
+          "symbol": "min"
+        },
+        {
+          "line": 117,
+          "symbol": "max"
+        },
+        {
+          "line": 129,
+          "symbol": "formatINR"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/money/rounding-policy.ts",
+      "sha256": "e590c7a013874ecf70aad4479c297d5cb8943f6739703ec3516994e3e35d5553",
+      "lines": 62,
+      "exports": [
+        {
+          "line": 17,
+          "symbol": "roundPfContribution"
+        },
+        {
+          "line": 25,
+          "symbol": "roundEsicContribution"
+        },
+        {
+          "line": 34,
+          "symbol": "roundMonthlyTds"
+        },
+        {
+          "line": 41,
+          "symbol": "roundGratuity"
+        },
+        {
+          "line": 51,
+          "symbol": "roundNetPay"
+        },
+        {
+          "line": 60,
+          "symbol": "roundOtPay"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/rbac/employee-scope.ts",
+      "sha256": "0e3f4a55f6550582e75c863e3688a6770c2bf75c0b17842c2989ba06790467fb",
+      "lines": 56,
+      "exports": [
+        {
+          "line": 6,
+          "symbol": "EmployeeScope"
+        },
+        {
+          "line": 10,
+          "symbol": "employeeScopeSql"
+        },
+        {
+          "line": 39,
+          "symbol": "assertEmployeesInScope"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/rbac/permissions.service.ts",
+      "sha256": "253b126afa3f268e0c5c68bf6006b70884501a49ca719fcacf8c3d9a91a26324",
+      "lines": 81,
+      "exports": [
+        {
+          "line": 14,
+          "symbol": "PermissionAccess"
+        },
+        {
+          "line": 22,
+          "symbol": "getUserPermissions"
+        },
+        {
+          "line": 38,
+          "symbol": "getUserPermissionAccess"
+        },
+        {
+          "line": 72,
+          "symbol": "getUserRoleCodes"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/rbac/seed-data.ts",
+      "sha256": "a9fbbfa726b8193d12787c61141c75d2c31f6589b4ccaedfcddbcfb1c633e8e9",
+      "lines": 251,
+      "exports": [
+        {
+          "line": 17,
+          "symbol": "RoleCode"
+        },
+        {
+          "line": 29,
+          "symbol": "Scope"
+        },
+        {
+          "line": 31,
+          "symbol": "RoleSeed"
+        },
+        {
+          "line": 38,
+          "symbol": "ROLES"
+        },
+        {
+          "line": 51,
+          "symbol": "PERMISSIONS"
+        },
+        {
+          "line": 93,
+          "symbol": "PermissionCode"
+        },
+        {
+          "line": 95,
+          "symbol": "Grant"
+        },
+        {
+          "line": 113,
+          "symbol": "ROLE_GRANTS"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/rbac/seed.ts",
+      "sha256": "c3e129b30493da9d07288ce9f6081ff1a2b4a153096eb05eb2b357bd49841c87",
+      "lines": 79,
+      "exports": []
+    },
+    {
+      "path": "backend/src/core/storage/documents.ts",
+      "sha256": "ac3bf2b60e628d7d6f8c2438fdc35c37e7a735e79b31995eb146d7c5aadafe96",
+      "lines": 51,
+      "exports": [
+        {
+          "line": 13,
+          "symbol": "CreateDocumentInput"
+        },
+        {
+          "line": 23,
+          "symbol": "createDocument"
+        },
+        {
+          "line": 48,
+          "symbol": "readDocument"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/core/storage/index.ts",
+      "sha256": "d56269524a445f7cdc4362400747f991423e7d8598e21d5bdc0ecfaf3aa2a71c",
+      "lines": 4,
+      "exports": []
+    },
+    {
+      "path": "backend/src/core/storage/storage.ts",
+      "sha256": "471ed0f1705ff92626c296736f610495246c73f8235ca73843b230745d7473d2",
+      "lines": 46,
+      "exports": [
+        {
+          "line": 11,
+          "symbol": "StorageAdapter"
+        },
+        {
+          "line": 43,
+          "symbol": "getStorage"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/index.ts",
+      "sha256": "00ada10da620c6dc73c2292e3faff604423f8d1d2aa2609833309083a9ceafe3",
+      "lines": 18,
+      "exports": []
+    },
+    {
+      "path": "backend/src/jobs/worker.ts",
+      "sha256": "f9bf8b0b5456248b6ea49e8e9ef2ef516ecd2a33e71533ad711bc65cfa800938",
+      "lines": 183,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/assets/assets.router.ts",
+      "sha256": "dfe65cc3edb4afb8a2b93d855ff682891ca20a02d14051e2d390efc72dbb0bd4",
+      "lines": 323,
+      "exports": [
+        {
+          "line": 312,
+          "symbol": "assetsRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/assets/assets.service.ts",
+      "sha256": "248df9561f160131b7400d812d4943984379f4c226480c69032f67d1904ce601",
+      "lines": 537,
+      "exports": [
+        {
+          "line": 25,
+          "symbol": "AssetRow"
+        },
+        {
+          "line": 68,
+          "symbol": "listAssets"
+        },
+        {
+          "line": 178,
+          "symbol": "upsertAsset"
+        },
+        {
+          "line": 254,
+          "symbol": "assignAsset"
+        },
+        {
+          "line": 335,
+          "symbol": "returnAsset"
+        },
+        {
+          "line": 402,
+          "symbol": "assetsHeldByEmployee"
+        },
+        {
+          "line": 424,
+          "symbol": "nonReturnedByLeavers"
+        },
+        {
+          "line": 449,
+          "symbol": "logMaintenance"
+        },
+        {
+          "line": 509,
+          "symbol": "assetMaintenance"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/assets/index.ts",
+      "sha256": "d77007dcbc6f7201c777d3af6ef757995605e69cca9d1d6f8098b21d165c5280",
+      "lines": 3,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/attendance/absence.router.ts",
+      "sha256": "3fdcb55caeb63ed7821c4660b640c912aae3d5731c3e99de8bd90ff22a263189",
+      "lines": 97,
+      "exports": [
+        {
+          "line": 97,
+          "symbol": "absenceRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/absence.service.ts",
+      "sha256": "d6b413096e6cb2b29946dedc69150339f1e6ea0c71caee841ff4281bd3673162",
+      "lines": 257,
+      "exports": [
+        {
+          "line": 25,
+          "symbol": "AbsenceCaseRow"
+        },
+        {
+          "line": 59,
+          "symbol": "AbsenceScanResult"
+        },
+        {
+          "line": 68,
+          "symbol": "runAbsenceScan"
+        },
+        {
+          "line": 191,
+          "symbol": "setAbsenceCaseStage"
+        },
+        {
+          "line": 219,
+          "symbol": "issueAbsenceCaseLetter"
+        },
+        {
+          "line": 250,
+          "symbol": "listAbsenceCases"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/attendance-config.router.ts",
+      "sha256": "bc48ce8c43bb0990cbf87e9061cb107c67eb46bcdd8d28ff39a8d407bc86f5c0",
+      "lines": 500,
+      "exports": [
+        {
+          "line": 487,
+          "symbol": "attendanceConfigRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "sha256": "4b335b8517ac303d24e769d021e48d5e0621dd0082fae0d1003e1ef111471415",
+      "lines": 195,
+      "exports": [
+        {
+          "line": 188,
+          "symbol": "attendanceRequestsRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/attendance.router.ts",
+      "sha256": "8f5d619c0fc455814532bf6ecd3002cefe155d868b855f1a476a2186f4eb988b",
+      "lines": 204,
+      "exports": [
+        {
+          "line": 197,
+          "symbol": "attendanceRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/day-status.service.ts",
+      "sha256": "04fff5a74a47d79e7c8f8f0e27f785ad4514fb5c3484d924ddfca22b84060d92",
+      "lines": 668,
+      "exports": [
+        {
+          "line": 34,
+          "symbol": "AttendancePolicy"
+        },
+        {
+          "line": 45,
+          "symbol": "loadAttendancePolicy"
+        },
+        {
+          "line": 60,
+          "symbol": "ResolvedShift"
+        },
+        {
+          "line": 70,
+          "symbol": "resolveDay"
+        },
+        {
+          "line": 137,
+          "symbol": "FinalizationHoldReason"
+        },
+        {
+          "line": 142,
+          "symbol": "AbsenceFinalizationReadiness"
+        },
+        {
+          "line": 149,
+          "symbol": "FinalizationHold"
+        },
+        {
+          "line": 174,
+          "symbol": "getAbsenceFinalizationReadiness"
+        },
+        {
+          "line": 283,
+          "symbol": "ComputedDay"
+        },
+        {
+          "line": 303,
+          "symbol": "computeDayStatus"
+        },
+        {
+          "line": 392,
+          "symbol": "recomputeDay"
+        },
+        {
+          "line": 505,
+          "symbol": "listFinalizationHolds"
+        },
+        {
+          "line": 552,
+          "symbol": "drainRecomputeQueue"
+        },
+        {
+          "line": 586,
+          "symbol": "setManualStatus"
+        },
+        {
+          "line": 638,
+          "symbol": "closeWeek"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/index.ts",
+      "sha256": "71c67ac6c4e7d6ac7054aa0e5ba3455f3b8bdc77aa8003323f8a08a4aef38b5b",
+      "lines": 49,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/attendance/ingest.service.ts",
+      "sha256": "6593a1b504fe7df6fce65ef2ada80d2d5a8adc2be8353a2467191c0b5990f4ee",
+      "lines": 336,
+      "exports": [
+        {
+          "line": 25,
+          "symbol": "IngestSummary"
+        },
+        {
+          "line": 33,
+          "symbol": "ingestOnce"
+        },
+        {
+          "line": 229,
+          "symbol": "reingestQuarantined"
+        },
+        {
+          "line": 280,
+          "symbol": "SilentDevice"
+        },
+        {
+          "line": 286,
+          "symbol": "findSilentDevices"
+        },
+        {
+          "line": 308,
+          "symbol": "alertSilentDevices"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/kent-connector.ts",
+      "sha256": "89d9e7784364933d1b025301b9975135c12a403fdcb6cf6304d3d8e34b9d101f",
+      "lines": 122,
+      "exports": [
+        {
+          "line": 9,
+          "symbol": "RawSwipe"
+        },
+        {
+          "line": 19,
+          "symbol": "DeviceInfo"
+        },
+        {
+          "line": 30,
+          "symbol": "KentConnector"
+        },
+        {
+          "line": 47,
+          "symbol": "MockKentOptions"
+        },
+        {
+          "line": 65,
+          "symbol": "MockKentConnector"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/kent-sync.job.ts",
+      "sha256": "dee0b8aabddb0561ffa45fe5b66325650487695b0919c1802236400b5c4408fd",
+      "lines": 62,
+      "exports": [
+        {
+          "line": 17,
+          "symbol": "KENT_SOURCE"
+        },
+        {
+          "line": 37,
+          "symbol": "KentSyncResult"
+        },
+        {
+          "line": 42,
+          "symbol": "runKentSync"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/manager-approval.service.ts",
+      "sha256": "0e262621ed0c2a32c4f5c703063ad5949cf266d8b9a4572b4997b8f4ce3622e6",
+      "lines": 180,
+      "exports": [
+        {
+          "line": 22,
+          "symbol": "ManagerApprovalRow"
+        },
+        {
+          "line": 38,
+          "symbol": "listManagersWithReports"
+        },
+        {
+          "line": 72,
+          "symbol": "getManagerApprovalLedger"
+        },
+        {
+          "line": 125,
+          "symbol": "countPendingManagerApprovals"
+        },
+        {
+          "line": 135,
+          "symbol": "approveManagerMonth"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/month-lock.service.ts",
+      "sha256": "d0bf8c4d0793b4c649925fa0fb0624b4c7413a8a34cc3b5465d02233ac1a2a29",
+      "lines": 286,
+      "exports": [
+        {
+          "line": 12,
+          "symbol": "ChecklistItem"
+        },
+        {
+          "line": 19,
+          "symbol": "MonthLockChecklist"
+        },
+        {
+          "line": 39,
+          "symbol": "getMonthLockChecklist"
+        },
+        {
+          "line": 219,
+          "symbol": "lockMonth"
+        },
+        {
+          "line": 271,
+          "symbol": "isMonthLocked"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/overtime.service.ts",
+      "sha256": "3335ea7920d991f55705cdbb086eac4e191cfa3c53fedfeed31ede460a761777",
+      "lines": 344,
+      "exports": [
+        {
+          "line": 35,
+          "symbol": "OvertimePolicy"
+        },
+        {
+          "line": 46,
+          "symbol": "recordDetectedOvertime"
+        },
+        {
+          "line": 164,
+          "symbol": "applyOvertimeOnFinal"
+        },
+        {
+          "line": 185,
+          "symbol": "DecideOvertimeParams"
+        },
+        {
+          "line": 201,
+          "symbol": "decideOvertime"
+        },
+        {
+          "line": 290,
+          "symbol": "lapseExpiredOvertime"
+        },
+        {
+          "line": 304,
+          "symbol": "sendOvertimeSummaries"
+        },
+        {
+          "line": 325,
+          "symbol": "listPendingOvertime"
+        },
+        {
+          "line": 336,
+          "symbol": "listMyOvertime"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/regularization.service.ts",
+      "sha256": "a1c2cbe0078932feb5c3695fcf3b67aaea3c8975f9e7568d4198d2a5c681d8d1",
+      "lines": 207,
+      "exports": [
+        {
+          "line": 28,
+          "symbol": "RegularizationKind"
+        },
+        {
+          "line": 44,
+          "symbol": "CreateRegularizationParams"
+        },
+        {
+          "line": 57,
+          "symbol": "createRegularization"
+        },
+        {
+          "line": 153,
+          "symbol": "applyRegularizationOnFinal"
+        },
+        {
+          "line": 194,
+          "symbol": "RegularizationRow"
+        },
+        {
+          "line": 197,
+          "symbol": "listRegularizations"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/roster.service.ts",
+      "sha256": "2eec728fa7245e2352ed308eb4fa28a448953655d256169dcb2d5110e9d555ae",
+      "lines": 84,
+      "exports": [
+        {
+          "line": 12,
+          "symbol": "RosterPersistenceEntry"
+        },
+        {
+          "line": 25,
+          "symbol": "applyRosterEntries"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/session-status.ts",
+      "sha256": "6329928567b21b58fa44595b6312e6b1078e449907d5d4e48d8e63a17d9da6db",
+      "lines": 33,
+      "exports": [
+        {
+          "line": 6,
+          "symbol": "sessionStatusesSchema"
+        },
+        {
+          "line": 10,
+          "symbol": "SessionStatuses"
+        },
+        {
+          "line": 12,
+          "symbol": "readSessionStatuses"
+        },
+        {
+          "line": 19,
+          "symbol": "validateSessionSummary"
+        },
+        {
+          "line": 28,
+          "symbol": "attendanceGlyph"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/attendance/workflow-hooks.ts",
+      "sha256": "f7c073d01e3c52e93eaeda1f620743b1d065655d450853ac14deb1e2bb603e39",
+      "lines": 19,
+      "exports": [
+        {
+          "line": 13,
+          "symbol": "registerAttendanceWorkflowHooks"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/audit/audit.router.ts",
+      "sha256": "26a1debac47cfb4aebd058c90bb4fa8f45f9c05ec34c956cf094b56db41c3ba8",
+      "lines": 145,
+      "exports": [
+        {
+          "line": 140,
+          "symbol": "auditRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/audit/audit.service.ts",
+      "sha256": "c5e3c968bf0295534f3334e59845d05f54fc145aa68b7eeb42717f4e56d1fc4a",
+      "lines": 114,
+      "exports": [
+        {
+          "line": 10,
+          "symbol": "AuditQuery"
+        },
+        {
+          "line": 21,
+          "symbol": "AuditEntry"
+        },
+        {
+          "line": 36,
+          "symbol": "auditScopeSql"
+        },
+        {
+          "line": 42,
+          "symbol": "listAuditPage"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/audit/index.ts",
+      "sha256": "b999afa8c6e03f4afe183f9edcacf4f734d5d028900b51cdb2070e70c2961702",
+      "lines": 2,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/auth/auth.repository.ts",
+      "sha256": "5edbbcb07695013ef98656c2ab8365bf536af2645de25220890acc5603aea1b9",
+      "lines": 58,
+      "exports": [
+        {
+          "line": 5,
+          "symbol": "UserRow"
+        },
+        {
+          "line": 11,
+          "symbol": "findUserByIdentifier"
+        },
+        {
+          "line": 23,
+          "symbol": "findUserById"
+        },
+        {
+          "line": 28,
+          "symbol": "recordLoginSuccess"
+        },
+        {
+          "line": 41,
+          "symbol": "recordLoginFailure"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/auth/auth.router.ts",
+      "sha256": "0f66f7dbeb15124a2c36d87a59628bacde26f9e6a07e9f70b388f33d48b7427c",
+      "lines": 128,
+      "exports": [
+        {
+          "line": 123,
+          "symbol": "authRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/auth/auth.service.ts",
+      "sha256": "a6289873dd26600ea5841bf232a901c7f9eee704845ef92b4c9fe21146390a3c",
+      "lines": 98,
+      "exports": [
+        {
+          "line": 19,
+          "symbol": "LoginResult"
+        },
+        {
+          "line": 23,
+          "symbol": "login"
+        },
+        {
+          "line": 73,
+          "symbol": "RefreshResult"
+        },
+        {
+          "line": 78,
+          "symbol": "refresh"
+        },
+        {
+          "line": 96,
+          "symbol": "hashPassword"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/auth/index.ts",
+      "sha256": "d20cb74d1c07fe6a3da3a8a27e30294304a27acc7e4ed407da54fc0b450fbd1d",
+      "lines": 3,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/employees/employees.repository.ts",
+      "sha256": "d35ba86f98c424aa10093e86e5122e56b82a1fad113889faf0fbad0601e9de7c",
+      "lines": 257,
+      "exports": [
+        {
+          "line": 8,
+          "symbol": "DirectoryFilters"
+        },
+        {
+          "line": 28,
+          "symbol": "DirectoryRow"
+        },
+        {
+          "line": 41,
+          "symbol": "EmployeeProfileRow"
+        },
+        {
+          "line": 138,
+          "symbol": "countDirectory"
+        },
+        {
+          "line": 153,
+          "symbol": "listDirectory"
+        },
+        {
+          "line": 244,
+          "symbol": "findByEcode"
+        },
+        {
+          "line": 252,
+          "symbol": "findById"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/employees/employees.router.ts",
+      "sha256": "783c8d93ee4d54ea7c89bb74936a9eb0aa2c10b06762702e6c3505c64261bee0",
+      "lines": 186,
+      "exports": [
+        {
+          "line": 181,
+          "symbol": "employeesRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/employees/employees.service.ts",
+      "sha256": "03d5692fbbe04c1163c11b97d67a266b67f32469c4bcdd265f6584969a6cbf0e",
+      "lines": 382,
+      "exports": [
+        {
+          "line": 20,
+          "symbol": "AuthedUser"
+        },
+        {
+          "line": 22,
+          "symbol": "DirectoryItem"
+        },
+        {
+          "line": 33,
+          "symbol": "DirectoryResult"
+        },
+        {
+          "line": 40,
+          "symbol": "EmployeeProfile"
+        },
+        {
+          "line": 94,
+          "symbol": "canViewStatutoryIds"
+        },
+        {
+          "line": 104,
+          "symbol": "statusLabel"
+        },
+        {
+          "line": 134,
+          "symbol": "listEmployees"
+        },
+        {
+          "line": 232,
+          "symbol": "getEmployeeByEcode"
+        },
+        {
+          "line": 256,
+          "symbol": "getOwnProfile"
+        },
+        {
+          "line": 286,
+          "symbol": "DirectoryFacets"
+        },
+        {
+          "line": 303,
+          "symbol": "listDirectoryFacets"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/employees/import.schemas.ts",
+      "sha256": "220b8232b666d2aaada0c719b60f58c28fdae56b38e6ed4db4983d6ad1178020",
+      "lines": 68,
+      "exports": [
+        {
+          "line": 9,
+          "symbol": "COMPANY_ALIASES"
+        },
+        {
+          "line": 28,
+          "symbol": "ECODE_PATTERN"
+        },
+        {
+          "line": 30,
+          "symbol": "emsUserSchema"
+        },
+        {
+          "line": 46,
+          "symbol": "EmsUserRow"
+        },
+        {
+          "line": 48,
+          "symbol": "greythrRowSchema"
+        },
+        {
+          "line": 63,
+          "symbol": "GreythrRow"
+        },
+        {
+          "line": 65,
+          "symbol": "ImportException"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/employees/import.service.ts",
+      "sha256": "8ff30068b015cc7338b97a877143be754a2ee7200df5afce06700c946b5950a2",
+      "lines": 239,
+      "exports": [
+        {
+          "line": 19,
+          "symbol": "EmsImportSummary"
+        },
+        {
+          "line": 56,
+          "symbol": "importEmsSeed"
+        },
+        {
+          "line": 181,
+          "symbol": "EnrichSummary"
+        },
+        {
+          "line": 186,
+          "symbol": "importGreythrEnrich"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/employees/index.ts",
+      "sha256": "3a132eacec616116cdea399e5df7baf4c7fef603635b3d96b85c9f192abd9760",
+      "lines": 9,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/engagement/announcements.service.ts",
+      "sha256": "6d42f58e000919e2e44cb154090db1333c0d51bd1d2dd4bba24fd47ded238cbf",
+      "lines": 163,
+      "exports": [
+        {
+          "line": 16,
+          "symbol": "AnnouncementRow"
+        },
+        {
+          "line": 26,
+          "symbol": "PublishAnnouncementParams"
+        },
+        {
+          "line": 34,
+          "symbol": "publishAnnouncement"
+        },
+        {
+          "line": 63,
+          "symbol": "listAllAnnouncements"
+        },
+        {
+          "line": 82,
+          "symbol": "listAnnouncementsForUser"
+        },
+        {
+          "line": 113,
+          "symbol": "withdrawAnnouncement"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/engagement/audience.ts",
+      "sha256": "3858c1fa75fab1aaa1bfa33a48b160d846265e24a04ee9b24ee5291e839d262b",
+      "lines": 63,
+      "exports": [
+        {
+          "line": 12,
+          "symbol": "Db"
+        },
+        {
+          "line": 14,
+          "symbol": "EngagementAudience"
+        },
+        {
+          "line": 39,
+          "symbol": "audienceIncludesUser"
+        },
+        {
+          "line": 59,
+          "symbol": "toAudience"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/engagement/engagement.router.ts",
+      "sha256": "20f564adbb5a8a40fed429721ae1fb852a1acc5502f23289c7d74bd03d6c01d6",
+      "lines": 227,
+      "exports": [
+        {
+          "line": 217,
+          "symbol": "engagementRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/engagement/index.ts",
+      "sha256": "0bc2f82e83d7ac41a5fb9403c04c3cf8269152bf1b326f3d71af8ca1e8166268",
+      "lines": 2,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/engagement/polls.service.ts",
+      "sha256": "d46bd03f8ef1d13313dfeb85b611b389f5979a17b8c20f984d543a805f3464d5",
+      "lines": 284,
+      "exports": [
+        {
+          "line": 23,
+          "symbol": "PollRow"
+        },
+        {
+          "line": 36,
+          "symbol": "PollResultRow"
+        },
+        {
+          "line": 66,
+          "symbol": "CreatePollParams"
+        },
+        {
+          "line": 76,
+          "symbol": "createPoll"
+        },
+        {
+          "line": 107,
+          "symbol": "listPollsForUser"
+        },
+        {
+          "line": 156,
+          "symbol": "RespondToPollParams"
+        },
+        {
+          "line": 164,
+          "symbol": "respondToPoll"
+        },
+        {
+          "line": 217,
+          "symbol": "pollResults"
+        },
+        {
+          "line": 262,
+          "symbol": "closePoll"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "sha256": "72ff11c22093732b84b06305198b05480087e44ec26f9c1b2c60fe998684e973",
+      "lines": 251,
+      "exports": [
+        {
+          "line": 240,
+          "symbol": "helpdeskRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/helpdesk/helpdesk.service.ts",
+      "sha256": "a0cc747849e73ca3e863390571b7028b40d423f208401ada81395fcd896e2678",
+      "lines": 444,
+      "exports": [
+        {
+          "line": 22,
+          "symbol": "TicketRow"
+        },
+        {
+          "line": 62,
+          "symbol": "listCategories"
+        },
+        {
+          "line": 83,
+          "symbol": "raiseTicket"
+        },
+        {
+          "line": 167,
+          "symbol": "listTickets"
+        },
+        {
+          "line": 244,
+          "symbol": "ticketThread"
+        },
+        {
+          "line": 267,
+          "symbol": "replyToTicket"
+        },
+        {
+          "line": 307,
+          "symbol": "setTicketStatus"
+        },
+        {
+          "line": 368,
+          "symbol": "escalateBreachedTickets"
+        },
+        {
+          "line": 404,
+          "symbol": "helpdeskPerformance"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/helpdesk/index.ts",
+      "sha256": "94273b5545de3599e7a1dc721c2896ac4fd732f12202a454b5a398d70b7634f8",
+      "lines": 3,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/leave/index.ts",
+      "sha256": "b6cca3a410095b31e5448f0b7d4fc02b3fb13337bc7c7efdff39f7c7f32ce2b0",
+      "lines": 21,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/leave/leave-apply.service.ts",
+      "sha256": "8f6ff250423820be361a2326c05616cbee9cd17e9a51f41e1eb7168a1381ba94",
+      "lines": 454,
+      "exports": [
+        {
+          "line": 32,
+          "symbol": "computeLeaveSpan"
+        },
+        {
+          "line": 80,
+          "symbol": "ApplyLeaveParams"
+        },
+        {
+          "line": 91,
+          "symbol": "applyForLeave"
+        },
+        {
+          "line": 178,
+          "symbol": "applyLeaveOnFinal"
+        },
+        {
+          "line": 241,
+          "symbol": "requestCancellation"
+        },
+        {
+          "line": 273,
+          "symbol": "applyCancelOnFinal"
+        },
+        {
+          "line": 323,
+          "symbol": "requestEncashment"
+        },
+        {
+          "line": 352,
+          "symbol": "applyEncashmentOnFinal"
+        },
+        {
+          "line": 386,
+          "symbol": "selectRestrictedHoliday"
+        },
+        {
+          "line": 431,
+          "symbol": "applyRhOnFinal"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/leave/leave-core.service.ts",
+      "sha256": "93b830a0e15e581d979abd56ed4a96d71744bb4a8e746e090e18aa525f8c9763",
+      "lines": 267,
+      "exports": [
+        {
+          "line": 16,
+          "symbol": "LeaveTypeRow"
+        },
+        {
+          "line": 18,
+          "symbol": "getLeaveType"
+        },
+        {
+          "line": 27,
+          "symbol": "getBalance"
+        },
+        {
+          "line": 57,
+          "symbol": "getBalances"
+        },
+        {
+          "line": 73,
+          "symbol": "runMonthlyAccrual"
+        },
+        {
+          "line": 113,
+          "symbol": "compOffDaysForMinutes"
+        },
+        {
+          "line": 124,
+          "symbol": "creditCompOffForOvertime"
+        },
+        {
+          "line": 163,
+          "symbol": "runCompOffExpiry"
+        },
+        {
+          "line": 201,
+          "symbol": "runYearEndCarryForward"
+        },
+        {
+          "line": 239,
+          "symbol": "adjustBalance"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/leave/leave.router.ts",
+      "sha256": "19c960c10b96795683a1e4be977753db1b7e8bcb813f7097b36067171d50d62a",
+      "lines": 378,
+      "exports": [
+        {
+          "line": 361,
+          "symbol": "leaveRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/leave/workflow-hooks.ts",
+      "sha256": "77530ab2cd0525e80669d7ddd46801793be317e09f68f6e7b8cd63b38fbc6ef5",
+      "lines": 19,
+      "exports": [
+        {
+          "line": 11,
+          "symbol": "registerLeaveWorkflowHooks"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/letters/index.ts",
+      "sha256": "986915fe5cd967c071f152a95367fae93453a195f97a7775ca859e3902a67340",
+      "lines": 4,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/letters/letters.router.ts",
+      "sha256": "0658d15c23ca64a3a512ddb5c87cffe060e1f736321f42727620ca02175ec5e8",
+      "lines": 145,
+      "exports": [
+        {
+          "line": 145,
+          "symbol": "lettersRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/letters/letters.service.ts",
+      "sha256": "42d811b4b116920d4f2759c5bece99efdc1e768857a9cf5a626c5ad213c9be31",
+      "lines": 174,
+      "exports": [
+        {
+          "line": 19,
+          "symbol": "LetterRow"
+        },
+        {
+          "line": 20,
+          "symbol": "LetterTemplateRow"
+        },
+        {
+          "line": 48,
+          "symbol": "renderTemplate"
+        },
+        {
+          "line": 61,
+          "symbol": "IssueLetterParams"
+        },
+        {
+          "line": 72,
+          "symbol": "issueLetter"
+        },
+        {
+          "line": 142,
+          "symbol": "applyLetterOnFinal"
+        },
+        {
+          "line": 170,
+          "symbol": "listLetters"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/letters/workflow-hooks.ts",
+      "sha256": "e65ee0bc883535979b83db9478eb20ce99d4507355d32c0634de153045144ff5",
+      "lines": 14,
+      "exports": [
+        {
+          "line": 10,
+          "symbol": "registerLettersWorkflowHooks"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/lifecycle/boarding-exit.service.ts",
+      "sha256": "7bc3360caf5ba490fac5bc149b01a5c69369989b238eacf1acf7b0cc33e7c274",
+      "lines": 169,
+      "exports": [
+        {
+          "line": 17,
+          "symbol": "BoardingRow"
+        },
+        {
+          "line": 29,
+          "symbol": "ExitRow"
+        },
+        {
+          "line": 33,
+          "symbol": "BoardingExitReport"
+        },
+        {
+          "line": 42,
+          "symbol": "boardingExitReport"
+        },
+        {
+          "line": 150,
+          "symbol": "boardingExitExcel"
+        },
+        {
+          "line": 157,
+          "symbol": "sendBoardingExitEmail"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/lifecycle/index.ts",
+      "sha256": "da7397d4e748e86047f97aafe755e8240a6cbd2667023bb5cf034b8eb641c141",
+      "lines": 3,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/lifecycle/lifecycle.router.ts",
+      "sha256": "1c7adbe8dcce6a1b2ee0eedc43f644118d49e4a70c6d95d262fcb38e38f5b589",
+      "lines": 56,
+      "exports": [
+        {
+          "line": 56,
+          "symbol": "lifecycleRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/notifications/index.ts",
+      "sha256": "87375c5dac9e78f72e24ad4210b28d398b1cf9b20fc6c1e81eeaf1f68cd0ab5f",
+      "lines": 8,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/notifications/notifications.repository.ts",
+      "sha256": "779722c1c2afcfb8d4ab6c2f801867bfdb08cc1999cb69b845fe5868342de39c",
+      "lines": 75,
+      "exports": [
+        {
+          "line": 6,
+          "symbol": "NotificationRow"
+        },
+        {
+          "line": 8,
+          "symbol": "EnqueueInput"
+        },
+        {
+          "line": 16,
+          "symbol": "insertNotification"
+        },
+        {
+          "line": 32,
+          "symbol": "claimDeliverable"
+        },
+        {
+          "line": 44,
+          "symbol": "markSent"
+        },
+        {
+          "line": 52,
+          "symbol": "markFailed"
+        },
+        {
+          "line": 69,
+          "symbol": "listSubscribers"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/notifications/notifications.service.ts",
+      "sha256": "01abd03956de3c92ee99dfd4aaff0e9013f307404d3ea467a1955d1b2ce37965",
+      "lines": 114,
+      "exports": [
+        {
+          "line": 22,
+          "symbol": "NotificationTransport"
+        },
+        {
+          "line": 27,
+          "symbol": "devLogTransport"
+        },
+        {
+          "line": 38,
+          "symbol": "enqueue"
+        },
+        {
+          "line": 47,
+          "symbol": "enqueueEvent"
+        },
+        {
+          "line": 91,
+          "symbol": "processQueue"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/policies/index.ts",
+      "sha256": "727833292e2dba81532073d7e1e2053c8eb86266cd135ed39a670a6c7c89d084",
+      "lines": 11,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/policies/policies.router.ts",
+      "sha256": "0b55d127e4df76d7145e61186ee286642617cb569ae08319162af7041323d6d2",
+      "lines": 233,
+      "exports": [
+        {
+          "line": 222,
+          "symbol": "policiesRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/policies/policies.service.ts",
+      "sha256": "1b44534a1dbb439e567f4ac5cb0e36b84e52979737dc72ac12026f7346ff9684",
+      "lines": 328,
+      "exports": [
+        {
+          "line": 18,
+          "symbol": "PolicyAudience"
+        },
+        {
+          "line": 33,
+          "symbol": "PublishPolicyParams"
+        },
+        {
+          "line": 48,
+          "symbol": "publishPolicy"
+        },
+        {
+          "line": 90,
+          "symbol": "listPoliciesFor"
+        },
+        {
+          "line": 125,
+          "symbol": "listActivePolicies"
+        },
+        {
+          "line": 143,
+          "symbol": "myPendingPolicies"
+        },
+        {
+          "line": 148,
+          "symbol": "acknowledgePolicy"
+        },
+        {
+          "line": 158,
+          "symbol": "policyAckStatus"
+        },
+        {
+          "line": 197,
+          "symbol": "runPolicyAckNag"
+        },
+        {
+          "line": 249,
+          "symbol": "PolicyAckReportRow"
+        },
+        {
+          "line": 261,
+          "symbol": "policyAckReport"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/rbac/index.ts",
+      "sha256": "87a9d91fd86baf3c49fc59b07fd1185f01e9c44c373a08abdfa026748593afec",
+      "lines": 2,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/rbac/rbac.guard.ts",
+      "sha256": "0ab69f8f448e3681582680d4b507657637d0ccfee34835a992302a51cc4c07fe",
+      "lines": 34,
+      "exports": [
+        {
+          "line": 6,
+          "symbol": "assertDelegationCeiling"
+        },
+        {
+          "line": 25,
+          "symbol": "assertRoleDelegation"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/rbac/rbac.repository.ts",
+      "sha256": "cfd8953a9a085b230368bdb83c042af73b2c6bb6cc5713dae6feaab452b09ca7",
+      "lines": 120,
+      "exports": [
+        {
+          "line": 5,
+          "symbol": "listRoles"
+        },
+        {
+          "line": 9,
+          "symbol": "listPermissions"
+        },
+        {
+          "line": 14,
+          "symbol": "listGrants"
+        },
+        {
+          "line": 25,
+          "symbol": "findRoleByCode"
+        },
+        {
+          "line": 29,
+          "symbol": "findPermissionByCode"
+        },
+        {
+          "line": 33,
+          "symbol": "insertGrant"
+        },
+        {
+          "line": 49,
+          "symbol": "deleteGrant"
+        },
+        {
+          "line": 58,
+          "symbol": "assignRoleToUser"
+        },
+        {
+          "line": 71,
+          "symbol": "removeRoleFromUser"
+        },
+        {
+          "line": 86,
+          "symbol": "searchUsersWithRoles"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/rbac/rbac.router.ts",
+      "sha256": "c1d5b9b1c5868f880bc448e2eb902a820d661786b2fd69e7f671245bf811e9c7",
+      "lines": 217,
+      "exports": [
+        {
+          "line": 210,
+          "symbol": "rbacRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/reports/dashboard.service.ts",
+      "sha256": "496df99f4d395f0c309e5ddaa2d0cb3c747c5b83e1ff49f4a65010944d721beb",
+      "lines": 390,
+      "exports": [
+        {
+          "line": 12,
+          "symbol": "hrOpsDashboard"
+        },
+        {
+          "line": 116,
+          "symbol": "essHome"
+        },
+        {
+          "line": 181,
+          "symbol": "myAttendanceMonth"
+        },
+        {
+          "line": 210,
+          "symbol": "teamMonthGrid"
+        },
+        {
+          "line": 285,
+          "symbol": "BusinessUnitDashboard"
+        },
+        {
+          "line": 298,
+          "symbol": "businessUnitDashboard"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/reports/index.ts",
+      "sha256": "1c1e730993287ebc9a40e5b63cb978c3ef24006d26f8271391995384eba3dab2",
+      "lines": 24,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/reports/kpi-snapshot.service.ts",
+      "sha256": "d8b40dc8b0f530b999cb9b3ee097b97536c3b917df1589ecc992088697a5b824",
+      "lines": 365,
+      "exports": [
+        {
+          "line": 32,
+          "symbol": "KpiSnapshot"
+        },
+        {
+          "line": 48,
+          "symbol": "buildKpiSnapshot"
+        },
+        {
+          "line": 286,
+          "symbol": "readKpiSnapshot"
+        },
+        {
+          "line": 330,
+          "symbol": "kpiTrend"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/reports/muster.service.ts",
+      "sha256": "247bdb990ecbe34f63777b8b5ddb00419b8724c5bd2ad6216bcf11b26d12fa49",
+      "lines": 444,
+      "exports": [
+        {
+          "line": 20,
+          "symbol": "MusterFilters"
+        },
+        {
+          "line": 38,
+          "symbol": "MusterRow"
+        },
+        {
+          "line": 66,
+          "symbol": "buildMusterMonth"
+        },
+        {
+          "line": 268,
+          "symbol": "listMuster"
+        },
+        {
+          "line": 366,
+          "symbol": "exportMusterExcel"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/reports/reports-export.service.ts",
+      "sha256": "ce93c6115acdf3113b40cf84d4dae43772ce0d679916e3fa4da6a7d4f386d639",
+      "lines": 224,
+      "exports": [
+        {
+          "line": 134,
+          "symbol": "exportR2Excel"
+        },
+        {
+          "line": 146,
+          "symbol": "exportR3Excel"
+        },
+        {
+          "line": 164,
+          "symbol": "exportR4Excel"
+        },
+        {
+          "line": 177,
+          "symbol": "exportR5Excel"
+        },
+        {
+          "line": 186,
+          "symbol": "exportR6Excel"
+        },
+        {
+          "line": 198,
+          "symbol": "exportR24Excel"
+        },
+        {
+          "line": 209,
+          "symbol": "exportR27Excel"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/reports/reports.router.ts",
+      "sha256": "c83a3b8bde30e3affbb2992c9b24030eb7511aa381b25e78f96ef231006aae39",
+      "lines": 823,
+      "exports": [
+        {
+          "line": 792,
+          "symbol": "reportsRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/reports/reports.service.ts",
+      "sha256": "e819e7e4356e5d72a21755044c2d39faa9902c4e54384fcb4235f2e44510ae1f",
+      "lines": 896,
+      "exports": [
+        {
+          "line": 21,
+          "symbol": "R2Row"
+        },
+        {
+          "line": 41,
+          "symbol": "reportR2Swipes"
+        },
+        {
+          "line": 200,
+          "symbol": "R2RawSwipeRow"
+        },
+        {
+          "line": 221,
+          "symbol": "reportR2RawSwipes"
+        },
+        {
+          "line": 279,
+          "symbol": "R3Row"
+        },
+        {
+          "line": 297,
+          "symbol": "R3TimelineStep"
+        },
+        {
+          "line": 308,
+          "symbol": "reportR3Regularizations"
+        },
+        {
+          "line": 421,
+          "symbol": "R4Row"
+        },
+        {
+          "line": 434,
+          "symbol": "reportR4Exceptions"
+        },
+        {
+          "line": 488,
+          "symbol": "R5Row"
+        },
+        {
+          "line": 509,
+          "symbol": "reportR5Ot"
+        },
+        {
+          "line": 602,
+          "symbol": "R6Row"
+        },
+        {
+          "line": 617,
+          "symbol": "reportR6AbsenceCases"
+        },
+        {
+          "line": 682,
+          "symbol": "BoardingReportRow"
+        },
+        {
+          "line": 696,
+          "symbol": "reportR24Boarding"
+        },
+        {
+          "line": 762,
+          "symbol": "R27Row"
+        },
+        {
+          "line": 776,
+          "symbol": "reportR27Headcount"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/settings/index.ts",
+      "sha256": "379ec8470c9476e9c2de4817ee803698d6678579d8024eed3add3f9c31e08e0c",
+      "lines": 3,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/settings/seed.ts",
+      "sha256": "3df1de703ea37175f9cf7384672829afb16501f5a8ef86036dd250698e025679",
+      "lines": 217,
+      "exports": [
+        {
+          "line": 30,
+          "symbol": "POLICY_SETTINGS"
+        },
+        {
+          "line": 184,
+          "symbol": "seedPolicySettings"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/settings/settings.repository.ts",
+      "sha256": "5a89a80b1c261c5dabc834c695182c24c5d71d704558912fed70f1fe8251d244",
+      "lines": 39,
+      "exports": [
+        {
+          "line": 5,
+          "symbol": "SettingRow"
+        },
+        {
+          "line": 9,
+          "symbol": "getSetting"
+        },
+        {
+          "line": 13,
+          "symbol": "listSettings"
+        },
+        {
+          "line": 17,
+          "symbol": "upsertSetting"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/settings/settings.router.ts",
+      "sha256": "9864bdcbf1f7cdc98b72eb0f0fc26346f089e1fa26a5add1ed031541cc1561b9",
+      "lines": 68,
+      "exports": [
+        {
+          "line": 64,
+          "symbol": "settingsRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/settings/settings.service.ts",
+      "sha256": "22d2fdb664dbbf84dfb1419e2bf72925142f80a08a33b800438e3adb8b5ad09e",
+      "lines": 67,
+      "exports": [
+        {
+          "line": 19,
+          "symbol": "SettingType"
+        },
+        {
+          "line": 22,
+          "symbol": "getTypedSetting"
+        },
+        {
+          "line": 38,
+          "symbol": "setSetting"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/system/index.ts",
+      "sha256": "9b6124fcaa591c3b7c036d212868353a31273df93d572135b105bcbc95154510",
+      "lines": 2,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/system/system.router.ts",
+      "sha256": "457d62d92818de7b1192a317a194a7bf730c3043462ae085fe13c7e2393e0e40",
+      "lines": 25,
+      "exports": [
+        {
+          "line": 23,
+          "symbol": "systemRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/workflows/definitions.seed.ts",
+      "sha256": "dbb634d4ab814e9a176046da13c33a5b74bc6184aaaf402bc937d36e9235316c",
+      "lines": 109,
+      "exports": [
+        {
+          "line": 12,
+          "symbol": "DefinitionSeed"
+        },
+        {
+          "line": 25,
+          "symbol": "WORKFLOW_DEFINITIONS"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/workflows/index.ts",
+      "sha256": "df9bef1e9e77b73cb9b5cc055516cdcc23fdd2674003b148b7a5d7cd9edbd11c",
+      "lines": 15,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/workflows/seed.ts",
+      "sha256": "6fee0ae5acc59eb3bdd1d37403bfec5b8dda965c2e211a95f702afe6825472a1",
+      "lines": 34,
+      "exports": []
+    },
+    {
+      "path": "backend/src/modules/workflows/workflow.service.ts",
+      "sha256": "7607e7e0d0c0e08b2de14305769dab43e4d1e1f5fe8313af66c1c839ae0c3e56",
+      "lines": 465,
+      "exports": [
+        {
+          "line": 31,
+          "symbol": "stepSpecSchema"
+        },
+        {
+          "line": 40,
+          "symbol": "StepSpec"
+        },
+        {
+          "line": 41,
+          "symbol": "stepsSchema"
+        },
+        {
+          "line": 43,
+          "symbol": "RequestRow"
+        },
+        {
+          "line": 44,
+          "symbol": "StepRow"
+        },
+        {
+          "line": 53,
+          "symbol": "WorkflowFinalStatus"
+        },
+        {
+          "line": 54,
+          "symbol": "WorkflowFinalHook"
+        },
+        {
+          "line": 58,
+          "symbol": "onWorkflowFinal"
+        },
+        {
+          "line": 65,
+          "symbol": "clearWorkflowFinalHooks"
+        },
+        {
+          "line": 231,
+          "symbol": "createRequest"
+        },
+        {
+          "line": 258,
+          "symbol": "ActOutcome"
+        },
+        {
+          "line": 260,
+          "symbol": "act"
+        },
+        {
+          "line": 323,
+          "symbol": "resubmit"
+        },
+        {
+          "line": 343,
+          "symbol": "runEscalations"
+        },
+        {
+          "line": 430,
+          "symbol": "inbox"
+        },
+        {
+          "line": 463,
+          "symbol": "timeline"
+        }
+      ]
+    },
+    {
+      "path": "backend/src/modules/workflows/workflows.router.ts",
+      "sha256": "439faa36f05667545119350273af0dc147a5e55b3c277ceae982cf6792ee2858",
+      "lines": 271,
+      "exports": [
+        {
+          "line": 261,
+          "symbol": "workflowsRouter"
+        }
+      ]
+    },
+    {
+      "path": "backend/tests/access-control.integration.test.ts",
+      "sha256": "0fe252bfebcd05377458b52f41619692b7b90029757d8f3a6cc5c9b92c37424a",
+      "lines": 253,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/api.test.ts",
+      "sha256": "72d32c5516f7c609681c79d87319c30fb5bcf5a8ab4e3cae0e846839c86f6b08",
+      "lines": 45,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/assets.integration.test.ts",
+      "sha256": "0509d2589f954429b7cc6cb7513920869f5e17e02094933e2f17a0bf2c101bb1",
+      "lines": 287,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/attendance-session-constraint.integration.test.ts",
+      "sha256": "2336e68408d67cba74350d4883492ce5ffba1f66aa6e2542d2d85d7735e73007",
+      "lines": 54,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/attendance-sessions.integration.test.ts",
+      "sha256": "23acf4f587fdc1feb927008ff609fb3d6cada53906f19365c04619cdd5c7c6b1",
+      "lines": 57,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/attendance-sessions.test.ts",
+      "sha256": "4e756adc2070ccb8bd52d4399b90da0e5acce070d4235377a15adb4fa88451b0",
+      "lines": 71,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/audit-read.integration.test.ts",
+      "sha256": "0c1fa1ee789b9301316530cc521b19f3bc8f0fa0628c8eed8527626e67b7b948",
+      "lines": 254,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/dates.test.ts",
+      "sha256": "8d7459f02ae0ac783ef2a1989c18af47d0eb35a491f4628ebb7c6f23befb997f",
+      "lines": 41,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/db.integration.test.ts",
+      "sha256": "ede29f5238f6fb26abd918e243eedd787c94f1e3cc9d4ea455b3c5c2884001da",
+      "lines": 222,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/directory-facets.integration.test.ts",
+      "sha256": "1f5ba3c4de5aeccf877d0e6c0ed093cbe2828e26c42270858e89359759224e04",
+      "lines": 220,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/employee-import.integration.test.ts",
+      "sha256": "150f58807f3dc8c26e87aa8cb7c268f4cb1f022da3657daee48bfd3d4810c2b9",
+      "lines": 228,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/employees-masking.test.ts",
+      "sha256": "ab98102c0095270693e8e452dcf0ce728d9297b8aa567bd32242eceb4b3865d7",
+      "lines": 61,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/employees-self.integration.test.ts",
+      "sha256": "3e14046e79a82624279ad4aba3ad316b890161d566ce2652fbdf641ff519a521",
+      "lines": 88,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/engagement.integration.test.ts",
+      "sha256": "54d409c0706471e2512836a7db9487a29e9a9c66473c618c5080d32581fe9782",
+      "lines": 361,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/exports.integration.test.ts",
+      "sha256": "8863c5132e8b3b7e852335423d035874068d6e54a1cda474d8aa04f85568d7cc",
+      "lines": 262,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/global-database.ts",
+      "sha256": "960148754f419eff7804afd2793b166677d226f526db356d0094af6353d83ca0",
+      "lines": 26,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/health.test.ts",
+      "sha256": "7dfaed5d6f0ce98e8503d9a22fb5f45959a5c96dcae28e0e61ea7312573ee7df",
+      "lines": 32,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/helpdesk.integration.test.ts",
+      "sha256": "af3de81bfaf88298faa7092d9eeeaec210585a3984f77c7605ab54168044b309",
+      "lines": 271,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/http-hardening.integration.test.ts",
+      "sha256": "17753e47438e1f0e589121f4dfec58552d3b49e5c826c039ba463c4fd7f00ade",
+      "lines": 142,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/kent-ingestion.integration.test.ts",
+      "sha256": "dc8ecc932c601e6b6c6cb85c098ca4bc551179a617a8bf727e1b2ba8954f8c88",
+      "lines": 111,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/money.test.ts",
+      "sha256": "4f0e65f7cfb433a0d5d13d00417b796c5881ac904c8517a0d169a26e3b08a373",
+      "lines": 165,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/rate-limits.test.ts",
+      "sha256": "b112e97d3000772f6c4b97cd5d95306e3cff0fa6b8c41cd3ad7c01495d8e05d6",
+      "lines": 15,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/rbac-ceiling.integration.test.ts",
+      "sha256": "31fd515a0907fde49820edde91af92d55e5180230b2dfe28703dbe1b4b356cf4",
+      "lines": 198,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/rbac-seed.test.ts",
+      "sha256": "e12eba84c860753873d08fc7ba3208866be4e3e8262ada6d29f9d85f1690b3cb",
+      "lines": 77,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/role-access.integration.test.ts",
+      "sha256": "cef4f48a1f9c4ff5001af83b8b86ab1234eec0761290ddea51842ad19c029112",
+      "lines": 188,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/settings-seed.test.ts",
+      "sha256": "b8914a5c5c5b72cd7e5bbc85de66e974c3a1f35783b4c8d9b0e368670a667adb",
+      "lines": 90,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/setup-database.ts",
+      "sha256": "6ce35d10c318defcd7d97e3f92772759f6279afda12759c4ed5aa73a8c641cb5",
+      "lines": 19,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage1-review-fixes.integration.test.ts",
+      "sha256": "6742e92fff6ab4089ba9d1f7f808f0042246c6096554084f7224a707813065ec",
+      "lines": 211,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage11-ingestion.integration.test.ts",
+      "sha256": "78e3a3c05bad578ae86da616f53388441790937ffcb86a837f0625c923524ae2",
+      "lines": 180,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage12-day-status.integration.test.ts",
+      "sha256": "287ada44ab775ca899b224dd80a4f0188ace1ac38f0c3ac45230265d0280d1ce",
+      "lines": 265,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage13-workflows.integration.test.ts",
+      "sha256": "ac759fddf940567ac2eba4e6be3af03df55578435f6386e745c51929bead3e1c",
+      "lines": 336,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage14-requests-overtime.integration.test.ts",
+      "sha256": "675f8e60951bb622a043cc5660fa9d7b82e35218b5b019053b9bd2d31c36d452",
+      "lines": 373,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage15-leave.integration.test.ts",
+      "sha256": "7c4bef7c247735e66cdd038457601fbd157d9767feb4ba716fd6c030eee8d854",
+      "lines": 448,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage16-absence-letters-policies.integration.test.ts",
+      "sha256": "381fab1a625427e86e13d891b4d1140b15dd91aceb783adfc3e7171b5263b047",
+      "lines": 337,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage17-absence-api.integration.test.ts",
+      "sha256": "41e0fc0ca06d2012b27cbcbaedeb12be66dfc211928223354be4f0192df779d7",
+      "lines": 120,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage17-device-watermark.integration.test.ts",
+      "sha256": "b36ee644918876decff9e364ad3bee62955500909743e0ae172d1285dba279e6",
+      "lines": 240,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage17-manager-approval-roster.integration.test.ts",
+      "sha256": "31f09174109df3ee91605c6ccf5cd66719a12dae5982f98ccf793658eab447d4",
+      "lines": 340,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage17-month-lock-muster.integration.test.ts",
+      "sha256": "ddc43183a43070d4364793ef44a3c060a4c4e817ff4990705d26cfcd68708dea",
+      "lines": 318,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage17-muster-equivalence.integration.test.ts",
+      "sha256": "9351483b7caf4acaca9de80180ea35cc00fe71abbe16e01c9ccb0e2ce84b9832",
+      "lines": 197,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage17-muster-performance.integration.test.ts",
+      "sha256": "77bf3664313afd32620a05155a7b92feaf41a8e9dd8e8024739fc0eaf4229a3b",
+      "lines": 110,
+      "exports": []
+    },
+    {
+      "path": "backend/tests/stage17-supporting-reports.integration.test.ts",
+      "sha256": "f7644ee2508427c5f613c2d178fb0b3b9e428cca366bb62fa06d1eedc75a7e44",
+      "lines": 391,
+      "exports": []
+    },
+    {
+      "path": "backend/migrations/1751790000000_core-auth-rbac-audit-settings.ts",
+      "sha256": "d36203029a60f9c295f8f2960e06a93152b3fe890307930bda1d883568b5c82b",
+      "lines": 201,
+      "exports": [
+        {
+          "line": 12,
+          "symbol": "up"
+        },
+        {
+          "line": 183,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751800000000_wf-notifications.ts",
+      "sha256": "92b753581fc1bfeb61ea619391d6e17a6752e0db7aa65a2bdcacfc8578dfd68f",
+      "lines": 58,
+      "exports": [
+        {
+          "line": 7,
+          "symbol": "up"
+        },
+        {
+          "line": 52,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751810000000_org-employees.ts",
+      "sha256": "4bc470bf4178f3b5aacaf741c6dc299e32fa68c3baecb13f4368a0218a7905fc",
+      "lines": 316,
+      "exports": [
+        {
+          "line": 14,
+          "symbol": "up"
+        },
+        {
+          "line": 293,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751820000000_attendance-ingestion.ts",
+      "sha256": "070fb4ae8ec3f3d155fe70befd866dfb77efcf446c604a6d35a18d43d0837c20",
+      "lines": 103,
+      "exports": [
+        {
+          "line": 11,
+          "symbol": "up"
+        },
+        {
+          "line": 94,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751830000000_attendance-quarantine.ts",
+      "sha256": "da0cbd4575c1f264e426d17556ae006a9737df1562666f880678fd96c405b50f",
+      "lines": 42,
+      "exports": [
+        {
+          "line": 8,
+          "symbol": "up"
+        },
+        {
+          "line": 37,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751840000000_attendance-processing.ts",
+      "sha256": "44a5d5d0a9bb1b330571b1692aa83729f99ef5cfb6c7f56f00579fe9169b6ab8",
+      "lines": 169,
+      "exports": [
+        {
+          "line": 11,
+          "symbol": "up"
+        },
+        {
+          "line": 155,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751850000000_workflow-engine.ts",
+      "sha256": "e1cc6904f6f265d239e9cbcfa54e80c1408c3dcd9d6ba5ca232376ef92c08d60",
+      "lines": 88,
+      "exports": [
+        {
+          "line": 10,
+          "symbol": "up"
+        },
+        {
+          "line": 81,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751860000000_phase1-review-fixes.ts",
+      "sha256": "4c64bcffe79dc08fe09aea5552bb2fda7e13e3a5f1bb513fdd4cdddd5334ead5",
+      "lines": 40,
+      "exports": [
+        {
+          "line": 12,
+          "symbol": "up"
+        },
+        {
+          "line": 32,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751870000000_attendance-requests.ts",
+      "sha256": "52af4342674dec4dbe2b34a4e66a0a8d628e9385bc595a1b4a0abcd8ebf27067",
+      "lines": 75,
+      "exports": [
+        {
+          "line": 10,
+          "symbol": "up"
+        },
+        {
+          "line": 70,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751880000000_leave.ts",
+      "sha256": "970363901d7a34c06f8e7a8fa110f73855ac8caf2f8ad4350f026d8f9e317b8b",
+      "lines": 158,
+      "exports": [
+        {
+          "line": 15,
+          "symbol": "up"
+        },
+        {
+          "line": 145,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751890000000_absence-letters-policies.ts",
+      "sha256": "35d5bc1e329a65bbad2ee618c8779c032e81b385d99ec0b9d03e066d003d443b",
+      "lines": 141,
+      "exports": [
+        {
+          "line": 12,
+          "symbol": "up"
+        },
+        {
+          "line": 133,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751900000000_stage17-month-lock-muster.ts",
+      "sha256": "54cf7a483850359c90a9e6f18e8cf5c4ab408e4fc0d3a5b62a7c929eef483d9d",
+      "lines": 78,
+      "exports": [
+        {
+          "line": 7,
+          "symbol": "up"
+        },
+        {
+          "line": 68,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751910000000_stage17-lock-hardening.ts",
+      "sha256": "f9fc9f4b840b64ec98d494ed7e6500c4b507228142a12deb0004c2dbe7d86b56",
+      "lines": 68,
+      "exports": [
+        {
+          "line": 8,
+          "symbol": "up"
+        },
+        {
+          "line": 60,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751920000000_per-device-watermarks.ts",
+      "sha256": "ced3edff6821f71216947921cac8f62c2a24f3919d02a5e81080682be6a3e14d",
+      "lines": 24,
+      "exports": [
+        {
+          "line": 8,
+          "symbol": "up"
+        },
+        {
+          "line": 22,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751930000000_device-watermark-monotonic.ts",
+      "sha256": "d8353a23bddbb2d6398947be2fdb91119a4cc0f06a186037021a740f64ba296b",
+      "lines": 29,
+      "exports": [
+        {
+          "line": 4,
+          "symbol": "up"
+        },
+        {
+          "line": 24,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751940000000_policy-body-summary.ts",
+      "sha256": "77e6ee433291808f0608b9aeaaf7c79839f74c43890242d545deb6eac002f95d",
+      "lines": 25,
+      "exports": [
+        {
+          "line": 9,
+          "symbol": "up"
+        },
+        {
+          "line": 20,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751950000000_stage17-schema-drift-fix.ts",
+      "sha256": "9ed14d27f252e4762eb7a136548c1143d6ed240f3c54a81899274f2ac2f89e7d",
+      "lines": 41,
+      "exports": [
+        {
+          "line": 9,
+          "symbol": "up"
+        },
+        {
+          "line": 37,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751960000000_manager-month-approvals.ts",
+      "sha256": "67f209f393c2fa35696366f7aaf9d9e2c690713fa85e062eff4684dbfd0c2e77",
+      "lines": 34,
+      "exports": [
+        {
+          "line": 8,
+          "symbol": "up"
+        },
+        {
+          "line": 32,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751970000000_stage17-review-hardening.ts",
+      "sha256": "2ebe0a595dd20645706d5ef3a6a24a29b916d32900c4b90f917b2ea73db85387",
+      "lines": 158,
+      "exports": [
+        {
+          "line": 9,
+          "symbol": "up"
+        },
+        {
+          "line": 143,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751980000000_assets-module.ts",
+      "sha256": "d74bc9fec7bade583dee39b0702eda6eb628c1ec97ba6706ebe752197a267432",
+      "lines": 108,
+      "exports": [
+        {
+          "line": 20,
+          "symbol": "up"
+        },
+        {
+          "line": 101,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1751990000000_helpdesk-engagement.ts",
+      "sha256": "aacdc09ffff220691e63560af144a3f96f5eb495e5747d96cc3b6ace6c12e0c9",
+      "lines": 171,
+      "exports": [
+        {
+          "line": 20,
+          "symbol": "up"
+        },
+        {
+          "line": 158,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1752000000000_kpi-daily-snapshot.ts",
+      "sha256": "88dc7df95eceb456901490695e4d391ce56483bcfa292883e903f55b6f476f9c",
+      "lines": 44,
+      "exports": [
+        {
+          "line": 19,
+          "symbol": "up"
+        },
+        {
+          "line": 42,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1752010000000_asset-search-trigram.ts",
+      "sha256": "415332a8e2dc6721d3dfb044f46ab188a06a523fd7988e53ddedab78f80853f1",
+      "lines": 47,
+      "exports": [
+        {
+          "line": 17,
+          "symbol": "up"
+        },
+        {
+          "line": 39,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1752020000000_helpdesk-ticket-sequence.ts",
+      "sha256": "4db7610b04dd32b430dbb40ca42560c7158accc4c6728cbd62e2f4e5b8dbab26",
+      "lines": 35,
+      "exports": [
+        {
+          "line": 16,
+          "symbol": "up"
+        },
+        {
+          "line": 33,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1752030000000_roster-noop-approval-guard.ts",
+      "sha256": "80f409b408ab3934bc01c02c5e7bcb158001ceec538c84b70c77190895268945",
+      "lines": 81,
+      "exports": [
+        {
+          "line": 73,
+          "symbol": "up"
+        },
+        {
+          "line": 78,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1752040000000_engagement-anonymous-dedupe.ts",
+      "sha256": "5ead33ac70025e2ff6dea6c925aced0be055d175cb05150752190714de526f1b",
+      "lines": 45,
+      "exports": [
+        {
+          "line": 18,
+          "symbol": "up"
+        },
+        {
+          "line": 38,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1752050000000_audit-org-unit-scope.ts",
+      "sha256": "0a6ce14df79c50a8c05db152964f5498f45d40aa9b35908a4ae9373f431d9bbc",
+      "lines": 144,
+      "exports": [
+        {
+          "line": 10,
+          "symbol": "up"
+        },
+        {
+          "line": 85,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1752200000000_rbac-last-admin-guard.ts",
+      "sha256": "73109b940e448d724b0e7209c8c71a2735672fa31f31167114a93618a5592eea",
+      "lines": 156,
+      "exports": [
+        {
+          "line": 17,
+          "symbol": "up"
+        },
+        {
+          "line": 144,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/migrations/1752210000000_attendance-session-off.ts",
+      "sha256": "cedc49ebbe5beeb8a149a431970c905f0948e5bf82109db83ff2d3cb365538cd",
+      "lines": 42,
+      "exports": [
+        {
+          "line": 4,
+          "symbol": "up"
+        },
+        {
+          "line": 24,
+          "symbol": "down"
+        }
+      ]
+    },
+    {
+      "path": "backend/scripts/create-admin.ts",
+      "sha256": "9c631c9187157c7168be06195e8a410f65299e2f2fcee7a9642a6e52131cbbdf",
+      "lines": 63,
+      "exports": []
+    },
+    {
+      "path": "backend/scripts/rollback/1751790000000_core-auth-rbac-audit-settings.down.sql",
+      "sha256": "f57ea61ca01e78aa284201fbf920cc173ca7fbe20300b3e1d0cd42674e1ab2ac",
+      "lines": 12,
+      "exports": []
+    },
+    {
+      "path": "backend/scripts/scale-spike.ts",
+      "sha256": "b7721b57fec76da714bf9296cb211e4f0d0f2bb948d5989382498b486ec12243",
+      "lines": 71,
+      "exports": []
+    },
+    {
+      "path": "backend/scripts/verify-migrations.ts",
+      "sha256": "d3f062521ebe5373ce8eefd4307af89ad238cf36b06b2f5b0520d794c38cb818",
+      "lines": 48,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "sha256": "0dfd63049c93161e2f8afaf6c1f2e9ef7571e44e8e7d7959907e7eb78d05320a",
+      "lines": 56,
+      "exports": [
+        {
+          "line": 15,
+          "symbol": "App"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/app/AccountMenu.tsx",
+      "sha256": "7e75a4aaa532a1c3bad061ffa857bb56b59e8b4751f31a2f3ebc505cd8f94bf4",
+      "lines": 114,
+      "exports": [
+        {
+          "line": 33,
+          "symbol": "AccountMenu"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/app/AppShell.test.tsx",
+      "sha256": "4b9b89a18cd06188ac5794b29c4c64a447a688cf230c67d006215883dee00883",
+      "lines": 87,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/app/AppShell.tsx",
+      "sha256": "1b036500179a682e2bb03eb1bccf6d099de180ca522b012ab07450747791ef51",
+      "lines": 237,
+      "exports": [
+        {
+          "line": 27,
+          "symbol": "AppShell"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/app/BottomBar.tsx",
+      "sha256": "fe3a83e33da59787fd829d59843aab0d397bfd3f3cc60b677e43aad6ec66511d",
+      "lines": 65,
+      "exports": [
+        {
+          "line": 17,
+          "symbol": "BottomBar"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/app/CommandPalette.test.ts",
+      "sha256": "c8e467530b2e97faf681d4c58dff210b9d84c387ebd4b3ef656e9d1b5d1e68bc",
+      "lines": 204,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/app/CommandPalette.tsx",
+      "sha256": "c15e4e3a27355c57bb8177c88423b9a226ed4e6bd80ddfbf5f69ed862aa81cde",
+      "lines": 263,
+      "exports": [
+        {
+          "line": 44,
+          "symbol": "filterExtras"
+        },
+        {
+          "line": 132,
+          "symbol": "CommandPalette"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/app/NavMoreList.tsx",
+      "sha256": "e2a321b4060f64246bb9f0847283a56d0ccc4a3c17db4bbe5d96107d1ebf9869",
+      "lines": 58,
+      "exports": [
+        {
+          "line": 25,
+          "symbol": "NavMoreList"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/app/PillNav.tsx",
+      "sha256": "b88a736563ccbe83785fd2ed63e01bd44c46e78821c0e8bdf2b7599df459d0b9",
+      "lines": 98,
+      "exports": [
+        {
+          "line": 19,
+          "symbol": "PillNav"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/app/nav-config.test.ts",
+      "sha256": "adff2ea277ebb22703d771ac7d3f1955f9aa3d9a46e842224d0e5a996459d553",
+      "lines": 241,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/app/nav-config.ts",
+      "sha256": "eb9315ff94c98d92d038feee51caed6138b2de5b3794940db6eb2a95f6654e74",
+      "lines": 350,
+      "exports": [
+        {
+          "line": 50,
+          "symbol": "NavItem"
+        },
+        {
+          "line": 75,
+          "symbol": "navForUser"
+        },
+        {
+          "line": 264,
+          "symbol": "isNavActive"
+        },
+        {
+          "line": 311,
+          "symbol": "splitNav"
+        },
+        {
+          "line": 337,
+          "symbol": "mobileTabs"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/app/router.tsx",
+      "sha256": "b08049d334d9b0a08a9fb0f4a65a99e96adf65fbe9f6e4ac548ede046c63f855",
+      "lines": 127,
+      "exports": [
+        {
+          "line": 62,
+          "symbol": "AppRouter"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/app/useInboxCount.ts",
+      "sha256": "0bae0e55b69c98dfb2f77c8a8048cbcac0af21ccc970dc65f63602ca54713280",
+      "lines": 33,
+      "exports": [
+        {
+          "line": 9,
+          "symbol": "useInboxCount"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/app/user-display.ts",
+      "sha256": "c49f7600cd72734fa742900c25ebc090c05c6b05f834cbf982bfcb99e653ef38",
+      "lines": 36,
+      "exports": [
+        {
+          "line": 24,
+          "symbol": "primaryRoleLabel"
+        },
+        {
+          "line": 29,
+          "symbol": "accountInitials"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/index.css",
+      "sha256": "18636ebd2933433661b439216e210f0824a228ca68cbdb8e1e7d54d6bfff2799",
+      "lines": 270,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/lib/api.test.ts",
+      "sha256": "91ce9815a6c8edc5a43b5e4c5aa10bbcd3acf6b85cb517734e43c818d75f47eb",
+      "lines": 125,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/lib/api.ts",
+      "sha256": "7a005e8df6f8d699fc37e6bd8be6c2b676de2ce75397e146d7a97bd259464c7d",
+      "lines": 63,
+      "exports": [
+        {
+          "line": 7,
+          "symbol": "ApiError"
+        },
+        {
+          "line": 32,
+          "symbol": "apiFetch"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/lib/date.test.ts",
+      "sha256": "af9609d628f5f586f3ff9620e679458f88ba532d7d5f44c1a023da0b876536f4",
+      "lines": 17,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/lib/date.ts",
+      "sha256": "6365d30c5da4c9f6a78aee7eb1b1fb5f45f73f1a08c3460a76d593cf55419801",
+      "lines": 17,
+      "exports": [
+        {
+          "line": 9,
+          "symbol": "todayLongIST"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/lib/session.test.ts",
+      "sha256": "fea2587213027c6e0eb0e194b639b838e5da159c01df9e0806c4200c65b846d1",
+      "lines": 128,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/lib/session.ts",
+      "sha256": "5ae664041f095fd50d49c26863f69c7177dea847fdb3911ba3581e7e0c07d72c",
+      "lines": 92,
+      "exports": [
+        {
+          "line": 11,
+          "symbol": "SessionUser"
+        },
+        {
+          "line": 21,
+          "symbol": "getAccessToken"
+        },
+        {
+          "line": 25,
+          "symbol": "setAccessToken"
+        },
+        {
+          "line": 29,
+          "symbol": "clearAccessToken"
+        },
+        {
+          "line": 47,
+          "symbol": "restoreSession"
+        },
+        {
+          "line": 67,
+          "symbol": "loadSession"
+        },
+        {
+          "line": 73,
+          "symbol": "logout"
+        },
+        {
+          "line": 82,
+          "symbol": "hasPermission"
+        },
+        {
+          "line": 86,
+          "symbol": "hasAnyPermission"
+        },
+        {
+          "line": 90,
+          "symbol": "hasRole"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "sha256": "7b030e76fbe3242a9aae8258f3c4b32263f9c476b6c5242ad61f164f1940b61d",
+      "lines": 13,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/pages/_shared/ModuleState.test.tsx",
+      "sha256": "d5eead6cf1e1506470c56bb725bea1386c95c5d9353d143d1ce2de5f313ce837",
+      "lines": 76,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/pages/_shared/ModuleState.tsx",
+      "sha256": "72be8d21f73c863ee6c3b3d2f8414048fe643cbb4fa0540202c5dfc51f8a1e61",
+      "lines": 85,
+      "exports": [
+        {
+          "line": 27,
+          "symbol": "PendingModule"
+        },
+        {
+          "line": 64,
+          "symbol": "ModuleHeader"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/_shared/useModuleResource.ts",
+      "sha256": "f7a4183b51f6082e04edab314c28d7598c18be696c756dd4019d4b82ab53feab",
+      "lines": 65,
+      "exports": [
+        {
+          "line": 26,
+          "symbol": "useModuleResource"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/admin/AccessControlPage.tsx",
+      "sha256": "5a9d7739dc539ca0229b866de319103c3857472ba74ecc0061f0b427eb3ee6d3",
+      "lines": 392,
+      "exports": [
+        {
+          "line": 55,
+          "symbol": "AccessControlPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+      "sha256": "46119440089534b86a5177622eef917653cc6d310d1d78ff8b9ff3d20b5a9a67",
+      "lines": 626,
+      "exports": [
+        {
+          "line": 73,
+          "symbol": "AttendanceMastersPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/admin/AuditLogPage.tsx",
+      "sha256": "08612947d52b230564ea17a17cc3c72a78606265515d1f84737eebf748fadb58",
+      "lines": 371,
+      "exports": [
+        {
+          "line": 82,
+          "symbol": "AuditLogPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/admin/SettingsPage.tsx",
+      "sha256": "ea33ba63a03d9e2aa8afc09ec913485f3e02bd66073e0b901e4c0b36b62626ef",
+      "lines": 357,
+      "exports": [
+        {
+          "line": 77,
+          "symbol": "SettingsPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/admin/WorkflowsPage.tsx",
+      "sha256": "d8174595e2f94cbffcede2ab8e92475e9a30bf81776f3868970467163a261fdd",
+      "lines": 406,
+      "exports": [
+        {
+          "line": 97,
+          "symbol": "WorkflowsPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+      "sha256": "bb28713140c77ea291270820aa399353b1fe7f28c5427ae843f915940badc88a",
+      "lines": 347,
+      "exports": [
+        {
+          "line": 45,
+          "symbol": "ApprovalsPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/approvals/request-summary.test.ts",
+      "sha256": "30176018c9049ccc307684363b48255b968f5672d7f77d6ab98a6b3dd9f77eeb",
+      "lines": 76,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/pages/approvals/request-summary.ts",
+      "sha256": "70d10fb835ca77ad7a3179aad3d9665ba6dedbd7094ad14578b22c2da88ccf8f",
+      "lines": 235,
+      "exports": [
+        {
+          "line": 214,
+          "symbol": "summarizeRequest"
+        },
+        {
+          "line": 229,
+          "symbol": "payloadAsJson"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/attendance/AbsenceCasesPage.tsx",
+      "sha256": "7d63993d55bde10e8ee90a812733f2ea00cb36570c453766814c9a78b54f95df",
+      "lines": 428,
+      "exports": [
+        {
+          "line": 111,
+          "symbol": "AbsenceCasesPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/attendance/AttendanceOpsPage.tsx",
+      "sha256": "0d3de3b1dc96c7c43165befccf01cb629c419607d0b291c697e0eefe20fba123",
+      "lines": 166,
+      "exports": [
+        {
+          "line": 57,
+          "symbol": "AttendanceOpsPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/attendance/AttendanceRequestDrawer.tsx",
+      "sha256": "81a6f86c51b4d03f8e27c9d3e6489168c361f601ea9d1eab39243ba77b49a5e0",
+      "lines": 257,
+      "exports": [
+        {
+          "line": 99,
+          "symbol": "AttendanceRequestDrawer"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/attendance/DeviceHealthPage.tsx",
+      "sha256": "7a0ae961e7201269f10aaeddefbd590b2d57645855ee456d5cd93c5fbddb9926",
+      "lines": 11,
+      "exports": [
+        {
+          "line": 6,
+          "symbol": "DeviceHealthPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/attendance/ExceptionsPage.tsx",
+      "sha256": "d219fcb72b05e9008a306e8af69878c1dd1dbc5dacfd8a9e216532b8b754c84e",
+      "lines": 124,
+      "exports": [
+        {
+          "line": 25,
+          "symbol": "ExceptionsPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/attendance/MonthLockPage.tsx",
+      "sha256": "803e9c26cd27ba4cf67f9b9228c46d1d28117cb0df140127aa769684caf80f82",
+      "lines": 301,
+      "exports": [
+        {
+          "line": 51,
+          "symbol": "MonthLockPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/attendance/MyAttendancePage.test.tsx",
+      "sha256": "55b159ecbe4e5ba4d450a1a1fc9af8eac83e98130db3c3f7ee2e6290b85db0b9",
+      "lines": 31,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+      "sha256": "3451df72012be0977fa397f679da75e404981ebf2f6f8fc29129746ebb860b37",
+      "lines": 401,
+      "exports": [
+        {
+          "line": 135,
+          "symbol": "MyAttendancePage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/attendance/attendance-session-format.test.ts",
+      "sha256": "4f576f8cb533ecbed250c86a2b54191603d1382f157bc85400ef1476aeb8cc57",
+      "lines": 16,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/pages/attendance/attendance-session-format.ts",
+      "sha256": "8d7172bb5a2d4a54c5d424e89575a1ee8b7ff003697853eabe772efa2fc22e00",
+      "lines": 13,
+      "exports": [
+        {
+          "line": 3,
+          "symbol": "attendanceSessionGlyph"
+        },
+        {
+          "line": 11,
+          "symbol": "attendanceSessionDescription"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/attendance/attendance-types.ts",
+      "sha256": "eda234965e2347d0ae973ac2fcd99f79e7ea7e3db271c778dc461bad872d8c24",
+      "lines": 41,
+      "exports": [
+        {
+          "line": 1,
+          "symbol": "AttendanceSession"
+        },
+        {
+          "line": 6,
+          "symbol": "AttendanceMonthRow"
+        },
+        {
+          "line": 16,
+          "symbol": "AttendanceRequest"
+        },
+        {
+          "line": 30,
+          "symbol": "OvertimeEntry"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/auth/LoginPage.test.tsx",
+      "sha256": "b349f23bf0451b25e6f2471f6d1592676001910ed6be06caf25f4099fa1b65ce",
+      "lines": 53,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/pages/auth/LoginPage.tsx",
+      "sha256": "919947902c7e21d76119e78458ae650c9861e43fc1ec6ce5c7d6db4711e1c1cd",
+      "lines": 319,
+      "exports": [
+        {
+          "line": 74,
+          "symbol": "LoginPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/dev/GalleryPage.tsx",
+      "sha256": "d0d4493bb7e4da3bc39c6e8fb8482e05ed333d83ab946b4e78557c82b37823ba",
+      "lines": 487,
+      "exports": [
+        {
+          "line": 195,
+          "symbol": "GalleryPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/executive/ExecutivePage.tsx",
+      "sha256": "d2f012e6f9d00441ced7ff1d9f56ff3491b693a34cf2346289a896ad6521e0f5",
+      "lines": 484,
+      "exports": [
+        {
+          "line": 196,
+          "symbol": "ExecutivePage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/home/BusinessUnitDashboard.tsx",
+      "sha256": "f16cd5e2b8c0d1c08c1fa7092b3b9baf5c5f3c5bb176bc83cacced016bd689e1",
+      "lines": 234,
+      "exports": [
+        {
+          "line": 84,
+          "symbol": "BusinessUnitDashboard"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/home/DashboardFeedback.test.tsx",
+      "sha256": "a9a0cfac8694812aac3a8830c41ebc9763513ea1408e33136badc25ae7d55640",
+      "lines": 58,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/pages/home/DashboardFeedback.tsx",
+      "sha256": "e15b02cdda38c8fa4ae0b1aeb3dc715465a16d75599c0814f39e239cad89190f",
+      "lines": 51,
+      "exports": [
+        {
+          "line": 4,
+          "symbol": "DashboardSkeleton"
+        },
+        {
+          "line": 28,
+          "symbol": "DashboardError"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/home/DeviceHealthDashboard.tsx",
+      "sha256": "b37b1aa1be16fb57132c19b4c10551ce200189e9f2d87ee1b7e000493ed37126",
+      "lines": 116,
+      "exports": [
+        {
+          "line": 7,
+          "symbol": "DeviceHealthDashboard"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/home/EssDashboard.tsx",
+      "sha256": "db8bfd794f0db3a1648b8679d01caf2d8cdc00694111c91703b350f3c52f20bb",
+      "lines": 389,
+      "exports": [
+        {
+          "line": 206,
+          "symbol": "EssDashboard"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/home/HrOpsDashboard.tsx",
+      "sha256": "3045b130dc2aecdcde0bd5df32561a9e075299916ac7b2a3ab65f9e379a1c4eb",
+      "lines": 199,
+      "exports": [
+        {
+          "line": 26,
+          "symbol": "HrOpsDashboard"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/home/ManagerDashboard.tsx",
+      "sha256": "638581f10fc89ffa7d19b2981364876304395f3c0793f7f11a57b2f513e6d9a9",
+      "lines": 250,
+      "exports": [
+        {
+          "line": 52,
+          "symbol": "ManagerDashboard"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/home/RoleHomePage.tsx",
+      "sha256": "b643084450a43b78e213cfcf2f37c1f56d6ccb686e788216531a04c0ea91d3b5",
+      "lines": 154,
+      "exports": [
+        {
+          "line": 140,
+          "symbol": "RoleHomePage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/home/dashboard-format.ts",
+      "sha256": "1a91f2edc3bc97acb4aa8e6dc5bfe376414d0f1aa4f9baa497ef80c3e00b6abf",
+      "lines": 59,
+      "exports": [
+        {
+          "line": 31,
+          "symbol": "attendanceLabel"
+        },
+        {
+          "line": 36,
+          "symbol": "attendanceDot"
+        },
+        {
+          "line": 44,
+          "symbol": "formatTime"
+        },
+        {
+          "line": 49,
+          "symbol": "formatTimestamp"
+        },
+        {
+          "line": 54,
+          "symbol": "currentMonthIST"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/home/dashboard-types.ts",
+      "sha256": "c5e99d575a22d9815dc591ca195673a39b51fd16df6debfb3984747e8605b857",
+      "lines": 54,
+      "exports": [
+        {
+          "line": 1,
+          "symbol": "EssDashboardData"
+        },
+        {
+          "line": 27,
+          "symbol": "HrDashboardData"
+        },
+        {
+          "line": 40,
+          "symbol": "TeamMemberMonth"
+        },
+        {
+          "line": 47,
+          "symbol": "DeviceHealth"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/home/useDashboardResource.ts",
+      "sha256": "a58bb82edbdaef01d1d4454b9a74e2cd498414c66e1bcfecf19047be67b4b995",
+      "lines": 44,
+      "exports": [
+        {
+          "line": 11,
+          "symbol": "useDashboardResource"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/leave/LeaveAdminPage.tsx",
+      "sha256": "1938856ebf72b3214fd70155e631c5ffc605595eadf7ecc66b01af574dd32658",
+      "lines": 87,
+      "exports": [
+        {
+          "line": 6,
+          "symbol": "LeaveAdminPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/leave/LeaveApplyDrawer.tsx",
+      "sha256": "90ee07d426864bd6bd7adaf3dc71443b595999295f226f3e3a6c5e90f69645e8",
+      "lines": 297,
+      "exports": [
+        {
+          "line": 67,
+          "symbol": "LeaveTypeOption"
+        },
+        {
+          "line": 101,
+          "symbol": "LeaveApplyDrawer"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/leave/MyLeavePage.tsx",
+      "sha256": "ac7c08d347f305abfb75013e3ee4bfeeb6139ef72e9b036dedb8ca722e5755d0",
+      "lines": 348,
+      "exports": [
+        {
+          "line": 96,
+          "symbol": "MyLeavePage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/letters/LettersPage.tsx",
+      "sha256": "e877f5c240cd4a73fc1b97701cb79342f51f4b5d4d5fa58618db96e9584b178d",
+      "lines": 238,
+      "exports": [
+        {
+          "line": 31,
+          "symbol": "LettersPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/letters/MyLettersPage.tsx",
+      "sha256": "23eb0bff2131c88287d7c57b9f9150ddb62ed31d8020a99fe054bb72628581b1",
+      "lines": 170,
+      "exports": [
+        {
+          "line": 41,
+          "symbol": "MyLettersPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/lifecycle/LifecyclePage.tsx",
+      "sha256": "188984f172de2dc13ba9bb5d76a577682570b930ba67eb6bf46135d608798b0c",
+      "lines": 136,
+      "exports": [
+        {
+          "line": 45,
+          "symbol": "LifecyclePage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "sha256": "d608b125696537e0ea15dfee1c92edc8d0927dda99510f8582ee1ca5a848296a",
+      "lines": 104,
+      "exports": [
+        {
+          "line": 43,
+          "symbol": "ClaimsPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/payroll/LoansPage.tsx",
+      "sha256": "6767bbc69de42b9fa4a1e96f4a883f5a608dd6fcad8eca0b081fb8a2cfaf5836",
+      "lines": 110,
+      "exports": [
+        {
+          "line": 27,
+          "symbol": "LoansPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/payroll/MyPayPage.tsx",
+      "sha256": "d7975c68953936331fa413db93c2dbf24a56c5372e7cd2398a8e0e161f7024bc",
+      "lines": 217,
+      "exports": [
+        {
+          "line": 53,
+          "symbol": "MyPayPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/payroll/PayrollPage.tsx",
+      "sha256": "3a640d0e1d4ab27adf8f425cbc03d33243fb29104bb281d0cdab258f28988383",
+      "lines": 154,
+      "exports": [
+        {
+          "line": 67,
+          "symbol": "PayrollPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/people/DirectoryPage.tsx",
+      "sha256": "84e702d7bbd75b833714202f022f2ca5cee115487534fa00b8cd1cfe2a632cf2",
+      "lines": 386,
+      "exports": [
+        {
+          "line": 162,
+          "symbol": "DirectoryPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/people/PeopleFilterDrawer.tsx",
+      "sha256": "8d43a8017de8a0c95aba84dc122ccdc5f5da12e62d9517802e8fc89546c5f863",
+      "lines": 250,
+      "exports": [
+        {
+          "line": 42,
+          "symbol": "PeopleFilters"
+        },
+        {
+          "line": 51,
+          "symbol": "EMPTY_PEOPLE_FILTERS"
+        },
+        {
+          "line": 64,
+          "symbol": "countActiveFilters"
+        },
+        {
+          "line": 83,
+          "symbol": "PeopleFilterDrawer"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/people/ProfilePage.tsx",
+      "sha256": "f54f73d96f4fc5db39ca9b37ba97bc890e4e874a86ee49cbbeb57f015f7742ad",
+      "lines": 344,
+      "exports": [
+        {
+          "line": 107,
+          "symbol": "ProfilePage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/policies/PoliciesPage.tsx",
+      "sha256": "d590b7212dcfe2c6283bcb16cfb3ec96a167c372ded0cdefca1d0f83c4b2d295",
+      "lines": 388,
+      "exports": [
+        {
+          "line": 50,
+          "symbol": "PoliciesPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/recruitment/RecruitmentPage.tsx",
+      "sha256": "9eddbf15358b681a3caeb11b07ba84e9f8b63aa9b2920c008d5c9e7eb3fb84f2",
+      "lines": 79,
+      "exports": [
+        {
+          "line": 36,
+          "symbol": "RecruitmentPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/reports/MusterPage.tsx",
+      "sha256": "5f70a1fe54fe6138a7d603c21de055ae2ce8e4d24d2b2201c6b31506cabb8f55",
+      "lines": 476,
+      "exports": [
+        {
+          "line": 146,
+          "symbol": "MusterPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/reports/ReportsPage.tsx",
+      "sha256": "63b7ad67d82df8fdc2ddc242cfd91bb681e8bb15947659be9079c94b089214fe",
+      "lines": 115,
+      "exports": [
+        {
+          "line": 64,
+          "symbol": "ReportsPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/reports/SupportingReportPage.tsx",
+      "sha256": "83965eaf8a35a571141a3e91ebc53b693e27d790cd25c6e03509321b3c41abbd",
+      "lines": 253,
+      "exports": [
+        {
+          "line": 67,
+          "symbol": "SupportingReportPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/reports/SupportingReports.tsx",
+      "sha256": "d1f10f3c5a4884b0e4a6d8466fbf3a7a983bb3eaf4b44db546443e815e0bbbcf",
+      "lines": 791,
+      "exports": [
+        {
+          "line": 133,
+          "symbol": "R2SwipesPage"
+        },
+        {
+          "line": 272,
+          "symbol": "R3RegularizationsPage"
+        },
+        {
+          "line": 375,
+          "symbol": "R4ExceptionsPage"
+        },
+        {
+          "line": 507,
+          "symbol": "R5OtPage"
+        },
+        {
+          "line": 593,
+          "symbol": "R6AbsencePage"
+        },
+        {
+          "line": 672,
+          "symbol": "R24BoardingPage"
+        },
+        {
+          "line": 760,
+          "symbol": "R27HeadcountPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/reports/report-utils.ts",
+      "sha256": "b4fb58684bcba396afac3bbef873c8891d9c052205fb5525f9c102459f3222d3",
+      "lines": 57,
+      "exports": [
+        {
+          "line": 5,
+          "symbol": "defaultCompanyId"
+        },
+        {
+          "line": 9,
+          "symbol": "rememberCompanyId"
+        },
+        {
+          "line": 13,
+          "symbol": "defaultMonth"
+        },
+        {
+          "line": 17,
+          "symbol": "defaultReportDate"
+        },
+        {
+          "line": 24,
+          "symbol": "qs"
+        },
+        {
+          "line": 34,
+          "symbol": "downloadExcel"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/team/OtDecisionsPage.tsx",
+      "sha256": "9c9971addf56fe73d55c771976412c79daeecfb49559ff5582633476f63ef859",
+      "lines": 360,
+      "exports": [
+        {
+          "line": 69,
+          "symbol": "OtDecisionsPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/team/TeamPage.tsx",
+      "sha256": "a4c3a1963b9c760069a143ae8a4071703727558e49376e885ea68a8be8dab73e",
+      "lines": 689,
+      "exports": [
+        {
+          "line": 198,
+          "symbol": "TeamPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/team/roster-draft.test.ts",
+      "sha256": "a33c6ddaed119e98ff29e1207b259906f2805b11b325f859a87c68d720f56334",
+      "lines": 47,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/pages/team/roster-draft.ts",
+      "sha256": "31d00a8c90b05e41e445f8099a1151626001c0f77f5fa6c0cc15f023705e2ed8",
+      "lines": 53,
+      "exports": [
+        {
+          "line": 2,
+          "symbol": "RosterCellDraft"
+        },
+        {
+          "line": 7,
+          "symbol": "RosterDraft"
+        },
+        {
+          "line": 16,
+          "symbol": "rosterCellKey"
+        },
+        {
+          "line": 20,
+          "symbol": "getRosterChanges"
+        },
+        {
+          "line": 41,
+          "symbol": "mergeSavedRosterChanges"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/travel/TravelPage.tsx",
+      "sha256": "7e17689b9c28b567e7bd84bb59c179450763549119af0cf5fde74648a3857f7b",
+      "lines": 130,
+      "exports": [
+        {
+          "line": 71,
+          "symbol": "TravelPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/workplace/AssetsPage.tsx",
+      "sha256": "5db03fca94b5edb2389dfb0d18f1037bcb1bb6e798ea6ea1d229f209ed891abc",
+      "lines": 740,
+      "exports": [
+        {
+          "line": 84,
+          "symbol": "AssetsPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "sha256": "66665c0a1d67a68d6b2124e0e70ea590cff46483b39cbea48c8799aba0176c4c",
+      "lines": 134,
+      "exports": [
+        {
+          "line": 45,
+          "symbol": "EngagementPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "sha256": "16da787b93970a7ab1e4a6d2727215884539a87318ad4a6d43e55af3368966fe",
+      "lines": 771,
+      "exports": [
+        {
+          "line": 107,
+          "symbol": "HelpdeskPage"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/test/axe.ts",
+      "sha256": "67c956a67a53e894d3a4c009e3feb76ca47aa4223119b65ad292c412c0c411d6",
+      "lines": 40,
+      "exports": [
+        {
+          "line": 11,
+          "symbol": "runAxe"
+        },
+        {
+          "line": 25,
+          "symbol": "toHaveNoViolations"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/test/render.tsx",
+      "sha256": "a2ba8f38b04d749ad6c1755cf5e5bbf4a2bfc4578ac37d64039ab4c9e40af748",
+      "lines": 23,
+      "exports": [
+        {
+          "line": 10,
+          "symbol": "Theme"
+        },
+        {
+          "line": 11,
+          "symbol": "THEMES"
+        },
+        {
+          "line": 14,
+          "symbol": "renderThemed"
+        },
+        {
+          "line": 20,
+          "symbol": "renderRouted"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/test/setup.ts",
+      "sha256": "d9f2fa0b0b6e94662e1728eb6ed1e2354e36e8be9f18b5fc22182a6e97e90299",
+      "lines": 86,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/test/vitest.d.ts",
+      "sha256": "04defde89cb27062e3ad6f19e293130fdf77faefbd3b18b54ad4fbc0584a16e7",
+      "lines": 18,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/tokens/tokens.css",
+      "sha256": "bf5643cb55362914f66c6f5b0d0d14c258aa18e9ae5dd2662043ee288a731fe4",
+      "lines": 75,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/ui/Button.test.tsx",
+      "sha256": "158b16d37d0da8ad779261d2d8de92581b346590bf90829460ece62d1a20cc53",
+      "lines": 88,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/ui/Button.tsx",
+      "sha256": "09da528a88832dbcf970646e99544dd8a9d8ffde16fed76e72b703a449e0394a",
+      "lines": 85,
+      "exports": [
+        {
+          "line": 56,
+          "symbol": "Button"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/Card.tsx",
+      "sha256": "b5664e6bba4abea6018c5b089e27ab89ef1bedbdfb62930f105020d1076d775e",
+      "lines": 70,
+      "exports": [
+        {
+          "line": 20,
+          "symbol": "Card"
+        },
+        {
+          "line": 47,
+          "symbol": "CardHeader"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/Chart.test.tsx",
+      "sha256": "ac086e8a017f944df0f27b7ec4551fcc23c078129ee2c132895f3028cb5207b9",
+      "lines": 141,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/ui/Chart.tsx",
+      "sha256": "cfc08b3d03533d5bb748fddce1add133a4cd0e3c543f8092221d5f6c1bc21e31",
+      "lines": 322,
+      "exports": [
+        {
+          "line": 25,
+          "symbol": "ChartPoint"
+        },
+        {
+          "line": 71,
+          "symbol": "TrendChart"
+        },
+        {
+          "line": 272,
+          "symbol": "BarChart"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/Checkbox.tsx",
+      "sha256": "fdca6a08d5d7042a2ee1cabea8599a3213d23629d1a58bf4f688c040e626e221",
+      "lines": 72,
+      "exports": [
+        {
+          "line": 22,
+          "symbol": "Checkbox"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/ConfirmModal.test.tsx",
+      "sha256": "3607891138901411dc7cac16d1f091b2ddf0cea2c2b97a8eb3db379b6361e4b0",
+      "lines": 140,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/ui/ConfirmModal.tsx",
+      "sha256": "add8e5a31520a61f8c29d014a6be6b6f42e4880b17e436458559ba0e882c7601",
+      "lines": 152,
+      "exports": [
+        {
+          "line": 30,
+          "symbol": "ConfirmModal"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/DarkCard.tsx",
+      "sha256": "4f9a654f928be00792ae093e8f3a5befa4e51ccd57cdf9d8ffeb0cb59b51a219",
+      "lines": 34,
+      "exports": [
+        {
+          "line": 16,
+          "symbol": "DarkCard"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/DataTable.tsx",
+      "sha256": "ac4a561a5dea26715b216466f88a020fc820bcd70e9535095dfc508f32586234",
+      "lines": 210,
+      "exports": [
+        {
+          "line": 18,
+          "symbol": "Column"
+        },
+        {
+          "line": 40,
+          "symbol": "DataTable"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/DatePicker.tsx",
+      "sha256": "f42d648803dab5584c992bdd96d39c126eeeb49a52bfa3ca0f27e49d5c96c925",
+      "lines": 309,
+      "exports": [
+        {
+          "line": 57,
+          "symbol": "DatePicker"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/DotMatrix.tsx",
+      "sha256": "9578aba3b3636e616ce2dc71f821860cd54242804223bf78d46dc76c9ebd21e1",
+      "lines": 55,
+      "exports": [
+        {
+          "line": 12,
+          "symbol": "DotState"
+        },
+        {
+          "line": 14,
+          "symbol": "Dot"
+        },
+        {
+          "line": 28,
+          "symbol": "DotMatrix"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/Drawer.tsx",
+      "sha256": "a63dc1ab79f7dc7748133b1398cb26c6c3d301fafc3833e9f2ca33a75f66c383",
+      "lines": 140,
+      "exports": [
+        {
+          "line": 29,
+          "symbol": "Drawer"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/EmptyState.tsx",
+      "sha256": "858bb29ab037390c34a833e7fc461753effeed9fa934a7bfbbd4aeb75c88035d",
+      "lines": 37,
+      "exports": [
+        {
+          "line": 17,
+          "symbol": "EmptyState"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/FilterPanel.tsx",
+      "sha256": "bab67b97aa2fb2e1699ad9bc4753c7b5ba014f3c7508aea58bb2a923818051e2",
+      "lines": 125,
+      "exports": [
+        {
+          "line": 34,
+          "symbol": "FilterPanel"
+        },
+        {
+          "line": 72,
+          "symbol": "FilterSection"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/HatchFill.tsx",
+      "sha256": "7f33a6170d48bbf07ca8a9ab999df64bc205acf9aa794192963611181abdc397",
+      "lines": 38,
+      "exports": [
+        {
+          "line": 18,
+          "symbol": "HatchFill"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/IconButton.tsx",
+      "sha256": "aa1d8509b82a545f561834daddeb780057f06a4d97246111b3dacb7bc1f59a73",
+      "lines": 63,
+      "exports": [
+        {
+          "line": 36,
+          "symbol": "IconButton"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/KpiNumber.test.tsx",
+      "sha256": "d979bffd2410253be70a8817dd2678e1f7404c6d87473c29f8732370190e4cab",
+      "lines": 110,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/ui/KpiNumber.tsx",
+      "sha256": "5de71310354b1f5b810e9a28b1275e8b18b678b26fb65d3a9c3555638ccd6dca",
+      "lines": 111,
+      "exports": [
+        {
+          "line": 41,
+          "symbol": "KpiNumber"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/KpiPillRow.tsx",
+      "sha256": "36891b6e66e035ea14e220e94e8a14087844bd9b329c47a5074c32a9919ac6a7",
+      "lines": 96,
+      "exports": [
+        {
+          "line": 19,
+          "symbol": "PillState"
+        },
+        {
+          "line": 21,
+          "symbol": "KpiPill"
+        },
+        {
+          "line": 69,
+          "symbol": "KpiPillRow"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/MonthCalendar.tsx",
+      "sha256": "67a6f0da05d17409074fa7cac7df53f66f52ffd0da4f5c87b1aac41c712491a6",
+      "lines": 202,
+      "exports": [
+        {
+          "line": 20,
+          "symbol": "AttendanceDayState"
+        },
+        {
+          "line": 22,
+          "symbol": "AttendanceDay"
+        },
+        {
+          "line": 60,
+          "symbol": "MonthCalendar"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/PageHeader.tsx",
+      "sha256": "446d0a20354564a8bc131e04ced84c27398ba9af0643059a5c7c06074b3e357c",
+      "lines": 47,
+      "exports": [
+        {
+          "line": 20,
+          "symbol": "PageHeader"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/SegmentedProgress.tsx",
+      "sha256": "21ab5e1eee5beb86de6158981056e84214eedb70be7f83fdc84c488b6548f8ee",
+      "lines": 79,
+      "exports": [
+        {
+          "line": 25,
+          "symbol": "SegmentedProgress"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/Select.tsx",
+      "sha256": "ecc92a96a01462e0c3ed89bd205eac85e141cb9bfca465f98d19387434ca294f",
+      "lines": 312,
+      "exports": [
+        {
+          "line": 21,
+          "symbol": "SelectOption"
+        },
+        {
+          "line": 53,
+          "symbol": "Select"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/Skeleton.tsx",
+      "sha256": "823035e460bc5da978439b44523ab22e8df95311caa47ed08e81838ad1e201c4",
+      "lines": 43,
+      "exports": [
+        {
+          "line": 31,
+          "symbol": "Skeleton"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/StatusBadge.tsx",
+      "sha256": "7506ed8f7c51c746ce8593d65a275ef46d0f95f5954b48c5a86c8b8abca177dd",
+      "lines": 90,
+      "exports": [
+        {
+          "line": 18,
+          "symbol": "StatusTone"
+        },
+        {
+          "line": 51,
+          "symbol": "StatusBadge"
+        },
+        {
+          "line": 70,
+          "symbol": "Pill"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/Switch.tsx",
+      "sha256": "016a267fe624ebbeef9d359ef7fce9c01cbaaac0f595e5dc054a00a1024f1105",
+      "lines": 75,
+      "exports": [
+        {
+          "line": 20,
+          "symbol": "Switch"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/TextField.tsx",
+      "sha256": "bd6b2301a891d6646a166b56f4abbd1643fe5d6b2ba785ff5f68a4ace6b4c660",
+      "lines": 137,
+      "exports": [
+        {
+          "line": 46,
+          "symbol": "TextField"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/Textarea.tsx",
+      "sha256": "e2a39ef40795ed0e6906c8cf777ae1a3d0d643c1eb57ea1530cd66142109a3ee",
+      "lines": 123,
+      "exports": [
+        {
+          "line": 36,
+          "symbol": "Textarea"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/ThemeToggle.tsx",
+      "sha256": "f663ccec7007f0d535ccac947c3944df8f17d1a9bccfca7abb89d279918d9dda",
+      "lines": 19,
+      "exports": [
+        {
+          "line": 10,
+          "symbol": "ThemeToggle"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/Timeline.tsx",
+      "sha256": "4e885a4f2d5b60cc7c7734127ee4455990d56649891b067c2d3cc8b66d7f7123",
+      "lines": 92,
+      "exports": [
+        {
+          "line": 15,
+          "symbol": "TimelineState"
+        },
+        {
+          "line": 17,
+          "symbol": "TimelineStep"
+        },
+        {
+          "line": 44,
+          "symbol": "Timeline"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/Toast.tsx",
+      "sha256": "e21ddbcb33e4b647882de08203f12d368a44156683bc1eaa6d6f99696c027dd2",
+      "lines": 66,
+      "exports": [
+        {
+          "line": 30,
+          "symbol": "Toaster"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/Tooltip.tsx",
+      "sha256": "70c71f6ecbbb409198a083b81eb40b6aefbe1be42a7afb85ee0ff03e004eb1a7",
+      "lines": 124,
+      "exports": [
+        {
+          "line": 47,
+          "symbol": "Tooltip"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/calendar.test.ts",
+      "sha256": "5eda2dd92d2040e78842abaf293c18336e2519dee9d53f1e9dfba79eed158c2b",
+      "lines": 125,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/ui/calendar.ts",
+      "sha256": "17e91890d1046b15a4595cef7003b0611a79f46605b7f4313e8d4a3962021790",
+      "lines": 103,
+      "exports": [
+        {
+          "line": 13,
+          "symbol": "CalendarDay"
+        },
+        {
+          "line": 23,
+          "symbol": "WEEKDAYS_MIN"
+        },
+        {
+          "line": 32,
+          "symbol": "todayISOIST"
+        },
+        {
+          "line": 43,
+          "symbol": "formatDateIN"
+        },
+        {
+          "line": 57,
+          "symbol": "monthLabel"
+        },
+        {
+          "line": 66,
+          "symbol": "addMonths"
+        },
+        {
+          "line": 79,
+          "symbol": "monthMatrix"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/cn.ts",
+      "sha256": "0fe2f5237d8c2881532c569f5dc9cfb0538b07371314ad32fc39706288179761",
+      "lines": 8,
+      "exports": [
+        {
+          "line": 6,
+          "symbol": "cn"
+        }
+      ]
+    },
+    {
+      "path": "frontend/src/ui/data-display.test.tsx",
+      "sha256": "95a7e1e95b9fd20873890597d492faa98077f93a81e68f33786635f6821af568",
+      "lines": 165,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/ui/forms.test.tsx",
+      "sha256": "f33dd04f122989a89664bbbe4805e32ac57bf4fc1ae543a8c28b4078331cbc80",
+      "lines": 151,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/ui/index.ts",
+      "sha256": "ed3b5fc47bc6177baa55aa81d79b786345ec7dffa71962f8ab924fd89fc9a4ff",
+      "lines": 63,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/ui/pickers.test.tsx",
+      "sha256": "2475249f3ae4b18a7f77e17386d2975a39c3bf5fe7033eae8c036c0f34a735ad",
+      "lines": 184,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/ui/surfaces.test.tsx",
+      "sha256": "e2c0a7024a0ee93817ca4e070513f8b86221acd537ea78ae0dd5fddb794b5747",
+      "lines": 223,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/ui/theme.test.ts",
+      "sha256": "600fc5854163e23fa232f26f8fbcb2a88e48e8c3ac864bcfcac7ac1b00f65ee0",
+      "lines": 102,
+      "exports": []
+    },
+    {
+      "path": "frontend/src/ui/theme.ts",
+      "sha256": "f0ac3515e969db9f0854fc87613c1892f93287f2f30dfcd476685d572391bc8e",
+      "lines": 70,
+      "exports": [
+        {
+          "line": 12,
+          "symbol": "ThemeMode"
+        },
+        {
+          "line": 35,
+          "symbol": "useTheme"
+        }
+      ]
+    },
+    {
+      "path": "backend/package.json",
+      "sha256": "fb2b166ff48a7915c7ff9b3f55b4b246d3539ff50b59ecc3123be01d7e92fc10",
+      "lines": 74,
+      "exports": []
+    },
+    {
+      "path": "frontend/package.json",
+      "sha256": "5fc76df581742850c5b128ce1d85f7e2072a68adac0073787b16d002fc2fda3a",
+      "lines": 51,
+      "exports": []
+    },
+    {
+      "path": "backend/vitest.config.ts",
+      "sha256": "7b441eee4e144232725ac6365b6444f97814b155f1b9dca4bda1b9b2875b7045",
+      "lines": 20,
+      "exports": []
+    },
+    {
+      "path": "frontend/vitest.config.ts",
+      "sha256": "847706621e1e6a1709a2f68d297c0e5dd289b86d7da261d64f7cb2433f87960d",
+      "lines": 27,
+      "exports": []
+    },
+    {
+      "path": "backend/tsconfig.json",
+      "sha256": "7718869d0aa750b3f4a141320c3e80504e7b0f957b77ac8e59079fc55d59477e",
+      "lines": 23,
+      "exports": []
+    },
+    {
+      "path": "frontend/tsconfig.json",
+      "sha256": "8a9c27ca8a122a6eff29e95165644f4f310c578c16b7912691393341aa607d81",
+      "lines": 24,
+      "exports": []
+    }
+  ],
+  "route_locators": [
+    {
+      "method": "GET",
+      "path_literal": "/assets",
+      "permission_locator": "withPermission: assets.manage",
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 56
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/assets/{assetNo}",
+      "permission_locator": "withPermission: assets.manage",
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 75
+    },
+    {
+      "method": "POST",
+      "path_literal": "/assets/{assetId}/assign",
+      "permission_locator": "withPermission: assets.manage",
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 104
+    },
+    {
+      "method": "POST",
+      "path_literal": "/assets/assignments/{assignmentId}/return",
+      "permission_locator": "withPermission: assets.manage",
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 130
+    },
+    {
+      "method": "GET",
+      "path_literal": "/assets/held-by/{employeeId}",
+      "permission_locator": "withPermission: assets.manage",
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 153
+    },
+    {
+      "method": "GET",
+      "path_literal": "/assets/non-returned",
+      "permission_locator": "withPermission: assets.manage",
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 171
+    },
+    {
+      "method": "GET",
+      "path_literal": "/assets/{assetId}/maintenance",
+      "permission_locator": "withPermission: assets.manage",
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 190
+    },
+    {
+      "method": "POST",
+      "path_literal": "/assets/{assetId}/maintenance",
+      "permission_locator": "withPermission: assets.manage",
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 209
+    },
+    {
+      "method": "GET",
+      "path_literal": "/assets/export",
+      "permission_locator": "withPermission: assets.manage",
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 241
+    },
+    {
+      "method": "GET",
+      "path_literal": "/assets/non-returned/export",
+      "permission_locator": "withPermission: assets.manage",
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 285
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/absence-cases",
+      "permission_locator": "withPermission: attendance.team.read",
+      "file": "backend/src/modules/attendance/absence.router.ts",
+      "line": 21
+    },
+    {
+      "method": "POST",
+      "path_literal": "/attendance/absence-cases/{id}/stage",
+      "permission_locator": "withPermission: letters.issue",
+      "file": "backend/src/modules/attendance/absence.router.ts",
+      "line": 56
+    },
+    {
+      "method": "POST",
+      "path_literal": "/attendance/absence-cases/{id}/letter",
+      "permission_locator": "withPermission: letters.issue",
+      "file": "backend/src/modules/attendance/absence.router.ts",
+      "line": 69
+    },
+    {
+      "method": "POST",
+      "path_literal": "/attendance/absence-cases/scan",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/attendance/absence.router.ts",
+      "line": 92
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/config/shifts",
+      "permission_locator": "withPermission: admin.settings",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 80
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/config/shifts/active",
+      "permission_locator": "withPermission: attendance.roster.write",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 89
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/attendance/config/shifts/{code}",
+      "permission_locator": "withPermission: admin.settings",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 122
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/config/holidays",
+      "permission_locator": "withPermission: attendance.own",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 157
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/attendance/config/holidays",
+      "permission_locator": "withPermission: admin.settings",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 176
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/attendance/config/schemes/{employeeId}",
+      "permission_locator": "withPermission: attendance.roster.write",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 201
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/roster",
+      "permission_locator": "withPermission: attendance.roster.write",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 233
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/attendance/roster",
+      "permission_locator": "withPermission: attendance.roster.write",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 317
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/days",
+      "permission_locator": "withPermission: attendance.team.read",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 390
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/attendance/days/override",
+      "permission_locator": "withPermission: attendance.manual_override",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 434
+    },
+    {
+      "method": "POST",
+      "path_literal": "/attendance/recompute",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 463
+    },
+    {
+      "method": "POST",
+      "path_literal": "/attendance/week-close",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 480
+    },
+    {
+      "method": "POST",
+      "path_literal": "/attendance/requests",
+      "permission_locator": "withPermission: attendance.own",
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 47
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/requests/mine",
+      "permission_locator": "withPermission: attendance.own",
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 78
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/ot/mine",
+      "permission_locator": "withPermission: attendance.own",
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 140
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/ot/pending",
+      "permission_locator": "withPermission: ot.approve",
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 148
+    },
+    {
+      "method": "POST",
+      "path_literal": "/attendance/ot/decide",
+      "permission_locator": "withPermission: ot.approve",
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 156
+    },
+    {
+      "method": "POST",
+      "path_literal": "/attendance/ot/lapse-sweep",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 182
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/devices",
+      "permission_locator": "withPermission: admin.devices",
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 18
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/finalization-holds",
+      "permission_locator": "withPermission: reports.hr",
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 58
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/exceptions/unmatched",
+      "permission_locator": "withPermission: attendance.manual_override",
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 86
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/exceptions/quarantined",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 125
+    },
+    {
+      "method": "POST",
+      "path_literal": "/attendance/sync",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 164
+    },
+    {
+      "method": "POST",
+      "path_literal": "/attendance/exceptions/quarantined/reingest",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 186
+    },
+    {
+      "method": "GET",
+      "path_literal": "/audit",
+      "permission_locator": "withPermission: audit.read",
+      "file": "backend/src/modules/audit/audit.router.ts",
+      "line": 45
+    },
+    {
+      "method": "GET",
+      "path_literal": "/audit/facets",
+      "permission_locator": "withPermission: audit.read",
+      "file": "backend/src/modules/audit/audit.router.ts",
+      "line": 66
+    },
+    {
+      "method": "GET",
+      "path_literal": "/audit/verify",
+      "permission_locator": "withPermission: audit.read",
+      "file": "backend/src/modules/audit/audit.router.ts",
+      "line": 79
+    },
+    {
+      "method": "GET",
+      "path_literal": "/audit/export",
+      "permission_locator": "withPermission: audit.read",
+      "file": "backend/src/modules/audit/audit.router.ts",
+      "line": 98
+    },
+    {
+      "method": "POST",
+      "path_literal": "/auth/login",
+      "permission_locator": "base",
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 41
+    },
+    {
+      "method": "POST",
+      "path_literal": "/auth/refresh",
+      "permission_locator": "base",
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 71
+    },
+    {
+      "method": "POST",
+      "path_literal": "/auth/logout",
+      "permission_locator": "base",
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 87
+    },
+    {
+      "method": "GET",
+      "path_literal": "/auth/me",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 103
+    },
+    {
+      "method": "GET",
+      "path_literal": "/employees",
+      "permission_locator": "withPermission: employee.read",
+      "file": "backend/src/modules/employees/employees.router.ts",
+      "line": 30
+    },
+    {
+      "method": "GET",
+      "path_literal": "/employees/me",
+      "permission_locator": "withPermission: employee.read",
+      "file": "backend/src/modules/employees/employees.router.ts",
+      "line": 116
+    },
+    {
+      "method": "GET",
+      "path_literal": "/employees/{ecode}",
+      "permission_locator": "withPermission: employee.read",
+      "file": "backend/src/modules/employees/employees.router.ts",
+      "line": 133
+    },
+    {
+      "method": "GET",
+      "path_literal": "/employees/facets",
+      "permission_locator": "withPermission: employee.read",
+      "file": "backend/src/modules/employees/employees.router.ts",
+      "line": 161
+    },
+    {
+      "method": "GET",
+      "path_literal": "/engagement/announcements",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 79
+    },
+    {
+      "method": "GET",
+      "path_literal": "/engagement/announcements/all",
+      "permission_locator": "withPermission: engagement.publish",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 88
+    },
+    {
+      "method": "POST",
+      "path_literal": "/engagement/announcements",
+      "permission_locator": "withPermission: engagement.publish",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 97
+    },
+    {
+      "method": "POST",
+      "path_literal": "/engagement/announcements/{id}/withdraw",
+      "permission_locator": "withPermission: engagement.publish",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 120
+    },
+    {
+      "method": "GET",
+      "path_literal": "/engagement/polls",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 139
+    },
+    {
+      "method": "POST",
+      "path_literal": "/engagement/polls",
+      "permission_locator": "withPermission: engagement.publish",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 144
+    },
+    {
+      "method": "POST",
+      "path_literal": "/engagement/polls/{id}/respond",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 168
+    },
+    {
+      "method": "GET",
+      "path_literal": "/engagement/polls/{id}/results",
+      "permission_locator": "withPermission: engagement.publish",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 193
+    },
+    {
+      "method": "POST",
+      "path_literal": "/engagement/polls/{id}/close",
+      "permission_locator": "withPermission: engagement.publish",
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 205
+    },
+    {
+      "method": "GET",
+      "path_literal": "/helpdesk/categories",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 55
+    },
+    {
+      "method": "POST",
+      "path_literal": "/helpdesk/tickets",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 71
+    },
+    {
+      "method": "GET",
+      "path_literal": "/helpdesk/tickets/mine",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 94
+    },
+    {
+      "method": "GET",
+      "path_literal": "/helpdesk/tickets",
+      "permission_locator": "withPermission: helpdesk.agent",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 102
+    },
+    {
+      "method": "GET",
+      "path_literal": "/helpdesk/tickets/{ticketId}/thread",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 126
+    },
+    {
+      "method": "POST",
+      "path_literal": "/helpdesk/tickets/{ticketId}/reply",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 149
+    },
+    {
+      "method": "POST",
+      "path_literal": "/helpdesk/tickets/{ticketId}/status",
+      "permission_locator": "withPermission: helpdesk.agent",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 176
+    },
+    {
+      "method": "POST",
+      "path_literal": "/helpdesk/escalate",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 198
+    },
+    {
+      "method": "GET",
+      "path_literal": "/helpdesk/performance",
+      "permission_locator": "withPermission: reports.hr",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 215
+    },
+    {
+      "method": "GET",
+      "path_literal": "/helpdesk/performance/export",
+      "permission_locator": "withPermission: reports.hr",
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 221
+    },
+    {
+      "method": "GET",
+      "path_literal": "/leave/types",
+      "permission_locator": "withPermission: leave.own",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 45
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/leave/types/{code}",
+      "permission_locator": "withPermission: leave.admin",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 65
+    },
+    {
+      "method": "GET",
+      "path_literal": "/leave/balances",
+      "permission_locator": "withPermission: leave.own",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 118
+    },
+    {
+      "method": "GET",
+      "path_literal": "/leave/balances/{employeeId}",
+      "permission_locator": "withPermission: leave.admin",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 123
+    },
+    {
+      "method": "POST",
+      "path_literal": "/leave/applications",
+      "permission_locator": "withPermission: leave.own",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 129
+    },
+    {
+      "method": "GET",
+      "path_literal": "/leave/applications/mine",
+      "permission_locator": "withPermission: leave.own",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 159
+    },
+    {
+      "method": "GET",
+      "path_literal": "/leave/ledger",
+      "permission_locator": "withPermission: leave.own",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 194
+    },
+    {
+      "method": "POST",
+      "path_literal": "/leave/applications/{id}/cancel",
+      "permission_locator": "withPermission: leave.own",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 238
+    },
+    {
+      "method": "POST",
+      "path_literal": "/leave/encashments",
+      "permission_locator": "withPermission: leave.own",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 255
+    },
+    {
+      "method": "GET",
+      "path_literal": "/leave/restricted-holidays",
+      "permission_locator": "withPermission: leave.own",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 273
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/leave/restricted-holidays",
+      "permission_locator": "withPermission: leave.admin",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 288
+    },
+    {
+      "method": "POST",
+      "path_literal": "/leave/restricted-holidays/{id}/select",
+      "permission_locator": "withPermission: leave.own",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 309
+    },
+    {
+      "method": "POST",
+      "path_literal": "/leave/adjustments",
+      "permission_locator": "withPermission: leave.admin",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 326
+    },
+    {
+      "method": "POST",
+      "path_literal": "/leave/accrual/run",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 345
+    },
+    {
+      "method": "POST",
+      "path_literal": "/leave/comp-off/expire",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 351
+    },
+    {
+      "method": "POST",
+      "path_literal": "/leave/year-end/run",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 356
+    },
+    {
+      "method": "GET",
+      "path_literal": "/letters/templates",
+      "permission_locator": "withPermission: letters.issue",
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 36
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/letters/templates/{code}",
+      "permission_locator": "withPermission: letters.issue",
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 49
+    },
+    {
+      "method": "POST",
+      "path_literal": "/letters/issue",
+      "permission_locator": "withPermission: letters.issue",
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 85
+    },
+    {
+      "method": "GET",
+      "path_literal": "/letters/mine",
+      "permission_locator": "withPermission: employee.read",
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 108
+    },
+    {
+      "method": "GET",
+      "path_literal": "/letters/employee/{employeeId}",
+      "permission_locator": "withPermission: letters.issue",
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 116
+    },
+    {
+      "method": "GET",
+      "path_literal": "/letters/{id}/content",
+      "permission_locator": "withPermission: employee.read",
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 122
+    },
+    {
+      "method": "GET",
+      "path_literal": "/lifecycle/boarding-exit",
+      "permission_locator": "withPermission: reports.hr",
+      "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+      "line": 25
+    },
+    {
+      "method": "POST",
+      "path_literal": "/lifecycle/boarding-exit/send",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+      "line": 38
+    },
+    {
+      "method": "GET",
+      "path_literal": "/lifecycle/boarding-exit/excel",
+      "permission_locator": "withPermission: reports.hr",
+      "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+      "line": 44
+    },
+    {
+      "method": "POST",
+      "path_literal": "/policies",
+      "permission_locator": "withPermission: engagement.publish",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 47
+    },
+    {
+      "method": "GET",
+      "path_literal": "/policies",
+      "permission_locator": "withPermission: employee.read",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 89
+    },
+    {
+      "method": "GET",
+      "path_literal": "/policies/pending",
+      "permission_locator": "withPermission: employee.read",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 94
+    },
+    {
+      "method": "GET",
+      "path_literal": "/policies/catalog",
+      "permission_locator": "withPermission: reports.hr",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 99
+    },
+    {
+      "method": "GET",
+      "path_literal": "/policies/{id}/content",
+      "permission_locator": "withPermission: employee.read",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 115
+    },
+    {
+      "method": "POST",
+      "path_literal": "/policies/{id}/ack",
+      "permission_locator": "withPermission: employee.read",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 134
+    },
+    {
+      "method": "GET",
+      "path_literal": "/policies/ack-status",
+      "permission_locator": "withPermission: reports.hr",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 143
+    },
+    {
+      "method": "POST",
+      "path_literal": "/policies/nag",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 159
+    },
+    {
+      "method": "GET",
+      "path_literal": "/policies/ack-report",
+      "permission_locator": "withPermission: reports.hr",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 186
+    },
+    {
+      "method": "GET",
+      "path_literal": "/policies/ack-report/export",
+      "permission_locator": "withPermission: reports.hr",
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 192
+    },
+    {
+      "method": "GET",
+      "path_literal": "/rbac/matrix",
+      "permission_locator": "withPermission: admin.roles",
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 31
+    },
+    {
+      "method": "POST",
+      "path_literal": "/rbac/grants",
+      "permission_locator": "withPermission: admin.roles",
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 66
+    },
+    {
+      "method": "DELETE",
+      "path_literal": "/rbac/grants",
+      "permission_locator": "withPermission: admin.roles",
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 94
+    },
+    {
+      "method": "POST",
+      "path_literal": "/rbac/user-roles",
+      "permission_locator": "withPermission: admin.roles",
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 123
+    },
+    {
+      "method": "DELETE",
+      "path_literal": "/rbac/user-roles",
+      "permission_locator": "withPermission: admin.roles",
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 154
+    },
+    {
+      "method": "GET",
+      "path_literal": "/rbac/users",
+      "permission_locator": "withPermission: admin.roles",
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 183
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/month-lock/checklist",
+      "permission_locator": "withPermission: attendance.month_lock",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 104
+    },
+    {
+      "method": "POST",
+      "path_literal": "/attendance/month-lock",
+      "permission_locator": "withPermission: attendance.month_lock",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 125
+    },
+    {
+      "method": "GET",
+      "path_literal": "/attendance/manager-approvals",
+      "permission_locator": "withPermission: attendance.month_lock",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 153
+    },
+    {
+      "method": "POST",
+      "path_literal": "/attendance/manager-approvals",
+      "permission_locator": "withPermission: attendance.team.read",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 170
+    },
+    {
+      "method": "POST",
+      "path_literal": "/reports/muster/build",
+      "permission_locator": "withPermission: attendance.muster.export",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 214
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/muster",
+      "permission_locator": "withPermission: attendance.muster.export",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 266
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/muster/export",
+      "permission_locator": "withPermission: attendance.muster.export",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 274
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r2-swipes",
+      "permission_locator": "withPermission: attendance.muster.export",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 325
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r2-swipes/export",
+      "permission_locator": "withPermission: attendance.muster.export",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 333
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r2-swipes/raw",
+      "permission_locator": "withPermission: attendance.muster.export",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 362
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r3-regularizations",
+      "permission_locator": "withPermission: attendance.muster.export",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 403
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r3-regularizations/export",
+      "permission_locator": "withPermission: attendance.muster.export",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 411
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r4-exceptions",
+      "permission_locator": "withPermission: attendance.muster.export",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 435
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r4-exceptions/export",
+      "permission_locator": "withPermission: attendance.muster.export",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 443
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r5-ot",
+      "permission_locator": "withAnyPermission: reports.hr,reports.bu,reports.ceo",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 476
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r5-ot/export",
+      "permission_locator": "withAnyPermission: reports.hr,reports.bu,reports.ceo",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 484
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r6-absence",
+      "permission_locator": "withAnyPermission: reports.hr,reports.bu,reports.ceo",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 514
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r6-absence/export",
+      "permission_locator": "withAnyPermission: reports.hr,reports.bu,reports.ceo",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 522
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r24-boarding",
+      "permission_locator": "withAnyPermission: reports.hr,reports.bu,reports.ceo",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 554
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r24-boarding/export",
+      "permission_locator": "withAnyPermission: reports.hr,reports.bu,reports.ceo",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 562
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r27-headcount",
+      "permission_locator": "withAnyPermission: reports.hr,reports.bu,reports.ceo",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 603
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/r27-headcount/export",
+      "permission_locator": "withAnyPermission: reports.hr,reports.bu,reports.ceo",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 611
+    },
+    {
+      "method": "GET",
+      "path_literal": "/dashboards/hr-ops",
+      "permission_locator": "withPermission: reports.hr",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 624
+    },
+    {
+      "method": "GET",
+      "path_literal": "/dashboards/ess",
+      "permission_locator": "withPermission: attendance.own",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 641
+    },
+    {
+      "method": "GET",
+      "path_literal": "/my/attendance",
+      "permission_locator": "withPermission: attendance.own",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 670
+    },
+    {
+      "method": "GET",
+      "path_literal": "/my/team/grid",
+      "permission_locator": "withPermission: attendance.team.read",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 686
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/executive",
+      "permission_locator": "withPermission: reports.ceo",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 710
+    },
+    {
+      "method": "GET",
+      "path_literal": "/dashboards/business-unit",
+      "permission_locator": "withAnyPermission: reports.bu,reports.hr",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 743
+    },
+    {
+      "method": "GET",
+      "path_literal": "/reports/executive/trend",
+      "permission_locator": "withAnyPermission: reports.hr,reports.bu,reports.ceo",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 773
+    },
+    {
+      "method": "POST",
+      "path_literal": "/reports/executive/rebuild",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 785
+    },
+    {
+      "method": "GET",
+      "path_literal": "/settings/{key}",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/settings/settings.router.ts",
+      "line": 20
+    },
+    {
+      "method": "GET",
+      "path_literal": "/settings",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/settings/settings.router.ts",
+      "line": 30
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/settings/{key}",
+      "permission_locator": "withPermission: admin.settings",
+      "file": "backend/src/modules/settings/settings.router.ts",
+      "line": 43
+    },
+    {
+      "method": "GET",
+      "path_literal": "/system/health",
+      "permission_locator": "base",
+      "file": "backend/src/modules/system/system.router.ts",
+      "line": 15
+    },
+    {
+      "method": "POST",
+      "path_literal": "/workflows/requests",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 21
+    },
+    {
+      "method": "GET",
+      "path_literal": "/workflows/inbox",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 50
+    },
+    {
+      "method": "POST",
+      "path_literal": "/workflows/requests/{requestId}/act",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 83
+    },
+    {
+      "method": "POST",
+      "path_literal": "/workflows/requests/{requestId}/resubmit",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 110
+    },
+    {
+      "method": "GET",
+      "path_literal": "/workflows/requests/{requestId}",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 124
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/workflows/delegations",
+      "permission_locator": "authed",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 180
+    },
+    {
+      "method": "GET",
+      "path_literal": "/workflows/definitions",
+      "permission_locator": "withPermission: admin.settings",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 212
+    },
+    {
+      "method": "PUT",
+      "path_literal": "/workflows/definitions/{code}",
+      "permission_locator": "withPermission: admin.settings",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 221
+    },
+    {
+      "method": "POST",
+      "path_literal": "/workflows/escalate",
+      "permission_locator": "withPermission: admin.integrations",
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 254
+    }
+  ],
+  "deep_inventory": "deep-code-index.json",
+  "fresh_verification": "verification-2026-10-09.json"
+}

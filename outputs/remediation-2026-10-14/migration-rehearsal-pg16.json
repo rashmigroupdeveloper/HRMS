@@ -1,0 +1,24 @@
+{
+  "prepared": "2026-10-14",
+  "target": "hrms_review_20261014_pg16_test",
+  "scope": "Disposable local empty database; existing hrms schema is not migrated",
+  "target_stack_limitation": "Scratch server PostgreSQL16.15; exact target database major version",
+  "up": {
+    "passed": true,
+    "count": 49
+  },
+  "second_up": {
+    "passed": true,
+    "count": 0
+  },
+  "down": {
+    "passed": true,
+    "count": 49
+  },
+  "restored_up": {
+    "passed": true,
+    "count": 49
+  },
+  "schema_difference_count": 0,
+  "disposable_database_removed": true
+}

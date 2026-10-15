@@ -20,7 +20,7 @@ describe('summarizeRequest', () => {
     ]);
     expect(summary.preview).toBe('CL · 03 Aug 2026 · 05 Aug 2026');
     expect(summary.consequence).toBe(
-      'Approving grants 3 days of CL (03 Aug 2026 to 05 Aug 2026).',
+      'Final approval grants 3 days of CL (03 Aug 2026 to 05 Aug 2026).',
     );
   });
 
@@ -33,7 +33,7 @@ describe('summarizeRequest', () => {
       { label: 'Work date', value: '01 Aug 2026' },
       { label: 'Detected', value: '1h 30m' },
     ]);
-    expect(summary.consequence).toBe('Approving records 1h 30m for 01 Aug 2026.');
+    expect(summary.consequence).toBe('Final approval records 1h 30m for 01 Aug 2026.');
   });
 
   it('names AR/OD kinds in plant language', () => {
@@ -44,7 +44,7 @@ describe('summarizeRequest', () => {
       reason: 'Kent door S4 offline',
     });
     expect(ar.rows[0]).toEqual({ label: 'Kind', value: 'Attendance regularisation' });
-    expect(ar.consequence).toBe('Approving marks 01 Aug 2026 as present.');
+    expect(ar.consequence).toBe('Final approval marks 01 Aug 2026 as present.');
 
     const od = summarizeRequest('od', {
       kind: 'OD',
@@ -52,14 +52,14 @@ describe('summarizeRequest', () => {
       toDate: '2026-08-22',
       site: 'DIP-6',
     });
-    expect(od.consequence).toBe('Approving marks 22 Aug 2026 as on duty.');
+    expect(od.consequence).toBe('Final approval marks 22 Aug 2026 as on duty.');
     expect(od.preview).toContain('DIP-6');
   });
 
   it('still labels unknown keys instead of dumping the object', () => {
     const summary = summarizeRequest('letter_signature', { templateCode: 'offer' });
     expect(summary.rows).toEqual([{ label: 'Template', value: 'offer' }]);
-    expect(summary.consequence).toContain('Approving grants this request');
+    expect(summary.consequence).toContain('Final approval grants this request');
   });
 
   it('handles empty or non-object payloads without throwing', () => {

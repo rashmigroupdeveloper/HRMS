@@ -11,7 +11,8 @@
  */
 import 'dotenv/config';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
+import { expectHttpStatus } from './http-assertions.js';
 import type { Express } from 'express';
 import { signAccessToken } from '../src/core/auth/jwt.js';
 import { createApp } from '../src/app.js';
@@ -52,17 +53,17 @@ describe('HTTP hardening (findings D4, D5, D6, D8)', () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('CORS_ORIGIN', 'https://hrms.example.invalid');
     const production = createApp({ jwtSecret: 'synthetic-production-test-secret-32-chars' });
-    const permitted = await request(production).get('/health').set('Origin', 'https://hrms.example.invalid');
+    const permitted = await (await httpRequest(production)).get('/health').set('Origin', 'https://hrms.example.invalid');
     expect(permitted.headers['strict-transport-security']).toContain('max-age=');
     expect(permitted.headers['access-control-allow-origin']).toBe('https://hrms.example.invalid');
-    const forbidden = await request(production).get('/health').set('Origin', 'https://untrusted.example.invalid');
+    const forbidden = await (await httpRequest(production)).get('/health').set('Origin', 'https://untrusted.example.invalid');
     expect(forbidden.headers['access-control-allow-origin']).toBeUndefined();
   });
 
   it('throttles identifier-less and non-object auth payloads too', async () => {
     const limited = createApp({ rateLimits: { authPerIdentifier: 1, authPerAddress: 100, globalPerAddress: 100 } });
-    expect((await request(limited).post('/api/auth/login').send({ password: 'wrong' })).status).not.toBe(429);
-    expect((await request(limited).post('/api/auth/login').send({ password: 'wrong' })).status).toBe(429);
+    expect((await (await httpRequest(limited)).post('/api/auth/login').send({ password: 'wrong' })).status).not.toBe(429);
+    expect((await (await httpRequest(limited)).post('/api/auth/login').send({ password: 'wrong' })).status).toBe(429);
   });
 
   it('keeps different employees behind one plant address in separate general buckets', async () => {
@@ -70,14 +71,14 @@ describe('HTTP hardening (findings D4, D5, D6, D8)', () => {
     const general = createApp({ jwtSecret: secret, rateLimits: { authPerIdentifier: 100, authPerAddress: 100, globalPerAddress: 1 } });
     const first = await signAccessToken(1, 'one@hrms.invalid', secret);
     const second = await signAccessToken(2, 'two@hrms.invalid', secret);
-    expect((await request(general).get('/api/openapi.json').auth(first, { type: 'bearer' })).status).toBe(200);
-    expect((await request(general).get('/api/openapi.json').auth(second, { type: 'bearer' })).status).toBe(200);
-    expect((await request(general).get('/api/openapi.json').auth(first, { type: 'bearer' })).status).toBe(429);
+    expect((await (await httpRequest(general)).get('/api/openapi.json').auth(first, { type: 'bearer' })).status).toBe(200);
+    expect((await (await httpRequest(general)).get('/api/openapi.json').auth(second, { type: 'bearer' })).status).toBe(200);
+    expect((await (await httpRequest(general)).get('/api/openapi.json').auth(first, { type: 'bearer' })).status).toBe(429);
   });
 
   it('sends the security headers that were entirely absent', async () => {
-    const res = await request(app).get('/health');
-    expect(res.status).toBe(200);
+    const res = await (await httpRequest(app)).get('/health');
+    expectHttpStatus(res, 200);
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['content-security-policy']).toContain("frame-ancestors 'none'");
     expect(res.headers['referrer-policy']).toBe('no-referrer');
@@ -85,7 +86,7 @@ describe('HTTP hardening (findings D4, D5, D6, D8)', () => {
   });
 
   it('no longer advertises the framework', async () => {
-    const res = await request(app).get('/health');
+    const res = await (await httpRequest(app)).get('/health');
     expect(res.headers['x-powered-by']).toBeUndefined();
   });
 
@@ -94,7 +95,7 @@ describe('HTTP hardening (findings D4, D5, D6, D8)', () => {
     // 15 min, so the 31st must be refused regardless of credentials.
     let sawLimit = false;
     for (let i = 0; i < 20; i += 1) {
-      const res = await request(app)
+      const res = await (await httpRequest(app))
         .post('/api/auth/login')
         .send({ identifier: 'nobody@hrms.invalid', password: `wrong-${String(i)}` });
       if (res.status === 429) { sawLimit = true; break; }
@@ -107,7 +108,7 @@ describe('HTTP hardening (findings D4, D5, D6, D8)', () => {
     // returned 413 with an HTML stack trace, so the document vault (DOC-02),
     // policy publish (CORE-13) and letters (CORE-09) did not work at all.
     const big = 'A'.repeat(400_000);
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post('/api/documents/mine')
       .send({ documentType: 'pan', fileName: 'x.pdf', mime: 'application/pdf', content: big });
     // Unauthenticated, so 401 — the point is that it was PARSED, not rejected
@@ -121,16 +122,16 @@ describe('HTTP hardening (findings D4, D5, D6, D8)', () => {
       rateLimits: { authPerIdentifier: 5, authPerAddress: 100, globalPerAddress: 1000 },
     });
     for (let i = 1; i <= 6; i += 1) {
-      const response = await request(ipv6App).post('/api/auth/login')
+      const response = await (await httpRequest(ipv6App)).post('/api/auth/login')
         .set('X-Forwarded-For', `2001:db8:1234:5600::${String(i)}`)
         .send({ identifier: 'same-account@hrms.invalid', password: 'wrong-password' });
       if (i <= 5) expect(response.status).not.toBe(429);
-      else expect(response.status).toBe(429);
+      else expectHttpStatus(response, 429);
     }
   });
 
   it('answers errors as JSON, never an HTML stack trace', async () => {
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post('/api/auth/login')
       .set('Content-Type', 'application/json')
       .send('{"identifier": "broken'); // deliberately malformed JSON

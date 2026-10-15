@@ -1,0 +1,10 @@
+{
+  "unique_fields": 1379,
+  "csv_data_rows": 1379,
+  "business_relations": 132,
+  "every_field_has_ddl_and_type": true,
+  "all_sow_links_are_valid_original_row_ids": true,
+  "original_sow_unchanged": true,
+  "full_verify": "fails lint597",
+  "no_release_gate_advanced": true
+}

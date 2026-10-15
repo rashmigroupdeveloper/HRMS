@@ -1,0 +1,13 @@
+{
+  "prepared": "2026-10-14",
+  "command": "PATH=/opt/homebrew/opt/node@24/bin:$PATH npm run verify",
+  "runtime": "Node24",
+  "exit_code": 1,
+  "typecheck": "passed",
+  "lint_errors": 597,
+  "lint_warnings": 0,
+  "subsequent_verify_gates": "not reached; lint failure stops && chain",
+  "source_changes_this_audit": false,
+  "db_mutations_this_audit": false,
+  "previous_test_counts_are_not_current_rerun": true
+}

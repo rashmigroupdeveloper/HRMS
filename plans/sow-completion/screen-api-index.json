@@ -1,0 +1,1619 @@
+[
+  {
+    "helper": "apiFetch",
+    "path": "/api/employees?q=${encodeURIComponent(q)}&pageSize=${String(PEOPLE_PAGE_SIZE)}&activeOnly=true",
+    "method": "GET",
+    "line": 106,
+    "file": "frontend/src/app/CommandPalette.tsx",
+    "candidate_routes": [
+      {
+        "path": "/employees",
+        "file": "backend/src/modules/employees/employees.router.ts",
+        "line": 29
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/workflows/inbox",
+    "method": "GET",
+    "line": 16,
+    "file": "frontend/src/app/useInboxCount.ts",
+    "candidate_routes": [
+      {
+        "path": "/workflows/inbox",
+        "file": "backend/src/modules/workflows/workflows.router.ts",
+        "line": 49
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "fetch",
+    "path": "/api/auth/refresh",
+    "method": "POST",
+    "line": 19,
+    "file": "frontend/src/lib/api.ts",
+    "candidate_routes": [
+      {
+        "path": "/auth/refresh",
+        "file": "backend/src/modules/auth/auth.router.ts",
+        "line": 70
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "fetch",
+    "path": "<dynamic>",
+    "method": "GET",
+    "line": 44,
+    "file": "frontend/src/lib/api.ts",
+    "verdict": "dynamic/local — inspect helper"
+  },
+  {
+    "helper": "fetch",
+    "path": "<dynamic>",
+    "method": "GET",
+    "line": 50,
+    "file": "frontend/src/lib/api.ts",
+    "verdict": "dynamic/local — inspect helper"
+  },
+  {
+    "helper": "fetch",
+    "path": "/api/auth/me",
+    "method": "GET",
+    "line": 34,
+    "file": "frontend/src/lib/session.ts",
+    "candidate_routes": [
+      {
+        "path": "/auth/me",
+        "file": "backend/src/modules/auth/auth.router.ts",
+        "line": 102
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "fetch",
+    "path": "/api/auth/refresh",
+    "method": "POST",
+    "line": 49,
+    "file": "frontend/src/lib/session.ts",
+    "candidate_routes": [
+      {
+        "path": "/auth/refresh",
+        "file": "backend/src/modules/auth/auth.router.ts",
+        "line": 70
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "fetch",
+    "path": "/api/auth/logout",
+    "method": "POST",
+    "line": 75,
+    "file": "frontend/src/lib/session.ts",
+    "candidate_routes": [
+      {
+        "path": "/auth/logout",
+        "file": "backend/src/modules/auth/auth.router.ts",
+        "line": 86
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "<dynamic>",
+    "method": "GET",
+    "line": 43,
+    "file": "frontend/src/pages/_shared/useModuleResource.ts",
+    "verdict": "dynamic/local — inspect helper"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/rbac/matrix",
+    "method": "GET",
+    "line": 99,
+    "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/rbac/matrix",
+        "file": "backend/src/modules/rbac/rbac.router.ts",
+        "line": 30
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/rbac/grants",
+    "method": "<dynamic>",
+    "line": 135,
+    "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+    "verdict": "dynamic/local — inspect helper"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/rbac/matrix",
+    "method": "GET",
+    "line": 248,
+    "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/rbac/matrix",
+        "file": "backend/src/modules/rbac/rbac.router.ts",
+        "line": 30
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/rbac/users?${params.toString()}",
+    "method": "GET",
+    "line": 256,
+    "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/rbac/users",
+        "file": "backend/src/modules/rbac/rbac.router.ts",
+        "line": 182
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/rbac/user-roles",
+    "method": "<dynamic>",
+    "line": 284,
+    "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+    "verdict": "dynamic/local — inspect helper"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/attendance/config/shifts",
+    "method": "GET",
+    "line": 118,
+    "file": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/config/shifts",
+        "file": "backend/src/modules/attendance/attendance-config.router.ts",
+        "line": 79
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/config/shifts/${encodeURIComponent(draft.code.trim())}",
+    "method": "PUT",
+    "line": 287,
+    "file": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/config/shifts/{code}",
+        "file": "backend/src/modules/attendance/attendance-config.router.ts",
+        "line": 121
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/attendance/config/holidays?year=${String(year)}",
+    "method": "GET",
+    "line": 452,
+    "file": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/config/holidays",
+        "file": "backend/src/modules/attendance/attendance-config.router.ts",
+        "line": 156
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/config/holidays",
+    "method": "PUT",
+    "line": 469,
+    "file": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/config/holidays",
+        "file": "backend/src/modules/attendance/attendance-config.router.ts",
+        "line": 175
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/audit?${params.toString()}",
+    "method": "GET",
+    "line": 113,
+    "file": "frontend/src/pages/admin/AuditLogPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/audit",
+        "file": "backend/src/modules/audit/audit.router.ts",
+        "line": 44
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/audit/facets",
+    "method": "GET",
+    "line": 132,
+    "file": "frontend/src/pages/admin/AuditLogPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/audit/facets",
+        "file": "backend/src/modules/audit/audit.router.ts",
+        "line": 65
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/audit/verify",
+    "method": "GET",
+    "line": 142,
+    "file": "frontend/src/pages/admin/AuditLogPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/audit/verify",
+        "file": "backend/src/modules/audit/audit.router.ts",
+        "line": 78
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/settings",
+    "method": "GET",
+    "line": 78,
+    "file": "frontend/src/pages/admin/SettingsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/settings",
+        "file": "backend/src/modules/settings/settings.router.ts",
+        "line": 29
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/settings/${encodeURIComponent(setting.key)}",
+    "method": "PUT",
+    "line": 261,
+    "file": "frontend/src/pages/admin/SettingsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/settings/{key}",
+        "file": "backend/src/modules/settings/settings.router.ts",
+        "line": 42
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/workflows/definitions",
+    "method": "GET",
+    "line": 98,
+    "file": "frontend/src/pages/admin/WorkflowsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/workflows/definitions",
+        "file": "backend/src/modules/workflows/workflows.router.ts",
+        "line": 211
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/workflows/definitions/${encodeURIComponent(definition.code)}",
+    "method": "PUT",
+    "line": 282,
+    "file": "frontend/src/pages/admin/WorkflowsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/workflows/definitions/{code}",
+        "file": "backend/src/modules/workflows/workflows.router.ts",
+        "line": 220
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/workflows/inbox",
+    "method": "GET",
+    "line": 48,
+    "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/workflows/inbox",
+        "file": "backend/src/modules/workflows/workflows.router.ts",
+        "line": 49
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/workflows/requests/${String(item.requestId)}/act",
+    "method": "POST",
+    "line": 74,
+    "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/workflows/requests/{requestId}/act",
+        "file": "backend/src/modules/workflows/workflows.router.ts",
+        "line": 82
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/workflows/requests/${String(requestId)}/act",
+    "method": "POST",
+    "line": 108,
+    "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/workflows/requests/{requestId}/act",
+        "file": "backend/src/modules/workflows/workflows.router.ts",
+        "line": 82
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/absence-cases?open=${String(onlyOpen)}",
+    "method": "GET",
+    "line": 132,
+    "file": "frontend/src/pages/attendance/AbsenceCasesPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/absence-cases",
+        "file": "backend/src/modules/attendance/absence.router.ts",
+        "line": 20
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/absence-cases/${String(selected.id)}/stage",
+    "method": "POST",
+    "line": 148,
+    "file": "frontend/src/pages/attendance/AbsenceCasesPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/absence-cases/{id}/stage",
+        "file": "backend/src/modules/attendance/absence.router.ts",
+        "line": 55
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/absence-cases/${String(selected.id)}/letter",
+    "method": "POST",
+    "line": 167,
+    "file": "frontend/src/pages/attendance/AbsenceCasesPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/absence-cases/{id}/letter",
+        "file": "backend/src/modules/attendance/absence.router.ts",
+        "line": 68
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/attendance/exceptions/unmatched?limit=20",
+    "method": "GET",
+    "line": 63,
+    "file": "frontend/src/pages/attendance/AttendanceOpsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/exceptions/unmatched",
+        "file": "backend/src/modules/attendance/attendance.router.ts",
+        "line": 85
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/requests",
+    "method": "POST",
+    "line": 161,
+    "file": "frontend/src/pages/attendance/AttendanceRequestDrawer.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/requests",
+        "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+        "line": 46
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/attendance/devices",
+    "method": "GET",
+    "line": 7,
+    "file": "frontend/src/pages/attendance/DeviceHealthPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/devices",
+        "file": "backend/src/modules/attendance/attendance.router.ts",
+        "line": 17
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/attendance/exceptions/unmatched?limit=200",
+    "method": "GET",
+    "line": 26,
+    "file": "frontend/src/pages/attendance/ExceptionsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/exceptions/unmatched",
+        "file": "backend/src/modules/attendance/attendance.router.ts",
+        "line": 85
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/month-lock/checklist?companyId=${companyId}&month=${month}",
+    "method": "GET",
+    "line": 70,
+    "file": "frontend/src/pages/attendance/MonthLockPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/month-lock/checklist",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 103
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/manager-approvals?companyId=${companyId}&month=${month}",
+    "method": "GET",
+    "line": 73,
+    "file": "frontend/src/pages/attendance/MonthLockPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/manager-approvals",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 152
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/month-lock",
+    "method": "POST",
+    "line": 94,
+    "file": "frontend/src/pages/attendance/MonthLockPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/month-lock",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 124
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/my/attendance?month=${month}",
+    "method": "GET",
+    "line": 139,
+    "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/my/attendance",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 669
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/attendance/requests/mine",
+    "method": "GET",
+    "line": 142,
+    "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/requests/mine",
+        "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+        "line": 77
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/attendance/ot/mine",
+    "method": "GET",
+    "line": 143,
+    "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/ot/mine",
+        "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+        "line": 139
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/attendance/config/holidays?year=${String(holidayYear)}",
+    "method": "GET",
+    "line": 146,
+    "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/config/holidays",
+        "file": "backend/src/modules/attendance/attendance-config.router.ts",
+        "line": 156
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "fetch",
+    "path": "/api/auth/login",
+    "method": "POST",
+    "line": 125,
+    "file": "frontend/src/pages/auth/LoginPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/auth/login",
+        "file": "backend/src/modules/auth/auth.router.ts",
+        "line": 40
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useModuleResource",
+    "path": "/api/reports/executive",
+    "method": "GET",
+    "line": 197,
+    "file": "frontend/src/pages/executive/ExecutivePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/reports/executive",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 709
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useModuleResource",
+    "path": "/api/reports/executive/trend?metric=absenteeism_pct&months=6",
+    "method": "GET",
+    "line": 198,
+    "file": "frontend/src/pages/executive/ExecutivePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/reports/executive/trend",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 772
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useModuleResource",
+    "path": "/api/reports/executive/trend?metric=overtime_hours&months=6",
+    "method": "GET",
+    "line": 201,
+    "file": "frontend/src/pages/executive/ExecutivePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/reports/executive/trend",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 772
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/dashboards/business-unit",
+    "method": "GET",
+    "line": 85,
+    "file": "frontend/src/pages/home/BusinessUnitDashboard.tsx",
+    "candidate_routes": [
+      {
+        "path": "/dashboards/business-unit",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 742
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/reports/executive/trend?metric=absenteeism_pct&months=6",
+    "method": "GET",
+    "line": 86,
+    "file": "frontend/src/pages/home/BusinessUnitDashboard.tsx",
+    "candidate_routes": [
+      {
+        "path": "/reports/executive/trend",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 772
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/reports/executive/trend?metric=overtime_hours&months=6",
+    "method": "GET",
+    "line": 89,
+    "file": "frontend/src/pages/home/BusinessUnitDashboard.tsx",
+    "candidate_routes": [
+      {
+        "path": "/reports/executive/trend",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 772
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/policies/pending",
+    "method": "GET",
+    "line": 208,
+    "file": "frontend/src/pages/home/EssDashboard.tsx",
+    "candidate_routes": [
+      {
+        "path": "/policies/pending",
+        "file": "backend/src/modules/policies/policies.router.ts",
+        "line": 93
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/policies",
+    "method": "GET",
+    "line": 209,
+    "file": "frontend/src/pages/home/EssDashboard.tsx",
+    "candidate_routes": [
+      {
+        "path": "/policies",
+        "file": "backend/src/modules/policies/policies.router.ts",
+        "line": 88
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/leave/applications/mine",
+    "method": "GET",
+    "line": 210,
+    "file": "frontend/src/pages/home/EssDashboard.tsx",
+    "candidate_routes": [
+      {
+        "path": "/leave/applications/mine",
+        "file": "backend/src/modules/leave/leave.router.ts",
+        "line": 158
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/attendance/requests/mine",
+    "method": "GET",
+    "line": 211,
+    "file": "frontend/src/pages/home/EssDashboard.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/requests/mine",
+        "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+        "line": 77
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/dashboards/ess",
+    "method": "GET",
+    "line": 110,
+    "file": "frontend/src/pages/home/RoleHomePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/dashboards/ess",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 640
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/dashboards/hr-ops",
+    "method": "GET",
+    "line": 117,
+    "file": "frontend/src/pages/home/RoleHomePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/dashboards/hr-ops",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 623
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/my/team/grid?${query.toString()}",
+    "method": "GET",
+    "line": 126,
+    "file": "frontend/src/pages/home/RoleHomePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/my/team/grid",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 685
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/attendance/devices",
+    "method": "GET",
+    "line": 134,
+    "file": "frontend/src/pages/home/RoleHomePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/devices",
+        "file": "backend/src/modules/attendance/attendance.router.ts",
+        "line": 17
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "<dynamic>",
+    "method": "GET",
+    "line": 26,
+    "file": "frontend/src/pages/home/useDashboardResource.ts",
+    "verdict": "dynamic/local — inspect helper"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "<dynamic>",
+    "method": "POST",
+    "line": 11,
+    "file": "frontend/src/pages/leave/LeaveAdminPage.tsx",
+    "verdict": "dynamic/local — inspect helper"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/leave/applications",
+    "method": "POST",
+    "line": 170,
+    "file": "frontend/src/pages/leave/LeaveApplyDrawer.tsx",
+    "candidate_routes": [
+      {
+        "path": "/leave/applications",
+        "file": "backend/src/modules/leave/leave.router.ts",
+        "line": 128
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/leave/balances",
+    "method": "GET",
+    "line": 99,
+    "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/leave/balances",
+        "file": "backend/src/modules/leave/leave.router.ts",
+        "line": 117
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/leave/types",
+    "method": "GET",
+    "line": 100,
+    "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/leave/types",
+        "file": "backend/src/modules/leave/leave.router.ts",
+        "line": 44
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/leave/applications/mine",
+    "method": "GET",
+    "line": 101,
+    "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/leave/applications/mine",
+        "file": "backend/src/modules/leave/leave.router.ts",
+        "line": 158
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/leave/ledger",
+    "method": "GET",
+    "line": 102,
+    "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/leave/ledger",
+        "file": "backend/src/modules/leave/leave.router.ts",
+        "line": 193
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/leave/restricted-holidays",
+    "method": "GET",
+    "line": 103,
+    "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/leave/restricted-holidays",
+        "file": "backend/src/modules/leave/leave.router.ts",
+        "line": 272
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/leave/restricted-holidays/${String(row.id)}/select",
+    "method": "POST",
+    "line": 140,
+    "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/leave/restricted-holidays/{id}/select",
+        "file": "backend/src/modules/leave/leave.router.ts",
+        "line": 308
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/letters/templates",
+    "method": "GET",
+    "line": 44,
+    "file": "frontend/src/pages/letters/LettersPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/letters/templates",
+        "file": "backend/src/modules/letters/letters.router.ts",
+        "line": 35
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/letters/employee/${employeeId}",
+    "method": "GET",
+    "line": 54,
+    "file": "frontend/src/pages/letters/LettersPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/letters/employee/{employeeId}",
+        "file": "backend/src/modules/letters/letters.router.ts",
+        "line": 115
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/letters/issue",
+    "method": "POST",
+    "line": 68,
+    "file": "frontend/src/pages/letters/LettersPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/letters/issue",
+        "file": "backend/src/modules/letters/letters.router.ts",
+        "line": 84
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/letters/${String(row.id)}/content",
+    "method": "GET",
+    "line": 87,
+    "file": "frontend/src/pages/letters/LettersPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/letters/{id}/content",
+        "file": "backend/src/modules/letters/letters.router.ts",
+        "line": 121
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/letters/mine",
+    "method": "GET",
+    "line": 50,
+    "file": "frontend/src/pages/letters/MyLettersPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/letters/mine",
+        "file": "backend/src/modules/letters/letters.router.ts",
+        "line": 107
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/letters/${String(row.id)}/content",
+    "method": "GET",
+    "line": 65,
+    "file": "frontend/src/pages/letters/MyLettersPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/letters/{id}/content",
+        "file": "backend/src/modules/letters/letters.router.ts",
+        "line": 121
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useModuleResource",
+    "path": "/api/lifecycle/boarding-exit?from=${today}&to=${today}",
+    "method": "GET",
+    "line": 51,
+    "file": "frontend/src/pages/lifecycle/LifecyclePage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/lifecycle/boarding-exit",
+        "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+        "line": 24
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useModuleResource",
+    "path": "/api/claims",
+    "method": "GET",
+    "line": 45,
+    "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+    "candidate_routes": [],
+    "verdict": "no literal route match — pending or inspect indirection"
+  },
+  {
+    "helper": "useModuleResource",
+    "path": "/api/loans",
+    "method": "GET",
+    "line": 28,
+    "file": "frontend/src/pages/payroll/LoansPage.tsx",
+    "candidate_routes": [],
+    "verdict": "no literal route match — pending or inspect indirection"
+  },
+  {
+    "helper": "useModuleResource",
+    "path": "/api/my/payslip?month=${month}",
+    "method": "GET",
+    "line": 55,
+    "file": "frontend/src/pages/payroll/MyPayPage.tsx",
+    "candidate_routes": [],
+    "verdict": "no literal route match — pending or inspect indirection"
+  },
+  {
+    "helper": "useModuleResource",
+    "path": "/api/payroll/runs",
+    "method": "GET",
+    "line": 68,
+    "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+    "candidate_routes": [],
+    "verdict": "no literal route match — pending or inspect indirection"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/employees?${params.toString()}",
+    "method": "GET",
+    "line": 203,
+    "file": "frontend/src/pages/people/DirectoryPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/employees",
+        "file": "backend/src/modules/employees/employees.router.ts",
+        "line": 29
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/employees/facets?activeOnly=${String(filters.activeOnly)}",
+    "method": "GET",
+    "line": 101,
+    "file": "frontend/src/pages/people/PeopleFilterDrawer.tsx",
+    "candidate_routes": [
+      {
+        "path": "/employees/{ecode}",
+        "file": "backend/src/modules/employees/employees.router.ts",
+        "line": 132
+      },
+      {
+        "path": "/employees/facets",
+        "file": "backend/src/modules/employees/employees.router.ts",
+        "line": 160
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "<dynamic>",
+    "method": "GET",
+    "line": 119,
+    "file": "frontend/src/pages/people/ProfilePage.tsx",
+    "verdict": "dynamic/local — inspect helper"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/policies",
+    "method": "GET",
+    "line": 66,
+    "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/policies",
+        "file": "backend/src/modules/policies/policies.router.ts",
+        "line": 88
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/policies/ack-status",
+    "method": "GET",
+    "line": 67,
+    "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/policies/ack-status",
+        "file": "backend/src/modules/policies/policies.router.ts",
+        "line": 142
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/policies/${String(policy.id)}/content",
+    "method": "GET",
+    "line": 81,
+    "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/policies/{id}/content",
+        "file": "backend/src/modules/policies/policies.router.ts",
+        "line": 114
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/policies/${String(policy.id)}/ack",
+    "method": "POST",
+    "line": 95,
+    "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/policies/{id}/ack",
+        "file": "backend/src/modules/policies/policies.router.ts",
+        "line": 133
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/policies",
+    "method": "POST",
+    "line": 118,
+    "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/policies",
+        "file": "backend/src/modules/policies/policies.router.ts",
+        "line": 46
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useModuleResource",
+    "path": "/api/recruitment/requisitions",
+    "method": "GET",
+    "line": 37,
+    "file": "frontend/src/pages/recruitment/RecruitmentPage.tsx",
+    "candidate_routes": [],
+    "verdict": "no literal route match — pending or inspect indirection"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/reports/muster/build",
+    "method": "POST",
+    "line": 211,
+    "file": "frontend/src/pages/reports/MusterPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/reports/muster/build",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 213
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/reports/muster${queryString}",
+    "method": "GET",
+    "line": 219,
+    "file": "frontend/src/pages/reports/MusterPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/reports/muster",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 265
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/reports/muster/export${queryString}",
+    "method": "GET",
+    "line": 242,
+    "file": "frontend/src/pages/reports/MusterPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/reports/muster/export",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 273
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "${listPath}${qs(buildQuery(filters))}",
+    "method": "GET",
+    "line": 122,
+    "file": "frontend/src/pages/reports/SupportingReportPage.tsx",
+    "verdict": "dynamic/local — inspect helper"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/reports/r2-swipes/raw${qs({\n        ecode: row.ecode, workDate: row.workDate,\n      })}",
+    "method": "GET",
+    "line": 143,
+    "file": "frontend/src/pages/reports/SupportingReports.tsx",
+    "candidate_routes": [
+      {
+        "path": "/reports/r2-swipes/raw",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 361
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/lifecycle/boarding-exit/send",
+    "method": "POST",
+    "line": 677,
+    "file": "frontend/src/pages/reports/SupportingReports.tsx",
+    "candidate_routes": [
+      {
+        "path": "/lifecycle/boarding-exit/send",
+        "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+        "line": 37
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "<dynamic>",
+    "method": "GET",
+    "line": 39,
+    "file": "frontend/src/pages/reports/report-utils.ts",
+    "verdict": "dynamic/local — inspect helper"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/ot/pending",
+    "method": "GET",
+    "line": 100,
+    "file": "frontend/src/pages/team/OtDecisionsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/ot/pending",
+        "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+        "line": 147
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/ot/decide",
+    "method": "POST",
+    "line": 131,
+    "file": "frontend/src/pages/team/OtDecisionsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/ot/decide",
+        "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+        "line": 155
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/ot/pending",
+    "method": "GET",
+    "line": 149,
+    "file": "frontend/src/pages/team/OtDecisionsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/ot/pending",
+        "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+        "line": 147
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useDashboardResource",
+    "path": "/api/my/team/grid?${query.toString()}",
+    "method": "GET",
+    "line": 206,
+    "file": "frontend/src/pages/team/TeamPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/my/team/grid",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 685
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/config/shifts/active",
+    "method": "GET",
+    "line": 224,
+    "file": "frontend/src/pages/team/TeamPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/config/shifts/active",
+        "file": "backend/src/modules/attendance/attendance-config.router.ts",
+        "line": 88
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/roster?month=${month}&subtree=${String(subtree)}",
+    "method": "GET",
+    "line": 225,
+    "file": "frontend/src/pages/team/TeamPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/roster",
+        "file": "backend/src/modules/attendance/attendance-config.router.ts",
+        "line": 232
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/roster",
+    "method": "PUT",
+    "line": 329,
+    "file": "frontend/src/pages/team/TeamPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/roster",
+        "file": "backend/src/modules/attendance/attendance-config.router.ts",
+        "line": 316
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/attendance/manager-approvals",
+    "method": "POST",
+    "line": 358,
+    "file": "frontend/src/pages/team/TeamPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/attendance/manager-approvals",
+        "file": "backend/src/modules/reports/reports.router.ts",
+        "line": 169
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useModuleResource",
+    "path": "/api/travel/trips",
+    "method": "GET",
+    "line": 73,
+    "file": "frontend/src/pages/travel/TravelPage.tsx",
+    "candidate_routes": [],
+    "verdict": "no literal route match — pending or inspect indirection"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/assets?${params.toString()}",
+    "method": "GET",
+    "line": 170,
+    "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/assets",
+        "file": "backend/src/modules/assets/assets.router.ts",
+        "line": 55
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/assets/${encodeURIComponent(assetNo.trim())}",
+    "method": "PUT",
+    "line": 371,
+    "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/assets/{assetNo}",
+        "file": "backend/src/modules/assets/assets.router.ts",
+        "line": 74
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/assets/${String(asset.id)}/assign",
+    "method": "POST",
+    "line": 491,
+    "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/assets/{assetId}/assign",
+        "file": "backend/src/modules/assets/assets.router.ts",
+        "line": 103
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/assets/assignments/${String(assignmentId)}/return",
+    "method": "POST",
+    "line": 519,
+    "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/assets/assignments/{assignmentId}/return",
+        "file": "backend/src/modules/assets/assets.router.ts",
+        "line": 129
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/assets/non-returned?${params.toString()}",
+    "method": "GET",
+    "line": 663,
+    "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/assets/non-returned",
+        "file": "backend/src/modules/assets/assets.router.ts",
+        "line": 170
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "useModuleResource",
+    "path": "/api/engagement/announcements",
+    "method": "GET",
+    "line": 46,
+    "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/engagement/announcements",
+        "file": "backend/src/modules/engagement/engagement.router.ts",
+        "line": 78
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "<dynamic>",
+    "method": "GET",
+    "line": 236,
+    "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+    "verdict": "dynamic/local — inspect helper"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/helpdesk/categories",
+    "method": "GET",
+    "line": 398,
+    "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/helpdesk/categories",
+        "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+        "line": 54
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/helpdesk/tickets",
+    "method": "POST",
+    "line": 418,
+    "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/helpdesk/tickets",
+        "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+        "line": 70
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/helpdesk/tickets/${String(id)}/thread",
+    "method": "GET",
+    "line": 521,
+    "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/helpdesk/tickets/{ticketId}/thread",
+        "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+        "line": 125
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/helpdesk/tickets/${String(ticket.id)}/reply",
+    "method": "POST",
+    "line": 536,
+    "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/helpdesk/tickets/{ticketId}/reply",
+        "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+        "line": 148
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/helpdesk/tickets/${String(ticket.id)}/status",
+    "method": "POST",
+    "line": 558,
+    "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/helpdesk/tickets/{ticketId}/status",
+        "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+        "line": 175
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  },
+  {
+    "helper": "apiFetch",
+    "path": "/api/helpdesk/performance?month=${month}",
+    "method": "GET",
+    "line": 687,
+    "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+    "candidate_routes": [
+      {
+        "path": "/helpdesk/performance",
+        "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+        "line": 214
+      }
+    ],
+    "verdict": "route candidate exists — schemas/authorization still need checking"
+  }
+]

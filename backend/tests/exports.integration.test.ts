@@ -14,7 +14,7 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
 import ExcelJS from 'exceljs';
 import type { Kysely } from 'kysely';
 import type { Express } from 'express';
@@ -133,24 +133,24 @@ run('Exports — R28 / R30 / audit (live Postgres)', () => {
       .execute();
 
     // supertest types res.body as any — cast to the shape we expect (CLAUDE.md §6).
-    const adminLogin = await request(app)
+    const adminLogin = await (await httpRequest(app))
       .post('/api/auth/login')
       .send({ identifier: adminEmail, password });
     token = (adminLogin.body as { accessToken: string }).accessToken;
-    const plainLogin = await request(app)
+    const plainLogin = await (await httpRequest(app))
       .post('/api/auth/login')
       .send({ identifier: plainEmail, password });
     plainToken = (plainLogin.body as { accessToken: string }).accessToken;
 
     // Two assets: one free, one held by the leaver (so AST-05 has a row).
     for (const suffix of ['A', 'B']) {
-      const res = await request(app)
+      const res = await (await httpRequest(app))
         .put(`/api/assets/${tag}${suffix}`)
         .set(auth())
         .send({ assetNo: `${tag}${suffix}`, category: 'laptop', serialNo: `SN-${tag}-${suffix}`, companyId });
       assetIds.push((res.body as { id: number }).id);
     }
-    await request(app)
+    await (await httpRequest(app))
       .post(`/api/assets/${String(assetIds[1] ?? 0)}/assign`)
       .set(auth())
       .send({ assetId: assetIds[1], holderKind: 'employee', employeeId: leaverId });
@@ -173,11 +173,11 @@ run('Exports — R28 / R30 / audit (live Postgres)', () => {
 
   it('E1 R28 register export equals the on-screen list, row for row', async () => {
     const list = (
-      await request(app).get(`/api/assets?q=${tag}&companyId=${String(companyId)}&limit=200`).set(auth())
+      await (await httpRequest(app)).get(`/api/assets?q=${tag}&companyId=${String(companyId)}&limit=200`).set(auth())
     ).body as { rows: { assetNo: string; status: string }[] };
 
     const file = (
-      await request(app).get(`/api/assets/export?q=${tag}&companyId=${String(companyId)}`).set(auth())
+      await (await httpRequest(app)).get(`/api/assets/export?q=${tag}&companyId=${String(companyId)}`).set(auth())
     ).body as FileOut;
     expect(file.filename).toBe('R28-asset-register.xlsx');
 
@@ -189,11 +189,11 @@ run('Exports — R28 / R30 / audit (live Postgres)', () => {
 
   it('E2 R28 not-returned export matches the AST-05 tile', async () => {
     const tile = (
-      await request(app).get(`/api/assets/non-returned?companyId=${String(companyId)}`).set(auth())
+      await (await httpRequest(app)).get(`/api/assets/non-returned?companyId=${String(companyId)}`).set(auth())
     ).body as { assetNo: string; ecode: string }[];
 
     const file = (
-      await request(app)
+      await (await httpRequest(app))
         .get(`/api/assets/non-returned/export?companyId=${String(companyId)}`)
         .set(auth())
     ).body as FileOut;
@@ -204,19 +204,19 @@ run('Exports — R28 / R30 / audit (live Postgres)', () => {
   });
 
   it('E3 R30 names who has not acknowledged, not just a percentage', async () => {
-    const all = (await request(app).get('/api/policies/ack-report').set(auth())).body as {
+    const all = (await (await httpRequest(app)).get('/api/policies/ack-report').set(auth())).body as {
       ecode: string;
       acknowledged: boolean;
     }[];
     const pending = (
-      await request(app).get('/api/policies/ack-report?pendingOnly=true').set(auth())
+      await (await httpRequest(app)).get('/api/policies/ack-report?pendingOnly=true').set(auth())
     ).body as { ecode: string; acknowledged: boolean }[];
 
     // Every row is a NAMED employee, and pendingOnly returns only outstanding.
     expect(pending.every((r) => !r.acknowledged)).toBe(true);
     expect(pending.length).toBeLessThanOrEqual(all.length);
 
-    const file = (await request(app).get('/api/policies/ack-report/export').set(auth()))
+    const file = (await (await httpRequest(app)).get('/api/policies/ack-report/export').set(auth()))
       .body as FileOut;
     const sheet = await parseWorkbook(file.base64);
     expect(sheet.length).toBe(Math.max(all.length, 1));
@@ -224,38 +224,38 @@ run('Exports — R28 / R30 / audit (live Postgres)', () => {
 
   it('E4 the audit export refuses rather than silently truncating', async () => {
     // A tight filter exports fine.
-    const ok = await request(app).get('/api/audit/export?entity=ast.assets').set(auth());
+    const ok = await (await httpRequest(app)).get('/api/audit/export?entity=ast.assets').set(auth());
     expect(ok.status).toBe(200);
     const sheet = await parseWorkbook((ok.body as FileOut).base64);
     expect(sheet.length).toBeGreaterThan(0);
 
     // An unfiltered export of a huge trail must ERROR, not hand over a partial
     // file that looks complete. (Asserted by contract: total > cap ⇒ 400.)
-    const listed = (await request(app).get('/api/audit?limit=1').set(auth())).body as {
+    const listed = (await (await httpRequest(app)).get('/api/audit?limit=1').set(auth())).body as {
       total: number;
     };
     if (listed.total > 50_000) {
-      const tooBig = await request(app).get('/api/audit/export').set(auth());
+      const tooBig = await (await httpRequest(app)).get('/api/audit/export').set(auth());
       expect(tooBig.status).toBe(400);
     }
   });
 
   it('E5 exports are permission-gated', async () => {
-    const denied = await request(app)
+    const denied = await (await httpRequest(app))
       .get('/api/assets/export')
       .set('Authorization', `Bearer ${plainToken}`);
     expect(denied.status).toBe(403);
 
-    const deniedAudit = await request(app)
+    const deniedAudit = await (await httpRequest(app))
       .get('/api/audit/export')
       .set('Authorization', `Bearer ${plainToken}`);
     expect(deniedAudit.status).toBe(403);
   });
 
   it('E6 an export writes an audit row (a register download is evidence)', async () => {
-    await request(app).get(`/api/assets/export?q=${tag}`).set(auth());
+    await (await httpRequest(app)).get(`/api/assets/export?q=${tag}`).set(auth());
     const trail = (
-      await request(app).get('/api/audit?entity=ast.assets&action=export&limit=5').set(auth())
+      await (await httpRequest(app)).get('/api/audit?entity=ast.assets&action=export&limit=5').set(auth())
     ).body as { rows: { field: string }[] };
     expect(trail.rows.some((r) => r.field === 'R28-register')).toBe(true);
   });

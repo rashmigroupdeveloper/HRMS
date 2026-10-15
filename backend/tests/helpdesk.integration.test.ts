@@ -13,7 +13,8 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
+import { expectHttpStatus } from './http-assertions.js';
 import { sql, type Kysely } from 'kysely';
 import type { Express } from 'express';
 import { createApp } from '../src/app.js';
@@ -77,8 +78,8 @@ run('M9 Helpdesk — HD-01 (live Postgres)', () => {
   }
 
   async function login(email: string): Promise<string> {
-    const res = await request(app).post('/api/auth/login').send({ identifier: email, password });
-    expect(res.status).toBe(200);
+    const res = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
+    expectHttpStatus(res, 200);
     return (res.body as { accessToken: string }).accessToken;
   }
 
@@ -129,19 +130,19 @@ run('M9 Helpdesk — HD-01 (live Postgres)', () => {
   });
 
   async function raise(category: string, subject: string): Promise<Ticket> {
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post('/api/helpdesk/tickets')
       .set(asStaff())
       .send({ categoryCode: category, subject, body: 'Details of the issue.' });
-    expect(res.status).toBe(200);
+    expectHttpStatus(res, 200);
     const t = res.body as Ticket;
     ticketIds.push(t.id);
     return t;
   }
 
   it('H7 ships the "HRMS platform" category live from day one (docs/07 §4b)', async () => {
-    const res = await request(app).get('/api/helpdesk/categories').set(asStaff());
-    expect(res.status).toBe(200);
+    const res = await (await httpRequest(app)).get('/api/helpdesk/categories').set(asStaff());
+    expectHttpStatus(res, 200);
     const codes = (res.body as { code: string }[]).map((c) => c.code);
     // The rollout needs a supported channel for its OWN bugs, or feedback
     // arrives as corridor complaints and never gets fixed.
@@ -161,7 +162,7 @@ run('M9 Helpdesk — HD-01 (live Postgres)', () => {
     expect(hours).toBeGreaterThan(7.5);
     expect(hours).toBeLessThan(8.5);
 
-    const mine = (await request(app).get('/api/helpdesk/tickets/mine').set(asStaff()))
+    const mine = (await (await httpRequest(app)).get('/api/helpdesk/tickets/mine').set(asStaff()))
       .body as { rows: TicketRow[] };
     const row = mine.rows.find((r) => r.id === ticket.id);
     expect(row?.acknowledgedAt).not.toBeNull();
@@ -169,7 +170,7 @@ run('M9 Helpdesk — HD-01 (live Postgres)', () => {
 
   it('H2 routes to the category role, resolved through RBAC', async () => {
     const ticket = await raise('it', 'Printer offline');
-    const queue = (await request(app).get('/api/helpdesk/tickets?status=open').set(asAgent()))
+    const queue = (await (await httpRequest(app)).get('/api/helpdesk/tickets?status=open').set(asAgent()))
       .body as { rows: TicketRow[] };
     const row = queue.rows.find((r) => r.id === ticket.id);
     // The IT category routes to it_admin; our agent holds that role.
@@ -179,20 +180,20 @@ run('M9 Helpdesk — HD-01 (live Postgres)', () => {
   it('H3 the thread is append-only in the DB, and internal notes are hidden from the raiser', async () => {
     const ticket = await raise('hrms', 'Muster column missing');
 
-    await request(app)
+    await (await httpRequest(app))
       .post(`/api/helpdesk/tickets/${String(ticket.id)}/reply`)
       .set(asStaff())
       .send({ ticketId: ticket.id, body: 'Adding more detail.' });
-    await request(app)
+    await (await httpRequest(app))
       .post(`/api/helpdesk/tickets/${String(ticket.id)}/reply`)
       .set(asAgent())
       .send({ ticketId: ticket.id, body: 'Internal: looks like a filter bug.', isInternal: true });
 
     const staffView = (
-      await request(app).get(`/api/helpdesk/tickets/${String(ticket.id)}/thread`).set(asStaff())
+      await (await httpRequest(app)).get(`/api/helpdesk/tickets/${String(ticket.id)}/thread`).set(asStaff())
     ).body as Message[];
     const agentView = (
-      await request(app).get(`/api/helpdesk/tickets/${String(ticket.id)}/thread`).set(asAgent())
+      await (await httpRequest(app)).get(`/api/helpdesk/tickets/${String(ticket.id)}/thread`).set(asAgent())
     ).body as Message[];
 
     expect(staffView.some((m) => m.isInternal)).toBe(false);
@@ -211,20 +212,31 @@ run('M9 Helpdesk — HD-01 (live Postgres)', () => {
   it('H4 refuses to resolve a ticket without saying how', async () => {
     const ticket = await raise('facilities', 'Broken chair');
 
-    const noReason = await request(app)
+    const noReason = await (await httpRequest(app))
       .post(`/api/helpdesk/tickets/${String(ticket.id)}/status`)
       .set(asAgent())
       .send({ ticketId: ticket.id, status: 'resolved' });
-    expect(noReason.status).toBe(400);
+    expectHttpStatus(noReason, 400);
 
-    const withReason = await request(app)
+    const withReason = await (await httpRequest(app))
       .post(`/api/helpdesk/tickets/${String(ticket.id)}/status`)
       .set(asAgent())
       .send({ ticketId: ticket.id, status: 'resolved', resolution: 'Chair replaced.' });
-    expect(withReason.status).toBe(200);
+    expectHttpStatus(withReason, 200);
   });
 
   it('H5 escalates breached tickets and does not double-escalate in the same window', async () => {
+    async function queuedTicket(id: number): Promise<TicketRow | undefined> {
+      // This shared test DB can have more than one page of historical breaches.
+      // Follow the HTTP pagination contract instead of assuming our row is first.
+      for (let offset = 0;; offset += 50) {
+        const response = await (await httpRequest(app)).get(`/api/helpdesk/tickets?breachedOnly=true&limit=50&offset=${offset}`).set(asAgent());
+        expectHttpStatus(response, 200);
+        const page = response.body as { rows: TicketRow[]; total: number };
+        const found = page.rows.find(row => row.id === id);
+        if (found || page.rows.length === 0 || offset + page.rows.length >= page.total) return found;
+      }
+    }
     const ticket = await raise('it', 'Escalation probe');
     // Push the clock into the past so the sweep sees a genuine breach.
     await db
@@ -233,39 +245,35 @@ run('M9 Helpdesk — HD-01 (live Postgres)', () => {
       .where('id', '=', ticket.id)
       .execute();
 
-    const first = await request(app).post('/api/helpdesk/escalate').set(asAgent());
-    expect(first.status).toBe(200);
+    const first = await (await httpRequest(app)).post('/api/helpdesk/escalate').set(asAgent());
+    expectHttpStatus(first, 200);
     expect((first.body as { escalated: number }).escalated).toBeGreaterThan(0);
 
-    const queue = (await request(app).get('/api/helpdesk/tickets?breachedOnly=true').set(asAgent()))
-      .body as { rows: TicketRow[] };
-    const row = queue.rows.find((r) => r.id === ticket.id);
+    const row = await queuedTicket(ticket.id);
     expect(row?.breached).toBe(true);
     expect(row?.escalatedLevel).toBe(1);
 
     // Immediately re-running must NOT escalate the same ticket again.
-    await request(app).post('/api/helpdesk/escalate').set(asAgent());
-    const after = (await request(app).get('/api/helpdesk/tickets?breachedOnly=true').set(asAgent()))
-      .body as { rows: TicketRow[] };
-    expect(after.rows.find((r) => r.id === ticket.id)?.escalatedLevel).toBe(1);
+    await (await httpRequest(app)).post('/api/helpdesk/escalate').set(asAgent());
+    expect((await queuedTicket(ticket.id))?.escalatedLevel).toBe(1);
   });
 
   it('H6 anyone may raise a ticket; only an agent may work the queue', async () => {
     // Raising is intentionally NOT permission-gated — see the router comment.
-    const raised = await request(app)
+    const raised = await (await httpRequest(app))
       .post('/api/helpdesk/tickets')
       .set(asStaff())
       .send({ categoryCode: 'hrms', subject: 'Cannot see my payslip', body: 'It is blank.' });
-    expect(raised.status).toBe(200);
+    expectHttpStatus(raised, 200);
     ticketIds.push((raised.body as Ticket).id);
 
-    const queue = await request(app).get('/api/helpdesk/tickets').set(asStaff());
-    expect(queue.status).toBe(403);
+    const queue = await (await httpRequest(app)).get('/api/helpdesk/tickets').set(asStaff());
+    expectHttpStatus(queue, 403);
 
-    const resolve = await request(app)
+    const resolve = await (await httpRequest(app))
       .post(`/api/helpdesk/tickets/${String((raised.body as Ticket).id)}/status`)
       .set(asStaff())
       .send({ ticketId: (raised.body as Ticket).id, status: 'closed', resolution: 'x' });
-    expect(resolve.status).toBe(403);
+    expectHttpStatus(resolve, 403);
   });
 });

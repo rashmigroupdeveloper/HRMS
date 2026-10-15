@@ -1,0 +1,13 @@
+{
+  "prepared": "2026-10-15",
+  "readOnly": true,
+  "localTestOnly": true,
+  "postgresVersion": "14.24 (Homebrew)",
+  "browserFixtureCleanupRecorded": true,
+  "checkedFixtureUsers": 42,
+  "activeFixtureUsers": 0,
+  "attachedFixtureUsers": 0,
+  "scopeFixtureEmployees": 0,
+  "openFixtureRequests": 0,
+  "immutableAuditUsersAndMonthLocksRetained": true
+}

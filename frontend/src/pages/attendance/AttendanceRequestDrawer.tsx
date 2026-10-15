@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { apiFetch } from '../../lib/api';
-import { Button, DatePicker, Drawer, Select, Textarea, formatDateIN, toast, todayISOIST } from '../../ui';
+import { Button, DatePicker, Drawer, Select, Textarea, TextField, formatDateIN, toast, todayISOIST } from '../../ui';
 
 const AR_DRAFT_KEY = 'rashmi.draft.ar';
 const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -11,6 +11,8 @@ interface AttendanceRequestDraft {
   fromDate: string | null;
   toDate: string | null;
   reason: string;
+  fromTime?: string;
+  toTime?: string;
 }
 
 function isIsoDate(value: unknown): value is string {
@@ -38,7 +40,9 @@ function readArDraft(): AttendanceRequestDraft | null {
     const fromDate = fromRaw === null ? null : isIsoDate(fromRaw) ? fromRaw : undefined;
     const toDate = toRaw === null ? null : isIsoDate(toRaw) ? toRaw : undefined;
     if (fromDate === undefined || toDate === undefined) return null;
-    return { savedAt, kind, fromDate, toDate, reason };
+    return { savedAt, kind, fromDate, toDate, reason,
+      fromTime: typeof record['fromTime'] === 'string' ? record['fromTime'] : '',
+      toTime: typeof record['toTime'] === 'string' ? record['toTime'] : '' };
   } catch {
     return null;
   }
@@ -111,6 +115,8 @@ export function AttendanceRequestDrawer({
   const [fromDate, setFromDate] = useState<string | null>(null);
   const [toDate, setToDate] = useState<string | null>(null);
   const [reason, setReason] = useState('');
+  const [fromTime, setFromTime] = useState('');
+  const [toTime, setToTime] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const skipPersistRef = useRef(true);
@@ -129,10 +135,12 @@ export function AttendanceRequestDrawer({
       setFromDate(draft.fromDate);
       setToDate(draft.toDate);
       setReason(draft.reason);
+      setFromTime(draft.fromTime ?? ''); setToTime(draft.toTime ?? '');
       return;
     }
     const fallback = initialDate ?? todayISOIST();
     if (initialDate) {
+      setKind(initialDate > todayISOIST() ? 'OD' : 'AR');
       setFromDate(initialDate);
       setToDate(initialDate);
       return;
@@ -147,27 +155,33 @@ export function AttendanceRequestDrawer({
       skipPersistRef.current = false;
       return;
     }
-    writeArDraft({ kind, fromDate, toDate, reason });
-  }, [open, kind, fromDate, toDate, reason]);
+    writeArDraft({ kind, fromDate, toDate, reason, fromTime, toTime });
+  }, [open, kind, fromDate, toDate, reason, fromTime, toTime]);
 
   const submit = async () => {
     if (!fromDate || !toDate || reason.trim().length < 5) {
       setError('Choose the dates and add a short reason your manager can act on.');
       return;
     }
+    if (kind === 'PERMISSION' && (fromDate !== toDate || !fromTime || !toTime || toTime <= fromTime)) {
+      setError('Short permission needs one date and an end time after the start time.'); return;
+    }
     setLoading(true);
     setError(null);
     try {
       await apiFetch('/api/attendance/requests', {
         method: 'POST',
-        body: JSON.stringify({ kind, fromDate, toDate, reason: reason.trim() }),
+        body: JSON.stringify({ kind, fromDate, toDate, reason: reason.trim(),
+          ...(kind === 'PERMISSION' ? { fromTime, toTime } : {}),
+        }),
       });
       toast.success(`${copy.title} sent`, {
-        description: 'Your reporting manager has been notified.',
+        description: 'Track the request and its decisions in My attendance.',
       });
       skipPersistRef.current = true;
       clearArDraft();
       setReason('');
+      setFromTime(''); setToTime('');
       onSubmitted();
       onClose();
     } catch (cause) {
@@ -198,7 +212,7 @@ export function AttendanceRequestDrawer({
         <Select
           label="What do you need?"
           value={kind}
-          onChange={setKind}
+          onChange={value => { setKind(value); if (value === 'PERMISSION') setToDate(fromDate); }}
           options={[
             {
               value: 'AR',
@@ -218,7 +232,7 @@ export function AttendanceRequestDrawer({
           ]}
         />
         <div className="grid grid-cols-2 gap-3">
-          <DatePicker label="From" required value={fromDate} onChange={setFromDate} />
+          <DatePicker label="From" required value={fromDate} onChange={value => { setFromDate(value); if (kind === 'PERMISSION') setToDate(value); }} />
           <DatePicker
             label="To"
             required
@@ -227,6 +241,10 @@ export function AttendanceRequestDrawer({
             onChange={setToDate}
           />
         </div>
+        {kind === 'PERMISSION' && <div className="grid grid-cols-2 gap-3">
+          <TextField label="Permission from" type="time" required value={fromTime} onChange={event => { setFromTime(event.currentTarget.value); }} />
+          <TextField label="Permission to" type="time" required value={toTime} onChange={event => { setToTime(event.currentTarget.value); }} />
+        </div>}
         {days > 0 && fromDate && toDate && (
           <div className="rounded-row bg-surface-2 px-4 py-3">
             <p className="text-sm font-semibold text-ink">

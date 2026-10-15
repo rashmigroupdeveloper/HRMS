@@ -1,0 +1,562 @@
+{
+  "prepared": "2026-10-13",
+  "assessment": "Clear AI-slop patterns in operational/financial paths; review identifies observable quality defects, not code authorship",
+  "findings": [
+    {
+      "id": "R01",
+      "priority": 1,
+      "title": "Fresh migration chain cannot build claims schema",
+      "file": "backend/migrations/1752270000000_claims-reconciliation.ts",
+      "line": 29,
+      "requirements": [
+        "NFR-04",
+        "CLM-02"
+      ],
+      "problem": "The earlier payroll migration creates a claim table without budget_id/reference; this later migration assumes both exist. Existing hrms masks the missing historical budget migration. Fresh up failed at budget_id on disposable PostgreSQL17; native14 separately fails on NULLS syntax.",
+      "required_repair": "Recover original migration sources, reconcile canonical claims/budgets through forward alterations, then prove empty up, no-op up, down/up and upgrade. Rehearse exact target16.",
+      "evidence": "migration-rehearsal-pg17.json; migration-rehearsal.json"
+    },
+    {
+      "id": "R02",
+      "priority": 1,
+      "title": "Applied schema and typed checkout still disagree",
+      "file": "backend/src/core/db/types.ts",
+      "line": 1404,
+      "requirements": [
+        "CORE-12",
+        "NFR-04"
+      ],
+      "problem": "Local catalog has 132 business relations and 48 applied migrations; 13 applied migration sources are absent. Database interface covers92 relations, leaving40 untyped. pay.gl_accounts declares cost_center_id and gl_description that do not exist physically; actual ownership uses company_code/plant_code/cost_center_code. IF NOT EXISTS does not reconcile a different existing definition.",
+      "required_repair": "Recover and hash migration provenance; reconcile actual table contracts before feature work. Update Kysely types and migrations together, without dropping canonical models. Untyped deferred modules need explicit scope decisions.",
+      "evidence": "local-schema.json; types-vs-schema.json"
+    },
+    {
+      "id": "R03",
+      "priority": 1,
+      "title": "Payroll attendance SQL is incompatible and day arithmetic is unsafe",
+      "file": "backend/src/modules/payroll-core/runs/run.service.ts",
+      "line": 274,
+      "requirements": [
+        "ATT-09",
+        "ATT-15",
+        "PAY-04"
+      ],
+      "problem": "Actual column is work_date; paid_wo/paid_l are not enum statuses. Read-only EXPLAIN reproduced both errors. COUNT(CASE ... HD THEN0.5) counts HD as1 (P+HD became2 instead of1.5). Zero payable attendance keeps the initialized full month, so correcting SQL alone still overpays wholly absent employees.",
+      "required_repair": "Use work_date plus paid leave/weekoff predicates, SUM weighted days, require complete locked inputs and retain true zero payable days. Integration-test P/HD/LWP/paid-WO/all-absent cases.",
+      "evidence": "behavior-probes.json"
+    },
+    {
+      "id": "R04",
+      "priority": 1,
+      "title": "Mid-month salary assignments can be skipped silently",
+      "file": "backend/src/modules/payroll-core/runs/run.service.ts",
+      "line": 250,
+      "requirements": [
+        "PAY-02",
+        "PAY-04",
+        "PAY-16"
+      ],
+      "problem": "Salary lookup uses first of month; a new joiner or first assignment effective later that month has no matching row and is silently skipped. emp.doj is loaded but never used to produce the required partial-month pay.",
+      "required_repair": "Resolve approved effective salary segments through the covered period and derive payable tenure from joining/leaving dates. Fail an incomplete run with explicit missing-salary exceptions.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R05",
+      "priority": 1,
+      "title": "Real payroll never supplies required statutory and debt facts",
+      "file": "backend/src/modules/payroll-core/runs/run.service.ts",
+      "line": 292,
+      "requirements": [
+        "PAY-09",
+        "PAY-10",
+        "PAY-12",
+        "PAY-13",
+        "PAY-14",
+        "LN-03"
+      ],
+      "problem": "The production orchestration supplies salary/days/inputs/arrears/hold only. It does not load approved effective PF policy, employee applicability/category/contract, ESIC period membership, TDS projection, LWF or loan installments. The engine defaults PF ceiling, TDS/LWF0 and current-gross ESIC; standalone statutory helpers passing tests do not fix the run.",
+      "required_repair": "Freeze and pass authoritative effective policy, membership, tax/YTD and debt facts; call the same tested statutory engines used by previews. Prove end-to-end run goldens including mid-period ESIC increase, apprentice and existing loan.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R06",
+      "priority": 1,
+      "title": "Recovery inputs print but do not reduce net pay",
+      "file": "backend/src/modules/payroll-core/engine/compute-engine.ts",
+      "line": 255,
+      "requirements": [
+        "PAY-04",
+        "PAY-08"
+      ],
+      "problem": "Deduction-kind variable inputs emit a positive line but never increment totalDeductionsPaise. A synthetic BASIC10000 plus GUEST_HOUSE2500 produced net8800 with only PF1200 deducted; expected recovery changes net to6300 under the same supplied policy.",
+      "required_repair": "Classify input and arrear effects by component kind, validate allowed amounts and update earning/deduction/employer bases consistently. Add an independent full-run recovery fixture.",
+      "evidence": "behavior-probes.json"
+    },
+    {
+      "id": "R07",
+      "priority": 1,
+      "title": "Detected OT is paid without approval and uses an absent component",
+      "file": "backend/src/modules/payroll-core/runs/run.service.ts",
+      "line": 277,
+      "requirements": [
+        "ATT-08",
+        "LV-04",
+        "PAY-04"
+      ],
+      "problem": "Run sums detected day_record OT instead of approved overtime_entries, with no paid-once/comp-off consumption. Engine emits OT_PAY while seed/local catalog contain OT and no OT_PAY, causing a line FK failure whenever payable OT is produced.",
+      "required_repair": "Consume only approved unconsumed OT against locked inputs; prohibit CO double consumption and bind the approved canonical component/policy base.",
+      "evidence": "Source; behavior-probes.json component_fk_targets"
+    },
+    {
+      "id": "R08",
+      "priority": 1,
+      "title": "Arrears can be paid again on subsequent runs",
+      "file": "backend/src/modules/payroll-core/runs/run.service.ts",
+      "line": 218,
+      "requirements": [
+        "PAY-16"
+      ],
+      "problem": "Unpaid arrears for_month<=month are loaded into calculation, but compute/finalize never marks their consumption or creates a unique consumption posting. Every later run selects the same rows again.",
+      "required_repair": "Reserve/consume each signed delta exactly once in the same financial transaction; preserve original/result versions and retry-safe keys.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R09",
+      "priority": 1,
+      "title": "Finalization ignores line and review reconciliation failures",
+      "file": "backend/src/modules/payroll-core/runs/run.service.ts",
+      "line": 477,
+      "requirements": [
+        "PAY-03",
+        "PAY-04",
+        "NFR-04"
+      ],
+      "problem": "Finalize checks aggregate discrepancy only, ignoring recon.isReconciled, lineMismatchCount and negativeNetCount. Reconciliation also compares sum of positive earning+deduction line amounts with net, and does not include that mismatch in isReconciled. Zero aggregate discrepancy can finalize an empty or line-inconsistent run.",
+      "required_repair": "Independently reconcile signed component classes, per-item and full-register totals, expected population and approved review exceptions; require the complete reconciled gate under a transaction/row lock.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R10",
+      "priority": 1,
+      "title": "Closed payroll results remain editable",
+      "file": "backend/migrations/1752220000000_pay-schema-init.ts",
+      "line": 168,
+      "requirements": [
+        "PAY-03",
+        "PAY-16",
+        "NFR-04"
+      ],
+      "problem": "Headers guard UPDATE/DELETE only; item lines have no immutability trigger and headers allow INSERT into closed runs. Inputs remain mutable. Finalized runs can be reopened and their results deleted/rebuilt; paid-run updates are unrestricted by the run trigger. Actual catalog confirms no line trigger.",
+      "required_repair": "Protect insert/update/delete of all frozen facts/results using DB constraints/triggers and grants. Retro creates new versions and current-period deltas; preserve original closed results.",
+      "evidence": "local-schema.json; source migration/service"
+    },
+    {
+      "id": "R11",
+      "priority": 1,
+      "title": "Maker/checker validation fails open on missing evidence",
+      "file": "backend/src/modules/payroll-core/runs/run-state-machine.ts",
+      "line": 79,
+      "requirements": [
+        "PAY-03",
+        "CORE-10"
+      ],
+      "problem": "Missing makerUserId is accepted; missing reconciliationDiffPaise is accepted. Real service derives maker from an optional audit row, and state updates/audit are separate operations without compare-and-swap. Independent hr_head co-sign is not recorded as a distinct required approval.",
+      "required_repair": "Persist authoritative maker/checker records with separate DB-backed authorities, reject missing evidence, and atomically enforce legal transitions/audit/reconciliation.",
+      "evidence": "behavior-probes.json; actual run service"
+    },
+    {
+      "id": "R12",
+      "priority": 1,
+      "title": "New API routes disagree with product callers",
+      "file": "backend/src/modules/claims/claims.router.ts",
+      "line": 86,
+      "requirements": [
+        "CORE-10",
+        "CLM-02",
+        "LN-02",
+        "PAY-03"
+      ],
+      "problem": "Middleware already mounts /api; loans/claims add /api again. /api/claims/my and /api/loans/my return404; /api/api/... matches401. Payroll/lifecycle handlers without explicit routes default to procedure paths/methods; product callers use different REST paths and response envelopes. Claims/loans also bypass authenticated apiFetch with raw fetch.",
+      "required_repair": "Generate and use the OpenAPI client, define explicit matching routes without a duplicate prefix, align input/output contracts and authenticated transport; test real browser->API flows.",
+      "evidence": "http-probes.json; openapi.json; ClaimsPage/LoansPage/SeparationBoardPage"
+    },
+    {
+      "id": "R13",
+      "priority": 1,
+      "title": "Payroll UI simulates successful computation and payment facts",
+      "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+      "line": 291,
+      "requirements": [
+        "PAY-03",
+        "PAY-05",
+        "PAY-06"
+      ],
+      "problem": "Run controls only change React state and show success toasts; no backend calls occur. Finalize claims outputs generated, downloads only toast, and displayed employees/lock/timing are sample constants. MyPayPage displays a fixed sample payslip and Disbursed to Bank for arbitrary months.",
+      "required_repair": "Read authoritative runs/results, persist actions through protected API, surface pending/error states and download actual generated artifacts. Keep fixture demos outside product routes.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R14",
+      "priority": 1,
+      "title": "API errors silently become sample employee records",
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 241,
+      "requirements": [
+        "LC-01",
+        "LC-04",
+        "LC-06",
+        "LN-01"
+      ],
+      "problem": "Separation, onboarding, probation and loan screens insert realistic sample IDs/people/amounts in catch blocks without a dev-only guard. Missing/unauthorized/broken APIs look like actual business records, and action buttons can submit sample IDs.",
+      "required_repair": "Remove product fake-data fallbacks; separate explicit dev fixtures and use honest loading/empty/permission/error states. Load master selectors and IDs from the API.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R15",
+      "priority": 1,
+      "title": "New financial/lifecycle endpoints do not enforce ownership scope",
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 83,
+      "requirements": [
+        "CORE-10",
+        "LC-06",
+        "LN-04"
+      ],
+      "problem": "Any logged-in caller supplies employeeId for resignation without a self check; Loans getLedger accepts arbitrary loanId without ownership. Many permission-gated payroll/lifecycle/claims handlers discard permissionAccess and operate globally, so scoped managers/HR can act outside their permitted subjects.",
+      "required_repair": "Require one declared business permission and server-derived self/subtree/entity/category scope on reads and writes; deny foreign subject IDs and test all restricted roles.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R16",
+      "priority": 1,
+      "title": "F&F substitutes fixture salary, leave and payable days",
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "line": 382,
+      "requirements": [
+        "PAY-15",
+        "LV-06",
+        "LC-06"
+      ],
+      "problem": "Missing salary uses BASIC32286/Gross64573 from G8, missing inputs use15 payable days and12 EL days, held salary is holds.length>0?0:0, and DOJ has a fallback. These values are written into settlement rows as business facts instead of reading locked attendance/leave/debt/tax ledgers.",
+      "required_repair": "Require authoritative as-of salary, attendance, leave ledger, paid holds, debt and final tax inputs. Fail missing facts explicitly; retain frozen calculation provenance and reviewed overrides.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R17",
+      "priority": 1,
+      "title": "F&F can mark paid and issue letters without approval/payment",
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "line": 518,
+      "requirements": [
+        "PAY-15",
+        "LC-06",
+        "LC-07",
+        "CORE-11"
+      ],
+      "problem": "Method accepts any existing settlement, does not validate approved state/resolved clearances/checker or external payment receipt, issues letters then marks paid and changes employee/roles through separate autocommits. Retries can duplicate letters; a later error leaves a partial exit. Endpoint uses payroll.run.manage.",
+      "required_repair": "Implement approved immutable settlement->payment obligation->verified receipt transitions, with maker/checker, idempotency, audit/outbox and atomic exit/letter release. Do not label queued payouts paid.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R18",
+      "priority": 1,
+      "title": "Onboarding conversion is not atomic and creates unusable salary/login",
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+      "line": 285,
+      "requirements": [
+        "LC-01",
+        "LC-02",
+        "PAY-02",
+        "CORE-04"
+      ],
+      "problem": "Atomic conversion is claimed but no transaction/row lock wraps employee/user/salary/candidate/tasks/review. It omits cost-center assignment, writes salary component_amounts:{} and password_hash:PENDING_INITIAL_LOGIN without initial credential delivery or employee grants. Failure/retry can leave partial master data.",
+      "required_repair": "Use the existing validated employee/e-code/salary/auth public APIs inside one owned transaction. Resolve mandatory master links and actual salary breakup, candidate consumption key, welcome credentials/grants and outbox tasks.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R19",
+      "priority": 1,
+      "title": "Lifecycle approval and notification claims lack workflow records",
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "line": 68,
+      "requirements": [
+        "WF-01",
+        "WF-04",
+        "LC-04",
+        "LC-06"
+      ],
+      "problem": "Resignation creates no wf.request/steps, probation decides directly, and transfers set notified_at=now without enqueueing a notification. Prejoin ingestion sets sent_at although no send is enqueued. Comments/trackers claim multi-tier approval and delivery proof that these paths do not create.",
+      "required_repair": "Wire authoritative versioned workflow requests and domain hooks, transactional audit/outbox and actual notification attempts/receipts. Never manufacture sent/verified timestamps.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R20",
+      "priority": 1,
+      "title": "Probation confirmation leaves a salary gap and zero components",
+      "file": "backend/src/modules/lifecycle/probation/probation.service.ts",
+      "line": 191,
+      "requirements": [
+        "LC-04",
+        "PAY-02"
+      ],
+      "problem": "The temporal range is [effective_from,effective_to), but confirmation closes the old salary at previous day, leaving that day uncovered. New confirmed salary has empty component_amounts; updates are separate autocommits and there is no completed-review retry guard. Separated outcome only marks the review; no separation is initiated.",
+      "required_repair": "Close the prior interval at confirmation date, resolve actual approved salary amounts, make decision/salary/employee/letter effects atomic and idempotent, and connect non-confirmation separation.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R21",
+      "priority": 1,
+      "title": "Transfer e-codes use employee count instead of allocator",
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "line": 139,
+      "requirements": [
+        "CORE-02",
+        "LC-05"
+      ],
+      "problem": "COUNT(current company employees)+1 ignores historical sequences and concurrent requests. Multiple pending transfers obtain the same target code; transfers out make counts smaller. Existing safe core.next_ecode is available.",
+      "required_repair": "Allocate via the canonical locked company sequence within the approved transfer transaction; use an external-identity mapping and concurrent transfer tests.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R22",
+      "priority": 1,
+      "title": "Future transfers mutate today and promotions do not change salary",
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "line": 381,
+      "requirements": [
+        "LC-05",
+        "PAY-16",
+        "RPT-05"
+      ],
+      "problem": "Approving a future effective date immediately changes the employee master. Salary revision amount is only a history string; no pay.employee_salaries revision is created. Entity changes do not establish aligned OU/cost-center/company and financial continuity.",
+      "required_repair": "Publish effective-dated placement/salary changes; activate projections on effective date with validated aligned links, historical scope snapshots and signed leave/entity payroll continuity.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R23",
+      "priority": 1,
+      "title": "ESS loan application bypasses eligibility and approval",
+      "file": "backend/src/modules/loans/loans.router.ts",
+      "line": 157,
+      "requirements": [
+        "LN-01",
+        "LN-02"
+      ],
+      "problem": "Apply does not call checkEligibility or create an approval workflow; inserts active loans immediately. Missing salary eligibility substitutes50000 monthly gross, with hardcoded service/ratio/benchmark policy. Preview validation does not protect the mutation.",
+      "required_repair": "Check authoritative effective eligibility under lock, require approved workflow/funding evidence and typed policy configuration; start as a request, not an active funded loan.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R24",
+      "priority": 1,
+      "title": "Loan ledger is mutable and repeated deductions are not unique",
+      "file": "backend/src/modules/loans/loans.service.ts",
+      "line": 304,
+      "requirements": [
+        "LN-03",
+        "LN-04",
+        "NFR-04"
+      ],
+      "problem": "Actual loan_postings has no append-only trigger or unique source-consumption key. Retrying the same run/loan inserts another deduction. Balance recomputation uses original principal, not imported opening balance; claim advance settlement directly changes outstanding without a posting. Legacy source writes sap_legacy:reference, which violates the migration source CHECK.",
+      "required_repair": "Use immutable funded/opening/recovery/settlement postings with once-only source keys and SUM-derived debt; reconcile legacy provenance in its own field and validate installment ownership.",
+      "evidence": "local-schema.json; service and claims.routePayout"
+    },
+    {
+      "id": "R25",
+      "priority": 1,
+      "title": "General claims cannot insert into the actual budget-owned model",
+      "file": "backend/src/modules/claims/claims.service.ts",
+      "line": 142,
+      "requirements": [
+        "CLM-02",
+        "CLM-04"
+      ],
+      "problem": "Submit omits funding_kind/budget_id. Actual funding_kind defaults budget and CHECK requires a budget, so a standalone claim fails. New payout_component_code defaults REIMB while local component catalog lacks REIMB. Existing claim_lines and new claim_bills need one explicit canonical receipt/financial-line contract.",
+      "required_repair": "Preserve shared claims ownership; explicitly choose validated entitlement funding, required provenance and existing canonical lines/bills. Bind an approved seeded component and reconcile prior budget reservations.",
+      "evidence": "local-schema.json; behavior-probes.json; migration227"
+    },
+    {
+      "id": "R26",
+      "priority": 1,
+      "title": "Claim routing declares paid before funds or batch lines exist",
+      "file": "backend/src/modules/claims/claims.service.ts",
+      "line": 269,
+      "requirements": [
+        "CLM-04",
+        "CLM-07",
+        "LN-03"
+      ],
+      "problem": "Routing immediately marks paid when merely adding a payroll input; off-cycle routing only points at a batch and does not add its payable line or ensure employee/company/run ownership/state. AdvanceLoanId can offset another employee loan and directly changes debt. Actual upgraded claims has no XOR CHECK because CREATE IF NOT EXISTS skipped it.",
+      "required_repair": "Create conserved settlement/obligation/consumption records, validate subject/payer and legal states, materialize frozen payroll/batch lines and mark paid only from payment receipt. Attach invariant CHECKs to the existing table.",
+      "evidence": "Source; local-schema.json claims constraints"
+    },
+    {
+      "id": "R27",
+      "priority": 1,
+      "title": "Entitlement policy is invented and the reservation check races",
+      "file": "backend/src/modules/claims/entitlement.service.ts",
+      "line": 106,
+      "requirements": [
+        "CLM-01",
+        "CLM-02"
+      ],
+      "problem": "Unconfigured claims receive guessed15000/5000/2000/50000/10000 limits. Availability is read before submit transaction without a locked reservation, so concurrent claims can both pass. Periods spanning bucket boundaries can evade contained-range totals.",
+      "required_repair": "Use signed effective entitlement rows, exact bucket membership and locked immutable reservation/consumption; reject unconfigured entitlement and test concurrency/period edges.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R28",
+      "priority": 1,
+      "title": "Year-end claim taxable recovery counts unrelated bills repeatedly",
+      "file": "backend/src/modules/claims/claims.service.ts",
+      "line": 517,
+      "requirements": [
+        "CLM-05",
+        "PAY-13"
+      ],
+      "problem": "Inside each taxable type, the query sums every unverified approved/paid bill for the employee without claim-type or FY filters; multiple taxable types duplicate the same sum and historic bills enter the current year. Unclaimed allowance treatment and final-run posting are not implemented.",
+      "required_repair": "Query each approved taxable bucket/FY and verified line amount exactly once; distinguish unclaimed from unsubstantiated policy and post one idempotent final-FY tax adjustment.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R29",
+      "priority": 1,
+      "title": "Parallel-run gate can pass with missing population or component errors",
+      "file": "backend/src/modules/payroll-core/parallel-run/variance-reporter.ts",
+      "line": 318,
+      "requirements": [
+        "PAY-04",
+        "PAY-13",
+        "NFR-04"
+      ],
+      "problem": "Gate ignores dataDiscrepancies and unsanctioned policy divergence; an empty HRMS run yields no unexplained bugs and passes. Iteration only covers HRMS population; components can differ while header totals match, yet exact_match is assigned. Comparisons/dispositions/two-cycle sign-offs are not durable.",
+      "required_repair": "Compare the union of both employee/component populations, reject empty/mismatched inputs, and require approved tolerances, explained dispositions and persisted two-cycle human sign-offs.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R30",
+      "priority": 1,
+      "title": "Opening YTD financial facts exist only in process memory",
+      "file": "backend/src/modules/payroll-core/parallel-run/ytd-loader.ts",
+      "line": 47,
+      "requirements": [
+        "PAY-13",
+        "CORE-12"
+      ],
+      "problem": "YTD import stores normalized payroll facts in a module Map; restart loses them and clustered API processes see different data. The real run does not consume this state for tax projection.",
+      "required_repair": "Persist immutable reviewed imports/mappings/opening postings with source checksum, employee/FY validation and replay keys; feed the exact facts into payroll snapshots.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R31",
+      "priority": 1,
+      "title": "Apply-increment reports success without salary revisions",
+      "file": "backend/src/modules/payroll-core/annual/annual.router.ts",
+      "line": 237,
+      "requirements": [
+        "PAY-16"
+      ],
+      "problem": "Apply uses client-supplied employee facts, inserts arrears with constant salary_id1, writes no salary revision, then reports employeesUpdatedCount. Repeated invocation duplicates arrears; foreign salary1 can satisfy a simple FK while belonging to someone else.",
+      "required_repair": "Resolve approved employee salary facts server-side, atomically create real effective revisions and replay-safe recompute/delta obligations, and return actual persisted counts.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R32",
+      "priority": 1,
+      "title": "Executive financial KPIs silently substitute estimates",
+      "file": "backend/src/modules/reports/kpi-snapshot.service.ts",
+      "line": 313,
+      "requirements": [
+        "RPT-03",
+        "RPT-04"
+      ],
+      "problem": "Missing payroll cost becomes CTC/headcount estimation; missing OT cost becomes an estimated hourly rate, sometimes100/hour. These values have no unavailable/estimate marker. OT hours use detected minutes, costs lack ER contributions, and burnout uses hardcoded OT/absence weights instead of the specified configurable composite. Historical requested-date metrics also use current master/status.",
+      "required_repair": "Use approved versioned scoped snapshots from actual finalized financial/approved OT facts; preserve missing versus0, label any approved estimates and implement the signed KPI formulas/settings.",
+      "evidence": "docs06 \u00a74; current source"
+    },
+    {
+      "id": "R33",
+      "priority": 2,
+      "title": "Output readiness and artifact ownership are inferred incorrectly",
+      "file": "backend/src/modules/payroll-outputs/outputs-bundle.service.ts",
+      "line": 128,
+      "requirements": [
+        "PAY-05",
+        "PAY-06"
+      ],
+      "problem": "Statutory outputs are called ready from run state while documentId/generatedAt are null. Payslip readiness needs only one archived slip and generatedAt is now; JV lookup uses month filename without run/company. Finalize itself does not generate these outputs.",
+      "required_repair": "Persist versioned per-run/payer artifacts with checksum, complete population and actual generation receipts; expose availability from those records, not approval state.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R34",
+      "priority": 1,
+      "title": "SAP mapping loses legal payer and cost-center dimensions",
+      "file": "backend/src/modules/payroll-outputs/gl/sap-jv.service.ts",
+      "line": 90,
+      "requirements": [
+        "PAY-05",
+        "RPT-06"
+      ],
+      "problem": "GL mappings across entities/plants/cost centers collapse into a component-only map, so last row wins for all companies. Unconfigured accounts fall back to guessed510xxx/210xxx literals and missing cost center becomes GEN; current DB dimensions are not honored.",
+      "required_repair": "Use the approved scoped GL mapping keys from the canonical table, fail missing/ambiguous mappings and reconcile exact balanced amounts from frozen placement/result versions.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R35",
+      "priority": 2,
+      "title": "Prejoin single-use and at-rest token claims are inaccurate",
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+      "line": 117,
+      "requirements": [
+        "LC-01",
+        "NFR-03"
+      ],
+      "problem": "Raw bearer token is stored alongside its SHA256 hash. Submission validates before an unguarded update, permitting concurrent successful submissions and overwrites. Data is JSON.stringify-ed before storage in JSONB.",
+      "required_repair": "Store only a hashed expiring invitation token, lock/compare-and-swap atomic consumption, validate typed profile fields and store one consistent object representation; audit and mask statutory data.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R36",
+      "priority": 2,
+      "title": "Biometric verification stamps evidence without checking Kent",
+      "file": "backend/src/modules/lifecycle/onboarding/task-fanout.service.ts",
+      "line": 191,
+      "requirements": [
+        "LC-02",
+        "ATT-01"
+      ],
+      "problem": "Method only flips biometric_registered and completes the task; it never invokes a connector or records source evidence, yet writes Verified against Kent feed. Task/probation reminder helper methods are not registered in the worker.",
+      "required_repair": "Separate human-confirmed versus connector-confirmed evidence, retain actor/source receipt and wire approved scheduled reminder/escalation jobs; do not manufacture integration proof.",
+      "evidence": "Source + specifications"
+    },
+    {
+      "id": "R37",
+      "priority": 1,
+      "title": "Completed-stage and UAT labels exceed verified behavior",
+      "file": "plans/phase-3-lifecycle-assets-executive.md",
+      "line": 231,
+      "requirements": [
+        "NFR-04",
+        "CORE-11"
+      ],
+      "problem": "Phase2 all six stages and Phase3 all five stages are marked completed; G3 says real disbursement/UAT/CEO acceptance/law verification. Current code lacks workflow/payment evidence and full verify is red. This review found no signed acceptance artifacts in docs/outputs; source presence and synthetic tests cannot establish those manual gates.",
+      "required_repair": "Retain work credit but reopen failed acceptance items; attach dated signed evidence for any external/UAT/legal claim. Never infer proof from a checked box.",
+      "evidence": "Current trackers; verify/test results; source-path review. Absence of an artifact in this scope is not proof no off-repo human review occurred."
+    },
+    {
+      "id": "R38",
+      "priority": 1,
+      "title": "Income-tax seed contradicts its cited reference and FY claim",
+      "file": "backend/migrations/1752220000000_pay-schema-init.ts",
+      "line": 439,
+      "requirements": [
+        "PAY-13",
+        "CORE-12"
+      ],
+      "problem": "The migration labels its IT seed FY2025-26/2026-27, but inserts only2025-26 rows with a300000 first band and700000 rebate threshold. Its cited doc10 specifies a400000 first band and1200000 rebate threshold. Separate helper constants do not reconcile this contradictory persisted configuration. This is a repository-consistency finding, not certification of current law.",
+      "required_repair": "Resolve D01 with signed authoritative notification/FY evidence; keep one effective-dated statutory policy source shared by real payroll and previews, with independent goldens and explicit unsupported-FY failures.",
+      "evidence": "Migration seed versus docs10 \u00a76 and \u00a715"
+    }
+  ]
+}

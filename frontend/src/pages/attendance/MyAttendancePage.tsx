@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CalendarClock, ChevronLeft, ChevronRight, Clock3, FilePlus2 } from 'lucide-react';
 import {
   Button,
@@ -46,16 +47,16 @@ function addDaysIso(iso: string, delta: number): string {
 }
 
 function stateFor(status: string): AttendanceDayState {
-  if (status === 'P') return 'present';
+  if (status === 'P' || status === 'OD') return 'present';
   if (status === 'A' || status === 'UAB') return 'absent';
-  if (status === 'L') return 'leave';
+  if (status === 'L' || status === 'CO') return 'leave';
   if (status === 'HD') return 'halfday';
   if (status === 'H') return 'holiday';
   return 'weekoff';
 }
 
 function statusTone(status: string): StatusTone {
-  if (status === 'P') return 'positive';
+  if (status === 'P' || status === 'OD') return 'positive';
   if (status === 'A' || status === 'UAB') return 'negative';
   if (status === 'HD' || status === 'L') return 'warning';
   return 'neutral';
@@ -73,8 +74,9 @@ function needsLook(row: AttendanceMonthRow): boolean {
 
 function statusCopy(status: string): string {
   if (status === 'approved') return 'Approved';
-  if (status === 'pending') return 'With your manager';
+  if (status === 'pending') return 'Awaiting approval';
   if (status === 'rejected') return 'Not approved';
+  if (status === 'sent_back') return 'Sent back for review';
   return status.replaceAll('_', ' ');
 }
 
@@ -160,8 +162,9 @@ export function MyAttendancePage() {
     for (const row of attendance.data ?? []) {
       value[Number(row.date.slice(-2))] = {
         state: stateFor(row.status),
-        label: row.sessionStatuses ? attendanceSessionGlyph(row.status, row.sessionStatuses) : undefined,
-        note: `${attendanceSessionDescription(row.sessionStatuses) || attendanceLabel(row.status)} · In ${formatTime(row.firstIn)} · Out ${formatTime(row.lastOut)}`,
+        label: row.sessionStatuses ? attendanceSessionGlyph(row.status, row.sessionStatuses)
+          : row.status === 'HD' && row.leaveTypeCode ? `HD/${row.leaveTypeCode}` : row.leaveTypeCode ?? row.status,
+        note: `${attendanceSessionDescription(row.sessionStatuses) || (row.leaveTypeName ?? attendanceLabel(row.status))} · In ${formatTime(row.firstIn)} · Out ${formatTime(row.lastOut)}`,
       };
     }
     return value;
@@ -171,8 +174,8 @@ export function MyAttendancePage() {
   if (attendance.error)
     return <DashboardError message={attendance.error} onRetry={attendance.reload} />;
 
-  const present = rows.filter((row) => row.status === 'P').length;
-  const exceptions = rows.filter((row) => row.status === 'A' || row.status === 'UAB').length;
+  const present = rows.filter((row) => row.status === 'P' || row.status === 'OD').length;
+  const exceptions = rows.filter(needsLook).length;
   const processed = rows.length;
   const yesterdayRow = rows.find((row) => row.date === yesterday);
   const yesterdayNeedsHelp = yesterdayRow !== undefined && needsLook(yesterdayRow);
@@ -188,7 +191,7 @@ export function MyAttendancePage() {
         title="My attendance"
         description={
           processed > 0
-            ? `${String(present)} of ${String(processed)} processed days this month are already marked present.`
+            ? `${String(present)} of ${String(processed)} processed days this month are present or on official duty.`
             : 'Processed Kent swipes land here as the month unfolds — nothing is waiting until a day is posted.'
         }
         actions={
@@ -208,7 +211,7 @@ export function MyAttendancePage() {
 
       <KpiPillRow
         pills={[
-          { label: 'Already present', value: present, state: 'outline' },
+          { label: 'Present or on duty', value: present, state: 'outline' },
           { label: 'Need a look', value: exceptions, state: 'hatched' },
           { label: 'Requests sent', value: requests.data?.length ?? 0, state: 'outline' },
           { label: 'Overtime rows', value: overtime.data?.length ?? 0, state: 'outline' },
@@ -251,6 +254,11 @@ export function MyAttendancePage() {
             }
           />
           <MonthCalendar year={year} month={monthNo} days={days} onSelectDay={setSelectedDate} />
+          <p className="mt-4 text-xs leading-5 text-ink-muted">
+            P present · A absent · HD half day · OD official duty · WO week off · H holiday.
+            Leave uses its type code, such as SL for sick leave. A:P shows Session 1 absent and Session 2 present.
+            A blank day has no posted attendance; it is not an absence decision.
+          </p>
         </Card>
 
         <DarkCard>
@@ -258,8 +266,13 @@ export function MyAttendancePage() {
           {selected ? (
             <div className="mt-4">
               <StatusBadge tone={statusTone(selected.status)}>
-                {selected.sessionStatuses ? attendanceSessionGlyph(selected.status, selected.sessionStatuses) : attendanceLabel(selected.status)}
+                {selected.status === 'HD' && selected.leaveTypeName ? `Half day · ${selected.leaveTypeName}` : selected.leaveTypeName ?? attendanceLabel(selected.status)}
               </StatusBadge>
+              {selected.source && <p className="mt-3 text-xs text-hero-muted">
+                {selected.source === 'regularized' ? 'From an approved request' : selected.source === 'manual' ? 'HR correction' : 'Processed attendance'}
+                {selected.isLocked ? ' · Locked for payroll' : ''}
+                {selected.leaveIsPaid === false ? ' · Unpaid leave' : ''}
+              </p>}
               {selected.sessionStatuses && (
                 <dl className="mt-4 grid grid-cols-2 gap-3 text-sm" aria-label="Attendance sessions">
                   {selected.sessionStatuses.map((session) => (
@@ -311,9 +324,11 @@ export function MyAttendancePage() {
           ) : (
             <div className="mt-8 text-hero-muted">
               <CalendarClock className="size-8" />
-              <p className="mt-3 text-sm leading-6">
-                Pick a calendar day to see its swipes. Today is highlighted on the month.
-              </p>
+              <p className="mt-3 text-sm leading-6">{selectedDate
+                ? selectedDate > today
+                  ? `Attendance is not due for ${formatDateIN(selectedDate)} yet. You can request official duty for planned company work.`
+                  : `No attendance is posted for ${formatDateIN(selectedDate)}. This does not mean absent. Processing may still be waiting for complete device data.`
+                : 'Pick a calendar day to see its attendance and swipes. Today is highlighted on the month.'}</p>
             </div>
           )}
         </DarkCard>
@@ -322,7 +337,8 @@ export function MyAttendancePage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader headingLevel={2} title="Requests you have already sent" subtitle="Regularisation, official duty and short permission" />
-          {requests.data?.length ? (
+          {requests.error ? <DashboardError message={requests.error} onRetry={requests.reload} /> : requests.loading
+            ? <p role="status" className="text-sm text-ink-muted">Loading requests…</p> : requests.data?.length ? (
             <div className="space-y-2">
               {requests.data.slice(0, 6).map((request) => (
                 <div
@@ -334,6 +350,8 @@ export function MyAttendancePage() {
                       {kindLabel(request.kind)} · {formatDateIN(request.fromDate)}
                     </p>
                     <p className="mt-0.5 text-xs text-ink-muted">{request.reason}</p>
+                    <Link className="mt-1 inline-block rounded-control text-xs font-semibold underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-accent"
+                      to={`/approvals/${String(request.workflowRequestId)}`}>View request and decisions</Link>
                   </div>
                   <StatusBadge
                     tone={request.workflowStatus === 'approved' ? 'positive' : 'warning'}
@@ -394,7 +412,7 @@ export function MyAttendancePage() {
         onClose={() => {
           setRequestOpen(false);
         }}
-        onSubmitted={requests.reload}
+        onSubmitted={() => { requests.reload(); attendance.reload(); }}
       />
     </div>
   );

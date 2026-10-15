@@ -2,6 +2,7 @@ import { useCallback, useEffect, useEffectEvent, useState } from 'react';
 import { Check, CheckCircle2, Clock3, RotateCcw, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../../lib/api';
+import { notifyWorkflowChanged } from '../../lib/workflow-events';
 import {
   Button,
   Card,
@@ -18,6 +19,7 @@ import {
 import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
 import { useDashboardResource } from '../home/useDashboardResource';
 import { payloadAsJson, summarizeRequest } from './request-summary';
+import { ApprovalRequestStatus } from './ApprovalRequestStatus';
 
 interface InboxItem {
   requestId: number;
@@ -52,7 +54,7 @@ export function ApprovalsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
   const [batchOpen, setBatchOpen] = useState(false);
   const routeRequestId = id === undefined ? undefined : Number(id);
-  const item = inbox.data?.find((row) => row.requestId === routeRequestId) ?? inbox.data?.[0];
+  const item = id === undefined ? inbox.data?.[0] : inbox.data?.find((row) => row.requestId === routeRequestId);
   const summary = item === undefined ? null : summarizeRequest(item.type, item.payload);
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export function ApprovalsPage() {
   }, [item?.requestId]);
 
   const act = useCallback(async (action: 'approve' | 'reject' | 'send_back') => {
-    if (!item) return;
+    if (!item || acting !== null) return;
     if (action !== 'approve' && comment.trim() === '') {
       setNoteError('Add a reason — required when rejecting or sending back.');
       toast.error('Add a decision note', {
@@ -71,7 +73,7 @@ export function ApprovalsPage() {
     }
     setActing(item.requestId);
     try {
-      await apiFetch(`/api/workflows/requests/${String(item.requestId)}/act`, {
+      const result = await apiFetch<{ outcome: 'advanced' | 'approved' | 'rejected' | 'sent_back' }>(`/api/workflows/requests/${String(item.requestId)}/act`, {
         method: 'POST',
         body: JSON.stringify({
           requestId: item.requestId,
@@ -79,8 +81,10 @@ export function ApprovalsPage() {
           comment: comment.trim() || undefined,
         }),
       });
-      toast.success(
-        action === 'approve'
+      if (result.outcome === 'advanced') {
+        toast.success('Approval recorded', { description: 'Waiting for the next approver.' });
+      } else toast.success(
+        result.outcome === 'approved'
           ? 'Request approved'
           : action === 'reject'
             ? 'Request rejected'
@@ -88,6 +92,7 @@ export function ApprovalsPage() {
       );
       setComment('');
       setNoteError(undefined);
+      notifyWorkflowChanged();
       inbox.reload();
       void navigate('/approvals', { replace: true });
     } catch (cause) {
@@ -97,21 +102,36 @@ export function ApprovalsPage() {
     } finally {
       setActing(null);
     }
-  }, [comment, inbox, item, navigate]);
+  }, [acting, comment, inbox, item, navigate]);
 
   const batchApprove = async () => {
     if (selectedIds.size === 0) return;
     setBatchOpen(false);
     setActing(-1);
     try {
-      await Promise.all([...selectedIds].map(async (requestId) =>
-        apiFetch(`/api/workflows/requests/${String(requestId)}/act`, {
-          method: 'POST',
-          body: JSON.stringify({ requestId, action: 'approve' }),
+      const ids = [...selectedIds].filter(requestId => inbox.data?.some(row => row.requestId === requestId));
+      const results = await Promise.allSettled(ids.map(async requestId =>
+        apiFetch<{ outcome: 'advanced' | 'approved' }>(`/api/workflows/requests/${String(requestId)}/act`, {
+          method: 'POST', body: JSON.stringify({ requestId, action: 'approve' }),
         }),
       ));
-      toast.success(`${String(selectedIds.size)} requests approved`);
-      setSelectedIds(new Set());
+      const failed = new Set<number>();
+      let final = 0;
+      let advanced = 0;
+      results.forEach((result, index) => {
+        const requestId = ids[index];
+        if (result.status === 'rejected') { if (requestId !== undefined) failed.add(requestId); }
+        else if (result.value.outcome === 'approved') final++;
+        else advanced++;
+      });
+      if (final + advanced > 0) toast.success(`${String(final + advanced)} decisions recorded`, {
+        description: `${String(final)} approved; ${String(advanced)} waiting for the next approver.`,
+      });
+      if (failed.size > 0) toast.error(`${String(failed.size)} decisions could not be saved`, {
+        description: 'Successful decisions are saved. Only failed requests remain selected for retry.',
+      });
+      setSelectedIds(failed);
+      if (final + advanced > 0) notifyWorkflowChanged();
       inbox.reload();
       void navigate('/approvals', { replace: true });
     } catch (cause) {
@@ -145,6 +165,13 @@ export function ApprovalsPage() {
 
   if (inbox.loading) return <DashboardSkeleton />;
   if (inbox.error) return <DashboardError message={inbox.error} onRetry={inbox.reload} />;
+  if (id !== undefined && !item) {
+    if (!Number.isSafeInteger(routeRequestId) || (routeRequestId ?? 0) <= 0) {
+      return <Card><EmptyState title="Invalid request link" description="Open a request from your approvals inbox."
+        action={<Button onClick={() => { void navigate('/approvals'); }}>Back to inbox</Button>} /></Card>;
+    }
+    return <ApprovalRequestStatus key={id} requestId={Number(id)} onBack={() => { void navigate('/approvals'); }} />;
+  }
   const overdue = inbox.data?.filter((row) => timeRemaining(row.slaDueAt).overdue).length ?? 0;
 
   return (
@@ -205,8 +232,8 @@ export function ApprovalsPage() {
                     key={row.requestId}
                     className={`flex items-start gap-3 border-t border-line/60 px-5 py-4 ${
                       selected
-                        ? 'border-l-4 border-l-accent bg-accent-soft'
-                        : 'border-l-4 border-l-transparent hover:bg-accent-soft'
+                        ? 'bg-accent text-accent-ink'
+                        : 'hover:bg-accent-soft'
                     }`}
                   >
                     <Checkbox
@@ -215,9 +242,10 @@ export function ApprovalsPage() {
                       checked={selectedIds.has(row.requestId)}
                       disabled={acting !== null}
                       onChange={(event) => {
+                        const checked = event.currentTarget.checked;
                         setSelectedIds((current) => {
                           const next = new Set(current);
-                          if (event.currentTarget.checked) next.add(row.requestId);
+                          if (checked) next.add(row.requestId);
                           else next.delete(row.requestId);
                           return next;
                         });
@@ -231,12 +259,12 @@ export function ApprovalsPage() {
                     >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-ink">{row.subject.name}</p>
-                        <p className="text-xs text-ink-muted">
+                        <p className={`text-sm font-semibold ${selected ? 'text-accent-ink' : 'text-ink'}`}>{row.subject.name}</p>
+                        <p className={`text-xs ${selected ? 'text-accent-ink/80' : 'text-ink-muted'}`}>
                           {row.subject.ecode} · {row.typeName}
                         </p>
                         {preview !== '' && (
-                          <p className="mt-1 text-xs text-ink">{preview}</p>
+                          <p className={`mt-1 text-xs ${selected ? 'text-accent-ink' : 'text-ink'}`}>{preview}</p>
                         )}
                       </div>
                       <StatusBadge tone={sla.overdue ? 'negative' : 'warning'}>

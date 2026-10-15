@@ -1,0 +1,28 @@
+{
+  "prepared": "2026-10-14",
+  "business_relations": 132,
+  "business_columns": 1379,
+  "partition_relations": 94,
+  "applied_migrations": 48,
+  "source_migrations": 49,
+  "purpose_classes": {
+    "Operational identity/timestamp convention (docs/03 introduction); not an extra business feature.": 294,
+    "Explicit baseline field in docs/03; business correctness still requires flow verification.": 587,
+    "Module/migration extension; field-level justification needs manual evidence. Not automatically unsupported.": 496,
+    "Named in prior amendment/proposal pack; applied implementation and approval must be reconciled.": 2
+  },
+  "usage_classes": {
+    "Explicit runtime candidate": 819,
+    "No runtime candidate found": 407,
+    "Incidental selectAll only": 153
+  },
+  "fields_without_parsed_ddl": [],
+  "untyped_fields": [],
+  "limits": [
+    "Catalog excludes partition duplicates, public migration bookkeeping and pg-boss internals.",
+    "AST candidate references are lexical and can include unrelated aliases or incidental selectAll. They do not prove a working feature.",
+    "No runtime candidate is not proof a field is unnecessary: triggers, SQL views, exports, import scripts and approved deferred modules may justify it.",
+    "Baseline/proposal classification is provenance, not human approval or release certification.",
+    "No database row values, credentials or statutory IDs were read/exported."
+  ]
+}

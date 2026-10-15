@@ -6,7 +6,7 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
 import type { Express } from 'express';
 import { sql, type Kysely } from 'kysely';
 import { createApp } from '../src/app.js';
@@ -28,7 +28,7 @@ run('employees self-service — GET /employees/me (live Postgres)', () => {
   let ownEcode: string | null = null;
 
   async function loginToken(identifier: string): Promise<string> {
-    const res = await request(app).post('/api/auth/login').send({ identifier, password });
+    const res = await (await httpRequest(app)).post('/api/auth/login').send({ identifier, password });
     expect(res.status).toBe(200);
     return (res.body as { accessToken: string }).accessToken;
   }
@@ -72,7 +72,7 @@ run('employees self-service — GET /employees/me (live Postgres)', () => {
   it('returns the caller’s OWN profile (not shadowed by /employees/{ecode})', async () => {
     expect(ownEcode).not.toBeNull();
     const token = await loginToken(email);
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .get('/api/employees/me')
       .set('Authorization', `Bearer ${token}`);
 
@@ -82,7 +82,7 @@ run('employees self-service — GET /employees/me (live Postgres)', () => {
   });
 
   it('rejects an unauthenticated caller with 401', async () => {
-    const res = await request(app).get('/api/employees/me');
+    const res = await (await httpRequest(app)).get('/api/employees/me');
     expect(res.status).toBe(401);
   });
 });

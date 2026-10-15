@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { LoginPage } from './pages/auth/LoginPage';
+import { PrejoinPortalPage } from './pages/lifecycle/PrejoinPortalPage';
 import { AppRouter } from './app/router';
 import {
   loadSession,
@@ -29,6 +30,14 @@ export function App() {
           <span className="text-sm font-semibold text-ink">Rashmi HRMS</span>
         </div>
       </div>
+    );
+  }
+
+  if (window.location.pathname.startsWith('/onboard/prejoin')) {
+    return (
+      <BrowserRouter>
+        <PrejoinPortalPage />
+      </BrowserRouter>
     );
   }
 

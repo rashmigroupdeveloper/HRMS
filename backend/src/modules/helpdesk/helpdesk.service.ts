@@ -32,6 +32,9 @@ export interface TicketRow {
   slaDueAt: string;
   breached: boolean;
   escalatedLevel: number;
+  escalatedToUserId: number | null;
+  firstResponseAt: string | null;
+  reopenCount: number;
   acknowledgedAt: string | null;
   resolvedAt: string | null;
   createdAt: string;
@@ -72,6 +75,7 @@ export async function listCategories(db: Kysely<Database>) {
     name: r.name,
     assigneeRoleCode: r.assignee_role_code,
     slaHours: r.sla_hours,
+    escalateToRoleCode: r.escalate_to_role_code,
   }));
 }
 
@@ -115,6 +119,16 @@ export async function raiseTicket(
       assignee = candidate?.id ?? null;
     }
 
+    const priority = params.priority ?? 'normal';
+    let computedHours = category.sla_hours;
+    if (priority === 'urgent') {
+      computedHours = Math.max(2, Math.round(category.sla_hours * 0.25));
+    } else if (priority === 'high') {
+      computedHours = Math.max(4, Math.round(category.sla_hours * 0.5));
+    } else if (priority === 'low') {
+      computedHours = Math.round(category.sla_hours * 2);
+    }
+
     const ticketNo = await nextTicketNo(trx);
     const inserted = await trx
       .insertInto('hd.tickets')
@@ -124,9 +138,9 @@ export async function raiseTicket(
         category_id: category.id,
         subject: params.subject,
         body: params.body,
-        priority: params.priority ?? 'normal',
+        priority,
         assignee_user_id: assignee,
-        sla_due_at: sql<Date>`now() + ${category.sla_hours} * INTERVAL '1 hour'`,
+        sla_due_at: sql<Date>`now() + ${computedHours} * INTERVAL '1 hour'`,
         acknowledged_at: sql<Date>`now()`,
       })
       .returning(['id', 'sla_due_at'])
@@ -145,7 +159,7 @@ export async function raiseTicket(
         recipientUserId: assignee,
         channel: 'in_app',
         templateCode: 'helpdesk_ticket_assigned',
-        payload: { ticketNo, subject: params.subject, slaHours: category.sla_hours },
+        payload: { ticketNo, subject: params.subject, slaHours: computedHours },
       });
     }
 
@@ -190,7 +204,9 @@ export async function listTickets(
     .$if(params.status !== undefined, (qb) => qb.where('t.status', '=', params.status ?? 'open'))
     .$if(params.categoryCode !== undefined, (qb) => qb.where('c.code', '=', params.categoryCode ?? ''))
     .$if(params.breachedOnly === true, (qb) =>
-      qb.where(sql<boolean>`t.sla_due_at < now() AND t.status IN ('open','pending')`),
+      qb.where(
+        sql<boolean>`((t.sla_due_at < now() AND t.status IN ('open','pending')) OR (t.resolved_at IS NOT NULL AND t.resolved_at > t.sla_due_at) OR t.escalated_level > 0)`,
+      ),
     );
 
   const counted = await base.select((eb) => eb.fn.countAll<string>().as('n')).executeTakeFirst();
@@ -203,6 +219,9 @@ export async function listTickets(
       't.status',
       't.priority',
       't.escalated_level',
+      't.escalated_to_user_id',
+      't.first_response_at',
+      't.reopen_count',
       't.acknowledged_at',
       't.resolved_at',
       't.created_at',
@@ -212,7 +231,11 @@ export async function listTickets(
       'ru.email as raised_by_email',
       'au.email as assignee_email',
     ])
-    .select(sql<boolean>`(t.sla_due_at < now() AND t.status IN ('open','pending'))`.as('breached'))
+    .select(
+      sql<boolean>`((t.sla_due_at < now() AND t.status IN ('open','pending')) OR (t.resolved_at IS NOT NULL AND t.resolved_at > t.sla_due_at) OR t.escalated_level > 0)`.as(
+        'breached',
+      ),
+    )
     .orderBy('t.sla_due_at')
     .limit(params.limit)
     .offset(params.offset)
@@ -233,6 +256,9 @@ export async function listTickets(
       slaDueAt: iso(r.sla_due_at) ?? '',
       breached: r.breached,
       escalatedLevel: r.escalated_level,
+      escalatedToUserId: r.escalated_to_user_id,
+      firstResponseAt: iso(r.first_response_at),
+      reopenCount: r.reopen_count,
       acknowledgedAt: iso(r.acknowledged_at),
       resolvedAt: iso(r.resolved_at),
       createdAt: iso(r.created_at) ?? '',
@@ -266,15 +292,29 @@ export async function ticketThread(
 
 export async function replyToTicket(
   db: Kysely<Database>,
-  params: { ticketId: number; authorUserId: number; body: string; isInternal: boolean },
+  params: {
+    ticketId: number;
+    authorUserId: number;
+    body: string;
+    isInternal: boolean;
+    isAgent?: boolean | undefined;
+  },
 ): Promise<{ id: number }> {
   const ticket = await db
     .selectFrom('hd.tickets')
-    .select(['id', 'raised_by', 'assignee_user_id', 'ticket_no', 'status'])
+    .select(['id', 'raised_by', 'assignee_user_id', 'ticket_no', 'status', 'first_response_at'])
     .where('id', '=', params.ticketId)
     .executeTakeFirst();
   if (!ticket) throw new Error('Ticket not found');
   if (ticket.status === 'closed') throw new Error('This ticket is closed — reopen it to add a reply');
+
+  const isAuthorized =
+    params.isAgent === true ||
+    params.authorUserId === ticket.raised_by ||
+    params.authorUserId === ticket.assignee_user_id;
+  if (!isAuthorized) {
+    throw new Error('Not authorized to access or reply to this ticket');
+  }
 
   const inserted = await db
     .insertInto('hd.ticket_messages')
@@ -286,6 +326,24 @@ export async function replyToTicket(
     })
     .returning('id')
     .executeTakeFirstOrThrow();
+
+  // If this is an agent reply, record first response time and transition status if open
+  if (params.isAgent) {
+    const updates: Record<string, unknown> = {};
+    if (ticket.first_response_at === null) {
+      updates['first_response_at'] = sql`now()`;
+    }
+    if (ticket.status === 'open') {
+      updates['status'] = 'pending';
+    }
+    if (Object.keys(updates).length > 0) {
+      await db
+        .updateTable('hd.tickets')
+        .set(updates)
+        .where('id', '=', params.ticketId)
+        .execute();
+    }
+  }
 
   // Notify the other party — an internal note tells nobody outside the desk.
   if (!params.isInternal) {
@@ -316,14 +374,21 @@ export async function setTicketStatus(
 ): Promise<{ ok: true }> {
   const ticket = await db
     .selectFrom('hd.tickets')
-    .select(['id', 'ticket_no', 'status', 'raised_by'])
+    .select(['id', 'ticket_no', 'status', 'raised_by', 'reopen_count'])
     .where('id', '=', params.ticketId)
     .executeTakeFirst();
   if (!ticket) throw new Error('Ticket not found');
 
   const closing = params.status === 'resolved' || params.status === 'closed';
+  const reopening =
+    params.status === 'open' && (ticket.status === 'resolved' || ticket.status === 'closed');
+
   if (closing && (params.resolution ?? '').trim() === '') {
     throw new Error('Say how it was resolved — a ticket closed without a reason helps nobody');
+  }
+
+  if (reopening && (params.resolution ?? '').trim() === '') {
+    throw new Error('State the reason for reopening this ticket');
   }
 
   await db
@@ -332,6 +397,7 @@ export async function setTicketStatus(
       status: params.status,
       resolution: closing ? (params.resolution ?? null) : null,
       resolved_at: closing ? sql`now()` : null,
+      reopen_count: reopening ? sql`reopen_count + 1` : sql`reopen_count`,
       updated_at: sql`now()`,
     })
     .where('id', '=', params.ticketId)
@@ -343,6 +409,13 @@ export async function setTicketStatus(
       channel: 'in_app',
       templateCode: 'helpdesk_ticket_resolved',
       payload: { ticketNo: ticket.ticket_no, resolution: params.resolution ?? '' },
+    });
+  } else if (reopening) {
+    await enqueue(db, {
+      recipientUserId: ticket.raised_by,
+      channel: 'in_app',
+      templateCode: 'helpdesk_ticket_reopened',
+      payload: { ticketNo: ticket.ticket_no, reason: params.resolution ?? '' },
     });
   }
 
@@ -361,15 +434,25 @@ export async function setTicketStatus(
 }
 
 /**
- * SOW-9.2 escalation sweep. Raises the level of every breached open ticket and
- * notifies. Idempotent per level, so running it twice in an hour does not
- * double-escalate.
+ * SOW-9.2 escalation sweep (C27). Raises the level of every breached open ticket
+ * and escalates to the designated higher management hierarchy rather than
+ * alerting the existing assignee alone.
  */
 export async function escalateBreachedTickets(db: Kysely<Database>): Promise<{ escalated: number }> {
   const breached = await db
     .selectFrom('hd.tickets as t')
     .innerJoin('hd.categories as c', 'c.id', 't.category_id')
-    .select(['t.id', 't.ticket_no', 't.escalated_level', 't.assignee_user_id'])
+    .select([
+      't.id',
+      't.ticket_no',
+      't.subject',
+      't.priority',
+      't.escalated_level',
+      't.assignee_user_id',
+      'c.name as category_name',
+      'c.escalate_to_role_code',
+      'c.escalate_after_hours',
+    ])
     .where('t.status', 'in', ['open', 'pending'])
     .where(sql<boolean>`t.sla_due_at < now()`)
     .where(
@@ -377,18 +460,51 @@ export async function escalateBreachedTickets(db: Kysely<Database>): Promise<{ e
     )
     .execute();
 
+  let count = 0;
   for (const ticket of breached) {
+    // Resolve higher management recipient for this category (C27)
+    const targetRole = ticket.escalate_to_role_code ?? 'hr_head';
+    const manager = await db
+      .selectFrom('core.user_roles as ur')
+      .innerJoin('core.roles as r', 'r.id', 'ur.role_id')
+      .innerJoin('core.users as u', 'u.id', 'ur.user_id')
+      .select('u.id')
+      .where('r.code', '=', targetRole)
+      .where('u.is_active', '=', true)
+      .orderBy('u.id')
+      .executeTakeFirst();
+
+    const targetUserId = manager?.id ?? null;
+
     await db
       .updateTable('hd.tickets')
       .set({
         escalated_level: ticket.escalated_level + 1,
         escalated_at: sql`now()`,
+        escalated_to_user_id: targetUserId,
         updated_at: sql`now()`,
       })
       .where('id', '=', ticket.id)
       .execute();
 
-    if (ticket.assignee_user_id !== null) {
+    // Alert the higher management hierarchy user (fixing C27)
+    if (targetUserId !== null) {
+      await enqueue(db, {
+        recipientUserId: targetUserId,
+        channel: 'in_app',
+        templateCode: 'helpdesk_ticket_escalated_manager',
+        payload: {
+          ticketNo: ticket.ticket_no,
+          subject: ticket.subject,
+          priority: ticket.priority,
+          level: ticket.escalated_level + 1,
+          category: ticket.category_name,
+        },
+      });
+    }
+
+    // Also notify current assignee that ticket has breached and escalated to management
+    if (ticket.assignee_user_id !== null && ticket.assignee_user_id !== targetUserId) {
       await enqueue(db, {
         recipientUserId: ticket.assignee_user_id,
         channel: 'in_app',
@@ -396,11 +512,13 @@ export async function escalateBreachedTickets(db: Kysely<Database>): Promise<{ e
         payload: { ticketNo: ticket.ticket_no, level: ticket.escalated_level + 1 },
       });
     }
+
+    count++;
   }
-  return { escalated: breached.length };
+  return { escalated: count };
 }
 
-/** R29 — monthly performance (SOW-9.3). */
+/** R29 — monthly performance (SOW-9.3, docs/06 §3). */
 export async function helpdeskPerformance(
   db: Kysely<Database>,
   params: { month: string },
@@ -412,6 +530,9 @@ export async function helpdeskPerformance(
     resolved: number;
     breached: number;
     avgResolutionHours: number | null;
+    avgFirstResponseHours: number | null;
+    reopenedCount: number;
+    resolutionRatePct: number;
   }[]
 > {
   const monthStart = `${params.month}-01`;
@@ -421,24 +542,44 @@ export async function helpdeskPerformance(
     .select(['c.code as category_code', 'c.name as category_name'])
     .select(sql<string>`COUNT(*)`.as('raised'))
     .select(sql<string>`COUNT(*) FILTER (WHERE t.status IN ('resolved','closed'))`.as('resolved'))
-    .select(sql<string>`COUNT(*) FILTER (WHERE t.resolved_at IS NULL AND t.sla_due_at < now())`.as('breached'))
+    .select(
+      sql<string>`COUNT(*) FILTER (WHERE (t.resolved_at IS NULL AND t.sla_due_at < now()) OR (t.resolved_at IS NOT NULL AND t.resolved_at > t.sla_due_at) OR t.escalated_level > 0)`.as(
+        'breached',
+      ),
+    )
     .select(
       sql<string | null>`AVG(EXTRACT(EPOCH FROM (t.resolved_at - t.created_at)) / 3600) FILTER (WHERE t.resolved_at IS NOT NULL)`.as(
         'avg_hours',
       ),
     )
+    .select(
+      sql<string | null>`AVG(EXTRACT(EPOCH FROM (t.first_response_at - t.created_at)) / 3600) FILTER (WHERE t.first_response_at IS NOT NULL)`.as(
+        'first_response_hours',
+      ),
+    )
+    .select(sql<string>`COUNT(*) FILTER (WHERE t.reopen_count > 0)`.as('reopened_count'))
     .where(sql<boolean>`t.created_at >= ${monthStart}::date`)
     .where(sql<boolean>`t.created_at < (${monthStart}::date + INTERVAL '1 month')`)
     .groupBy(['c.code', 'c.name'])
     .orderBy('c.name')
     .execute();
 
-  return rows.map((r) => ({
-    categoryCode: r.category_code,
-    categoryName: r.category_name,
-    raised: Number(r.raised),
-    resolved: Number(r.resolved),
-    breached: Number(r.breached),
-    avgResolutionHours: r.avg_hours === null ? null : Number(r.avg_hours),
-  }));
+  return rows.map((r) => {
+    const raised = Number(r.raised);
+    const resolved = Number(r.resolved);
+    return {
+      categoryCode: r.category_code,
+      categoryName: r.category_name,
+      raised,
+      resolved,
+      breached: Number(r.breached),
+      avgResolutionHours: r.avg_hours === null ? null : Math.round(Number(r.avg_hours) * 10) / 10,
+      avgFirstResponseHours:
+        r.first_response_hours === null
+          ? null
+          : Math.round(Number(r.first_response_hours) * 10) / 10,
+      reopenedCount: Number(r.reopened_count),
+      resolutionRatePct: raised === 0 ? 100 : Math.round((resolved / raised) * 100),
+    };
+  });
 }

@@ -25,8 +25,16 @@ import {
   exportR4Excel,
   exportR5Excel,
   exportR6Excel,
+  exportR21Excel,
+  exportR23Excel,
   exportR24Excel,
+  exportR25Excel,
+  exportR26Excel,
   exportR27Excel,
+  exportR28Excel,
+  exportR29Excel,
+  exportR30Excel,
+  exportR31Excel,
 } from './reports-export.service.js';
 import {
   reportR2Swipes,
@@ -35,8 +43,16 @@ import {
   reportR4Exceptions,
   reportR5Ot,
   reportR6AbsenceCases,
+  reportR21Offers,
+  reportR23Transfers,
   reportR24Boarding,
+  reportR25Probation,
+  reportR26Attrition,
   reportR27Headcount,
+  reportR28Assets,
+  reportR29Helpdesk,
+  reportR30Policies,
+  reportR31Claims,
 } from './reports.service.js';
 import {
   businessUnitDashboard,
@@ -673,6 +689,11 @@ const myAttendance = withPermission('attendance.own')
     date: z.string(),
     status: z.string(),
     sessionStatuses: sessionStatusesSchema.nullable(),
+    source: z.enum(['auto', 'regularized', 'manual']),
+    isLocked: z.boolean(),
+    leaveTypeCode: z.string().nullable(),
+    leaveTypeName: z.string().nullable(),
+    leaveIsPaid: z.boolean().nullable(),
     firstIn: z.string().nullable(),
     lastOut: z.string().nullable(),
     otMinutes: z.number(),
@@ -754,8 +775,12 @@ const businessUnit = withAnyPermission('reports.bu', 'reports.hr')
       headcountTotal: z.number(),
       absentToday: z.number(),
       scheduledToday: z.number(),
+      presenceTodayPct: z.number().nullable(),
+      shiftScheduleCompliancePct: z.number().nullable(),
       absenteeismTodayPct: z.number().nullable(),
       otHoursMtd: z.number(),
+      activeOvertimeHours: z.number(),
+      pendingApprovalsCount: z.number(),
       joinersMtd: z.number(),
       exitsMtd: z.number(),
       openAbsenceCases: z.array(z.object({ stage: z.string(), count: z.number() })),
@@ -765,6 +790,9 @@ const businessUnit = withAnyPermission('reports.bu', 'reports.hr')
     businessUnitDashboard(context.db, {
       companyId: input?.companyId,
       locationId: input?.locationId,
+      all: context.permissionAccess.all,
+      orgUnitIds: context.permissionAccess.orgUnitIds,
+      actorEmployeeId: context.user.employee_id,
     }),
   );
 
@@ -781,7 +809,7 @@ const executiveTrend = reportGuard()
   .output(z.array(z.object({ label: z.string(), date: z.string(), value: z.number().nullable() })))
   .handler(({ input, context }) => kpiTrend(context.db, input));
 
-const rebuildExecutiveKpis = withPermission('admin.integrations')
+const rebuildExecutiveKpis = withAnyPermission('reports.ceo', 'reports.hr', 'admin.integrations', 'admin.settings')
   .route({ method: 'POST', path: '/reports/executive/rebuild', summary: 'Rebuild the KPI snapshot now' })
   .input(z.object({ date: isoDate.optional() }).optional())
   .output(z.object({ snapshotDate: z.string(), metrics: z.number() }))
@@ -789,9 +817,346 @@ const rebuildExecutiveKpis = withPermission('admin.integrations')
     return buildKpiSnapshot(context.db, { date: input?.date });
   });
 
+const executiveLeavers = withAnyPermission('reports.ceo', 'reports.hr')
+  .route({ method: 'GET', path: '/reports/executive/leavers', summary: 'Leavers drill-down for executive attrition KPI' })
+  .input(z.object({ limit: z.coerce.number().int().min(1).max(100).optional() }).optional())
+  .output(
+    z.array(
+      z.object({
+        id: z.number(),
+        employeeName: z.string(),
+        ecode: z.string(),
+        company: z.string(),
+        department: z.string().nullable(),
+        location: z.string().nullable(),
+        category: z.string(),
+        dol: z.string().nullable(),
+        reason: z.string(),
+        exitType: z.string(),
+      }),
+    ),
+  )
+  .handler(async ({ input, context }) => {
+    const list = await reportR26Attrition(context.db, { scope: employeeScope(context) });
+    return list.slice(0, input?.limit ?? 50).map((r) => ({
+      id: r.id,
+      employeeName: r.employeeName,
+      ecode: r.ecode,
+      company: r.company,
+      department: r.department,
+      location: r.location,
+      category: r.category,
+      dol: r.dol,
+      reason: r.reason,
+      exitType: r.exitType,
+    }));
+  });
+
+// ── R21 Offers ─────────────────────────────────────────────────────────────
+const r21Row = z.object({
+  id: z.number(),
+  candidateName: z.string(),
+  orgUnit: z.string().nullable(),
+  designationOffered: z.string(),
+  doj: z.string(),
+  offerDate: z.string(),
+  offeredSalary: z.number(),
+  probationPercentage: z.number(),
+  loiStatus: z.enum(['Accepted', 'Rejected', 'Yet to Accept']),
+  workLocation: z.string().nullable(),
+  status: z.string(),
+});
+
+const r21Input = z.object({
+  companyId: z.coerce.number().int().positive().optional(),
+  fromDate: isoDate.optional(),
+  toDate: isoDate.optional(),
+  status: z.string().optional(),
+}).optional();
+
+const r21 = reportGuard()
+  .route({ method: 'GET', path: '/reports/r21-offers', summary: 'R21 offers & candidates' })
+  .input(r21Input)
+  .output(z.array(r21Row))
+  .handler(async ({ input, context }) =>
+    reportR21Offers(context.db, { ...input, scope: employeeScope(context) }),
+  );
+
+const r21Export = reportGuard()
+  .route({ method: 'GET', path: '/reports/r21-offers/export', summary: 'R21 Excel' })
+  .input(r21Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR21Excel(context.db, { ...input, scope: employeeScope(context) });
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R21', input, 'r21-offers.xlsx', buf);
+  });
+
+// ── R23 Transfers ──────────────────────────────────────────────────────────
+const r23Row = z.object({
+  id: z.number(),
+  employeeName: z.string(),
+  ecode: z.string(),
+  fromCompany: z.string(),
+  toCompany: z.string().nullable(),
+  fromDepartment: z.string().nullable(),
+  toDepartment: z.string().nullable(),
+  fromLocation: z.string().nullable(),
+  toLocation: z.string().nullable(),
+  transferType: z.string(),
+  effectiveDate: z.string(),
+  status: z.string(),
+  approverName: z.string().nullable(),
+});
+
+const r23Input = z.object({
+  companyId: z.coerce.number().int().positive().optional(),
+  fromDate: isoDate.optional(),
+  toDate: isoDate.optional(),
+}).optional();
+
+const r23 = reportGuard()
+  .route({ method: 'GET', path: '/reports/r23-transfers', summary: 'R23 promotions & transfers' })
+  .input(r23Input)
+  .output(z.array(r23Row))
+  .handler(async ({ input, context }) =>
+    reportR23Transfers(context.db, { ...input, scope: employeeScope(context) }),
+  );
+
+const r23Export = reportGuard()
+  .route({ method: 'GET', path: '/reports/r23-transfers/export', summary: 'R23 Excel' })
+  .input(r23Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR23Excel(context.db, { ...input, scope: employeeScope(context) });
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R23', input, 'r23-transfers.xlsx', buf);
+  });
+
+// ── R25 Probation ──────────────────────────────────────────────────────────
+const r25Row = z.object({
+  id: z.number(),
+  employeeName: z.string(),
+  ecode: z.string(),
+  department: z.string().nullable(),
+  designation: z.string().nullable(),
+  doj: z.string().nullable(),
+  dueDate: z.string(),
+  status: z.string(),
+  outcome: z.string().nullable(),
+  extensionMonths: z.number().nullable(),
+  decidedBy: z.string().nullable(),
+  isOverdue: z.boolean(),
+});
+
+const r25Input = z.object({
+  companyId: z.coerce.number().int().positive().optional(),
+  status: z.string().optional(),
+}).optional();
+
+const r25 = reportGuard()
+  .route({ method: 'GET', path: '/reports/r25-probation', summary: 'R25 probation reviews' })
+  .input(r25Input)
+  .output(z.array(r25Row))
+  .handler(async ({ input, context }) =>
+    reportR25Probation(context.db, { ...input, scope: employeeScope(context) }),
+  );
+
+const r25Export = reportGuard()
+  .route({ method: 'GET', path: '/reports/r25-probation/export', summary: 'R25 Excel' })
+  .input(r25Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR25Excel(context.db, { ...input, scope: employeeScope(context) });
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R25', input, 'r25-probation.xlsx', buf);
+  });
+
+// ── R26 Attrition ──────────────────────────────────────────────────────────
+const r26Row = z.object({
+  id: z.number(),
+  employeeName: z.string(),
+  ecode: z.string(),
+  company: z.string(),
+  department: z.string().nullable(),
+  location: z.string().nullable(),
+  category: z.string(),
+  doj: z.string().nullable(),
+  dol: z.string().nullable(),
+  tenureBand: z.string(),
+  reason: z.string(),
+  resignationDate: z.string(),
+  noticePeriodDays: z.number(),
+  shortfallDays: z.number(),
+  exitType: z.enum(['Voluntary', 'Involuntary']),
+  status: z.string(),
+});
+
+const r26Input = z.object({
+  companyId: z.coerce.number().int().positive().optional(),
+  fromDate: isoDate.optional(),
+  toDate: isoDate.optional(),
+}).optional();
+
+const r26 = reportGuard()
+  .route({ method: 'GET', path: '/reports/r26-attrition', summary: 'R26 exit and attrition' })
+  .input(r26Input)
+  .output(z.array(r26Row))
+  .handler(async ({ input, context }) =>
+    reportR26Attrition(context.db, { ...input, scope: employeeScope(context) }),
+  );
+
+const r26Export = reportGuard()
+  .route({ method: 'GET', path: '/reports/r26-attrition/export', summary: 'R26 Excel' })
+  .input(r26Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR26Excel(context.db, { ...input, scope: employeeScope(context) });
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R26', input, 'r26-attrition.xlsx', buf);
+  });
+
+// ── R28 Assets ─────────────────────────────────────────────────────────────
+const r28Row = z.object({
+  assetId: z.number(),
+  assetNo: z.string(),
+  category: z.string(),
+  description: z.string().nullable(),
+  serialNo: z.string().nullable(),
+  status: z.string(),
+  company: z.string(),
+  location: z.string().nullable(),
+  holderName: z.string().nullable(),
+  holderEcode: z.string().nullable(),
+  holderKind: z.string().nullable(),
+  assignedAt: z.string().nullable(),
+  warrantyTill: z.string().nullable(),
+});
+
+const r28Input = z.object({
+  companyId: z.coerce.number().int().positive().optional(),
+  status: z.string().optional(),
+  category: z.string().optional(),
+}).optional();
+
+const r28 = reportGuard()
+  .route({ method: 'GET', path: '/reports/r28-assets', summary: 'R28 asset custody register' })
+  .input(r28Input)
+  .output(z.array(r28Row))
+  .handler(async ({ input, context }) =>
+    reportR28Assets(context.db, { ...input, scope: employeeScope(context) }),
+  );
+
+const r28Export = reportGuard()
+  .route({ method: 'GET', path: '/reports/r28-assets/export', summary: 'R28 Excel' })
+  .input(r28Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR28Excel(context.db, { ...input, scope: employeeScope(context) });
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R28', input, 'r28-assets.xlsx', buf);
+  });
+
+// ── R29 Helpdesk Performance ───────────────────────────────────────────────
+const r29Row = z.object({
+  month: z.string(),
+  category: z.string(),
+  totalTickets: z.number(),
+  resolvedTickets: z.number(),
+  resolutionRatePct: z.number(),
+  breachedCount: z.number(),
+  escalatedCount: z.number(),
+  avgFirstResponseHours: z.number().nullable(),
+  avgResolutionHours: z.number().nullable(),
+});
+
+const r29Input = z.object({
+  month: monthStr.optional(),
+}).optional();
+
+const r29 = reportGuard()
+  .route({ method: 'GET', path: '/reports/r29-helpdesk', summary: 'R29 helpdesk monthly performance' })
+  .input(r29Input)
+  .output(z.array(r29Row))
+  .handler(async ({ input, context }) =>
+    reportR29Helpdesk(context.db, input),
+  );
+
+const r29Export = reportGuard()
+  .route({ method: 'GET', path: '/reports/r29-helpdesk/export', summary: 'R29 Excel' })
+  .input(r29Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR29Excel(context.db, input);
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R29', input, 'r29-helpdesk.xlsx', buf);
+  });
+
+// ── R30 Policy Compliance ──────────────────────────────────────────────────
+const r30Row = z.object({
+  policyId: z.number(),
+  title: z.string(),
+  effectiveDate: z.string(),
+  requiresAcknowledgment: z.boolean(),
+  targetedCount: z.number(),
+  acknowledgedCount: z.number(),
+  pendingCount: z.number(),
+  compliancePct: z.number(),
+});
+
+const r30 = reportGuard()
+  .route({ method: 'GET', path: '/reports/r30-policies', summary: 'R30 policy compliance matrix' })
+  .output(z.array(r30Row))
+  .handler(async ({ context }) => reportR30Policies(context.db));
+
+const r30Export = reportGuard()
+  .route({ method: 'GET', path: '/reports/r30-policies/export', summary: 'R30 Excel' })
+  .output(fileOut)
+  .handler(async ({ context }) => {
+    const buf = await exportR30Excel(context.db);
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R30', {}, 'r30-policies.xlsx', buf);
+  });
+
+// ── R31 Reimbursements ─────────────────────────────────────────────────────
+const r31Row = z.object({
+  claimId: z.number(),
+  employeeName: z.string(),
+  ecode: z.string(),
+  department: z.string().nullable(),
+  claimType: z.string(),
+  periodFrom: z.string(),
+  periodTo: z.string(),
+  claimedAmount: z.number(),
+  approvedAmount: z.number().nullable(),
+  status: z.string(),
+  billsCount: z.number(),
+  verifiedBillsCount: z.number(),
+  paidInRunId: z.number().nullable(),
+  rejectionReason: z.string().nullable(),
+});
+
+const r31Input = z.object({
+  companyId: z.coerce.number().int().positive().optional(),
+  fromDate: isoDate.optional(),
+  toDate: isoDate.optional(),
+  status: z.string().optional(),
+}).optional();
+
+const r31 = reportGuard()
+  .route({ method: 'GET', path: '/reports/r31-claims', summary: 'R31 reimbursements register' })
+  .input(r31Input)
+  .output(z.array(r31Row))
+  .handler(async ({ input, context }) =>
+    reportR31Claims(context.db, { ...input, scope: employeeScope(context) }),
+  );
+
+const r31Export = reportGuard()
+  .route({ method: 'GET', path: '/reports/r31-claims/export', summary: 'R31 Excel' })
+  .input(r31Input)
+  .output(fileOut)
+  .handler(async ({ input, context }) => {
+    const buf = await exportR31Excel(context.db, { ...input, scope: employeeScope(context) });
+    return auditedFilePayload(context.db, context.user.id, context.req.ip ?? null, 'R31', input, 'r31-reimbursements.xlsx', buf);
+  });
+
 export const reportsRouter = {
   executiveKpis,
   executiveTrend,
+  executiveLeavers,
   businessUnit,
   rebuildExecutiveKpis,
   monthLockChecklist,
@@ -812,10 +1177,26 @@ export const reportsRouter = {
   r5Export,
   r6,
   r6Export,
+  r21,
+  r21Export,
+  r23,
+  r23Export,
   r24,
   r24Export,
+  r25,
+  r25Export,
+  r26,
+  r26Export,
   r27,
   r27Export,
+  r28,
+  r28Export,
+  r29,
+  r29Export,
+  r30,
+  r30Export,
+  r31,
+  r31Export,
   hrDashboard,
   ess,
   myAttendance,

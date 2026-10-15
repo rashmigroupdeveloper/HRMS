@@ -15,6 +15,7 @@
  * request, and those rows get source='regularized' so recomputeDay never
  * silently reverts an approved decision.
  */
+import { z } from 'zod';
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import type { AttRegularizationsTable, Database, DayStatus } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
@@ -22,6 +23,7 @@ import { addDaysIso, formatDbDate, istDateString } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
 import { createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
 import { resolveDay } from './day-status.service.js';
+import { assertApprovalSpanWritable } from '../../core/db/attendance-period.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 
@@ -52,12 +54,7 @@ export interface CreateRegularizationParams {
   reason: string;
 }
 
-/** Validate per-kind rules (all caps are settings), then create the workflow
- *  request WITH its domain row in one transaction. */
-export async function createRegularization(
-  db: Kysely<Database>,
-  params: CreateRegularizationParams,
-): Promise<{ id: number; workflowRequestId: number }> {
+async function validateRegularization(db: Db, params: CreateRegularizationParams, excludeRequestId?: number): Promise<void> {
   if (params.fromDate > params.toDate) throw new Error('fromDate must be on or before toDate');
 
   const today = istDateString();
@@ -96,12 +93,23 @@ export async function createRegularization(
     .selectFrom('att.regularizations as reg')
     .innerJoin('wf.requests as r', 'r.id', 'reg.workflow_request_id')
     .where('reg.employee_id', '=', params.employeeId)
+    .where('r.id', '!=', excludeRequestId ?? -1)
     .where('r.status', 'in', ['pending', 'sent_back'])
     .where('reg.from_date', '<=', sql<Date>`${params.toDate}::date`)
     .where('reg.to_date', '>=', sql<Date>`${params.fromDate}::date`)
     .select('reg.id')
     .executeTakeFirst();
   if (duplicate) throw new Error('An open request already covers these dates');
+
+}
+
+/** Validate per-kind rules (all caps are settings), then create the workflow
+ *  request WITH its domain row in one transaction. */
+export async function createRegularization(
+  db: Kysely<Database>,
+  params: CreateRegularizationParams,
+): Promise<{ id: number; workflowRequestId: number }> {
+  await validateRegularization(db, params);
 
   let regularizationId = 0;
   const workflowRequestId = await createRequest(
@@ -156,11 +164,18 @@ export async function applyRegularizationOnFinal(db: Db, request: RequestRow, st
     .selectAll()
     .where('workflow_request_id', '=', request.id)
     .executeTakeFirst();
-  if (!reg || reg.applied || status !== 'approved') return;
+  if (status !== 'approved') return;
+  if (reg?.employee_id !== request.subject_employee_id || KIND_TO_WORKFLOW[reg.kind] !== request.definition_code
+    || KIND_TO_STATUS[reg.kind] !== reg.requested_status) {
+    throw new Error('Attendance request does not match its authoritative domain record');
+  }
+  if (reg.applied) return;
 
   const toIso = formatDbDate(reg.to_date);
+  await assertApprovalSpanWritable(db, reg.employee_id, formatDbDate(reg.from_date), toIso);
   const row = {
     status: reg.requested_status,
+    leave_type_id: null,
     session_statuses: null,
     source: 'regularized' as const,
     computed_at: new Date(),
@@ -168,7 +183,7 @@ export async function applyRegularizationOnFinal(db: Db, request: RequestRow, st
   for (let iso = formatDbDate(reg.from_date); iso <= toIso; iso = addDaysIso(iso, 1)) {
     const resolved = await resolveDay(db, reg.employee_id, iso);
     if (resolved.isHoliday || resolved.isWeekOff) continue; // leave the paid off-day intact
-    await db
+    const applied = await db
       .insertInto('att.day_records')
       .values({ employee_id: reg.employee_id, work_date: sql<Date>`${iso}::date` as unknown as Date, ...row })
       .onConflict((oc) =>
@@ -178,7 +193,8 @@ export async function applyRegularizationOnFinal(db: Db, request: RequestRow, st
           .where('att.day_records.source', '<>', 'manual')
           .where('att.day_records.is_locked', '=', false),
       )
-      .execute();
+      .returning('id').executeTakeFirst();
+    if (!applied) throw new Error('Attendance changed during approval — refresh and contact HR');
   }
 
   await db.updateTable('att.regularizations').set({ applied: true }).where('id', '=', reg.id).execute();
@@ -204,4 +220,29 @@ export async function listRegularizations(db: Kysely<Database>, employeeId: numb
     .orderBy('reg.id', 'desc')
     .limit(200)
     .execute();
+}
+
+const correctionSchema = z.object({
+  kind: z.enum(['AR', 'OD', 'PERMISSION']), fromDate: z.string().date(), toDate: z.string().date(),
+  fromTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).nullish(),
+  toTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).nullish(),
+  reason: z.string().trim().min(5),
+});
+
+/** WF-01 / ATT-06/07: manager-visible revision and applied dates are one fact. */
+export async function resubmitRegularization(db: Db, request: RequestRow, raw: Record<string, unknown>) {
+  const payload = correctionSchema.parse(raw);
+  const reg = await db.selectFrom('att.regularizations').selectAll()
+    .where('workflow_request_id', '=', request.id).forUpdate().executeTakeFirstOrThrow();
+  if (reg.applied || reg.employee_id !== request.subject_employee_id || payload.kind !== reg.kind) {
+    throw new Error('Attendance request identity or kind cannot change during resubmission');
+  }
+  await validateRegularization(db, { ...payload, employeeId: reg.employee_id,
+    requestedByUserId: request.requested_by, fromTime: payload.fromTime ?? undefined, toTime: payload.toTime ?? undefined }, request.id);
+  await assertApprovalSpanWritable(db, reg.employee_id, payload.fromDate, payload.toDate);
+  await db.updateTable('att.regularizations').set({
+    from_date: sql<Date>`${payload.fromDate}::date`, to_date: sql<Date>`${payload.toDate}::date`,
+    from_time: payload.fromTime ?? null, to_time: payload.toTime ?? null, reason: payload.reason,
+  }).where('id', '=', reg.id).execute();
+  return { ...payload, fromTime: payload.fromTime ?? null, toTime: payload.toTime ?? null };
 }

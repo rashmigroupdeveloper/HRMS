@@ -46,6 +46,9 @@ const ticketShape = z.object({
   slaDueAt: z.string(),
   breached: z.boolean(),
   escalatedLevel: z.number(),
+  escalatedToUserId: z.number().nullable(),
+  firstResponseAt: z.string().nullable(),
+  reopenCount: z.number(),
   acknowledgedAt: z.string().nullable(),
   resolvedAt: z.string().nullable(),
   createdAt: z.string(),
@@ -61,6 +64,7 @@ const categories = authed
         name: z.string(),
         assigneeRoleCode: z.string().nullable(),
         slaHours: z.number(),
+        escalateToRoleCode: z.string().nullable(),
       }),
     ),
   )
@@ -137,11 +141,24 @@ const thread = authed
     ),
   )
   .handler(async ({ input, context }) => {
-    // Internal notes are for the desk, not the raiser. `authed` does not carry
-    // resolved permissions, so ask for them explicitly rather than assuming.
+    const ticket = await context.db
+      .selectFrom('hd.tickets')
+      .select(['id', 'raised_by', 'assignee_user_id'])
+      .where('id', '=', input.ticketId)
+      .executeTakeFirst();
+    if (!ticket) throw new ORPCError('NOT_FOUND', { message: 'Ticket not found' });
+
+    // Internal notes are for the desk, not the raiser.
     const permissions = await getUserPermissions(context.db, context.user.id);
+    const isAgent = permissions.has('helpdesk.agent') || permissions.has('helpdesk.manage');
+    const isOwner = ticket.raised_by === context.user.id;
+    const isAssignee = ticket.assignee_user_id === context.user.id;
+    if (!isAgent && !isOwner && !isAssignee) {
+      throw new ORPCError('FORBIDDEN', { message: 'You do not have permission to view this ticket' });
+    }
+
     return ticketThread(context.db, input.ticketId, {
-      includeInternal: permissions.has('helpdesk.agent'),
+      includeInternal: isAgent,
     });
   });
 
@@ -159,15 +176,20 @@ const reply = authed
     // Only an agent may write an internal note — a raiser marking their own
     // reply "internal" must not hide it from the desk.
     const permissions = await getUserPermissions(context.db, context.user.id);
-    const isAgent = permissions.has('helpdesk.agent');
+    const isAgent = permissions.has('helpdesk.agent') || permissions.has('helpdesk.manage');
     try {
       return await replyToTicket(context.db, {
         ticketId: input.ticketId,
         authorUserId: context.user.id,
         body: input.body,
         isInternal: input.isInternal && isAgent,
+        isAgent,
       });
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Invalid request';
+      if (msg.includes('Not authorized')) {
+        throw new ORPCError('FORBIDDEN', { message: msg });
+      }
       asBadRequest(err);
     }
   });
@@ -206,6 +228,9 @@ const performanceRow = z.object({
   resolved: z.number(),
   breached: z.number(),
   avgResolutionHours: z.number().nullable(),
+  avgFirstResponseHours: z.number().nullable(),
+  reopenedCount: z.number(),
+  resolutionRatePct: z.number(),
 });
 
 const monthStr = z.string().regex(/^\d{4}-\d{2}$/, 'YYYY-MM');
@@ -231,6 +256,9 @@ const performanceExcel = withPermission('reports.hr')
         { header: 'Resolved', key: 'resolved', width: 11 },
         { header: 'SLA breached', key: 'breached', width: 14 },
         { header: 'Avg resolution (hrs)', key: 'avgResolutionHours', width: 20 },
+        { header: 'Avg first response (hrs)', key: 'avgFirstResponseHours', width: 22 },
+        { header: 'Reopened', key: 'reopenedCount', width: 12 },
+        { header: 'Resolution %', key: 'resolutionRatePct', width: 14 },
       ],
       rows,
     );

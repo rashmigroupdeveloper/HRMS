@@ -1,0 +1,5 @@
+{
+  "method": "Read-only node-postgres bound serialized object, cast to JSONB exactly as a JSONB INSERT parameter is parsed",
+  "kind": "object",
+  "correction": "JSON.stringify alone does not prove JSONB double encoding. Withdraw that subclaim from R35; raw token persistence and single-use race remain valid."
+}

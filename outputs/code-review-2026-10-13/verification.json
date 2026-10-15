@@ -1,0 +1,72 @@
+{
+  "prepared": "2026-10-13",
+  "backend_verify": {
+    "exit_code": 1,
+    "typecheck": "passed",
+    "lint_errors": 603,
+    "source_lint_errors": 82,
+    "test_lint_errors": 521,
+    "later_gates_in_verify": "not reached"
+  },
+  "backend_tests_separate": {
+    "exit_code": 1,
+    "files_passed": 41,
+    "files_failed": 11,
+    "tests_passed": 351,
+    "tests_failed": 16,
+    "tests_skipped": 27,
+    "coverage_percent": {
+      "statements": 72.27,
+      "branches": 69.64,
+      "functions": 73.43,
+      "lines": 72.27
+    },
+    "limit": "Mixture of failing suite setup, stale baseline assertions and behavioral failures; not all failures attributed to newly added code"
+  },
+  "backend_independent_diagnostics": {
+    "knip": {
+      "exit_code": 1,
+      "unused_exports": [
+        "STANDARD_ONBOARDING_TASKS",
+        "STATUTORY_GRATUITY_CAP_PAISE"
+      ]
+    },
+    "module_boundaries": {
+      "exit_code": 0,
+      "modules": 198,
+      "dependencies": 742
+    },
+    "build": {
+      "exit_code": 0
+    }
+  },
+  "frontend_verify": {
+    "exit_code": 0,
+    "tests_passed": 233,
+    "files_passed": 23,
+    "limit": "Existing tests do not prove new payroll/lifecycle/loan/claim screens end-to-end; no visual/browser accessibility certification performed"
+  },
+  "live_catalog": {
+    "database": "hrms",
+    "version": "14.24",
+    "business_relations": 132,
+    "applied_migrations": 48,
+    "checked_in_migration_sources": 35,
+    "applied_sources_missing": 13,
+    "typed_relations": 92,
+    "untyped_relations": 40,
+    "typed_fields_absent_from_DB": [
+      "pay.gl_accounts.cost_center_id",
+      "pay.gl_accounts.gl_description"
+    ]
+  },
+  "environment": {
+    "node": "26.8.2",
+    "target_node": "24.x",
+    "native_postgres": "14.24",
+    "scratch_postgres": "17.11",
+    "target_postgres": "16",
+    "exact_target_rehearsal": "not performed"
+  },
+  "mutation_scope": "Existing hrms was inspected read-only for catalog/probes; test suite used its expressly configured local test target and performed fixture setup/cleanup. Fresh migrations were applied only in disposable local databases. Both review databases removed; temporary PG17 server stopped. No application source or existing business schema was edited by this review."
+}

@@ -5,7 +5,7 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
 import { sql, type Kysely } from 'kysely';
 import type { Express } from 'express';
 import { createApp } from '../src/app.js';
@@ -73,7 +73,7 @@ run('Stage 1.7 — absence-case API open filter (live Postgres)', () => {
     const role = await db.selectFrom('core.roles').select('id').where('code', '=', 'hr_ops').executeTakeFirstOrThrow();
     await db.insertInto('core.user_roles').values({ user_id: u.id, role_id: role.id, scope_org_unit_id: null }).execute();
 
-    const login = await request(app).post('/api/auth/login').send({ identifier: `s17api-${stamp}@hrms.test`, password });
+    const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: `s17api-${stamp}@hrms.test`, password });
     token = (login.body as { accessToken: string }).accessToken;
     expect(token).toBeTruthy();
   });
@@ -88,14 +88,14 @@ run('Stage 1.7 — absence-case API open filter (live Postgres)', () => {
   const our = (rows: CaseDto[]): CaseDto[] => rows.filter((r) => r.ecode.includes(`Q${String(stamp).slice(-5)}`));
 
   it('open=true returns only open cases; open=false returns closed ones too', async () => {
-    const openOnly = await request(app).get('/api/attendance/absence-cases?open=true').set('Authorization', `Bearer ${token}`);
+    const openOnly = await (await httpRequest(app)).get('/api/attendance/absence-cases?open=true').set('Authorization', `Bearer ${token}`);
     expect(openOnly.status).toBe(200);
     const openRows = our(openOnly.body as CaseDto[]);
     expect(openRows.every((r) => r.closedAt === null)).toBe(true);
     expect(openRows.some((r) => r.ecode.endsWith('O'))).toBe(true);
     expect(openRows.some((r) => r.ecode.endsWith('C'))).toBe(false); // the closed case is hidden
 
-    const all = await request(app).get('/api/attendance/absence-cases?open=false').set('Authorization', `Bearer ${token}`);
+    const all = await (await httpRequest(app)).get('/api/attendance/absence-cases?open=false').set('Authorization', `Bearer ${token}`);
     expect(all.status).toBe(200); // 'false' must PARSE, not 400
     const allRows = our(all.body as CaseDto[]);
     expect(allRows.some((r) => r.ecode.endsWith('C') && r.closedAt !== null)).toBe(true); // closed now visible
@@ -106,12 +106,12 @@ run('Stage 1.7 — absence-case API open filter (live Postgres)', () => {
 
     // `?limit=20` on a `z.number()` query param would 400 without the smart-
     // coercion plugin (query values are strings). Proves the global fix.
-    const unmatched = await request(app)
+    const unmatched = await (await httpRequest(app))
       .get('/api/attendance/exceptions/unmatched?limit=20')
       .set('Authorization', `Bearer ${token}`);
     expect(unmatched.status).toBe(200);
 
-    const r6 = await request(app)
+    const r6 = await (await httpRequest(app))
       .get(`/api/reports/r6-absence?companyId=${String(rml.id)}`)
       .set('Authorization', `Bearer ${token}`);
     expect(r6.status).toBe(200);

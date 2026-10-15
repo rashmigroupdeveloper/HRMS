@@ -1,0 +1,24 @@
+{
+  "id": "G2",
+  "name": "PF Ceiling Crosser (CEILING_15000 Mode)",
+  "description": "Employee with Basic > 15,000 computed under statutory ceiling mode",
+  "employee": {
+    "employeeId": 1002,
+    "category": "staff",
+    "contractType": "regular",
+    "state": "WB"
+  },
+  "monthlySalary": {
+    "BASIC": 2200000,
+    "SPECIAL_ALLOW": 2200000
+  },
+  "pfPolicy": "CEILING_15000",
+  "expected": {
+    "pfWagesPaise": 2200000,
+    "cappedWagesPaise": 1500000,
+    "eePfPaise": 180000,
+    "erEpsPaise": 125000,
+    "erEpfPaise": 139000,
+    "edliPaise": 7500
+  }
+}

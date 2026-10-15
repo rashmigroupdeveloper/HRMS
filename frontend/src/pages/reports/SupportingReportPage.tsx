@@ -22,7 +22,22 @@ import {
   rememberCompanyId,
 } from './report-utils';
 
-type ReportCode = 'R2' | 'R3' | 'R4' | 'R5' | 'R6' | 'R24' | 'R27';
+type ReportCode =
+  | 'R2'
+  | 'R3'
+  | 'R4'
+  | 'R5'
+  | 'R6'
+  | 'R21'
+  | 'R23'
+  | 'R24'
+  | 'R25'
+  | 'R26'
+  | 'R27'
+  | 'R28'
+  | 'R29'
+  | 'R30'
+  | 'R31';
 
 interface BaseFilters {
   companyId: string;

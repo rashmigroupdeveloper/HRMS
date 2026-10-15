@@ -112,7 +112,7 @@ export async function getManagerApprovalLedger(
         reportCount: mgr.reportCount,
         approved: approval?.event_type === 'approve',
         approvedAt: approval?.event_type === 'approve'
-          ? new Date(approval.approved_at as unknown as string | number | Date).toISOString()
+          ? new Date(approval.approved_at).toISOString()
           : null,
         approvedByUserId:
           approval?.event_type === 'approve' ? (approval.approved_by_user_id ?? null) : null,

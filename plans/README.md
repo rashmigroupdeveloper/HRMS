@@ -1,6 +1,18 @@
 # HRMS Execution Plans
 
+**Latest approval/attendance repair, 15 Oct 2026:** [pack20 — manager flow, database connections and remaining work](sow-completion/20-MANAGER-APPROVAL-AND-ATTENDANCE-REVIEW.md) records exact request links, scoped authority, validated resubmission, protected final effects and attendance/leave presentation. Local browser and native database evidence are linked. No new database fields or release gate; global backend coverage and the listed policy/integration work remain open.
+
 This folder is the **live execution tracker** for the Rashmi HRMS build. The specs live in `docs/` (what to build and why); these files track **in what order and what's done**.
+
+**Latest backend work, 14 Oct 2026:** [current repair scope and progress](sow-completion/19-BACKEND-REPAIR-SCOPE-AND-PROGRESS.md) supersedes earlier lint/test counts below. Backend lint is now clean; scoped workflow/directory tests, shared locked e-code allocation, JSON boundaries and local HTTP transport are repaired. Full verification remains blocked by the unchanged coverage floor. Claims and budgets are deferred; other remaining HR work and all 176 original SOW rows remain tracked. No release gate is advanced.
+
+**Current field-purpose audit, 14 Oct 2026:** [all 1,379 business fields and remaining schema issues](sow-completion/18-FIELD-PURPOSE-AND-SCHEMA-AUDIT.md). All observed fields have migration/type declaration evidence; duplicate bill flags, raw invitation token storage, claim-state drift, financial/relational guards and missing historical runtime context remain open. The audit-time 597 lint errors are resolved by the latest increment above. This is a supplement to the 176-row SOW tracker, not a completion or zero-slop certificate.
+
+**Current repair and SOW reconciliation, 14 Oct 2026:** [every SOW point and linked defects](../outputs/remediation-2026-10-14/SOW-ISSUES-AND-REMAINING.md) retains all 176 original rows and maps 46 reviewed findings. [Repair evidence](../outputs/remediation-2026-10-14/progress.json) separates tested changes from remaining integration, policy and acceptance work. Matching typed column names covers all 132 local business relations; 49-migration PostgreSQL16 replay and a disposable existing-data upgrade now pass with no column differences. Phase 2 and 3 completion labels are under revalidation; no phase gate is certified by this repair pass.
+
+**Fresh validation, 13 Oct 2026:** [schema/migration/code review](../outputs/code-review-2026-10-13/REVIEW.md) records 38 actionable findings. Backend verify fails lint; separately, tests/coverage and knip also fail. Frontend verify passes its existing 233 tests, but new financial/lifecycle flows still have API, data and transaction defects. Fresh migration up fails on a disposable PostgreSQL17 database at missing claims.budget_id; exact target16 rehearsal is pending. Phase2/3 completion labels and Gate G3 checks must be reconciled against the review and dated signed acceptance evidence before being relied upon; this review advances no gate.
+
+**Remaining backend schema, 10 Oct 2026:** [complete schema plan](sow-completion/13-BACKEND-SCHEMA-PLAN.md), [field/table catalog](sow-completion/14-BACKEND-TABLE-CATALOG.md), [46 proposed models and 44 amendments](sow-completion/15-BACKEND-SCHEMA-CHANGES.md), and [latest checkout/verification limits](sow-completion/16-CURRENT-CHECKOUT-ADDENDUM.md). All 176 scored SOW points, 119 requirements and 60 build tasks have a schema or explicit decision boundary. SQL drafts are guarded and unapplied; Phase0 Stage0.2 remains in progress.
 
 | Phase file | Scope | Duration | Gate |
 |---|---|---|---|
@@ -43,7 +55,15 @@ This folder is the **live execution tracker** for the Rashmi HRMS build. The spe
 
 ## Key spec references
 
-**Read-only database audit, 07 Oct 2026:** [evidence and repair order](../docs/recon/database-audit-2026-10-07.md). Confirmed shared-database test contamination, an unrestricted user/employee unlink in test cleanup, future device watermarks, missing applied migration sources, deployed audit hash-scope drift, and a red backend verify gate from existing merge conflicts. These are outstanding findings; no stage or gate was advanced.
+**Complete SOW execution handoff, 09 Oct 2026:** [start here](sow-completion/00-START-HERE.md) links the domain plans, all 176 exact-wording SOW points, existing code inventory, database relationships, transaction/state rules, screen contracts, acceptance checks and unresolved decisions. [Portable context bundle](../outputs/sow-review-2026-10-09/HRMS-SOW-Execution-Context.zip) includes the plan pack, original specifications/trackers and both SOW workbooks. This is completion planning, not new feature implementation or gate sign-off. Revalidate source fingerprints before execution; a full checkout and sanctioned external source contracts remain required.
+
+**SOW checklist review, 09 Oct 2026:** [point-by-point workbook](../outputs/sow-review-2026-10-09/SOW-Completion-Review.xlsx) reconciles all 176 scored items in the supplied Protiviti SOW against the current repository. Assessment: 12 implemented capabilities, 43 partial, 86 pending, 29 manual/service duties requiring external evidence, and 6 scope decisions. Historical vendor/RML percentages are retained separately. “Implemented” means the reviewed capability exists in code, not production acceptance. Backend and frontend TypeScript checks passed; full verify, DB integration tests and live UAT were not run. No stage or phase gate was advanced.
+
+**Code versus plan follow-up:** every SOW row now includes an explicit code verdict; the workbook's **Code vs Plan** tab records nine reconciliation findings. Corrected the stale settings-write note, credited the existing BU dashboard as partial, and refreshed the Phase 3 route summary. Existing asset/helpdesk/engagement APIs are credited without treating pending UI, authorization, integration or acceptance work as complete. The BU dashboard handler currently does not apply the caller's permission scope; that remains an open gap. Counts and stage gates are unchanged.
+
+**Expanded actual-code audit, 09 Oct 2026:** [37 source-backed gaps and repairs](sow-completion/10-CODE-AUDIT-AND-GAPS.md), [119 PRD requirements and 60 numbered build tasks](sow-completion/11-REQUIREMENT-TO-CODE.md), and [screen/API/database/transaction connections](sow-completion/12-TRANSACTION-AND-CONNECTION-MAP.md) extend the initial checklist. The source index covers 338 backend/frontend files and four root deployment/CI files. Fresh frontend full verify passed 233 tests. Backend static checks and separate build passed; full verify failed coverage (lines/statements 29.98%, functions 19.17%), with 164 DB tests skipped. The preceding workbook paragraph describes the earlier checklist pass, not these later checks. No fresh business-database inspection or gate sign-off was performed. An implemented capability in that baseline still requires its linked repairs and acceptance evidence.
+
+**Read-only database audit, 07 Oct 2026:** [dated evidence and repair order](../docs/recon/database-audit-2026-10-07.md). At that inspection: shared-database test contamination, unrestricted test cleanup, future device watermarks, missing migration sources, deployed audit hash-scope drift and merge-conflict failures. **Fresh source reconciliation, 09 Oct:** dedicated test-DB setup and fixture-scoped cleanup now exist; the earlier TypeScript checks passed and current source has no recorded merge conflicts. Historical data/deployed schema findings require a fresh safe audit; these source fixes do not prove live data repaired. No stage or gate advanced.
 
 **Schema/connection follow-up:** the actual Kysely factory connects successfully. All 61 typed tables/declared columns exist, but 43 business relations and 15 columns are unrepresented in the current types. Temporal exclusions and processed-attendance partitioning remain absent; backend HTTP on port 5100 was unavailable at inspection. See the follow-up section in the audit evidence above.
 
@@ -51,7 +71,7 @@ This folder is the **live execution tracker** for the Rashmi HRMS build. The spe
 
 **Additional greytHR field recon, 07 Oct 2026 (P0-T02 evidence):** [sanitized inventory and HRMS comparison](../docs/recon/greythr-additional-fields-2026-10-07.md) captures 164 field-definition appearances / 143 unique technical names across six authenticated metadata sections. Education and previous-employment tables are specified in doc 03 but absent from the inspected live schema. Further fields require a scope decision; no records were imported, schema changed, or gate advanced.
 
-**Attendance/access recon follow-up (P0-T02, ATT-03/05):** [session model, supported API access and unresolved parity gaps](../docs/recon/greythr-attendance-and-access-2026-10-07.md). Live attendance config reads returned 403 and the current-period endpoint returned 500. Source review flags assumed session thresholds, partial-absence watermark handling and stale session labels after regularization. No persistent integration was configured or gate advanced.
+**Attendance/access recon follow-up (P0-T02, ATT-03/05):** [dated session/access evidence](../docs/recon/greythr-attendance-and-access-2026-10-07.md). At inspection, configuration reads returned 403 and current-period returned 500. **Fresh source reconciliation, 09 Oct:** processor readiness now considers absent sessions; regularization and whole-day leave clear stale session labels. Preserve those fixes. Approved tenant thresholds, isolated behavior/deployment proof and real connector access remain open. No persistent integration was configured or gate advanced.
 
 - `docs/13-MASTER-BUILD-PLAN.md` — the master plan these files decompose (task IDs P0-T01…P2-T12)
 - `docs/14-TECH-STACK-AND-RELIABILITY.md` — stack decision record + reliability program (wins over doc 02 on conflict)
@@ -70,7 +90,10 @@ Product routes live in `frontend/src/app/router.tsx`. **Every route now resolves
 | `/team`, `/reports/*`, `/policies`, `/letters` | live (Stage 1.7) | 1 |
 | `/admin/users`, `/admin/settings`, `/admin/workflows`, `/admin/masters`, `/admin/audit` | live (Stage 1.8) | 1 |
 | `/payroll/*`, `/loans`, `/claims`, `/my/pay`, `/my/claims` | UI live · backend Phase 2 | 2 |
-| `/lifecycle/*`, `/assets`, `/helpdesk`, `/engagement`, `/executive` | UI live · backend Phase 3 | 3 |
+| `/lifecycle/*` | pending process shells; boarding/exit report slice exists | 3 |
+| `/assets`, `/helpdesk` | backend + operational UI exist; exact SOW gaps/UAT remain | 3 |
+| `/engagement` | announcement feed live; poll/pulse APIs exist; publisher/poll UI pending | 3 |
+| `/executive`, BU home | snapshot/BU API + screens exist; KPI, scope and acceptance gaps remain | 3 |
 | `/travel/*` | UI live · backend Phase 3.5 | 3.5 |
 | `/recruitment/*` | UI live · backend Phase 4 | 4 |
 | `/dev/gallery` | live (super_admin) | 0 |

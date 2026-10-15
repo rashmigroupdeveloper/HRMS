@@ -14,14 +14,14 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
 import type { Express } from 'express';
 import type { Kysely } from 'kysely';
 import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { hashPassword } from '../src/modules/auth/index.js';
-import { PERMISSIONS } from '../src/core/rbac/seed-data.js';
+import { PERMISSIONS, ROLES } from '../src/core/rbac/seed-data.js';
 import {
   devLogTransport,
   enqueueEvent,
@@ -68,13 +68,13 @@ run('central access control (live Postgres)', () => {
   }
 
   async function loginToken(email: string): Promise<string> {
-    const res = await request(app).post('/api/auth/login').send({ identifier: email, password });
+    const res = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
     expect(res.status).toBe(200);
     return (res.body as { accessToken: string }).accessToken;
   }
 
-  function putSetting(token: string) {
-    return request(app)
+  async function putSetting(token: string) {
+    return (await httpRequest(app))
       .put(`/api/settings/${settingKey}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ key: settingKey, value: 7, valueType: 'number', description: 'acl probe' });
@@ -91,7 +91,7 @@ run('central access control (live Postgres)', () => {
   afterAll(async () => {
     // Restore the grid exactly (in case a test failed mid-flight).
     const token = await loginToken(adminEmail);
-    await request(app)
+    await (await httpRequest(app))
       .post('/api/rbac/grants')
       .set('Authorization', `Bearer ${token}`)
       .send({ role: 'it_admin', permission: 'admin.settings' });
@@ -112,14 +112,14 @@ run('central access control (live Postgres)', () => {
     const token = await loginToken(opsEmail);
     expect((await putSetting(token)).status).toBe(403);
 
-    const matrix = await request(app).get('/api/rbac/matrix').set('Authorization', `Bearer ${token}`);
+    const matrix = await (await httpRequest(app)).get('/api/rbac/matrix').set('Authorization', `Bearer ${token}`);
     expect(matrix.status).toBe(403);
   });
 
   it('2. assigning a role via the RBAC API makes the same call pass — no restart', async () => {
     const adminToken = await loginToken(adminEmail);
 
-    const assign = await request(app)
+    const assign = await (await httpRequest(app))
       .post('/api/rbac/user-roles')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ userId: opsId, role: 'it_admin' });
@@ -133,7 +133,7 @@ run('central access control (live Postgres)', () => {
     const adminToken = await loginToken(adminEmail);
     const opsToken = await loginToken(opsEmail);
 
-    const revoke = await request(app)
+    const revoke = await (await httpRequest(app))
       .delete('/api/rbac/grants')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ role: 'it_admin', permission: 'admin.settings' });
@@ -142,7 +142,7 @@ run('central access control (live Postgres)', () => {
 
     expect((await putSetting(opsToken)).status).toBe(403); // same token, next request: refused
 
-    const grantBack = await request(app)
+    const grantBack = await (await httpRequest(app))
       .post('/api/rbac/grants')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ role: 'it_admin', permission: 'admin.settings' });
@@ -165,11 +165,11 @@ run('central access control (live Postgres)', () => {
 
   it('5. the matrix endpoint exposes the live grid (the admin access matrix)', async () => {
     const adminToken = await loginToken(adminEmail);
-    const res = await request(app).get('/api/rbac/matrix').set('Authorization', `Bearer ${adminToken}`);
+    const res = await (await httpRequest(app)).get('/api/rbac/matrix').set('Authorization', `Bearer ${adminToken}`);
     expect(res.status).toBe(200);
-    const body = res.body as { roles: unknown[]; permissions: string[]; grants: unknown[] };
-    expect(body.roles).toHaveLength(10);
-    expect(body.permissions).toHaveLength(PERMISSIONS.length);
+    const body = res.body as { roles: { code: string }[]; permissions: string[]; grants: unknown[] };
+    expect(body.roles.map(role => role.code)).toEqual(expect.arrayContaining(ROLES.map(role => role.code)));
+    expect(body.permissions).toEqual(expect.arrayContaining([...PERMISSIONS]));
     expect(body.grants.length).toBeGreaterThan(150);
   });
 });

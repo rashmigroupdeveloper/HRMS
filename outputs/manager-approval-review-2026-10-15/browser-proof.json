@@ -1,0 +1,64 @@
+{
+  "prepared": "2026-10-15",
+  "synthetic": true,
+  "browserActions": [
+    "manager approved AR",
+    "manager sent OD back with note",
+    "requester changed OD 20 Oct to 21 Oct and resubmitted",
+    "manager approved revised OD; queue empty"
+  ],
+  "requests": [
+    {
+      "id": 1672,
+      "status": "approved"
+    },
+    {
+      "id": 1673,
+      "status": "approved"
+    }
+  ],
+  "regularization": [
+    {
+      "date": "2026-10-14",
+      "status": "P",
+      "source": "regularized"
+    }
+  ],
+  "od": {
+    "originalDate": "2026-10-20",
+    "revisedFrom": "2026-10-21",
+    "revisedTo": "2026-10-21",
+    "applied": true,
+    "originalDayExists": false,
+    "revisedDay": [
+      {
+        "date": "2026-10-21",
+        "status": "OD",
+        "source": "regularized"
+      }
+    ]
+  },
+  "visual": {
+    "requestedDesktop": {
+      "width": 1440,
+      "height": 1000
+    },
+    "requestedMobile": {
+      "width": 390,
+      "height": 844
+    },
+    "observedMobileCssWidth": 487,
+    "observedMobileScrollWidth": 487,
+    "observedCalendarDayHeight": 43.994140625,
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "viewportRestored": true
+  },
+  "limits": [
+    "Synthetic records, not real HR approval or payroll acceptance",
+    "One native sign-in attempt failed; supported DOM filling succeeded; direct local login/me probe returned 200",
+    "Full accessibility and narrower CSS viewport certification remain outside this screenshot evidence"
+  ]
+}

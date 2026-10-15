@@ -8,6 +8,8 @@ const ATTENDANCE_LABELS: Record<string, string> = {
   WO: 'Week off',
   H: 'Holiday',
   HD: 'Half day',
+  OD: 'Official duty',
+  CO: 'Compensatory off',
 };
 
 const TIME_IST = new Intl.DateTimeFormat('en-IN', {
@@ -34,9 +36,9 @@ export function attendanceLabel(status: string | null | undefined): string {
 }
 
 export function attendanceDot(status: string | null | undefined): DotState {
-  if (status === 'P' || status === 'HD') return 'present';
+  if (status === 'P' || status === 'HD' || status === 'OD') return 'present';
   if (status === 'A' || status === 'UAB') return 'absent';
-  if (status === 'L') return 'leave';
+  if (status === 'L' || status === 'CO') return 'leave';
   if (status === 'WO' || status === 'H') return 'weekoff';
   return 'none';
 }

@@ -18,19 +18,24 @@
  * Reads precomputed `reporting.kpi_daily` rows — no live aggregation on CEO
  * open (CLAUDE.md §1.9), with the snapshot timestamp shown on the page.
  */
-import { Activity, Gauge, RefreshCw, TrendingDown, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Activity, Gauge, RefreshCw, TrendingDown, Users, UserX } from 'lucide-react';
+import { apiFetch } from '../../lib/api';
 import {
   BarChart,
+  Button,
   Card,
   CardHeader,
   DarkCard,
   DataTable,
+  Drawer,
   KpiNumber,
   PageHeader,
   Pill,
   StatusBadge,
   Tooltip,
   TrendChart,
+  toast,
 } from '../../ui';
 import type { Column } from '../../ui';
 import { PendingModule } from '../_shared/ModuleState';
@@ -45,6 +50,7 @@ const DEMOGRAPHIC_ROWS = [
   { label: 'Average age', formula: 'AVG(age(dob)) by category' },
   { label: 'Tenure', formula: 'AVG(age(doj)) of active, by category' },
   { label: 'Leadership %', formula: 'Active with grade.rank ≥ leadership cutoff ÷ active' },
+  { label: 'Gender diversity %', formula: 'Active female employees ÷ total headcount' },
   { label: 'Contract dependency ratio', formula: 'Contract count ÷ total manpower (Phase 4)' },
   { label: 'Average CTC', formula: 'AVG(annual_ctc) by category and grade band' },
 ];
@@ -54,6 +60,8 @@ const PRODUCTIVITY = [
   { label: 'Output per man-hour', formula: 'Output ÷ Σ worked_minutes / 60' },
   { label: 'Cost per man-hour', formula: '(Gross payroll + ER contributions) ÷ Σ worked hours' },
   { label: 'Cost per unit', formula: 'Payroll cost ÷ output units' },
+  { label: 'Gross salary spend MTD', formula: 'Σ Gross earnings + employer contributions' },
+  { label: 'OT spend per ton', formula: 'Overtime wages ÷ monthly steel output units' },
   { label: 'Overtime hours & cost', formula: 'Σ approved OT minutes / 60 · Σ OT payroll lines' },
 ];
 
@@ -61,7 +69,11 @@ const ENGAGEMENT = [
   { label: 'Absenteeism %', formula: '(UAB + A) days ÷ scheduled working days, monthly trend' },
   { label: 'Attrition rate', formula: 'Leavers in period ÷ average headcount, annualised' },
   { label: 'Number of leavers', formula: 'Count by month' },
-  { label: 'New-hire attrition 3 / 6 / 12 mo', formula: '% of a joiner cohort exited within 90 / 180 / 365 days of DOJ' },
+  { label: 'Voluntary attrition %', formula: 'Voluntary resignations ÷ total workforce' },
+  { label: 'New-hire attrition 30d', formula: '% exited within 30 days of DOJ' },
+  { label: 'New-hire attrition 90d', formula: '% exited within 90 days of DOJ' },
+  { label: 'New-hire attrition 180d', formula: '% exited within 180 days of DOJ' },
+  { label: 'New-hire attrition 365d', formula: '% exited within 365 days of DOJ' },
 ];
 
 interface KpiMetric {
@@ -78,12 +90,25 @@ interface ExecutiveKpis {
   metrics: KpiMetric[];
 }
 
+interface LeaverRow {
+  separationId: number;
+  employeeName: string;
+  ecode: string;
+  department: string | null;
+  location: string | null;
+  resignationDate: string;
+  lwd: string | null;
+  exitType: 'Voluntary' | 'Involuntary';
+  reason: string | null;
+}
+
 /** docs/06 §4 metric keys → the row they belong to. */
 const DEMOGRAPHIC_METRIC: Record<string, string> = {
   'Manpower count': 'manpower_count',
   'Average age': 'average_age',
   Tenure: 'tenure_years',
   'Leadership %': 'leadership_pct',
+  'Gender diversity %': 'gender_diversity_ratio_pct',
   'Contract dependency ratio': 'contract_dependency_ratio',
   'Average CTC': 'average_ctc',
 };
@@ -93,6 +118,8 @@ const PRODUCTIVITY_METRIC: Record<string, string> = {
   'Output per man-hour': 'output_per_man_hour',
   'Cost per man-hour': 'cost_per_man_hour',
   'Cost per unit': 'cost_per_unit',
+  'Gross salary spend MTD': 'gross_salary_cost_mtd',
+  'OT spend per ton': 'ot_spend_per_ton',
   'Overtime hours & cost': 'overtime_hours',
 };
 
@@ -100,7 +127,11 @@ const ENGAGEMENT_METRIC: Record<string, string> = {
   'Absenteeism %': 'absenteeism_pct',
   'Attrition rate': 'attrition_rate_annualised_pct',
   'Number of leavers': 'leavers_mtd',
-  'New-hire attrition 3 / 6 / 12 mo': 'new_hire_attrition_3m_pct',
+  'Voluntary attrition %': 'voluntary_attrition_pct',
+  'New-hire attrition 30d': 'new_hire_attrition_30d_pct',
+  'New-hire attrition 90d': 'new_hire_attrition_90d_pct',
+  'New-hire attrition 180d': 'new_hire_attrition_180d_pct',
+  'New-hire attrition 365d': 'new_hire_attrition_365d_pct',
 };
 
 /** The pptx column label → the employment category stored on the employee. */
@@ -193,7 +224,39 @@ function TrendTable({ points, unit }: { points: TrendPoint[]; unit: string }) {
   return <DataTable rows={points} columns={columns} rowKey={(r) => r.date} maxHeight={240} />;
 }
 
+const leaverColumns: Column<LeaverRow>[] = [
+  {
+    key: 'emp',
+    header: 'Employee',
+    width: 'minmax(160px,1.2fr)',
+    render: (r) => (
+      <div>
+        <p className="font-semibold text-ink">{r.employeeName}</p>
+        <p className="text-xs text-ink-muted">{r.ecode} · {r.department ?? '—'}</p>
+      </div>
+    ),
+  },
+  {
+    key: 'type',
+    header: 'Exit type',
+    width: '110px',
+    render: (r) => (
+      <StatusBadge tone={r.exitType === 'Voluntary' ? 'neutral' : 'negative'}>
+        {r.exitType}
+      </StatusBadge>
+    ),
+  },
+  { key: 'resDate', header: 'Resigned', width: '100px', render: (r) => r.resignationDate },
+  { key: 'lwd', header: 'LWD', width: '100px', render: (r) => r.lwd ?? '—' },
+  { key: 'reason', header: 'Reason', width: 'minmax(140px,1fr)', render: (r) => <span className="text-xs text-ink-muted">{r.reason ?? '—'}</span> },
+];
+
 export function ExecutivePage() {
+  const [rebuilding, setRebuilding] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [leavers, setLeavers] = useState<LeaverRow[]>([]);
+  const [loadingLeavers, setLoadingLeavers] = useState(false);
+
   const kpis = useModuleResource<ExecutiveKpis>('/api/reports/executive');
   const absenteeism = useModuleResource<TrendPoint[]>(
     '/api/reports/executive/trend?metric=absenteeism_pct&months=6',
@@ -202,11 +265,44 @@ export function ExecutivePage() {
     '/api/reports/executive/trend?metric=overtime_hours&months=6',
   );
 
+  const openLeaversDrawer = async () => {
+    setDrawerOpen(true);
+    setLoadingLeavers(true);
+    try {
+      const res = await apiFetch<LeaverRow[]>('/api/reports/executive/leavers');
+      setLeavers(res);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to load leavers');
+    } finally {
+      setLoadingLeavers(false);
+    }
+  };
+
   /** Look a metric up by (metric, category); absent stays absent. */
   const find = (metric: string, category = 'total'): KpiMetric | undefined =>
     kpis.data === null
       ? undefined
       : kpis.data.metrics.find((m) => m.metric === metric && m.category === category);
+
+  const burnoutMetric = find('burnout_index');
+
+  const handleRebuild = async () => {
+    setRebuilding(true);
+    try {
+      await apiFetch('/api/reports/executive/rebuild', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      toast.success('Executive KPI snapshot rebuilt successfully');
+      kpis.reload();
+      absenteeism.reload();
+      overtime.reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to rebuild snapshot');
+    } finally {
+      setRebuilding(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -221,10 +317,15 @@ export function ExecutivePage() {
             ) : (
               <StatusBadge tone="positive">Snapshot {kpis.data.snapshotDate}</StatusBadge>
             )}
-            <Pill>
-              <RefreshCw className="mr-1 inline size-3" />
-              Nightly
-            </Pill>
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={rebuilding}
+              leadingIcon={<RefreshCw className="size-3.5" />}
+              onClick={() => { void handleRebuild(); }}
+            >
+              Rebuild snapshot
+            </Button>
           </div>
         }
       />
@@ -355,8 +456,20 @@ export function ExecutivePage() {
         <Card>
           <CardHeader
             title="Attendance & attrition"
-            subtitle="Absenteeism trend, attrition and the new-hire cohort view from slide 2."
-            action={<TrendingDown className="size-5 text-ink-faint" />}
+            subtitle="Absenteeism trend, voluntary/involuntary attrition and 30/90/180/365d cohorts."
+            action={
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leadingIcon={<UserX className="size-3.5" />}
+                  onClick={() => void openLeaversDrawer()}
+                >
+                  View leavers
+                </Button>
+                <TrendingDown className="size-5 text-ink-faint" />
+              </div>
+            }
           />
           <div className="space-y-2">
             {ENGAGEMENT.map((metric, index) => (
@@ -387,7 +500,11 @@ export function ExecutivePage() {
             action={<Activity className="size-5 text-ink-faint" />}
           />
           <p className="text-5xl font-light tabular-nums text-ink">
-            <NoValue label="Burnout index" />
+            {burnoutMetric?.value !== null && burnoutMetric?.value !== undefined ? (
+              <KpiNumber value={burnoutMetric.value} precision={1} />
+            ) : (
+              <NoValue label="Burnout index" />
+            )}
           </p>
           <div className="mt-4 space-y-2 text-xs leading-5 text-ink-muted">
             <p>Weighted z-score of:</p>
@@ -479,6 +596,27 @@ export function ExecutivePage() {
           same as zero.
         </p>
       )}
+
+      <Drawer
+        open={drawerOpen}
+        onClose={() => { setDrawerOpen(false); }}
+        title="Recent leavers & attrition drill-down"
+        subtitle="Employees separated in the current period with recorded notice and reasons."
+        width={640}
+      >
+        {loadingLeavers ? (
+          <div className="py-8 text-center text-sm text-ink-muted">Loading leavers...</div>
+        ) : leavers.length === 0 ? (
+          <div className="py-8 text-center text-sm text-ink-muted">No recorded leavers in the current period.</div>
+        ) : (
+          <DataTable
+            rows={leavers}
+            columns={leaverColumns}
+            rowKey={(r) => String(r.separationId)}
+            maxHeight={480}
+          />
+        )}
+      </Drawer>
     </div>
   );
 }

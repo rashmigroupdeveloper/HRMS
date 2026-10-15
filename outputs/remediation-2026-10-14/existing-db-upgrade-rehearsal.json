@@ -1,0 +1,19 @@
+{
+  "prepared": "2026-10-14",
+  "scope": "Read-only full copy of existing local test hrms; upgrade runs only on disposable PostgreSQL16 clone. No copied business data is delivered.",
+  "read_only_copy": true,
+  "restore": true,
+  "upgrade": {
+    "passed": true,
+    "count": 1,
+    "names": [
+      "1752280000000_pay-budget-claim-contract"
+    ]
+  },
+  "second_up": {
+    "passed": true,
+    "count": 0
+  },
+  "clone_removed": true,
+  "sensitive_temporary_dump_removed": true
+}

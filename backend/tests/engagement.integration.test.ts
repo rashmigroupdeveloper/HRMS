@@ -14,7 +14,8 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
+import { expectHttpStatus } from './http-assertions.js';
 import { type Kysely } from 'kysely';
 import type { Express } from 'express';
 import { createApp } from '../src/app.js';
@@ -99,8 +100,8 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
   }
 
   async function login(email: string): Promise<string> {
-    const res = await request(app).post('/api/auth/login').send({ identifier: email, password });
-    expect(res.status).toBe(200);
+    const res = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
+    expectHttpStatus(res, 200);
     return (res.body as { accessToken: string }).accessToken;
   }
 
@@ -155,7 +156,7 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
   });
 
   async function publish(title: string, departmentIds?: number[]): Promise<number> {
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post('/api/engagement/announcements')
       .set(asHr())
       .send({
@@ -163,7 +164,7 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
         body: 'Body of the announcement.',
         ...(departmentIds ? { audience: { departmentIds } } : {}),
       });
-    expect(res.status).toBe(200);
+    expectHttpStatus(res, 200);
     const id = (res.body as { id: number }).id;
     announcementIds.push(id);
     return id;
@@ -174,7 +175,7 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
     isAnonymous: boolean,
     departmentIds?: number[],
   ): Promise<number> {
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post('/api/engagement/polls')
       .set(asHr())
       .send({
@@ -183,7 +184,7 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
         isAnonymous,
         ...(departmentIds ? { audience: { departmentIds } } : {}),
       });
-    expect(res.status).toBe(200);
+    expectHttpStatus(res, 200);
     const id = (res.body as { id: number }).id;
     pollIds.push(id);
     return id;
@@ -195,10 +196,10 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
     await publish(targetedTitle, [inDeptId]);
     await publish(everyoneTitle);
 
-    const inFeed = await request(app).get('/api/engagement/announcements').set(asIn());
-    const outFeed = await request(app).get('/api/engagement/announcements').set(asOut());
-    expect(inFeed.status).toBe(200);
-    expect(outFeed.status).toBe(200);
+    const inFeed = await (await httpRequest(app)).get('/api/engagement/announcements').set(asIn());
+    const outFeed = await (await httpRequest(app)).get('/api/engagement/announcements').set(asOut());
+    expectHttpStatus(inFeed, 200);
+    expectHttpStatus(outFeed, 200);
 
     const inTitles = (inFeed.body as Announcement[]).map((a) => a.title);
     const outTitles = (outFeed.body as Announcement[]).map((a) => a.title);
@@ -212,29 +213,29 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
   });
 
   it('E2 publishing needs engagement.publish; reading your own feed does not', async () => {
-    const forbidden = await request(app)
+    const forbidden = await (await httpRequest(app))
       .post('/api/engagement/announcements')
       .set(asIn())
       .send({ title: `${tag} nope`, body: 'x' });
-    expect(forbidden.status).toBe(403);
+    expectHttpStatus(forbidden, 403);
 
     // But an ordinary employee can always read what was addressed to them.
-    const feed = await request(app).get('/api/engagement/announcements').set(asIn());
-    expect(feed.status).toBe(200);
+    const feed = await (await httpRequest(app)).get('/api/engagement/announcements').set(asIn());
+    expectHttpStatus(feed, 200);
 
     // ...and cannot see the publisher's full catalogue.
-    const catalogue = await request(app).get('/api/engagement/announcements/all').set(asIn());
-    expect(catalogue.status).toBe(403);
+    const catalogue = await (await httpRequest(app)).get('/api/engagement/announcements/all').set(asIn());
+    expectHttpStatus(catalogue, 403);
   });
 
   it('E3 an anonymous poll stores and returns no identity (EN-02/03)', async () => {
     const pollId = await createPoll(`${tag} anonymous?`, true);
 
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post(`/api/engagement/polls/${String(pollId)}/respond`)
       .set(asIn())
       .send({ optionIndex: 0, comment: 'said in confidence' });
-    expect(res.status).toBe(200);
+    expectHttpStatus(res, 200);
 
     // The row itself carries no user id — anonymity is a property of the DATA,
     // not of the query that happens to read it.
@@ -247,10 +248,10 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
     expect(stored[0]?.respondent_user_id).toBeNull();
     expect(stored[0]?.respondent_hash).toBeTruthy();
 
-    const results = await request(app)
+    const results = await (await httpRequest(app))
       .get(`/api/engagement/polls/${String(pollId)}/results`)
       .set(asHr());
-    expect(results.status).toBe(200);
+    expectHttpStatus(results, 200);
     const body = results.body as PollResult;
     expect(body.isAnonymous).toBe(true);
     expect(body.totalResponses).toBe(1);
@@ -263,26 +264,26 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
   it('E4 an anonymous poll still allows only one response per person', async () => {
     const pollId = await createPoll(`${tag} anonymous dedupe?`, true);
 
-    const first = await request(app)
+    const first = await (await httpRequest(app))
       .post(`/api/engagement/polls/${String(pollId)}/respond`)
       .set(asIn())
       .send({ optionIndex: 0 });
-    expect(first.status).toBe(200);
+    expectHttpStatus(first, 200);
 
     // Before the respondent_hash fix this second vote succeeded, and an
     // anonymous poll could be stuffed without limit.
-    const second = await request(app)
+    const second = await (await httpRequest(app))
       .post(`/api/engagement/polls/${String(pollId)}/respond`)
       .set(asIn())
       .send({ optionIndex: 1 });
-    expect(second.status).toBe(400);
+    expectHttpStatus(second, 400);
 
     // A DIFFERENT person is still free to answer.
-    const other = await request(app)
+    const other = await (await httpRequest(app))
       .post(`/api/engagement/polls/${String(pollId)}/respond`)
       .set(asOut())
       .send({ optionIndex: 1 });
-    expect(other.status).toBe(200);
+    expectHttpStatus(other, 200);
 
     const rows = await db
       .selectFrom('eng.poll_responses')
@@ -292,7 +293,7 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
     expect(rows).toHaveLength(2);
 
     // The caller can see they have already answered, without anyone else learning it.
-    const mine = await request(app).get('/api/engagement/polls').set(asIn());
+    const mine = await (await httpRequest(app)).get('/api/engagement/polls').set(asIn());
     const poll = (mine.body as Poll[]).find((p) => p.id === pollId);
     expect(poll?.hasResponded).toBe(true);
   });
@@ -300,19 +301,19 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
   it('E5 a named poll dedupes and may attribute its comments', async () => {
     const pollId = await createPoll(`${tag} named?`, false);
 
-    const first = await request(app)
+    const first = await (await httpRequest(app))
       .post(`/api/engagement/polls/${String(pollId)}/respond`)
       .set(asIn())
       .send({ optionIndex: 0, comment: 'happy to be quoted' });
-    expect(first.status).toBe(200);
+    expectHttpStatus(first, 200);
 
-    const second = await request(app)
+    const second = await (await httpRequest(app))
       .post(`/api/engagement/polls/${String(pollId)}/respond`)
       .set(asIn())
       .send({ optionIndex: 1 });
-    expect(second.status).toBe(400);
+    expectHttpStatus(second, 400);
 
-    const results = await request(app)
+    const results = await (await httpRequest(app))
       .get(`/api/engagement/polls/${String(pollId)}/results`)
       .set(asHr());
     const body = results.body as PollResult;
@@ -323,19 +324,19 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
   it('E6 a closed poll accepts nothing further', async () => {
     const pollId = await createPoll(`${tag} closing?`, false);
 
-    const closed = await request(app)
+    const closed = await (await httpRequest(app))
       .post(`/api/engagement/polls/${String(pollId)}/close`)
       .set(asHr());
-    expect(closed.status).toBe(200);
+    expectHttpStatus(closed, 200);
 
-    const late = await request(app)
+    const late = await (await httpRequest(app))
       .post(`/api/engagement/polls/${String(pollId)}/respond`)
       .set(asIn())
       .send({ optionIndex: 0 });
-    expect(late.status).toBe(400);
+    expectHttpStatus(late, 400);
 
     // A closed poll also drops off the ESS list.
-    const mine = await request(app).get('/api/engagement/polls').set(asIn());
+    const mine = await (await httpRequest(app)).get('/api/engagement/polls').set(asIn());
     expect((mine.body as Poll[]).some((p) => p.id === pollId)).toBe(false);
   });
 
@@ -343,19 +344,22 @@ run('M10 Engagement — EN-01..03 (live Postgres)', () => {
     const title = `${tag} withdrawn`;
     const id = await publish(title);
 
-    const before = await request(app).get('/api/engagement/announcements').set(asIn());
+    const before = await (await httpRequest(app)).get('/api/engagement/announcements').set(asIn());
     expect((before.body as Announcement[]).map((a) => a.title)).toContain(title);
 
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post(`/api/engagement/announcements/${String(id)}/withdraw`)
       .set(asHr());
-    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+    expectHttpStatus(res, 200);
 
-    const after = await request(app).get('/api/engagement/announcements').set(asIn());
+    const after = await (await httpRequest(app)).get('/api/engagement/announcements').set(asIn());
+    expectHttpStatus(after, 200);
+    expect(Array.isArray(after.body)).toBe(true);
     expect((after.body as Announcement[]).map((a) => a.title)).not.toContain(title);
 
     // Withdrawal is a flag, never a delete: what was said stays on the record.
-    const catalogue = await request(app).get('/api/engagement/announcements/all').set(asHr());
+    const catalogue = await (await httpRequest(app)).get('/api/engagement/announcements/all').set(asHr());
     expect((catalogue.body as Announcement[]).map((a) => a.title)).toContain(title);
   });
 });

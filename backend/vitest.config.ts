@@ -14,6 +14,7 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       reporter: ['text-summary', 'json-summary', 'html'],
       reportOnFailure: true,
+      // docs/14: the general floor remains 80%; money requires stricter gates.
       thresholds: { statements: 80, branches: 80, functions: 80, lines: 80 },
     },
   },

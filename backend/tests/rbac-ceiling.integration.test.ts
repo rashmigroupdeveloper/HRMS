@@ -13,7 +13,7 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
 import type { Express } from 'express';
 import type { Kysely } from 'kysely';
 import { createApp } from '../src/app.js';
@@ -60,7 +60,7 @@ run('admin.roles ceiling (finding D3)', () => {
 
   /** Log in using the current documented auth contract. */
   async function loginElevated(email: string): Promise<string> {
-    const login = await request(app).post('/api/auth/login').send({ identifier: email, password });
+    const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
     expect(login.status).toBe(200);
     const token = (login.body as LoginBody).accessToken;
     return token;
@@ -83,7 +83,7 @@ run('admin.roles ceiling (finding D3)', () => {
   });
 
   it('EXPLOIT 1: it_admin cannot grant itself compensation.read (docs/08 hard rule)', async () => {
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post('/api/rbac/grants').set(auth(itToken))
       .send({ role: 'it_admin', permission: 'employee.compensation.read', scope: 'all' });
     expect(res.status).toBe(403);
@@ -99,14 +99,14 @@ run('admin.roles ceiling (finding D3)', () => {
   });
 
   it('EXPLOIT 1b: nor the statutory-ID permission', async () => {
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post('/api/rbac/grants').set(auth(itToken))
       .send({ role: 'it_admin', permission: 'employee.statutory_ids.read', scope: 'all' });
     expect(res.status).toBe(403);
   });
 
   it('EXPLOIT 2: it_admin cannot assign super_admin to anyone', async () => {
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post('/api/rbac/user-roles').set(auth(itToken))
       .send({ userId: victimUserId, role: 'super_admin' });
     expect(res.status).toBe(403);
@@ -115,7 +115,7 @@ run('admin.roles ceiling (finding D3)', () => {
   });
 
   it('EXPLOIT 2b: nor to itself — self-targeting is refused before any lattice check', async () => {
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post('/api/rbac/user-roles').set(auth(itToken))
       .send({ userId: itUserId, role: 'it_admin' });
     expect(res.status).toBe(403);
@@ -123,7 +123,7 @@ run('admin.roles ceiling (finding D3)', () => {
   });
 
   it('cannot revoke a permission it does not hold — no unilateral outage of another domain', async () => {
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .delete('/api/rbac/grants').set(auth(itToken))
       .send({ role: 'payroll_admin', permission: 'payroll.reports', scope: 'all' });
     expect(res.status).toBe(403);
@@ -132,12 +132,12 @@ run('admin.roles ceiling (finding D3)', () => {
   it('CAN still do its own job: grant and revoke a permission it holds', async () => {
     // it_admin holds admin.devices, so handing it to another role is legitimate
     // administration — the ceiling must not become a blanket deny.
-    const grant = await request(app)
+    const grant = await (await httpRequest(app))
       .post('/api/rbac/grants').set(auth(itToken))
       .send({ role: 'employee', permission: 'admin.devices', scope: 'all' });
     expect(grant.status).toBe(200);
 
-    const revoke = await request(app)
+    const revoke = await (await httpRequest(app))
       .delete('/api/rbac/grants').set(auth(itToken))
       .send({ role: 'employee', permission: 'admin.devices', scope: 'all' });
     expect(revoke.status).toBe(200);
@@ -151,7 +151,7 @@ run('admin.roles ceiling (finding D3)', () => {
     await db.updateTable('core.role_permissions').set({ scope: 'readonly' })
       .where('role_id', '=', role.id).where('permission_id', '=', permission.id).execute();
     try {
-      const denied = await request(app).post('/api/rbac/grants').set(auth(itToken))
+      const denied = await (await httpRequest(app)).post('/api/rbac/grants').set(auth(itToken))
         .send({ role: 'employee', permission: 'admin.devices', scope: 'all' });
       expect(denied.status).toBe(403);
     } finally {

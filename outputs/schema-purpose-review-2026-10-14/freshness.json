@@ -1,0 +1,91 @@
+{
+  "new_relations": [
+    {
+      "name": "att.swipe_events_203201",
+      "schema": "att",
+      "table": "swipe_events_203201",
+      "kind": "r",
+      "is_partition": true
+    },
+    {
+      "name": "att.swipe_events_203301",
+      "schema": "att",
+      "table": "swipe_events_203301",
+      "kind": "r",
+      "is_partition": true
+    },
+    {
+      "name": "att.swipe_events_203303",
+      "schema": "att",
+      "table": "swipe_events_203303",
+      "kind": "r",
+      "is_partition": true
+    },
+    {
+      "name": "att.swipe_events_203912",
+      "schema": "att",
+      "table": "swipe_events_203912",
+      "kind": "r",
+      "is_partition": true
+    },
+    {
+      "name": "att.swipe_events_204002",
+      "schema": "att",
+      "table": "swipe_events_204002",
+      "kind": "r",
+      "is_partition": true
+    },
+    {
+      "name": "att.swipe_events_204502",
+      "schema": "att",
+      "table": "swipe_events_204502",
+      "kind": "r",
+      "is_partition": true
+    },
+    {
+      "name": "att.swipe_events_204503",
+      "schema": "att",
+      "table": "swipe_events_204503",
+      "kind": "r",
+      "is_partition": true
+    },
+    {
+      "name": "att.swipe_events_204607",
+      "schema": "att",
+      "table": "swipe_events_204607",
+      "kind": "r",
+      "is_partition": true
+    },
+    {
+      "name": "att.swipe_events_205506",
+      "schema": "att",
+      "table": "swipe_events_205506",
+      "kind": "r",
+      "is_partition": true
+    },
+    {
+      "name": "att.swipe_events_205605",
+      "schema": "att",
+      "table": "swipe_events_205605",
+      "kind": "r",
+      "is_partition": true
+    },
+    {
+      "name": "att.swipe_events_206301",
+      "schema": "att",
+      "table": "swipe_events_206301",
+      "kind": "r",
+      "is_partition": true
+    },
+    {
+      "name": "att.swipe_events_208112",
+      "schema": "att",
+      "table": "swipe_events_208112",
+      "kind": "r",
+      "is_partition": true
+    }
+  ],
+  "changed_columns": [],
+  "changed_source_files": [],
+  "prior_verification_is_not_rerun": true
+}

@@ -117,7 +117,7 @@ export async function listPoliciesFor(db: Db, employeeId: number) {
       bodySummary: p.body_summary,
       effectiveDate: formatDbDate(p.effective_date),
       requiresAcknowledgment: p.requires_acknowledgment,
-      acknowledgedAt: p.acknowledged_at ? new Date(p.acknowledged_at as unknown as Date).toISOString() : null,
+      acknowledgedAt: p.acknowledged_at ? new Date(p.acknowledged_at).toISOString() : null,
     }));
 }
 

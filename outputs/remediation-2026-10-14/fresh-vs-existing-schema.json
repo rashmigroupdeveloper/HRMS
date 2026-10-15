@@ -1,0 +1,13 @@
+{
+  "basis": "48 migration PG17 replay versus 13 Oct PG14 read-only schema snapshot; default SQL rendering may vary by server version",
+  "differences": [
+    {
+      "column": "pay.budgets.overspend_allowed",
+      "issue": "Absent in fresh replay"
+    },
+    {
+      "column": "pay.claims.funding_kind",
+      "issue": "Absent in fresh replay"
+    }
+  ]
+}

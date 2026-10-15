@@ -23,6 +23,10 @@ import { auditRouter } from '../modules/audit/index.js';
 import { assetsRouter } from '../modules/assets/index.js';
 import { helpdeskRouter } from '../modules/helpdesk/index.js';
 import { engagementRouter } from '../modules/engagement/index.js';
+import { payrollCoreRouter } from '../modules/payroll-core/index.js';
+import { payrollOutputsRouter } from '../modules/payroll-outputs/index.js';
+import { loansRouter } from '../modules/loans/index.js';
+import { claimsRouter } from '../modules/claims/index.js';
 
 export const appRouter = {
   system: systemRouter,
@@ -46,6 +50,12 @@ export const appRouter = {
   assets: assetsRouter,
   helpdesk: helpdeskRouter,
   engagement: engagementRouter,
+  payroll: {
+    ...payrollCoreRouter,
+    outputs: payrollOutputsRouter,
+  },
+  loans: loansRouter,
+  claims: claimsRouter,
 };
 
 export type AppRouter = typeof appRouter;

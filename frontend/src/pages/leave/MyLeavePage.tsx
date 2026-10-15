@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { BookOpen, CalendarPlus, Palmtree } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import {
@@ -46,6 +47,7 @@ interface LeaveApplication {
   toDate: string;
   days: number;
   status: string;
+  workflowStatus?: string;
   workflowRequestId: number;
 }
 interface LedgerRow {
@@ -108,7 +110,7 @@ export function MyLeavePage() {
   const totalAvailable = rows.reduce((sum, item) => sum + item.available, 0);
   const totalBalance = rows.reduce((sum, item) => sum + item.balance, 0);
   const totalPending = rows.reduce((sum, item) => sum + item.pending, 0);
-  const pendingApps = applications.data?.filter((item) => item.status === 'pending').length ?? 0;
+  const pendingApps = applications.data?.filter((item) => item.status === 'pending' && item.workflowStatus !== 'sent_back').length ?? 0;
   const options: LeaveTypeOption[] = (types.data ?? []).map((type) => ({
     code: type.code,
     name: type.name,
@@ -118,14 +120,16 @@ export function MyLeavePage() {
     sandwichRule: type.sandwichRule,
   }));
 
-  const timeline: TimelineStep[] = (applications.data ?? []).slice(0, 8).map((item) => ({
-    id: String(item.id),
-    title: `${item.leaveType} · ${item.fromDate} to ${item.toDate}`,
-    description: `${String(item.days)} days reserved`,
-    timestamp: item.status,
-    state:
-      item.status === 'approved' ? 'done' : item.status === 'rejected' ? 'rejected' : 'current',
-  }));
+  const timeline: TimelineStep[] = (applications.data ?? []).slice(0, 8).map(item => {
+    const status = item.status === 'pending' ? item.workflowStatus ?? item.status : item.status;
+    return { id: String(item.id),
+      title: <Link className="rounded-control underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-accent"
+        to={`/approvals/${String(item.workflowRequestId)}`}>{item.leaveType} · {formatDateIN(item.fromDate)} to {formatDateIN(item.toDate)} · View decisions</Link>,
+      description: `${String(item.days)} days ${item.status === 'pending' ? 'reserved' : item.status}`,
+      timestamp: status.replaceAll('_', ' '),
+      state: status === 'approved' ? 'done' : status === 'rejected' || status === 'sent_back' ? 'rejected' : 'current',
+    };
+  });
 
   const today = todayISOIST();
   const yearPrefix = today.slice(0, 4);
@@ -280,15 +284,16 @@ export function MyLeavePage() {
         <Card>
           <CardHeader
             title="Applications already in motion"
-            subtitle={pendingApps > 0 ? `${String(pendingApps)} waiting on your manager` : 'Live approval state'}
+            subtitle={pendingApps > 0 ? `${String(pendingApps)} awaiting approval` : 'Live approval state'}
           />
-          {timeline.length ? (
+          {applications.error ? <DashboardError message={applications.error} onRetry={applications.reload} />
+            : applications.loading ? <p role="status" className="text-sm text-ink-muted">Loading applications…</p> : timeline.length ? (
             <Timeline steps={timeline} />
           ) : (
             <EmptyState
               icon={<Palmtree />}
               title="You have not asked for leave yet"
-              description="Apply now and the days are reserved so they are not treated as unauthorised absence."
+              description="Apply for leave, then track its approval here. Attendance changes after final approval."
               action={
                 <Button size="sm" variant="secondary" onClick={() => { setDrawerOpen(true); }}>
                   Apply for a day off

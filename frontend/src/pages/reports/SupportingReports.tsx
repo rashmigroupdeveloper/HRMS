@@ -789,3 +789,527 @@ export function R27HeadcountPage() {
     />
   );
 }
+
+// ── R21 Offers and Candidates ───────────────────────────────────────────────
+
+interface R21Row {
+  candidateName: string;
+  personalEmail: string;
+  mobile: string;
+  positionTitle: string;
+  department: string | null;
+  orgUnit: string | null;
+  designation: string | null;
+  category: string;
+  offeredCtc: number;
+  proposedDoj: string;
+  offerDate: string;
+  probationMonths: number | null;
+  probationPercentage: number | null;
+  workLocation: string | null;
+  loiStatus: string;
+  onboardingStatus: string;
+}
+
+const r21Columns: Column<R21Row>[] = [
+  {
+    key: 'candidate',
+    header: 'Candidate',
+    width: 'minmax(180px,1.2fr)',
+    render: (r) => (
+      <div>
+        <p className="font-semibold text-ink">{r.candidateName}</p>
+        <p className="text-xs text-ink-muted">{r.personalEmail} · {r.mobile}</p>
+      </div>
+    ),
+  },
+  { key: 'role', header: 'Position & Dept', width: '160px', render: (r) => (
+    <div>
+      <p className="text-ink">{r.positionTitle}</p>
+      <p className="text-xs text-ink-muted">{r.department ?? r.orgUnit ?? '—'}</p>
+    </div>
+  )},
+  { key: 'cat', header: 'Category', width: '110px', render: (r) => r.category.replace('_', ' ') },
+  { key: 'offerDate', header: 'Offer Date', width: '100px', render: (r) => formatDateIN(r.offerDate) },
+  { key: 'doj', header: 'Proposed DOJ', width: '100px', render: (r) => formatDateIN(r.proposedDoj) },
+  { key: 'ctc', header: 'Offered CTC', width: '110px', numeric: true, render: (r) => `₹${r.offeredCtc.toLocaleString('en-IN')}` },
+  { key: 'probation', header: 'Probation', width: '90px', numeric: true, render: (r) => r.probationPercentage ? `${String(r.probationPercentage)}%` : '—' },
+  {
+    key: 'status',
+    header: 'LOI Status',
+    width: '120px',
+    render: (r) => (
+      <StatusBadge tone={r.loiStatus === 'Accepted' ? 'positive' : r.loiStatus === 'Rejected' ? 'negative' : 'warning'}>
+        {r.loiStatus}
+      </StatusBadge>
+    ),
+  },
+];
+
+export function R21OffersPage() {
+  return (
+    <SupportingReportPage<R21Row>
+      code="R21"
+      title="Offers & Candidates Register"
+      subtitle="Recruitment pipeline, LOI conversions, proposed joinings and probation salary terms."
+      listPath="/api/reports/r21-offers"
+      exportPath="/api/reports/r21-offers/export"
+      columns={r21Columns}
+      rowKey={(r) => `${r.candidateName}-${r.offerDate}`}
+      mode="companyOptional"
+      requireCompany={false}
+      buildQuery={(f) => ({
+        companyId: /^\d+$/.test(f.companyId) ? Number(f.companyId) : undefined,
+      })}
+      parseRows={(body) => body as R21Row[]}
+    />
+  );
+}
+
+// ── R23 Internal Movements & Transfers ──────────────────────────────────────
+
+interface R23Row {
+  transferId: number;
+  employeeName: string;
+  currentEcode: string;
+  targetEcode: string | null;
+  transferType: string;
+  effectiveDate: string;
+  status: string;
+  fromCompany: string;
+  toCompany: string | null;
+  fromDepartment: string | null;
+  toDepartment: string | null;
+  fromLocation: string | null;
+  toLocation: string | null;
+  fromDesignation: string | null;
+  toDesignation: string | null;
+  fromGrade: string | null;
+  toGrade: string | null;
+  reason: string | null;
+}
+
+const r23Columns: Column<R23Row>[] = [
+  {
+    key: 'emp',
+    header: 'Employee',
+    width: 'minmax(160px,1.2fr)',
+    render: (r) => (
+      <div>
+        <p className="font-semibold text-ink">{r.employeeName}</p>
+        <p className="text-xs text-ink-muted">{r.currentEcode}{r.targetEcode ? ` → ${r.targetEcode}` : ''}</p>
+      </div>
+    ),
+  },
+  { key: 'type', header: 'Type', width: '120px', render: (r) => <StatusBadge tone="neutral">{r.transferType.replace('_', ' ')}</StatusBadge> },
+  { key: 'effDate', header: 'Effective', width: '100px', render: (r) => formatDateIN(r.effectiveDate) },
+  {
+    key: 'movement',
+    header: 'From → To',
+    width: 'minmax(200px,1.5fr)',
+    render: (r) => (
+      <div className="text-xs">
+        <p className="text-ink">{r.fromDepartment ?? '—'} → {r.toDepartment ?? r.fromDepartment ?? '—'}</p>
+        <p className="text-ink-muted">{r.fromLocation ?? '—'} → {r.toLocation ?? r.fromLocation ?? '—'}</p>
+      </div>
+    ),
+  },
+  { key: 'reason', header: 'Reason', width: 'minmax(140px,1fr)', render: (r) => <span className="text-xs text-ink-muted">{r.reason ?? '—'}</span> },
+  { key: 'status', header: 'Status', width: '90px', render: (r) => <StatusBadge tone={r.status === 'approved' ? 'positive' : 'warning'}>{r.status}</StatusBadge> },
+];
+
+export function R23TransfersPage() {
+  return (
+    <SupportingReportPage<R23Row>
+      code="R23"
+      title="Internal Movements & Transfers"
+      subtitle="Promotions, inter-department transfers, plant relocations and inter-company transfers."
+      listPath="/api/reports/r23-transfers"
+      exportPath="/api/reports/r23-transfers/export"
+      columns={r23Columns}
+      rowKey={(r) => String(r.transferId)}
+      mode="companyOptional"
+      requireCompany={false}
+      buildQuery={(f) => ({
+        companyId: /^\d+$/.test(f.companyId) ? Number(f.companyId) : undefined,
+      })}
+      parseRows={(body) => body as R23Row[]}
+    />
+  );
+}
+
+// ── R25 Probation Reviews ───────────────────────────────────────────────────
+
+interface R25Row {
+  reviewId: number;
+  employeeName: string;
+  ecode: string;
+  department: string | null;
+  designation: string | null;
+  doj: string;
+  dueDate: string;
+  status: string;
+  outcome: string | null;
+  managerRecommendation: string | null;
+  extensionMonths: number | null;
+  isOverdue: boolean;
+  reviewNotes: string | null;
+}
+
+const r25Columns: Column<R25Row>[] = [
+  {
+    key: 'emp',
+    header: 'Employee',
+    width: 'minmax(160px,1.2fr)',
+    render: (r) => (
+      <div>
+        <p className="font-semibold text-ink">{r.employeeName}</p>
+        <p className="text-xs text-ink-muted">{r.ecode} · {r.department ?? '—'}</p>
+      </div>
+    ),
+  },
+  { key: 'doj', header: 'DOJ', width: '100px', render: (r) => formatDateIN(r.doj) },
+  {
+    key: 'due',
+    header: 'Due Date',
+    width: '120px',
+    render: (r) => (
+      <div>
+        <p className="text-ink">{formatDateIN(r.dueDate)}</p>
+        {r.isOverdue && <StatusBadge tone="negative">Overdue</StatusBadge>}
+      </div>
+    ),
+  },
+  { key: 'rec', header: 'Recommendation', width: '130px', render: (r) => r.managerRecommendation ?? 'Pending' },
+  { key: 'outcome', header: 'Outcome', width: '110px', render: (r) => r.outcome ? <StatusBadge tone={r.outcome === 'confirmed' ? 'positive' : 'warning'}>{r.outcome}</StatusBadge> : '—' },
+  { key: 'notes', header: 'Notes', width: 'minmax(140px,1fr)', render: (r) => <span className="text-xs text-ink-muted">{r.reviewNotes ?? '—'}</span> },
+];
+
+export function R25ProbationPage() {
+  return (
+    <SupportingReportPage<R25Row>
+      code="R25"
+      title="Probation Reviews & Confirmations"
+      subtitle="Evaluation schedules, manager assessments, extension tracking and overdue reviews."
+      listPath="/api/reports/r25-probation"
+      exportPath="/api/reports/r25-probation/export"
+      columns={r25Columns}
+      rowKey={(r) => String(r.reviewId)}
+      mode="companyOptional"
+      requireCompany={false}
+      buildQuery={(f) => ({
+        companyId: /^\d+$/.test(f.companyId) ? Number(f.companyId) : undefined,
+      })}
+      parseRows={(body) => body as R25Row[]}
+    />
+  );
+}
+
+// ── R26 Attrition Analysis ──────────────────────────────────────────────────
+
+interface R26Row {
+  separationId: number;
+  employeeName: string;
+  ecode: string;
+  department: string | null;
+  location: string | null;
+  category: string | null;
+  doj: string;
+  tenureMonths: number;
+  tenureBand: string;
+  resignationDate: string;
+  lwd: string | null;
+  reason: string | null;
+  exitType: 'Voluntary' | 'Involuntary';
+  noticePeriodDays: number | null;
+  shortfallDays: number | null;
+  fnfStatus: string | null;
+}
+
+const r26Columns: Column<R26Row>[] = [
+  {
+    key: 'emp',
+    header: 'Employee',
+    width: 'minmax(160px,1.2fr)',
+    render: (r) => (
+      <div>
+        <p className="font-semibold text-ink">{r.employeeName}</p>
+        <p className="text-xs text-ink-muted">{r.ecode} · {r.department ?? '—'}</p>
+      </div>
+    ),
+  },
+  { key: 'exitType', header: 'Exit Type', width: '110px', render: (r) => <StatusBadge tone={r.exitType === 'Voluntary' ? 'neutral' : 'negative'}>{r.exitType}</StatusBadge> },
+  { key: 'tenure', header: 'Tenure', width: '110px', render: (r) => <span>{r.tenureBand} ({r.tenureMonths}m)</span> },
+  { key: 'dates', header: 'Resigned / LWD', width: '140px', render: (r) => (
+    <div className="text-xs">
+      <p className="text-ink">{formatDateIN(r.resignationDate)}</p>
+      <p className="text-ink-muted">{r.lwd ? `LWD: ${formatDateIN(r.lwd)}` : '—'}</p>
+    </div>
+  )},
+  { key: 'notice', header: 'Notice (Shortfall)', width: '120px', render: (r) => `${String(r.noticePeriodDays ?? 0)}d (${String(r.shortfallDays ?? 0)}d)` },
+  { key: 'reason', header: 'Reason', width: 'minmax(150px,1fr)', render: (r) => <span className="text-xs text-ink-muted">{r.reason ?? '—'}</span> },
+];
+
+export function R26AttritionPage() {
+  return (
+    <SupportingReportPage<R26Row>
+      code="R26"
+      title="Attrition & Exit Analysis"
+      subtitle="Voluntary vs involuntary attrition, tenure bands, notice shortfalls and reasons for exit."
+      listPath="/api/reports/r26-attrition"
+      exportPath="/api/reports/r26-attrition/export"
+      columns={r26Columns}
+      rowKey={(r) => String(r.separationId)}
+      mode="companyOptional"
+      requireCompany={false}
+      buildQuery={(f) => ({
+        companyId: /^\d+$/.test(f.companyId) ? Number(f.companyId) : undefined,
+      })}
+      parseRows={(body) => body as R26Row[]}
+    />
+  );
+}
+
+// ── R28 Asset Custody Register ──────────────────────────────────────────────
+
+interface R28Row {
+  assetId: number;
+  assetNo: string;
+  category: string;
+  brand: string | null;
+  model: string | null;
+  serialNo: string | null;
+  status: string;
+  location: string | null;
+  holderKind: string | null;
+  holderName: string | null;
+  holderEcode: string | null;
+  assignedAt: string | null;
+  warrantyExpiry: string | null;
+}
+
+const r28Columns: Column<R28Row>[] = [
+  {
+    key: 'asset',
+    header: 'Asset Tag',
+    width: 'minmax(150px,1fr)',
+    render: (r) => (
+      <div>
+        <p className="font-semibold text-ink">{r.assetNo}</p>
+        <p className="text-xs text-ink-muted">{r.category} · {r.model ?? r.brand ?? '—'}</p>
+      </div>
+    ),
+  },
+  { key: 'serial', header: 'Serial No', width: '130px', render: (r) => <span className="font-mono text-xs">{r.serialNo ?? '—'}</span> },
+  { key: 'status', header: 'Status', width: '100px', render: (r) => <StatusBadge tone={r.status === 'assigned' ? 'positive' : 'neutral'}>{r.status}</StatusBadge> },
+  {
+    key: 'holder',
+    header: 'Assigned Custodian',
+    width: 'minmax(160px,1.2fr)',
+    render: (r) => r.holderName ? (
+      <div>
+        <p className="font-medium text-ink">{r.holderName}</p>
+        <p className="text-xs text-ink-muted">{r.holderEcode ?? '—'} · {r.location ?? '—'}</p>
+      </div>
+    ) : (
+      <span className="text-ink-muted">In Inventory</span>
+    ),
+  },
+  { key: 'assignedAt', header: 'Assigned On', width: '100px', render: (r) => r.assignedAt ? formatDateIN(r.assignedAt) : '—' },
+  { key: 'warranty', header: 'Warranty Till', width: '100px', render: (r) => r.warrantyExpiry ? formatDateIN(r.warrantyExpiry) : '—' },
+];
+
+export function R28AssetsPage() {
+  return (
+    <SupportingReportPage<R28Row>
+      code="R28"
+      title="Asset Custody Register"
+      subtitle="Complete hardware and property inventory, employee allocations, serials and warranty tracking."
+      listPath="/api/reports/r28-assets"
+      exportPath="/api/reports/r28-assets/export"
+      columns={r28Columns}
+      rowKey={(r) => String(r.assetId)}
+      mode="companyOptional"
+      requireCompany={false}
+      buildQuery={(f) => ({
+        companyId: /^\d+$/.test(f.companyId) ? Number(f.companyId) : undefined,
+      })}
+      parseRows={(body) => body as R28Row[]}
+    />
+  );
+}
+
+// ── R29 Helpdesk SLA Performance ───────────────────────────────────────────
+
+interface R29Row {
+  month: string;
+  category: string;
+  totalTickets: number;
+  resolvedTickets: number;
+  slaBreachedTickets: number;
+  slaHitPct: number;
+  avgFirstResponseHours: number | null;
+  avgResolutionHours: number | null;
+  reopenedTickets: number;
+}
+
+const r29Columns: Column<R29Row>[] = [
+  { key: 'month', header: 'Month', width: '100px', render: (r) => r.month },
+  { key: 'cat', header: 'Category', width: '140px', render: (r) => r.category },
+  { key: 'total', header: 'Total Tickets', width: '100px', numeric: true, render: (r) => r.totalTickets },
+  { key: 'resolved', header: 'Resolved', width: '90px', numeric: true, render: (r) => r.resolvedTickets },
+  {
+    key: 'slaHit',
+    header: 'SLA Hit Rate',
+    width: '120px',
+    numeric: true,
+    render: (r) => (
+      <StatusBadge tone={r.slaHitPct >= 90 ? 'positive' : r.slaHitPct >= 75 ? 'warning' : 'negative'}>
+        {r.slaHitPct.toFixed(1)}%
+      </StatusBadge>
+    ),
+  },
+  { key: 'breached', header: 'Breaches', width: '90px', numeric: true, render: (r) => r.slaBreachedTickets },
+  { key: 'respTime', header: 'Avg Response', width: '110px', numeric: true, render: (r) => r.avgFirstResponseHours ? `${r.avgFirstResponseHours.toFixed(1)}h` : '—' },
+  { key: 'resTime', header: 'Avg Resolution', width: '110px', numeric: true, render: (r) => r.avgResolutionHours ? `${r.avgResolutionHours.toFixed(1)}h` : '—' },
+];
+
+export function R29HelpdeskPage() {
+  return (
+    <SupportingReportPage<R29Row>
+      code="R29"
+      title="Helpdesk SLA Analytics"
+      subtitle="Monthly ticket volumes, SLA resolution hit rates, response latency and auto-escalations."
+      listPath="/api/reports/r29-helpdesk"
+      exportPath="/api/reports/r29-helpdesk/export"
+      columns={r29Columns}
+      rowKey={(r) => `${r.month}-${r.category}`}
+      mode="companyOptional"
+      requireCompany={false}
+      buildQuery={() => ({})}
+      parseRows={(body) => body as R29Row[]}
+    />
+  );
+}
+
+// ── R30 Policy Compliance Matrix ────────────────────────────────────────────
+
+interface R30Row {
+  policyId: number;
+  policyCode: string;
+  policyTitle: string;
+  version: number;
+  mandatory: boolean;
+  effectiveDate: string;
+  targetedEmployees: number;
+  acknowledgedEmployees: number;
+  pendingEmployees: number;
+  compliancePct: number;
+}
+
+const r30Columns: Column<R30Row>[] = [
+  {
+    key: 'policy',
+    header: 'Policy',
+    width: 'minmax(220px,1.5fr)',
+    render: (r) => (
+      <div>
+        <p className="font-semibold text-ink">{r.policyTitle}</p>
+        <p className="text-xs text-ink-muted">Code: {r.policyCode} · v{r.version} {r.mandatory ? '· Mandatory' : ''}</p>
+      </div>
+    ),
+  },
+  { key: 'effDate', header: 'Effective Date', width: '110px', render: (r) => formatDateIN(r.effectiveDate) },
+  { key: 'target', header: 'Targeted', width: '90px', numeric: true, render: (r) => r.targetedEmployees },
+  { key: 'ack', header: 'Acknowledged', width: '100px', numeric: true, render: (r) => r.acknowledgedEmployees },
+  { key: 'pending', header: 'Pending', width: '90px', numeric: true, render: (r) => r.pendingEmployees },
+  {
+    key: 'pct',
+    header: 'Compliance %',
+    width: '120px',
+    numeric: true,
+    render: (r) => (
+      <StatusBadge tone={r.compliancePct >= 95 ? 'positive' : r.compliancePct >= 75 ? 'warning' : 'negative'}>
+        {r.compliancePct.toFixed(1)}%
+      </StatusBadge>
+    ),
+  },
+];
+
+export function R30PoliciesPage() {
+  return (
+    <SupportingReportPage<R30Row>
+      code="R30"
+      title="Policy Compliance Matrix"
+      subtitle="Mandatory workplace policies, employee acknowledgment rates, and pending compliance backlog."
+      listPath="/api/reports/r30-policies"
+      exportPath="/api/reports/r30-policies/export"
+      columns={r30Columns}
+      rowKey={(r) => String(r.policyId)}
+      mode="companyOptional"
+      requireCompany={false}
+      buildQuery={() => ({})}
+      parseRows={(body) => body as R30Row[]}
+    />
+  );
+}
+
+// ── R31 Reimbursement Utilization ───────────────────────────────────────────
+
+interface R31Row {
+  claimId: number;
+  employeeName: string;
+  ecode: string;
+  department: string | null;
+  claimType: string;
+  periodFrom: string;
+  periodTo: string;
+  claimedAmount: number;
+  approvedAmount: number | null;
+  status: string;
+  billsCount: number;
+  verifiedBillsCount: number;
+  paidInRunId: number | null;
+  rejectionReason: string | null;
+}
+
+const r31Columns: Column<R31Row>[] = [
+  {
+    key: 'emp',
+    header: 'Employee',
+    width: 'minmax(160px,1.2fr)',
+    render: (r) => (
+      <div>
+        <p className="font-semibold text-ink">{r.employeeName}</p>
+        <p className="text-xs text-ink-muted">{r.ecode} · {r.department ?? '—'}</p>
+      </div>
+    ),
+  },
+  { key: 'type', header: 'Expense Type', width: '130px', render: (r) => r.claimType },
+  { key: 'period', header: 'Claim Period', width: '130px', render: (r) => `${formatDateIN(r.periodFrom)} - ${formatDateIN(r.periodTo)}` },
+  { key: 'claimed', header: 'Claimed', width: '110px', numeric: true, render: (r) => `₹${r.claimedAmount.toLocaleString('en-IN')}` },
+  { key: 'approved', header: 'Approved', width: '110px', numeric: true, render: (r) => r.approvedAmount !== null ? `₹${r.approvedAmount.toLocaleString('en-IN')}` : '—' },
+  { key: 'bills', header: 'Bills (Verified)', width: '110px', numeric: true, render: (r) => `${String(r.billsCount)} (${String(r.verifiedBillsCount)})` },
+  { key: 'status', header: 'Status', width: '100px', render: (r) => <StatusBadge tone={r.status === 'approved' || r.status === 'paid' ? 'positive' : r.status === 'rejected' ? 'negative' : 'warning'}>{r.status}</StatusBadge> },
+];
+
+export function R31ClaimsPage() {
+  return (
+    <SupportingReportPage<R31Row>
+      code="R31"
+      title="Reimbursement Utilization"
+      subtitle="Travel, conveyance and expense claims, receipt audits, approvals and settlement tracking."
+      listPath="/api/reports/r31-claims"
+      exportPath="/api/reports/r31-claims/export"
+      columns={r31Columns}
+      rowKey={(r) => String(r.claimId)}
+      mode="companyOptional"
+      requireCompany={false}
+      buildQuery={(f) => ({
+        companyId: /^\d+$/.test(f.companyId) ? Number(f.companyId) : undefined,
+      })}
+      parseRows={(body) => body as R31Row[]}
+    />
+  );
+}
+

@@ -1,0 +1,37 @@
+{
+  "method": "Compare compiler-resolved SELECT literal domains with exact single-column PostgreSQL CHECK (... = ANY ARRAY[...]) and enum labels. Compound checks, semantic cross-field rules and INSERT projections are outside this probe.",
+  "issues": [
+    {
+      "table": "pay.claims",
+      "column": "status",
+      "db_values": [
+        "draft",
+        "submitted",
+        "sent_back",
+        "pending",
+        "verified",
+        "approved",
+        "rejected",
+        "paid",
+        "settled"
+      ],
+      "type_values": [
+        "pending",
+        "approved",
+        "rejected",
+        "paid",
+        "verified"
+      ],
+      "db_rejects_type_values": [],
+      "type_cannot_represent_db_values": [
+        "draft",
+        "sent_back",
+        "settled",
+        "submitted"
+      ],
+      "source": [
+        "claims_status_check"
+      ]
+    }
+  ]
+}

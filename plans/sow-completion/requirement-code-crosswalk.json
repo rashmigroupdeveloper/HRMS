@@ -1,0 +1,4055 @@
+{
+  "prepared": "2026-10-09",
+  "requirements": [
+    {
+      "id": "CORE-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 56,
+      "definition": "- **CORE-01** Single employee master: personal, employment, statutory, financial details in one record. *(SOW-2.1a)*",
+      "cards": [
+        "F02",
+        "F03"
+      ],
+      "code_verdict": "Partial — master reads/import, security and utility code; full governance/integration incomplete",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C31"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 57,
+      "definition": "- **CORE-02** E-code generation per entity series (RML…, RGH…, EIPL…, RPF…) — system-generated, sequence-enforced, duplicates impossible. *(Agreement tracker 3.2 remark: \"Incorrect employee codes generated, not adhering to predefined series\"; SOW-5.2: duplicate e-code checks)*",
+      "cards": [
+        "F02"
+      ],
+      "code_verdict": "Code exists — atomic allocation/uniqueness; legacy import/series sign-off and fresh isolated DB proof remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 58,
+      "definition": "- **CORE-03** Both **Reporting Manager** and **Functional Reporting Manager** on every employee; both appear in master report and muster exports. *(RT: \"Functional Reporting Manager… not yet updated\"; PP-15)*",
+      "cards": [
+        "F02",
+        "F03"
+      ],
+      "code_verdict": "Partial — master reads/import, security and utility code; full governance/integration incomplete",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C31"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 59,
+      "definition": "- **CORE-04** Cost center (plant code, e.g., 1701) on every employee; manpower cost queryable by cost center. *(PP-8)*",
+      "cards": [
+        "F02",
+        "F03"
+      ],
+      "code_verdict": "Partial — master reads/import, security and utility code; full governance/integration incomplete",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-05",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 60,
+      "definition": "- **CORE-05** Employment category enum: `white_collar | blue_collar | trainee | consultant | contract(reserved)` — drives CEO dashboard splits and payroll rules (apprentices: no statutory deductions per SOW-5.8). *(CEO; SOW-5.8)*",
+      "cards": [
+        "F02",
+        "F03"
+      ],
+      "code_verdict": "Partial — master reads/import, security and utility code; full governance/integration incomplete",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-06",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 61,
+      "definition": "- **CORE-06** Status lifecycle `onboarding → active → on_notice → exited (inactive)`; exited employees **never** appear in active lists, payroll variable-input lists, or reports unless explicitly filtered. Date-of-leaving mandatory at exit. *(PP-17; Agreement 5.2.12: \"Inactive employees still appearing in active list\")*",
+      "cards": [
+        "F02",
+        "L04",
+        "L05"
+      ],
+      "code_verdict": "Partial — status/active filters exist; connected separation/alumni behavior absent",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-07",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 62,
+      "definition": "- **CORE-07** Statutory identifiers on master: PAN, Aadhaar, UAN, PF number, ESIC IP number, bank account + IFSC — all validated (format + checksum where applicable) and **printed on payslip**. *(PP-3, PP-4; SOW-5.2 validations 1–12)*",
+      "cards": [
+        "F02",
+        "F03"
+      ],
+      "code_verdict": "Partial — master reads/import, security and utility code; full governance/integration incomplete",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C31"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-08",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 63,
+      "definition": "- **CORE-08** Field-level validation at entry mirroring SOW-5.2: DOB → minor check, bank account length, IFSC format, PAN format, Aadhaar format, duplicate ESI/UAN/e-code, special characters stripped from designation/department, CTC-vs-breakup match.",
+      "cards": [
+        "F02",
+        "F03"
+      ],
+      "code_verdict": "Partial — master reads/import, security and utility code; full governance/integration incomplete",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C31"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-09",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 64,
+      "definition": "- **CORE-09** Letter generation from templates with merge fields + workflow: appointment, confirmation, experience, relieving, salary certificate, show-cause/warning. Issued letters archived on the employee record and visible in ESS. *(SOW-3.6; PP-14)*",
+      "cards": [
+        "W03",
+        "F04",
+        "L01",
+        "L02",
+        "L05"
+      ],
+      "code_verdict": "Partial — templating/signature/archive exists; C20 and official lifecycle/pay-derived letters remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C20"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-10",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 65,
+      "definition": "- **CORE-10** Role-based access control: module × action permissions; leadership read-only dashboards; managers scoped to their reporting tree (incl. multi-level: \"employees working under managers whose RM is Kinjal Ma'am\" *(KQ)*); Protiviti-style access-control matrix exportable. *(SOW-2.1b; PI-ESS-2)*",
+      "cards": [
+        "F03",
+        "A03"
+      ],
+      "code_verdict": "Partial — runtime RBAC/scoping utilities exist; all-endpoint scope/permission contract gaps remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C01",
+        "C02",
+        "C03",
+        "C05",
+        "C22",
+        "C23"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-11",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 66,
+      "definition": "- **CORE-11** Full audit log: who changed which field of which record, when, old → new value. Compensation and statutory fields flagged as sensitive (restricted visibility).",
+      "cards": [
+        "F03"
+      ],
+      "code_verdict": "Partial — append-only hash/audit code exists; atomic mutation coverage and deployed chain parity remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C20",
+        "C21"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-12",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 67,
+      "definition": "- **CORE-12** Bulk import (Excel) for initial migration from greytHR/Adrenalin exports, with per-row validation report. *(SOW-1.3 data transfer precedent)*",
+      "cards": [
+        "F02",
+        "F01",
+        "P07",
+        "T04"
+      ],
+      "code_verdict": "Partial — two-source import functions exist; full Excel/error catalog and real signed loads remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C31"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-13",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 68,
+      "definition": "- **CORE-13** Policy repository: publish policy docs, track per-employee acknowledgment in real time, auto-alert non-acknowledgers; HR dashboard tile. *(SOW-2.3; PI-ESS-5)*",
+      "cards": [
+        "W03",
+        "F04",
+        "W04"
+      ],
+      "code_verdict": "Partial — policy list/ack/nag/report exists; eligibility/denominator/receipts remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C19"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CORE-14",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 69,
+      "definition": "- **CORE-14** In-app contextual help: role-based quick guides (ESS, manager, HR admin screens), empty states that teach, and printable/short training material per module — the greytHR rollout needed 11 training sessions and HR still asked for \"ESS Admin Access Training\"; reduce that dependency by design. *(PP-v2-7; DESIGN_RESEARCH §4 adoption evidence)*",
+      "cards": [
+        "W05"
+      ],
+      "code_verdict": "Partial — teaching empty states exist; role/module quick guides/training absent",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/employees/employees.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/employees/import.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/people/ProfilePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C32"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 73,
+      "definition": "- **ATT-01** Automated ingestion of swipes from Kent/Astra access-control cloud/DB on a schedule (≤ 5 min lag), storing **raw immutable swipe events** exactly as received (fields per EmployeeSwipeDetails.xlsx: employee no, access card, shift, swipe datetime, door/address, swipe type, received-on). *(SOW-4.2a/b; PP-9 root cause)*",
+      "cards": [
+        "A01",
+        "F04"
+      ],
+      "code_verdict": "Partial — partitioned immutable ingest exists; always-mock feed and lossless real protocol incomplete",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C14",
+        "C15"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 74,
+      "definition": "- **ATT-02** Ingestion resilience: per-device watermark, gap detection, retry/backfill, and **device-offline alerting to IT** — the greytHR failure mode (\"Kent machines go offline… attendance captured late\") must be detected, not discovered at month-end. *(PP-9)*",
+      "cards": [
+        "A01",
+        "F04"
+      ],
+      "code_verdict": "Partial — device/source watermarks/quarantine/alerts exist; real completeness/backfill/delivery proof remains",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C14",
+        "C15"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 75,
+      "definition": "- **ATT-03** Attendance recomputation: processed day-status derives from raw swipes + shift + approved requests, and can be recomputed idempotently for any date range until the month is locked.",
+      "cards": [
+        "A01",
+        "A02",
+        "A03",
+        "A05"
+      ],
+      "code_verdict": "Partial — attendance capability exists; integration/policy/transaction acceptance open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C11",
+        "C12",
+        "C37"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 76,
+      "definition": "- **ATT-04** Shift management: fixed/rotational/flexible/night shift definitions; roster maintained **by reporting managers** (greytHR blocked this — Agreement 4.1b) with monthly roster deadline (5th) reminders. *(SOW-4.1)*",
+      "cards": [
+        "A02",
+        "F04"
+      ],
+      "code_verdict": "Partial — shift/scheme/roster configuration exists; full rotation/flex/effective history and reminders remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-05",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 77,
+      "definition": "- **ATT-05** Day statuses: Present, Absent, Half-day, Week-off, Holiday, Leave (by type), OD, Comp-off, UAB (unauthorized absence). Late-coming and early-leaving minutes computed per policy grace. **Two-session days**: RML shifts split into Session 1 / Session 2 (live: G5 09:00–13:30 / 13:31–18:00), so a day can hold a dual status (e.g. Absent-first-half / Present-second-half); day model is session-aware, not one-status-per-day. **Saturday runs a different scheme** (live \"GCS\" alternate-Saturday) — schemes are weekday-vs-Saturday distinct per employee. A configurable **Penalty Days** policy exists (live metric). *(SOW-4.2c, 4.5a; live recon 09-RECON §4)*",
+      "cards": [
+        "A02",
+        "A04"
+      ],
+      "code_verdict": "Partial — current session-aware processor preserves recent fixes; exact policy/payable semantics remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-06",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 78,
+      "definition": "- **ATT-06** Attendance Regularization (AR) with multi-level approval and **Excel-exportable AR report**; plus **Permission** — short-duration time-bounded attendance exception (e.g. 2-hour personal permission), distinct from full-day AR (confirmed as \"Regularization & Permission\" in live greytHR, 09-RECON §5). *(PP-16; KQ; live recon)*",
+      "cards": [
+        "A01",
+        "A02",
+        "A03",
+        "A05"
+      ],
+      "code_verdict": "Partial — attendance capability exists; integration/policy/transaction acceptance open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C04",
+        "C08"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-07",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 79,
+      "definition": "- **ATT-07** On-Duty (OD): **future-dated applications allowed**, remote/site employees supported (the \"on site, can't punch out\" case → OD or comp-off path), OD report exportable. *(KQ; Agreement 4.2a remark)*",
+      "cards": [
+        "A01",
+        "A02",
+        "A03",
+        "A05"
+      ],
+      "code_verdict": "Partial — attendance capability exists; integration/policy/transaction acceptance open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-08",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 80,
+      "definition": "- **ATT-08** Overtime: pre-approved-policy based. OT auto-detected from swipes beyond shift; daily OT summary to reporting manager; manager approves/rejects **within 48 hours or OT lapses** (configurable); approved OT flows to payroll at configured rates; comp-off offered as alternative where policy says (week-off work → OT **or** comp-off, one only). *(PP-19; PI-ESS-13; Protiviti Status doc; Agreement 5.1.6)*",
+      "cards": [
+        "A03",
+        "A04",
+        "P02"
+      ],
+      "code_verdict": "Partial — detection/decision/lapse/CO exist; C06 atomic authority plus preapproval/pay linkage remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C06",
+        "C13",
+        "C25"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-09",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 81,
+      "definition": "- **ATT-09** Week-off eligibility rule: an employee absent (UAB) the entire week earns **no paid week-off**; absent the entire month earns no paid week-offs at all. Configurable \"must work ≥ 1 day in week\" criterion. *(PI-PAY-1, PI-PAY-2; RT)*",
+      "cards": [
+        "A01",
+        "A02",
+        "A03",
+        "A05"
+      ],
+      "code_verdict": "Partial — attendance capability exists; integration/policy/transaction acceptance open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-10",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 82,
+      "definition": "- **ATT-10** Absenteeism engine: continuous-absence tracker; at 7 days (configurable) auto-generate show-cause/warning/feedback email through HR with letter template and case record. *(PP-7)*",
+      "cards": [
+        "A05",
+        "W03",
+        "F04"
+      ],
+      "code_verdict": "Partial — absence scan/cases/HR letter actions exist; full official issuance/delivery acceptance remains",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C36"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-11",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 83,
+      "definition": "- **ATT-11** Auto-alerts: absenteeism, late arrival, early departure — to employee, up the hierarchy, and HR as configured. UAB alerts \"across the hierarchy & HR\". *(PI-ESS-12, PI-ESS-14; SOW-4.2d)*",
+      "cards": [
+        "A05",
+        "F04"
+      ],
+      "code_verdict": "Partial — UAB alerts queued; full late/early/hierarchy rules and delivery proof remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C36"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-12",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 84,
+      "definition": "- **ATT-12** Attendance approval by manager precedes monthly leave-credit and payroll locks (greytHR leave credits failed because attendance approval was missing — make the dependency explicit and visible). *(PP-1)*",
+      "cards": [
+        "A05",
+        "A04"
+      ],
+      "code_verdict": "Conflict/open — manager approval ledger exists but lock default false; D02 credit semantics unsigned",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C10",
+        "C11",
+        "C37"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-13",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 85,
+      "definition": "- **ATT-13** Holiday calendars by location/plant. *(SOW-4.3b)*",
+      "cards": [
+        "A01",
+        "A02",
+        "A03",
+        "A05"
+      ],
+      "code_verdict": "Partial — attendance capability exists; integration/policy/transaction acceptance open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-14",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 86,
+      "definition": "- **ATT-14** Sales/field employee attendance: mobile/geo check-in (PWA) with GPS coordinates — schema supports longitude/latitude/location-type per swipe (columns already exist in Kent export). *(PP-21)*",
+      "cards": [
+        "X01",
+        "A01"
+      ],
+      "code_verdict": "Pending mobile business API/PWA — raw/type geo fields are only structural support",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C15",
+        "C30"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-15",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 87,
+      "definition": "- **ATT-15** Month-end attendance lock per entity+month; post-lock changes only via HR with audit trail; locked data feeds payroll.",
+      "cards": [
+        "A05",
+        "P02"
+      ],
+      "code_verdict": "Partial — lock/freeze exists; C08/C11 completeness/synchronization and payroll dependency remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C08",
+        "C11",
+        "C37"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-16",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 88,
+      "definition": "- **ATT-16** Cross-plant swipes are valid attendance: employees may punch at any door (fitting plant, DIP-6, corporate, Seamless) while their cost center stays as mapped; reports always show the *mapped* cost center, and a reconciliation flag highlights employees habitually swiping at a different plant than their mapping. *(PP-v2-15: temp-copy pain point sheet)*",
+      "cards": [
+        "A01",
+        "A02",
+        "A03",
+        "A05"
+      ],
+      "code_verdict": "Partial — attendance capability exists; integration/policy/transaction acceptance open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C15"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-17",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 89,
+      "definition": "- **ATT-17** Attendance modification lockdown: reporting managers can **never** directly edit day statuses (no \"mark present\" override) — they only approve employee-initiated AR/OD/OT. Direct manual override is restricted to HR ops with reason + audit trail. *(PP-v2-18: \"We do not want anybody to have access to modify the attendance\" — Sapikul Ali)*",
+      "cards": [
+        "A02",
+        "F03"
+      ],
+      "code_verdict": "Partial — HR-only reason/audit manual path exists; C13 linked-field consistency remains",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C13"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "ATT-18",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 90,
+      "definition": "- **ATT-18** First-In / Last-Out is the attendance basis for multi-swipe days (explicit RML ask on the Kent integration). *(PP-v2-2)*",
+      "cards": [
+        "A02"
+      ],
+      "code_verdict": "Code exists — FILO processor; real night/session/attribution policy and source-data acceptance remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/attendance/index.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LV-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 94,
+      "definition": "- **LV-01** Leave types (confirmed from live greytHR — see 09-GREYTHR-RECON §1): **Casual Leave, Sick Leave, Earned Leave** (credited after 1 year; encashable), **Compensatory Off** (fractional/half-day), **Election Leave** (India statutory paid voting leave), **Loss Of Pay** (unpaid → LOP), plus **Maternity** (gender-conditional, not in this employee's scheme but in catalog). CL/SL/EL are monthly-accrual (fractional balances confirm it). Configurable accrual, carry-forward, encashment rules. *(SOW-4.3a/e; live recon)*",
+      "cards": [
+        "A04"
+      ],
+      "code_verdict": "Partial — seeded catalog/runtime API exists; complete sanctioned policy/configuration/UI remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/leave/leave-core.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/leave/leave-apply.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LV-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 95,
+      "definition": "- **LV-02** Monthly leave credit runs automatically on the 1st (00:05), *without* human trigger; blocked employees (unapproved attendance) get queued + flagged rather than silently skipped. *(PP-1)*",
+      "cards": [
+        "A04",
+        "F04"
+      ],
+      "code_verdict": "Partial/conflict — scheduled accrual exists; C10 signed credit/pro-rate/exception semantics remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/leave/leave-core.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/leave/leave-apply.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C10",
+        "C17"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LV-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 96,
+      "definition": "- **LV-03** Leave applications with multi-level approval, balance check, half-day support, holiday/week-off sandwich rules configurable.",
+      "cards": [
+        "A04",
+        "A05"
+      ],
+      "code_verdict": "Partial — ledger/application APIs exist; policy/concurrency/scheduler/payout acceptance open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/leave/leave-core.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/leave/leave-apply.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C02",
+        "C04",
+        "C07",
+        "C08",
+        "C13"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LV-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 97,
+      "definition": "- **LV-04** Comp-off: earn from approved work on week-off/holiday (auto-suggested from swipes), expiry window, apply like leave. Must actually work — greytHR's broken comp-off application (Rishab Sahoo case) is the anti-example. *(PP-18; Agreement 4.3a)*",
+      "cards": [
+        "A04",
+        "A03"
+      ],
+      "code_verdict": "Partial — CO posting/application exist; all-expired/parallel lapse and approval safety remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/leave/leave-core.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/leave/leave-apply.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C06",
+        "C09"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LV-05",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 98,
+      "definition": "- **LV-05** Immutable leave ledger (credit/debit/lapse/encash transactions) — balances are always the sum of ledger entries, never a mutable counter.",
+      "cards": [
+        "A04",
+        "F01"
+      ],
+      "code_verdict": "Code exists — immutable SUM ledger; C07/C09/C21 posting safety/fresh DB proof remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/leave/leave-core.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/leave/leave-apply.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C09"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LV-06",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 99,
+      "definition": "- **LV-06** Leave encashment in F&F and annual cycles per policy, **plus employee-initiated encashment request** with its own approval workflow (confirmed live as a distinct workflow, 09-RECON §10.2). *(SOW-4.3e, 10.1)*",
+      "cards": [
+        "A04",
+        "P02",
+        "L05"
+      ],
+      "code_verdict": "Partial — encash ledger workflow exists; verified annual/F&F payout consumption absent",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/leave/leave-core.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/leave/leave-apply.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C02",
+        "C07"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LV-07",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 100,
+      "definition": "- **LV-07** Leave dashboard + muster integration (leave columns in muster summary per the shared template).",
+      "cards": [
+        "A04",
+        "A05"
+      ],
+      "code_verdict": "Partial — ledger/application APIs exist; policy/concurrency/scheduler/payout acceptance open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/leave/leave-core.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/leave/leave-apply.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C25"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LV-08",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 101,
+      "definition": "- **LV-08** Leave cancellation is an **approval workflow** (cancelling an approved leave routes for re-approval and reverses the ledger debit) — not a silent delete. *(live: \"Leave Cancel\" workflow, 09-RECON §10.2)*",
+      "cards": [
+        "A04",
+        "A05"
+      ],
+      "code_verdict": "Partial — cancel workflow/reversal/dirty requeue exists; locked/concurrent correction safety remains",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/leave/leave-core.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/leave/leave-apply.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C07",
+        "C08"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LV-09",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 102,
+      "definition": "- **LV-09** **Restricted Holiday (RH)**: publish a list of optional/floating holidays; employees select up to N per year; selection routes for approval and, once approved, marks the day as holiday. India-standard concept. *(live: \"Restricted Holiday\" workflow — new)*",
+      "cards": [
+        "A04",
+        "A05"
+      ],
+      "code_verdict": "Partial — ledger/application APIs exist; policy/concurrency/scheduler/payout acceptance open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/leave/leave-core.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/leave/leave-apply.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C07",
+        "C08"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 106,
+      "definition": "- **PAY-01** Salary structures with formula-based components (earnings/deductions), grade/level/location-wise templates, CTC breakup auto-structuring. *(SOW-2.2, 3.2b)*",
+      "cards": [
+        "P01"
+      ],
+      "code_verdict": "Pending salary business API/engine — specified/recovered tables are not source implementation",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 107,
+      "definition": "- **PAY-02** Probation salary automation: LOI captures probation % (70/80/90); system auto-applies probation breakup and **auto-switches to confirmation breakup on confirmation date** — no manual restructuring. *(PI-ESS-1; LOI)*",
+      "cards": [
+        "P01",
+        "L02"
+      ],
+      "code_verdict": "Pending probation/confirmation salary switch",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 108,
+      "definition": "- **PAY-03** Monthly run pipeline: inputs (locked attendance, LOP, OT, new joiners, revisions, variable pay, loans, advances, holds) → draft register → review/approval → final register → outputs. Every step logged; run lockable and re-runnable pre-lock. *(SOW-5.1)*",
+      "cards": [
+        "P01",
+        "P02",
+        "P03",
+        "P04",
+        "P07"
+      ],
+      "code_verdict": "Pending domain — no registered payroll business engine; Money utilities/UI shells exist",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C30",
+        "C35"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 109,
+      "definition": "- **PAY-04** Proration: mid-month join/leave; LOP and LOP-reversal (incl. previous-month LOP); calendar-days / fixed-days bases. *(SOW-5.4)*",
+      "cards": [
+        "P01",
+        "P02",
+        "P03",
+        "P04",
+        "P07"
+      ],
+      "code_verdict": "Pending domain — no registered payroll business engine; Money utilities/UI shells exist",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-05",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 110,
+      "definition": "- **PAY-05** Outputs per run: final pay register, **bank transfer file** (per RML bank format), JV report (SAP-consumable), payslips + tax computation sheet to ESS, variance report vs previous month, CTC/cost-center/department/location reports. *(SOW-5.1.4/5)*",
+      "cards": [
+        "P04",
+        "W04"
+      ],
+      "code_verdict": "Pending payroll bank/JV/payslip/variance and approved bank/SAP formats",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-06",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 111,
+      "definition": "- **PAY-06** Payslip in the RML format: fixed template incl. UAN, PAN, PF no, ESIC no, leave balances — consistent every month (greytHR shipped 3 different templates in 3 months). *(PP-3, PP-4; PI-PAY-10)*",
+      "cards": [
+        "P04",
+        "F04"
+      ],
+      "code_verdict": "Pending fixed official payslip output; frontend pending surface only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-07",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 112,
+      "definition": "- **PAY-07** New-joiner salary availability: LOI-accepted candidates carry salary breakup into the employee record on DOJ — payroll never misses a new joiner. *(PP-12)*",
+      "cards": [
+        "P01",
+        "L01",
+        "R01"
+      ],
+      "code_verdict": "Pending accepted LOI salary-to-join transaction",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-08",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 113,
+      "definition": "- **PAY-08** Salary hold & release (payment-hold and process-hold/absconder scenarios exactly as SOW-5.7).",
+      "cards": [
+        "P02",
+        "P04"
+      ],
+      "code_verdict": "Pending hold/release engine and conserved payment obligation",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-09",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 114,
+      "definition": "- **PAY-09** PF: 12% EE / 12% ER split (EPS 8.33% capped ₹15k, EPF remainder), EDLI + admin charges, ECR text file for EPFO portal upload, UAN capture/validation. *(SOW-5.10)*",
+      "cards": [
+        "P03"
+      ],
+      "code_verdict": "Pending statutory engine; D01/D10 and hand-derived golden cases required",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-10",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 115,
+      "definition": "- **PAY-10** ESIC: 0.75% EE / 3.25% ER for gross ≤ ₹21,000, contribution-period rules, return/challan data export, IP number + family details capture. *(SOW-5.10 ESIC)*",
+      "cards": [
+        "P03"
+      ],
+      "code_verdict": "Pending ESIC coverage/contribution engine; D01 official applicability conflict remains",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-11",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 116,
+      "definition": "- **PAY-11** PT: West Bengal slab (and per-state table for other locations), monthly deduction + register. *(SOW-5.10 PT)*",
+      "cards": [
+        "P03"
+      ],
+      "code_verdict": "Pending PT jurisdiction/effective rate engine",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-12",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 117,
+      "definition": "- **PAY-12** LWF: WB rates + periodicity, register export. *(SOW-5.11)*",
+      "cards": [
+        "P03"
+      ],
+      "code_verdict": "Pending LWF periodicity/jurisdiction engine",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-13",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 118,
+      "definition": "- **PAY-13** Income tax: old + new regime, employee regime election, investment declarations on ESS with proof upload + HR verification window, monthly TDS projection, Form 24Q quarterly data export, Form 16 annual generation, challan reconciliation record. *(SOW-5.9, 3.2d; PI-ESS-15)*",
+      "cards": [
+        "P03",
+        "P06",
+        "P07"
+      ],
+      "code_verdict": "Pending declarations/proofs/verification/TDS/24Q/Form16/YTD pipeline",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-14",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 119,
+      "definition": "- **PAY-14** Trainee/apprentice payroll: stipend processing; apprentices excluded from statutory deductions per Apprenticeship Act. *(SOW-5.8)*",
+      "cards": [
+        "P01",
+        "P03"
+      ],
+      "code_verdict": "Pending stipend/apprentice applicability; category name alone cannot exempt statutory deductions",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-15",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 120,
+      "definition": "- **PAY-15** F&F: separation-triggered settlement — days payable, leave encashment, notice recovery, gratuity (Payment of Gratuity Act formula), salary-hold release, other dues/deductions; 3-working-day TAT target; 2 cycles/month; relieving + experience letters gated on clearance completion. *(SOW-10; PP-14)*",
+      "cards": [
+        "L04",
+        "L05",
+        "P02",
+        "P04"
+      ],
+      "code_verdict": "Pending F&F/clearance engine and statutory deadline/cycle decisions",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-16",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 121,
+      "definition": "- **PAY-16** Arrears: salary-revision arrears computed from effective date, component-wise. *(SOW-5.2.1, 5.4)*",
+      "cards": [
+        "P01",
+        "P02",
+        "P03",
+        "P04",
+        "P07"
+      ],
+      "code_verdict": "Pending domain — no registered payroll business engine; Money utilities/UI shells exist",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-17",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 122,
+      "definition": "- **PAY-17** Annual: bonus (Payment of Bonus Act 8.33%–20% band, ₹21k eligibility), increment processing with effective dates. *(SOW-5.14)*",
+      "cards": [
+        "P07",
+        "P01",
+        "P03"
+      ],
+      "code_verdict": "Pending annual bonus/increment/effective revision",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "PAY-18",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 123,
+      "definition": "- **PAY-18** Payroll lock/audit: finalized months immutable; recompute requires unlock with reason + audit trail; parallel-run comparison report vs Protiviti register during transition.",
+      "cards": [
+        "P01",
+        "P02",
+        "P03",
+        "P04",
+        "P07"
+      ],
+      "code_verdict": "Pending domain — no registered payroll business engine; Money utilities/UI shells exist",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/core/money/index.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LC-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 127,
+      "definition": "- **LC-01** Onboarding from ATS: LOI-accepted candidate record (all fields per LOI doc §1–4) converts to a pre-boarding employee; personal-email link for candidate to complete data + upload documents (greytHR's broken pre-joining-link flow, done right — with link-delivery tracking). *(SOW-3.2a; ATS-SOW XIV)*",
+      "cards": [
+        "L01",
+        "R01",
+        "P01",
+        "F04"
+      ],
+      "code_verdict": "Pending prejoin/onboarding handoff/token/documents/LOI business flow",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/lifecycle/boarding-exit.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/lifecycle/LifecyclePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C30"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LC-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 128,
+      "definition": "- **LC-02** Onboarding task checklist auto-assigned to stakeholders on DOJ: IT (e-code activation, biometric registration, email), Admin (assets), HR (induction) — with due dates, reminders, and escalation; no manual follow-up emails. *(Agreement 3.2 remark; Latest-Update \"Onboarding alerts to stakeholders\")*",
+      "cards": [
+        "L01",
+        "F04",
+        "W01"
+      ],
+      "code_verdict": "Pending stakeholder onboarding tasks/checklist/receipts",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/lifecycle/boarding-exit.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/lifecycle/LifecyclePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LC-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 129,
+      "definition": "- **LC-03** Daily boarding & exit report: every day at a configured time, email to Plant Head + HR + Business Head + CEO Cell listing joins and exits of the previous day, per plant. Runs without exception. *(PP-6; PP-26)*",
+      "cards": [
+        "A05",
+        "F04"
+      ],
+      "code_verdict": "Partial — boarding/exit report/export/job queue present; actual worker/time/plant delivery remains",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/lifecycle/boarding-exit.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/lifecycle/LifecyclePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C16",
+        "C36"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LC-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 130,
+      "definition": "- **LC-04** Probation: end-date tracking, auto-reminders to manager ahead of due date, review form, multi-level confirmation workflow, confirmation letter + salary switch (PAY-02). *(SOW-3.3; PI-ESS-8/10)*",
+      "cards": [
+        "L02",
+        "P01",
+        "W03"
+      ],
+      "code_verdict": "Pending confirmation/reminders/review/letter/salary transaction",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/lifecycle/boarding-exit.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/lifecycle/LifecyclePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LC-05",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 131,
+      "definition": "- **LC-05** Transfers: department/location/cost-center/entity transfer workflows with approvals, documentation updates, payroll continuity (entity transfer per SOW-5.3). *(SOW-3.4)*",
+      "cards": [
+        "L03",
+        "P01",
+        "A02"
+      ],
+      "code_verdict": "Pending effective transfer continuity/approvals/documentation",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/lifecycle/boarding-exit.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/lifecycle/LifecyclePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LC-06",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 132,
+      "definition": "- **LC-06** Separation: resignation initiation in ESS → multi-level approval chain where **every configured approver (e.g., HR Head) is actually notified and must act** → notice-period computation → department clearances (IT/Admin/Finance/HR, incl. asset return) → F&F → relieving/experience letters issued **through the system**. Resignation status visible to employee, RM, HR at all levels. *(PP-14; RT F&F workflow; SOW-3.5)*",
+      "cards": [
+        "L04",
+        "L05",
+        "W01",
+        "F04"
+      ],
+      "code_verdict": "Pending connected resignation/clearance/F&F/letter workflow",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/lifecycle/boarding-exit.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/lifecycle/LifecyclePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C20",
+        "C30"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LC-07",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 133,
+      "definition": "- **LC-07** Exit sets status/DOL exactly once, cascading: removed from active lists, ESS restricted to alumni view (payslips/Form 16 download), assets flagged if unreturned. *(PP-17; AR-4)*",
+      "cards": [
+        "L04",
+        "L05",
+        "F03"
+      ],
+      "code_verdict": "Pending once-only exit projection/alumni/downstream exclusions",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/lifecycle/boarding-exit.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/lifecycle/LifecyclePage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "WF-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 138,
+      "definition": "- **WF-01** Generic approval engine: named chains (sequence of role/person steps) attachable to any request type; per-step SLA; escalation on breach; delegation for absence. Actions per step: **approve / reject / send_back** (return-for-edit, from the live Yatra Avedan model — richer than a binary approve/reject). Covers: leave, leave-cancel, leave-encashment, AR/permission, OD, OT, comp-off, restricted-holiday, resignation, confirmation, transfer, loan, claim, travel/advance, letter-signature, offer/LOI. *(multiple sources; LOI flowchart + live greytHR Review + Yatra Avedan approvals[] are the references)*",
+      "cards": [
+        "A03",
+        "F04",
+        "F03"
+      ],
+      "code_verdict": "Partial — engine exists; domain authority/scope/delivery/version controls open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/workflows/workflow.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/workflows/workflows.router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C02",
+        "C03",
+        "C04",
+        "C05",
+        "C06",
+        "C24"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "WF-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 139,
+      "definition": "- **WF-02** Notification service: in-app + email (SMTP), templated, queued with retry; per-event recipient matrix configurable (e.g., onboarding/exit → HR + Business Head + CEO Cell). *(PP-26)*",
+      "cards": [
+        "A03",
+        "F04",
+        "F03"
+      ],
+      "code_verdict": "Partial — engine exists; domain authority/scope/delivery/version controls open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/workflows/workflow.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/workflows/workflows.router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C03",
+        "C16",
+        "C17"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "WF-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 140,
+      "definition": "- **WF-03** Escalation matrix with time-based auto-escalation (helpdesk + approvals). *(SOW-9.2)*",
+      "cards": [
+        "A03",
+        "F04",
+        "F03"
+      ],
+      "code_verdict": "Partial — engine exists; domain authority/scope/delivery/version controls open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/workflows/workflow.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/workflows/workflows.router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C16",
+        "C27"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "WF-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 141,
+      "definition": "- **WF-04** Every workflow state change timestamped and visible as a timeline on the request (the ATS already does this for offers — same pattern).",
+      "cards": [
+        "A03",
+        "F04",
+        "F03"
+      ],
+      "code_verdict": "Partial — engine exists; domain authority/scope/delivery/version controls open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/workflows/workflow.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/workflows/workflows.router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C04",
+        "C24"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "RPT-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 144,
+      "definition": "- **RPT-01** Attendance Muster Summary (the June 2025 template) **plus** Reporting Manager, Emp ID, and Cost Center/Plant columns. *(PP-5, PP-8, PP-9, PP-25)*",
+      "cards": [
+        "W04",
+        "A05",
+        "A04"
+      ],
+      "code_verdict": "Partial — complete-looking muster does not yet establish payable-source/real-month parity",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/reports/reports.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/reports/muster.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/reports/ReportsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C25"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "RPT-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 145,
+      "definition": "- **RPT-02** Offer report: candidate, org unit, designation, DOJ, offer date, offered salary, probation %, LOI status (Accepted/Rejected/Yet to Accept). *(PP-24)*",
+      "cards": [
+        "W04",
+        "R01"
+      ],
+      "code_verdict": "Pending Offer/LOI report; ATS source/contract required",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/reports/reports.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/reports/muster.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/reports/ReportsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "RPT-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 146,
+      "definition": "- **RPT-03** CEO Dashboard: all KPIs from HR Dashboard pptx incl. new-hire attrition at 3/6/12 months. *(CEO; PP-2)*",
+      "cards": [
+        "W04",
+        "P02"
+      ],
+      "code_verdict": "Partial — CEO precomputed snapshots and honest unavailable costs exist; exact formulas/history/inputs remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/reports/reports.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/reports/muster.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/reports/ReportsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C25"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "RPT-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 147,
+      "definition": "- **RPT-04** HR / Business-Unit dashboards (formats already shared with Protiviti). *(RT)*",
+      "cards": [
+        "W04",
+        "F03"
+      ],
+      "code_verdict": "Partial — HR/BU APIs and screens exist; scope/denominator/snapshot/template acceptance remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/reports/reports.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/reports/muster.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/reports/ReportsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C19",
+        "C25"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "RPT-05",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 148,
+      "definition": "- **RPT-05** Recruitment & hiring, promotion & internal movement reports. *(Latest-Update sheet)*",
+      "cards": [
+        "W04",
+        "R01",
+        "L03"
+      ],
+      "code_verdict": "Pending recruitment/promotion/internal movement report sources",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/reports/reports.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/reports/muster.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/reports/ReportsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "RPT-06",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 149,
+      "definition": "- **RPT-06** Every tabular report exportable to Excel with the on-screen filters applied.",
+      "cards": [
+        "W04"
+      ],
+      "code_verdict": "Partial — existing report exports wired; full R1–R31 parity/catalog/performance remains",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/reports/reports.router.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/reports/muster.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/reports/ReportsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "AST-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 152,
+      "definition": "- **AST-01** Asset registry with search (by asset number, type, holder). *(AR-1; Task-Matrix \"asset number filter\")*",
+      "cards": [
+        "W01",
+        "L04"
+      ],
+      "code_verdict": "Partial — registry/allocation/maintenance present; custody/exit/recovery safety incomplete",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/assets/assets.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/assets/assets.router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "AST-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 153,
+      "definition": "- **AST-02** Warranty date accepts past dates. *(AR-2)*",
+      "cards": [
+        "W01"
+      ],
+      "code_verdict": "Code exists — past warranty allowed; scope and fresh DB/UAT proof remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/assets/assets.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/assets/assets.router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "AST-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 154,
+      "definition": "- **AST-03** Allocation to employees **and third-party/contract persons** (dropdown). *(AR-3)*",
+      "cards": [
+        "W01"
+      ],
+      "code_verdict": "Code exists — employee/third-party allocation; scoped custody transition proof remains",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/assets/assets.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/assets/assets.router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "AST-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 155,
+      "definition": "- **AST-04** Resigned-employee asset view + return workflow in exit clearance. *(AR-4)*",
+      "cards": [
+        "W01",
+        "L04"
+      ],
+      "code_verdict": "Partial — held-assets read/return exists; not_returned defect and exit clearance connection remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/assets/assets.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/assets/assets.router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C18"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "AST-05",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 156,
+      "definition": "- **AST-05** Non-returned assets dashboard tile. *(AR-5)*",
+      "cards": [
+        "W01",
+        "W04"
+      ],
+      "code_verdict": "Partial — nonreturned-leaver query exists; C18 custody correctness/scoped dashboard remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/assets/assets.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/assets/assets.router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C18"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "AST-06",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 157,
+      "definition": "- **AST-06** Maintenance scheduling, incident/damage reporting, lost-asset handling. *(SOW-8)*",
+      "cards": [
+        "W01",
+        "L04"
+      ],
+      "code_verdict": "Partial — registry/allocation/maintenance present; custody/exit/recovery safety incomplete",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/assets/assets.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/assets/assets.router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C18",
+        "C35"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "HD-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 160,
+      "definition": "- **HD-01** Categorized tickets, auto-acknowledgment + assignment, SLA-based escalation matrix, open/pending/resolved tracking, monthly performance report, query logs for audit. *(SOW-9)*",
+      "cards": [
+        "W02",
+        "F03",
+        "F04"
+      ],
+      "code_verdict": "Partial — ticket/SLA API and screen exist; ownership/receipts/historical reporting open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/helpdesk/helpdesk.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C26",
+        "C27"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "EN-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 163,
+      "definition": "- **EN-01** Announcements/news broadcast; **EN-02** opinion polls; **EN-03** structured pulse surveys with response analytics; **EN-04** policy acknowledgment tracking (see CORE-13). *(SOW-7)*",
+      "cards": [
+        "W03",
+        "F03"
+      ],
+      "code_verdict": "Partial — feed/polls/policies exist; full admin/structured survey/delivery open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/engagement/polls.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/policies/policies.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C34"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "EN-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 163,
+      "definition": "- **EN-01** Announcements/news broadcast; **EN-02** opinion polls; **EN-03** structured pulse surveys with response analytics; **EN-04** policy acknowledgment tracking (see CORE-13). *(SOW-7)*",
+      "cards": [
+        "W03",
+        "F03"
+      ],
+      "code_verdict": "Partial — feed/polls/policies exist; full admin/structured survey/delivery open",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/engagement/polls.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/policies/policies.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C34"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "EN-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 163,
+      "definition": "- **EN-01** Announcements/news broadcast; **EN-02** opinion polls; **EN-03** structured pulse surveys with response analytics; **EN-04** policy acknowledgment tracking (see CORE-13). *(SOW-7)*",
+      "cards": [
+        "W03"
+      ],
+      "code_verdict": "Partial single-question pulse; full structured multi-question model not implemented",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/engagement/polls.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/policies/policies.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C34"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "EN-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 163,
+      "definition": "- **EN-01** Announcements/news broadcast; **EN-02** opinion polls; **EN-03** structured pulse surveys with response analytics; **EN-04** policy acknowledgment tracking (see CORE-13). *(SOW-7)*",
+      "cards": [
+        "W03",
+        "F04",
+        "W04"
+      ],
+      "code_verdict": "Partial policies acknowledgment; C19 population and actual reminder delivery remain",
+      "entrypoints": [
+        {
+          "file": "backend/src/modules/engagement/polls.service.ts",
+          "line": 1
+        },
+        {
+          "file": "backend/src/modules/policies/policies.service.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C19"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LN-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 166,
+      "definition": "- **LN-01** Loan types with schedulers: diminishing, flat, EMI-without-interest; eligibility rules (e.g., multiple of Basic); perquisite valuation per SBI lending rate for tax. *(SOW-5.5)*",
+      "cards": [
+        "P05",
+        "T02"
+      ],
+      "code_verdict": "Pending domain — no registered loans engine or connected deduction; definitions/shells only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/LoansPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C30"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LN-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 167,
+      "definition": "- **LN-02** ESS application + approval workflow, **restricted by eligibility policy — not open to all employees**. *(PI-ESS-7)*",
+      "cards": [
+        "P05",
+        "T02"
+      ],
+      "code_verdict": "Pending domain — no registered loans engine or connected deduction; definitions/shells only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/LoansPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LN-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 168,
+      "definition": "- **LN-03** EMI auto-deduction in payroll; salary-advance monthly deduction inputs; balance visible in ESS; legacy SAP loan balances importable. *(SOW-5.5; PP-11)*",
+      "cards": [
+        "P05",
+        "T02"
+      ],
+      "code_verdict": "Pending domain — no registered loans engine or connected deduction; definitions/shells only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/LoansPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "LN-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 169,
+      "definition": "- **LN-04** Travel advance requests with configurable approval flow (domestic; global adds final approver e.g., CHRO). *(PP-1 Travel Advance; Latest-Update)*",
+      "cards": [
+        "P05",
+        "T02"
+      ],
+      "code_verdict": "Pending trip-linked advance approval/funding/wallet/settlement",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/LoansPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CLM-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 172,
+      "definition": "- **CLM-01** Claim types configurable (medical, conveyance/fuel, telephone, LTA, relocation, misc.) with per-type: annual/monthly entitlement (per grade), bill-required flag, taxability rule.",
+      "cards": [
+        "P06",
+        "T02"
+      ],
+      "code_verdict": "Pending domain — no registered claims engine or verified payout; shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C30"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CLM-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 173,
+      "definition": "- **CLM-02** ESS claim submission: amount, period, bill uploads (multiple), running entitlement balance shown before submit.",
+      "cards": [
+        "P06",
+        "T02"
+      ],
+      "code_verdict": "Pending domain — no registered claims engine or verified payout; shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CLM-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 174,
+      "definition": "- **CLM-03** Approval chain: RM → HR verify (bill check) → payroll pay-batch; rejection reasons mandatory; partial approval (approved amount ≤ claimed) supported.",
+      "cards": [
+        "P06",
+        "T02"
+      ],
+      "code_verdict": "Pending domain — no registered claims engine or verified payout; shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CLM-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 175,
+      "definition": "- **CLM-04** Payout via payroll run as non-taxable/taxable component per type rule **or** off-cycle reimbursement batch with its own bank file + reimbursement payslip (SOW-6: reimbursement bank transfer, register, payslip via platform).",
+      "cards": [
+        "P06",
+        "P04",
+        "T02"
+      ],
+      "code_verdict": "Pending connected payroll/off-cycle conserved payout and artifacts",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CLM-05",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 176,
+      "definition": "- **CLM-05** Year-end: TDS on unclaimed/unsubstantiated entitlement per policy (SOW-6: \"TDS on the unclaimed entitlement at the year end\"); entitlement lapse/carry per type.",
+      "cards": [
+        "P06",
+        "T02"
+      ],
+      "code_verdict": "Pending domain — no registered claims engine or verified payout; shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CLM-06",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 177,
+      "definition": "- **CLM-06** Reimbursement register report (R31) and per-employee claim history in ESS.",
+      "cards": [
+        "P06",
+        "T02"
+      ],
+      "code_verdict": "Pending domain — no registered claims engine or verified payout; shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "CLM-07",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 178,
+      "definition": "- **CLM-07** Travel advance settlement links to claims: advance adjusted against approved claim; unspent advance recovered via payroll deduction. *(closes the loop on LN-04)*",
+      "cards": [
+        "P06",
+        "T02",
+        "P02"
+      ],
+      "code_verdict": "Pending advance-vs-claim settlement/recovery/payroll connection",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "TE-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 185,
+      "definition": "- **TE-01** Trip request: trip name, travel type (Domestic/International), purpose, itineraries (flight/train/bus/hotel/car segments), destination country, visa-required flag, expected journey date, attachments (MinIO). Reference-number generated.",
+      "cards": [
+        "T01",
+        "T02",
+        "T03",
+        "T04"
+      ],
+      "code_verdict": "Pending HRMS domain — source EMS context is external; HRMS travel shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/travel/TravelPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C30"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "TE-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 186,
+      "definition": "- **TE-02** International travel: visa request sub-flow, multi-currency, region/country policy; passport/visa document capture.",
+      "cards": [
+        "T01",
+        "T02",
+        "T03",
+        "T04"
+      ],
+      "code_verdict": "Pending HRMS domain — source EMS context is external; HRMS travel shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/travel/TravelPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "TE-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 187,
+      "definition": "- **TE-03** Corporate booking integration: pluggable travel-booking connector (Yatra Avedan uses **MakeMyTrip Corporate** — port it) — push requisition, receive booking id/url, capture total cost; support \"own arrangement\" with reason + budget. Booking stays behind an interface so the provider is swappable.",
+      "cards": [
+        "T03"
+      ],
+      "code_verdict": "Pending real swappable MMT booking connector and callback provenance",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/travel/TravelPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "TE-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 188,
+      "definition": "- **TE-04** Trip status machine with cancellation (reason + cancellation cost) and closure.",
+      "cards": [
+        "T01",
+        "T02",
+        "T03",
+        "T04"
+      ],
+      "code_verdict": "Pending HRMS domain — source EMS context is external; HRMS travel shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/travel/TravelPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "TE-05",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 191,
+      "definition": "- **TE-05** Per-trip budget engine: travel modes (Air class + lowest-logical-airfare + flying-hours × cost/hour; Train coach + budget; Bus budget), hotel budget/night × nights, local conveyance/daily allowance, visa cost, own-arrangement budget. Grade/level-driven entitlements (level A/B/C in the live model). *(port `budgetAllowances`, `internationalTravelPolicy`)*",
+      "cards": [
+        "T01",
+        "T02",
+        "T03",
+        "T04"
+      ],
+      "code_verdict": "Pending HRMS domain — source EMS context is external; HRMS travel shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/travel/TravelPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "TE-06",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 192,
+      "definition": "- **TE-06** Policy enforcement: claim/spend validated against approved budget; over-budget flagged for higher approval, not silently blocked.",
+      "cards": [
+        "T01",
+        "T02",
+        "T03",
+        "T04"
+      ],
+      "code_verdict": "Pending HRMS domain — source EMS context is external; HRMS travel shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/travel/TravelPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "TE-07",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 195,
+      "definition": "- **TE-07** Travel advance request linked to a trip/budget; approval chain RM → HOD → Admin/Finance (Chandan Modi / CEO stages for high value — matches PP-1); status incl. **Sent Back**.",
+      "cards": [
+        "T01",
+        "T02",
+        "T03",
+        "T04"
+      ],
+      "code_verdict": "Pending HRMS domain — source EMS context is external; HRMS travel shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/travel/TravelPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "TE-08",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 196,
+      "definition": "- **TE-08** **Employee wallet**: an approved advance **credits** the employee's wallet (`walletBalance`); every movement is an immutable `WalletTransaction` (credit/debit, source ADVANCE|CLAIM_SETTLEMENT, links to advance/claim, remarks). Balance = sum of ledger (same immutable-ledger discipline as leave/payroll).",
+      "cards": [
+        "T02"
+      ],
+      "code_verdict": "Pending immutable wallet/reservation/funding contract in HRMS",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/travel/TravelPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "TE-09",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 197,
+      "definition": "- **TE-09** **Settlement**: on claim approval, reconcile claimed vs advance held in the wallet → compute **net payable to employee** or **recoverable from employee**; settlement mode AUTO or MANUAL, settledBy/settledAt recorded; recoverable amounts flow to **payroll deduction** (ties to PAY/LN-03) or wallet carry-forward.",
+      "cards": [
+        "T02",
+        "P02",
+        "P06"
+      ],
+      "code_verdict": "Pending settlement/payable/recoverable engine and once-only consumption",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/travel/TravelPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "TE-10",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 200,
+      "definition": "- **TE-10** Claim with line items: expense types (travel, daily_allowance, hotel, visa, local_travel, miscellaneous), per-item receipt no/date/amount/currency, travel mode + from/to + dates, hotel name/location + check-in/out, purpose, remarks, receipt attachment (MinIO). Multi-currency with exchange-rate capture. *(this is the concrete CLM-01..07 schema, sourced from the live `Claim` model)*",
+      "cards": [
+        "T01",
+        "T02",
+        "T03",
+        "T04"
+      ],
+      "code_verdict": "Pending HRMS domain — source EMS context is external; HRMS travel shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/travel/TravelPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "TE-11",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 201,
+      "definition": "- **TE-11** Claim approval chain (RM → Travel Admin/CM → CEO stages per amount), **send_back** for correction; settlement per TE-09; reimbursement payout via payroll or off-cycle batch (validates CLM-04 / the live \"Reimbursement Payslip\").",
+      "cards": [
+        "T01",
+        "T02",
+        "T03",
+        "T04"
+      ],
+      "code_verdict": "Pending HRMS domain — source EMS context is external; HRMS travel shell only",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/travel/TravelPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "TE-12",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 204,
+      "definition": "- **TE-12** Migrate Yatra Avedan MongoDB data (users, trips, claims, advances, budgets, wallets, transactions) into the HRMS; run parallel until parity; **decommission Yatra Avedan** once payroll settlement integration is proven.",
+      "cards": [
+        "T04",
+        "F01",
+        "F02"
+      ],
+      "code_verdict": "Pending sanctioned EMS migration/parity/retirement gate",
+      "entrypoints": [
+        {
+          "file": "backend/src/api/router.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/src/pages/travel/TravelPage.tsx",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "NFR-01",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 258,
+      "definition": "- **NFR-01 Performance:** muster export for 2,500 employees × 31 days < 10 s; dashboard first paint < 2 s; filter interactions never freeze the UI (async, debounced — per DESIGN_RESEARCH §3.4).",
+      "cards": [
+        "F01",
+        "F03",
+        "F04",
+        "W04",
+        "P07"
+      ],
+      "code_verdict": "Partial artifacts; operating/release evidence unverified",
+      "entrypoints": [
+        {
+          "file": ".github/workflows/ci.yml",
+          "line": 1
+        },
+        {
+          "file": "scripts/deploy.sh",
+          "line": 1
+        },
+        {
+          "file": "backend/vitest.config.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/vitest.config.ts",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C33"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "NFR-02",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 259,
+      "definition": "- **NFR-02 Scale assumptions:** ~2,000–3,000 on-roll employees; ~10,000–20,000 swipe events/day (467 rows in a partial-day sample export ⇒ thousands/day full-plant); 5 years online history. Verify headcount before capacity sign-off.",
+      "cards": [
+        "F01",
+        "F03",
+        "F04",
+        "W04",
+        "P07"
+      ],
+      "code_verdict": "Partial artifacts; operating/release evidence unverified",
+      "entrypoints": [
+        {
+          "file": ".github/workflows/ci.yml",
+          "line": 1
+        },
+        {
+          "file": "scripts/deploy.sh",
+          "line": 1
+        },
+        {
+          "file": "backend/vitest.config.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/vitest.config.ts",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C33"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "NFR-03",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 260,
+      "definition": "- **NFR-03 Security:** RBAC everywhere; bcrypt password hashing; JWT with short expiry + refresh; sensitive columns (salary, Aadhaar, PAN, bank) restricted by permission and masked in logs; TLS end-to-end; rate limiting on auth + all endpoints; parameterized queries only.",
+      "cards": [
+        "F03",
+        "F01",
+        "F04"
+      ],
+      "code_verdict": "Partial auth/RBAC/rate-limit/audit artifacts; scope, session/security/production proof remain",
+      "entrypoints": [
+        {
+          "file": ".github/workflows/ci.yml",
+          "line": 1
+        },
+        {
+          "file": "scripts/deploy.sh",
+          "line": 1
+        },
+        {
+          "file": "backend/vitest.config.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/vitest.config.ts",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C01",
+        "C22",
+        "C23",
+        "C26",
+        "C28"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "NFR-04",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 261,
+      "definition": "- **NFR-04 Auditability:** append-only audit log for master-data, payroll, and workflow actions; payroll months immutable after lock.",
+      "cards": [
+        "F01",
+        "F03",
+        "F04",
+        "W04",
+        "P07"
+      ],
+      "code_verdict": "Partial artifacts; operating/release evidence unverified",
+      "entrypoints": [
+        {
+          "file": ".github/workflows/ci.yml",
+          "line": 1
+        },
+        {
+          "file": "scripts/deploy.sh",
+          "line": 1
+        },
+        {
+          "file": "backend/vitest.config.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/vitest.config.ts",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C12",
+        "C21",
+        "C28",
+        "C29",
+        "C35"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "NFR-05",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 262,
+      "definition": "- **NFR-05 Backup/recovery:** nightly full pg_dump off-box + WAL archiving (PITR); restore drill documented and rehearsed before payroll go-live; RPO ≤ 24h (≤ 15 min for payroll months via WAL), RTO ≤ 4h.",
+      "cards": [
+        "F01",
+        "F04",
+        "P07"
+      ],
+      "code_verdict": "Open operating evidence — off-box/PITR/restore drill unverified",
+      "entrypoints": [
+        {
+          "file": ".github/workflows/ci.yml",
+          "line": 1
+        },
+        {
+          "file": "scripts/deploy.sh",
+          "line": 1
+        },
+        {
+          "file": "backend/vitest.config.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/vitest.config.ts",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C17",
+        "C33"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "NFR-06",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 263,
+      "definition": "- **NFR-06 Availability:** business-hours critical; payroll week is the hard window — no deploys during run days; PM2 auto-restart; disk/CPU alerts.",
+      "cards": [
+        "F01",
+        "F04"
+      ],
+      "code_verdict": "Partial PM2/freeze artifacts; deploy/worker/alerts/rollback operating proof remains",
+      "entrypoints": [
+        {
+          "file": ".github/workflows/ci.yml",
+          "line": 1
+        },
+        {
+          "file": "scripts/deploy.sh",
+          "line": 1
+        },
+        {
+          "file": "backend/vitest.config.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/vitest.config.ts",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C17",
+        "C33"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "NFR-07",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 264,
+      "definition": "- **NFR-07 Compatibility:** responsive desktop-first (managers use large monitors — don't repeat Workday's scaling failure), functional on tablets/phones for ESS; PWA for geo check-in.",
+      "cards": [
+        "F01",
+        "F03",
+        "F04",
+        "W04",
+        "P07"
+      ],
+      "code_verdict": "Partial artifacts; operating/release evidence unverified",
+      "entrypoints": [
+        {
+          "file": ".github/workflows/ci.yml",
+          "line": 1
+        },
+        {
+          "file": "scripts/deploy.sh",
+          "line": 1
+        },
+        {
+          "file": "backend/vitest.config.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/vitest.config.ts",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C33"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "NFR-08",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 265,
+      "definition": "- **NFR-08 Data migration:** greytHR/Adrenalin exports (employee master, leave balances, salary structures, YTD payroll for mid-year TDS continuity) imported with validation reports before go-live.",
+      "cards": [
+        "F02",
+        "P07",
+        "T04"
+      ],
+      "code_verdict": "Partial employee import utilities; full leave/salary/YTD/loan/travel migration proof remains",
+      "entrypoints": [
+        {
+          "file": ".github/workflows/ci.yml",
+          "line": 1
+        },
+        {
+          "file": "scripts/deploy.sh",
+          "line": 1
+        },
+        {
+          "file": "backend/vitest.config.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/vitest.config.ts",
+          "line": 1
+        }
+      ],
+      "findings": [
+        "C14",
+        "C29"
+      ],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    },
+    {
+      "id": "NFR-09",
+      "spec_file": "docs/01-REQUIREMENTS-PRD.md",
+      "spec_line": 266,
+      "definition": "- **NFR-09 Localization:** INR formatting (lakh/crore grouping), IST timezone everywhere, DD MMM YYYY dates (matches Kent exports).",
+      "cards": [
+        "F01",
+        "A02",
+        "W04"
+      ],
+      "code_verdict": "Partial shared formatting/date helpers; every screen/export/worker timezone and INR acceptance remains",
+      "entrypoints": [
+        {
+          "file": ".github/workflows/ci.yml",
+          "line": 1
+        },
+        {
+          "file": "scripts/deploy.sh",
+          "line": 1
+        },
+        {
+          "file": "backend/vitest.config.ts",
+          "line": 1
+        },
+        {
+          "file": "frontend/vitest.config.ts",
+          "line": 1
+        }
+      ],
+      "findings": [],
+      "completion": "Open until card acceptance and applicable original stage gate evidence; no documentary/code presence alone closes this requirement"
+    }
+  ],
+  "master_build_tasks": [
+    {
+      "id": "P0-T01",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 102,
+      "definition": "Kent/Astra access method — DB view vs REST vs SFTP/CSV drop — from IT (Sharique/Ayush). *(02 §4)* **Blocks Phase 1.**",
+      "cards": [
+        "A01",
+        "F01"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T02",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 103,
+      "definition": "Dedicated **read-only greytHR admin login** to capture: salary structures per grade, one month's Final Pay Register + Bank file + JV, statutory file formats (ECR/ESIC/PT/24Q), workflow configs, attendance policy (grace/half-day/penalty/GCS Saturday/OT rates), full employee master export incl. inactive, leave policy config, loan register, holiday calendars. *(09 §8)*",
+      "cards": [
+        "F02",
+        "A02",
+        "A04",
+        "P01",
+        "P03",
+        "P04",
+        "P05",
+        "P07"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T03",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 104,
+      "definition": "Bank bulk-upload file format from Finance. *(02 §5)*",
+      "cards": [
+        "P04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T04",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 105,
+      "definition": "Payslip template sign-off (the RML fixed template — 09 §2 is the reference). *(PAY-06)*",
+      "cards": [
+        "P04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T05",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 106,
+      "definition": "**Confirm true headcount** and 5-yr swipe volume → final capacity sign-off. *(NFR-02, §0; part-answered: live EMS master holds 1,066 — reconcile vs the ~3k assumption, doc 11 §0.1)*",
+      "cards": [
+        "F01",
+        "W04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T08",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 107,
+      "definition": "**Entity-scope confirmations** (doc 11 §0.2): which small India entities payroll here (eHoome/Koove ×2/Rashmi Rare Earth); canonical RPL name; 5 foreign entities stay master-only.",
+      "cards": [
+        "F02",
+        "P01"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T09",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 108,
+      "definition": "**Sanctioned EMS Mongo export** of the `users` collection (1,066 rows) + snapshot date freeze — the employee-master seed (doc 11 §0.1).",
+      "cards": [
+        "F02",
+        "T04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T06",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 109,
+      "definition": "Resolve the 9 statutory policy decisions in 10 §15 (PF base, bonus true-up, LOP divisor, OT base, DA/VDA, penalty→pay, gratuity 5y/4y240d, grade structures, sample formats). **Do not code payroll until signed.** Plus: **verify the 2026 Labour Codes status** (F&F TAT ~2 working days vs 3? \"wages\" ≥ 50% of CTC widening the PF/gratuity base?) per 10 §8 — owner: payroll admin; re-checked at the Phase-3 F&F gate.",
+      "cards": [
+        "P01",
+        "P02",
+        "P03",
+        "L05"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T10",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 112,
+      "definition": "Scaffold monorepo (frontend, backend, packages). CI: lint + typecheck + test on PR.",
+      "cards": [
+        "F01"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T11",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 113,
+      "definition": "Deploy script (build → migrate → `pm2 reload`); staging vhost + DB; **PgBouncer in front of Postgres from the start**; deploy-freeze flag for payroll days.",
+      "cards": [
+        "F01",
+        "F04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T12",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 114,
+      "definition": "`packages/tokens` + `packages/ui`: port Card, DarkCard, Pill/StatusBadge, KpiNumber, DataTable (virtualized), FilterPanel, Drawer, Timeline, EmptyState, ConfirmModal, MonthCalendar from the ATS; **build the Crextio-signature set**: KpiPillRow, HatchFill, SegmentedProgress, IconButton, DotMatrix, plus RosterGrid and ApprovalInbox. *(05 §5, 12 §7)*",
+      "cards": [
+        "F01",
+        "W04",
+        "A03"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T13",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 115,
+      "definition": "Observability baseline: structured logs, error tracking, PM2 monit, disk/CPU/queue-depth/biometric-gap alert cron. *(02 §2.6)*",
+      "cards": [
+        "F01",
+        "F04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T20",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 118,
+      "definition": "Auth: JWT issuer + refresh (httpOnly cookie) + bcrypt + lockout/backoff; becomes SSO issuer the ATS validates. *(02 §1, NFR-03)*",
+      "cards": [
+        "F03",
+        "R01"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T21",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 119,
+      "definition": "RBAC tables + seed the full role catalog and permission grid from **08 §1–2** verbatim; manager scope via `core.reporting_tree` closure (trigger-maintained, **company-agnostic** — cross-entity managers exist, 09 §10.3); **per-role navigation shells per 08 §3** (skeleton in Phase 0, surfaces filled as each phase ships). *(CORE-10)*",
+      "cards": [
+        "F03"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T22",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 120,
+      "definition": "`core.audit_log` append-only (INSERT-only trigger), **hash-chained for tamper evidence** (India MCA edit-log rule — doc 14 §7); auth events with IP. *(CORE-11)*",
+      "cards": [
+        "F03"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T23",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 121,
+      "definition": "`core.settings` typed key-value store (audited) — the home for every policy number.",
+      "cards": [
+        "F03"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T24",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 122,
+      "definition": "Notification service skeleton: `wf.notifications` queue (in-app + SMTP via nodemailer), templated, retry + dead-letter, `wf.event_subscriptions` matrix.",
+      "cards": [
+        "F04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T30",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 125,
+      "definition": "Org tables: `companies` = **canonical 14-entity master with dedupe** (doc 11 §0.2 supersedes the six-entity list: merge \"Rashmi Metalix Ltd\"→RML; e-code prefixes per doc 11 §6.3; `is_india_payroll=false` for the 5 foreign entities — Dubai/Tanzania/UK/Bahrain/holding), locations, cost_centers, departments, org_units, designations, grades. E-code generator as a DB function with `FOR UPDATE` on `ecode_next_seq` (CORE-02, 03 §10.5).",
+      "cards": [
+        "F02"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T31",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 126,
+      "definition": "`core.employees` with **all CORE-01..08 validations** (PAN/Aadhaar/IFSC/bank-length/DOB-minor/duplicate ESI-UAN-ecode/CTC-vs-breakup/special-char strip); statutory-ID masking by permission; `reporting_tree` trigger; `employee_history`, `employee_family`, `documents` (object-store keys via the storage adapter).",
+      "cards": [
+        "F02"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T32",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 127,
+      "definition": "**Two-source import** (CORE-12; strategy per doc 11 §0.1): **step 1 seed from the live EMS `users` collection** (1,066 employees; `userid` = greytHR e-code = the join key; hierarchy via `reporting_manager_id`/`hod_id`; bcrypt hashes carried over so everyone can log in day one; normalize 176 designations/112 departments; flag userid typos), **step 2 enrich from the greytHR export** matched on the same `userid` (DOB, DOJ, grade, statutory IDs, bank — fields EMS lacks). Per-row validation reports + reconciliation counts vs both sources.",
+      "cards": [
+        "F02"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T33",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 128,
+      "definition": "Employee directory + profile UI shell (05 §4.2), compensation tab permission-gated/masked.",
+      "cards": [
+        "F02"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T40",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 131,
+      "definition": "**Kent connectivity spike:** implement `KentConnector` behind the interface (02 §4) for whichever access method IT confirms; pull **one real day** of swipes end-to-end into `att.swipe_events` (idempotent upsert). Prove watermark + overlap window + gap detection. *This is the highest-risk integration — de-risk first.*",
+      "cards": [
+        "A01"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P0-T41",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 132,
+      "definition": "**Scale spike:** load-test with synthetic data at **3k (today) and 10k (ceiling)** × 60 days of swipes; validate partitioning strategy, muster MV refresh time, and a dashboard snapshot build. Confirm the single box comfortably handles 3k and identify at what point the read replica/extra nodes kick in — freeze the partitioning plan and the documented scale-up trigger on measured numbers, not guesses.",
+      "cards": [
+        "F01",
+        "W04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T01",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 143,
+      "definition": "Kent ingestion pipeline productionized: `*/5 min` pg-boss job, per-device watermark, 30-min overlap, idempotent upsert, raw immutable rows; **partitioned** swipe table. *(ATT-01)*",
+      "cards": [
+        "A01"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T02",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 144,
+      "definition": "Device health + gap detection + **offline alerting to IT** (`att.devices`, expected_hourly_swipes, last_seen); device-health dashboard tile. *(ATT-02)* — this is the fix for the 200-employee PP-9 mismatch.",
+      "cards": [
+        "A01",
+        "F04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T03",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 145,
+      "definition": "Unmatched-swipe exception queue (never silently dropped). *(04 §1.1)*",
+      "cards": [
+        "A01",
+        "F02"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T04",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 146,
+      "definition": "Shifts, rosters (manager-maintained, monthly-5th reminder), holidays per location; **two-session day model + Saturday GCS scheme** (session_statuses JSONB, scheme_code). *(ATT-04/05/13, 09 §4)*",
+      "cards": [
+        "A02"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T05",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 147,
+      "definition": "Day-status processor + idempotent recompute (dirty-flag driven), FILO basis, cross-plant swipes valid (ATT-16/18); manual override HR-only with reason+audit (ATT-17). *(04 §1.1)*",
+      "cards": [
+        "A02"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T06",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 148,
+      "definition": "Week-off eligibility engine at week close (ATT-09); \"Penalty Days\" policy hook. *(04 §1.2)*",
+      "cards": [
+        "A02"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T07",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 149,
+      "definition": "Month-lock checklist + `att.month_locks` + freeze trigger; managers' attendance approval is an explicit, visible precondition (ATT-12/15). **Frappe-pattern safety watermark (doc 14 §8): never finalize a day — especially never mark Absent — until the device-sync watermark has passed that shift's end.** *(04 §1.6)*",
+      "cards": [
+        "A05"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T10",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 152,
+      "definition": "Generic approval engine: `wf.definitions/requests/request_steps/delegations`; steps resolve to RM/functional-mgr/role/user; **approve / reject / send_back** (adopt from Yatra Avedan); per-step SLA; vacant-approver auto-skip; every step writes `notified_at`. *(WF-01..04)*",
+      "cards": [
+        "A03",
+        "F03"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T11",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 153,
+      "definition": "Seed the **authoritative workflow catalog from 08 §4 / 09 §10.2** (Leave, Leave Cancel, Leave Encashment, Comp Off, Restricted Holiday, Regularization & Permission, OD, Overtime, Claim, Loan, Confirmation, Resignation, Transfer, Letter Signature; Offer/LOI reserved for Phase 4).",
+      "cards": [
+        "A03"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T12",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 154,
+      "definition": "Approvals inbox (05 §3): one cross-type queue, ≤2-click decisions, SLA countdown pills, keyboard `a`/`r`, batch approve, \"all caught up\" state.",
+      "cards": [
+        "A03"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T13",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 155,
+      "definition": "SLA escalation job (hourly): breach → escalate/auto-reject/lapse per definition. *(WF-03)*",
+      "cards": [
+        "A03",
+        "F04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T14",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 156,
+      "definition": "AR + **Permission** (time-bounded) + OD (future-dated allowed); Excel-exportable. *(ATT-06/07)*",
+      "cards": [
+        "A03"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T15",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 157,
+      "definition": "Overtime with the **48-hour rule**: daily 18:00 summary to managers, deadline_at, lapse job, comp-off-or-pay (never both, DB CHECK). *(ATT-08, 04 §1.4)*",
+      "cards": [
+        "A03",
+        "A04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T20",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 160,
+      "definition": "Leave types seed = live six (CL, SL, EL, Election Leave, Comp Off, LWP) + ML in catalog (09 §1); `lv.leave_types` with accrual/carry/encash/sandwich config.",
+      "cards": [
+        "A04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T21",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 161,
+      "definition": "Immutable `lv.ledger` (balance = SUM(delta)); monthly accrual job (1st 00:05) never blocked by unapproved attendance — flags exceptions instead. *(LV-02/05)*",
+      "cards": [
+        "A04",
+        "F04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T22",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 162,
+      "definition": "Applications with balance check, half-day, sandwich preview; cancellation as re-approval reversing ledger; encashment request workflow; Restricted Holiday selection→approval→holiday. *(LV-03/06/08/09)*",
+      "cards": [
+        "A04",
+        "A03"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T23",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 163,
+      "definition": "Comp-off earn from approved WO/H work (auto-suggested from swipes), expiry job. *(LV-04)*",
+      "cards": [
+        "A04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T30",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 166,
+      "definition": "Absenteeism engine: daily scans; UAB alerts up the hierarchy + HR; `absence_cases` watch→show_cause→warning with letter from template through official HR email. *(ATT-10/11)*",
+      "cards": [
+        "A05",
+        "W03",
+        "F04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T31",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 167,
+      "definition": "**Daily 07:00 boarding/exit email** per plant, sent even when empty. *(LC-03)* — small, huge visibility, ship early.",
+      "cards": [
+        "A05",
+        "F04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T32",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 168,
+      "definition": "Letters engine: templates + merge fields + Letter Signature Approval workflow; show-cause/warning/certificates; archived on employee + ESS. *(CORE-09)*",
+      "cards": [
+        "W03",
+        "F04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T33",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 169,
+      "definition": "Policy repository + acknowledgment tracking + weekly nag + HR tile. *(CORE-13)*",
+      "cards": [
+        "W03",
+        "F04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T40",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 172,
+      "definition": "**R1 Muster Summary** with RM + Functional Mgr + Emp ID + Cost Center/Plant columns and leave-type columns, from precomputed MV, virtualized, <15 s export for 10k. *(RPT-01, LV-07, PP-5/8/15/25)*",
+      "cards": [
+        "A05",
+        "W04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T41",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 173,
+      "definition": "R2 swipe/reconciliation (HRMS status vs raw + cross-plant flag), R3 AR/OD, R4 late/early/UAB, R5 OT register, R6 absence cases, R24 boarding/exit, R27 headcount — all Excel-exportable with applied filters. *(RPT-06)*",
+      "cards": [
+        "W04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T42",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 174,
+      "definition": "HR Ops dashboard (05 §4.1) + manager team view/roster editor + senior-manager subtree scope (KQ) + device-health board.",
+      "cards": [
+        "W04",
+        "F03",
+        "A02"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P1-T43",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 175,
+      "definition": "ESS home + My Attendance + My Leave (05 §4.3/4.4/4.9); mobile/geo check-in PWA if pulled forward (ATT-14).",
+      "cards": [
+        "A04",
+        "A02",
+        "X01"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P2-T01",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 185,
+      "definition": "Salary components seed = live six earnings + deductions with real formulas (HRA=Basic×0.5, PF on full basic per RML flag, monthly BONUS, fixed MEDICAL/EDUCATION, GUEST HOUSE recovery class); components model ported from Frappe HR. *(PAY-01, 09 §2, 10 §10)*",
+      "cards": [
+        "P01"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P2-T02",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 186,
+      "definition": "Salary structures per grade/category/location; effective-dated `employee_salaries` with **DB-level overlap exclusion** (`EXCLUDE USING gist` — doc 14 §6); **probation % auto-apply + auto-switch to confirmed on confirmation date**; CTC-vs-breakup validation; new-joiner salary rows created from LOI CTC on conversion so payroll never misses a joiner. *(PAY-01/02/07)*",
+      "cards": [
+        "P01",
+        "L01",
+        "L02"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P2-T03",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 187,
+      "definition": "Run pipeline state machine (draft→inputs_locked→computed→under_review→approved→finalized|reopened); immutability trigger; attendance-lock hard precondition. *(PAY-03, 03 §10)*",
+      "cards": [
+        "P02"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P2-T04",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 188,
+      "definition": "Compute engine in the exact order of 04 §3: proration/LOP/LOP-reversal (divisor per settings), earnings, OT pay, arrears, inputs → gross → PF → ESIC → PT → LWF → TDS → other deductions → net; per-line `calc_note`. Retro/arrears follow the **recompute-and-delta model** (closed periods never edited; new result version + delta paid in current month — doc 14 §7). Runs as chunked worker jobs (per cost-center) for 10k scale. *(PAY-03/04/16)*",
+      "cards": [
+        "P02"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P2-T05",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 189,
+      "definition": "**Statutory engines, each test-first with golden fixtures (10 §13):**",
+      "cards": [
+        "P03"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P2-T06",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 196,
+      "definition": "Payslip PDF (fixed RML template, PAN/UAN/PF/ESIC, net in words) + **three payslip types** (regular, reimbursement, overtime). *(PAY-06, 10 §11)*",
+      "cards": [
+        "P04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P2-T07",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 197,
+      "definition": "Outputs: bank file (excludes holds), JV/GL mapping (SAP-consumable), variance report vs prev month; reports R7–R19. Salary holds (payment/process). *(PAY-05/08)*",
+      "cards": [
+        "P04",
+        "P02",
+        "W04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P2-T08",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 198,
+      "definition": "Payroll console UI (05 §4.5): stepper, review grid with Δ + drawer payslip preview, typed-confirmation finalize ceremony, outputs card.",
+      "cards": [
+        "P02",
+        "P04"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P2-T09",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 199,
+      "definition": "Loans & Advances (M11): types/schedulers, ESS application + eligibility-gated workflow, EMI auto-deduction, perquisite valuation, **SAP legacy loan import**. *(LN-01..04, PP-11)*",
+      "cards": [
+        "P05"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P2-T10",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 200,
+      "definition": "Claims & Reimbursements (M12): claim types/entitlements, ESS submission w/ live balance, RM→HR-verify→payroll-batch chain, payout via run or off-cycle batch, year-end TDS on unsubstantiated, R31 register. *(CLM-01..07)*",
+      "cards": [
+        "P06"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P2-T11",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 201,
+      "definition": "YTD import from Protiviti (mid-year TDS continuity); **parallel run 2 months minimum** with per-component Δ report (R20), **pre-agreed numeric tolerances, gross reconciled before net** (industry practice — doc 14 §7); cut-over sign-off (HR Head + Finance, two-person finalize rule).",
+      "cards": [
+        "P07"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    },
+    {
+      "id": "P2-T12",
+      "spec_file": "docs/13-MASTER-BUILD-PLAN.md",
+      "spec_line": 202,
+      "definition": "Annual processes: statutory-bonus year-end true-up (8.33–20% band, set-on/set-off per Sec 15) and increment processing with effective dates. *(PAY-17, 10 §7.1)*",
+      "cards": [
+        "P07",
+        "P01"
+      ],
+      "status": "Use current phase stage checkbox/evidence; this task map is not a completion tick"
+    }
+  ]
+}

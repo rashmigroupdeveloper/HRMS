@@ -1,0 +1,6 @@
+{
+  "evidence_date": "2026-10-14",
+  "historical_snapshot_available": false,
+  "reason": "The 14 Oct report named this file before a frozen inventory was saved. Exact historical dirty-checkout hashes cannot be reconstructed from current files.",
+  "current_inventory": "../manager-approval-review-2026-10-15/final-source-inventory.json"
+}

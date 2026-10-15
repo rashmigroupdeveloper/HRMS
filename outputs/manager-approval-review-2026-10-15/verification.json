@@ -1,0 +1,104 @@
+{
+  "prepared": "2026-10-15",
+  "phase_stage": "Phase 1, Stage 1.3 repair increment; acceptance remains open",
+  "backend": {
+    "command": "npm run verify with guarded explicit loopback TEST_DATABASE_URL; NODE_ENV=test and LOCAL_TEST_DATABASE_NAME=hrms",
+    "runtime": "Node24",
+    "postgres_version": "14.24 (Homebrew)",
+    "production_target": "PostgreSQL16; prior replay is separate historical evidence",
+    "verify_exit": 1,
+    "typecheck": "pass",
+    "lint": "pass",
+    "knip": "pass",
+    "dependency_cruiser": "pass",
+    "tests": {
+      "passed": 486,
+      "files": 65,
+      "failed": 0,
+      "skipped": 0
+    },
+    "coverage": {
+      "statements": 76.37,
+      "lines": 76.37,
+      "branches": 71.5,
+      "functions": 80.45,
+      "global_threshold": 80,
+      "threshold_changed": false
+    },
+    "separate_build": {
+      "command": "npm run build",
+      "exit": 0
+    },
+    "limitations": [
+      "Global coverage gate remains red; verify does not reach build automatically",
+      "No payroll/statutory formula change in this increment; human money review and release acceptance remain outstanding"
+    ]
+  },
+  "frontend": {
+    "command": "npm run verify",
+    "exit": 0,
+    "typecheck": "pass",
+    "lint": "pass",
+    "knip": "pass",
+    "tests": {
+      "passed": 245,
+      "files": 27,
+      "failed": 0
+    },
+    "build": "pass",
+    "warnings": [
+      "Vite main JS chunk 919.37 kB minified exceeds 500 kB advisory"
+    ]
+  },
+  "review_tools": {
+    "impeccable": {
+      "target": "frontend/src/pages/approvals",
+      "deterministic_findings": 0,
+      "file": "impeccable-approval.json",
+      "limits": "Deterministic scan is not a full visual/a11y certification; manual browser evidence is separate; no overlay server was started"
+    },
+    "react_doctor": {
+      "scope": "9 current source files, explicit file scope including untracked source",
+      "warnings": 7,
+      "categories": {
+        "high_complexity": 3,
+        "large_component": 1,
+        "prop_change_state_adjustment": 2,
+        "intl_formatter_per_call": 1
+      },
+      "limits": "No suppression or scoring override used to assert a clean app. Draft restoration effects need care in future refactors; warnings are recorded, not silently waived."
+    }
+  },
+  "browser": {
+    "synthetic": true,
+    "evidence": "browser-proof.json",
+    "actual_data_assertions": [
+      "AR 14 Oct became P",
+      "OD revised 20 Oct to 21 Oct; only 21 Oct became OD",
+      "Both workflow requests approved"
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "mobile_css_width_observed": 487,
+    "narrow_390_css_certified": false,
+    "local_servers_stopped": true,
+    "agent_tab_closed_and_viewport_restored": true
+  },
+  "cleanup": "cleanup-proof.json",
+  "schema_changes_this_increment": {
+    "tables": 0,
+    "columns": 0,
+    "migrations": 0
+  },
+  "sow": {
+    "source_sha256": "44d5192848744881f034cb6efdfdeed5602d37e46858a3a4eb7ffdca69be180a",
+    "rows_retained": 176,
+    "full_rows_promoted_to_accepted": 0,
+    "claims_budgets": "deferred by sponsor",
+    "full_completion": false
+  },
+  "gates_advanced": [],
+  "pending_sponsor_decision": "All genuinely vacant approvers: hold for HR vs documented skip/exhaust-to-approve. No answer inferred. Missing escalation target is separately repaired."
+}

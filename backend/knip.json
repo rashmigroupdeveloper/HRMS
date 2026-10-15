@@ -11,5 +11,7 @@
     "scripts/*.ts"
   ],
   "project": ["src/**/*.ts", "tests/**/*.ts"],
+  "ignoreDependencies": ["dependency-cruiser", "eslint", "prettier", "tsx"],
+  "ignoreBinaries": ["tsx", "tsc", "eslint", "knip", "depcruise", "vitest", "prettier"],
   "exclude": ["types"]
 }

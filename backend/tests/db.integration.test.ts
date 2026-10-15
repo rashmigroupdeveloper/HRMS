@@ -11,14 +11,14 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest, httpAgent } from './http-client.js';
 import { sql, type Kysely } from 'kysely';
 import type { Express } from 'express';
 import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { writeAudit, verifyAuditChain } from '../src/core/audit/audit.service.js';
-import { PERMISSIONS } from '../src/core/rbac/seed-data.js';
+import { PERMISSIONS, ROLES } from '../src/core/rbac/seed-data.js';
 import { hashPassword } from '../src/modules/auth/index.js';
 import { getTypedSetting, setSetting } from '../src/modules/settings/index.js';
 
@@ -54,19 +54,20 @@ run('database integration (live Postgres)', () => {
   });
 
   // ---------------------------------------------------------------- RBAC seed
-  it('RBAC seed landed: 10 roles, the full permission grid, super_admin holds all', async () => {
-    const roles = await db.selectFrom('core.roles').select(db.fn.countAll().as('n')).executeTakeFirstOrThrow();
-    const perms = await db.selectFrom('core.permissions').select(db.fn.countAll().as('n')).executeTakeFirstOrThrow();
-    expect(Number(roles.n)).toBe(10);
-    expect(Number(perms.n)).toBe(PERMISSIONS.length);
+  it('RBAC has every required seed role and permission; runtime additions are allowed', async () => {
+    const roles = await db.selectFrom('core.roles').select('code').execute();
+    const perms = await db.selectFrom('core.permissions').select('code').execute();
+    expect(roles.map(role => role.code)).toEqual(expect.arrayContaining(ROLES.map(role => role.code)));
+    expect(perms.map(permission => permission.code)).toEqual(expect.arrayContaining([...PERMISSIONS]));
 
     const superAdmin = await db
       .selectFrom('core.role_permissions as rp')
       .innerJoin('core.roles as r', 'r.id', 'rp.role_id')
+      .innerJoin('core.permissions as p', 'p.id', 'rp.permission_id')
       .where('r.code', '=', 'super_admin')
-      .select(db.fn.countAll().as('n'))
-      .executeTakeFirstOrThrow();
-    expect(Number(superAdmin.n)).toBe(PERMISSIONS.length);
+      .select('p.code')
+      .execute();
+    expect(superAdmin.map(permission => permission.code)).toEqual(expect.arrayContaining([...PERMISSIONS]));
   });
 
   it('hard rule: it_admin never holds compensation.read (separation of duties)', async () => {
@@ -126,15 +127,15 @@ run('database integration (live Postgres)', () => {
   // ------------------------------------------------------------------- auth
   it('rejects a wrong password, locks after 5 failures, then correct password stays locked', async () => {
     for (let i = 1; i <= 4; i++) {
-      const res = await request(app).post('/api/auth/login').send({ identifier: email, password: 'wrong!' });
+      const res = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password: 'wrong!' });
       expect(res.status).toBe(401);
     }
-    const fifth = await request(app).post('/api/auth/login').send({ identifier: email, password: 'wrong!' });
+    const fifth = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password: 'wrong!' });
     expect(fifth.status).toBe(401);
     expect((fifth.body as { message?: string }).message).toMatch(/locked/i);
 
     // Even the CORRECT password is refused while locked.
-    const locked = await request(app).post('/api/auth/login').send({ identifier: email, password });
+    const locked = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
     expect(locked.status).toBe(401);
 
     // Backoff state is in the DB.
@@ -155,7 +156,7 @@ run('database integration (live Postgres)', () => {
   });
 
   it('full happy path: login → me → refresh rotation → logout', async () => {
-    const agent = request.agent(app); // persists the httpOnly refresh cookie
+    const agent = (await httpAgent(app)); // persists the httpOnly refresh cookie
 
     const login = await agent.post('/api/auth/login').send({ identifier: email, password });
     expect(login.status).toBe(200);
@@ -182,9 +183,9 @@ run('database integration (live Postgres)', () => {
   });
 
   it('me without a token is 401; garbage token is 401', async () => {
-    expect((await request(app).get('/api/auth/me')).status).toBe(401);
+    expect((await (await httpRequest(app)).get('/api/auth/me')).status).toBe(401);
     expect(
-      (await request(app).get('/api/auth/me').set('Authorization', 'Bearer garbage')).status,
+      (await (await httpRequest(app)).get('/api/auth/me').set('Authorization', 'Bearer garbage')).status,
     ).toBe(401);
   });
 
@@ -211,9 +212,9 @@ run('database integration (live Postgres)', () => {
     expect(audit).toHaveLength(1);
     expect(audit[0]?.new_value).toBe('42');
 
-    const login = await request(app).post('/api/auth/login').send({ identifier: email, password });
+    const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
     const token = (login.body as { accessToken: string }).accessToken;
-    const res = await request(app).get(`/api/settings/${key}`).set('Authorization', `Bearer ${token}`);
+    const res = await (await httpRequest(app)).get(`/api/settings/${key}`).set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect((res.body as { value: number }).value).toBe(42);
 

@@ -10,6 +10,7 @@
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/types.js';
 import type { PermissionCode, Scope } from './seed-data.js';
+import { effectiveRoleGrants } from './effective-role-grants.js';
 
 export interface PermissionAccess {
   all: boolean;
@@ -24,10 +25,9 @@ export async function getUserPermissions(
   userId: number,
 ): Promise<ReadonlySet<string>> {
   const rows = await db
-    .selectFrom('core.user_roles as ur')
+    .selectFrom(effectiveRoleGrants(userId).as('ur'))
     .innerJoin('core.role_permissions as rp', 'rp.role_id', 'ur.role_id')
     .innerJoin('core.permissions as p', 'p.id', 'rp.permission_id')
-    .where('ur.user_id', '=', userId)
     .select('p.code')
     .distinct()
     .execute();
@@ -41,10 +41,9 @@ export async function getUserPermissionAccess(
   permission: PermissionCode,
 ): Promise<PermissionAccess | null> {
   const rows = await db
-    .selectFrom('core.user_roles as ur')
+    .selectFrom(effectiveRoleGrants(userId).as('ur'))
     .innerJoin('core.role_permissions as rp', 'rp.role_id', 'ur.role_id')
     .innerJoin('core.permissions as p', 'p.id', 'rp.permission_id')
-    .where('ur.user_id', '=', userId)
     .where('p.code', '=', permission)
     .select(['rp.scope', 'ur.scope_org_unit_id'])
     .execute();
@@ -71,9 +70,8 @@ export async function getUserPermissionAccess(
  *  any holder of a `role:<code>` step may act, not just one designated user. */
 export async function getUserRoleCodes(db: Kysely<Database>, userId: number): Promise<ReadonlySet<string>> {
   const rows = await db
-    .selectFrom('core.user_roles as ur')
+    .selectFrom(effectiveRoleGrants(userId).as('ur'))
     .innerJoin('core.roles as r', 'r.id', 'ur.role_id')
-    .where('ur.user_id', '=', userId)
     .select('r.code')
     .distinct()
     .execute();

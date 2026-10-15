@@ -46,6 +46,20 @@
 **Tests:** 6 integration (90 total green, verify 0): receipt + inbox + stranger-403 + RM approve; send_back→resubmit round-trip; delegation reroute with trail; vacant-skip→auto-approve with audit; OT lapse + RH auto-approve + leave escalate; runtime chain edit takes effect immediately.
 **Exit criteria:** every action path walked with a visible timeline ✅ · a step cannot exist un-notified (NOT NULL receipt) ✅ · non-approver acting → 403 ✅.
 
+### Stage 1.3 repair review — 15 Oct 2026: `◐ acceptance open`
+
+Historical checkboxes above record the original implementation, not current release acceptance. [Pack20](sow-completion/20-MANAGER-APPROVAL-AND-ATTENDANCE-REVIEW.md) supersedes the old missing-target “skip-forward” behavior: an unresolved escalation now stays pending and re-notifies. It also narrows step-holder timeline visibility to current scope. `notified_at` and queued events prove enqueue, not external delivery.
+
+- [x] Derived reporting-manager authority and mapped domain scopes; current permission revocation enforced on inbox/detail/action.
+- [x] Required decision notes; exact request deep links; honest intermediate/batch outcomes and refreshed badge.
+- [x] Atomic validated AR/OD/permission/leave/CO correction and resubmission; authoritative dates/day counts.
+- [x] Protected month/manual-day approval rolls back decision and attendance/ledger effects; no silent success.
+- [x] Employee OD/leave/half-session labels, source/lock details, missing-data explanation and sent-back history/correction links.
+- [x] Synthetic browser: AR → P; OD sent back, revised 20→21 Oct, approved → OD only on 21 Oct; native assertions confirm the dates.
+- [ ] All-vacant chain sponsor decision; frozen chain/request revision contract; heterogeneous per-stage permission/delegation contracts.
+- [ ] Month completeness, half-session/payable policy, all leave concurrency/expiry paths, real Kent/notification delivery and signed UAT.
+- [ ] Backend global coverage ≥80% and complete stage/release criteria. No G1 advancement.
+
 ## Stage 1.4 — AR / OD / Permission + Overtime 48h   `[ ☑ done 11 Jul 2026 — backend; ESS/inbox UI = frontend team on the new APIs; Excel exports land with the R3/R5 reports in 1.7 ]`
 **Goal:** the attendance-exception requests, and the OT module greytHR never delivered.
 **Depends on:** 1.2, 1.3.

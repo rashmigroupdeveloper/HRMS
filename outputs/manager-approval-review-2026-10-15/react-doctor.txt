@@ -1,0 +1,35 @@
+✔ Scanned 9 files in 1.2s
+
+React Doctor — hrms-frontend
+Score disabled by --no-score. Want something custom to your company? Contact us at https://react.doctor/enterprise.
+
+7 issues
+Maintainability: 4 warnings
+Bugs: 2 warnings
+Performance: 1 warning
+
+⚠ React function has high control-flow complexity ×3
+  react-doctor/no-high-complexity-react-function
+  src/pages/approvals/ApprovalsPage.tsx:47
+  src/pages/attendance/MyAttendancePage.tsx:137
+  src/pages/leave/MyLeavePage.tsx:98
+⚠ Large component is hard to read and change
+  react-doctor/no-giant-component
+  src/pages/approvals/ApprovalsPage.tsx:47
+⚠ State adjusted after a prop changes ×2
+  react-doctor/no-adjust-state-on-prop-change
+  src/pages/attendance/AttendanceRequestDrawer.tsx:148
+  src/pages/attendance/AttendanceRequestDrawer.tsx:149
+⚠ Intl formatter rebuilt each call
+  react-doctor/js-hoist-intl
+  src/pages/attendance/MyAttendancePage.tsx:86
+
+  ────────────────────────────────────────────────────────────
+
+  Docs: https://react.doctor/docs
+  Learn more about fixing issues, setting up CI/CD, and
+  configuring rules with a config file
+
+  GitHub: https://github.com/millionco/react-doctor
+  Report issues and star the repository!
+

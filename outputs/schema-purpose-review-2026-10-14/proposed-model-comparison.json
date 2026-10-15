@@ -1,0 +1,657 @@
+[
+  {
+    "table": "core.employee_assignments",
+    "exists_exactly": false,
+    "requirements": [
+      "CORE-01",
+      "CORE-03",
+      "LC-05",
+      "RPT-05"
+    ],
+    "cards": [
+      "F02",
+      "A02",
+      "P01",
+      "L01",
+      "L03",
+      "W04"
+    ],
+    "grain": "One approved effective placement interval per employee",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "core.import_batches",
+    "exists_exactly": false,
+    "requirements": [
+      "CORE-12",
+      "TE-12"
+    ],
+    "cards": [
+      "F02",
+      "T04",
+      "P07"
+    ],
+    "grain": "One sanitized source snapshot/import attempt",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "core.source_mappings",
+    "exists_exactly": false,
+    "requirements": [
+      "CORE-12",
+      "TE-12",
+      "LC-01"
+    ],
+    "cards": [
+      "F02",
+      "T04",
+      "R01",
+      "L01"
+    ],
+    "grain": "One immutable external ID to internal domain record mapping",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "wf.definition_versions",
+    "exists_exactly": false,
+    "requirements": [
+      "WF-01",
+      "WF-04"
+    ],
+    "cards": [
+      "A03",
+      "F03"
+    ],
+    "grain": "One immutable published approval-chain version",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "wf.request_revisions",
+    "exists_exactly": false,
+    "requirements": [
+      "WF-01",
+      "WF-04",
+      "LV-03"
+    ],
+    "cards": [
+      "A03",
+      "A04",
+      "F03"
+    ],
+    "grain": "One validated domain/request revision",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "wf.notification_attempts",
+    "exists_exactly": false,
+    "requirements": [
+      "WF-02",
+      "WF-04"
+    ],
+    "cards": [
+      "F04",
+      "A03",
+      "W02"
+    ],
+    "grain": "One immutable transport attempt/receipt",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "core.document_operations",
+    "exists_exactly": false,
+    "requirements": [
+      "CORE-09",
+      "NFR-04"
+    ],
+    "cards": [
+      "F04",
+      "T04"
+    ],
+    "grain": "One staged object operation/reconciliation intent",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "att.source_receipts",
+    "exists_exactly": false,
+    "requirements": [
+      "ATT-01",
+      "ATT-02",
+      "ATT-15"
+    ],
+    "cards": [
+      "A01",
+      "A02",
+      "A05"
+    ],
+    "grain": "One connector completeness receipt per device and covered interval",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "lv.credit_allocations",
+    "exists_exactly": false,
+    "requirements": [
+      "LV-04",
+      "LV-05"
+    ],
+    "cards": [
+      "A04"
+    ],
+    "grain": "One debit/reversal allocation against a specific leave credit",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "lv.operation_keys",
+    "exists_exactly": false,
+    "requirements": [
+      "LV-02",
+      "LV-04",
+      "LV-05"
+    ],
+    "cards": [
+      "A04"
+    ],
+    "grain": "One deterministic accrual/lapse/year-end operation",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.salary_structure_versions",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-01",
+      "PAY-02"
+    ],
+    "cards": [
+      "P01"
+    ],
+    "grain": "One immutable published salary-template version",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.run_input_refs",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-03",
+      "PAY-16",
+      "NFR-04"
+    ],
+    "cards": [
+      "P02"
+    ],
+    "grain": "One frozen input provenance entry per payroll result version",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.payment_obligations",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-05",
+      "PAY-08",
+      "LN-03",
+      "CLM-04",
+      "CLM-07"
+    ],
+    "cards": [
+      "P02",
+      "P04",
+      "P05",
+      "P06",
+      "A04",
+      "L05",
+      "T02"
+    ],
+    "grain": "One approved source amount owed to/from an employee/payer",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.source_consumptions",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-03",
+      "PAY-05",
+      "LN-03",
+      "CLM-04"
+    ],
+    "cards": [
+      "P02",
+      "P04",
+      "P05",
+      "P06",
+      "T02"
+    ],
+    "grain": "One immutable source obligation consumed by an accepted output/result",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.payment_events",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-05",
+      "PAY-08",
+      "CLM-04",
+      "LN-03"
+    ],
+    "cards": [
+      "P04",
+      "P05",
+      "P06",
+      "T02",
+      "L05"
+    ],
+    "grain": "One immutable external payment/recovery evidence event",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.bank_batch_lines",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-05",
+      "CLM-04"
+    ],
+    "cards": [
+      "P04",
+      "P06"
+    ],
+    "grain": "One payable obligation portion in one frozen bank file version",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.output_artifacts",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-05",
+      "PAY-06",
+      "PAY-09",
+      "PAY-10",
+      "PAY-11",
+      "PAY-12",
+      "PAY-13"
+    ],
+    "cards": [
+      "P03",
+      "P04",
+      "P07"
+    ],
+    "grain": "One immutable result/return/document artifact version",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.statutory_memberships",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-09",
+      "PAY-10",
+      "PAY-14"
+    ],
+    "cards": [
+      "P03"
+    ],
+    "grain": "One effective employee/entity/scheme eligibility interval",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.tax_elections",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-13"
+    ],
+    "cards": [
+      "P03"
+    ],
+    "grain": "One authorized employee/FY election version",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.previous_employer_income",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-13"
+    ],
+    "cards": [
+      "P03"
+    ],
+    "grain": "One verified prior-employer/FY declaration version",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.statutory_postings",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-09",
+      "PAY-10",
+      "PAY-11",
+      "PAY-12",
+      "PAY-13",
+      "PAY-17"
+    ],
+    "cards": [
+      "P03",
+      "P07"
+    ],
+    "grain": "One immutable result-linked liability/YTD movement",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.journal_batches",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-05"
+    ],
+    "cards": [
+      "P04"
+    ],
+    "grain": "One frozen balanced JV version per accepted result",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.journal_lines",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-05"
+    ],
+    "cards": [
+      "P04"
+    ],
+    "grain": "One GL/cost-center allocation line in a JV batch",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.loan_installments",
+    "exists_exactly": false,
+    "requirements": [
+      "LN-01",
+      "LN-03"
+    ],
+    "cards": [
+      "P05"
+    ],
+    "grain": "One authorized scheduled installment/version for a loan",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.parallel_comparisons",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-03"
+    ],
+    "cards": [
+      "P07"
+    ],
+    "grain": "One frozen external register versus HRMS result comparison",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "pay.parallel_comparison_lines",
+    "exists_exactly": false,
+    "requirements": [
+      "PAY-03"
+    ],
+    "cards": [
+      "P07"
+    ],
+    "grain": "One employee/component variance with source lineage",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "core.prejoin_invitations",
+    "exists_exactly": false,
+    "requirements": [
+      "LC-01",
+      "NFR-03"
+    ],
+    "cards": [
+      "L01",
+      "F03"
+    ],
+    "grain": "One purpose-scoped invitation issuance, not a reusable login",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "core.transfer_requests",
+    "exists_exactly": false,
+    "requirements": [
+      "LC-05"
+    ],
+    "cards": [
+      "L03"
+    ],
+    "grain": "One approved effective placement change request",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "ast.custody_events",
+    "exists_exactly": false,
+    "requirements": [
+      "AST-04",
+      "AST-05"
+    ],
+    "cards": [
+      "W01",
+      "L04"
+    ],
+    "grain": "One immutable physical receipt/loss/clearance disposition",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "hd.ticket_events",
+    "exists_exactly": false,
+    "requirements": [
+      "HD-01"
+    ],
+    "cards": [
+      "W02"
+    ],
+    "grain": "One immutable ticket lifecycle/SLA-cycle event",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "hd.escalation_rules",
+    "exists_exactly": false,
+    "requirements": [
+      "HD-01"
+    ],
+    "cards": [
+      "W02"
+    ],
+    "grain": "One effective category/level routing rule",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "core.policy_versions",
+    "exists_exactly": false,
+    "requirements": [
+      "CORE-13",
+      "EN-04"
+    ],
+    "cards": [
+      "W03"
+    ],
+    "grain": "One immutable published policy content/audience version",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "reporting.snapshot_builds",
+    "exists_exactly": false,
+    "requirements": [
+      "RPT-01",
+      "RPT-03",
+      "RPT-04"
+    ],
+    "cards": [
+      "W04",
+      "A05"
+    ],
+    "grain": "One versioned reporting build with source population/freshness",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "te.trips",
+    "exists_exactly": false,
+    "requirements": [
+      "TE-01",
+      "TE-02"
+    ],
+    "cards": [
+      "T01",
+      "T02"
+    ],
+    "grain": "One employee/payer travel intent revision",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "te.itinerary_segments",
+    "exists_exactly": false,
+    "requirements": [
+      "TE-02",
+      "TE-04"
+    ],
+    "cards": [
+      "T01",
+      "T03"
+    ],
+    "grain": "One ordered trip/segment with stay/travel evidence",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "te.travel_levels",
+    "exists_exactly": false,
+    "requirements": [
+      "TE-03",
+      "TE-06"
+    ],
+    "cards": [
+      "T01"
+    ],
+    "grain": "One source-approved domestic/international entitlement tier",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "te.employee_travel_levels",
+    "exists_exactly": false,
+    "requirements": [
+      "TE-03"
+    ],
+    "cards": [
+      "T01"
+    ],
+    "grain": "One effective employee travel-tier assignment",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "te.policy_versions",
+    "exists_exactly": false,
+    "requirements": [
+      "TE-03",
+      "TE-06"
+    ],
+    "cards": [
+      "T01",
+      "T02"
+    ],
+    "grain": "One reviewed effective travel-policy publication",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "te.currency_rates",
+    "exists_exactly": false,
+    "requirements": [
+      "TE-05"
+    ],
+    "cards": [
+      "T01",
+      "T02"
+    ],
+    "grain": "One captured currency-to-INR source quote",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "te.advances",
+    "exists_exactly": false,
+    "requirements": [
+      "TE-07",
+      "LN-04"
+    ],
+    "cards": [
+      "T02"
+    ],
+    "grain": "One approved accountable advance, authorization distinct from funding",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "te.wallet_postings",
+    "exists_exactly": false,
+    "requirements": [
+      "TE-08",
+      "TE-09",
+      "LN-04"
+    ],
+    "cards": [
+      "T02",
+      "T04"
+    ],
+    "grain": "One immutable accountable-funds movement",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "te.settlements",
+    "exists_exactly": false,
+    "requirements": [
+      "TE-09",
+      "TE-10",
+      "CLM-07"
+    ],
+    "cards": [
+      "T02"
+    ],
+    "grain": "One approved claim revision settlement result",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "te.settlement_advances",
+    "exists_exactly": false,
+    "requirements": [
+      "TE-09",
+      "CLM-07"
+    ],
+    "cards": [
+      "T02"
+    ],
+    "grain": "One settlement allocation against a funded advance",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "te.booking_operations",
+    "exists_exactly": false,
+    "requirements": [
+      "TE-04"
+    ],
+    "cards": [
+      "T03"
+    ],
+    "grain": "One durable booking/cancel/refund provider intent",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "te.booking_events",
+    "exists_exactly": false,
+    "requirements": [
+      "TE-04"
+    ],
+    "cards": [
+      "T03"
+    ],
+    "grain": "One immutable provider acknowledgment/status/cost event",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  },
+  {
+    "table": "att.mobile_submissions",
+    "exists_exactly": false,
+    "requirements": [
+      "ATT-14"
+    ],
+    "cards": [
+      "X01"
+    ],
+    "grain": "One authenticated mobile capture/queue attempt",
+    "note": "Exact-name presence alone neither proves nor disproves an equivalent implementation."
+  }
+]

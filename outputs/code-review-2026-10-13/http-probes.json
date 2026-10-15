@@ -1,0 +1,50 @@
+[
+  {
+    "method": "get",
+    "path": "/api/claims/my",
+    "status": 404,
+    "meaning": "No matching route"
+  },
+  {
+    "method": "get",
+    "path": "/api/api/claims/my",
+    "status": 401,
+    "meaning": "Matched protected procedure; missing token"
+  },
+  {
+    "method": "get",
+    "path": "/api/loans/my",
+    "status": 404,
+    "meaning": "No matching route"
+  },
+  {
+    "method": "get",
+    "path": "/api/api/loans/my",
+    "status": 401,
+    "meaning": "Matched protected procedure; missing token"
+  },
+  {
+    "method": "get",
+    "path": "/api/payroll/runs",
+    "status": 404,
+    "meaning": "No matching route"
+  },
+  {
+    "method": "post",
+    "path": "/api/payroll/runs/list",
+    "status": 401,
+    "meaning": "Matched protected procedure; missing token"
+  },
+  {
+    "method": "get",
+    "path": "/api/lifecycle/separations",
+    "status": 404,
+    "meaning": "No matching route"
+  },
+  {
+    "method": "post",
+    "path": "/api/lifecycle/separations/list",
+    "status": 401,
+    "meaning": "Matched protected procedure; missing token"
+  }
+]

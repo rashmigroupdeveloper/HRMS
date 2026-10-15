@@ -12,7 +12,7 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
 import { sql, type Kysely } from 'kysely';
 import type { Express } from 'express';
 import { createApp } from '../src/app.js';
@@ -26,7 +26,7 @@ import {
   recomputeDay,
   registerAttendanceWorkflowHooks,
 } from '../src/modules/attendance/index.js';
-import { act, inbox, runEscalations, WORKFLOW_DEFINITIONS } from '../src/modules/workflows/index.js';
+import { act, inbox, resubmit, runEscalations, WORKFLOW_DEFINITIONS } from '../src/modules/workflows/index.js';
 import { addDaysIso, istDateString } from '../src/core/dates.js';
 
 const DB_URL = process.env['DATABASE_URL'];
@@ -75,6 +75,7 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
         company_id: rml.id,
         first_name: `S14 ${suffix}`,
         reporting_manager_id: managerId,
+        status: 'active',
       })
       .returning('id')
       .executeTakeFirstOrThrow();
@@ -143,7 +144,7 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
     await mkUser(emp2Id, 'emp2');
     emp3Id = await mkEmployee('G', mgrId); // deliberately NO user account
 
-    const login = await request(app).post('/api/auth/login').send({ identifier: `s14-emp-${stamp}@hrms.test`, password });
+    const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: `s14-emp-${stamp}@hrms.test`, password });
     empToken = (login.body as { accessToken: string }).accessToken;
     expect(empToken).toBeTruthy();
   });
@@ -192,8 +193,12 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
 
   it('R1: AR approved by the manager flips the absent day to P and survives recompute', async () => {
     expect(await recomputeDay(db, empId, arDay)).toBe('A'); // no swipes that day
+    const type = await db.selectFrom('lv.leave_types').select('id').where('code', '=', 'SL').executeTakeFirstOrThrow();
+    await db.updateTable('att.day_records').set({ status: 'HD', leave_type_id: type.id,
+      session_statuses: JSON.stringify([{ session: 1, status: 'A' }, { session: 2, status: 'P' }]),
+    }).where('employee_id', '=', empId).where('work_date', '=', sql<Date>`${arDay}::date`).execute();
 
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post('/api/attendance/requests')
       .set('Authorization', `Bearer ${empToken}`)
       .send({ kind: 'AR', fromDate: arDay, toDate: arDay, reason: 'Biometric reader was down at gate 2' });
@@ -207,6 +212,8 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
     const d = await day(empId, arDay);
     expect(d.status).toBe('P');
     expect(d.source).toBe('regularized');
+    expect(d.leave_type_id).toBeNull();
+    expect(d.session_statuses).toBeNull();
     const reg = await db.selectFrom('att.regularizations').selectAll().where('workflow_request_id', '=', workflowRequestId).executeTakeFirstOrThrow();
     expect(reg.applied).toBe(true);
 
@@ -215,10 +222,15 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
     expect((await day(empId, arDay)).source).toBe('regularized');
 
     // ESS list shows the decided request.
-    const mine = await request(app).get('/api/attendance/requests/mine').set('Authorization', `Bearer ${empToken}`);
+    const mine = await (await httpRequest(app)).get('/api/attendance/requests/mine').set('Authorization', `Bearer ${empToken}`);
     expect(mine.status).toBe(200);
     const rows = mine.body as { workflowRequestId: number; workflowStatus: string; applied: boolean }[];
     expect(rows.find((r) => r.workflowRequestId === workflowRequestId)?.workflowStatus).toBe('approved');
+    const month = await (await httpRequest(app)).get(`/api/my/attendance?month=${arDay.slice(0, 7)}`)
+      .set('Authorization', `Bearer ${empToken}`);
+    expect(month.status).toBe(200);
+    const posted = (month.body as { date: string; status: string; leaveTypeCode: string | null; source: string }[]).find(row => row.date === arDay);
+    expect(posted).toMatchObject({ status: 'P', leaveTypeCode: null, source: 'regularized' });
   });
 
   it('R2: a FUTURE-dated OD (KQ ask) approves into an OD day record', async () => {
@@ -235,6 +247,56 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
     const d = await day(empId, odDay);
     expect(d.status).toBe('OD');
     expect(d.source).toBe('regularized');
+  });
+
+  it('AR resubmission cannot bypass past-date validation or alter only the displayed payload', async () => {
+    const { workflowRequestId } = await createRegularization(db, {
+      employeeId: emp2Id, requestedByUserId: empUserId, kind: 'AR', fromDate: arDay, toDate: arDay,
+      reason: 'Missing gate punch for regression',
+    });
+    await act(db, { requestId: workflowRequestId, actorUserId: mgrUserId, action: 'send_back', comment: 'Please verify the date' });
+    const future = addDaysIso(today, 2);
+    await expect(resubmit(db, { requestId: workflowRequestId, requesterUserId: empUserId,
+      payload: { kind: 'AR', fromDate: future, toDate: future, reason: 'Revised missing punch reason', fromTime: null, toTime: null },
+    })).rejects.toThrow(/past days/);
+    const stored = await db.selectFrom('wf.requests').select('status').where('id', '=', workflowRequestId).executeTakeFirstOrThrow();
+    expect(stored.status).toBe('sent_back');
+  });
+
+  it('OD resubmission updates the authoritative date before the manager approves it', async () => {
+    let oldDate = addDaysIso(odDay, 12);
+    if (dow(oldDate) === 0) oldDate = addDaysIso(oldDate, 1);
+    let newDate = addDaysIso(oldDate, 2);
+    if (dow(newDate) === 0) newDate = addDaysIso(newDate, 1);
+    const { workflowRequestId } = await createRegularization(db, {
+      employeeId: emp2Id, requestedByUserId: empUserId, kind: 'OD', fromDate: oldDate, toDate: oldDate,
+      reason: 'Original client visit date',
+    });
+    await act(db, { requestId: workflowRequestId, actorUserId: mgrUserId, action: 'send_back', comment: 'Confirm the revised visit date' });
+    await resubmit(db, { requestId: workflowRequestId, requesterUserId: empUserId,
+      payload: { kind: 'OD', fromDate: newDate, toDate: newDate, reason: 'Revised client visit date', fromTime: null, toTime: null },
+    });
+    expect(await act(db, { requestId: workflowRequestId, actorUserId: mgrUserId, action: 'approve' })).toBe('approved');
+    expect((await day(emp2Id, newDate)).status).toBe('OD');
+    expect(await db.selectFrom('att.day_records').select('id').where('employee_id', '=', emp2Id)
+      .where('work_date', '=', sql<Date>`${oldDate}::date`).executeTakeFirst()).toBeUndefined();
+  });
+
+  it('an HR override blocks approval atomically instead of marking an unapplied request approved', async () => {
+    let date = addDaysIso(odDay, 30);
+    if (dow(date) === 0) date = addDaysIso(date, 1);
+    const { workflowRequestId } = await createRegularization(db, {
+      employeeId: emp2Id, requestedByUserId: empUserId, kind: 'OD', fromDate: date, toDate: date,
+      reason: 'Protected-date regression fixture',
+    });
+    await db.insertInto('att.day_records').values({ employee_id: emp2Id, work_date: sql<Date>`${date}::date`,
+      status: 'A', source: 'manual', override_reason: 'HR-reviewed fixture' }).execute();
+    await expect(act(db, { requestId: workflowRequestId, actorUserId: mgrUserId, action: 'approve' })).rejects.toThrow(/HR override/);
+    const request = await db.selectFrom('wf.requests').select('status').where('id', '=', workflowRequestId).executeTakeFirstOrThrow();
+    expect(request.status).toBe('pending');
+    const reg = await db.selectFrom('att.regularizations').select('applied').where('workflow_request_id', '=', workflowRequestId).executeTakeFirstOrThrow();
+    expect(reg.applied).toBe(false);
+    expect((await day(emp2Id, date)).source).toBe('manual');
   });
 
   it('O1: OT beyond shift end creates an entry + intimation; partial approval sticks', async () => {

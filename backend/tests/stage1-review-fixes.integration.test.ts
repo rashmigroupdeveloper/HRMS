@@ -8,7 +8,7 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
 import { sql, type Kysely } from 'kysely';
 import type { Express } from 'express';
 import { createApp } from '../src/app.js';
@@ -129,10 +129,10 @@ run('Phase-1 review fixes (live Postgres)', () => {
     const role = await db.selectFrom('core.roles').select('id').where('code', '=', 'hr_ops').executeTakeFirstOrThrow();
     await db.insertInto('core.user_roles').values({ user_id: hr.id, role_id: role.id, scope_org_unit_id: null }).execute();
 
-    const login = await request(app).post('/api/auth/login').send({ identifier: `fix-hr-${stamp}@hrms.test`, password });
+    const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: `fix-hr-${stamp}@hrms.test`, password });
     const token = (login.body as { accessToken: string }).accessToken;
 
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .get('/api/attendance/days?employeeId=' + String(empId) + '&from=2031-06-04&to=2031-06-04')
       .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);

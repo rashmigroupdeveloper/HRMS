@@ -15,7 +15,8 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
+import { expectHttpStatus } from './http-assertions.js';
 import type { Kysely } from 'kysely';
 import type { Express } from 'express';
 import { createApp } from '../src/app.js';
@@ -55,18 +56,25 @@ run('Directory facets and filters (live Postgres)', () => {
   let token: string;
   let companyId: number;
   let companyCode: string;
+  let orgUnitId: number;
+  let otherOrgUnitId: number;
+  let userId: number;
+  let unscopedUserId: number;
+  const unscopedEmail = `facets-unscoped-${String(stamp)}@hrms.test`;
   const created: number[] = [];
 
   async function mkEmployee(
     suffix: string,
     status: 'active' | 'on_notice' | 'exited',
     category: 'white_collar' | 'blue_collar',
+    unitId: number = orgUnitId,
   ): Promise<number> {
     const row = await db
       .insertInto('core.employees')
       .values({
         ecode: `${tag}${suffix}`,
         company_id: companyId,
+        org_unit_id: unitId,
         first_name: `Facet ${suffix}`,
         status,
         category,
@@ -98,16 +106,27 @@ run('Directory facets and filters (live Postgres)', () => {
     companyId = company.id;
     companyCode = company.code;
 
+    const unit = await db.insertInto('core.org_units')
+      .values({ company_id: companyId, name: `Facet scope ${stamp}` })
+      .returning('id').executeTakeFirstOrThrow();
+    orgUnitId = unit.id;
+    const otherUnit = await db.insertInto('core.org_units')
+      .values({ company_id: companyId, name: `Facet outside scope ${stamp}` })
+      .returning('id').executeTakeFirstOrThrow();
+    otherOrgUnitId = otherUnit.id;
+
     await mkEmployee('A', 'active', 'white_collar');
     await mkEmployee('B', 'active', 'blue_collar');
     await mkEmployee('C', 'on_notice', 'white_collar');
     await mkEmployee('D', 'exited', 'blue_collar');
+    await mkEmployee('OUT', 'active', 'white_collar', otherOrgUnitId);
 
     const user = await db
       .insertInto('core.users')
       .values({ email, password_hash: await hashPassword(password), employee_id: null })
       .returning('id')
       .executeTakeFirstOrThrow();
+    userId = user.id;
     const role = await db
       .selectFrom('core.roles')
       .select('id')
@@ -115,21 +134,32 @@ run('Directory facets and filters (live Postgres)', () => {
       .executeTakeFirstOrThrow();
     await db
       .insertInto('core.user_roles')
-      .values({ user_id: user.id, role_id: role.id, scope_org_unit_id: null })
+      .values({ user_id: user.id, role_id: role.id, scope_org_unit_id: orgUnitId })
       .execute();
 
-    const login = await request(app).post('/api/auth/login').send({ identifier: email, password });
+    const unscoped = await db.insertInto('core.users')
+      .values({ email: unscopedEmail, password_hash: await hashPassword(password) })
+      .returning('id').executeTakeFirstOrThrow();
+    unscopedUserId = unscoped.id;
+    await db.insertInto('core.user_roles')
+      .values({ user_id: unscopedUserId, role_id: role.id, scope_org_unit_id: null })
+      .execute();
+
+    const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
+    expectHttpStatus(login, 200);
     token = (login.body as { accessToken: string }).accessToken;
     expect(token).toBeTruthy();
   });
 
   afterAll(async () => {
     await db.deleteFrom('core.employees').where('id', 'in', created).execute();
+    await db.deleteFrom('core.user_roles').where('user_id', 'in', [userId, unscopedUserId]).execute();
+    await db.deleteFrom('core.org_units').where('id', 'in', [orgUnitId, otherOrgUnitId]).execute();
     await db.deleteFrom('core.companies').where('id', '=', companyId).execute();
     await db
       .updateTable('core.users')
       .set({ is_active: false, employee_id: null })
-      .where('email', '=', email)
+      .where('id', 'in', [userId, unscopedUserId])
       .execute();
     await db.destroy();
   });
@@ -137,8 +167,8 @@ run('Directory facets and filters (live Postgres)', () => {
   const auth = () => ({ Authorization: `Bearer ${token}` });
 
   it('D1 entity facet count equals a direct count of the same employees', async () => {
-    const res = await request(app).get('/api/employees/facets?activeOnly=true').set(auth());
-    expect(res.status).toBe(200);
+    const res = await (await httpRequest(app)).get('/api/employees/facets?activeOnly=true').set(auth());
+    expectHttpStatus(res, 200);
     const facets = res.body as Facets;
 
     const ours = facets.entities.find((e) => e.code === companyCode);
@@ -149,6 +179,7 @@ run('Directory facets and filters (live Postgres)', () => {
       .selectFrom('core.employees')
       .select((eb) => eb.fn.countAll<string>().as('n'))
       .where('company_id', '=', companyId)
+      .where('org_unit_id', '=', orgUnitId)
       .where('status', 'in', ['active', 'on_notice'])
       .executeTakeFirstOrThrow();
     expect(ours?.count).toBe(Number(direct.n));
@@ -156,14 +187,14 @@ run('Directory facets and filters (live Postgres)', () => {
 
   it('D2 every facet code offered is a code the list API accepts', async () => {
     const facets = (
-      await request(app).get('/api/employees/facets?activeOnly=true').set(auth())
+      await (await httpRequest(app)).get('/api/employees/facets?activeOnly=true').set(auth())
     ).body as Facets;
 
     // Entity codes must round-trip through the list filter.
-    const byEntity = await request(app)
+    const byEntity = await (await httpRequest(app))
       .get(`/api/employees?companyCodes=${companyCode}&activeOnly=true&pageSize=200`)
       .set(auth());
-    expect(byEntity.status).toBe(200);
+    expectHttpStatus(byEntity, 200);
     const list = byEntity.body as Directory;
     expect(list.total).toBe(3);
     expect(list.items.every((i) => i.entity === companyCode)).toBe(true);
@@ -182,20 +213,20 @@ run('Directory facets and filters (live Postgres)', () => {
   });
 
   it('D3 multi-select unions instead of silently dropping the second value', async () => {
-    const both = await request(app)
+    const both = await (await httpRequest(app))
       .get(
         `/api/employees?companyCodes=${companyCode}&statuses=active,on_notice&activeOnly=false&pageSize=200`,
       )
       .set(auth());
-    expect(both.status).toBe(200);
+    expectHttpStatus(both, 200);
     expect((both.body as Directory).total).toBe(3);
 
-    const one = await request(app)
+    const one = await (await httpRequest(app))
       .get(`/api/employees?companyCodes=${companyCode}&statuses=on_notice&activeOnly=false&pageSize=200`)
       .set(auth());
     expect((one.body as Directory).total).toBe(1);
 
-    const categories = await request(app)
+    const categories = await (await httpRequest(app))
       .get(
         `/api/employees?companyCodes=${companyCode}&categories=white_collar,blue_collar&activeOnly=true&pageSize=200`,
       )
@@ -204,7 +235,7 @@ run('Directory facets and filters (live Postgres)', () => {
   });
 
   it('D4 status facets remain discoverable under the active-only default', async () => {
-    const res = await request(app).get('/api/employees/facets?activeOnly=true').set(auth());
+    const res = await (await httpRequest(app)).get('/api/employees/facets?activeOnly=true').set(auth());
     const facets = res.body as Facets;
     const codes = facets.statuses.map((s) => s.code);
     // "Exited" must still be offerable, or it can never be filtered FOR.
@@ -212,9 +243,28 @@ run('Directory facets and filters (live Postgres)', () => {
   });
 
   it('D5 rejects an unknown category rather than ignoring it', async () => {
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .get(`/api/employees?categories=not_a_category`)
       .set(auth());
-    expect(res.status).toBe(400);
+    expectHttpStatus(res, 400);
+  });
+
+  it('CORE-10 keeps unassigned HR org-unit access empty and excludes other units', async () => {
+    const login = await (await httpRequest(app)).post('/api/auth/login')
+      .send({ identifier: unscopedEmail, password });
+    expectHttpStatus(login, 200);
+    const unscopedToken = (login.body as { accessToken: string }).accessToken;
+    const empty = await (await httpRequest(app)).get('/api/employees/facets?activeOnly=false')
+      .auth(unscopedToken, { type: 'bearer' });
+    expectHttpStatus(empty, 200);
+    expect((empty.body as Facets).total).toBe(0);
+
+    const scoped = await (await httpRequest(app))
+      .get(`/api/employees?companyCodes=${companyCode}&activeOnly=false&pageSize=200`)
+      .set(auth());
+    expectHttpStatus(scoped, 200);
+    const result = scoped.body as Directory;
+    expect(result.total).toBe(4);
+    expect(result.items.some(item => item.ecode === `${tag}OUT`)).toBe(false);
   });
 });

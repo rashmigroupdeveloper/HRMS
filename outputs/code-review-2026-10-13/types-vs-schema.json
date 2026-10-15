@@ -1,0 +1,147 @@
+{
+  "method": "TypeScript compiler resolves Database interface fields; compared by column name to read-only PostgreSQL catalog, not a SQL type/nullability compatibility proof",
+  "typed_tables": 92,
+  "untyped_relations": [
+    "att.coverage_targets",
+    "att.leave_blackouts",
+    "att.roster_publications",
+    "att.roster_revisions",
+    "att.shift_patterns",
+    "att.shift_swaps",
+    "cmp.calendar_items",
+    "cmp.filing_evidence",
+    "cmp.registrations",
+    "core.mis_codes",
+    "core.password_reset_tokens",
+    "core.plants",
+    "core.profile_change_requests",
+    "doc.types",
+    "ird.grievances",
+    "ird.ic_members",
+    "ird.posh_case_access_log",
+    "ird.posh_cases",
+    "ird.whistleblower_reports",
+    "pay.budget_categories",
+    "pay.budgets",
+    "pay.claim_lines",
+    "pay.claim_reservations",
+    "prv.breach_register",
+    "prv.consent_events",
+    "prv.consents",
+    "prv.legal_holds",
+    "prv.notice_acks",
+    "prv.notices",
+    "prv.processing_register",
+    "prv.processors",
+    "prv.purge_log",
+    "prv.purge_proposals",
+    "prv.retention_rules",
+    "prv.rights_requests",
+    "sec.access_events",
+    "sec.mfa_enrolments",
+    "sec.mfa_recovery_codes",
+    "sec.password_history",
+    "sec.sessions"
+  ],
+  "differences": [
+    {
+      "table": "core.audit_log",
+      "typed_columns_absent_in_db": [],
+      "db_columns_absent_in_types": [
+        "chain_seq"
+      ]
+    },
+    {
+      "table": "core.companies",
+      "typed_columns_absent_in_db": [],
+      "db_columns_absent_in_types": [
+        "sap_company_code"
+      ]
+    },
+    {
+      "table": "core.cost_centers",
+      "typed_columns_absent_in_db": [],
+      "db_columns_absent_in_types": [
+        "plant_id"
+      ]
+    },
+    {
+      "table": "core.departments",
+      "typed_columns_absent_in_db": [],
+      "db_columns_absent_in_types": [
+        "mis_code_id"
+      ]
+    },
+    {
+      "table": "core.employees",
+      "typed_columns_absent_in_db": [],
+      "db_columns_absent_in_types": [
+        "plant_id",
+        "hod_employee_id"
+      ]
+    },
+    {
+      "table": "core.documents",
+      "typed_columns_absent_in_db": [],
+      "db_columns_absent_in_types": [
+        "expires_on",
+        "status"
+      ]
+    },
+    {
+      "table": "att.shifts",
+      "typed_columns_absent_in_db": [],
+      "db_columns_absent_in_types": [
+        "break_paid",
+        "ot_start_offset_minutes",
+        "late_slabs",
+        "early_exit_slabs",
+        "allowance_component_code",
+        "session2_start",
+        "session2_end"
+      ]
+    },
+    {
+      "table": "pay.gl_accounts",
+      "typed_columns_absent_in_db": [
+        "cost_center_id",
+        "gl_description"
+      ],
+      "db_columns_absent_in_types": [
+        "company_code",
+        "plant_code",
+        "cost_center_code"
+      ]
+    },
+    {
+      "table": "pay.claim_types",
+      "typed_columns_absent_in_db": [],
+      "db_columns_absent_in_types": [
+        "requires_bill",
+        "is_taxable",
+        "is_active",
+        "sort_order",
+        "updated_at"
+      ]
+    },
+    {
+      "table": "pay.claims",
+      "typed_columns_absent_in_db": [],
+      "db_columns_absent_in_types": [
+        "reserved_budget_id",
+        "display_currency",
+        "fx_rates_to_inr",
+        "fx_rate_date",
+        "settlement_status",
+        "settlement_mode",
+        "settlement_amount",
+        "net_payable",
+        "settled_by_user_id",
+        "settled_at",
+        "submitted_at",
+        "decided_at",
+        "updated_at"
+      ]
+    }
+  ]
+}

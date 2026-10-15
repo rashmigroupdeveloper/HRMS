@@ -11,135 +11,20 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { addDaysIso, formatDbDate, istDateString } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
 import { createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
-import { getBalance, getLeaveType, type LeaveTypeRow } from './leave-core.service.js';
+import { getBalance, getLeaveType } from './leave-core.service.js';
+import { assertApprovalSpanWritable } from '../../core/db/attendance-period.js';
+import { computeLeaveSpan, validateLeaveApplication, type ApplyLeaveParams } from './leave-validation.js';
+export { computeLeaveSpan } from './leave-validation.js';
+export type { ApplyLeaveParams } from './leave-validation.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
-
-interface SpanDay {
-  iso: string;
-  /** counts toward the requested days (sandwich rule applied) */
-  counted: boolean;
-  /** 0.5 for the half-day edges, else 1 */
-  weight: number;
-  /** a half-day edge → the day record is written as HD, not L/CO */
-  isHalf: boolean;
-  /** gets a leave day-record on approval (any working, non-holiday/WO day) */
-  writesRecord: boolean;
-}
-
-/** Sandwich rule (LV-03): 'exclude' skips holidays/week-offs inside the span;
- *  'include' counts them but never overwrites their H/WO day record. */
-export async function computeLeaveSpan(
-  db: Db,
-  employee: { id: number; location_id: number | null },
-  type: Pick<LeaveTypeRow, 'sandwich_rule'>,
-  fromDate: string,
-  toDate: string,
-  fromHalf: boolean,
-  toHalf: boolean,
-): Promise<{ days: number; span: SpanDay[] }> {
-  const span: SpanDay[] = [];
-  for (let iso = fromDate; iso <= toDate; iso = addDaysIso(iso, 1)) {
-    const holiday = await db
-      .selectFrom('att.holidays')
-      .select('id')
-      .where('holiday_date', '=', sql<Date>`${iso}::date`)
-      .where((eb) =>
-        employee.location_id === null
-          ? eb('location_id', 'is', null)
-          : eb.or([eb('location_id', 'is', null), eb('location_id', '=', employee.location_id)]),
-      )
-      .executeTakeFirst();
-    let offDay = holiday !== undefined;
-    if (!offDay) {
-      const roster = await db
-        .selectFrom('att.rosters')
-        .select('is_week_off')
-        .where('employee_id', '=', employee.id)
-        .where('work_date', '=', sql<Date>`${iso}::date`)
-        .executeTakeFirst();
-      offDay = roster ? roster.is_week_off : new Date(`${iso}T00:00:00Z`).getUTCDay() === 0;
-    }
-
-    const counted = type.sandwich_rule === 'include' || !offDay;
-    const isHalf = (iso === fromDate && fromHalf) || (iso === toDate && toHalf);
-    span.push({
-      iso,
-      counted,
-      weight: isHalf ? 0.5 : 1,
-      isHalf,
-      // Every working day of the leave gets a record (full → L/CO, half → HD),
-      // so payroll counts it. Only holidays/week-offs are left untouched.
-      writesRecord: counted && !offDay,
-    });
-  }
-  const days = span.filter((d) => d.counted).reduce((acc, d) => acc + d.weight, 0);
-  return { days, span };
-}
-
-export interface ApplyLeaveParams {
-  employeeId: number;
-  requestedByUserId: number;
-  leaveTypeCode: string;
-  fromDate: string;
-  toDate: string;
-  fromHalf?: boolean | undefined;
-  toHalf?: boolean | undefined;
-  reason?: string | undefined;
-}
 
 export async function applyForLeave(
   db: Kysely<Database>,
   params: ApplyLeaveParams,
 ): Promise<{ id: number; workflowRequestId: number; days: number }> {
-  if (params.fromDate > params.toDate) throw new Error('fromDate must be on or before toDate');
-  const type = await getLeaveType(db, params.leaveTypeCode);
-  const fromHalf = params.fromHalf ?? false;
-  const toHalf = params.toHalf ?? false;
-  if ((fromHalf || toHalf) && !type.allow_half_day) throw new Error(`${type.code} does not allow half days`);
-  if (fromHalf && toHalf && params.fromDate === params.toDate) throw new Error('A single day cannot be two halves');
-
-  const employee = await db
-    .selectFrom('core.employees')
-    .select(['id', 'location_id', 'gender', 'category'])
-    .where('id', '=', params.employeeId)
-    .executeTakeFirstOrThrow();
-  if (type.applicable_gender !== null && employee.gender !== type.applicable_gender) {
-    throw new Error(`${type.name} is not applicable for this employee`);
-  }
-  if (type.applicable_categories !== null && (employee.category === null || !type.applicable_categories.includes(employee.category))) {
-    throw new Error(`${type.name} is not applicable for this employee category`);
-  }
-
-  const locked = await db
-    .selectFrom('att.day_records')
-    .select('id')
-    .where('employee_id', '=', params.employeeId)
-    .where('work_date', '>=', sql<Date>`${params.fromDate}::date`)
-    .where('work_date', '<=', sql<Date>`${params.toDate}::date`)
-    .where('is_locked', '=', true)
-    .executeTakeFirst();
-  if (locked) throw new Error('The period is locked for payroll — contact HR');
-
-  const overlap = await db
-    .selectFrom('lv.applications')
-    .select('id')
-    .where('employee_id', '=', params.employeeId)
-    .where('status', 'in', ['pending', 'approved'])
-    .where('from_date', '<=', sql<Date>`${params.toDate}::date`)
-    .where('to_date', '>=', sql<Date>`${params.fromDate}::date`)
-    .executeTakeFirst();
-  if (overlap) throw new Error('An open or approved leave already covers these dates');
-
-  const { days } = await computeLeaveSpan(db, employee, type, params.fromDate, params.toDate, fromHalf, toHalf);
-  if (days <= 0) throw new Error('The requested span contains no countable leave days');
-  if (type.max_per_request !== null && days > Number(type.max_per_request)) {
-    throw new Error(`${type.code} allows at most ${Number(type.max_per_request)} days per request`);
-  }
-  if (type.is_paid) {
-    const { available } = await getBalance(db, params.employeeId, type.id);
-    if (available < days) throw new Error(`Insufficient ${type.code} balance: ${available} available, ${days} requested`);
-  }
+  let validated = await validateLeaveApplication(db, params);
+  const { type, fromHalf, toHalf } = validated;
 
   let applicationId = 0;
   const workflowRequestId = await createRequest(
@@ -148,9 +33,15 @@ export async function applyForLeave(
       definitionCode: type.code === 'CO' ? 'comp_off' : 'leave',
       subjectEmployeeId: params.employeeId,
       requestedByUserId: params.requestedByUserId,
-      payload: { leaveType: type.code, fromDate: params.fromDate, toDate: params.toDate, days, reason: params.reason ?? null },
+      payload: { leaveType: type.code, fromDate: params.fromDate, toDate: params.toDate, days: validated.days, reason: params.reason ?? null, fromHalf, toHalf },
     },
     async (trx, requestId) => {
+      await assertApprovalSpanWritable(trx, params.employeeId, params.fromDate, params.toDate);
+      validated = await validateLeaveApplication(trx, params);
+      await trx.updateTable('wf.requests').set({ payload: JSON.stringify({
+        leaveType: validated.type.code, fromDate: params.fromDate, toDate: params.toDate,
+        days: validated.days, reason: params.reason ?? null, fromHalf: validated.fromHalf, toHalf: validated.toHalf,
+      }) }).where('id', '=', requestId).execute();
       const inserted = await trx
         .insertInto('lv.applications')
         .values({
@@ -160,7 +51,7 @@ export async function applyForLeave(
           to_date: sql<Date>`${params.toDate}::date` as unknown as Date,
           from_half: fromHalf,
           to_half: toHalf,
-          days: String(days),
+          days: String(validated.days),
           reason: params.reason ?? null,
           workflow_request_id: requestId,
         })
@@ -169,7 +60,7 @@ export async function applyForLeave(
       applicationId = inserted.id;
     },
   );
-  return { id: applicationId, workflowRequestId, days };
+  return { id: applicationId, workflowRequestId, days: validated.days };
 }
 
 /** Completion hook ('leave' + 'comp_off'): approval = ledger debit + leave day
@@ -189,6 +80,8 @@ export async function applyLeaveOnFinal(db: Db, request: RequestRow, status: Wor
     return;
   }
 
+  if (app.employee_id !== request.subject_employee_id) throw new Error('Leave subject does not match its application');
+  await assertApprovalSpanWritable(db, app.employee_id, formatDbDate(app.from_date), formatDbDate(app.to_date));
   const type = await db.selectFrom('lv.leave_types').selectAll().where('id', '=', app.leave_type_id).executeTakeFirstOrThrow();
   let ledgerTxnId: number | null = null;
   if (type.is_paid) {
@@ -223,7 +116,7 @@ export async function applyLeaveOnFinal(db: Db, request: RequestRow, status: Wor
       source: 'regularized' as const,
       computed_at: new Date(),
     };
-    await db
+    const applied = await db
       .insertInto('att.day_records')
       .values({ employee_id: app.employee_id, work_date: sql<Date>`${day.iso}::date` as unknown as Date, ...row })
       .onConflict((oc) =>
@@ -233,7 +126,8 @@ export async function applyLeaveOnFinal(db: Db, request: RequestRow, status: Wor
           .where('att.day_records.source', '<>', 'manual')
           .where('att.day_records.is_locked', '=', false),
       )
-      .execute();
+      .returning('id').executeTakeFirst();
+    if (!applied) throw new Error('Attendance changed during leave approval — refresh and contact HR');
   }
 }
 
@@ -280,6 +174,7 @@ export async function applyCancelOnFinal(db: Db, request: RequestRow, status: Wo
     .executeTakeFirst();
   if (!app) return;
 
+  await assertApprovalSpanWritable(db, app.employee_id, formatDbDate(app.from_date), formatDbDate(app.to_date));
   const type = await db.selectFrom('lv.leave_types').selectAll().where('id', '=', app.leave_type_id).executeTakeFirstOrThrow();
   if (type.is_paid) {
     await db
@@ -438,8 +333,9 @@ export async function applyRhOnFinal(db: Db, request: RequestRow, status: Workfl
   if (!selection || status !== 'approved') return;
 
   const rh = await db.selectFrom('lv.restricted_holidays').selectAll().where('id', '=', selection.restricted_holiday_id).executeTakeFirstOrThrow();
-  const row = { status: 'H' as const, source: 'regularized' as const, session_statuses: null, computed_at: new Date() };
-  await db
+  await assertApprovalSpanWritable(db, selection.employee_id, formatDbDate(rh.holiday_date), formatDbDate(rh.holiday_date));
+  const row = { status: 'H' as const, source: 'regularized' as const, leave_type_id: null, session_statuses: null, computed_at: new Date() };
+  const applied = await db
     .insertInto('att.day_records')
     .values({ employee_id: selection.employee_id, work_date: rh.holiday_date, ...row })
     .onConflict((oc) =>
@@ -449,6 +345,7 @@ export async function applyRhOnFinal(db: Db, request: RequestRow, status: Workfl
         .where('att.day_records.source', '<>', 'manual')
         .where('att.day_records.is_locked', '=', false),
     )
-    .execute();
+    .returning('id').executeTakeFirst();
+  if (!applied) throw new Error('Attendance changed during holiday approval — refresh and contact HR');
   await db.updateTable('lv.rh_selections').set({ applied: true }).where('id', '=', selection.id).execute();
 }

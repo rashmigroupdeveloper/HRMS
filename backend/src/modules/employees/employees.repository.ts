@@ -4,6 +4,7 @@
  */
 import { sql, type Kysely, type ExpressionBuilder } from 'kysely';
 import type { Database, EmployeeStatus, EmploymentCategory } from '../../core/db/types.js';
+import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 
 export interface DirectoryFilters {
   q?: string | undefined;
@@ -23,6 +24,7 @@ export interface DirectoryFilters {
   activeOnly: boolean;
   limit: number;
   offset: number;
+  scope?: EmployeeScope | undefined;
 }
 
 export interface DirectoryRow {
@@ -146,6 +148,9 @@ export async function countDirectory(
     .leftJoin('core.departments as dep', 'dep.id', 'e.department_id')
     .select((eb) => eb.fn.countAll<string>().as('n'))
     .where((eb) => applyFilters(eb as unknown as DirEB, filters))
+    .$if(filters.scope !== undefined && !filters.scope.all, (qb) =>
+      qb.where(employeeScopeSql(filters.scope, 'e')),
+    )
     .executeTakeFirstOrThrow();
   return Number(row.n);
 }
@@ -172,6 +177,9 @@ export async function listDirectory(
       'dep.name as department',
     ])
     .where((eb) => applyFilters(eb as unknown as DirEB, filters))
+    .$if(filters.scope !== undefined && !filters.scope.all, (qb) =>
+      qb.where(employeeScopeSql(filters.scope, 'e')),
+    )
     .orderBy('e.ecode', 'asc')
     .limit(filters.limit)
     .offset(filters.offset)
@@ -244,8 +252,13 @@ function selectProfile(db: Kysely<Database>) {
 export async function findByEcode(
   db: Kysely<Database>,
   ecode: string,
+  scope?: EmployeeScope,
 ): Promise<EmployeeProfileRow | undefined> {
-  return selectProfile(db).where('e.ecode', '=', ecode).executeTakeFirst();
+  let query = selectProfile(db).where('e.ecode', '=', ecode);
+  if (scope !== undefined && !scope.all) {
+    query = query.where(employeeScopeSql(scope, 'e'));
+  }
+  return query.executeTakeFirst();
 }
 
 /** Profile by internal id — the self-service (`/employees/me`) resolution path. */

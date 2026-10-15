@@ -3,7 +3,7 @@
  */
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
-import { formatDbDate } from '../../core/dates.js';
+import { formatDbDate, istDateString } from '../../core/dates.js';
 import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { monthStart, nextMonthStart } from '../attendance/index.js';
 
@@ -894,3 +894,638 @@ function bandYears(years: number | null, kind: 'age' | 'tenure'): string {
   if (years < 11) return '6–10 years';
   return '10+ years';
 }
+
+// ── R21 Offers & Candidates (docs/06 §R21 / RPT-02) ─────────────────────────
+
+export interface R21Row {
+  id: number;
+  candidateName: string;
+  orgUnit: string | null;
+  designationOffered: string;
+  doj: string;
+  offerDate: string;
+  offeredSalary: number;
+  probationPercentage: number;
+  loiStatus: 'Accepted' | 'Rejected' | 'Yet to Accept';
+  workLocation: string | null;
+  status: string;
+}
+
+export async function reportR21Offers(
+  db: Kysely<Database>,
+  params: {
+    companyId?: number | undefined;
+    fromDate?: string | undefined;
+    toDate?: string | undefined;
+    status?: string | undefined;
+    scope?: EmployeeScope | undefined;
+  } = {},
+): Promise<R21Row[]> {
+  let q = db
+    .selectFrom('core.onboarding_candidates as c')
+    .select([
+      'c.id',
+      'c.full_name',
+      'c.org_unit',
+      'c.position_title',
+      'c.designation',
+      'c.proposed_doj',
+      'c.offer_date',
+      'c.offered_ctc',
+      'c.probation_salary_pct',
+      'c.work_location',
+      'c.status',
+    ]);
+
+  if (params.companyId !== undefined) {
+    q = q.where('c.company_id', '=', params.companyId);
+  }
+  if (params.fromDate !== undefined) {
+    q = q.where('c.offer_date', '>=', sql<Date>`${params.fromDate}::date`);
+  }
+  if (params.toDate !== undefined) {
+    q = q.where('c.offer_date', '<=', sql<Date>`${params.toDate}::date`);
+  }
+  if (params.status !== undefined) {
+    q = q.where('c.status', '=', params.status as unknown as 'converted');
+  }
+
+  const rows = await q.orderBy('c.offer_date', 'desc').execute();
+
+  return rows.map((r) => {
+    let loiStatus: 'Accepted' | 'Rejected' | 'Yet to Accept' = 'Yet to Accept';
+    if (r.status === 'converted' || r.status === 'prejoin_done') loiStatus = 'Accepted';
+    else if (r.status === 'no_show') loiStatus = 'Rejected';
+
+    return {
+      id: r.id,
+      candidateName: r.full_name,
+      orgUnit: r.org_unit,
+      designationOffered: r.designation ?? r.position_title,
+      doj: formatDbDate(r.proposed_doj),
+      offerDate: formatDbDate(r.offer_date),
+      offeredSalary: Number(r.offered_ctc),
+      probationPercentage: r.probation_salary_pct ?? 100,
+      loiStatus,
+      workLocation: r.work_location,
+      status: r.status,
+    };
+  });
+}
+
+// ── R23 Promotion & Internal Movement (docs/06 §R23 / RPT-05) ───────────────
+
+export interface R23Row {
+  id: number;
+  employeeName: string;
+  ecode: string;
+  fromCompany: string;
+  toCompany: string | null;
+  fromDepartment: string | null;
+  toDepartment: string | null;
+  fromLocation: string | null;
+  toLocation: string | null;
+  transferType: string;
+  effectiveDate: string;
+  status: string;
+  approverName: string | null;
+}
+
+export async function reportR23Transfers(
+  db: Kysely<Database>,
+  params: {
+    companyId?: number | undefined;
+    fromDate?: string | undefined;
+    toDate?: string | undefined;
+    scope?: EmployeeScope | undefined;
+  } = {},
+): Promise<R23Row[]> {
+  let q = db
+    .selectFrom('core.transfers as t')
+    .innerJoin('core.employees as e', 'e.id', 't.employee_id')
+    .innerJoin('core.companies as c1', 'c1.id', 't.current_company_id')
+    .leftJoin('core.companies as c2', 'c2.id', 't.target_company_id')
+    .leftJoin('core.departments as d1', 'd1.id', 't.current_department_id')
+    .leftJoin('core.departments as d2', 'd2.id', 't.target_department_id')
+    .leftJoin('core.locations as l1', 'l1.id', 't.current_location_id')
+    .leftJoin('core.locations as l2', 'l2.id', 't.target_location_id')
+    .leftJoin('core.employees as approver', 'approver.id', 't.approved_by')
+    .select([
+      't.id',
+      'e.first_name',
+      'e.last_name',
+      't.current_ecode',
+      'c1.name as from_company',
+      'c2.name as to_company',
+      'd1.name as from_department',
+      'd2.name as to_department',
+      'l1.name as from_location',
+      'l2.name as to_location',
+      't.transfer_type',
+      't.effective_date',
+      't.status',
+      'approver.first_name as approver_first',
+      'approver.last_name as approver_last',
+    ])
+    .where(employeeScopeSql(params.scope, 'e'));
+
+  if (params.companyId !== undefined) {
+    q = q.where('t.current_company_id', '=', params.companyId);
+  }
+  if (params.fromDate !== undefined) {
+    q = q.where('t.effective_date', '>=', sql<Date>`${params.fromDate}::date`);
+  }
+  if (params.toDate !== undefined) {
+    q = q.where('t.effective_date', '<=', sql<Date>`${params.toDate}::date`);
+  }
+
+  const rows = await q.orderBy('t.effective_date', 'desc').execute();
+
+  return rows.map((r) => ({
+    id: r.id,
+    employeeName: fullName(r.first_name, r.last_name),
+    ecode: r.current_ecode,
+    fromCompany: r.from_company,
+    toCompany: r.to_company,
+    fromDepartment: r.from_department,
+    toDepartment: r.to_department,
+    fromLocation: r.from_location,
+    toLocation: r.to_location,
+    transferType: r.transfer_type,
+    effectiveDate: formatDbDate(r.effective_date),
+    status: r.status,
+    approverName: r.approver_first ? fullName(r.approver_first, r.approver_last) : null,
+  }));
+}
+
+// ── R25 Probation Due / Confirmation (docs/06 §R25 / LC-04) ─────────────────
+
+export interface R25Row {
+  id: number;
+  employeeName: string;
+  ecode: string;
+  department: string | null;
+  designation: string | null;
+  doj: string | null;
+  dueDate: string;
+  status: string;
+  outcome: string | null;
+  extensionMonths: number | null;
+  decidedBy: string | null;
+  isOverdue: boolean;
+}
+
+export async function reportR25Probation(
+  db: Kysely<Database>,
+  params: {
+    companyId?: number | undefined;
+    status?: string | undefined;
+    scope?: EmployeeScope | undefined;
+  } = {},
+): Promise<R25Row[]> {
+  let q = db
+    .selectFrom('core.probation_reviews as pr')
+    .innerJoin('core.employees as e', 'e.id', 'pr.employee_id')
+    .leftJoin('core.departments as dep', 'dep.id', 'e.department_id')
+    .leftJoin('core.designations as des', 'des.id', 'e.designation_id')
+    .leftJoin('core.employees as decider', 'decider.id', 'pr.decided_by')
+    .select([
+      'pr.id',
+      'e.first_name',
+      'e.last_name',
+      'e.ecode',
+      'e.doj',
+      'dep.name as department',
+      'des.name as designation',
+      'pr.due_date',
+      'pr.status',
+      'pr.outcome',
+      'pr.extension_months',
+      'decider.first_name as decider_first',
+      'decider.last_name as decider_last',
+    ])
+    .where(employeeScopeSql(params.scope, 'e'));
+
+  if (params.companyId !== undefined) {
+    q = q.where('e.company_id', '=', params.companyId);
+  }
+  if (params.status !== undefined) {
+    q = q.where('pr.status', '=', params.status as unknown as 'pending');
+  }
+
+  const rows = await q.orderBy('pr.due_date', 'asc').execute();
+  const today = new Date();
+
+  return rows.map((r) => ({
+    id: r.id,
+    employeeName: fullName(r.first_name, r.last_name),
+    ecode: r.ecode,
+    department: r.department,
+    designation: r.designation,
+    doj: r.doj ? formatDbDate(r.doj) : null,
+    dueDate: formatDbDate(r.due_date),
+    status: r.status,
+    outcome: r.outcome,
+    extensionMonths: r.extension_months,
+    decidedBy: r.decider_first ? fullName(r.decider_first, r.decider_last) : null,
+    isOverdue: r.status === 'pending' && new Date(r.due_date) < today,
+  }));
+}
+
+// ── R26 Exit / Attrition Report (docs/06 §R26) ──────────────────────────────
+
+export interface R26Row {
+  id: number;
+  employeeName: string;
+  ecode: string;
+  company: string;
+  department: string | null;
+  location: string | null;
+  category: string;
+  doj: string | null;
+  dol: string | null;
+  tenureBand: string;
+  reason: string;
+  resignationDate: string;
+  noticePeriodDays: number;
+  shortfallDays: number;
+  exitType: 'Voluntary' | 'Involuntary';
+  status: string;
+}
+
+export async function reportR26Attrition(
+  db: Kysely<Database>,
+  params: {
+    companyId?: number | undefined;
+    fromDate?: string | undefined;
+    toDate?: string | undefined;
+    scope?: EmployeeScope | undefined;
+  } = {},
+): Promise<R26Row[]> {
+  let q = db
+    .selectFrom('core.separations as s')
+    .innerJoin('core.employees as e', 'e.id', 's.employee_id')
+    .innerJoin('core.companies as c', 'c.id', 'e.company_id')
+    .leftJoin('core.departments as dep', 'dep.id', 'e.department_id')
+    .leftJoin('core.locations as loc', 'loc.id', 'e.location_id')
+    .select([
+      's.id',
+      'e.first_name',
+      'e.last_name',
+      'e.ecode',
+      'e.category',
+      'e.doj',
+      'e.dol',
+      'c.name as company',
+      'dep.name as department',
+      'loc.name as location',
+      's.reason',
+      's.resignation_date',
+      's.requested_lwd',
+      's.approved_lwd',
+      's.notice_period_days',
+      's.shortfall_days',
+      's.initiated_by',
+      's.status',
+    ])
+    .where(employeeScopeSql(params.scope, 'e'));
+
+  if (params.companyId !== undefined) {
+    q = q.where('e.company_id', '=', params.companyId);
+  }
+  if (params.fromDate !== undefined) {
+    q = q.where('s.resignation_date', '>=', sql<Date>`${params.fromDate}::date`);
+  }
+  if (params.toDate !== undefined) {
+    q = q.where('s.resignation_date', '<=', sql<Date>`${params.toDate}::date`);
+  }
+
+  const rows = await q.orderBy('s.resignation_date', 'desc').execute();
+
+  return rows.map((r) => {
+    const exitDate = r.dol ?? r.approved_lwd ?? r.requested_lwd;
+    const tenureYears = r.doj ? yearsBetween(r.doj, formatDbDate(exitDate)) : null;
+
+    return {
+      id: r.id,
+      employeeName: fullName(r.first_name, r.last_name),
+      ecode: r.ecode,
+      company: r.company,
+      department: r.department,
+      location: r.location,
+      category: r.category ?? 'unspecified',
+      doj: r.doj ? formatDbDate(r.doj) : null,
+      dol: formatDbDate(exitDate),
+      tenureBand: bandYears(tenureYears, 'tenure'),
+      reason: r.reason,
+      resignationDate: formatDbDate(r.resignation_date),
+      noticePeriodDays: r.notice_period_days,
+      shortfallDays: Number(r.shortfall_days),
+      exitType: r.initiated_by === 'employee' ? 'Voluntary' : 'Involuntary',
+      status: r.status,
+    };
+  });
+}
+
+// ── R28 Asset Custody Register (docs/06 §R28 / AR-04/05) ─────────────────────
+
+export interface R28Row {
+  assetId: number;
+  assetNo: string;
+  category: string;
+  description: string | null;
+  serialNo: string | null;
+  status: string;
+  company: string;
+  location: string | null;
+  holderName: string | null;
+  holderEcode: string | null;
+  holderKind: string | null;
+  assignedAt: string | null;
+  warrantyTill: string | null;
+}
+
+export async function reportR28Assets(
+  db: Kysely<Database>,
+  params: {
+    companyId?: number | undefined;
+    status?: string | undefined;
+    category?: string | undefined;
+    scope?: EmployeeScope | undefined;
+  } = {},
+): Promise<R28Row[]> {
+  let q = db
+    .selectFrom('ast.assets as a')
+    .innerJoin('core.companies as c', 'c.id', 'a.company_id')
+    .leftJoin('core.locations as loc', 'loc.id', 'a.location_id')
+    .leftJoin('ast.assignments as asgn', (join) =>
+      join.onRef('asgn.asset_id', '=', 'a.id').on('asgn.returned_at', 'is', null),
+    )
+    .leftJoin('core.employees as holder', 'holder.id', 'asgn.employee_id')
+    .select([
+      'a.id as asset_id',
+      'a.asset_no',
+      'a.category',
+      'a.description',
+      'a.serial_no',
+      'a.status',
+      'c.name as company',
+      'loc.name as location',
+      'asgn.holder_kind',
+      'asgn.third_party_name',
+      'asgn.assigned_at',
+      'a.warranty_till',
+      'holder.first_name as holder_first',
+      'holder.last_name as holder_last',
+      'holder.ecode as holder_ecode',
+    ]);
+
+  if (params.companyId !== undefined) {
+    q = q.where('a.company_id', '=', params.companyId);
+  }
+  if (params.status !== undefined) {
+    q = q.where('a.status', '=', params.status as unknown as 'assigned');
+  }
+  if (params.category !== undefined) {
+    q = q.where('a.category', '=', params.category);
+  }
+
+  const rows = await q.orderBy('a.asset_no').execute();
+
+  return rows.map((r) => ({
+    assetId: r.asset_id,
+    assetNo: r.asset_no,
+    category: r.category,
+    description: r.description,
+    serialNo: r.serial_no,
+    status: r.status,
+    company: r.company,
+    location: r.location,
+    holderName: r.holder_first
+      ? fullName(r.holder_first, r.holder_last)
+      : r.third_party_name ?? null,
+    holderEcode: r.holder_ecode,
+    holderKind: r.holder_kind,
+    assignedAt: r.assigned_at ? formatDbDate(r.assigned_at) : null,
+    warrantyTill: r.warranty_till ? formatDbDate(r.warranty_till) : null,
+  }));
+}
+
+// ── R29 Helpdesk Monthly Performance (docs/06 §R29 / HD-01) ─────────────────
+
+export interface R29Row {
+  month: string;
+  category: string;
+  totalTickets: number;
+  resolvedTickets: number;
+  resolutionRatePct: number;
+  breachedCount: number;
+  escalatedCount: number;
+  avgFirstResponseHours: number | null;
+  avgResolutionHours: number | null;
+}
+
+export async function reportR29Helpdesk(
+  db: Kysely<Database>,
+  params: {
+    month?: string | undefined;
+  } = {},
+): Promise<R29Row[]> {
+  const m = params.month ? monthStart(params.month) : istDateString().slice(0, 7) + '-01';
+  const mEnd = nextMonthStart(m);
+
+  const categories = await db.selectFrom('hd.categories').selectAll().where('is_active', '=', true).execute();
+
+  const out: R29Row[] = [];
+  for (const cat of categories) {
+    const tickets = await db
+      .selectFrom('hd.tickets')
+      .selectAll()
+      .where('category_id', '=', cat.id)
+      .where(sql<boolean>`created_at >= ${m}::date AND created_at < ${mEnd}::date`)
+      .execute();
+
+    const total = tickets.length;
+    const resolved = tickets.filter((t) => t.status === 'resolved' || t.status === 'closed').length;
+    const nowTs = Date.now();
+    const breached = tickets.filter((t) => {
+      const due = new Date(t.sla_due_at).getTime();
+      const resolvedTs = t.resolved_at ? new Date(t.resolved_at).getTime() : nowTs;
+      return resolvedTs > due;
+    }).length;
+    const escalated = tickets.filter((t) => t.escalated_level > 0).length;
+
+    let responseHoursTotal = 0;
+    let responseCount = 0;
+    for (const t of tickets) {
+      if (t.first_response_at) {
+        responseHoursTotal += (new Date(t.first_response_at).getTime() - new Date(t.created_at).getTime()) / 3600_000;
+        responseCount++;
+      }
+    }
+
+    let resHoursTotal = 0;
+    let resCount = 0;
+    for (const t of tickets) {
+      if (t.resolved_at) {
+        resHoursTotal += (new Date(t.resolved_at).getTime() - new Date(t.created_at).getTime()) / 3600_000;
+        resCount++;
+      }
+    }
+
+    out.push({
+      month: m.slice(0, 7),
+      category: cat.name,
+      totalTickets: total,
+      resolvedTickets: resolved,
+      resolutionRatePct: total === 0 ? 100 : Math.round((resolved / total) * 1000) / 10,
+      breachedCount: breached,
+      escalatedCount: escalated,
+      avgFirstResponseHours: responseCount === 0 ? null : Math.round((responseHoursTotal / responseCount) * 10) / 10,
+      avgResolutionHours: resCount === 0 ? null : Math.round((resHoursTotal / resCount) * 10) / 10,
+    });
+  }
+
+  return out;
+}
+
+// ── R30 Policy Compliance Matrix (docs/06 §R30 / CORE-13) ───────────────────
+
+export interface R30Row {
+  policyId: number;
+  title: string;
+  effectiveDate: string;
+  requiresAcknowledgment: boolean;
+  targetedCount: number;
+  acknowledgedCount: number;
+  pendingCount: number;
+  compliancePct: number;
+}
+
+export async function reportR30Policies(
+  db: Kysely<Database>,
+): Promise<R30Row[]> {
+  const policies = await db
+    .selectFrom('core.policies')
+    .selectAll()
+    .where('is_active', '=', true)
+    .orderBy('effective_date', 'desc')
+    .execute();
+
+  const totalEmployees = await db
+    .selectFrom('core.employees')
+    .select((eb) => eb.fn.countAll<string>().as('n'))
+    .where('status', 'in', ['active', 'on_notice'])
+    .executeTakeFirst();
+  const totalEmp = Number(totalEmployees?.n ?? 0);
+
+  const out: R30Row[] = [];
+  for (const pol of policies) {
+    const acks = await db
+      .selectFrom('core.policy_acknowledgments')
+      .select((eb) => eb.fn.countAll<string>().as('n'))
+      .where('policy_id', '=', pol.id)
+      .executeTakeFirst();
+    const ackCount = Number(acks?.n ?? 0);
+    const targeted = totalEmp;
+    const pending = Math.max(0, targeted - ackCount);
+    out.push({
+      policyId: pol.id,
+      title: pol.title,
+      effectiveDate: formatDbDate(pol.effective_date),
+      requiresAcknowledgment: pol.requires_acknowledgment,
+      targetedCount: targeted,
+      acknowledgedCount: ackCount,
+      pendingCount: pending,
+      compliancePct: targeted === 0 ? 100 : Math.round((ackCount / targeted) * 1000) / 10,
+    });
+  }
+  return out;
+}
+
+// ── R31 Reimbursement Utilization (docs/06 §R31 / CLM-06) ───────────────────
+
+export interface R31Row {
+  claimId: number;
+  employeeName: string;
+  ecode: string;
+  department: string | null;
+  claimType: string;
+  periodFrom: string;
+  periodTo: string;
+  claimedAmount: number;
+  approvedAmount: number | null;
+  status: string;
+  billsCount: number;
+  verifiedBillsCount: number;
+  paidInRunId: number | null;
+  rejectionReason: string | null;
+}
+
+export async function reportR31Claims(
+  db: Kysely<Database>,
+  params: {
+    companyId?: number | undefined;
+    fromDate?: string | undefined;
+    toDate?: string | undefined;
+    status?: string | undefined;
+    scope?: EmployeeScope | undefined;
+  } = {},
+): Promise<R31Row[]> {
+  let q = db
+    .selectFrom('pay.claims as cl')
+    .innerJoin('core.employees as e', 'e.id', 'cl.employee_id')
+    .innerJoin('pay.claim_types as ct', 'ct.id', 'cl.claim_type_id')
+    .leftJoin('core.departments as dep', 'dep.id', 'e.department_id')
+    .select([
+      'cl.id as claim_id',
+      'e.first_name',
+      'e.last_name',
+      'e.ecode',
+      'dep.name as department',
+      'ct.name as claim_type',
+      'cl.period_from',
+      'cl.period_to',
+      'cl.claimed_amount',
+      'cl.approved_amount',
+      'cl.status',
+      'cl.paid_in_run_id',
+      'cl.rejection_reason',
+      sql<number>`(SELECT count(*)::int FROM pay.claim_bills cb WHERE cb.claim_id = cl.id)`.as('bills_count'),
+      sql<number>`(SELECT count(*)::int FROM pay.claim_bills cb WHERE cb.claim_id = cl.id AND cb.verified = true)`.as('verified_count'),
+    ])
+    .where(employeeScopeSql(params.scope, 'e'));
+
+  if (params.companyId !== undefined) {
+    q = q.where('e.company_id', '=', params.companyId);
+  }
+  if (params.fromDate !== undefined) {
+    q = q.where('cl.period_from', '>=', sql<Date>`${params.fromDate}::date`);
+  }
+  if (params.toDate !== undefined) {
+    q = q.where('cl.period_to', '<=', sql<Date>`${params.toDate}::date`);
+  }
+  if (params.status !== undefined) {
+    q = q.where('cl.status', '=', params.status as unknown as 'approved');
+  }
+
+  const rows = await q.orderBy('cl.id', 'desc').execute();
+
+  return rows.map((r) => ({
+    claimId: r.claim_id,
+    employeeName: fullName(r.first_name, r.last_name),
+    ecode: r.ecode,
+    department: r.department,
+    claimType: r.claim_type,
+    periodFrom: formatDbDate(r.period_from),
+    periodTo: formatDbDate(r.period_to),
+    claimedAmount: Number(r.claimed_amount),
+    approvedAmount: r.approved_amount ? Number(r.approved_amount) : null,
+    status: r.status,
+    billsCount: r.bills_count,
+    verifiedBillsCount: r.verified_count,
+    paidInRunId: r.paid_in_run_id,
+    rejectionReason: r.rejection_reason,
+  }));
+}
+

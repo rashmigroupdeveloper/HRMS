@@ -1,0 +1,83 @@
+{
+  "recovered_from_git": [
+    {
+      "file": "backend/migrations/1752060000000_sec-identity-hardening.ts",
+      "commit": "c915a382fb8cf6fd068b2b3a369072355489ee98",
+      "bytes": 8256,
+      "sha256": "8e74e6670b89fec7f45514f5e14fcffa8ad2ec58996c8da742d02559d0512b61"
+    },
+    {
+      "file": "backend/migrations/1752070000000_cmp-licences-calendar.ts",
+      "commit": "ed038ca252560234275eba6833fd5a45a0b2c49e",
+      "bytes": 7740,
+      "sha256": "a5ebbc8f696d0e98dbbe3730629e639c5c3e90b5b7c9a8623e776626c9cee400"
+    },
+    {
+      "file": "backend/migrations/1752080000000_shift-micro-scheduling.ts",
+      "commit": "c3a768c6d29fdf4faf5d5772c01833c72e408a3e",
+      "bytes": 6564,
+      "sha256": "8c628043c649eb4beb7c5cb658ae23d3dfff98b92d92bf78599f158fac85394b"
+    },
+    {
+      "file": "backend/migrations/1752090000000_org-mis-spine.ts",
+      "commit": "babe6d1b5e9fb8d774e2b65646fb80e56a67c2f6",
+      "bytes": 3139,
+      "sha256": "6013beedfeee6a7a126bd5201cf4c7739498f25c562638ebb9af2b97a4dee3b2"
+    },
+    {
+      "file": "backend/migrations/1752100000000_prv-dpdp.ts",
+      "commit": "00bd153fdd4797e20fd4e8ee7f907677f993b46c",
+      "bytes": 9975,
+      "sha256": "6a7183aa6cb922e3c9052cf541678d71b99176c67587372b409672ba2e1b80c4"
+    },
+    {
+      "file": "backend/migrations/1752110000000_ess-identity-daily.ts",
+      "commit": "81b4037088ead22db023a03b0d9b68bb5aa11a59",
+      "bytes": 1480,
+      "sha256": "b3734ce69fea77e2eff35ad0a6aa570c3e5441db80e4c17aa48f2d24e690af7e"
+    },
+    {
+      "file": "backend/migrations/1752120000000_doc-vault.ts",
+      "commit": "cdd998c6a2f7cc311af6f2963dff0b061c14e6ab",
+      "bytes": 4075,
+      "sha256": "1b81ec3dece384b0009db202007a1c2e701060419d4970736f37701716f9e398"
+    },
+    {
+      "file": "backend/migrations/1752140000000_ird-posh-grievance.ts",
+      "commit": "6a1d3464bf74b72598606b723763d7d1c2d7b342",
+      "bytes": 7612,
+      "sha256": "e83ad2f250d441c91d9f80a595fbc7a06063e26650366fbae4eed7ce36008d7c"
+    },
+    {
+      "file": "backend/migrations/1752150000000_pay-budgets-claims.ts",
+      "commit": "b8e10228d6506419e18d9aeb19cb6831e7f8020e",
+      "bytes": 14892,
+      "sha256": "b96b1d2eab4bd8dcabc0a65c197dc1183b889150ae76a588684519e67e386f30"
+    },
+    {
+      "file": "backend/migrations/1752160000000_employee-hod.ts",
+      "commit": "5c16de6776853943148005d9382e539b3e6d06c3",
+      "bytes": 1780,
+      "sha256": "1fd4def9ca83036c1f13ce4ab780496e401dda1bb73d2f302440581ac5c447a0"
+    },
+    {
+      "file": "backend/migrations/1752170000000_audit-chain-seq.ts",
+      "commit": "62c50eb9f27db095ce6391882531cc8bd19d6c55",
+      "bytes": 6557,
+      "sha256": "cee13b642aca86fb8d886f99aaf3f9ed88828d9f6eec2a6eb0d8198f468dfc8e"
+    },
+    {
+      "file": "backend/migrations/1752180000000_org-spine-integrity.ts",
+      "commit": "babe6d1b5e9fb8d774e2b65646fb80e56a67c2f6",
+      "bytes": 6398,
+      "sha256": "bed705e208916dc46ecf76da10bce83c5fa5b8d24b189d6e0620bc3c87305e8e"
+    },
+    {
+      "file": "backend/migrations/1752190000000_attendance-day-integrity.ts",
+      "commit": "5c16de6776853943148005d9382e539b3e6d06c3",
+      "bytes": 2944,
+      "sha256": "627ff0526e5c1650b43cdb1b053b41e482601d8c3e85e9dcbafaf33f282cc1f9"
+    }
+  ],
+  "note": "Exact historical file contents, not a reconstruction or invented applied history."
+}

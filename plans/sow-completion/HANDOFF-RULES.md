@@ -1,0 +1,19 @@
+# Repository rules included for AI handoff
+
+This is a portable summary of the user-supplied AGENTS instructions for `/Users/anooppratapsingh/Documents/HRMS`. Read the actual current AGENTS instructions in the repository/session before edits; sponsor instructions take precedence. This summary creates no feature scope.
+
+Read packs 10, 11 and 12 as well as the selected domain card, then schema packs13–15 and [current checkout addendum](16-CURRENT-CHECKOUT-ADDENDUM.md). They connect 176 scored SOW points, 119 canonical PRD requirements and 60 numbered build tasks to code, 37 historical repairs and transaction obligations. Revalidate source inventories: 09 Oct code evidence is historical after subsequent edits. Latest 10 Oct backend verify passed typecheck and failed payroll-core lint before later gates. Do not convert source presence or this plan into completion ticks.
+
+- Read docs00 first, governing specs, docs13/14 before nontrivial work; money04/10 in full, UI05/12. Specs win over code for desired behavior; surface contradictions.
+- Work one existing plan-stage at a time; announce Phase/Stage/name before building, finish/report/stop. Never delete Markdown. Plans track progress; gates require real criteria and human sign-off.
+- Independent frontend React/Vite/Tailwind and backend Express/TypeScript/Kysely/PostgreSQL projects, npm, native PG. No cross-project imports/root shared package. Backend modules expose index public APIs; module boundaries are verified.
+- Every business API uses oRPC zod input/output, one central permission code and runtime DB RBAC. Ownership/entity/subtree scope checked server-side. No handler role literals. Frontend uses generated HTTP contract.
+- Policies in typed audited settings, money integer paise in backend/core/money and central rounding; ledgers/audit/raw/locked outputs immutable via DB triggers. Retro recompute+delta, no closed-month edits. All FK/check/temporal invariants enforced; migration and DB types change together.
+- Money tests first with independent golden/property values; payroll-core branch100%, general floor80%. Mandatory human review for payroll-core/statutory diff. `npm run verify` green for changed projects; never claim skipped gates passed.
+- UI Warm Editorial tokens/primitives only; seven interaction states, accessibility in both themes, keyboard/focus/reduced motion, IST/INR/DD MMM YYYY, preserved context/drafts. No fake data or MUI.
+- Explain every monetary line; KPI drilldowns; workflow delivery proof; partition big history, pool/report/snapshot boundaries, provision3k architect10k.
+- Source employee master EMS users historical1066, userid join key, enrich greytHR; canonical14 entities, India payroll only eligible entities; Kent completeness critical. Validate authorized current source rather than assume historical counts.
+- Mask PAN/Aadhaar/UAN/ESIC/bank; no secrets/logs/commits. Old shared credentials must be rotated, not casually reused; external recon read-only.
+- CI integration tests use a dedicated sanctioned *_test DB. **Sponsor override, 10 Oct:** every current local DB is test-only; `hrms_test` was explicitly removed. Local tests may use `hrms` only through explicit TEST_DATABASE_URL plus LOCAL_TEST_DATABASE_NAME=hrms, NODE_ENV=test and a loopback host; no implicit fallback or remote/production exception. fileParallelismfalse for audit chain; fixture-scoped cleanup; no hard delete audit-linked users. Object storage S3-compatible SeaweedFS; connector interfaces with mocks, production proof separate.
+
+The original 09 Oct plan authoring applied no application/schema changes. The 10 Oct follow-up changed test-target/seed tooling, explicitly dropped the local test database at sponsor request, and ran targeted tests with their existing baseline fixture setup on local hrms. The proposed schema SQL was not applied. No filing, remittance, external messaging, deployment or system retirement was performed.

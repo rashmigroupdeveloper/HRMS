@@ -9,7 +9,8 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
+import { expectHttpStatus } from './http-assertions.js';
 import type { Express } from 'express';
 import type { Kysely } from 'kysely';
 import { createApp } from '../src/app.js';
@@ -17,6 +18,7 @@ import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { hashPassword } from '../src/modules/auth/index.js';
 import { createRequest, runEscalations } from '../src/modules/workflows/index.js';
+import { getUserPermissions, getUserRoleCodes } from '../src/core/rbac/permissions.service.js';
 
 const DB_URL = process.env['DATABASE_URL'];
 const JWT_SECRET = process.env['JWT_SECRET'] ?? 'integration-test-secret-at-least-32-chars!';
@@ -27,6 +29,8 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
   let app: Express;
   const stamp = Date.now();
   const password = 'stage13-test-password-1!';
+  const genericDefinitionCode = `s13_chain_${stamp}`;
+  const editableDefinitionCode = `s13_edit_${stamp}`;
 
   // people: worker → manager → (hr user with hr_ops role)
   let workerEmpId: number;
@@ -47,8 +51,8 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
   }
 
   async function token(email: string): Promise<string> {
-    const res = await request(app).post('/api/auth/login').send({ identifier: email, password });
-    expect(res.status).toBe(200);
+    const res = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
+    expectHttpStatus(res, 200);
     return (res.body as { accessToken: string }).accessToken;
   }
 
@@ -68,7 +72,7 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     const rml = await db.selectFrom('core.companies').select('id').where('code', '=', 'RML').executeTakeFirstOrThrow();
     const mgr = await db
       .insertInto('core.employees')
-      .values({ ecode: `RML8${String(stamp).slice(-5)}M`, company_id: rml.id, first_name: 'S13 Manager' })
+      .values({ ecode: `RML8${String(stamp).slice(-5)}M`, company_id: rml.id, first_name: 'S13 Manager', status: 'active' })
       .returning('id')
       .executeTakeFirstOrThrow();
     managerEmpId = mgr.id;
@@ -78,6 +82,7 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
         ecode: `RML8${String(stamp).slice(-5)}W`,
         company_id: rml.id,
         first_name: 'S13 Worker',
+        status: 'active',
         reporting_manager_id: managerEmpId,
       })
       .returning('id')
@@ -89,6 +94,15 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     hrUser = await makeUser(`s13-hr-${stamp}@hrms.test`);
     delegateUser = await makeUser(`s13-delegate-${stamp}@hrms.test`);
     await giveRole(hrUser, 'hr_ops');
+    // Test the configurable generic engine without bypassing the dedicated
+    // leave/attendance APIs or editing shared default workflow definitions.
+    const steps = JSON.stringify([
+      { step: 1, approver: 'reporting_manager', slaHours: 48, onBreach: 'escalate' },
+    ]);
+    await db.insertInto('wf.definitions').values([
+      { code: genericDefinitionCode, name: 'S13 synthetic approval chain', steps },
+      { code: editableDefinitionCode, name: 'S13 editable approval chain', steps },
+    ]).execute();
     // Make this HR user the deterministic role resolution target? Resolution
     // picks the LOWEST active user id holding the role — existing test users
     // are inactive, so ours wins unless an older active hr_ops user exists.
@@ -100,6 +114,8 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
       await db.deleteFrom('wf.requests').where('id', '=', id).execute();
     }
     await db.deleteFrom('wf.delegations').where('from_user_id', '=', managerUser).execute();
+    await db.deleteFrom('wf.definitions')
+      .where('code', 'in', [genericDefinitionCode, editableDefinitionCode]).execute();
     await db.deleteFrom('core.user_roles').where('user_id', 'in', [workerUser, managerUser, hrUser, delegateUser]).execute();
     await db
       .updateTable('core.users')
@@ -110,13 +126,13 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     await db.destroy();
   });
 
-  it('leave request: step 1 lands on the RM with a notification RECEIPT (PP-14)', async () => {
+  it('generic request: step 1 lands on the RM with a notification RECEIPT (PP-14)', async () => {
     const t = await token(`s13-worker-${stamp}@hrms.test`);
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .post('/api/workflows/requests')
       .set('Authorization', `Bearer ${t}`)
-      .send({ definitionCode: 'leave', payload: { from: '2026-08-03', to: '2026-08-05', type: 'CL' } });
-    expect(res.status).toBe(200);
+      .send({ definitionCode: genericDefinitionCode, payload: { reason: 'Synthetic routing proof' } });
+    expectHttpStatus(res, 200);
     const requestId = (res.body as { requestId: number }).requestId;
     createdRequests.push(requestId);
 
@@ -139,22 +155,22 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
 
     // It shows in the manager's inbox…
     const mt = await token(`s13-manager-${stamp}@hrms.test`);
-    const inbox = await request(app).get('/api/workflows/inbox').set('Authorization', `Bearer ${mt}`);
+    const inbox = await (await httpRequest(app)).get('/api/workflows/inbox').set('Authorization', `Bearer ${mt}`);
     expect((inbox.body as { requestId: number }[]).some((r) => r.requestId === requestId)).toBe(true);
 
     // …a stranger cannot act, the RM can.
     const st = await token(`s13-hr-${stamp}@hrms.test`);
-    const forbidden = await request(app)
+    const forbidden = await (await httpRequest(app))
       .post(`/api/workflows/requests/${requestId}/act`)
       .set('Authorization', `Bearer ${st}`)
       .send({ requestId, action: 'approve' });
-    expect(forbidden.status).toBe(403);
+    expectHttpStatus(forbidden, 403);
 
-    const approve = await request(app)
+    const approve = await (await httpRequest(app))
       .post(`/api/workflows/requests/${requestId}/act`)
       .set('Authorization', `Bearer ${mt}`)
       .send({ requestId, action: 'approve', comment: 'Enjoy' });
-    expect(approve.status).toBe(200);
+    expectHttpStatus(approve, 200);
     expect((approve.body as { outcome: string }).outcome).toBe('approved'); // single-step chain
   });
 
@@ -162,32 +178,69 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     const wt = await token(`s13-worker-${stamp}@hrms.test`);
     const mt = await token(`s13-manager-${stamp}@hrms.test`);
 
-    const created = await request(app)
+    const created = await (await httpRequest(app))
       .post('/api/workflows/requests')
       .set('Authorization', `Bearer ${wt}`)
-      .send({ definitionCode: 'regularization', payload: { date: '2026-08-01', reason: 'forgot' } });
+      .send({ definitionCode: genericDefinitionCode, payload: { reason: 'forgot' } });
+    expectHttpStatus(created, 200);
     const requestId = (created.body as { requestId: number }).requestId;
     createdRequests.push(requestId);
 
-    const back = await request(app)
+    const back = await (await httpRequest(app))
       .post(`/api/workflows/requests/${requestId}/act`)
       .set('Authorization', `Bearer ${mt}`)
       .send({ requestId, action: 'send_back', comment: 'Reason too vague — which gate?' });
+    expectHttpStatus(back, 200);
     expect((back.body as { outcome: string }).outcome).toBe('sent_back');
 
-    const resub = await request(app)
+    const resub = await (await httpRequest(app))
       .post(`/api/workflows/requests/${requestId}/resubmit`)
       .set('Authorization', `Bearer ${wt}`)
       .send({ requestId, payload: { date: '2026-08-01', reason: 'Kent door S4 offline, gate register signed' } });
-    expect(resub.status).toBe(200);
+    expectHttpStatus(resub, 200);
 
-    const timeline = await request(app)
+    const timeline = await (await httpRequest(app))
       .get(`/api/workflows/requests/${requestId}`)
       .set('Authorization', `Bearer ${wt}`);
     const body = timeline.body as { status: string; steps: { action: string | null }[] };
     expect(body.status).toBe('pending');
     expect(body.steps.map((s) => s.action)).toEqual(['sent_back', null]); // round 1 + fresh step
   });
+
+  it('CORE-10 derives manager approval permissions from the live reporting tree', async () => {
+    expect(await getUserRoleCodes(db, managerUser)).toContain('manager');
+    expect(await getUserPermissions(db, managerUser)).toContain('ar.approve');
+    expect(await getUserPermissions(db, managerUser)).toContain('leave.approve');
+    expect(await getUserRoleCodes(db, workerUser)).not.toContain('manager');
+  });
+
+  it.each(['reject', 'send_back'] as const)('WF-04 refuses %s without a decision reason', async action => {
+    const requestId = await createRequest(db, {
+      definitionCode: genericDefinitionCode, subjectEmployeeId: workerEmpId,
+      requestedByUserId: workerUser, payload: { reason: 'Decision-note regression' },
+    });
+    createdRequests.push(requestId);
+    const mt = await token(`s13-manager-${stamp}@hrms.test`);
+    const response = await (await httpRequest(app)).post(`/api/workflows/requests/${requestId}/act`)
+      .set('Authorization', `Bearer ${mt}`).send({ requestId, action, comment: '   ' });
+    expectHttpStatus(response, 400);
+    const request = await db.selectFrom('wf.requests').select('status').where('id', '=', requestId).executeTakeFirstOrThrow();
+    expect(request.status).toBe('pending');
+    const step = await db.selectFrom('wf.request_steps').select('action').where('request_id', '=', requestId).executeTakeFirstOrThrow();
+    expect(step.action).toBeNull();
+  });
+
+  it.each(['leave', 'leave_cancel', 'leave_encashment', 'comp_off', 'restricted_holiday', 'regularization', 'od', 'overtime'])(
+    'WF-01 refuses %s through the generic API so domain validation cannot be bypassed',
+    async definitionCode => {
+      const t = await token(`s13-worker-${stamp}@hrms.test`);
+      const res = await (await httpRequest(app)).post('/api/workflows/requests')
+        .auth(t, { type: 'bearer' }).send({ definitionCode, payload: {} });
+      expectHttpStatus(res, 400);
+      const error = res.body as { message: string };
+      expect(error.message).toContain('dedicated domain API');
+    },
+  );
 
   it('delegation reroutes new steps to the delegate, recording delegated_from (WF-01)', async () => {
     const mt = await token(`s13-manager-${stamp}@hrms.test`);
@@ -196,11 +249,11 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     const dayMs = 86_400_000;
     const yesterday = new Date(Date.now() - dayMs).toISOString().slice(0, 10);
     const tomorrow = new Date(Date.now() + dayMs).toISOString().slice(0, 10);
-    const setDelegation = await request(app)
+    const setDelegation = await (await httpRequest(app))
       .put('/api/workflows/delegations')
       .set('Authorization', `Bearer ${mt}`)
       .send({ toUserId: delegateUser, fromDate: yesterday, toDate: tomorrow });
-    expect(setDelegation.status).toBe(200);
+    expectHttpStatus(setDelegation, 200);
 
     const requestId = await createRequest(db, {
       definitionCode: 'leave',
@@ -279,8 +332,7 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     const rh = await db.selectFrom('wf.requests').select('status').where('id', '=', rhId).executeTakeFirstOrThrow();
     expect(rh.status).toBe('approved'); // RH: silence = consent at cutoff
 
-    // Leave → escalate: manager overdue, no manager-of-manager → skips → approved
-    // (single-step chain); the escalation TOUCH is recorded on the step.
+    // An unresolved escalation must never turn silence into approval.
     const lvId = await createRequest(db, {
       definitionCode: 'leave',
       subjectEmployeeId: workerEmpId,
@@ -297,24 +349,27 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     await runEscalations(db);
     const lvSteps = await db.selectFrom('wf.request_steps').selectAll().where('request_id', '=', lvId).execute();
     expect(lvSteps.some((s) => s.action === 'escalated')).toBe(true);
+    const leave = await db.selectFrom('wf.requests').select('status').where('id', '=', lvId).executeTakeFirstOrThrow();
+    expect(leave.status).toBe('pending');
+    expect(lvSteps.some(step => step.action === null && step.approver_user_id === managerUser)).toBe(true);
   });
 
   it('the chain catalog is runtime-editable data: editing a definition changes routing immediately', async () => {
     await giveRole(hrUser, 'super_admin'); // needs admin.settings
     const st = await token(`s13-hr-${stamp}@hrms.test`);
 
-    const edit = await request(app)
-      .put('/api/workflows/definitions/od')
+    const edit = await (await httpRequest(app))
+      .put(`/api/workflows/definitions/${editableDefinitionCode}`)
       .set('Authorization', `Bearer ${st}`)
       .send({
-        code: 'od',
+        code: editableDefinitionCode,
         name: 'On Duty',
         steps: [{ step: 1, approver: `user:${hrUser}`, slaHours: 24, onBreach: 'escalate' }],
       });
-    expect(edit.status).toBe(200);
+    expectHttpStatus(edit, 200);
 
     const odId = await createRequest(db, {
-      definitionCode: 'od',
+      definitionCode: editableDefinitionCode,
       subjectEmployeeId: workerEmpId,
       requestedByUserId: workerUser,
       payload: { date: '2026-08-22', site: 'DIP-6' },
@@ -323,14 +378,6 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     const step = await db.selectFrom('wf.request_steps').selectAll().where('request_id', '=', odId).executeTakeFirstOrThrow();
     expect(step.approver_user_id).toBe(hrUser); // the edited chain took effect at once
 
-    // Restore the shipped default.
-    await request(app)
-      .put('/api/workflows/definitions/od')
-      .set('Authorization', `Bearer ${st}`)
-      .send({
-        code: 'od',
-        name: 'On Duty',
-        steps: [{ step: 1, approver: 'reporting_manager', slaHours: 48, onBreach: 'escalate' }],
-      });
+    // The edited definition is fixture-owned and removed by afterAll.
   });
 });

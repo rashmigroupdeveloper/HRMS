@@ -15,12 +15,15 @@
  *    appears in every holder's inbox — not just the lowest-id user (F8).
  */
 import { z } from 'zod';
-import type { Kysely, Selectable, Transaction } from 'kysely';
+import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import type { Database, WfRequestsTable, WfRequestStepsTable } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { enqueue } from '../notifications/index.js';
-import { getUserRoleCodes } from '../../core/rbac/permissions.service.js';
-import { istDateString } from '../../core/dates.js';
+import { workflowPermissionSql, workflowRoleSql } from './workflow-access.js';
+import { resolveApprover, canActOnStep, type ResolvedApprover } from './workflow-approvers.js';
+import { fireFinalHooks, prepareResubmission } from './workflow-hooks.js';
+export { onWorkflowFinal, clearWorkflowFinalHooks, onWorkflowResubmit } from './workflow-hooks.js';
+export type { WorkflowFinalStatus } from './workflow-hooks.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 
@@ -42,121 +45,6 @@ export const stepsSchema = z.array(stepSpecSchema).min(1);
 
 export type RequestRow = Selectable<WfRequestsTable>;
 export type StepRow = Selectable<WfRequestStepsTable>;
-
-/**
- * COMPLETION HOOKS — how domain modules react to a request reaching a final
- * state WITHOUT the workflows module importing them (no dependency cycle):
- * the domain registers `onWorkflowFinal('regularization', handler)` at app
- * wiring time; the engine fires the handler inside the SAME transaction that
- * finalized the request, so domain side-effects are atomic with the decision.
- */
-export type WorkflowFinalStatus = 'approved' | 'rejected' | 'lapsed';
-export type WorkflowFinalHook = (db: Db, request: RequestRow, status: WorkflowFinalStatus) => Promise<void>;
-
-const finalHooks = new Map<string, WorkflowFinalHook[]>();
-
-export function onWorkflowFinal(definitionCode: string, hook: WorkflowFinalHook): void {
-  const list = finalHooks.get(definitionCode) ?? [];
-  list.push(hook);
-  finalHooks.set(definitionCode, list);
-}
-
-/** Test/bootstrap helper: clears registered hooks (idempotent re-registration). */
-export function clearWorkflowFinalHooks(): void {
-  finalHooks.clear();
-}
-
-async function fireFinalHooks(db: Db, requestId: number, status: WorkflowFinalStatus): Promise<void> {
-  const request = await db.selectFrom('wf.requests').selectAll().where('id', '=', requestId).executeTakeFirst();
-  if (!request) return;
-  for (const hook of finalHooks.get(request.definition_code) ?? []) {
-    await hook(db, request, status);
-  }
-}
-
-interface ResolvedApprover {
-  userId: number;
-  delegatedFrom: number | null;
-}
-
-/** Spec → the canonical ACTIVE recipient, with delegation applied. Null = vacant.
- *  For `role:` this is the deterministic first holder who is NOTIFIED; any
- *  holder may still act (see canActOnStep / inbox). */
-async function resolveApprover(db: Db, spec: string, subjectEmployeeId: number): Promise<ResolvedApprover | null> {
-  let userId: number | null = null;
-
-  if (spec === 'reporting_manager' || spec === 'functional_manager') {
-    const col = spec === 'reporting_manager' ? 'reporting_manager_id' : 'functional_manager_id';
-    const subject = await db.selectFrom('core.employees').select([col]).where('id', '=', subjectEmployeeId).executeTakeFirst();
-    const managerEmployeeId = subject?.[col] ?? null;
-    if (managerEmployeeId !== null) {
-      const user = await db
-        .selectFrom('core.users')
-        .select('id')
-        .where('employee_id', '=', managerEmployeeId)
-        .where('is_active', '=', true)
-        .executeTakeFirst();
-      userId = user?.id ?? null;
-    }
-  } else if (spec.startsWith('role:')) {
-    const roleCode = spec.slice('role:'.length);
-    const user = await db
-      .selectFrom('core.user_roles as ur')
-      .innerJoin('core.roles as r', 'r.id', 'ur.role_id')
-      .innerJoin('core.users as u', 'u.id', 'ur.user_id')
-      .where('r.code', '=', roleCode)
-      .where('u.is_active', '=', true)
-      .select('u.id')
-      .orderBy('u.id')
-      .executeTakeFirst();
-    userId = user?.id ?? null;
-  } else if (spec.startsWith('user:')) {
-    const explicit = Number(spec.slice('user:'.length));
-    const user = await db
-      .selectFrom('core.users')
-      .select('id')
-      .where('id', '=', explicit)
-      .where('is_active', '=', true)
-      .executeTakeFirst();
-    userId = user?.id ?? null;
-  }
-
-  if (userId === null) return null;
-
-  // Out-of-office delegation (WF-01): active IST-calendar window today.
-  const today = istDateString();
-  const delegation = await db
-    .selectFrom('wf.delegations')
-    .select('to_user_id')
-    .where('from_user_id', '=', userId)
-    .where('from_date', '<=', today as unknown as Date)
-    .where('to_date', '>=', today as unknown as Date)
-    .orderBy('id', 'desc')
-    .executeTakeFirst();
-
-  if (delegation) {
-    const delegate = await db
-      .selectFrom('core.users')
-      .select('id')
-      .where('id', '=', delegation.to_user_id)
-      .where('is_active', '=', true)
-      .executeTakeFirst();
-    if (delegate) return { userId: delegate.id, delegatedFrom: userId };
-  }
-  return { userId, delegatedFrom: null };
-}
-
-/** May this actor act on this step? The named approver, or (role queue) any
- *  active holder of the step's role. */
-async function canActOnStep(db: Db, step: Pick<StepRow, 'approver_user_id' | 'approver_spec'>, actorUserId: number): Promise<boolean> {
-  if (step.approver_user_id === actorUserId) return true;
-  if (step.approver_spec?.startsWith('role:')) {
-    const roleCode = step.approver_spec.slice('role:'.length);
-    const roles = await getUserRoleCodes(db, actorUserId);
-    return roles.has(roleCode);
-  }
-  return false;
-}
 
 async function getSteps(db: Db, definitionCode: string): Promise<StepSpec[]> {
   const def = await db.selectFrom('wf.definitions').select(['steps', 'is_active']).where('code', '=', definitionCode).executeTakeFirst();
@@ -202,7 +90,7 @@ async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definition_code
   const steps = await getSteps(db, request.definition_code);
 
   for (const spec of steps.filter((s) => s.step > fromStepNo).sort((a, b) => a.step - b.step)) {
-    const approver = await resolveApprover(db, spec.approver, request.subject_employee_id);
+    const approver = await resolveApprover(db, spec.approver, request.subject_employee_id, request.definition_code);
     if (approver) {
       await db.updateTable('wf.requests').set({ current_step: spec.step }).where('id', '=', request.id).execute();
       await openStep(db, request.id, spec.step, spec.approver, approver, spec.slaHours, request.definition_code);
@@ -261,6 +149,9 @@ export async function act(
   db: Kysely<Database>,
   params: { requestId: number; actorUserId: number; action: 'approve' | 'reject' | 'send_back'; comment?: string | undefined },
 ): Promise<ActOutcome> {
+  if (params.action !== 'approve' && !params.comment?.trim()) {
+    throw new Error('A decision reason is required when rejecting or sending back');
+  }
   return db.transaction().execute(async (trx) => {
     const request = await trx.selectFrom('wf.requests').selectAll().where('id', '=', params.requestId).executeTakeFirstOrThrow();
     if (request.status !== 'pending') throw new Error(`Request is ${request.status}, not actionable`);
@@ -276,7 +167,7 @@ export async function act(
       .forUpdate()
       .executeTakeFirst();
     if (!step) throw new Error('No pending step');
-    if (!(await canActOnStep(trx, step, params.actorUserId))) {
+    if (!(await canActOnStep(trx, step, params.actorUserId, request))) {
       throw new Error('Not the current approver'); // routers map this to FORBIDDEN
     }
 
@@ -329,9 +220,12 @@ export async function resubmit(
     if (request.status !== 'sent_back') throw new Error('Only sent-back requests can be resubmitted');
     if (request.requested_by !== params.requesterUserId) throw new Error('Only the requester can resubmit');
 
+    const payload = await prepareResubmission(trx, request, params.payload);
+    await writeAudit(trx, { actorUserId: params.requesterUserId, action: 'update', entity: 'wf.requests',
+      entityId: request.id, field: 'resubmit', newValue: 'Domain request revalidated; approval chain restarted' });
     await trx
       .updateTable('wf.requests')
-      .set({ payload: JSON.stringify(params.payload), status: 'pending', current_step: 1 })
+      .set({ payload: JSON.stringify(payload), status: 'pending', current_step: 1 })
       .where('id', '=', params.requestId)
       .execute();
     await advance(trx, request, 0);
@@ -370,7 +264,7 @@ export async function runEscalations(db: Kysely<Database>, asOf = new Date()): P
       // acted on between the scan and now).
       const still = await trx
         .selectFrom('wf.request_steps')
-        .select('id')
+        .selectAll()
         .where('id', '=', row.step_id)
         .where('action', 'is', null)
         .forUpdate()
@@ -406,18 +300,24 @@ export async function runEscalations(db: Kysely<Database>, asOf = new Date()): P
       // manager — resolved through resolveApprover so DELEGATION still applies.
       let target: ResolvedApprover | null = null;
       if (spec?.escalateTo) {
-        target = await resolveApprover(trx, spec.escalateTo, row.subject_employee_id);
+        target = await resolveApprover(trx, spec.escalateTo, row.subject_employee_id, row.definition_code);
       } else {
         const approver = await trx.selectFrom('core.users').select('employee_id').where('id', '=', row.approver_user_id).executeTakeFirst();
         if (approver && approver.employee_id !== null) {
-          target = await resolveApprover(trx, 'reporting_manager', approver.employee_id);
+          target = await resolveApprover(trx, 'reporting_manager', approver.employee_id, row.definition_code);
         }
       }
       const escalateSpec = spec?.escalateTo ?? 'reporting_manager';
       if (target) {
         await openStep(trx, row.request_id, row.step_no, escalateSpec, target, spec?.slaHours ?? DEFAULT_STEP_SLA_HOURS, row.definition_code);
       } else {
-        await advance(trx, { id: row.request_id, definition_code: row.definition_code, subject_employee_id: row.subject_employee_id }, row.step_no);
+        // Missing escalation routing is not consent. Keep the decision pending
+        // and re-notify the existing approver using the configured SLA.
+        await openStep(trx, row.request_id, row.step_no, still.approver_spec ?? spec?.approver ?? 'reporting_manager',
+          { userId: still.approver_user_id, delegatedFrom: still.delegated_from },
+          spec?.slaHours ?? DEFAULT_STEP_SLA_HOURS, row.definition_code);
+        await writeAudit(trx, { action: 'update', entity: 'wf.requests', entityId: row.request_id,
+          field: 'escalation_target_missing', newValue: 'Existing approver re-notified; request remains pending' });
       }
     });
     handled += 1;
@@ -428,8 +328,6 @@ export async function runEscalations(db: Kysely<Database>, asOf = new Date()): P
 /** Everything waiting on ME — the approvals inbox (05 §3). Includes role-queue
  *  steps for every role I hold, not just steps addressed to me by name. */
 export async function inbox(db: Kysely<Database>, userId: number) {
-  const roleSpecs = [...(await getUserRoleCodes(db, userId))].map((code) => `role:${code}`);
-
   return db
     .selectFrom('wf.request_steps as s')
     .innerJoin('wf.requests as r', 'r.id', 's.request_id')
@@ -437,11 +335,12 @@ export async function inbox(db: Kysely<Database>, userId: number) {
     .innerJoin('core.employees as e', 'e.id', 'r.subject_employee_id')
     .where('s.action', 'is', null)
     .where('r.status', '=', 'pending')
-    .where((eb) =>
-      roleSpecs.length > 0
-        ? eb.or([eb('s.approver_user_id', '=', userId), eb('s.approver_spec', 'in', roleSpecs)])
-        : eb('s.approver_user_id', '=', userId),
-    )
+    .where(sql<boolean>`(
+      (s.approver_user_id = ${userId}
+        AND ${workflowPermissionSql(sql<number>`coalesce(s.delegated_from, ${userId})`, sql.ref<string>('r.definition_code'), sql.ref<number>('r.subject_employee_id'))}
+        AND (coalesce(s.approver_spec, '') NOT LIKE 'role:%' OR ${workflowRoleSql(sql<number>`coalesce(s.delegated_from, ${userId})`, sql.ref<string>('s.approver_spec'), sql.ref<string>('r.definition_code'), sql.ref<number>('r.subject_employee_id'))}))
+      OR ${workflowRoleSql(userId, sql.ref<string>('s.approver_spec'), sql.ref<string>('r.definition_code'), sql.ref<number>('r.subject_employee_id'))}
+    )`)
     .select([
       'r.id as request_id',
       'd.code as definition_code',

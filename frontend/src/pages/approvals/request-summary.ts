@@ -167,7 +167,7 @@ function dateSpan(record: Record<string, unknown>): string | null {
 
 function consequence(type: string, payload: unknown): string {
   if (!isRecord(payload)) {
-    return 'Approving grants this request as submitted. Rejecting or sending it back needs a note.';
+    return 'Final approval grants this request as submitted. Rejecting or sending it back needs a note.';
   }
   const span = dateSpan(payload);
   const days = formatScalar('days', payload['days']);
@@ -180,35 +180,35 @@ function consequence(type: string, payload: unknown): string {
 
   if (type === 'overtime' || detected !== null) {
     return span === null
-      ? `Approving records ${detected ?? 'detected overtime'} against the 48-hour rule.`
-      : `Approving records ${detected ?? 'detected overtime'} for ${span}.`;
+      ? `Final approval records ${detected ?? 'detected overtime'} against the 48-hour rule.`
+      : `Final approval records ${detected ?? 'detected overtime'} for ${span}.`;
   }
   if (type === 'od' || kind === KIND_LABEL['OD']) {
     return span === null
-      ? 'Approving marks the requested days as on duty.'
-      : `Approving marks ${span} as on duty.`;
+      ? 'Final approval marks the requested days as on duty.'
+      : `Final approval marks ${span} as on duty.`;
   }
   if (type === 'regularization' || kind === KIND_LABEL['AR']) {
     return span === null
-      ? 'Approving marks the requested days as present.'
-      : `Approving marks ${span} as present.`;
+      ? 'Final approval marks the requested days as present.'
+      : `Final approval marks ${span} as present.`;
   }
   if (type === 'leave' || type === 'comp_off' || leave !== null) {
     const daysBit = days === null ? 'leave' : `${days} day${days === '1' ? '' : 's'}`;
     const typeBit = leave ?? 'leave';
     return span === null
-      ? `Approving grants ${daysBit} of ${typeBit}.`
-      : `Approving grants ${daysBit} of ${typeBit} (${span}).`;
+      ? `Final approval grants ${daysBit} of ${typeBit}.`
+      : `Final approval grants ${daysBit} of ${typeBit} (${span}).`;
   }
   if (type === 'leave_cancel') {
-    return 'Approving cancels the leave and returns the days to the ledger.';
+    return 'Final approval cancels the leave and returns the days to the ledger.';
   }
   if (type === 'leave_encashment') {
     return days === null
-      ? 'Approving encashes the requested leave days.'
-      : `Approving encashes ${days} day${days === '1' ? '' : 's'}.`;
+      ? 'Final approval encashes the requested leave days.'
+      : `Final approval encashes ${days} day${days === '1' ? '' : 's'}.`;
   }
-  return 'Approving grants this request as submitted. Rejecting or sending it back needs a note.';
+  return 'Final approval grants this request as submitted. Rejecting or sending it back needs a note.';
 }
 
 export function summarizeRequest(type: string, payload: unknown): RequestSummary {

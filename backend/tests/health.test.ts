@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
 import { createApp } from '../src/app.js';
 import { loadEnv } from '../src/core/config/env.js';
 
 describe('setup smoke', () => {
   it('GET /health returns the response envelope', async () => {
-    const res = await request(createApp()).get('/health');
+    const res = await (await httpRequest(createApp())).get('/health');
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({

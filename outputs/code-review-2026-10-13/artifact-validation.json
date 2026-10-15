@@ -1,0 +1,10 @@
+{
+  "prepared": "2026-10-13",
+  "findings": 38,
+  "ids_unique": true,
+  "all_source_locators_exist": true,
+  "source_hashes_changed_since_capture": [],
+  "json_files_valid": true,
+  "review_anchors_valid": true,
+  "scope": "Artifact integrity, not release or business acceptance"
+}

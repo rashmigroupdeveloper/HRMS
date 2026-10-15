@@ -1,0 +1,20 @@
+{
+  "id": "G9",
+  "name": "Apprentice Exclusions (Apprentices Act, 1961)",
+  "employee": {
+    "employeeId": 1009,
+    "category": "trainee",
+    "contractType": "apprentice",
+    "state": "WB"
+  },
+  "stipendPaise": 1500000,
+  "expected": {
+    "pfEePaise": 0,
+    "pfErPaise": 0,
+    "esicEePaise": 0,
+    "esicErPaise": 0,
+    "bonusPaise": 0,
+    "ptPaise": 11000,
+    "netPaise": 1489000
+  }
+}

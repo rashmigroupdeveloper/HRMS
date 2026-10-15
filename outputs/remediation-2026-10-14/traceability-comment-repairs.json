@@ -1,0 +1,169 @@
+{
+  "method": "TypeScript scanner edits comments only. Unverified physical-row numeric citations replaced with SOW crosswalk; PRD IDs and original section-style references preserved.",
+  "changes": [
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/prejoin.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/task-fanout.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/lifecycle/probation/probation.router.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/lifecycle/probation/probation.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/clearance.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.router.ts",
+      "comment_blocks": 2
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/annual/annual.router.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/annual/bonus-trueup.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/annual/increment-batch.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/components/component.router.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/components/component.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/components/definitions.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/engine/arrears.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/engine/compute-engine.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/engine/proration.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/fnf/fnf-engine.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/holds/holds.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/parallel-run/parallel-import.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/parallel-run/parallel-run.router.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/parallel-run/variance-reporter.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/parallel-run/ytd-loader.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/runs/run.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/salaries/salary.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/structure.router.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/structure.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/bank/bank-file.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/gl/sap-jv.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/outputs-bundle.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/payslip/payslip-generator.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/payslip/template.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/variance/variance.service.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/src/modules/reports/executive-kpi.job.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/tests/payroll-pipeline.test.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "comment_blocks": 3
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "comment_blocks": 1
+    },
+    {
+      "file": "backend/migrations/1752240000000_lifecycle-separation-clearances-fnf.ts",
+      "comment_blocks": 4
+    },
+    {
+      "file": "backend/migrations/1752250000000_lifecycle-transfers.ts",
+      "comment_blocks": 1
+    }
+  ]
+}

@@ -13,7 +13,8 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
+import { expectHttpStatus } from './http-assertions.js';
 import type { Kysely } from 'kysely';
 import type { Express } from 'express';
 import { createApp } from '../src/app.js';
@@ -100,7 +101,7 @@ run('M8 Assets — AST-01..06 (live Postgres)', () => {
       .values({ user_id: user.id, role_id: role.id, scope_org_unit_id: null })
       .execute();
 
-    const login = await request(app).post('/api/auth/login').send({ identifier: email, password });
+    const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
     token = (login.body as { accessToken: string }).accessToken;
     expect(token).toBeTruthy();
   });
@@ -121,7 +122,7 @@ run('M8 Assets — AST-01..06 (live Postgres)', () => {
   });
 
   async function createAsset(suffix: string, warrantyTill: string | null): Promise<number> {
-    const res = await request(app)
+    const res = await (await httpRequest(app))
       .put(`/api/assets/${tag}${suffix}`)
       .set(auth())
       .send({
@@ -132,7 +133,7 @@ run('M8 Assets — AST-01..06 (live Postgres)', () => {
         warrantyTill,
         companyId,
       });
-    expect(res.status).toBe(200);
+    expectHttpStatus(res, 200);
     const id = (res.body as { id: number }).id;
     assetIds.push(id);
     return id;
@@ -140,7 +141,7 @@ run('M8 Assets — AST-01..06 (live Postgres)', () => {
 
   it('A1 AST-02 accepts a PAST warranty date (greytHR blocked these)', async () => {
     const id = await createAsset('P', '2020-01-15');
-    const res = await request(app).get(`/api/assets?q=${tag}P&companyId=${String(companyId)}`).set(auth());
+    const res = await (await httpRequest(app)).get(`/api/assets?q=${tag}P&companyId=${String(companyId)}`).set(auth());
     const page = res.body as AssetPage;
     const found = page.rows.find((r) => r.id === id);
     // The date is stored as given — not clamped, not rejected.
@@ -150,36 +151,36 @@ run('M8 Assets — AST-01..06 (live Postgres)', () => {
   it('A2 AST-03 rejects a holder that is neither an employee nor a third party', async () => {
     const id = await createAsset('X', null);
 
-    const noHolder = await request(app)
+    const noHolder = await (await httpRequest(app))
       .post(`/api/assets/${String(id)}/assign`)
       .set(auth())
       .send({ assetId: id, holderKind: 'employee' });
-    expect(noHolder.status).toBe(400);
+    expectHttpStatus(noHolder, 400);
 
-    const namelessThirdParty = await request(app)
+    const namelessThirdParty = await (await httpRequest(app))
       .post(`/api/assets/${String(id)}/assign`)
       .set(auth())
       .send({ assetId: id, holderKind: 'third_party', thirdPartyName: '   ' });
-    expect(namelessThirdParty.status).toBe(400);
+    expectHttpStatus(namelessThirdParty, 400);
   });
 
   it('A3 an asset cannot be allocated to two holders at once', async () => {
     const id = await createAsset('D', null);
 
-    const first = await request(app)
+    const first = await (await httpRequest(app))
       .post(`/api/assets/${String(id)}/assign`)
       .set(auth())
       .send({ assetId: id, holderKind: 'employee', employeeId: holderId });
-    expect(first.status).toBe(200);
+    expectHttpStatus(first, 200);
 
-    const second = await request(app)
+    const second = await (await httpRequest(app))
       .post(`/api/assets/${String(id)}/assign`)
       .set(auth())
       .send({ assetId: id, holderKind: 'third_party', thirdPartyName: 'Contractor Ltd' });
-    expect(second.status).toBe(400);
+    expectHttpStatus(second, 400);
 
     // Status reflects reality for the register.
-    const page = (await request(app).get(`/api/assets?q=${tag}D`).set(auth())).body as AssetPage;
+    const page = (await (await httpRequest(app)).get(`/api/assets?q=${tag}D`).set(auth())).body as AssetPage;
     const asset = page.rows.find((r) => r.id === id);
     expect(asset?.status).toBe('assigned');
     expect(asset?.holderKind).toBe('employee');
@@ -187,45 +188,45 @@ run('M8 Assets — AST-01..06 (live Postgres)', () => {
 
   it('A4 AST-04 records returns; damage goes to maintenance, not back to stock', async () => {
     const id = await createAsset('R', null);
-    const assign = await request(app)
+    const assign = await (await httpRequest(app))
       .post(`/api/assets/${String(id)}/assign`)
       .set(auth())
       .send({ assetId: id, holderKind: 'employee', employeeId: holderId });
     const assignmentId = (assign.body as { assignmentId: number }).assignmentId;
 
-    const ret = await request(app)
+    const ret = await (await httpRequest(app))
       .post(`/api/assets/assignments/${String(assignmentId)}/return`)
       .set(auth())
       .send({ assignmentId, condition: 'damaged', notes: 'Cracked screen' });
-    expect(ret.status).toBe(200);
+    expectHttpStatus(ret, 200);
 
-    const page = (await request(app).get(`/api/assets?q=${tag}R`).set(auth())).body as AssetPage;
+    const page = (await (await httpRequest(app)).get(`/api/assets?q=${tag}R`).set(auth())).body as AssetPage;
     const asset = page.rows.find((r) => r.id === id);
     // Damaged kit must NOT be reallocated to the next joiner in that state.
     expect(asset?.status).toBe('maintenance');
     expect(asset?.holderKind).toBeNull();
 
-    const trail = (await request(app).get(`/api/assets/${String(id)}/maintenance`).set(auth()))
+    const trail = (await (await httpRequest(app)).get(`/api/assets/${String(id)}/maintenance`).set(auth()))
       .body as { kind: string; description: string }[];
     expect(trail.some((m) => m.kind === 'damage')).toBe(true);
 
     // A closed allocation cannot be closed twice.
-    const again = await request(app)
+    const again = await (await httpRequest(app))
       .post(`/api/assets/assignments/${String(assignmentId)}/return`)
       .set(auth())
       .send({ assignmentId, condition: 'ok' });
-    expect(again.status).toBe(400);
+    expectHttpStatus(again, 400);
   });
 
   it('A5 AST-05 surfaces kit still held by someone who has already left', async () => {
     const id = await createAsset('N', null);
-    await request(app)
+    await (await httpRequest(app))
       .post(`/api/assets/${String(id)}/assign`)
       .set(auth())
       .send({ assetId: id, holderKind: 'employee', employeeId: leaverId });
 
     const outstanding = (
-      await request(app).get(`/api/assets/non-returned?companyId=${String(companyId)}`).set(auth())
+      await (await httpRequest(app)).get(`/api/assets/non-returned?companyId=${String(companyId)}`).set(auth())
     ).body as { assetNo: string; ecode: string; dol: string | null }[];
 
     const row = outstanding.find((r) => r.assetNo === `${tag}N`);
@@ -235,20 +236,20 @@ run('M8 Assets — AST-01..06 (live Postgres)', () => {
 
     // AST-04: the same asset appears on the leaver's exit-clearance list.
     const held = (
-      await request(app).get(`/api/assets/held-by/${String(leaverId)}`).set(auth())
+      await (await httpRequest(app)).get(`/api/assets/held-by/${String(leaverId)}`).set(auth())
     ).body as { assetNo: string }[];
     expect(held.map((h) => h.assetNo)).toContain(`${tag}N`);
   });
 
   it('A6 AST-01 searches by asset number, serial and holder name', async () => {
-    const byNo = (await request(app).get(`/api/assets?q=${tag}D`).set(auth())).body as AssetPage;
+    const byNo = (await (await httpRequest(app)).get(`/api/assets?q=${tag}D`).set(auth())).body as AssetPage;
     expect(byNo.rows.some((r) => r.assetNo === `${tag}D`)).toBe(true);
 
-    const bySerial = (await request(app).get(`/api/assets?q=SN-${tag}-D`).set(auth())).body as AssetPage;
+    const bySerial = (await (await httpRequest(app)).get(`/api/assets?q=SN-${tag}-D`).set(auth())).body as AssetPage;
     expect(bySerial.rows.some((r) => r.assetNo === `${tag}D`)).toBe(true);
 
     // The Task-Matrix gap was specifically that you could not find kit by holder.
-    const byHolder = (await request(app).get('/api/assets?q=Asset Holder').set(auth()))
+    const byHolder = (await (await httpRequest(app)).get('/api/assets?q=Asset Holder').set(auth()))
       .body as AssetPage;
     expect(byHolder.rows.some((r) => r.assetNo === `${tag}D`)).toBe(true);
   });
@@ -270,13 +271,13 @@ run('M8 Assets — AST-01..06 (live Postgres)', () => {
       .values({ user_id: u.id, role_id: role.id, scope_org_unit_id: null })
       .execute();
 
-    const login = await request(app)
+    const login = await (await httpRequest(app))
       .post('/api/auth/login')
       .send({ identifier: plainEmail, password });
     const plainToken = (login.body as { accessToken: string }).accessToken;
 
-    const res = await request(app).get('/api/assets').set('Authorization', `Bearer ${plainToken}`);
-    expect(res.status).toBe(403);
+    const res = await (await httpRequest(app)).get('/api/assets').set('Authorization', `Bearer ${plainToken}`);
+    expectHttpStatus(res, 403);
 
     await db
       .updateTable('core.users')

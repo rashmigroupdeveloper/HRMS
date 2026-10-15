@@ -7,6 +7,7 @@ import { formatDbDate } from '../../core/dates.js';
 import type { Kysely } from 'kysely';
 import type { Selectable } from 'kysely';
 import type { Database, EmploymentCategory, UsersTable } from '../../core/db/types.js';
+import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import {
   countDirectory,
   findByEcode,
@@ -147,6 +148,7 @@ export async function listEmployees(
     page?: number | undefined;
     pageSize?: number | undefined;
   },
+  scope?: EmployeeScope,
 ): Promise<DirectoryResult> {
   const page = input.page ?? 1;
   const pageSize = Math.min(input.pageSize ?? 50, 200);
@@ -163,6 +165,7 @@ export async function listEmployees(
     activeOnly: input.activeOnly ?? true,
     limit: pageSize,
     offset: (page - 1) * pageSize,
+    ...(scope === undefined ? {} : { scope }),
   };
 
   const [total, rows] = await Promise.all([
@@ -234,8 +237,9 @@ export async function getEmployeeByEcode(
   ecode: string,
   user: AuthedUser,
   permissions: ReadonlySet<string>,
+  scope?: EmployeeScope,
 ): Promise<EmployeeProfile | null> {
-  const row = await findByEcode(db, ecode);
+  const row = await findByEcode(db, ecode, scope);
   if (!row) return null;
 
   const unmask = canViewStatutoryIds(user, permissions, row.id);
@@ -303,12 +307,14 @@ const STATUS_LABELS: Record<string, string> = {
 export async function listDirectoryFacets(
   db: Kysely<Database>,
   input: { activeOnly?: boolean | undefined },
+  scope?: EmployeeScope,
 ): Promise<DirectoryFacets> {
   const activeOnly = input.activeOnly ?? true;
 
   const base = db
     .selectFrom('core.employees as e')
-    .$if(activeOnly, (qb) => qb.where('e.status', 'in', ['active', 'on_notice']));
+    .$if(activeOnly, (qb) => qb.where('e.status', 'in', ['active', 'on_notice']))
+    .$if(scope !== undefined && !scope.all, (qb) => qb.where(employeeScopeSql(scope, 'e')));
 
   const [entities, departments, categories, locations, statuses, totalRow] = await Promise.all([
     base
@@ -343,7 +349,8 @@ export async function listDirectoryFacets(
     // Status facets deliberately ignore activeOnly: otherwise "Exited" could
     // never be discovered from a directory that defaults to active-only.
     db
-      .selectFrom('core.employees')
+      .selectFrom('core.employees as e')
+      .$if(scope !== undefined && !scope.all, (qb) => qb.where(employeeScopeSql(scope, 'e')))
       .select('status as code')
       .select((eb) => eb.fn.countAll<string>().as('count'))
       .groupBy('status')

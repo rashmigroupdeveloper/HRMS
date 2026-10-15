@@ -1,0 +1,9 @@
+{
+  "sow_ids": 176,
+  "original_wording_exact": true,
+  "finding_ids": 46,
+  "xlsx_crc_ok": true,
+  "native_filter_tables": true,
+  "summary_recalculation_test": true,
+  "visual_review": "Both tabs and remaining-scope columns reviewed; one added finding retains verified layout"
+}

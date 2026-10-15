@@ -188,17 +188,24 @@ export async function myAttendanceMonth(
   const mEnd =
     mo === 12 ? `${y + 1}-01-01` : `${y}-${String(mo + 1).padStart(2, '0')}-01`;
   const rows = await db
-    .selectFrom('att.day_records')
-    .select(['work_date', 'status', 'session_statuses', 'first_in', 'last_out', 'ot_minutes', 'late_minutes'])
-    .where('employee_id', '=', employeeId)
-    .where('work_date', '>=', sql<Date>`${m}::date`)
-    .where('work_date', '<', sql<Date>`${mEnd}::date`)
-    .orderBy('work_date')
+    .selectFrom('att.day_records as day')
+    .leftJoin('lv.leave_types as leave', 'leave.id', 'day.leave_type_id')
+    .select(['day.work_date', 'day.status', 'day.session_statuses', 'day.first_in', 'day.last_out', 'day.ot_minutes', 'day.late_minutes',
+      'day.source', 'day.is_locked', 'leave.code as leave_code', 'leave.name as leave_name', 'leave.is_paid as leave_is_paid'])
+    .where('day.employee_id', '=', employeeId)
+    .where('day.work_date', '>=', sql<Date>`${m}::date`)
+    .where('day.work_date', '<', sql<Date>`${mEnd}::date`)
+    .orderBy('day.work_date')
     .execute();
   return rows.map((r) => ({
     date: formatDbDate(r.work_date),
     status: r.status,
     sessionStatuses: readSessionStatuses(r.session_statuses),
+    source: r.source,
+    isLocked: r.is_locked,
+    leaveTypeCode: r.leave_code,
+    leaveTypeName: r.leave_name,
+    leaveIsPaid: r.leave_is_paid,
     firstIn: r.first_in?.toISOString() ?? null,
     lastOut: r.last_out?.toISOString() ?? null,
     otMinutes: r.ot_minutes,
@@ -288,8 +295,12 @@ export interface BusinessUnitDashboard {
   headcountTotal: number;
   absentToday: number;
   scheduledToday: number;
+  presenceTodayPct: number | null;
+  shiftScheduleCompliancePct: number | null;
   absenteeismTodayPct: number | null;
   otHoursMtd: number;
+  activeOvertimeHours: number;
+  pendingApprovalsCount: number;
   joinersMtd: number;
   exitsMtd: number;
   openAbsenceCases: { stage: string; count: number }[];
@@ -297,10 +308,46 @@ export interface BusinessUnitDashboard {
 
 export async function businessUnitDashboard(
   db: Kysely<Database>,
-  scope: { companyId?: number | undefined; locationId?: number | undefined },
+  scope: {
+    companyId?: number | undefined;
+    locationId?: number | undefined;
+    all?: boolean | undefined;
+    orgUnitIds?: readonly number[] | undefined;
+    actorEmployeeId?: number | null | undefined;
+  },
 ): Promise<BusinessUnitDashboard> {
   const today = istDateString();
   const monthStart = `${today.slice(0, 7)}-01`;
+  const isRestricted = scope.all !== true && scope.all !== undefined;
+  const orgUnitIds = scope.orgUnitIds ?? [];
+
+  // ── C01 Scope Security Enforcement ────────────────────────────────────────
+  // A plant/BU head can never inspect another plant's numbers.
+  if (isRestricted) {
+    if (scope.locationId !== undefined) {
+      let isAllowedLocation = false;
+      if (orgUnitIds.length > 0) {
+        const allowedLocation = await db
+          .selectFrom('core.employees')
+          .select(['location_id'])
+          .where('org_unit_id', 'in', orgUnitIds)
+          .where('location_id', '=', scope.locationId)
+          .executeTakeFirst();
+        if (allowedLocation) isAllowedLocation = true;
+      }
+      if (!isAllowedLocation && scope.actorEmployeeId) {
+        const emp = await db
+          .selectFrom('core.employees')
+          .select(['location_id'])
+          .where('id', '=', scope.actorEmployeeId)
+          .executeTakeFirst();
+        if (emp?.location_id === scope.locationId) isAllowedLocation = true;
+      }
+      if (!isAllowedLocation) {
+        throw new Error('Forbidden: Unauthorized plant/location access');
+      }
+    }
+  }
 
   const headcountRows = await db
     .selectFrom('core.employees as e')
@@ -308,6 +355,8 @@ export async function businessUnitDashboard(
     .where('e.status', 'in', ['active', 'on_notice'])
     .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
     .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .$if(isRestricted && orgUnitIds.length > 0, (qb) => qb.where('e.org_unit_id', 'in', orgUnitIds))
+    .$if(isRestricted && orgUnitIds.length === 0, (qb) => qb.where(sql<boolean>`false`))
     .groupBy('e.category')
     .orderBy('e.category')
     .execute();
@@ -326,6 +375,8 @@ export async function businessUnitDashboard(
     .where('d.work_date', '=', sql<Date>`${today}::date`)
     .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
     .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .$if(isRestricted && orgUnitIds.length > 0, (qb) => qb.where('e.org_unit_id', 'in', orgUnitIds))
+    .$if(isRestricted && orgUnitIds.length === 0, (qb) => qb.where(sql<boolean>`false`))
     .executeTakeFirst();
 
   const absentToday = Number(dayRow?.absent ?? 0);
@@ -339,6 +390,8 @@ export async function businessUnitDashboard(
     .where('d.work_date', '<=', sql<Date>`${today}::date`)
     .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
     .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .$if(isRestricted && orgUnitIds.length > 0, (qb) => qb.where('e.org_unit_id', 'in', orgUnitIds))
+    .$if(isRestricted && orgUnitIds.length === 0, (qb) => qb.where(sql<boolean>`false`))
     .executeTakeFirst();
 
   const movement = await db
@@ -355,6 +408,8 @@ export async function businessUnitDashboard(
     )
     .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
     .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .$if(isRestricted && orgUnitIds.length > 0, (qb) => qb.where('e.org_unit_id', 'in', orgUnitIds))
+    .$if(isRestricted && orgUnitIds.length === 0, (qb) => qb.where(sql<boolean>`false`))
     .executeTakeFirst();
 
   const cases = await db
@@ -364,15 +419,42 @@ export async function businessUnitDashboard(
     .where('c.closed_at', 'is', null)
     .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
     .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .$if(isRestricted && orgUnitIds.length > 0, (qb) => qb.where('e.org_unit_id', 'in', orgUnitIds))
+    .$if(isRestricted && orgUnitIds.length === 0, (qb) => qb.where(sql<boolean>`false`))
     .groupBy('c.stage')
     .execute();
+
+  const pendingApprovalsRow = await db
+    .selectFrom('wf.request_steps as step')
+    .innerJoin('wf.requests as req', 'req.id', 'step.request_id')
+    .innerJoin('core.employees as e', 'e.id', 'req.subject_employee_id')
+    .select(sql<string>`COUNT(*)`.as('n'))
+    .where('step.action', 'is', null)
+    .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
+    .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
+    .$if(isRestricted && orgUnitIds.length > 0, (qb) => qb.where('e.org_unit_id', 'in', orgUnitIds))
+    .$if(isRestricted && orgUnitIds.length === 0, (qb) => qb.where(sql<boolean>`false`))
+    .executeTakeFirst();
+  const pendingApprovalsCount = Number(pendingApprovalsRow?.n ?? 0);
 
   const scopeLabel =
     scope.locationId !== undefined
       ? `Location #${String(scope.locationId)}`
       : scope.companyId !== undefined
         ? `Entity #${String(scope.companyId)}`
-        : 'All entities';
+        : isRestricted && orgUnitIds.length > 0
+          ? `Org Unit (${orgUnitIds.join(', ')})`
+          : 'All entities';
+
+  const otHoursMtd = Number(otRow?.minutes ?? 0) / 60;
+  const presenceTodayPct =
+    scheduledToday === 0
+      ? null
+      : Math.round(((scheduledToday - absentToday) / scheduledToday) * 1000) / 10;
+  const shiftScheduleCompliancePct =
+    headcountTotal === 0
+      ? null
+      : Math.round((scheduledToday / headcountTotal) * 1000) / 10;
 
   return {
     scopeLabel,
@@ -380,9 +462,13 @@ export async function businessUnitDashboard(
     headcountTotal,
     absentToday,
     scheduledToday,
+    presenceTodayPct,
+    shiftScheduleCompliancePct,
     // Absence with no scheduled days is NOT 0% — it is unmeasured.
     absenteeismTodayPct: scheduledToday === 0 ? null : (absentToday / scheduledToday) * 100,
-    otHoursMtd: Number(otRow?.minutes ?? 0) / 60,
+    otHoursMtd,
+    activeOvertimeHours: Math.round(otHoursMtd * 10) / 10,
+    pendingApprovalsCount,
     joinersMtd: Number(movement?.joiners ?? 0),
     exitsMtd: Number(movement?.exits ?? 0),
     openAbsenceCases: cases.map((c) => ({ stage: c.stage, count: Number(c.n) })),

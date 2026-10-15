@@ -1,0 +1,29 @@
+{
+  "sow_items": 176,
+  "unique_sow_ids": 176,
+  "counts": {
+    "Partial": 43,
+    "Pending": 86,
+    "Implemented": 12,
+    "Scope decision": 6,
+    "Manual / service": 29
+  },
+  "manual_items": 29,
+  "canonical_prd_requirements": 119,
+  "numbered_master_build_tasks": 60,
+  "open_source_findings": 37,
+  "source_files_hashed": 323,
+  "deep_source_files_hashed": 342,
+  "route_locators": 153,
+  "typed_relations": 61,
+  "all_evidence_paths_exist": true,
+  "all_finding_line_anchors_verified": true,
+  "all_pack_markdown_links_resolve": true,
+  "all_completion_cards_resolve": true,
+  "source_wording_preserved": true,
+  "both_workbooks_unchanged_since_prior_bundle": true,
+  "current_source_hashes_match_both_inventories": true,
+  "business_code_changed_by_planning": false,
+  "fresh_verification": "See verification-2026-10-09.json: frontend verify passed; backend static checks and separate build passed; backend verify failed coverage, 164 dedicated-DB tests skipped.",
+  "verification_limit": "No fresh business-DB inspection, full DB integration, external repository/runtime, UAT, deployment, statutory/money acceptance or phase-gate advancement."
+}

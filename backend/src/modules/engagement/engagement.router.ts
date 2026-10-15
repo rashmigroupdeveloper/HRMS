@@ -24,6 +24,14 @@ import {
   pollResults,
   respondToPoll,
 } from './polls.service.js';
+import {
+  closeSurvey,
+  createSurvey,
+  listAllSurveys,
+  listSurveysForUser,
+  respondToSurvey,
+  surveyResults,
+} from './surveys.service.js';
 
 const publisher = () => withPermission('engagement.publish');
 
@@ -35,6 +43,7 @@ function asBadRequest(err: unknown): never {
 
 const audienceShape = z
   .object({
+    companyIds: z.array(z.number().int().positive()).optional(),
     categories: z.array(z.enum(['white_collar', 'blue_collar', 'contract', 'trainee'])).optional(),
     departmentIds: z.array(z.number().int().positive()).optional(),
     locationIds: z.array(z.number().int().positive()).optional(),
@@ -42,9 +51,10 @@ const audienceShape = z
   .optional();
 
 const announcementShape = z.object({
-  id: z.number(),
+  id: z.coerce.number(),
   title: z.string(),
   body: z.string(),
+  attachmentDocumentId: z.coerce.number().nullable().optional(),
   publishedAt: z.string(),
   expiresAt: z.string().nullable(),
   isActive: z.boolean(),
@@ -99,6 +109,7 @@ const publish = publisher()
     z.object({
       title: z.string().min(1).max(200),
       body: z.string().min(1),
+      attachmentDocumentId: z.number().int().positive().nullish(),
       audience: audienceShape,
       expiresAt: z.string().datetime().optional(),
     }),
@@ -107,7 +118,11 @@ const publish = publisher()
   .handler(async ({ input, context }) => {
     try {
       const id = await publishAnnouncement(context.db, {
-        ...input,
+        title: input.title,
+        body: input.body,
+        attachmentDocumentId: input.attachmentDocumentId ?? null,
+        audience: input.audience,
+        expiresAt: input.expiresAt,
         actorUserId: context.user.id,
       });
       return { id };
@@ -214,6 +229,149 @@ const close = publisher()
     }
   });
 
+// ── Structured Multi-Question Surveys (EN-03, C34) ──────────────────────────
+
+const surveyQuestionInputShape = z.object({
+  id: z.string().min(1),
+  prompt: z.string().min(1).max(500),
+  type: z.enum(['rating', 'choice', 'text']),
+  options: z.array(z.string().min(1)).optional(),
+  required: z.boolean().optional(),
+});
+
+const surveyQuestionOutputShape = z.object({
+  id: z.string(),
+  prompt: z.string(),
+  type: z.enum(['rating', 'choice', 'text']),
+  options: z.array(z.string()).optional(),
+  required: z.boolean().optional(),
+});
+
+const surveyShape = z.object({
+  id: z.number(),
+  title: z.string(),
+  description: z.string().nullable(),
+  questions: z.array(surveyQuestionOutputShape),
+  isAnonymous: z.boolean(),
+  openFrom: z.string(),
+  openTill: z.string().nullable(),
+  isActive: z.boolean(),
+  hasResponded: z.boolean(),
+});
+
+const surveyAnswerInputShape = z.object({
+  questionId: z.string().min(1),
+  answer: z.union([z.string(), z.number()]),
+});
+
+const surveyQuestionResultShape = z.object({
+  questionId: z.string(),
+  prompt: z.string(),
+  type: z.enum(['rating', 'choice', 'text']),
+  totalAnswers: z.number(),
+  avgRating: z.number().nullable().optional(),
+  ratingDistribution: z.record(z.string(), z.number()).optional(),
+  choiceDistribution: z.record(z.string(), z.number()).optional(),
+  textAnswers: z.array(z.object({ answer: z.string(), byEmail: z.string().nullable() })).optional(),
+});
+
+const surveyResultShape = z.object({
+  surveyId: z.number(),
+  title: z.string(),
+  description: z.string().nullable(),
+  isAnonymous: z.boolean(),
+  totalResponses: z.number(),
+  questions: z.array(surveyQuestionResultShape),
+});
+
+const mySurveys = authed
+  .route({ method: 'GET', path: '/engagement/surveys', summary: 'EN-03 surveys addressed to me' })
+  .output(z.array(surveyShape))
+  .handler(({ context }) => listSurveysForUser(context.db, context.user.id, context.jwtSecret));
+
+const allSurveys = publisher()
+  .route({ method: 'GET', path: '/engagement/surveys/all', summary: 'EN-03 all surveys (publisher view)' })
+  .output(z.array(surveyShape))
+  .handler(({ context }) => listAllSurveys(context.db));
+
+const createSurveyRoute = publisher()
+  .route({ method: 'POST', path: '/engagement/surveys', summary: 'EN-03 create multi-question survey' })
+  .input(
+    z.object({
+      title: z.string().min(1).max(300),
+      description: z.string().max(2000).optional(),
+      questions: z.array(surveyQuestionInputShape).min(1).max(30),
+      isAnonymous: z.boolean(),
+      audience: audienceShape,
+      openTill: z.string().datetime().optional(),
+    }),
+  )
+  .output(z.object({ id: z.number() }))
+  .handler(async ({ input, context }) => {
+    try {
+      const id = await createSurvey(context.db, {
+        title: input.title,
+        description: input.description,
+        questions: input.questions,
+        isAnonymous: input.isAnonymous,
+        audience: input.audience,
+        openTill: input.openTill,
+        actorUserId: context.user.id,
+      });
+      return { id };
+    } catch (err: unknown) {
+      return asBadRequest(err);
+    }
+  });
+
+const respondSurvey = authed
+  .route({ method: 'POST', path: '/engagement/surveys/{id}/respond', summary: 'EN-03 submit survey response' })
+  .input(
+    z.object({
+      id: z.coerce.number().int().positive(),
+      answers: z.array(surveyAnswerInputShape).min(1),
+    }),
+  )
+  .output(z.object({ ok: z.boolean() }))
+  .handler(async ({ input, context }) => {
+    try {
+      await respondToSurvey(context.db, {
+        surveyId: input.id,
+        userId: context.user.id,
+        answers: input.answers,
+        appSecret: context.jwtSecret,
+      });
+      return { ok: true };
+    } catch (err: unknown) {
+      return asBadRequest(err);
+    }
+  });
+
+const surveyResultsRoute = publisher()
+  .route({ method: 'GET', path: '/engagement/surveys/{id}/results', summary: 'EN-03 survey results and tally' })
+  .input(z.object({ id: z.coerce.number().int().positive() }))
+  .output(surveyResultShape)
+  .handler(async ({ input, context }) => {
+    try {
+      return await surveyResults(context.db, input.id);
+    } catch (err: unknown) {
+      return asBadRequest(err);
+    }
+  });
+
+const closeSurveyRoute = publisher()
+  .route({ method: 'POST', path: '/engagement/surveys/{id}/close', summary: 'EN-03 close a survey' })
+  .input(z.object({ id: z.coerce.number().int().positive() }))
+  .output(z.object({ ok: z.boolean() }))
+  .handler(async ({ input, context }) => {
+    try {
+      await closeSurvey(context.db, input.id, context.user.id);
+      return { ok: true };
+    } catch (err: unknown) {
+      return asBadRequest(err);
+    }
+  });
+
 export const engagementRouter = {
   myAnnouncements,
   allAnnouncements,
@@ -224,4 +382,10 @@ export const engagementRouter = {
   respond,
   results,
   close,
+  mySurveys,
+  allSurveys,
+  createSurvey: createSurveyRoute,
+  respondSurvey,
+  surveyResults: surveyResultsRoute,
+  closeSurvey: closeSurveyRoute,
 };

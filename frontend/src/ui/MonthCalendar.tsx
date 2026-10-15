@@ -105,7 +105,7 @@ export function MonthCalendar({
         {WEEKDAYS_MIN.map((wd) => (
           <span
             key={wd}
-            className="grid h-6 place-items-center text-[11px] font-medium text-ink-faint"
+            className="grid h-6 place-items-center text-[11px] font-medium text-ink-muted"
           >
             {wd}
           </span>
@@ -123,7 +123,7 @@ export function MonthCalendar({
           <div key={week[0]?.iso} role="row" className="contents">
             {week.map((cell) => {
               if (!cell.inMonth) {
-                return <span key={cell.iso} role="gridcell" aria-hidden className="h-10" />;
+                return <span key={cell.iso} role="gridcell" aria-hidden className="h-11" />;
               }
               const info = days[cell.day];
               const isWeekOff = info?.state === 'weekoff';
@@ -140,10 +140,10 @@ export function MonthCalendar({
                   aria-label={`${cell.iso}${info ? ` — ${info.note ?? STATE_LABEL[info.state]}` : ''}`}
                   onClick={() => onSelectDay?.(cell.iso)}
                   className={cn(
-                    'u-press relative grid h-10 w-full place-items-center rounded-[10px]',
+                    'u-press relative grid h-11 w-full place-items-center rounded-[10px]',
                     'text-sm tabular-nums transition-colors duration-[var(--motion-micro)] ease-[var(--ease-std)]',
                     isWeekOff
-                      ? 'u-hatch bg-surface-2 text-ink-faint'
+                      ? 'u-hatch bg-surface-2 text-ink-muted'
                       : isHoliday
                         ? 'bg-accent-soft text-accent-ink'
                         : 'text-ink hover:bg-surface-2',

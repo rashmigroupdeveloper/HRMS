@@ -123,7 +123,15 @@ const employeeBalances = withPermission('leave.admin')
   .route({ method: 'GET', path: '/leave/balances/{employeeId}', summary: 'An employee’s balances (HR)' })
   .input(z.object({ employeeId: z.coerce.number().int().positive() }))
   .output(z.array(balanceShape))
-  .handler(async ({ input, context }) => balancesDto(context.db, input.employeeId));
+  .handler(async ({ input, context }) => {
+    const { assertEmployeesInScope } = await import('../../core/rbac/employee-scope.js');
+    await assertEmployeesInScope(
+      context.db,
+      { ...context.permissionAccess, actorEmployeeId: context.user.employee_id },
+      [input.employeeId],
+    );
+    return balancesDto(context.db, input.employeeId);
+  });
 
 const apply = withPermission('leave.own')
   .route({ method: 'POST', path: '/leave/applications', summary: 'Apply for leave (LV-03; CO applies against comp-off balance)' })
@@ -166,6 +174,7 @@ const myApplications = withPermission('leave.own')
         toDate: z.string(),
         days: z.number(),
         status: z.string(),
+        workflowStatus: z.string(),
         workflowRequestId: z.number(),
       }),
     ),
@@ -174,8 +183,9 @@ const myApplications = withPermission('leave.own')
     const rows = await context.db
       .selectFrom('lv.applications as a')
       .innerJoin('lv.leave_types as t', 't.id', 'a.leave_type_id')
+      .innerJoin('wf.requests as workflow', 'workflow.id', 'a.workflow_request_id')
       .where('a.employee_id', '=', requireEmployeeId(context.user))
-      .select(['a.id', 't.code', 'a.from_date', 'a.to_date', 'a.days', 'a.status', 'a.workflow_request_id'])
+      .select(['a.id', 't.code', 'a.from_date', 'a.to_date', 'a.days', 'a.status', 'a.workflow_request_id', 'workflow.status as workflow_status'])
       .orderBy('a.id', 'desc')
       .limit(200)
       .execute();
@@ -186,6 +196,7 @@ const myApplications = withPermission('leave.own')
       toDate: formatDbDate(r.to_date),
       days: Number(r.days),
       status: r.status,
+      workflowStatus: r.workflow_status,
       workflowRequestId: r.workflow_request_id,
     }));
   });
@@ -327,6 +338,12 @@ const adjust = withPermission('leave.admin')
   .input(z.object({ employeeId: z.number().int().positive(), leaveType: z.string().min(1), delta: z.number(), note: z.string().min(5) }))
   .output(z.object({ ledgerTxnId: z.number() }))
   .handler(async ({ input, context }) => {
+    const { assertEmployeesInScope } = await import('../../core/rbac/employee-scope.js');
+    await assertEmployeesInScope(
+      context.db,
+      { ...context.permissionAccess, actorEmployeeId: context.user.employee_id },
+      [input.employeeId],
+    );
     try {
       const ledgerTxnId = await adjustBalance(context.db, {
         employeeId: input.employeeId,

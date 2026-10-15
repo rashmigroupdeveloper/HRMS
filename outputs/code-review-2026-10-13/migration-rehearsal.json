@@ -1,0 +1,10 @@
+{
+  "prepared": "2026-10-13",
+  "target": "hrms_review_20261013_migration_test",
+  "scope": "Disposable local empty database; existing hrms schema is not migrated",
+  "target_stack_limitation": "Native server is PostgreSQL14.24; target PostgreSQL16 rehearsal still required",
+  "failure": {
+    "message": "syntax error at or near \"NULLS\""
+  },
+  "disposable_database_removed": true
+}

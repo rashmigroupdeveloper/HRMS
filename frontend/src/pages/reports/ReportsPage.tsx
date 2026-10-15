@@ -1,4 +1,19 @@
-import { ArrowRight, CalendarDays, Clock3, ScanLine, UserMinus, Users } from 'lucide-react';
+import {
+  ArrowRight,
+  Briefcase,
+  CalendarDays,
+  Clock3,
+  FileText,
+  Headphones,
+  Laptop,
+  Receipt,
+  ScanLine,
+  Shuffle,
+  UserCheck,
+  UserMinus,
+  UserX,
+  Users,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, DarkCard, PageHeader } from '../../ui';
 
@@ -46,6 +61,20 @@ const reports = [
     icon: UserMinus,
   },
   {
+    code: 'R21',
+    title: 'Offers & Candidates Register',
+    body: 'Recruitment pipeline, LOI status, proposed DOJ and probation terms.',
+    to: '/reports/r21-offers',
+    icon: Briefcase,
+  },
+  {
+    code: 'R23',
+    title: 'Internal Movements & Transfers',
+    body: 'Promotions, department and plant transfers with effective dates.',
+    to: '/reports/r23-transfers',
+    icon: Shuffle,
+  },
+  {
     code: 'R24',
     title: 'Boarding and exits',
     body: 'Daily joiners and exits behind the 07:00 notification.',
@@ -53,11 +82,53 @@ const reports = [
     icon: Users,
   },
   {
+    code: 'R25',
+    title: 'Probation Reviews',
+    body: 'Evaluation schedules, confirmation outcomes and overdue reviews.',
+    to: '/reports/r25-probation',
+    icon: UserCheck,
+  },
+  {
+    code: 'R26',
+    title: 'Attrition Analysis',
+    body: 'Voluntary vs involuntary attrition, tenure cohorts and reasons.',
+    to: '/reports/r26-attrition',
+    icon: UserX,
+  },
+  {
     code: 'R27',
     title: 'Headcount demographics',
-    body: 'Status × category × department counts.',
+    body: 'Status × category × department counts across all entities.',
     to: '/reports/r27-headcount',
     icon: Users,
+  },
+  {
+    code: 'R28',
+    title: 'Asset Custody Register',
+    body: 'Allocated laptops, SIMs, equipment and warranty expirations.',
+    to: '/reports/r28-assets',
+    icon: Laptop,
+  },
+  {
+    code: 'R29',
+    title: 'Helpdesk SLA Performance',
+    body: 'Monthly ticket metrics, resolution SLA hit rates and escalations.',
+    to: '/reports/r29-helpdesk',
+    icon: Headphones,
+  },
+  {
+    code: 'R30',
+    title: 'Policy Compliance Matrix',
+    body: 'Company policies, mandatory employee acknowledgments and pending lists.',
+    to: '/reports/r30-policies',
+    icon: FileText,
+  },
+  {
+    code: 'R31',
+    title: 'Reimbursement Utilization',
+    body: 'Travel & business expense claims, receipt audits and payment status.',
+    to: '/reports/r31-claims',
+    icon: Receipt,
   },
 ];
 

@@ -1,0 +1,2427 @@
+{
+  "counts": {
+    "src/modules/engagement/announcements.service.ts": 1,
+    "src/modules/engagement/surveys.service.ts": 5,
+    "src/modules/lifecycle/separation/clearance.service.ts": 10,
+    "src/modules/lifecycle/separation/separation.service.ts": 32,
+    "src/modules/lifecycle/transfers/transfer.service.ts": 34,
+    "tests/helpdesk-and-engagement-stage34.test.ts": 6,
+    "tests/onboarding-and-probation.test.ts": 308,
+    "tests/separation-clearances-fnf.test.ts": 194,
+    "tests/transfers-and-assets.test.ts": 13
+  },
+  "errors": [
+    {
+      "file": "backend/src/modules/engagement/announcements.service.ts",
+      "detail": "165:44  error  Unnecessary conditional, the types have no overlap  @typescript-eslint/no-unnecessary-condition"
+    },
+    {
+      "file": "backend/src/modules/engagement/surveys.service.ts",
+      "detail": "52:17  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                   @typescript-eslint/array-type"
+    },
+    {
+      "file": "backend/src/modules/engagement/surveys.service.ts",
+      "detail": "79:20  error  'item['id'] ?? ''' will use Object's default stringification format ('[object Object]') when stringified      @typescript-eslint/no-base-to-string"
+    },
+    {
+      "file": "backend/src/modules/engagement/surveys.service.ts",
+      "detail": "80:24  error  'item['prompt'] ?? ''' will use Object's default stringification format ('[object Object]') when stringified  @typescript-eslint/no-base-to-string"
+    },
+    {
+      "file": "backend/src/modules/engagement/surveys.service.ts",
+      "detail": "233:45  error  This assertion is unnecessary since the receiver accepts the original type of the expression                  @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/engagement/surveys.service.ts",
+      "detail": "248:53  error  Unnecessary conditional, the types have no overlap                                                            @typescript-eslint/no-unnecessary-condition"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/clearance.service.ts",
+      "detail": "26:22  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                @typescript-eslint/array-type"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/clearance.service.ts",
+      "detail": "97:24  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead                                                @typescript-eslint/array-type"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/clearance.service.ts",
+      "detail": "120:97  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/clearance.service.ts",
+      "detail": "123:9   error  'finalStatus' is never reassigned. Use 'const' instead                                                     prefer-const"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/clearance.service.ts",
+      "detail": "124:59  error  Expected '!==' and instead saw '!='                                                                        eqeqeq"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/clearance.service.ts",
+      "detail": "186:11  error  Passing a number to Number() does not change the type or value of the number                               @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/clearance.service.ts",
+      "detail": "187:21  error  Passing a number to Number() does not change the type or value of the number                               @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/clearance.service.ts",
+      "detail": "191:7   error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/clearance.service.ts",
+      "detail": "195:35  error  Passing a number to Number() does not change the type or value of the number                               @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/clearance.service.ts",
+      "detail": "196:36  error  This assertion is unnecessary since it does not change the type of the expression                          @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "149:50   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "186:10   error  This assertion is unnecessary since it does not change the type of the expression             @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "189:30   error  This assertion is unnecessary since the receiver accepts the original type of the expression  @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "259:100  error  Explicit undefined is unnecessary on an optional parameter                                    @typescript-eslint/no-duplicate-type-constituents"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "281:11   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "282:19   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "287:33   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "293:12   error  This assertion is unnecessary since it does not change the type of the expression             @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "297:12   error  This assertion is unnecessary since it does not change the type of the expression             @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "301:16   error  This assertion is unnecessary since it does not change the type of the expression             @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "304:50   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "306:25   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "372:53   error  This assertion is unnecessary since it does not change the type of the expression             @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "387:9    error  Prefer using an optional chain expression instead, as it's more concise and easier to read    @typescript-eslint/prefer-optional-chain"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "387:19   error  Unnecessary conditional, value is always truthy                                               @typescript-eslint/no-unnecessary-condition"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "388:13   error  Unsafe assignment of an `any` value                                                           @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "390:12   error  This assertion is unnecessary since the receiver accepts the original type of the expression  @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "428:28   error  This assertion is unnecessary since it does not change the type of the expression             @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "473:15   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "498:15   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "552:53   error  This assertion is unnecessary since it does not change the type of the expression             @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "599:30   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "600:33   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "658:26   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "659:29   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "666:11   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "667:19   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "673:12   error  This assertion is unnecessary since it does not change the type of the expression             @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "677:12   error  This assertion is unnecessary since it does not change the type of the expression             @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "681:16   error  This assertion is unnecessary since it does not change the type of the expression             @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "684:52   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "detail": "686:27   error  Passing a number to Number() does not change the type or value of the number                  @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "110:17  error  'd ?? ''' will use Object's default stringification format ('[object Object]') when stringified                 @typescript-eslint/no-base-to-string"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "139:19  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "346:7   error  Prefer using nullish coalescing operator (`??=`) instead of an assignment expression, as it is simpler to read  @typescript-eslint/prefer-nullish-coalescing"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "396:22  error  Passing a string to String() does not change the type or value of the string                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "527:9   error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "528:17  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "534:35  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "637:80  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "638:86  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "639:84  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "640:71  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "643:17  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "706:82  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "707:88  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "708:86  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "709:73  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "721:11  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "722:19  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "725:21  error  This assertion is unnecessary since it does not change the type of the expression                               @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "727:15  error  This assertion is unnecessary since it does not change the type of the expression                               @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "728:25  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "730:46  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "732:54  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "734:52  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "736:50  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "738:48  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "740:56  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "742:54  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "744:44  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "746:42  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "749:11  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "753:11  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "759:23  error  This assertion is unnecessary since it does not change the type of the expression                               @typescript-eslint/no-unnecessary-type-assertion"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "detail": "762:35  error  Passing a number to Number() does not change the type or value of the number                                    @typescript-eslint/no-unnecessary-type-conversion"
+    },
+    {
+      "file": "backend/tests/helpdesk-and-engagement-stage34.test.ts",
+      "detail": "46:7   error  'agentUserId' is assigned a value but never used             @typescript-eslint/no-unused-vars"
+    },
+    {
+      "file": "backend/tests/helpdesk-and-engagement-stage34.test.ts",
+      "detail": "52:9   error  'authHrHead' is assigned a value but never used              @typescript-eslint/no-unused-vars"
+    },
+    {
+      "file": "backend/tests/helpdesk-and-engagement-stage34.test.ts",
+      "detail": "176:44  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type"
+    },
+    {
+      "file": "backend/tests/helpdesk-and-engagement-stage34.test.ts",
+      "detail": "184:52  error  Array type using 'Array<T>' is forbidden. Use 'T[]' instead  @typescript-eslint/array-type"
+    },
+    {
+      "file": "backend/tests/helpdesk-and-engagement-stage34.test.ts",
+      "detail": "347:23  error  Unsafe member access .ok on an `any` value                   @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/helpdesk-and-engagement-stage34.test.ts",
+      "detail": "373:23  error  Unsafe member access .message on an `any` value              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "31:26   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "32:25   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "33:21   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "34:24   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "35:21   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "36:23   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "37:23   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "42:16   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "43:23   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "44:23   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "45:26   error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "46:23   error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "47:25   error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "48:26   error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "49:24   error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "50:26   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "50:36   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "50:47   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "52:27   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "52:66   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "52:91   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "53:20   error  Unsafe member access .or on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "53:31   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "55:27   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "55:32   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "55:34   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "58:13   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "60:13   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "60:15   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "60:29   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "60:43   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "60:47   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "62:11   error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "66:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "66:36   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "66:38   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "66:54   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "66:64   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "67:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "67:29   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "67:31   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "67:47   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "67:57   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "69:21   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "69:55   error  Unsafe member access .prejoin_token_hash on an `any` value                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "69:93   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "73:21   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "73:55   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "73:70   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "78:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "78:33   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "78:35   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "78:53   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "78:63   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "78:93   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "79:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "79:33   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "79:35   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "79:51   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "79:61   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "80:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "80:30   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "80:32   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "80:48   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "80:58   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "81:29   error  Unsafe member access .length on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "82:21   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "82:45   error  Unsafe member access [0] on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "83:21   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "83:54   error  Unsafe member access .personal_email on an `any` value                                      @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "83:88   error  Unsafe member access .work_email on an `any` value                                          @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "87:21   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "87:54   error  Unsafe member access .mobile on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "87:77   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "91:21   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "91:54   error  Unsafe member access .pan on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "91:71   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "99:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "99:29   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "99:31   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "99:47   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "99:57   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "100:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "100:48   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "100:64   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "104:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "104:29   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "104:31   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "104:47   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "104:57   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "105:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "105:50   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "105:66   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "112:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "112:33   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "112:35   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "112:51   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "112:61   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "113:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "113:30   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "113:32   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "113:48   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "113:58   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "114:32   error  Prefer using an optional chain expression instead, as it's more concise and easier to read  @typescript-eslint/prefer-optional-chain"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "114:53   error  Unsafe member access .op on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "115:58   error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "115:81   error  Unsafe member access .due_date on an `any` value                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "115:101  error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "123:23   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "123:58   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "123:68   error  Unsafe member access .employee_id on an `any` value                                         @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "130:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "130:26   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "131:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "131:34   error  Unsafe member access .employee_id on an `any` value                                         @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "132:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "132:30   error  Unsafe member access .ecode on an `any` value                                               @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "133:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "133:35   error  Unsafe member access .first_name on an `any` value                                          @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "134:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "134:34   error  Unsafe member access .last_name on an `any` value                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "137:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "137:28   error  Unsafe member access .doj on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "138:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "138:31   error  Unsafe member access .due_date on an `any` value                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "139:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "139:45   error  Unsafe member access .manager_recommendation on an `any` value                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "140:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "140:39   error  Unsafe member access .extension_months on an `any` value                                    @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "141:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "141:35   error  Unsafe member access .review_notes on an `any` value                                        @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "142:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "142:30   error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "143:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "143:31   error  Unsafe member access .outcome on an `any` value                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "144:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "144:40   error  Unsafe member access .confirmation_date on an `any` value                                   @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "150:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "150:30   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "150:32   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "150:48   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "150:58   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "151:52   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "152:21   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "152:34   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "152:43   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "152:55   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "154:31   error  Unsafe member access .toOperationNode on an `any` value                                     @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "155:25   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "155:32   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "155:34   error  Unsafe member access .toOperationNode on an `any` value                                     @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "156:25   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "156:34   error  Unsafe member access .parameters on an `any` value                                          @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "157:37   error  Unsafe member access .value on an `any` value                                               @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "157:57   error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "157:66   error  Unsafe member access .value on an `any` value                                               @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "162:23   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "162:33   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "162:36   error  Unsafe member access .due_date on an `any` value                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "162:63   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "162:65   error  Unsafe member access .due_date on an `any` value                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "162:99   error  Unsafe member access .due_date on an `any` value                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "162:110  error  Unsafe member access .slice on an `any` value                                               @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "163:26   error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "163:50   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "163:61   error  Unsafe member access .includes on an `any` value                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "172:7    error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "175:16   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "176:23   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "177:11   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "177:13   error  Unsafe member access ._val on an `any` value                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "178:11   error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "180:26   error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "183:17   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "183:37   error  Unsafe member access ._val on an `any` value                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "195:17   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "195:37   error  Unsafe member access ._val on an `any` value                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "201:17   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "201:37   error  Unsafe member access ._val on an `any` value                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "210:7    error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "213:16   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "214:9    error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "214:21   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "215:23   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "216:22   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "217:11   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "217:13   error  Unsafe member access ._set on an `any` value                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "218:11   error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "220:47   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "221:11   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "221:13   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "221:36   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "222:11   error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "225:17   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "225:27   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "225:29   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "225:45   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "225:55   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "226:17   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "226:28   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "226:30   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "226:46   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "226:56   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "228:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "228:58   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "228:73   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "229:49   error  Unsafe member access ._set on an `any` value                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "232:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "232:57   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "232:74   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "232:91   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "233:49   error  Unsafe member access ._set on an `any` value                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "236:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "236:35   error  Unsafe call of an `any` typed value                                                         @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "236:37   error  Unsafe member access ._where on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "236:53   error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "236:63   error  Unsafe member access .col on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "238:32   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "238:47   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "239:33   error  Unsafe member access .employee_id on an `any` value                                         @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "239:58   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "240:38   error  Unsafe member access .task_code on an `any` value                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "240:66   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "244:34   error  Unsafe member access ._set on an `any` value                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "248:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "248:55   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "248:70   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "249:49   error  Unsafe member access ._set on an `any` value                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "252:19   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "252:56   error  Unsafe member access .employee_id on an `any` value                                         @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "252:81   error  Unsafe member access .val on an `any` value                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "253:49   error  Unsafe member access ._set on an `any` value                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "256:48   error  Unsafe member access ._set on an `any` value                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "261:7    error  Unsafe return of a value of type `any`                                                      @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "294:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "294:51   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "296:20   error  Unsafe member access .full_name on an `any` value                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "297:20   error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "301:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "320:9    error  Unsafe argument of type `any` assigned to a parameter of type `string`                      @typescript-eslint/no-unsafe-argument"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "320:19   error  Unsafe member access .prejoin_link_token on an `any` value                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "325:24   error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "326:24   error  Unsafe member access .prejoin_completed_at on an `any` value                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "386:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "390:9    error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "390:32   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "405:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "405:48   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "407:18   error  Unsafe member access .ecode on an `any` value                                               @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "408:18   error  Unsafe member access .first_name on an `any` value                                          @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "409:18   error  Unsafe member access .contract_type on an `any` value                                       @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "410:18   error  Unsafe member access .biometric_registered on an `any` value                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "413:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "413:45   error  Unsafe member access .employee_id on an `any` value                                         @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "417:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "417:50   error  Unsafe member access .employee_id on an `any` value                                         @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "419:28   error  Unsafe member access .annual_ctc on an `any` value                                          @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "422:24   error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "425:51   error  Unsafe member access .employee_id on an `any` value                                         @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "427:37   error  Unsafe member access .task_code on an `any` value                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "428:37   error  Unsafe member access .task_code on an `any` value                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "431:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "431:49   error  Unsafe member access .employee_id on an `any` value                                         @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "433:21   error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "434:23   error  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`      @typescript-eslint/no-unsafe-argument"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "434:30   error  Unsafe member access .due_date on an `any` value                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "438:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "441:67   error  Unsafe argument of type `any` assigned to a parameter of type `number`                      @typescript-eslint/no-unsafe-argument"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "441:71   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "443:18   error  Unsafe member access .biometric_registered on an `any` value                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "444:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "445:18   error  Unsafe member access .employee_id on an `any` value                                         @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "445:38   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "445:46   error  Unsafe member access .task_code on an `any` value                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "447:23   error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "467:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "467:52   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "468:27   error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "469:27   error  Unsafe member access .escalated_at on an `any` value                                        @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "475:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "479:9    error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "479:26   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "485:21   error  Unsafe member access .manager_recommendation on an `any` value                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "486:21   error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "490:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "491:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "491:28   error  Unsafe member access .employee_id on an `any` value                                         @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "494:9    error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "494:26   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "507:21   error  Unsafe member access .outcome on an `any` value                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "508:21   error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "509:23   error  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`      @typescript-eslint/no-unsafe-argument"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "509:30   error  Unsafe member access .confirmation_date on an `any` value                                   @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "512:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "512:48   error  Unsafe member access .id on an `any` value                                                  @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "513:19   error  Unsafe member access .contract_type on an `any` value                                       @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "516:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "517:31   error  Unsafe member access .annual_ctc on an `any` value                                          @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "518:23   error  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`      @typescript-eslint/no-unsafe-argument"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "518:33   error  Unsafe member access .effective_from on an `any` value                                      @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "521:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "521:49   error  Unsafe member access .employee_id on an `any` value                                         @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "523:21   error  Unsafe member access .template_code on an `any` value                                       @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "551:13   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "552:18   error  Unsafe member access .employee_id on an `any` value                                         @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "552:41   error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "555:23   error  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`      @typescript-eslint/no-unsafe-argument"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "detail": "555:34   error  Unsafe member access .due_date on an `any` value                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "21:3   error  'calculateServiceTenure' is defined but never used                                                         @typescript-eslint/no-unused-vars"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "210:27  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "214:18  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "215:25  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "216:28  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "217:25  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "218:49  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "219:13  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "219:15  error  Unsafe member access ._where on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "219:38  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "220:13  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "222:26  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "223:11  error  Async method 'execute' has no 'await' expression                                                           @typescript-eslint/require-await"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "225:15  error  Unsafe return of a value of type `any[]`                                                                   @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "226:17  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "226:19  error  Unsafe member access ._where on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "226:36  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "226:46  error  Unsafe member access [w.col] on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "226:46  error  Computed name [w.col] resolves to an `any` value                                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "226:48  error  Unsafe member access .col on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "226:59  error  Unsafe member access .val on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "232:19  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "232:32  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "232:34  error  Unsafe member access .execute on an `any` value                                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "233:13  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "233:25  error  Unsafe member access [0] on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "233:28  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "236:9   error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "238:20  error  'table' is defined but never used                                                                          @typescript-eslint/no-unused-vars"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "239:24  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "242:15  error  Async method 'executeTakeFirstOrThrow' has no 'await' expression                                           @typescript-eslint/require-await"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "243:23  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "254:17  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "260:21  error  'table' is defined but never used                                                                          @typescript-eslint/no-unused-vars"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "261:24  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "262:49  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "264:15  error  Async method 'executeTakeFirstOrThrow' has no 'await' expression                                           @typescript-eslint/require-await"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "265:23  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "265:59  error  Unsafe member access [col] on an `any` value                                                               @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "267:17  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "270:13  error  Async method 'execute' has no 'await' expression                                                           @typescript-eslint/require-await"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "272:23  error  Unsafe member access [col] on an `any` value                                                               @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "349:29  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "350:28  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "351:27  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "364:23  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "367:23  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "370:27  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "373:25  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "374:21  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "375:26  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "387:18  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "388:25  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "389:28  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "390:25  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "391:27  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "392:49  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "393:13  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "393:15  error  Unsafe member access ._where on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "393:38  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "394:13  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "396:26  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "397:11  error  Async method 'execute' has no 'await' expression                                                           @typescript-eslint/require-await"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "399:15  error  Unsafe return of a value of type `any[]`                                                                   @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "400:17  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "400:19  error  Unsafe member access ._where on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "400:36  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "400:46  error  Unsafe member access [w.col] on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "400:46  error  Computed name [w.col] resolves to an `any` value                                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "400:48  error  Unsafe member access .col on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "400:59  error  Unsafe member access .val on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "404:15  error  Unsafe return of a value of type `any[]`                                                                   @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "405:17  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "405:19  error  Unsafe member access ._where on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "405:36  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "405:46  error  Unsafe member access [w.col] on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "405:46  error  Computed name [w.col] resolves to an `any` value                                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "405:48  error  Unsafe member access .col on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "405:59  error  Unsafe member access .val on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "409:15  error  Unsafe return of a value of type `any[]`                                                                   @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "410:17  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "410:19  error  Unsafe member access ._where on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "410:36  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "410:46  error  Unsafe member access [w.col] on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "410:46  error  Computed name [w.col] resolves to an `any` value                                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "410:48  error  Unsafe member access .col on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "410:59  error  Unsafe member access .val on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "414:15  error  Unsafe return of a value of type `any[]`                                                                   @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "415:17  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "415:19  error  Unsafe member access ._where on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "415:36  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "415:46  error  Unsafe member access [w.col] on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "415:46  error  Computed name [w.col] resolves to an `any` value                                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "415:48  error  Unsafe member access .col on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "415:59  error  Unsafe member access .val on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "419:15  error  Unsafe return of a value of type `any[]`                                                                   @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "420:17  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "420:19  error  Unsafe member access ._where on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "420:36  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "420:46  error  Unsafe member access [w.col] on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "420:46  error  Computed name [w.col] resolves to an `any` value                                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "420:48  error  Unsafe member access .col on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "420:59  error  Unsafe member access .val on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "424:15  error  Unsafe return of a value of type `any[]`                                                                   @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "425:17  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "425:19  error  Unsafe member access ._where on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "425:36  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "425:46  error  Unsafe member access [w.col] on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "425:46  error  Computed name [w.col] resolves to an `any` value                                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "425:48  error  Unsafe member access .col on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "425:59  error  Unsafe member access .val on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "429:15  error  Unsafe return of a value of type `any[]`                                                                   @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "430:17  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "430:19  error  Unsafe member access ._where on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "430:36  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "430:46  error  Unsafe member access [w.col] on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "430:46  error  Computed name [w.col] resolves to an `any` value                                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "430:48  error  Unsafe member access .col on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "430:59  error  Unsafe member access .val on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "434:15  error  Unsafe return of a value of type `any[]`                                                                   @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "435:17  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "435:19  error  Unsafe member access ._where on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "435:36  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "435:46  error  Unsafe member access [w.col] on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "435:46  error  Computed name [w.col] resolves to an `any` value                                                           @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "435:48  error  Unsafe member access .col on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "435:59  error  Unsafe member access .val on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "444:19  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "444:32  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "444:34  error  Unsafe member access .execute on an `any` value                                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "445:13  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "445:25  error  Unsafe member access [0] on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "445:28  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "448:19  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "448:32  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "448:34  error  Unsafe member access .execute on an `any` value                                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "449:23  error  Unsafe member access [0] on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "450:13  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "450:25  error  Unsafe member access [0] on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "453:9   error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "456:47  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "457:11  error  Async method 'execute' has no 'await' expression                                                           @typescript-eslint/require-await"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "459:61  error  Unsafe member access [col] on an `any` value                                                               @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "467:24  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "468:11  error  Async method 'execute' has no 'await' expression                                                           @typescript-eslint/require-await"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "469:19  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "475:15  error  Async method 'executeTakeFirstOrThrow' has no 'await' expression                                           @typescript-eslint/require-await"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "476:23  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "487:17  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "492:13  error  Async method 'executeTakeFirstOrThrow' has no 'await' expression                                           @typescript-eslint/require-await"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "493:21  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "504:15  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "510:24  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "511:49  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "513:15  error  Async method 'executeTakeFirstOrThrow' has no 'await' expression                                           @typescript-eslint/require-await"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "518:23  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "518:48  error  Unsafe member access [col] on an `any` value                                                               @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "520:17  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "523:13  error  Async method 'execute' has no 'await' expression                                                           @typescript-eslint/require-await"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "529:26  error  Unsafe member access [col] on an `any` value                                                               @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "563:13  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "566:9   error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "566:34  error  Unsafe member access .id on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "568:9   error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "568:22  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "568:22  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "568:33  error  Unsafe member access .requested_lwd on an `any` value                                                      @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "568:61  error  Unsafe member access .slice on an `any` value                                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "572:41  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "572:41  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "572:52  error  Unsafe member access .requested_lwd on an `any` value                                                      @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "572:80  error  Unsafe member access .slice on an `any` value                                                              @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "575:13  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "575:53  error  Unsafe member access .id on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "576:23  error  Unsafe member access .status on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "579:58  error  Unsafe member access .separation_id on an `any` value                                                      @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "579:87  error  Unsafe member access .id on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "585:13  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "589:12  error  Unsafe member access .status on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "594:9   error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "594:34  error  Unsafe member access .id on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "604:13  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "606:9   error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "606:26  error  Unsafe member access .id on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "613:13  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "613:53  error  Unsafe member access .id on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "614:23  error  Unsafe member access .status on an `any` value                                                             @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "615:23  error  Unsafe member access .dol on an `any` value                                                                @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "618:52  error  Unsafe member access .employee_id on an `any` value                                                        @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "620:33  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "620:35  error  Unsafe member access .template_code on an `any` value                                                      @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "625:13  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "625:59  error  Unsafe member access .user_id on an `any` value                                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "detail": "626:28  error  Unsafe member access .role_id on an `any` value                                                            @typescript-eslint/no-unsafe-member-access"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "18:3   error  'generateTargetEcode' is defined but never used                                                                 @typescript-eslint/no-unused-vars"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "69:60  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "73:5   error  Prefer using nullish coalescing operator (`??=`) instead of an assignment expression, as it is simpler to read  @typescript-eslint/prefer-nullish-coalescing"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "90:17  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "91:17  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "110:16  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "111:16  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "130:23  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "143:16  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "144:16  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "163:18  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "164:18  error  Forbidden non-null assertion                                                                                    @typescript-eslint/no-non-null-assertion"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "detail": "229:9   error  Unnecessary conditional, value is always truthy                                                                 @typescript-eslint/no-unnecessary-condition"
+    }
+  ]
+}

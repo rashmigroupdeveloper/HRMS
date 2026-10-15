@@ -1,0 +1,25 @@
+{
+  "evidence_date": "2026-10-14",
+  "reconstructed_from_retained_log": "hrms-backend-stage02-final-20261014.log",
+  "backend": {
+    "verify_exit": 1,
+    "typecheck": "pass",
+    "lint": "pass",
+    "knip": "pass",
+    "dependency_check": "pass",
+    "tests_passed": 471,
+    "test_files": 64,
+    "skipped": 0,
+    "coverage": {
+      "statements": 76.08,
+      "lines": 76.08,
+      "branches": 71.56,
+      "functions": 79.89
+    },
+    "threshold": 80,
+    "separate_build": "pass"
+  },
+  "no_gate_advanced": true,
+  "current_followup": "../manager-approval-review-2026-10-15/verification.json",
+  "source_inventory_limit": "No frozen 14 Oct source snapshot was saved; current source hashes are in the 15 Oct final inventory. Do not infer historical file hashes."
+}

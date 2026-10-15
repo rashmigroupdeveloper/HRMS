@@ -7,7 +7,7 @@
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import request from 'supertest';
+import { httpRequest } from './http-client.js';
 import type { Express } from 'express';
 import { sql, type Kysely } from 'kysely';
 import { createApp } from '../src/app.js';
@@ -134,12 +134,12 @@ run('Stage 1.1 — productionized ingestion (live Postgres)', () => {
   });
 
   it('ops APIs obey the central permission gates (401 → 403 → 200 with the right roles)', async () => {
-    expect((await request(app).get('/api/attendance/exceptions/unmatched')).status).toBe(401);
+    expect((await (await httpRequest(app)).get('/api/attendance/exceptions/unmatched')).status).toBe(401);
 
-    const login = await request(app).post('/api/auth/login').send({ identifier: opsEmail, password });
+    const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: opsEmail, password });
     const token = (login.body as { accessToken: string }).accessToken;
-    expect((await request(app).get('/api/attendance/exceptions/unmatched').set('Authorization', `Bearer ${token}`)).status).toBe(403);
-    expect((await request(app).get('/api/attendance/devices').set('Authorization', `Bearer ${token}`)).status).toBe(403);
+    expect((await (await httpRequest(app)).get('/api/attendance/exceptions/unmatched').set('Authorization', `Bearer ${token}`)).status).toBe(403);
+    expect((await (await httpRequest(app)).get('/api/attendance/devices').set('Authorization', `Bearer ${token}`)).status).toBe(403);
 
     // hr_ops → attendance.manual_override (unmatched queue); it_admin → devices/integrations.
     for (const role of ['hr_ops', 'it_admin']) {
@@ -151,19 +151,19 @@ run('Stage 1.1 — productionized ingestion (live Postgres)', () => {
         .execute();
     }
 
-    const unmatched = await request(app)
+    const unmatched = await (await httpRequest(app))
       .get('/api/attendance/exceptions/unmatched')
       .set('Authorization', `Bearer ${token}`);
     expect(unmatched.status).toBe(200);
     const list = unmatched.body as { employeeNo: string; swipes: number }[];
     expect(list.some((r) => r.employeeNo === 'S11OK0001')).toBe(true); // ghost e-code surfaced, not dropped
 
-    const devices = await request(app).get('/api/attendance/devices').set('Authorization', `Bearer ${token}`);
+    const devices = await (await httpRequest(app)).get('/api/attendance/devices').set('Authorization', `Bearer ${token}`);
     expect(devices.status).toBe(200);
     const board = devices.body as { doorCode: string; silent: boolean }[];
     expect(board.some((d) => d.doorCode === door)).toBe(true);
 
-    const quarantined = await request(app)
+    const quarantined = await (await httpRequest(app))
       .get('/api/attendance/exceptions/quarantined')
       .set('Authorization', `Bearer ${token}`);
     expect(quarantined.status).toBe(200);

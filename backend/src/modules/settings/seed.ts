@@ -14,7 +14,8 @@
  * Idempotent: existing rows are never overwritten, so a re-seed can never undo
  * an HR change. Usage: npm run seed:settings
  */
-import 'dotenv/config';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { loadEnv } from '../../core/config/env.js';
 import { createDatabase } from '../../core/db/database.js';
 import { logger } from '../../core/logger.js';
@@ -207,11 +208,16 @@ export async function seedPolicySettings(): Promise<{ total: number; inserted: n
 }
 
 async function main(): Promise<void> {
+  await import('dotenv/config');
   const { total, inserted } = await seedPolicySettings();
   logger.info({ total, inserted }, 'policy settings seeded (idempotent)');
 }
 
-main().catch((err: unknown) => {
-  logger.error(err, 'settings seed failed');
-  process.exitCode = 1;
-});
+// CORE-13 / NFR-04: importing definitions must never seed the database.
+const entry = process.argv[1];
+if (entry !== undefined && pathToFileURL(resolve(entry)).href === import.meta.url) {
+  main().catch((err: unknown) => {
+    logger.error(err, 'settings seed failed');
+    process.exitCode = 1;
+  });
+}

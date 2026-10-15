@@ -6,6 +6,10 @@
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { boardingExitExcel, boardingExitReport, sendBoardingExitEmail } from './boarding-exit.service.js';
+import { onboardingRouter } from './onboarding/onboarding.router.js';
+import { probationRouter } from './probation/probation.router.js';
+import { separationRouter } from './separation/separation.router.js';
+import { transferRouter } from './transfers/transfer.router.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
 
@@ -53,4 +57,12 @@ const excel = withPermission('reports.hr')
     };
   });
 
-export const lifecycleRouter = { report, send, excel };
+export const lifecycleRouter = {
+  report,
+  send,
+  excel,
+  ...onboardingRouter,
+  ...probationRouter,
+  separations: separationRouter,
+  transfers: transferRouter,
+};

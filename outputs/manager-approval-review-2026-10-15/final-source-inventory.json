@@ -1,0 +1,2065 @@
+{
+  "prepared": "2026-10-15",
+  "baseline": "Current dirty working tree; start inventory is an in-session snapshot, not Git HEAD",
+  "files": [
+    {
+      "file": "backend/.dependency-cruiser.cjs",
+      "sha256": "cf605119a08b8d05fc8d966d8cb01916511ba5615e44ad5fd883ec3adcde7fd0"
+    },
+    {
+      "file": "backend/eslint.config.mjs",
+      "sha256": "b9671ce21ff5ec8835c36486cfd4450641c6e9d213e2a59eb7ea3011085182c6"
+    },
+    {
+      "file": "backend/knip.json",
+      "sha256": "f713b05ad3ed141ffae5d2e2e8a5c1f51c3e2a4b83b363a5a6726ff3e6fdeccc"
+    },
+    {
+      "file": "backend/migrations/1751790000000_core-auth-rbac-audit-settings.ts",
+      "sha256": "d36203029a60f9c295f8f2960e06a93152b3fe890307930bda1d883568b5c82b"
+    },
+    {
+      "file": "backend/migrations/1751800000000_wf-notifications.ts",
+      "sha256": "92b753581fc1bfeb61ea619391d6e17a6752e0db7aa65a2bdcacfc8578dfd68f"
+    },
+    {
+      "file": "backend/migrations/1751810000000_org-employees.ts",
+      "sha256": "4bc470bf4178f3b5aacaf741c6dc299e32fa68c3baecb13f4368a0218a7905fc"
+    },
+    {
+      "file": "backend/migrations/1751820000000_attendance-ingestion.ts",
+      "sha256": "070fb4ae8ec3f3d155fe70befd866dfb77efcf446c604a6d35a18d43d0837c20"
+    },
+    {
+      "file": "backend/migrations/1751830000000_attendance-quarantine.ts",
+      "sha256": "da0cbd4575c1f264e426d17556ae006a9737df1562666f880678fd96c405b50f"
+    },
+    {
+      "file": "backend/migrations/1751840000000_attendance-processing.ts",
+      "sha256": "44a5d5d0a9bb1b330571b1692aa83729f99ef5cfb6c7f56f00579fe9169b6ab8"
+    },
+    {
+      "file": "backend/migrations/1751850000000_workflow-engine.ts",
+      "sha256": "e1cc6904f6f265d239e9cbcfa54e80c1408c3dcd9d6ba5ca232376ef92c08d60"
+    },
+    {
+      "file": "backend/migrations/1751860000000_phase1-review-fixes.ts",
+      "sha256": "4c64bcffe79dc08fe09aea5552bb2fda7e13e3a5f1bb513fdd4cdddd5334ead5"
+    },
+    {
+      "file": "backend/migrations/1751870000000_attendance-requests.ts",
+      "sha256": "52af4342674dec4dbe2b34a4e66a0a8d628e9385bc595a1b4a0abcd8ebf27067"
+    },
+    {
+      "file": "backend/migrations/1751880000000_leave.ts",
+      "sha256": "970363901d7a34c06f8e7a8fa110f73855ac8caf2f8ad4350f026d8f9e317b8b"
+    },
+    {
+      "file": "backend/migrations/1751890000000_absence-letters-policies.ts",
+      "sha256": "35d5bc1e329a65bbad2ee618c8779c032e81b385d99ec0b9d03e066d003d443b"
+    },
+    {
+      "file": "backend/migrations/1751900000000_stage17-month-lock-muster.ts",
+      "sha256": "54cf7a483850359c90a9e6f18e8cf5c4ab408e4fc0d3a5b62a7c929eef483d9d"
+    },
+    {
+      "file": "backend/migrations/1751910000000_stage17-lock-hardening.ts",
+      "sha256": "f9fc9f4b840b64ec98d494ed7e6500c4b507228142a12deb0004c2dbe7d86b56"
+    },
+    {
+      "file": "backend/migrations/1751920000000_per-device-watermarks.ts",
+      "sha256": "ced3edff6821f71216947921cac8f62c2a24f3919d02a5e81080682be6a3e14d"
+    },
+    {
+      "file": "backend/migrations/1751930000000_device-watermark-monotonic.ts",
+      "sha256": "d8353a23bddbb2d6398947be2fdb91119a4cc0f06a186037021a740f64ba296b"
+    },
+    {
+      "file": "backend/migrations/1751940000000_policy-body-summary.ts",
+      "sha256": "77e6ee433291808f0608b9aeaaf7c79839f74c43890242d545deb6eac002f95d"
+    },
+    {
+      "file": "backend/migrations/1751950000000_stage17-schema-drift-fix.ts",
+      "sha256": "9ed14d27f252e4762eb7a136548c1143d6ed240f3c54a81899274f2ac2f89e7d"
+    },
+    {
+      "file": "backend/migrations/1751960000000_manager-month-approvals.ts",
+      "sha256": "67f209f393c2fa35696366f7aaf9d9e2c690713fa85e062eff4684dbfd0c2e77"
+    },
+    {
+      "file": "backend/migrations/1751970000000_stage17-review-hardening.ts",
+      "sha256": "2ebe0a595dd20645706d5ef3a6a24a29b916d32900c4b90f917b2ea73db85387"
+    },
+    {
+      "file": "backend/migrations/1751980000000_assets-module.ts",
+      "sha256": "d74bc9fec7bade583dee39b0702eda6eb628c1ec97ba6706ebe752197a267432"
+    },
+    {
+      "file": "backend/migrations/1751990000000_helpdesk-engagement.ts",
+      "sha256": "aacdc09ffff220691e63560af144a3f96f5eb495e5747d96cc3b6ace6c12e0c9"
+    },
+    {
+      "file": "backend/migrations/1752000000000_kpi-daily-snapshot.ts",
+      "sha256": "88dc7df95eceb456901490695e4d391ce56483bcfa292883e903f55b6f476f9c"
+    },
+    {
+      "file": "backend/migrations/1752010000000_asset-search-trigram.ts",
+      "sha256": "415332a8e2dc6721d3dfb044f46ab188a06a523fd7988e53ddedab78f80853f1"
+    },
+    {
+      "file": "backend/migrations/1752020000000_helpdesk-ticket-sequence.ts",
+      "sha256": "4db7610b04dd32b430dbb40ca42560c7158accc4c6728cbd62e2f4e5b8dbab26"
+    },
+    {
+      "file": "backend/migrations/1752030000000_roster-noop-approval-guard.ts",
+      "sha256": "80f409b408ab3934bc01c02c5e7bcb158001ceec538c84b70c77190895268945"
+    },
+    {
+      "file": "backend/migrations/1752040000000_engagement-anonymous-dedupe.ts",
+      "sha256": "5ead33ac70025e2ff6dea6c925aced0be055d175cb05150752190714de526f1b"
+    },
+    {
+      "file": "backend/migrations/1752050000000_audit-org-unit-scope.ts",
+      "sha256": "0a6ce14df79c50a8c05db152964f5498f45d40aa9b35908a4ae9373f431d9bbc"
+    },
+    {
+      "file": "backend/migrations/1752060000000_sec-identity-hardening.ts",
+      "sha256": "8e74e6670b89fec7f45514f5e14fcffa8ad2ec58996c8da742d02559d0512b61"
+    },
+    {
+      "file": "backend/migrations/1752070000000_cmp-licences-calendar.ts",
+      "sha256": "a5ebbc8f696d0e98dbbe3730629e639c5c3e90b5b7c9a8623e776626c9cee400"
+    },
+    {
+      "file": "backend/migrations/1752080000000_shift-micro-scheduling.ts",
+      "sha256": "8c628043c649eb4beb7c5cb658ae23d3dfff98b92d92bf78599f158fac85394b"
+    },
+    {
+      "file": "backend/migrations/1752090000000_org-mis-spine.ts",
+      "sha256": "6013beedfeee6a7a126bd5201cf4c7739498f25c562638ebb9af2b97a4dee3b2"
+    },
+    {
+      "file": "backend/migrations/1752100000000_prv-dpdp.ts",
+      "sha256": "6a7183aa6cb922e3c9052cf541678d71b99176c67587372b409672ba2e1b80c4"
+    },
+    {
+      "file": "backend/migrations/1752110000000_ess-identity-daily.ts",
+      "sha256": "b3734ce69fea77e2eff35ad0a6aa570c3e5441db80e4c17aa48f2d24e690af7e"
+    },
+    {
+      "file": "backend/migrations/1752120000000_doc-vault.ts",
+      "sha256": "1b81ec3dece384b0009db202007a1c2e701060419d4970736f37701716f9e398"
+    },
+    {
+      "file": "backend/migrations/1752140000000_ird-posh-grievance.ts",
+      "sha256": "e83ad2f250d441c91d9f80a595fbc7a06063e26650366fbae4eed7ce36008d7c"
+    },
+    {
+      "file": "backend/migrations/1752150000000_pay-budgets-claims.ts",
+      "sha256": "b96b1d2eab4bd8dcabc0a65c197dc1183b889150ae76a588684519e67e386f30"
+    },
+    {
+      "file": "backend/migrations/1752160000000_employee-hod.ts",
+      "sha256": "1fd4def9ca83036c1f13ce4ab780496e401dda1bb73d2f302440581ac5c447a0"
+    },
+    {
+      "file": "backend/migrations/1752170000000_audit-chain-seq.ts",
+      "sha256": "cee13b642aca86fb8d886f99aaf3f9ed88828d9f6eec2a6eb0d8198f468dfc8e"
+    },
+    {
+      "file": "backend/migrations/1752180000000_org-spine-integrity.ts",
+      "sha256": "bed705e208916dc46ecf76da10bce83c5fa5b8d24b189d6e0620bc3c87305e8e"
+    },
+    {
+      "file": "backend/migrations/1752190000000_attendance-day-integrity.ts",
+      "sha256": "627ff0526e5c1650b43cdb1b053b41e482601d8c3e85e9dcbafaf33f282cc1f9"
+    },
+    {
+      "file": "backend/migrations/1752200000000_rbac-last-admin-guard.ts",
+      "sha256": "73109b940e448d724b0e7209c8c71a2735672fa31f31167114a93618a5592eea"
+    },
+    {
+      "file": "backend/migrations/1752210000000_attendance-session-off.ts",
+      "sha256": "cedc49ebbe5beeb8a149a431970c905f0948e5bf82109db83ff2d3cb365538cd"
+    },
+    {
+      "file": "backend/migrations/1752220000000_pay-schema-init.ts",
+      "sha256": "1663440a7ed4ca9d111c21187e42507e1bce9dfe1704bdcda65f0999b79791ce"
+    },
+    {
+      "file": "backend/migrations/1752230000000_lifecycle-onboarding-probation.ts",
+      "sha256": "f38a1d038c63fce40445d640fdb109379723b3a323ef19a9c8aa6876945079d3"
+    },
+    {
+      "file": "backend/migrations/1752240000000_lifecycle-separation-clearances-fnf.ts",
+      "sha256": "a1152df72074d23987d69ffd351cd5b12ef9005ebf4c78534dd34668997ee5f6"
+    },
+    {
+      "file": "backend/migrations/1752250000000_lifecycle-transfers.ts",
+      "sha256": "318d4b169f868609ece9aae1c1f84bdb1518b0b51df80a79c5841ed98bbeff3f"
+    },
+    {
+      "file": "backend/migrations/1752260000000_helpdesk-engagement-surveys.ts",
+      "sha256": "77e2de44b10f4faace458043714d896139c8aefcd896b5c718a04b6b98f8821d"
+    },
+    {
+      "file": "backend/migrations/1752270000000_claims-reconciliation.ts",
+      "sha256": "8f1133842e9a843fd2fc76381b032ea14259aa6418f55de97ef6c0a0378f349c"
+    },
+    {
+      "file": "backend/migrations/1752280000000_pay-budget-claim-contract.ts",
+      "sha256": "69c61d4e3a93d88e1800b1ca4f386c2e26e96b61bd5ba1b2ba2a4ff1681b8525"
+    },
+    {
+      "file": "backend/migrations/README.md",
+      "sha256": "8901055e83e88a6e688b9391d1c62567706b60771ef350682fa0e2fba9322513"
+    },
+    {
+      "file": "backend/package-lock.json",
+      "sha256": "210cd92302bc2501d0fec3d9a51f4378ea2f43c944e3d2be64f0394e1cfbae95"
+    },
+    {
+      "file": "backend/package.json",
+      "sha256": "d3b93928650631d6f0c0f0dbabff354a3326608aa0ad1417c2777d978a054797"
+    },
+    {
+      "file": "backend/scripts/create-admin.ts",
+      "sha256": "9c631c9187157c7168be06195e8a410f65299e2f2fcee7a9642a6e52131cbbdf"
+    },
+    {
+      "file": "backend/scripts/rollback/1751790000000_core-auth-rbac-audit-settings.down.sql",
+      "sha256": "f57ea61ca01e78aa284201fbf920cc173ca7fbe20300b3e1d0cd42674e1ab2ac"
+    },
+    {
+      "file": "backend/scripts/scale-spike.ts",
+      "sha256": "b7721b57fec76da714bf9296cb211e4f0d0f2bb948d5989382498b486ec12243"
+    },
+    {
+      "file": "backend/scripts/verify-migrations.ts",
+      "sha256": "d3f062521ebe5373ce8eefd4307af89ad238cf36b06b2f5b0520d794c38cb818"
+    },
+    {
+      "file": "backend/src/api/handler.ts",
+      "sha256": "06a9031cc955f93863a90696c63498f45b10e517b180c4ad652a49c09d5db654"
+    },
+    {
+      "file": "backend/src/api/orpc.ts",
+      "sha256": "68724f7a02ff188ee242f3476cf6e83fbdbfd5e511b65a7c5f2e29d99cd5c5a2"
+    },
+    {
+      "file": "backend/src/api/rate-limits.ts",
+      "sha256": "a88fabe08d8a788b81f3acc03da4ea96e1d47f03185a6df4b963fe0109912cef"
+    },
+    {
+      "file": "backend/src/api/router.ts",
+      "sha256": "4731bfe875e9e83ca5314eae564116f982ba393ec2adf7a8729c69a349db61b7"
+    },
+    {
+      "file": "backend/src/api/zod.ts",
+      "sha256": "a6cc37b67b4761e01610900c523febd988cb6b593c29202031966248e562c4c8"
+    },
+    {
+      "file": "backend/src/app.ts",
+      "sha256": "2588e6dc37ec9c99eb37b91c79afde56fdeee9e23d926c1b994d24fbe191b8f6"
+    },
+    {
+      "file": "backend/src/core/audit/audit.service.ts",
+      "sha256": "bcf5f849cc7698555031aa6301da03070a631ec7a04a6686df199d8e38313913"
+    },
+    {
+      "file": "backend/src/core/auth/jwt.ts",
+      "sha256": "a164ca9d171f63c13fd0f515b1f1d53fea00f3ba8cd0fd90aff9a7b43098276f"
+    },
+    {
+      "file": "backend/src/core/config/env.ts",
+      "sha256": "1219225663be4d28d70f898954f40db5e912150fffb47377c7857f7e428af3f6"
+    },
+    {
+      "file": "backend/src/core/dates.ts",
+      "sha256": "b074817c002563827d77c9c814ca054174193172afef7d7231dcd0f4a8c8de67"
+    },
+    {
+      "file": "backend/src/core/db/attendance-period.ts",
+      "sha256": "5bbf02b9d8472389e73edaff8b82971967cf93383c46a8673b9f30e29bd03f87"
+    },
+    {
+      "file": "backend/src/core/db/database.ts",
+      "sha256": "3a8f1133dfc1d43c906d409d2c83ea68c8a13f46ad2728956f6cc97cd1d1812d"
+    },
+    {
+      "file": "backend/src/core/db/types.cmp.ts",
+      "sha256": "2d54b4d51356959deb1613181abf3f96a48df951db49220a36663bedc0ee621d"
+    },
+    {
+      "file": "backend/src/core/db/types.doc.ts",
+      "sha256": "753f2bf51d9db49e595d6281a466dfb3438c1bf3aa8dfc6d8605d644ef977fe8"
+    },
+    {
+      "file": "backend/src/core/db/types.ird.ts",
+      "sha256": "16f1837231a74a52bc568b8e70c8f0ac6dd422af6c27937c96168ce63c77e94d"
+    },
+    {
+      "file": "backend/src/core/db/types.org.ts",
+      "sha256": "5b4b462e22fc4b71ff4b9276bbc1a094771c7df7a8fff92fd71dfce1c50039cd"
+    },
+    {
+      "file": "backend/src/core/db/types.pay-claims.ts",
+      "sha256": "13090be6623e4ba60021e4e182b1e85886421c5ef672a6abfc9385e9e56b7d66"
+    },
+    {
+      "file": "backend/src/core/db/types.prv.ts",
+      "sha256": "a92af2f235836b988880ed73354b2d1a4be415805c4eaa80050eb570fa29fe8c"
+    },
+    {
+      "file": "backend/src/core/db/types.ts",
+      "sha256": "ebb092bd91cb2f4acedb695fd85eccb203e7c4ba63b5f853ee3b187d009c4e98"
+    },
+    {
+      "file": "backend/src/core/employee-code.ts",
+      "sha256": "e663acaea1c1be065a1313913e29da7fae8db2075422c899079aa5fb8d060184"
+    },
+    {
+      "file": "backend/src/core/excel/workbook.ts",
+      "sha256": "d79835eb8cb0d02d5740eb074b756e7e7a9d7624dc0a9d227009d1a4a0d3a565"
+    },
+    {
+      "file": "backend/src/core/json.ts",
+      "sha256": "085960a7307296078725d06383fba76bd1b42137881bc0b3dd955b501f050561"
+    },
+    {
+      "file": "backend/src/core/logger.ts",
+      "sha256": "12b9bbeecd9cccb9c5703cbbc9f681e962d10586e39233edb7b12c7c63a63dd1"
+    },
+    {
+      "file": "backend/src/core/money/index.ts",
+      "sha256": "c1ffef55f556660f0c7112193ce4c7d1e2e0faf7f64a20ea42f133e698063634"
+    },
+    {
+      "file": "backend/src/core/money/money.ts",
+      "sha256": "d186661c231de883e31373a4800302efa24d74057c878acc9b7ea7b3b0e62dab"
+    },
+    {
+      "file": "backend/src/core/money/rounding-policy.ts",
+      "sha256": "e590c7a013874ecf70aad4479c297d5cb8943f6739703ec3516994e3e35d5553"
+    },
+    {
+      "file": "backend/src/core/rbac/effective-role-grants.ts",
+      "sha256": "3cde91053edfcf48ffb359a96a13a8f813e5bc59b2544858f081dc0d844911d1"
+    },
+    {
+      "file": "backend/src/core/rbac/employee-scope.ts",
+      "sha256": "0e3f4a55f6550582e75c863e3688a6770c2bf75c0b17842c2989ba06790467fb"
+    },
+    {
+      "file": "backend/src/core/rbac/permissions.service.ts",
+      "sha256": "7e7eb7859a011edf57ce0b83311cd42690b0a44fbe453b59fc61a709faf72ccd"
+    },
+    {
+      "file": "backend/src/core/rbac/seed-data.ts",
+      "sha256": "b12fc01de37fb007b73d98c796f0e0ac7faff6249c3a95d812b23a8ec2ddcc3f"
+    },
+    {
+      "file": "backend/src/core/rbac/seed.ts",
+      "sha256": "c3e129b30493da9d07288ce9f6081ff1a2b4a153096eb05eb2b357bd49841c87"
+    },
+    {
+      "file": "backend/src/core/storage/documents.ts",
+      "sha256": "ac3bf2b60e628d7d6f8c2438fdc35c37e7a735e79b31995eb146d7c5aadafe96"
+    },
+    {
+      "file": "backend/src/core/storage/index.ts",
+      "sha256": "d56269524a445f7cdc4362400747f991423e7d8598e21d5bdc0ecfaf3aa2a71c"
+    },
+    {
+      "file": "backend/src/core/storage/storage.ts",
+      "sha256": "471ed0f1705ff92626c296736f610495246c73f8235ca73843b230745d7473d2"
+    },
+    {
+      "file": "backend/src/index.ts",
+      "sha256": "00ada10da620c6dc73c2292e3faff604423f8d1d2aa2609833309083a9ceafe3"
+    },
+    {
+      "file": "backend/src/jobs/worker.ts",
+      "sha256": "f9bf8b0b5456248b6ea49e8e9ef2ef516ecd2a33e71533ad711bc65cfa800938"
+    },
+    {
+      "file": "backend/src/modules/README.md",
+      "sha256": "21c3b5177d442e32a5f354723934c683088372561c63734944d8b9fb06ae7951"
+    },
+    {
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "sha256": "e8b7cfe388089218881b4ef20ce21c178977926f5abf40117d45cf1f1307f694"
+    },
+    {
+      "file": "backend/src/modules/assets/assets.service.ts",
+      "sha256": "248df9561f160131b7400d812d4943984379f4c226480c69032f67d1904ce601"
+    },
+    {
+      "file": "backend/src/modules/assets/index.ts",
+      "sha256": "d77007dcbc6f7201c777d3af6ef757995605e69cca9d1d6f8098b21d165c5280"
+    },
+    {
+      "file": "backend/src/modules/attendance/absence.router.ts",
+      "sha256": "3fdcb55caeb63ed7821c4660b640c912aae3d5731c3e99de8bd90ff22a263189"
+    },
+    {
+      "file": "backend/src/modules/attendance/absence.service.ts",
+      "sha256": "d6b413096e6cb2b29946dedc69150339f1e6ea0c71caee841ff4281bd3673162"
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "sha256": "bc48ce8c43bb0990cbf87e9061cb107c67eb46bcdd8d28ff39a8d407bc86f5c0"
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "sha256": "4b335b8517ac303d24e769d021e48d5e0621dd0082fae0d1003e1ef111471415"
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "sha256": "8f5d619c0fc455814532bf6ecd3002cefe155d868b855f1a476a2186f4eb988b"
+    },
+    {
+      "file": "backend/src/modules/attendance/day-status.service.ts",
+      "sha256": "04fff5a74a47d79e7c8f8f0e27f785ad4514fb5c3484d924ddfca22b84060d92"
+    },
+    {
+      "file": "backend/src/modules/attendance/index.ts",
+      "sha256": "71c67ac6c4e7d6ac7054aa0e5ba3455f3b8bdc77aa8003323f8a08a4aef38b5b"
+    },
+    {
+      "file": "backend/src/modules/attendance/ingest.service.ts",
+      "sha256": "6593a1b504fe7df6fce65ef2ada80d2d5a8adc2be8353a2467191c0b5990f4ee"
+    },
+    {
+      "file": "backend/src/modules/attendance/kent-connector.ts",
+      "sha256": "89d9e7784364933d1b025301b9975135c12a403fdcb6cf6304d3d8e34b9d101f"
+    },
+    {
+      "file": "backend/src/modules/attendance/kent-sync.job.ts",
+      "sha256": "dee0b8aabddb0561ffa45fe5b66325650487695b0919c1802236400b5c4408fd"
+    },
+    {
+      "file": "backend/src/modules/attendance/manager-approval.service.ts",
+      "sha256": "185a05a166c0fc707477859943a1cc98939c3886d56b872affe105b419d79845"
+    },
+    {
+      "file": "backend/src/modules/attendance/month-lock.service.ts",
+      "sha256": "d0bf8c4d0793b4c649925fa0fb0624b4c7413a8a34cc3b5465d02233ac1a2a29"
+    },
+    {
+      "file": "backend/src/modules/attendance/overtime.service.ts",
+      "sha256": "3335ea7920d991f55705cdbb086eac4e191cfa3c53fedfeed31ede460a761777"
+    },
+    {
+      "file": "backend/src/modules/attendance/regularization.service.ts",
+      "sha256": "8866b5579dfbd5848583f048806fc9ab621f3075c3b2ede4be1116e3f6b64cf2"
+    },
+    {
+      "file": "backend/src/modules/attendance/roster.service.ts",
+      "sha256": "2eec728fa7245e2352ed308eb4fa28a448953655d256169dcb2d5110e9d555ae"
+    },
+    {
+      "file": "backend/src/modules/attendance/session-status.ts",
+      "sha256": "6329928567b21b58fa44595b6312e6b1078e449907d5d4e48d8e63a17d9da6db"
+    },
+    {
+      "file": "backend/src/modules/attendance/workflow-hooks.ts",
+      "sha256": "af97e9182f58fc1fb71e645bfbc32edc9bd571dce4671192e306673911ca3451"
+    },
+    {
+      "file": "backend/src/modules/audit/audit.router.ts",
+      "sha256": "26a1debac47cfb4aebd058c90bb4fa8f45f9c05ec34c956cf094b56db41c3ba8"
+    },
+    {
+      "file": "backend/src/modules/audit/audit.service.ts",
+      "sha256": "c5e3c968bf0295534f3334e59845d05f54fc145aa68b7eeb42717f4e56d1fc4a"
+    },
+    {
+      "file": "backend/src/modules/audit/index.ts",
+      "sha256": "b999afa8c6e03f4afe183f9edcacf4f734d5d028900b51cdb2070e70c2961702"
+    },
+    {
+      "file": "backend/src/modules/auth/auth.repository.ts",
+      "sha256": "5edbbcb07695013ef98656c2ab8365bf536af2645de25220890acc5603aea1b9"
+    },
+    {
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "sha256": "0f66f7dbeb15124a2c36d87a59628bacde26f9e6a07e9f70b388f33d48b7427c"
+    },
+    {
+      "file": "backend/src/modules/auth/auth.service.ts",
+      "sha256": "a6289873dd26600ea5841bf232a901c7f9eee704845ef92b4c9fe21146390a3c"
+    },
+    {
+      "file": "backend/src/modules/auth/index.ts",
+      "sha256": "d20cb74d1c07fe6a3da3a8a27e30294304a27acc7e4ed407da54fc0b450fbd1d"
+    },
+    {
+      "file": "backend/src/modules/claims/claims.router.ts",
+      "sha256": "b9fc3c10f6f510ee7e47c2d9004a113a09949a72c768d2cef66f771414e6db96"
+    },
+    {
+      "file": "backend/src/modules/claims/claims.service.ts",
+      "sha256": "d3ba9b804ccec9280a73e30da91e5b628692b6403237e3811d0f6f8295b1613f"
+    },
+    {
+      "file": "backend/src/modules/claims/entitlement.service.ts",
+      "sha256": "9bdc52aa1ce2f4c987af4545a29edf9b62a98fa8f48211fae7e12b4d052a2182"
+    },
+    {
+      "file": "backend/src/modules/claims/index.ts",
+      "sha256": "09098c3427b68648f9e99cdae0aca2b6925d36e085f5d239b0a8f4b8cfce4aed"
+    },
+    {
+      "file": "backend/src/modules/employees/employees.repository.ts",
+      "sha256": "80aca3e7382a76152b95750bf1b9dc21721bdb3d8b52ae2fbe58f850999d80a2"
+    },
+    {
+      "file": "backend/src/modules/employees/employees.router.ts",
+      "sha256": "73c987c5b4015d696c37bccfce5f46e1e6fc046d161b12bbc35e512c15f934d7"
+    },
+    {
+      "file": "backend/src/modules/employees/employees.service.ts",
+      "sha256": "ecd1e1748f50dd2c5278f54b039177531891cbe1b89bd2e10d82dd8e26021474"
+    },
+    {
+      "file": "backend/src/modules/employees/import.schemas.ts",
+      "sha256": "220b8232b666d2aaada0c719b60f58c28fdae56b38e6ed4db4983d6ad1178020"
+    },
+    {
+      "file": "backend/src/modules/employees/import.service.ts",
+      "sha256": "8ff30068b015cc7338b97a877143be754a2ee7200df5afce06700c946b5950a2"
+    },
+    {
+      "file": "backend/src/modules/employees/index.ts",
+      "sha256": "3a132eacec616116cdea399e5df7baf4c7fef603635b3d96b85c9f192abd9760"
+    },
+    {
+      "file": "backend/src/modules/engagement/announcements.service.ts",
+      "sha256": "d84079ef6178c10fee28e91e984ce7efc4fb863bc1c7b11281ccc18b8d7cbb7b"
+    },
+    {
+      "file": "backend/src/modules/engagement/audience.ts",
+      "sha256": "3858c1fa75fab1aaa1bfa33a48b160d846265e24a04ee9b24ee5291e839d262b"
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "sha256": "da4e6c22e96bb359df941ca6ee16b996d5285fb26e797b274e515c132600d6c5"
+    },
+    {
+      "file": "backend/src/modules/engagement/index.ts",
+      "sha256": "14b1e99539153acb97de959860d97132c4029e52b390d9a7e7c7149f88afb716"
+    },
+    {
+      "file": "backend/src/modules/engagement/polls.service.ts",
+      "sha256": "d46bd03f8ef1d13313dfeb85b611b389f5979a17b8c20f984d543a805f3464d5"
+    },
+    {
+      "file": "backend/src/modules/engagement/surveys.service.ts",
+      "sha256": "5111ef2dad85f807fa2f5bd619c4e82f1abdae1c52acbac339d455998cf918bc"
+    },
+    {
+      "file": "backend/src/modules/helpdesk/escalation.job.ts",
+      "sha256": "ad577bb20f39ca10d826495c956aa2c9dcdb241ec47a1a338bcc68cbc36be63d"
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "sha256": "09ced0a3549d0c6ad8f81725e44b9da3cea4dc375e49eda2414f15027745fc73"
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.service.ts",
+      "sha256": "43edc58426668e37fea8890efbc1c287d5491f318c66c6b43af86bcc0241ef51"
+    },
+    {
+      "file": "backend/src/modules/helpdesk/index.ts",
+      "sha256": "2fbdc3c4ecf6368096d02876f0ba3234c9624acfc91b058df2a8b2062677c5d1"
+    },
+    {
+      "file": "backend/src/modules/leave/index.ts",
+      "sha256": "b6cca3a410095b31e5448f0b7d4fc02b3fb13337bc7c7efdff39f7c7f32ce2b0"
+    },
+    {
+      "file": "backend/src/modules/leave/leave-apply.service.ts",
+      "sha256": "58b845f46f68c699bc40815a94854a78e4985597ba21ee27614047344443569e"
+    },
+    {
+      "file": "backend/src/modules/leave/leave-core.service.ts",
+      "sha256": "93b830a0e15e581d979abd56ed4a96d71744bb4a8e746e090e18aa525f8c9763"
+    },
+    {
+      "file": "backend/src/modules/leave/leave-resubmit.service.ts",
+      "sha256": "f02320acf81eb995502f082adcc012978ea15e11eb4b21850bb4de67c963b6a8"
+    },
+    {
+      "file": "backend/src/modules/leave/leave-validation.ts",
+      "sha256": "07206abec221fdf327d163aff1b36d9ee5f9577059b606dfdfa2c3ff89f829ac"
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "sha256": "77d24a4dfdce8fabc9827055be667bb26137231d34344b89de04bd5c5e0282f1"
+    },
+    {
+      "file": "backend/src/modules/leave/workflow-hooks.ts",
+      "sha256": "939344de9e5687e657c449697b3f63ad27e3f029decce7467dff1b77da61097c"
+    },
+    {
+      "file": "backend/src/modules/letters/index.ts",
+      "sha256": "986915fe5cd967c071f152a95367fae93453a195f97a7775ca859e3902a67340"
+    },
+    {
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "sha256": "0658d15c23ca64a3a512ddb5c87cffe060e1f736321f42727620ca02175ec5e8"
+    },
+    {
+      "file": "backend/src/modules/letters/letters.service.ts",
+      "sha256": "42d811b4b116920d4f2759c5bece99efdc1e768857a9cf5a626c5ad213c9be31"
+    },
+    {
+      "file": "backend/src/modules/letters/workflow-hooks.ts",
+      "sha256": "e65ee0bc883535979b83db9478eb20ce99d4507355d32c0634de153045144ff5"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/boarding-exit.service.ts",
+      "sha256": "7bc3360caf5ba490fac5bc149b01a5c69369989b238eacf1acf7b0cc33e7c274"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/index.ts",
+      "sha256": "2df5a8c5a8cb7ceb4d43efc0a40a0dabd6da0584387d20e15d253c2d4c114da2"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+      "sha256": "950a15f89ec25f027b88306f6d087f9a71c1af140f7551d96a6cc043fe82309d"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+      "sha256": "ebeb8cbace59e34a4c2e6cebe98ffaf81c1f6327ae452908abf4960068f23bd2"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+      "sha256": "22fb6e5714d2a6c5a94520bb74f2c4c2af54bb365676244a3bf0972a4385c8c8"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/prejoin.service.ts",
+      "sha256": "32ad0c3037fcfdc9f10f36dbc3122f4c5c86809730216452209a34dced2be611"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/task-fanout.service.ts",
+      "sha256": "2a06479f33ec1f0089ed5df13ec09bc9a51381aed21f828a5c947afd94144503"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/probation/probation.router.ts",
+      "sha256": "d1170b31b0e67d6b5a04d41e7f9d0e292fe3fc6019a8a0a2cdae926a91ba5c33"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/probation/probation.service.ts",
+      "sha256": "4cba59da704461afdb41c269d94cddb4d643401e3aa372fbfb9658b3bfda6eef"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/clearance.service.ts",
+      "sha256": "01a9d617bf14ffe32beffce8d8fb7eb017753d4b63ba62d7f3972fdcc1ba8809"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "sha256": "36dc32a27137e00607055d72ab40cc22deab2f69fb1821eac41d989017f9bae7"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+      "sha256": "f133e8910a433aca917f42d048615758f6eafbbad47b9d300d82fca816cd93b9"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.router.ts",
+      "sha256": "a3e7466e9f90ec7f4dbbf63de768c0d79a12c14680194c966b7c4e731e081e34"
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+      "sha256": "006482177fd90112c06b92cae94a1f846cc59ed9c170e3d5194415b2415b6b49"
+    },
+    {
+      "file": "backend/src/modules/loans/amortization.ts",
+      "sha256": "b2a42f18acfaa7efa99e14780ad85d19c5082f2525f000852e24e45d0cea4e17"
+    },
+    {
+      "file": "backend/src/modules/loans/index.ts",
+      "sha256": "7e89aa96e567f7f2206d024cc7a3a67edd84b3639809855ba0cf4ba132c5c9b5"
+    },
+    {
+      "file": "backend/src/modules/loans/loans.router.ts",
+      "sha256": "b6cf0c387310706b88f97142cc9b89ea604732919680d43cfafb9d8f1fcfac30"
+    },
+    {
+      "file": "backend/src/modules/loans/loans.service.ts",
+      "sha256": "f49bfc87672f4cd3b85910c44994fe32d03bc3e0c490eac144b08c57dbeba18d"
+    },
+    {
+      "file": "backend/src/modules/notifications/index.ts",
+      "sha256": "87375c5dac9e78f72e24ad4210b28d398b1cf9b20fc6c1e81eeaf1f68cd0ab5f"
+    },
+    {
+      "file": "backend/src/modules/notifications/notifications.repository.ts",
+      "sha256": "779722c1c2afcfb8d4ab6c2f801867bfdb08cc1999cb69b845fe5868342de39c"
+    },
+    {
+      "file": "backend/src/modules/notifications/notifications.service.ts",
+      "sha256": "01abd03956de3c92ee99dfd4aaff0e9013f307404d3ea467a1955d1b2ce37965"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/annual/annual.router.ts",
+      "sha256": "489f89bef2384823beba1e8bb0cc3d222f3f47fa58075c55ab6aa6da3efead43"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/annual/bonus-trueup.ts",
+      "sha256": "f2c89309d1bc3b880a2add81faed509f17464277d9d4211e472ce05e27314ef3"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/annual/increment-batch.ts",
+      "sha256": "cfaed34a4294299a1be278805f37c5a7c2e9506faa9dd57da2e08d9d10c7732f"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/components/component.router.ts",
+      "sha256": "7cbc618bb300ed6e9d5f6fe4f94b9c691b34bfdcd13e9f24d18cb7c16249d1cd"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/components/component.service.ts",
+      "sha256": "716880df6bba26844762de48608aae769f59b8e26306849da4450be5019e1ad9"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/components/definitions.ts",
+      "sha256": "2afc095c8dd2499e68f274041f16e8db28d309cc0bd64c9a27aee5b0a703ad14"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/engine/arrears.ts",
+      "sha256": "52422b985addd19273cbea8f1f81d0eb4e8cb07cda94f44a11c45ffcbcc54058"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/engine/compute-engine.ts",
+      "sha256": "801e2d2a62f0c4052060ec27a2a27a60299cbceca480f5e216ae9f8358e57055"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/engine/proration.ts",
+      "sha256": "fa26d33b28424ed0e6a75139891f547e10d1a27515096efb985ff94ca7bf5f17"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/fnf/fnf-engine.ts",
+      "sha256": "dc97570d0518b9cd3be4eddb519ba574478c4d157b0929493adf7572593d6c48"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/fnf/gratuity-calculator.ts",
+      "sha256": "fe4891192fd0c75c0c0e68b12bdae5260a9adae2207414d4f938db90e6c6e813"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/holds/holds.router.ts",
+      "sha256": "7c3c7256c126ac36c126d1a07c2e20ec68986f27c42aab7093e44e27d2cdc6ed"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/holds/holds.service.ts",
+      "sha256": "961cb70729e77734f629d1ecdba36895e1d063b989a65c7c55c308d428af08e5"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/index.ts",
+      "sha256": "2468225530bf7640ee3d292d1b11598882c8fa8c3868b62c1f1721a571860e51"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/parallel-run/parallel-import.ts",
+      "sha256": "619ffd4f9742d32cf652c62352d5e51c0f681b19ff9a9b60c34375d25dce9163"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/parallel-run/parallel-run.router.ts",
+      "sha256": "fa02d5506e764e35ac6b7337d90dc17827bfe3ce718609b4c731405cabbb9a1c"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/parallel-run/variance-reporter.ts",
+      "sha256": "a9c74cffabea975967febb5adeb8c4acdf986b2b453345dd8b06e210ec88c483"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/parallel-run/ytd-loader.ts",
+      "sha256": "6349b99e0b7c6bf3c91a5c945d852759ab595f1356c552a11dba216e4dbf0360"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/reconciliation/component-totals.ts",
+      "sha256": "c873e86d1667b9d3e0f6b5362f00b895709e74e9d071ecd43446d3992fe8edad"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/reconciliation/reconciliation.service.ts",
+      "sha256": "2f67930298c0adba62ae7b39f32b4f74d8d5ca5b5830b94c687f20d07e10f2ff"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/runs/attendance.repository.ts",
+      "sha256": "952615c1910920c0108a2975ded4cf35ccf3794378b56dbd9cdb3b46c2ef7481"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/runs/run-compute.service.ts",
+      "sha256": "0649c016dda88dfc6857049ad377fb3be723b2c5f411fcf54ef53305d0941c91"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/runs/run-state-machine.ts",
+      "sha256": "6c22d1d556f6da7174f478c7bba064b0e82d37375163f74e505bcb7b299d300b"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/runs/run.repository.ts",
+      "sha256": "eea8563c58c8a9fa7b624c473ac026f3ec71e9d5dd8cae51c68afe1399222a12"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/runs/run.router.ts",
+      "sha256": "52256cf7547cc1f67bf6e3a9b6dd9fc44a8974031707c816d5c88193b2742e2d"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/runs/run.service.ts",
+      "sha256": "b351d88461cd948cd51231ea28b488fd3f31172234d0ace29c69d9557ae69448"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/salaries/assignment.repository.ts",
+      "sha256": "206eea8df402e28dbd9c5f8fe36deaf61aa62d7cab6f61cf2469ff37d946ec93"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/salaries/salary-snapshot.ts",
+      "sha256": "24f83b7ad88def97eb223644170e0c3b9ce0a7d7dedb139e543585a82cbbb891"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/salaries/salary.router.ts",
+      "sha256": "cf4e7be51ad7b61ca6848eb699cb78065e4a8f8a5caaf24ce7b1a80635b7a438"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/salaries/salary.service.ts",
+      "sha256": "40b4ff909b01b0a1584251387a42c5a75e73ee0b873ae9cafc0ff13dcebb99d6"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/statutory/apprentice.ts",
+      "sha256": "400829a76e32a539a8622d5647e6fef47cdfada235bf7529c1645872dd495f68"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/statutory/esic.ts",
+      "sha256": "ab8666aaa182a168f6a80a081e6529db6a8696235da84a0de4ced04e3d5f7639"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/statutory/lwf.ts",
+      "sha256": "e60d9825dcf59348756bbd929508072f972dc25b081daf84cb5efc20fc74dfd1"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/statutory/pf.ts",
+      "sha256": "4b09af333b327ade14168a63d5aaa2f2609a1f8f507358e54f12060ddb31c8cd"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/statutory/pt.ts",
+      "sha256": "b9eb47a6a728e451a3bee2f07899054447824ea2a3a2227e8eaac236c5c3677c"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/statutory/statutory.router.ts",
+      "sha256": "e9f365b0ab9ee7bddb7112b89d59ad253e9bff45da885fd35f01e5d5a6d3975f"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/statutory/tds.ts",
+      "sha256": "7e2d5316a79d803c5d29bbb061806dc4739e492925de1d530c42c54f2fe375a6"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/dag-evaluator.ts",
+      "sha256": "d1e38d05307aadfed1f7cead5c96282e7a07b7bb9a72d36f5896adbd4d575869"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/structure.router.ts",
+      "sha256": "b54e87eff8a9af37724ba3f1ed444ac1ea1db778ba362f1bcbbd603e364e65b3"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/structure.service.ts",
+      "sha256": "b754cbd1fbc175ac92f9e083b03c9ba38df7c08b429933da41a8daca7c9e3eb2"
+    },
+    {
+      "file": "backend/src/modules/payroll-core/tax-declaration/declaration.service.ts",
+      "sha256": "3317d9e5a13e1d619755fc5a2fcaaf0450ef4a87cdf545f7781311c2a4df49cb"
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/bank/bank-file.service.ts",
+      "sha256": "92734fc81c63455869bdcc99723321f9082689c21eea1577e87af7ebbac1c9c4"
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/gl/sap-jv.service.ts",
+      "sha256": "4616ffe287c3611a99e22e6fe3435442d99c2b1091888e45f6294d0ee6ec5a38"
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/index.ts",
+      "sha256": "66a1a58cd590aee2f93c46c681c91531ee0e3f45754cbd66b94431339d6e6b4b"
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/outputs-bundle.service.ts",
+      "sha256": "d29dde6a1fd747e7cb00c97f355e8754fb6dcc155c66ca24392106fd5c2e1945"
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/payroll-outputs.router.ts",
+      "sha256": "23076ede02b4cececd1c3121133c9afeab58bdac78ba9b91f5e9c2f39136bbe4"
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/payslip/number-to-words.ts",
+      "sha256": "1ffbbfaec79526c379dc661f4bd7f6f54e2ce4a9904a54033f8903634c555aaf"
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/payslip/payslip-generator.ts",
+      "sha256": "b46a001ab94c50611cae5374f7291eb846f7db11637b290567a3a4570d055d2b"
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/payslip/pdf-builder.ts",
+      "sha256": "5c37d56fa3b78ef4a0c8b2f55d557aae73fd34dfcbda903bc4bdcb29d1c2a629"
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/payslip/template.service.ts",
+      "sha256": "25f1c8d4531f65548e29afc6ab81d6c43dd02baeba45b6f44cb37fb8f678ba37"
+    },
+    {
+      "file": "backend/src/modules/payroll-outputs/variance/variance.service.ts",
+      "sha256": "df25d49b4f6e9d6353736264f76cf04c7e3796964c1ae13893feb6a58c53af4d"
+    },
+    {
+      "file": "backend/src/modules/policies/index.ts",
+      "sha256": "727833292e2dba81532073d7e1e2053c8eb86266cd135ed39a670a6c7c89d084"
+    },
+    {
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "sha256": "0b55d127e4df76d7145e61186ee286642617cb569ae08319162af7041323d6d2"
+    },
+    {
+      "file": "backend/src/modules/policies/policies.service.ts",
+      "sha256": "09f8bf4bd06f06cca9f87bdc846e88fcdc7fb01307d9d37e1ad3e42cfc0145ce"
+    },
+    {
+      "file": "backend/src/modules/rbac/index.ts",
+      "sha256": "87a9d91fd86baf3c49fc59b07fd1185f01e9c44c373a08abdfa026748593afec"
+    },
+    {
+      "file": "backend/src/modules/rbac/rbac.guard.ts",
+      "sha256": "0ab69f8f448e3681582680d4b507657637d0ccfee34835a992302a51cc4c07fe"
+    },
+    {
+      "file": "backend/src/modules/rbac/rbac.repository.ts",
+      "sha256": "cfd8953a9a085b230368bdb83c042af73b2c6bb6cc5713dae6feaab452b09ca7"
+    },
+    {
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "sha256": "c1d5b9b1c5868f880bc448e2eb902a820d661786b2fd69e7f671245bf811e9c7"
+    },
+    {
+      "file": "backend/src/modules/reports/dashboard.service.ts",
+      "sha256": "370f8e8a9752c1d5fdbac53e0bf893bd06115bfc775fab93f659833ae4303ab5"
+    },
+    {
+      "file": "backend/src/modules/reports/executive-kpi.job.ts",
+      "sha256": "0c45640d58e5256626c0ee0285c7557470ffc0738a2e2aed24441be2fd2768c0"
+    },
+    {
+      "file": "backend/src/modules/reports/index.ts",
+      "sha256": "05256dde3f07642fb4d0b35c846885557cf388dafecfdb8da08266939ffeacbb"
+    },
+    {
+      "file": "backend/src/modules/reports/kpi-snapshot.service.ts",
+      "sha256": "2463d20708a75d1bdd6efec6414c4188886842dce820609ea171b1b4d4d4a910"
+    },
+    {
+      "file": "backend/src/modules/reports/muster.service.ts",
+      "sha256": "247bdb990ecbe34f63777b8b5ddb00419b8724c5bd2ad6216bcf11b26d12fa49"
+    },
+    {
+      "file": "backend/src/modules/reports/reports-export.service.ts",
+      "sha256": "e1b3a25ab56b90f12013038804c839cd02fa362f435651c2040e596ede6ff13d"
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "sha256": "3810bf7cc28c1ec426dd3bbe838f6080d1c83821d4a588025569d4c454ace742"
+    },
+    {
+      "file": "backend/src/modules/reports/reports.service.ts",
+      "sha256": "bd3072056369d5b5612e38fb6d622f58c0694a129f79a0de3b2a2bf7c17a5480"
+    },
+    {
+      "file": "backend/src/modules/settings/index.ts",
+      "sha256": "379ec8470c9476e9c2de4817ee803698d6678579d8024eed3add3f9c31e08e0c"
+    },
+    {
+      "file": "backend/src/modules/settings/seed.ts",
+      "sha256": "8c1e53aca1fc2ab3e0cda0d72a6cfc18210139adad37d6b17f6fd981edbf2c7a"
+    },
+    {
+      "file": "backend/src/modules/settings/settings.repository.ts",
+      "sha256": "5a89a80b1c261c5dabc834c695182c24c5d71d704558912fed70f1fe8251d244"
+    },
+    {
+      "file": "backend/src/modules/settings/settings.router.ts",
+      "sha256": "9864bdcbf1f7cdc98b72eb0f0fc26346f089e1fa26a5add1ed031541cc1561b9"
+    },
+    {
+      "file": "backend/src/modules/settings/settings.service.ts",
+      "sha256": "22d2fdb664dbbf84dfb1419e2bf72925142f80a08a33b800438e3adb8b5ad09e"
+    },
+    {
+      "file": "backend/src/modules/system/index.ts",
+      "sha256": "9b6124fcaa591c3b7c036d212868353a31273df93d572135b105bcbc95154510"
+    },
+    {
+      "file": "backend/src/modules/system/system.router.ts",
+      "sha256": "457d62d92818de7b1192a317a194a7bf730c3043462ae085fe13c7e2393e0e40"
+    },
+    {
+      "file": "backend/src/modules/workflows/definitions.seed.ts",
+      "sha256": "dbb634d4ab814e9a176046da13c33a5b74bc6184aaaf402bc937d36e9235316c"
+    },
+    {
+      "file": "backend/src/modules/workflows/index.ts",
+      "sha256": "d12dce6c065381466aff8ec228165bed513ea7f830e89bf8ce80e03a206451e2"
+    },
+    {
+      "file": "backend/src/modules/workflows/seed.ts",
+      "sha256": "6fee0ae5acc59eb3bdd1d37403bfec5b8dda965c2e211a95f702afe6825472a1"
+    },
+    {
+      "file": "backend/src/modules/workflows/workflow-access.ts",
+      "sha256": "0185e211d6ba8a9b874d53bd99cbb497e83e9c710d648f746f57afa24da029f7"
+    },
+    {
+      "file": "backend/src/modules/workflows/workflow-approvers.ts",
+      "sha256": "916de332a2a68f439fcaa7a8bf43e0022bff8f3cc16548f493271e38c55d6b8d"
+    },
+    {
+      "file": "backend/src/modules/workflows/workflow-hooks.ts",
+      "sha256": "5c25dbb75608273b6e144efbbd7b507639555a2f3c8ee97a459b20dd9e2abb4f"
+    },
+    {
+      "file": "backend/src/modules/workflows/workflow.service.ts",
+      "sha256": "8f6402abd24a689d92dee4b7b9efe7c50cffdff17a2c443183bab9e372524371"
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "sha256": "2bb4f7a12cf6e7ba0ba524df70d854ac1b11fd493960b3c6392e643982ee202b"
+    },
+    {
+      "file": "backend/tests/access-control.integration.test.ts",
+      "sha256": "7f22e50d36d71386678a6eb25c1f23fd7a7a6deb089ae10291381296f5499b72"
+    },
+    {
+      "file": "backend/tests/api.test.ts",
+      "sha256": "ffd4c53f8584e22601164df2ed3bd8515c6ab79d32fe9f6ca039b374f2f0caa6"
+    },
+    {
+      "file": "backend/tests/assets.integration.test.ts",
+      "sha256": "97a855c14b1c971d7f8fd62012ea3b784bc74cfe37561310a0803878b1a51487"
+    },
+    {
+      "file": "backend/tests/attendance-session-constraint.integration.test.ts",
+      "sha256": "2336e68408d67cba74350d4883492ce5ffba1f66aa6e2542d2d85d7735e73007"
+    },
+    {
+      "file": "backend/tests/attendance-sessions.integration.test.ts",
+      "sha256": "23acf4f587fdc1feb927008ff609fb3d6cada53906f19365c04619cdd5c7c6b1"
+    },
+    {
+      "file": "backend/tests/attendance-sessions.test.ts",
+      "sha256": "4e756adc2070ccb8bd52d4399b90da0e5acce070d4235377a15adb4fa88451b0"
+    },
+    {
+      "file": "backend/tests/audit-read.integration.test.ts",
+      "sha256": "088aced1008c3d6ca05fb5d31d45508034b1822d61a345e51bcbc977e6ecf9eb"
+    },
+    {
+      "file": "backend/tests/clearance-json.test.ts",
+      "sha256": "68f5be16618a1e6ff8314b9163260d80c087265a1dd787924d08e3c2a1f2d7c1"
+    },
+    {
+      "file": "backend/tests/dates.test.ts",
+      "sha256": "8d7459f02ae0ac783ef2a1989c18af47d0eb35a491f4628ebb7c6f23befb997f"
+    },
+    {
+      "file": "backend/tests/db.integration.test.ts",
+      "sha256": "80f892453d0a5fac616b25c42a07a048375d833e4d5f3208203b8c1d03d58d1e"
+    },
+    {
+      "file": "backend/tests/directory-facets.integration.test.ts",
+      "sha256": "ee7226959f45636997880b7ab09115d05a89c991a465103028d62f68a0c26a71"
+    },
+    {
+      "file": "backend/tests/employee-code.integration.test.ts",
+      "sha256": "8c73b0e8131904e5e93279df29165b842e0e15a134800c0ea13b01e8eaad9f11"
+    },
+    {
+      "file": "backend/tests/employee-import.integration.test.ts",
+      "sha256": "0097f5ac7dcd28ddbf19b0b7121bc67047287df4193ee44a5d226471552a198e"
+    },
+    {
+      "file": "backend/tests/employees-masking.test.ts",
+      "sha256": "ab98102c0095270693e8e452dcf0ce728d9297b8aa567bd32242eceb4b3865d7"
+    },
+    {
+      "file": "backend/tests/employees-self.integration.test.ts",
+      "sha256": "aa5a7e33db236b432787722f99cb981ca84e3a26e52eab2163e3b16df45f87cc"
+    },
+    {
+      "file": "backend/tests/engagement.integration.test.ts",
+      "sha256": "637f7fe9eff73ef4d032c68a5c3cf7203a1eb180ce75d17ddd058a186209b38d"
+    },
+    {
+      "file": "backend/tests/exports.integration.test.ts",
+      "sha256": "0b4cb6d77b3752282e6e4c92f5c56a87de4d220bc95db355a283f55a0acfbaf0"
+    },
+    {
+      "file": "backend/tests/fixtures/ems-users.sample.json",
+      "sha256": "d703bae60c45a326a8cb871ab5347c8e72c7f1d5385c5eaa3565de7f2cf1f8a5"
+    },
+    {
+      "file": "backend/tests/fixtures/greythr-enrich.sample.json",
+      "sha256": "2bc01830a429c4a68eeda0e991d68e77cbe26eff4eb4039c6987985c28b1e499"
+    },
+    {
+      "file": "backend/tests/fixtures/payroll/golden/g1_staff.json",
+      "sha256": "16850c220ebfbf56b83996d547e5824b74136e7565356b95ea8d613dcd19d89d"
+    },
+    {
+      "file": "backend/tests/fixtures/payroll/golden/g2_pf_ceiling.json",
+      "sha256": "5288af3c5f944447134792830148648fc1123cae8a1b566a091cd7278bfbba53"
+    },
+    {
+      "file": "backend/tests/fixtures/payroll/golden/g3_esic.json",
+      "sha256": "a2810b29cbe1f5b94178be96b49fd97fed6d70c8670e7c85db2ee5c5e202434c"
+    },
+    {
+      "file": "backend/tests/fixtures/payroll/golden/g4_pt.json",
+      "sha256": "c36f64357179e5063320430506d0ae3d00e6ecfcc1affab9b5b594b7189313af"
+    },
+    {
+      "file": "backend/tests/fixtures/payroll/golden/g5_tds.json",
+      "sha256": "3c150fe1888c8fe6933e4a6bac0b7f9c17e12c1f847e0ce76bb52d25c38f4568"
+    },
+    {
+      "file": "backend/tests/fixtures/payroll/golden/g9_apprentice.json",
+      "sha256": "1b442613d13c30e9c9ac9f5af7b0921b41aaaa9dd4322ce694bd755ec8c0546a"
+    },
+    {
+      "file": "backend/tests/global-database.ts",
+      "sha256": "0755c0813a3097ebeac0a073ff4fe553d440ef0199dba8d78095fcb3a2a878ba"
+    },
+    {
+      "file": "backend/tests/health.test.ts",
+      "sha256": "69794c4f9430151279718d439d15e946d5424e9949b505577532b491cad4c74d"
+    },
+    {
+      "file": "backend/tests/helpdesk-and-engagement-stage34.test.ts",
+      "sha256": "526031422f01e1c209ffa85396c1d865ef6b6abbc0d3fda76e2d1aaa5ed27de7"
+    },
+    {
+      "file": "backend/tests/helpdesk.integration.test.ts",
+      "sha256": "ec0c024e9812650ff064f2e53fce1c49360c6a1a72aef8178e7d9092d8844319"
+    },
+    {
+      "file": "backend/tests/http-assertions.ts",
+      "sha256": "31cb3f2863265f84d4ce8f2fcf4d0e461b206c7d28b69f81ade168191ae88f41"
+    },
+    {
+      "file": "backend/tests/http-client.ts",
+      "sha256": "30dfc29ffdc3354322472fcb495c1746d272fbc54b9b66eed63f912a6e4677d4"
+    },
+    {
+      "file": "backend/tests/http-hardening.integration.test.ts",
+      "sha256": "fa71e2b188c2e5093b6e25d0d69cb67b602120a4bcc546e7c7f57d7237d778cb"
+    },
+    {
+      "file": "backend/tests/json.test.ts",
+      "sha256": "c49a93d43ec9b67054d046b32a6102f33b3e976e6d10ecfbe26888e01b1e53cd"
+    },
+    {
+      "file": "backend/tests/kent-ingestion.integration.test.ts",
+      "sha256": "dc8ecc932c601e6b6c6cb85c098ca4bc551179a617a8bf727e1b2ba8954f8c88"
+    },
+    {
+      "file": "backend/tests/lifecycle-fixtures.ts",
+      "sha256": "251429459ce49ac231b277aa9a8db3e841db5061896d4f9b5ba325a3f48d9975"
+    },
+    {
+      "file": "backend/tests/loans-and-claims.test.ts",
+      "sha256": "70a5f5e5307cdf6507ec0d467c8ac65eb557e6ddfd653993794739fba73a4dfc"
+    },
+    {
+      "file": "backend/tests/money.test.ts",
+      "sha256": "4f0e65f7cfb433a0d5d13d00417b796c5881ac904c8517a0d169a26e3b08a373"
+    },
+    {
+      "file": "backend/tests/onboarding-and-probation.test.ts",
+      "sha256": "104043cfcd1e683eb2a1bed16fc5fcc14f3906ead05662dbda27ecbb5ed2ec78"
+    },
+    {
+      "file": "backend/tests/parallel-run-and-annual.test.ts",
+      "sha256": "310a0668247a421eb8a8c4c6ddb095737998089099d0caaab9e505a2ae51af04"
+    },
+    {
+      "file": "backend/tests/payroll-attendance.integration.test.ts",
+      "sha256": "10b1f761b1ab606adc3394fb6a6a3d26f72ca5b275a46fe4df85874d66faa30e"
+    },
+    {
+      "file": "backend/tests/payroll-component-totals.test.ts",
+      "sha256": "ad46abe97605ae2c4e215f3bdedd11c95aba2d07f08027ab80452c0a3504834f"
+    },
+    {
+      "file": "backend/tests/payroll-dag.test.ts",
+      "sha256": "dada954306227a7a772cf9a72e0f3d72d19d3f735d61bcb5b69245d692be4ddf"
+    },
+    {
+      "file": "backend/tests/payroll-money-boundary.test.ts",
+      "sha256": "338017042f6674a812396c473c1939c43b906ff6a3bcee9440e830c80f7b93d2"
+    },
+    {
+      "file": "backend/tests/payroll-outputs.test.ts",
+      "sha256": "b1300ce4361b83c763c0f0f3750097f4aa9c65f581e182f192d6a70c053861f5"
+    },
+    {
+      "file": "backend/tests/payroll-pipeline.test.ts",
+      "sha256": "ec407597c61b9e3d1c91710a3a45eaedf8d9b6c3b290040dc82fd6ec0ec93f8f"
+    },
+    {
+      "file": "backend/tests/payroll-reconciliation.integration.test.ts",
+      "sha256": "4c795d7c525a76ff1eaeadc7f19bf15edb8c238376606457f4cdd9c3bc9ad1f8"
+    },
+    {
+      "file": "backend/tests/payroll-recovery.test.ts",
+      "sha256": "5850070a8486df00274c3d0fb38712dbe5ce370453d6ec633abe94b53a77cfcb"
+    },
+    {
+      "file": "backend/tests/payroll-run-atomicity.integration.test.ts",
+      "sha256": "291594a30d5f481b53114540e66d2cd598a753e0d302674f1d8de57c8ebbe270"
+    },
+    {
+      "file": "backend/tests/payroll-run-boundary.integration.test.ts",
+      "sha256": "c0c3cfe0e9651da0e0c9cbe5e543ecc0c59ea85e11f57b296976efbaeb843e64"
+    },
+    {
+      "file": "backend/tests/payroll-run-guards.test.ts",
+      "sha256": "d4c60fdc77e5c8cdeb8ad3e3871795cc8f17f977443c11fb52f065b95e261b07"
+    },
+    {
+      "file": "backend/tests/payroll-salary-snapshot.test.ts",
+      "sha256": "7992774ea533ed718e72a67128b5d932dc1a822b55600ad3bada83b5ff56420d"
+    },
+    {
+      "file": "backend/tests/rate-limits.test.ts",
+      "sha256": "b112e97d3000772f6c4b97cd5d95306e3cff0fa6b8c41cd3ad7c01495d8e05d6"
+    },
+    {
+      "file": "backend/tests/rbac-ceiling.integration.test.ts",
+      "sha256": "1229329beefc343cbc9f950d1a8c00a3ec89f487df7f49786b8687c96f6369e9"
+    },
+    {
+      "file": "backend/tests/rbac-seed.test.ts",
+      "sha256": "e12eba84c860753873d08fc7ba3208866be4e3e8262ada6d29f9d85f1690b3cb"
+    },
+    {
+      "file": "backend/tests/role-access.integration.test.ts",
+      "sha256": "43106b2702f78417e451b9c0c196debdb62041032951fcec66898dac81021cbf"
+    },
+    {
+      "file": "backend/tests/seed-import.test.ts",
+      "sha256": "af3349e51c868e54ce8138dc888bae36c3d6c3a69c7bb3ed1dfa793c94baf35c"
+    },
+    {
+      "file": "backend/tests/separation-clearances-fnf.test.ts",
+      "sha256": "49b4d9b4dafe62a6bbed351ffc63652d097aa73184fcfafff7c3e72995df5c15"
+    },
+    {
+      "file": "backend/tests/settings-seed.test.ts",
+      "sha256": "b8914a5c5c5b72cd7e5bbc85de66e974c3a1f35783b4c8d9b0e368670a667adb"
+    },
+    {
+      "file": "backend/tests/setup-database.ts",
+      "sha256": "49a406af44db54b472bd078792e579d1ff8151760002ab1cf01cdeacf05c4f13"
+    },
+    {
+      "file": "backend/tests/stage1-review-fixes.integration.test.ts",
+      "sha256": "fba41a43596bed0c6df39e071b27977ba208e3aacdd9e8a4cf43b09977eef6b4"
+    },
+    {
+      "file": "backend/tests/stage11-ingestion.integration.test.ts",
+      "sha256": "7e0af7208df64df1deea8bbbef7ce2e46b4fcb97fc7c6bce431428ffdfe33323"
+    },
+    {
+      "file": "backend/tests/stage12-day-status.integration.test.ts",
+      "sha256": "287ada44ab775ca899b224dd80a4f0188ace1ac38f0c3ac45230265d0280d1ce"
+    },
+    {
+      "file": "backend/tests/stage13-workflows.integration.test.ts",
+      "sha256": "813d6211f94d76c63f833ebcb0fb4525da2ace85a3e3053a295715f73c353458"
+    },
+    {
+      "file": "backend/tests/stage14-requests-overtime.integration.test.ts",
+      "sha256": "dd06506d77600c1ca4990fb1608455f0134cb26b59d0ba59065aaf5f0a38ceff"
+    },
+    {
+      "file": "backend/tests/stage15-leave.integration.test.ts",
+      "sha256": "7fe4a60a57ff64cf5c6a58d76591872232f2a502666aa83a8bf7514d3f2ac5d4"
+    },
+    {
+      "file": "backend/tests/stage16-absence-letters-policies.integration.test.ts",
+      "sha256": "381fab1a625427e86e13d891b4d1140b15dd91aceb783adfc3e7171b5263b047"
+    },
+    {
+      "file": "backend/tests/stage17-absence-api.integration.test.ts",
+      "sha256": "7c2b6e70e7e60a16927c107c9a2f66654fafebb0dfd7374329a311b8f16d09d5"
+    },
+    {
+      "file": "backend/tests/stage17-device-watermark.integration.test.ts",
+      "sha256": "b36ee644918876decff9e364ad3bee62955500909743e0ae172d1285dba279e6"
+    },
+    {
+      "file": "backend/tests/stage17-manager-approval-roster.integration.test.ts",
+      "sha256": "31f09174109df3ee91605c6ccf5cd66719a12dae5982f98ccf793658eab447d4"
+    },
+    {
+      "file": "backend/tests/stage17-month-lock-muster.integration.test.ts",
+      "sha256": "ddc43183a43070d4364793ef44a3c060a4c4e817ff4990705d26cfcd68708dea"
+    },
+    {
+      "file": "backend/tests/stage17-muster-equivalence.integration.test.ts",
+      "sha256": "9351483b7caf4acaca9de80180ea35cc00fe71abbe16e01c9ccb0e2ce84b9832"
+    },
+    {
+      "file": "backend/tests/stage17-muster-performance.integration.test.ts",
+      "sha256": "77bf3664313afd32620a05155a7b92feaf41a8e9dd8e8024739fc0eaf4229a3b"
+    },
+    {
+      "file": "backend/tests/stage17-supporting-reports.integration.test.ts",
+      "sha256": "f7644ee2508427c5f613c2d178fb0b3b9e428cca366bb62fa06d1eedc75a7e44"
+    },
+    {
+      "file": "backend/tests/stage35-executive-and-bu-reports.test.ts",
+      "sha256": "c0892854723e64fb0c20f32499dcb7afa7778e6af4a8669ba79a6c6b9508568a"
+    },
+    {
+      "file": "backend/tests/statutory-golden.test.ts",
+      "sha256": "30a2f38e81efbbf866b3cf0fceb6647c7ac26a4d0bdd47f853fe821c9ba20459"
+    },
+    {
+      "file": "backend/tests/test-database-target.test.ts",
+      "sha256": "fc4296fddbb2b560ff90d894904a9cff60789be4d7f67b1ca5d877c381748eaf"
+    },
+    {
+      "file": "backend/tests/test-database-target.ts",
+      "sha256": "9813927b3c679b768808ac844f6d2d66757cd7f16187a4bee38706441c4c403a"
+    },
+    {
+      "file": "backend/tests/transfers-and-assets.test.ts",
+      "sha256": "6e7b586992746e943d392c60dca3f06b2ade06b3d46662be78999b0baef83146"
+    },
+    {
+      "file": "backend/tests/workflow-scope.integration.test.ts",
+      "sha256": "3968e875e710e2e3f833d0a73ec49c767de483046e2ffc213fa4d3c16cbdb98c"
+    },
+    {
+      "file": "backend/tsconfig.build.json",
+      "sha256": "ebd7786eb10470279e57d3f6d0df82ccf29e55b62897a643d236685c7c2829df"
+    },
+    {
+      "file": "backend/tsconfig.json",
+      "sha256": "7718869d0aa750b3f4a141320c3e80504e7b0f957b77ac8e59079fc55d59477e"
+    },
+    {
+      "file": "backend/vitest.config.ts",
+      "sha256": "819b2dab5c5a04360d63ef108ce6d718ca02e26c484eaade0a6ee339148c7454"
+    },
+    {
+      "file": "frontend/eslint.config.mjs",
+      "sha256": "b0f32884af824d96ebdcc6fc65aa9c30ff97656c4d6c945936927706d58bf989"
+    },
+    {
+      "file": "frontend/index.html",
+      "sha256": "6479adf666770b64f22dc9764a4dc759562f7a5965722f9d44469ba21afe8083"
+    },
+    {
+      "file": "frontend/knip.json",
+      "sha256": "c75c849975f0bb0013cfd9014602b17302ca07f2025b9299a5b86e1abd14d09e"
+    },
+    {
+      "file": "frontend/package-lock.json",
+      "sha256": "f9347a46cfa676863d7829db2203216f20c3db2fe280a0c9de80a377bfbca092"
+    },
+    {
+      "file": "frontend/package.json",
+      "sha256": "5fc76df581742850c5b128ce1d85f7e2072a68adac0073787b16d002fc2fda3a"
+    },
+    {
+      "file": "frontend/src/App.tsx",
+      "sha256": "89df16b0d5512c79fee12f20fdde772ceef575af9bc68f329eb6bad2163dbfe2"
+    },
+    {
+      "file": "frontend/src/app/AccountMenu.tsx",
+      "sha256": "7e75a4aaa532a1c3bad061ffa857bb56b59e8b4751f31a2f3ebc505cd8f94bf4"
+    },
+    {
+      "file": "frontend/src/app/AppShell.test.tsx",
+      "sha256": "4b9b89a18cd06188ac5794b29c4c64a447a688cf230c67d006215883dee00883"
+    },
+    {
+      "file": "frontend/src/app/AppShell.tsx",
+      "sha256": "1b036500179a682e2bb03eb1bccf6d099de180ca522b012ab07450747791ef51"
+    },
+    {
+      "file": "frontend/src/app/BottomBar.tsx",
+      "sha256": "fe3a83e33da59787fd829d59843aab0d397bfd3f3cc60b677e43aad6ec66511d"
+    },
+    {
+      "file": "frontend/src/app/CommandPalette.test.ts",
+      "sha256": "c8e467530b2e97faf681d4c58dff210b9d84c387ebd4b3ef656e9d1b5d1e68bc"
+    },
+    {
+      "file": "frontend/src/app/CommandPalette.tsx",
+      "sha256": "c15e4e3a27355c57bb8177c88423b9a226ed4e6bd80ddfbf5f69ed862aa81cde"
+    },
+    {
+      "file": "frontend/src/app/NavMoreList.tsx",
+      "sha256": "e2a321b4060f64246bb9f0847283a56d0ccc4a3c17db4bbe5d96107d1ebf9869"
+    },
+    {
+      "file": "frontend/src/app/PillNav.tsx",
+      "sha256": "b88a736563ccbe83785fd2ed63e01bd44c46e78821c0e8bdf2b7599df459d0b9"
+    },
+    {
+      "file": "frontend/src/app/nav-config.test.ts",
+      "sha256": "adff2ea277ebb22703d771ac7d3f1955f9aa3d9a46e842224d0e5a996459d553"
+    },
+    {
+      "file": "frontend/src/app/nav-config.ts",
+      "sha256": "eb9315ff94c98d92d038feee51caed6138b2de5b3794940db6eb2a95f6654e74"
+    },
+    {
+      "file": "frontend/src/app/router.tsx",
+      "sha256": "1815a513b2b665763d6b6142e3606565c37bb8da2e1a70f68971d98d08bc1ea7"
+    },
+    {
+      "file": "frontend/src/app/useInboxCount.test.tsx",
+      "sha256": "c782975357fe0e916d78d82cbf1a3568b0fccbc4ae96b358a3d29fd37cbbca38"
+    },
+    {
+      "file": "frontend/src/app/useInboxCount.ts",
+      "sha256": "7a55b6a42268b25218ac93c2b9c92cf801c167dfc83844c7aa939a6525b3e53a"
+    },
+    {
+      "file": "frontend/src/app/user-display.ts",
+      "sha256": "c49f7600cd72734fa742900c25ebc090c05c6b05f834cbf982bfcb99e653ef38"
+    },
+    {
+      "file": "frontend/src/index.css",
+      "sha256": "18636ebd2933433661b439216e210f0824a228ca68cbdb8e1e7d54d6bfff2799"
+    },
+    {
+      "file": "frontend/src/lib/api.test.ts",
+      "sha256": "91ce9815a6c8edc5a43b5e4c5aa10bbcd3acf6b85cb517734e43c818d75f47eb"
+    },
+    {
+      "file": "frontend/src/lib/api.ts",
+      "sha256": "7a005e8df6f8d699fc37e6bd8be6c2b676de2ce75397e146d7a97bd259464c7d"
+    },
+    {
+      "file": "frontend/src/lib/date.test.ts",
+      "sha256": "af9609d628f5f586f3ff9620e679458f88ba532d7d5f44c1a023da0b876536f4"
+    },
+    {
+      "file": "frontend/src/lib/date.ts",
+      "sha256": "6365d30c5da4c9f6a78aee7eb1b1fb5f45f73f1a08c3460a76d593cf55419801"
+    },
+    {
+      "file": "frontend/src/lib/session.test.ts",
+      "sha256": "fea2587213027c6e0eb0e194b639b838e5da159c01df9e0806c4200c65b846d1"
+    },
+    {
+      "file": "frontend/src/lib/session.ts",
+      "sha256": "5ae664041f095fd50d49c26863f69c7177dea847fdb3911ba3581e7e0c07d72c"
+    },
+    {
+      "file": "frontend/src/lib/workflow-events.ts",
+      "sha256": "954008d4b73b7a5f309f91e6e74a4ba54137cdf58e52e145f3b9ad8cc69605ad"
+    },
+    {
+      "file": "frontend/src/main.tsx",
+      "sha256": "7b030e76fbe3242a9aae8258f3c4b32263f9c476b6c5242ad61f164f1940b61d"
+    },
+    {
+      "file": "frontend/src/pages/_shared/ModuleState.test.tsx",
+      "sha256": "d5eead6cf1e1506470c56bb725bea1386c95c5d9353d143d1ce2de5f313ce837"
+    },
+    {
+      "file": "frontend/src/pages/_shared/ModuleState.tsx",
+      "sha256": "72be8d21f73c863ee6c3b3d2f8414048fe643cbb4fa0540202c5dfc51f8a1e61"
+    },
+    {
+      "file": "frontend/src/pages/_shared/useModuleResource.ts",
+      "sha256": "f7a4183b51f6082e04edab314c28d7598c18be696c756dd4019d4b82ab53feab"
+    },
+    {
+      "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+      "sha256": "5a9d7739dc539ca0229b866de319103c3857472ba74ecc0061f0b427eb3ee6d3"
+    },
+    {
+      "file": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+      "sha256": "46119440089534b86a5177622eef917653cc6d310d1d78ff8b9ff3d20b5a9a67"
+    },
+    {
+      "file": "frontend/src/pages/admin/AuditLogPage.tsx",
+      "sha256": "08612947d52b230564ea17a17cc3c72a78606265515d1f84737eebf748fadb58"
+    },
+    {
+      "file": "frontend/src/pages/admin/SettingsPage.tsx",
+      "sha256": "ea33ba63a03d9e2aa8afc09ec913485f3e02bd66073e0b901e4c0b36b62626ef"
+    },
+    {
+      "file": "frontend/src/pages/admin/WorkflowsPage.tsx",
+      "sha256": "d8174595e2f94cbffcede2ab8e92475e9a30bf81776f3868970467163a261fdd"
+    },
+    {
+      "file": "frontend/src/pages/approvals/ApprovalRequestStatus.tsx",
+      "sha256": "4bbfa0c5881bfd57b8311836f1b158fd8df099d580c9ac5a467522798ecce3c9"
+    },
+    {
+      "file": "frontend/src/pages/approvals/ApprovalsPage.test.tsx",
+      "sha256": "7684a19b07d04c8fd41150f9c5d6f68de35ba363479b2f0472dad8821e698bfe"
+    },
+    {
+      "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+      "sha256": "e023644f647e001633dbdd2b832d33e2dd4eb36b93521f5b8f6e969113bae19c"
+    },
+    {
+      "file": "frontend/src/pages/approvals/ResubmitRequestForm.tsx",
+      "sha256": "d92f99d756143108c574e655e0d6ce68b3d0ef6a25542229437f9293db63cc20"
+    },
+    {
+      "file": "frontend/src/pages/approvals/request-summary.test.ts",
+      "sha256": "ceca09d6987b6f612e0397e9aa61f4c9590fd71a4814e0298ee4be3c7cc6861a"
+    },
+    {
+      "file": "frontend/src/pages/approvals/request-summary.ts",
+      "sha256": "20619f00dbd9380a59da81bf3fcf335fa0b501547c4d4915943471361369e32f"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AbsenceCasesPage.tsx",
+      "sha256": "7d63993d55bde10e8ee90a812733f2ea00cb36570c453766814c9a78b54f95df"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AttendanceOpsPage.tsx",
+      "sha256": "0d3de3b1dc96c7c43165befccf01cb629c419607d0b291c697e0eefe20fba123"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AttendanceRequestDrawer.test.tsx",
+      "sha256": "df16199e45eae08c348935ce079457f48a78ba4cfe1938a5cd8dab6a5e0aa2bb"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AttendanceRequestDrawer.tsx",
+      "sha256": "b62e46767644e6edd328d2f924ab6e208b88005a3a021bee8893f7f9e5f693cf"
+    },
+    {
+      "file": "frontend/src/pages/attendance/DeviceHealthPage.tsx",
+      "sha256": "7a0ae961e7201269f10aaeddefbd590b2d57645855ee456d5cd93c5fbddb9926"
+    },
+    {
+      "file": "frontend/src/pages/attendance/ExceptionsPage.tsx",
+      "sha256": "d219fcb72b05e9008a306e8af69878c1dd1dbc5dacfd8a9e216532b8b754c84e"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MonthLockPage.tsx",
+      "sha256": "803e9c26cd27ba4cf67f9b9228c46d1d28117cb0df140127aa769684caf80f82"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MyAttendancePage.test.tsx",
+      "sha256": "f05cdd86f53921fb115c94d8744c5c91a10e381fce2860c82c73f49010fd6097"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+      "sha256": "e6ce1bbc160f4a844247768b855fe144575c95c3faf55c82bb764eafc91eb256"
+    },
+    {
+      "file": "frontend/src/pages/attendance/attendance-session-format.test.ts",
+      "sha256": "4f576f8cb533ecbed250c86a2b54191603d1382f157bc85400ef1476aeb8cc57"
+    },
+    {
+      "file": "frontend/src/pages/attendance/attendance-session-format.ts",
+      "sha256": "8d7172bb5a2d4a54c5d424e89575a1ee8b7ff003697853eabe772efa2fc22e00"
+    },
+    {
+      "file": "frontend/src/pages/attendance/attendance-types.ts",
+      "sha256": "467458b1aa7658ea41a36a61453dfcdcf01dd52765ab7725fbe0f0893ba1ee6d"
+    },
+    {
+      "file": "frontend/src/pages/auth/LoginPage.test.tsx",
+      "sha256": "b349f23bf0451b25e6f2471f6d1592676001910ed6be06caf25f4099fa1b65ce"
+    },
+    {
+      "file": "frontend/src/pages/auth/LoginPage.tsx",
+      "sha256": "919947902c7e21d76119e78458ae650c9861e43fc1ec6ce5c7d6db4711e1c1cd"
+    },
+    {
+      "file": "frontend/src/pages/dev/GalleryPage.tsx",
+      "sha256": "d0d4493bb7e4da3bc39c6e8fb8482e05ed333d83ab946b4e78557c82b37823ba"
+    },
+    {
+      "file": "frontend/src/pages/executive/ExecutivePage.tsx",
+      "sha256": "29b1a30f3490bf1bf72e14d8ee113c7968bcb0e954c41310a03c9d8bcb3b09e9"
+    },
+    {
+      "file": "frontend/src/pages/home/BusinessUnitDashboard.tsx",
+      "sha256": "686d71079e1aa8e2cdbd475da5331b11f6bb492a192c3c108869147eecbd6a64"
+    },
+    {
+      "file": "frontend/src/pages/home/DashboardFeedback.test.tsx",
+      "sha256": "a9a0cfac8694812aac3a8830c41ebc9763513ea1408e33136badc25ae7d55640"
+    },
+    {
+      "file": "frontend/src/pages/home/DashboardFeedback.tsx",
+      "sha256": "e15b02cdda38c8fa4ae0b1aeb3dc715465a16d75599c0814f39e239cad89190f"
+    },
+    {
+      "file": "frontend/src/pages/home/DeviceHealthDashboard.tsx",
+      "sha256": "b37b1aa1be16fb57132c19b4c10551ce200189e9f2d87ee1b7e000493ed37126"
+    },
+    {
+      "file": "frontend/src/pages/home/EssDashboard.tsx",
+      "sha256": "db8bfd794f0db3a1648b8679d01caf2d8cdc00694111c91703b350f3c52f20bb"
+    },
+    {
+      "file": "frontend/src/pages/home/HrOpsDashboard.tsx",
+      "sha256": "3045b130dc2aecdcde0bd5df32561a9e075299916ac7b2a3ab65f9e379a1c4eb"
+    },
+    {
+      "file": "frontend/src/pages/home/ManagerDashboard.tsx",
+      "sha256": "638581f10fc89ffa7d19b2981364876304395f3c0793f7f11a57b2f513e6d9a9"
+    },
+    {
+      "file": "frontend/src/pages/home/RoleHomePage.tsx",
+      "sha256": "b643084450a43b78e213cfcf2f37c1f56d6ccb686e788216531a04c0ea91d3b5"
+    },
+    {
+      "file": "frontend/src/pages/home/dashboard-format.ts",
+      "sha256": "303cc8d04baa1b7100f4c0d5055f0b7551bb362ebf5058b237f21f6d2f824fb1"
+    },
+    {
+      "file": "frontend/src/pages/home/dashboard-types.ts",
+      "sha256": "c5e99d575a22d9815dc591ca195673a39b51fd16df6debfb3984747e8605b857"
+    },
+    {
+      "file": "frontend/src/pages/home/useDashboardResource.ts",
+      "sha256": "a58bb82edbdaef01d1d4454b9a74e2cd498414c66e1bcfecf19047be67b4b995"
+    },
+    {
+      "file": "frontend/src/pages/leave/LeaveAdminPage.tsx",
+      "sha256": "1938856ebf72b3214fd70155e631c5ffc605595eadf7ecc66b01af574dd32658"
+    },
+    {
+      "file": "frontend/src/pages/leave/LeaveApplyDrawer.tsx",
+      "sha256": "90ee07d426864bd6bd7adaf3dc71443b595999295f226f3e3a6c5e90f69645e8"
+    },
+    {
+      "file": "frontend/src/pages/leave/MyLeavePage.test.tsx",
+      "sha256": "b73ad8c3b7c9f1203d094b3ba39522d0ff44a7a13da8ba177c338122591a4301"
+    },
+    {
+      "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+      "sha256": "f8e262ae66c8eb888c65f22b8bebc48c108ace436df63679a0310de7737ad916"
+    },
+    {
+      "file": "frontend/src/pages/letters/LettersPage.tsx",
+      "sha256": "e877f5c240cd4a73fc1b97701cb79342f51f4b5d4d5fa58618db96e9584b178d"
+    },
+    {
+      "file": "frontend/src/pages/letters/MyLettersPage.tsx",
+      "sha256": "23eb0bff2131c88287d7c57b9f9150ddb62ed31d8020a99fe054bb72628581b1"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/AlumniPortalPage.tsx",
+      "sha256": "8397b1426b18bf6bc43a2c8b3dc571b01fe6c8dbaf1d1e1d8e5b11f01ccd421c"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/LifecyclePage.tsx",
+      "sha256": "29dcc37935eba5501bb4959760d1494cb8efeee346c24ddb73503a5b573221f0"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "sha256": "6503e85e9213263c1de4681d12373fa1341385b34ad80540a61a3ef5ee012dc9"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/PrejoinPortalPage.tsx",
+      "sha256": "09bb623c5635e2820fcb984813cf28ca63205669bac2930cc9f01500651770c8"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/ProbationBoardPage.tsx",
+      "sha256": "0dd16c8f9dd99a62dbb6cc0cbaf793a6f7729a60b5aecf70ad95d3cca51a0309"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "sha256": "a20c088908275ca911283bba68de8e8a466a71606c58ecf3ee2cd7dc3864837e"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "sha256": "ae3f836d9a82ca3fa4e72debd3f4ed50712c9d98171cfd6dcf4caf7e935da592"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "sha256": "1ef2a2aebc9fe51f3a1e7944838e62dbfafc5ff36066f313f3631a3662f3f863"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "sha256": "7e0a4126b0e47fd1eebe7954c4e69acc0cf1ffcc6a93c851d96875a15e2d4d37"
+    },
+    {
+      "file": "frontend/src/pages/payroll/MyPayPage.tsx",
+      "sha256": "df16f8291f5d6f6df4d0892cdc02de5180d802b37efb10faddc078d3c7efd91d"
+    },
+    {
+      "file": "frontend/src/pages/payroll/OutputsCard.tsx",
+      "sha256": "ce3cce58996a431edace8833b763030d5dd54bf7b5e0b5f2a81567dcabb989fd"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ParallelRunPage.tsx",
+      "sha256": "dd387833f76e09f7b59929bdb0ba598804cce9b5f8aa614787eb52dc68aba48d"
+    },
+    {
+      "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+      "sha256": "155f164bc5d0eef8a48c5663571a42e8401bad3dc6d7ddb6c8f8e065faf3cf84"
+    },
+    {
+      "file": "frontend/src/pages/payroll/PayrollReviewGrid.tsx",
+      "sha256": "84a2f6e630b3230ed72bb384ea5824332a55ee1ddd91a094a4ecdfaff77f7751"
+    },
+    {
+      "file": "frontend/src/pages/payroll/PayslipDrawer.tsx",
+      "sha256": "5c919ce0ee56e45118ef3cc38e8f608e3c8bd805c16e73a30caf69cf57c541c7"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryRevisionsPage.tsx",
+      "sha256": "86bd32507f7b04b03d6957c06173bb0219561ca9a3037726efc1a95e3c528d60"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryStructuresPage.tsx",
+      "sha256": "eaaa6a254b975b8d51a9921583b28d10b2be8028340f8c63fe5ee39abcd8b157"
+    },
+    {
+      "file": "frontend/src/pages/people/DirectoryPage.tsx",
+      "sha256": "84e702d7bbd75b833714202f022f2ca5cee115487534fa00b8cd1cfe2a632cf2"
+    },
+    {
+      "file": "frontend/src/pages/people/PeopleFilterDrawer.tsx",
+      "sha256": "8d43a8017de8a0c95aba84dc122ccdc5f5da12e62d9517802e8fc89546c5f863"
+    },
+    {
+      "file": "frontend/src/pages/people/ProfilePage.tsx",
+      "sha256": "f54f73d96f4fc5db39ca9b37ba97bc890e4e874a86ee49cbbeb57f015f7742ad"
+    },
+    {
+      "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+      "sha256": "d590b7212dcfe2c6283bcb16cfb3ec96a167c372ded0cdefca1d0f83c4b2d295"
+    },
+    {
+      "file": "frontend/src/pages/recruitment/RecruitmentPage.tsx",
+      "sha256": "9eddbf15358b681a3caeb11b07ba84e9f8b63aa9b2920c008d5c9e7eb3fb84f2"
+    },
+    {
+      "file": "frontend/src/pages/reports/MusterPage.tsx",
+      "sha256": "5f70a1fe54fe6138a7d603c21de055ae2ce8e4d24d2b2201c6b31506cabb8f55"
+    },
+    {
+      "file": "frontend/src/pages/reports/ReportsPage.tsx",
+      "sha256": "d97364ef58998ef99ae32ad302bd049a2d24789ef32b8ba33480804681170c6b"
+    },
+    {
+      "file": "frontend/src/pages/reports/SupportingReportPage.tsx",
+      "sha256": "c54fc564628197db169f07dfc0761054ba102532488e3f6448f0e628b40913da"
+    },
+    {
+      "file": "frontend/src/pages/reports/SupportingReports.tsx",
+      "sha256": "0759411d9a926d442dcb79f872a489ef17434de8b88525394588c849d80a8738"
+    },
+    {
+      "file": "frontend/src/pages/reports/report-utils.ts",
+      "sha256": "b4fb58684bcba396afac3bbef873c8891d9c052205fb5525f9c102459f3222d3"
+    },
+    {
+      "file": "frontend/src/pages/team/OtDecisionsPage.tsx",
+      "sha256": "9c9971addf56fe73d55c771976412c79daeecfb49559ff5582633476f63ef859"
+    },
+    {
+      "file": "frontend/src/pages/team/TeamPage.tsx",
+      "sha256": "a4c3a1963b9c760069a143ae8a4071703727558e49376e885ea68a8be8dab73e"
+    },
+    {
+      "file": "frontend/src/pages/team/roster-draft.test.ts",
+      "sha256": "a33c6ddaed119e98ff29e1207b259906f2805b11b325f859a87c68d720f56334"
+    },
+    {
+      "file": "frontend/src/pages/team/roster-draft.ts",
+      "sha256": "31d00a8c90b05e41e445f8099a1151626001c0f77f5fa6c0cc15f023705e2ed8"
+    },
+    {
+      "file": "frontend/src/pages/travel/TravelPage.tsx",
+      "sha256": "7e17689b9c28b567e7bd84bb59c179450763549119af0cf5fde74648a3857f7b"
+    },
+    {
+      "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+      "sha256": "5db03fca94b5edb2389dfb0d18f1037bcb1bb6e798ea6ea1d229f209ed891abc"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "sha256": "ae19ff517b4fd4bcf1e953483f11fff299e26f6855424dfc928ed43de5d7ece1"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "sha256": "40af5d1a42f8ceb78db86ab8f437a42b80bd308c7e8db43810269d8138ec6ea0"
+    },
+    {
+      "file": "frontend/src/test/axe.ts",
+      "sha256": "67c956a67a53e894d3a4c009e3feb76ca47aa4223119b65ad292c412c0c411d6"
+    },
+    {
+      "file": "frontend/src/test/render.tsx",
+      "sha256": "a2ba8f38b04d749ad6c1755cf5e5bbf4a2bfc4578ac37d64039ab4c9e40af748"
+    },
+    {
+      "file": "frontend/src/test/setup.ts",
+      "sha256": "d9f2fa0b0b6e94662e1728eb6ed1e2354e36e8be9f18b5fc22182a6e97e90299"
+    },
+    {
+      "file": "frontend/src/test/vitest.d.ts",
+      "sha256": "04defde89cb27062e3ad6f19e293130fdf77faefbd3b18b54ad4fbc0584a16e7"
+    },
+    {
+      "file": "frontend/src/tokens/tokens.css",
+      "sha256": "bf5643cb55362914f66c6f5b0d0d14c258aa18e9ae5dd2662043ee288a731fe4"
+    },
+    {
+      "file": "frontend/src/ui/Button.test.tsx",
+      "sha256": "158b16d37d0da8ad779261d2d8de92581b346590bf90829460ece62d1a20cc53"
+    },
+    {
+      "file": "frontend/src/ui/Button.tsx",
+      "sha256": "09da528a88832dbcf970646e99544dd8a9d8ffde16fed76e72b703a449e0394a"
+    },
+    {
+      "file": "frontend/src/ui/Card.tsx",
+      "sha256": "b5664e6bba4abea6018c5b089e27ab89ef1bedbdfb62930f105020d1076d775e"
+    },
+    {
+      "file": "frontend/src/ui/Chart.test.tsx",
+      "sha256": "ac086e8a017f944df0f27b7ec4551fcc23c078129ee2c132895f3028cb5207b9"
+    },
+    {
+      "file": "frontend/src/ui/Chart.tsx",
+      "sha256": "cfc08b3d03533d5bb748fddce1add133a4cd0e3c543f8092221d5f6c1bc21e31"
+    },
+    {
+      "file": "frontend/src/ui/Checkbox.tsx",
+      "sha256": "fdca6a08d5d7042a2ee1cabea8599a3213d23629d1a58bf4f688c040e626e221"
+    },
+    {
+      "file": "frontend/src/ui/ConfirmModal.test.tsx",
+      "sha256": "3607891138901411dc7cac16d1f091b2ddf0cea2c2b97a8eb3db379b6361e4b0"
+    },
+    {
+      "file": "frontend/src/ui/ConfirmModal.tsx",
+      "sha256": "add8e5a31520a61f8c29d014a6be6b6f42e4880b17e436458559ba0e882c7601"
+    },
+    {
+      "file": "frontend/src/ui/DarkCard.tsx",
+      "sha256": "4f9a654f928be00792ae093e8f3a5befa4e51ccd57cdf9d8ffeb0cb59b51a219"
+    },
+    {
+      "file": "frontend/src/ui/DataTable.tsx",
+      "sha256": "ac4a561a5dea26715b216466f88a020fc820bcd70e9535095dfc508f32586234"
+    },
+    {
+      "file": "frontend/src/ui/DatePicker.tsx",
+      "sha256": "f42d648803dab5584c992bdd96d39c126eeeb49a52bfa3ca0f27e49d5c96c925"
+    },
+    {
+      "file": "frontend/src/ui/DotMatrix.tsx",
+      "sha256": "9578aba3b3636e616ce2dc71f821860cd54242804223bf78d46dc76c9ebd21e1"
+    },
+    {
+      "file": "frontend/src/ui/Drawer.tsx",
+      "sha256": "a63dc1ab79f7dc7748133b1398cb26c6c3d301fafc3833e9f2ca33a75f66c383"
+    },
+    {
+      "file": "frontend/src/ui/EmptyState.tsx",
+      "sha256": "858bb29ab037390c34a833e7fc461753effeed9fa934a7bfbbd4aeb75c88035d"
+    },
+    {
+      "file": "frontend/src/ui/FilterPanel.tsx",
+      "sha256": "bab67b97aa2fb2e1699ad9bc4753c7b5ba014f3c7508aea58bb2a923818051e2"
+    },
+    {
+      "file": "frontend/src/ui/HatchFill.tsx",
+      "sha256": "7f33a6170d48bbf07ca8a9ab999df64bc205acf9aa794192963611181abdc397"
+    },
+    {
+      "file": "frontend/src/ui/IconButton.tsx",
+      "sha256": "aa1d8509b82a545f561834daddeb780057f06a4d97246111b3dacb7bc1f59a73"
+    },
+    {
+      "file": "frontend/src/ui/KpiNumber.test.tsx",
+      "sha256": "d979bffd2410253be70a8817dd2678e1f7404c6d87473c29f8732370190e4cab"
+    },
+    {
+      "file": "frontend/src/ui/KpiNumber.tsx",
+      "sha256": "5de71310354b1f5b810e9a28b1275e8b18b678b26fb65d3a9c3555638ccd6dca"
+    },
+    {
+      "file": "frontend/src/ui/KpiPillRow.tsx",
+      "sha256": "36891b6e66e035ea14e220e94e8a14087844bd9b329c47a5074c32a9919ac6a7"
+    },
+    {
+      "file": "frontend/src/ui/MonthCalendar.tsx",
+      "sha256": "2981181edcfa0f6f2e8a96d6b19d771c5142287af8f8dd7e6640b7a3a5902232"
+    },
+    {
+      "file": "frontend/src/ui/PageHeader.tsx",
+      "sha256": "446d0a20354564a8bc131e04ced84c27398ba9af0643059a5c7c06074b3e357c"
+    },
+    {
+      "file": "frontend/src/ui/SegmentedProgress.tsx",
+      "sha256": "21ab5e1eee5beb86de6158981056e84214eedb70be7f83fdc84c488b6548f8ee"
+    },
+    {
+      "file": "frontend/src/ui/Select.tsx",
+      "sha256": "ecc92a96a01462e0c3ed89bd205eac85e141cb9bfca465f98d19387434ca294f"
+    },
+    {
+      "file": "frontend/src/ui/Skeleton.tsx",
+      "sha256": "823035e460bc5da978439b44523ab22e8df95311caa47ed08e81838ad1e201c4"
+    },
+    {
+      "file": "frontend/src/ui/StatusBadge.tsx",
+      "sha256": "7506ed8f7c51c746ce8593d65a275ef46d0f95f5954b48c5a86c8b8abca177dd"
+    },
+    {
+      "file": "frontend/src/ui/Switch.tsx",
+      "sha256": "016a267fe624ebbeef9d359ef7fce9c01cbaaac0f595e5dc054a00a1024f1105"
+    },
+    {
+      "file": "frontend/src/ui/TextField.tsx",
+      "sha256": "bd6b2301a891d6646a166b56f4abbd1643fe5d6b2ba785ff5f68a4ace6b4c660"
+    },
+    {
+      "file": "frontend/src/ui/Textarea.tsx",
+      "sha256": "e2a39ef40795ed0e6906c8cf777ae1a3d0d643c1eb57ea1530cd66142109a3ee"
+    },
+    {
+      "file": "frontend/src/ui/ThemeToggle.tsx",
+      "sha256": "f663ccec7007f0d535ccac947c3944df8f17d1a9bccfca7abb89d279918d9dda"
+    },
+    {
+      "file": "frontend/src/ui/Timeline.tsx",
+      "sha256": "9022cba8cd921bf718783da3b783a8cafca8f7b490b695ddc66559926ce8eacc"
+    },
+    {
+      "file": "frontend/src/ui/Toast.tsx",
+      "sha256": "e21ddbcb33e4b647882de08203f12d368a44156683bc1eaa6d6f99696c027dd2"
+    },
+    {
+      "file": "frontend/src/ui/Tooltip.tsx",
+      "sha256": "70c71f6ecbbb409198a083b81eb40b6aefbe1be42a7afb85ee0ff03e004eb1a7"
+    },
+    {
+      "file": "frontend/src/ui/calendar.test.ts",
+      "sha256": "5eda2dd92d2040e78842abaf293c18336e2519dee9d53f1e9dfba79eed158c2b"
+    },
+    {
+      "file": "frontend/src/ui/calendar.ts",
+      "sha256": "17e91890d1046b15a4595cef7003b0611a79f46605b7f4313e8d4a3962021790"
+    },
+    {
+      "file": "frontend/src/ui/cn.ts",
+      "sha256": "0fe2f5237d8c2881532c569f5dc9cfb0538b07371314ad32fc39706288179761"
+    },
+    {
+      "file": "frontend/src/ui/data-display.test.tsx",
+      "sha256": "95a7e1e95b9fd20873890597d492faa98077f93a81e68f33786635f6821af568"
+    },
+    {
+      "file": "frontend/src/ui/forms.test.tsx",
+      "sha256": "f33dd04f122989a89664bbbe4805e32ac57bf4fc1ae543a8c28b4078331cbc80"
+    },
+    {
+      "file": "frontend/src/ui/index.ts",
+      "sha256": "ed3b5fc47bc6177baa55aa81d79b786345ec7dffa71962f8ab924fd89fc9a4ff"
+    },
+    {
+      "file": "frontend/src/ui/pickers.test.tsx",
+      "sha256": "2475249f3ae4b18a7f77e17386d2975a39c3bf5fe7033eae8c036c0f34a735ad"
+    },
+    {
+      "file": "frontend/src/ui/surfaces.test.tsx",
+      "sha256": "e2c0a7024a0ee93817ca4e070513f8b86221acd537ea78ae0dd5fddb794b5747"
+    },
+    {
+      "file": "frontend/src/ui/theme.test.ts",
+      "sha256": "600fc5854163e23fa232f26f8fbcb2a88e48e8c3ac864bcfcac7ac1b00f65ee0"
+    },
+    {
+      "file": "frontend/src/ui/theme.ts",
+      "sha256": "f0ac3515e969db9f0854fc87613c1892f93287f2f30dfcd476685d572391bc8e"
+    },
+    {
+      "file": "frontend/tsconfig.json",
+      "sha256": "8a9c27ca8a122a6eff29e95165644f4f310c578c16b7912691393341aa607d81"
+    },
+    {
+      "file": "frontend/vite.config.ts",
+      "sha256": "965f9ec872a347ba6a63eeb185f08f11e29f94529d0c2cdb3f6cc7d8eb9d0cde"
+    },
+    {
+      "file": "frontend/vitest.config.ts",
+      "sha256": "847706621e1e6a1709a2f68d297c0e5dd289b86d7da261d64f7cb2433f87960d"
+    }
+  ],
+  "source_changes_since_start": [
+    "backend/src/core/rbac/permissions.service.ts",
+    "backend/src/modules/attendance/regularization.service.ts",
+    "backend/src/modules/attendance/workflow-hooks.ts",
+    "backend/src/modules/leave/leave-apply.service.ts",
+    "backend/src/modules/leave/leave.router.ts",
+    "backend/src/modules/leave/workflow-hooks.ts",
+    "backend/src/modules/reports/dashboard.service.ts",
+    "backend/src/modules/reports/reports.router.ts",
+    "backend/src/modules/workflows/index.ts",
+    "backend/src/modules/workflows/workflow.service.ts",
+    "backend/src/modules/workflows/workflows.router.ts",
+    "backend/tests/helpdesk-and-engagement-stage34.test.ts",
+    "backend/tests/helpdesk.integration.test.ts",
+    "backend/tests/stage13-workflows.integration.test.ts",
+    "backend/tests/stage14-requests-overtime.integration.test.ts",
+    "backend/tests/stage15-leave.integration.test.ts",
+    "frontend/src/app/useInboxCount.ts",
+    "frontend/src/pages/approvals/ApprovalsPage.tsx",
+    "frontend/src/pages/approvals/request-summary.test.ts",
+    "frontend/src/pages/approvals/request-summary.ts",
+    "frontend/src/pages/attendance/AttendanceRequestDrawer.tsx",
+    "frontend/src/pages/attendance/MyAttendancePage.test.tsx",
+    "frontend/src/pages/attendance/MyAttendancePage.tsx",
+    "frontend/src/pages/attendance/attendance-types.ts",
+    "frontend/src/pages/home/dashboard-format.ts",
+    "frontend/src/pages/leave/MyLeavePage.tsx",
+    "frontend/src/ui/MonthCalendar.tsx",
+    "frontend/src/ui/Timeline.tsx"
+  ],
+  "source_new_since_start": [
+    "backend/src/core/db/attendance-period.ts",
+    "backend/src/core/rbac/effective-role-grants.ts",
+    "backend/src/modules/README.md",
+    "backend/src/modules/leave/leave-resubmit.service.ts",
+    "backend/src/modules/leave/leave-validation.ts",
+    "backend/src/modules/workflows/workflow-access.ts",
+    "backend/src/modules/workflows/workflow-approvers.ts",
+    "backend/src/modules/workflows/workflow-hooks.ts",
+    "backend/tests/fixtures/ems-users.sample.json",
+    "backend/tests/fixtures/greythr-enrich.sample.json",
+    "backend/tests/fixtures/payroll/golden/g1_staff.json",
+    "backend/tests/fixtures/payroll/golden/g2_pf_ceiling.json",
+    "backend/tests/fixtures/payroll/golden/g3_esic.json",
+    "backend/tests/fixtures/payroll/golden/g4_pt.json",
+    "backend/tests/fixtures/payroll/golden/g5_tds.json",
+    "backend/tests/fixtures/payroll/golden/g9_apprentice.json",
+    "backend/tests/workflow-scope.integration.test.ts",
+    "frontend/src/app/useInboxCount.test.tsx",
+    "frontend/src/index.css",
+    "frontend/src/lib/workflow-events.ts",
+    "frontend/src/pages/approvals/ApprovalRequestStatus.tsx",
+    "frontend/src/pages/approvals/ApprovalsPage.test.tsx",
+    "frontend/src/pages/approvals/ResubmitRequestForm.tsx",
+    "frontend/src/pages/attendance/AttendanceRequestDrawer.test.tsx",
+    "frontend/src/pages/leave/MyLeavePage.test.tsx",
+    "frontend/src/tokens/tokens.css"
+  ],
+  "no_schema_change_by_this_increment": true
+}

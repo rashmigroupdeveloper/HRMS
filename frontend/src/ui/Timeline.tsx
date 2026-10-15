@@ -75,7 +75,7 @@ export function Timeline({ steps }: { steps: TimelineStep[] }) {
                   {step.title}
                 </span>
                 {step.timestamp && (
-                  <span className="shrink-0 text-xs tabular-nums text-ink-faint">
+                  <span className="shrink-0 text-xs tabular-nums text-ink-muted">
                     {step.timestamp}
                   </span>
                 )}

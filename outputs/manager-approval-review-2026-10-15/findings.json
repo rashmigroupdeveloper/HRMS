@@ -1,0 +1,92 @@
+{
+  "prepared": "2026-10-15",
+  "mapping_limit": "SOW links identify affected obligations, not full-row acceptance. Original wording and all broader obligations remain in the 176-row register.",
+  "findings": [
+    {
+      "id": "M01",
+      "prior": "C03",
+      "status": "partial",
+      "requirements": "CORE-10/WF-01",
+      "sow_rows": [
+        "SOW-054",
+        "SOW-058",
+        "SOW-064"
+      ],
+      "assessment": "Mapped domain scoped authority and derived RM grants repaired; heterogeneous per-stage permission/delegation contract and derived role candidate enumeration remain."
+    },
+    {
+      "id": "M02",
+      "prior": "C04",
+      "status": "partial",
+      "requirements": "WF-01/ATT-06/ATT-07/LV-03",
+      "sow_rows": [
+        "SOW-054",
+        "SOW-058"
+      ],
+      "assessment": "AR/OD/permission/leave/CO domain revisions synchronized and revalidated; chain snapshots and immutable request/domain revision history remain."
+    },
+    {
+      "id": "M03",
+      "prior": "C08",
+      "status": "partial",
+      "requirements": "ATT-15/ATT-17/LV-03/LV-08/LV-09",
+      "sow_rows": [
+        "SOW-054",
+        "SOW-058"
+      ],
+      "assessment": "Locked month/manual overrides fail final decision atomically; month completeness and HR historical correction policy remain."
+    },
+    {
+      "id": "M04",
+      "prior": "C24",
+      "status": "repaired_in_checked_paths",
+      "requirements": "WF-01",
+      "sow_rows": [
+        "SOW-054",
+        "SOW-058",
+        "SOW-064"
+      ],
+      "assessment": "Exact notification identity, authorized historical detail, intermediate/batch outcomes and retry selection repaired."
+    },
+    {
+      "id": "M05",
+      "prior": null,
+      "status": "repaired_in_checked_paths",
+      "requirements": "WF-03",
+      "sow_rows": [
+        "SOW-058",
+        "SOW-064"
+      ],
+      "assessment": "Missing SLA escalation target stays pending and re-notifies; genuine all-vacant creation behavior awaits sponsor decision."
+    },
+    {
+      "id": "M06",
+      "prior": null,
+      "status": "repaired_in_checked_paths",
+      "requirements": "ATT-06/ATT-07/LV-03",
+      "sow_rows": [
+        "SOW-054",
+        "SOW-058"
+      ],
+      "assessment": "Permission times and real OD/leave/session display repaired; missing day is not absence. Does not settle all payable-day policies."
+    },
+    {
+      "id": "M07",
+      "prior": null,
+      "status": "repaired_in_checked_paths",
+      "requirements": "WF-01/LV-03",
+      "sow_rows": [
+        "SOW-058"
+      ],
+      "assessment": "Sent-back leave history and exact correction links, immediate post-commit badge refresh and stale polling protection."
+    },
+    {
+      "id": "M08",
+      "prior": "R46",
+      "status": "partial",
+      "requirements": "NFR-03/NFR-04",
+      "sow_rows": [],
+      "assessment": "486 backend tests pass; full gate blocked by unchanged global coverage. Previous exact-loopback transport repair retained."
+    }
+  ]
+}

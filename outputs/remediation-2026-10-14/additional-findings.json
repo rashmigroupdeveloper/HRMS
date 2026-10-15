@@ -1,0 +1,118 @@
+[
+  {
+    "id": "R39",
+    "priority": 1,
+    "title": "Salary assignment and payroll disagree on paise versus rupee units",
+    "file": "backend/src/modules/payroll-core/runs/run.service.ts",
+    "line": 264,
+    "requirements": [
+      "PAY-02",
+      "PAY-04",
+      "PAY-15"
+    ],
+    "problem": "assignSalary persists component_amounts as integer paise. The run multiplied each stored amount by 100, increasing salary by a factor of 100. F&F independently repeats this conversion. Legacy fixtures use rupees, so a magnitude heuristic would silently conceal the contract mismatch.",
+    "required_repair": "Use an explicit integer-paise salary snapshot boundary everywhere; inspect existing snapshots for import provenance without guessing their unit. Correct F&F consumers and prove assignment-to-run and assignment-to-F&F integration. Run boundary fixed with regression; remaining consumers and legacy-data provenance remain open.",
+    "evidence": "backend/tests/payroll-salary-snapshot.test.ts; salary.service.ts stores paise; separation.service.ts multiplies BASIC and DA by 100"
+  },
+  {
+    "id": "R40",
+    "priority": 1,
+    "title": "Salary preview and assignment ignore configured amount rules",
+    "file": "backend/src/modules/payroll-core/salaries/salary.service.ts",
+    "line": 59,
+    "requirements": [
+      "PAY-01",
+      "PAY-02",
+      "PAY-07"
+    ],
+    "problem": "SalaryComponentItem and the API accept amount_rule, but both node assemblers drop it. They pass no fixed amount for BASIC or the fixed allowances. Passing fixed ComponentFormulaNode amounts in unit tests bypasses these actual product paths, so those tests do not prove the configured structure can be previewed or assigned.",
+    "required_repair": "Define and validate the documented amount_rule grammar and CTC anchors; use one assembler for preview and assignment. Reject missing rules rather than fabricate pay. Add real persisted-structure preview/assignment tests with explicit approved amounts.",
+    "evidence": "structure.service.ts assembleComponentNodes; salary.service.ts assignSalary; structure.router.ts accepts amount_rule"
+  },
+  {
+    "id": "R41",
+    "priority": 1,
+    "title": "Probation scales earnings after dependent contributions have already been computed",
+    "file": "backend/src/modules/payroll-core/structures/dag-evaluator.ts",
+    "line": 290,
+    "requirements": [
+      "PAY-01",
+      "PAY-02"
+    ],
+    "problem": "The resolver evaluates all component formulas first, then scales earning amounts for probation. PF and employer contributions computed from full BASIC are retained. The existing G6 fixture contains only earnings, so it cannot reveal stale contribution amounts.",
+    "required_repair": "Apply approved probation scaling before evaluating dependent deduction/employer formulas and balancing CTC. Add a hand-computed fixture that includes BASIC, PF_EE and employer PF, with approved rounding and policy inputs.",
+    "evidence": "Source ordering in resolveSalaryStructure; existing G6 test omits deduction/employer nodes"
+  },
+  {
+    "id": "R42",
+    "priority": 1,
+    "title": "Configured PT slabs are accepted by the compute interface but never used",
+    "file": "backend/src/modules/payroll-core/engine/compute-engine.ts",
+    "line": 72,
+    "requirements": [
+      "PAY-04",
+      "PAY-11"
+    ],
+    "problem": "EmployeeComputeInput exposes ptSlabs, but computeEmployeePayroll never reads it and calls computePt with only gross and state. Effective-dated configured slabs cannot affect the result; an unsupported state silently yields zero.",
+    "required_repair": "Pass authoritative effective-dated slab facts to the shared PT engine, reject missing applicable state policy, and test custom configured slabs through the run path. Do not infer current statutory rates from this defect review.",
+    "evidence": "Compute input declaration and computePt call; statutory/pt.ts uses built-in WB table only"
+  },
+  {
+    "id": "R43",
+    "priority": 2,
+    "title": "Generated timestamp and numeric aliases nest Kysely ColumnType wrappers",
+    "file": "backend/src/core/db/types.ts",
+    "line": 796,
+    "requirements": [
+      "CORE-12",
+      "NFR-04"
+    ],
+    "problem": "154 fields used Generated<Timestamp> where Timestamp was already ColumnType. This causes selected values to retain a ColumnType wrapper and normal Date inserts to fail TypeScript. The restored budget types also nested Generated<Numeric>. A live payroll boundary regression exposed locked_at Date as an invalid insert even though PostgreSQL accepts it.",
+    "required_repair": "Use one flattened ColumnType with optional insert for defaulted timestamps/numerics. Corrected timestamp and FX declarations; rerun typecheck and actual database flows. Continue nullability/domain compatibility audit separately from column-name equality.",
+    "evidence": "Typecheck failed on tests/payroll-run-boundary.integration.test.ts locked_at; flattened aliases now typecheck successfully."
+  },
+  {
+    "id": "R44",
+    "priority": 1,
+    "title": "Parallel comparison drops repeated lines of the same component",
+    "file": "backend/src/modules/payroll-core/parallel-run/variance-reporter.ts",
+    "line": 151,
+    "requirements": [
+      "PAY-04",
+      "RPT-06"
+    ],
+    "problem": "A Map.set overwrote earlier lines for the same employee/component. The real engine emits separate base, adjustment and arrear rows with the same component code, so the comparison silently retained only the last amount. A \u20b910,000 base + \u20b92,500 adjustment \u2212 \u20b9500 reversal became \u2212\u20b9500 instead of \u20b912,000.",
+    "required_repair": "Sum all signed component facts in integer paise per employee/component. Corrected shared component aggregation is now used by the real comparison; durable complete-population two-cycle/sign-off gates remain open under R29.",
+    "evidence": "backend/tests/payroll-component-totals.test.ts failed before correction and passes; backend/tests/parallel-run-and-annual.test.ts passes."
+  },
+  {
+    "id": "R45",
+    "priority": 2,
+    "title": "Numeric SOW citations in phase plans and backend comments do not identify the original requirements",
+    "file": "backend/src/modules/payroll-outputs/gl/sap-jv.service.ts",
+    "line": 2,
+    "requirements": [
+      "CORE-12",
+      "NFR-04",
+      "PAY-05",
+      "RPT-06"
+    ],
+    "problem": "The JV service cited SOW-176, but original spreadsheet row176 is PT inspection assistance. JV deliverables are in original rows75 and101. Contiguous phase-plan block ranges were assigned without preserving original row meanings. This is an observable hallucinated traceability pattern.",
+    "required_repair": "Regenerate phase tables from the exact original crosswalk, preserve requirement IDs, and replace unverified numeric references in backend comments. Done for backend comments and Phase2/3 maps; source-doc section labels and remaining frontend annotations require separate context validation.",
+    "evidence": "Original SOW row JSON and unchanged workbook hash; traceability-comment-repairs.json records comment-only repairs."
+  },
+  {
+    "id": "R46",
+    "priority": 1,
+    "title": "Full integration results vary across repeated runs and HTTP error bodies are hidden by downstream casts",
+    "file": "backend/tests/audit-read.integration.test.ts",
+    "line": 66,
+    "requirements": [
+      "NFR-04",
+      "CORE-10"
+    ],
+    "problem": "The same Node24/local-test setup produced435 passing/6 failing tests, then an independent serialized run produced423 passing/13 failing/5 skipped. Extra failures include login, audit, asset, engagement and leave HTTP400 responses. Some tests cast error objects to arrays and fail later. A standalone100-request login probe succeeded100 times, so a specific production HTTP defect is not yet established.",
+    "required_repair": "Capture sanitized typed HTTP error codes/messages at each failed request; resolve route/input/fixture/environment or framework causes, then prove stable serialized full runs. Do not hide failures with casts, skips, fallback records or reduced coverage thresholds.",
+    "evidence": "Final full-test runs recorded in progress.json; http-repeat-probe.json; audit-read/assets/engagement/leave integration failures."
+  }
+]

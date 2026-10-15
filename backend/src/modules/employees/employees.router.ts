@@ -64,7 +64,11 @@ const listProcedure = guard()
     }),
   )
   .handler(async ({ input, context }) => {
-    return listEmployees(context.db, input ?? {});
+    const scope = {
+      ...context.permissionAccess,
+      actorEmployeeId: context.user.employee_id,
+    };
+    return listEmployees(context.db, input ?? {}, scope);
   });
 
 const profileOutput = z.object({
@@ -138,11 +142,16 @@ const getByEcodeProcedure = guard()
   .input(z.object({ ecode: z.string().min(3).max(32) }))
   .output(profileOutput)
   .handler(async ({ input, context }) => {
+    const scope = {
+      ...context.permissionAccess,
+      actorEmployeeId: context.user.employee_id,
+    };
     const profile = await getEmployeeByEcode(
       context.db,
       input.ecode,
       context.user,
       context.permissions,
+      scope,
     );
     if (!profile) {
       throw new ORPCError('NOT_FOUND', { message: `Employee ${input.ecode} not found` });
@@ -175,7 +184,11 @@ const facetsProcedure = guard()
     }),
   )
   .handler(async ({ input, context }) => {
-    return listDirectoryFacets(context.db, { activeOnly: input?.activeOnly });
+    const scope = {
+      ...context.permissionAccess,
+      actorEmployeeId: context.user.employee_id,
+    };
+    return listDirectoryFacets(context.db, { activeOnly: input?.activeOnly }, scope);
   });
 
 export const employeesRouter = {

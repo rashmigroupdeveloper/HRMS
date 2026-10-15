@@ -5,6 +5,7 @@
  */
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../lib/api';
+import { WORKFLOW_CHANGED_EVENT } from '../lib/workflow-events';
 
 export function useInboxCount(enabled: boolean): number {
   const [count, setCount] = useState(0);
@@ -12,10 +13,12 @@ export function useInboxCount(enabled: boolean): number {
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
+    let latestPoll = 0;
     const poll = (): void => {
+      const pollId = ++latestPoll;
       apiFetch<unknown[]>('/api/workflows/inbox')
         .then((rows) => {
-          if (!cancelled && Array.isArray(rows)) setCount(rows.length);
+          if (!cancelled && pollId === latestPoll && Array.isArray(rows)) setCount(rows.length);
         })
         .catch(() => {
           /* a badge never surfaces an error */
@@ -23,9 +26,11 @@ export function useInboxCount(enabled: boolean): number {
     };
     poll();
     const timer = window.setInterval(poll, 60_000);
+    window.addEventListener(WORKFLOW_CHANGED_EVENT, poll);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
+      window.removeEventListener(WORKFLOW_CHANGED_EVENT, poll);
     };
   }, [enabled]);
 

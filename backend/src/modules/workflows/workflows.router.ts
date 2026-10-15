@@ -5,8 +5,12 @@
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
+import { DOMAIN_RESERVED_DEFINITIONS } from './workflow-hooks.js';
 import { authed, withPermission } from '../../api/orpc.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
+import { employeeScopeSql } from '../../core/rbac/employee-scope.js';
+import { getUserPermissionAccess } from '../../core/rbac/permissions.service.js';
+import { canActOnStep } from './workflow-approvers.js';
 import {
   act,
   createRequest,
@@ -29,10 +33,27 @@ const createProcedure = authed
   .output(z.object({ requestId: z.number() }))
   .handler(async ({ input, context }) => {
     const db = context.db;
+    if (DOMAIN_RESERVED_DEFINITIONS.has(input.definitionCode)) {
+      throw new ORPCError('BAD_REQUEST', {
+        message: `Requests for '${input.definitionCode}' must be submitted via their dedicated domain API endpoint.`,
+      });
+    }
+
     const subjectEmployeeId = input.subjectEmployeeId ?? context.user.employee_id;
     if (subjectEmployeeId === null) {
       throw new ORPCError('BAD_REQUEST', { message: 'No employee record linked to your account — pass subjectEmployeeId' });
     }
+
+    if (subjectEmployeeId !== context.user.employee_id) {
+      const { getUserPermissions } = await import('../../core/rbac/permissions.service.js');
+      const perms = await getUserPermissions(db, context.user.id);
+      if (!perms.has('admin.workflows') && !perms.has('admin.settings')) {
+        throw new ORPCError('FORBIDDEN', {
+          message: 'You can only raise workflow requests for yourself unless you hold workflow administration permissions',
+        });
+      }
+    }
+
     try {
       const requestId = await createRequest(db, {
         definitionCode: input.definitionCode,
@@ -127,6 +148,7 @@ const timelineProcedure = authed
     z.object({
       status: z.string(),
       type: z.string(),
+      canResubmit: z.boolean(),
       payload: z.unknown(),
       steps: z.array(
         z.object({
@@ -149,19 +171,27 @@ const timelineProcedure = authed
 
     // Visible to the requester, the subject, anyone who held a step, and HR (audit.read).
     const steps = await timeline(db, input.requestId);
-    const involved =
+    let involved =
       request.requested_by === context.user.id ||
-      context.user.employee_id === request.subject_employee_id ||
-      steps.some((s) => s.approver_user_id === context.user.id || s.delegated_from === context.user.id);
+      context.user.employee_id === request.subject_employee_id;
     if (!involved) {
-      const { getUserPermissions } = await import('../../core/rbac/permissions.service.js');
-      const perms = await getUserPermissions(db, context.user.id);
-      if (!perms.has('audit.read')) throw new ORPCError('FORBIDDEN', { message: 'Not involved in this request' });
+      for (const step of steps.filter(s => s.approver_user_id === context.user.id || s.delegated_from === context.user.id)) {
+        if (await canActOnStep(db, step, context.user.id, request)) { involved = true; break; }
+      }
+    }
+    if (!involved) {
+      const auditAccess = await getUserPermissionAccess(db, context.user.id, 'audit.read');
+      const allowed = auditAccess && await db.selectFrom('core.employees as e').select('e.id')
+        .where('e.id', '=', request.subject_employee_id)
+        .where(employeeScopeSql({ ...auditAccess, actorEmployeeId: context.user.employee_id }))
+        .executeTakeFirst();
+      if (!allowed) throw new ORPCError('FORBIDDEN', { message: 'Not involved in this request or outside your permitted scope' });
     }
 
     return {
       status: request.status,
       type: request.definition_code,
+      canResubmit: request.status === 'sent_back' && request.requested_by === context.user.id,
       payload: request.payload,
       steps: steps.map((s) => ({
         stepNo: s.step_no,

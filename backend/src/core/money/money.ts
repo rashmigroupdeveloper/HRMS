@@ -23,7 +23,8 @@ const MAX_SAFE_PAISE = Number.MAX_SAFE_INTEGER / 10_000; // headroom for bp prod
 
 function assertSafe(n: number, what: string): void {
   if (!Number.isFinite(n)) throw new RangeError(`${what}: not finite (${n})`);
-  if (Math.abs(n) > MAX_SAFE_PAISE) throw new RangeError(`${what}: exceeds safe money range (${n})`);
+  if (Math.abs(n) > MAX_SAFE_PAISE)
+    throw new RangeError(`${what}: exceeds safe money range (${n})`);
 }
 
 /** Assert-and-brand an integer paise value. */
@@ -48,6 +49,25 @@ export function fromRupees(rupees: number): Paise {
     throw new TypeError(`fromRupees(): ${rupees} has more than 2 decimal places`);
   }
   return p as Paise;
+}
+
+/** Exact DB NUMERIC boundary; no binary floating point rupee arithmetic. */
+export function parseRupees(value: string): Paise {
+  const match = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(value);
+  if (!match)
+    throw new TypeError('Expected a decimal rupee amount with at most two decimal places');
+  const whole = match[2];
+  if (whole === undefined) throw new TypeError('Missing decimal rupee amount');
+  const fractional = (match[3] ?? '').padEnd(2, '0');
+  const sign = match[1] === '-' ? -1n : 1n;
+  return paise(Number(sign * (BigInt(whole) * 100n + BigInt(fractional))));
+}
+
+/** Exact SQL NUMERIC text; display-only rupee numbers never re-enter storage. */
+export function decimalRupees(amount: Paise): string {
+  const integer = BigInt(paise(amount));
+  const absolute = integer < 0n ? -integer : integer;
+  return `${integer < 0n ? '-' : ''}${String(absolute / 100n)}.${String(absolute % 100n).padStart(2, '0')}`;
 }
 
 /** Display-only conversion. NEVER feed the result back into calculations. */
@@ -88,7 +108,8 @@ function roundQuotient(numerator: number, denominator: number, mode: RoundingMod
  * PF 12% of ₹32,286 → percentBp(fromRupees(32286), 1200) = 387,432 paise (₹3,874.32).
  */
 export function percentBp(amount: Paise, rateBp: number, mode: RoundingMode = 'half_up'): Paise {
-  if (!Number.isInteger(rateBp)) throw new TypeError(`percentBp(): rateBp must be integer, got ${rateBp}`);
+  if (!Number.isInteger(rateBp))
+    throw new TypeError(`percentBp(): rateBp must be integer, got ${rateBp}`);
   return paise(roundQuotient(amount * rateBp, 10_000, mode));
 }
 
@@ -96,7 +117,12 @@ export function percentBp(amount: Paise, rateBp: number, mode: RoundingMode = 'h
  * amount × (num / den) with a single rounding — proration, hourly rates, splits.
  * e.g. monthly × payableDays/daysInMonth.
  */
-export function mulDiv(amount: Paise, num: number, den: number, mode: RoundingMode = 'half_up'): Paise {
+export function mulDiv(
+  amount: Paise,
+  num: number,
+  den: number,
+  mode: RoundingMode = 'half_up',
+): Paise {
   if (!Number.isInteger(num) || !Number.isInteger(den)) {
     throw new TypeError(`mulDiv(): num/den must be integers, got ${num}/${den}`);
   }

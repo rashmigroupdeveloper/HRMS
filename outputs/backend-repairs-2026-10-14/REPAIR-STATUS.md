@@ -1,0 +1,11 @@
+# Backend repair status — 14 Oct 2026
+
+The current scope is remaining HR backend work, with claims and budgets deferred. This is a Phase0 Stage0.2 repair increment, not completion of all HR features or a release gate. [The current execution tracker](../../plans/sow-completion/19-BACKEND-REPAIR-SCOPE-AND-PROGRESS.md) records verified repairs and the active remaining domain work. [Every original SOW row](backend-sow-scope.json) retains its wording, current evidence category, schema references and deferred subset.
+
+Repairs: shared PostgreSQL-locked employee-code allocation for onboarding/transfers; scoped directory fixtures; reserved-domain workflow regressions; explicit loopback HTTP test listeners; validated survey/clearance JSON; typed lifecycle test builders and a real expiry-branch assertion; transfer fixture lifecycle cleanup; backend lint repaired without weakening checks. This increment adds no database fields or migrations, and changes no frontend or payroll-core/statutory formulas.
+
+Read `verification.json` for final check results and limitations and `source-inventory.json` for hashes. The probe evidence records 32/500 rejected implicit-listener health requests and 0/500 rejected explicit-loopback requests; no application parser error was seen. Error responses identified an explicit proxy. The remedy is exact listener binding and readiness, not retrying or suppressing HTTP failures.
+
+The 176-row scope retains 109 blocked rows, 32 requiring current end-to-end verification, 29 manual/service duties and six scope decisions. Thirteen rows contain deferred claim/expense requirements and can also contain active HR obligations. No row is promoted to release completion from this increment. Prior payroll fixes, migration replay and field-purpose audits remain dated evidence in the older packs; their open gaps are preserved in pack19.
+
+The next work must close meaningful uncovered flows and their defects under the existing stage rules. Salary/F&F units and authoritative inputs, effective transfers/promotions, onboarding atomicity/notifications, immutable payroll/loan sources, real outputs/payment evidence, missing historical runtime modules and the remaining SOW flows are still open. The database field audit remains a purpose/integrity review with unresolved findings; this work does not certify zero redundant fields.

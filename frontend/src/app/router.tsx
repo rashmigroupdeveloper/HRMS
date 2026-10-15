@@ -28,8 +28,16 @@ import {
   R4ExceptionsPage,
   R5OtPage,
   R6AbsencePage,
+  R21OffersPage,
+  R23TransfersPage,
   R24BoardingPage,
+  R25ProbationPage,
+  R26AttritionPage,
   R27HeadcountPage,
+  R28AssetsPage,
+  R29HelpdeskPage,
+  R30PoliciesPage,
+  R31ClaimsPage,
 } from '../pages/reports/SupportingReports';
 import { TeamPage } from '../pages/team/TeamPage';
 import { OtDecisionsPage } from '../pages/team/OtDecisionsPage';
@@ -43,10 +51,15 @@ import { AuditLogPage } from '../pages/admin/AuditLogPage';
 import { WorkflowsPage } from '../pages/admin/WorkflowsPage';
 import { AttendanceMastersPage } from '../pages/admin/AttendanceMastersPage';
 import { PayrollPage } from '../pages/payroll/PayrollPage';
+import { SalaryStructuresPage } from '../pages/payroll/SalaryStructuresPage';
+import { SalaryRevisionsPage } from '../pages/payroll/SalaryRevisionsPage';
+import { ParallelRunPage } from '../pages/payroll/ParallelRunPage';
 import { MyPayPage } from '../pages/payroll/MyPayPage';
 import { ClaimsPage } from '../pages/payroll/ClaimsPage';
 import { LoansPage } from '../pages/payroll/LoansPage';
 import { LifecyclePage } from '../pages/lifecycle/LifecyclePage';
+import { PrejoinPortalPage } from '../pages/lifecycle/PrejoinPortalPage';
+import { AlumniPortalPage } from '../pages/lifecycle/AlumniPortalPage';
 import { AssetsPage } from '../pages/workplace/AssetsPage';
 import { HelpdeskPage } from '../pages/workplace/HelpdeskPage';
 import { EngagementPage } from '../pages/workplace/EngagementPage';
@@ -89,21 +102,35 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="attendance/absence-cases" element={<AbsenceCasesPage user={user} />} />
 
         <Route path="leave" element={<LeaveAdminPage />} />
-        <Route path="payroll/*" element={<PayrollPage />} />
+        <Route path="payroll" element={<PayrollPage />} />
+        <Route path="payroll/structures" element={<SalaryStructuresPage />} />
+        <Route path="payroll/revisions" element={<SalaryRevisionsPage />} />
+        <Route path="payroll/parallel-run" element={<ParallelRunPage />} />
+        <Route path="admin/salary-structures" element={<SalaryStructuresPage />} />
         <Route path="loans" element={<LoansPage />} />
         <Route path="claims" element={<ClaimsPage />} />
         <Route path="lifecycle/*" element={<LifecyclePage />} />
+        <Route path="onboard/prejoin" element={<PrejoinPortalPage />} />
+        <Route path="alumni" element={<AlumniPortalPage />} />
         <Route path="assets" element={<AssetsPage />} />
         <Route path="helpdesk" element={<HelpdeskPage user={user} />} />
-        <Route path="engagement" element={<EngagementPage />} />
+        <Route path="engagement" element={<EngagementPage user={user} />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="reports/r2-swipes" element={<R2SwipesPage />} />
         <Route path="reports/r3-regularizations" element={<R3RegularizationsPage />} />
         <Route path="reports/r4-exceptions" element={<R4ExceptionsPage />} />
         <Route path="reports/r5-ot" element={<R5OtPage />} />
         <Route path="reports/r6-absence" element={<R6AbsencePage />} />
+        <Route path="reports/r21-offers" element={<R21OffersPage />} />
+        <Route path="reports/r23-transfers" element={<R23TransfersPage />} />
         <Route path="reports/r24-boarding" element={<R24BoardingPage />} />
+        <Route path="reports/r25-probation" element={<R25ProbationPage />} />
+        <Route path="reports/r26-attrition" element={<R26AttritionPage />} />
         <Route path="reports/r27-headcount" element={<R27HeadcountPage />} />
+        <Route path="reports/r28-assets" element={<R28AssetsPage />} />
+        <Route path="reports/r29-helpdesk" element={<R29HelpdeskPage />} />
+        <Route path="reports/r30-policies" element={<R30PoliciesPage />} />
+        <Route path="reports/r31-claims" element={<R31ClaimsPage />} />
         <Route path="executive" element={<ExecutivePage />} />
 
         <Route path="admin/users" element={<AccessControlPage />} />

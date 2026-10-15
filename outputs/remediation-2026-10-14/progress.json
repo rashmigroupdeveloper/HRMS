@@ -1,0 +1,388 @@
+{
+  "started": "2026-10-14",
+  "objective": "Fix current reviewed implementation and schema against specifications; verify and update every SOW point with evidenced remaining scope",
+  "stage": "Phase 2, Stage 2.2 \u2014 verified repair increment; full delivery remains open",
+  "findings": [
+    {
+      "id": "R01",
+      "status": "verified-fixed",
+      "title": "Fresh migration chain cannot build claims schema",
+      "evidence": [
+        "migration-rehearsal-pg16.json",
+        "existing-db-upgrade-rehearsal.json",
+        "fresh-pg16-vs-existing-schema.json"
+      ],
+      "remaining": "Fresh49 up/no-op/down/up and upgrade of disposable existing-data clone pass on PG16.15/Node24. Original hrms schema not migrated. Forward-only compatibility rollback retains added columns on one-step down."
+    },
+    {
+      "id": "R02",
+      "status": "partial-repair-verified",
+      "title": "Applied schema and typed checkout still disagree",
+      "evidence": [
+        "type-compatibility.json",
+        "fresh-pg16-vs-existing-schema.json"
+      ],
+      "remaining": "All132 relation/column names aligned;154 timestamp wrappers corrected; claim_type_id nullable corrected. Deep CHECK-domain/enum compatibility and deferred-feature acceptance remain open."
+    },
+    {
+      "id": "R03",
+      "status": "partial-repair-verified",
+      "title": "Payroll attendance SQL is incompatible and day arithmetic is unsafe",
+      "evidence": [
+        "backend/tests/payroll-attendance.integration.test.ts"
+      ],
+      "remaining": "Real locked attendance query fixes enum/date errors, half-days, paid leave/weekoffs, completeness and zero payable days. Full run policy integration remains open."
+    },
+    {
+      "id": "R04",
+      "status": "partial-repair-verified",
+      "title": "Mid-month salary assignments can be skipped silently",
+      "evidence": [
+        "backend/src/modules/payroll-core/runs/run.service.ts"
+      ],
+      "remaining": "Includes overlap tenure and mid-month first assignment; missing/empty/gapped/multiple salary segments fail closed. Multiple-revision segment computation remains open."
+    },
+    {
+      "id": "R05",
+      "status": "open",
+      "title": "Real payroll never supplies required statutory and debt facts"
+    },
+    {
+      "id": "R06",
+      "status": "partial-repair-verified",
+      "title": "Recovery inputs print but do not reduce net pay",
+      "evidence": [
+        "backend/tests/payroll-recovery.test.ts"
+      ],
+      "remaining": "Six recovery goldens pass; input/arrear kinds update deductions and earning PF base. Full-run and human review pending."
+    },
+    {
+      "id": "R07",
+      "status": "partial-safety-repair",
+      "title": "Detected OT is paid without approval and uses an absent component",
+      "evidence": [
+        "backend/src/modules/payroll-core/runs/run.service.ts"
+      ],
+      "remaining": "Detected OT no longer paid. Unconsumed approved OT blocks computation pending configured rate/once-only consumption integration."
+    },
+    {
+      "id": "R08",
+      "status": "open",
+      "title": "Arrears can be paid again on subsequent runs"
+    },
+    {
+      "id": "R09",
+      "status": "partial-repair-verified",
+      "title": "Finalization ignores line and review reconciliation failures",
+      "evidence": [
+        "backend/tests/payroll-reconciliation.integration.test.ts"
+      ],
+      "remaining": "Positive deductions reconciled separately, employer excluded; bad lines, empty and negative net fail. Frozen expected population, snapshot classifications and review dispositions remain open."
+    },
+    {
+      "id": "R10",
+      "status": "open",
+      "title": "Closed payroll results remain editable"
+    },
+    {
+      "id": "R11",
+      "status": "partial-repair-verified",
+      "title": "Maker/checker validation fails open on missing evidence",
+      "evidence": [
+        "backend/tests/payroll-run-guards.test.ts",
+        "backend/tests/payroll-run-atomicity.integration.test.ts"
+      ],
+      "remaining": "Missing maker/reconciliation rejected. Latest computation actor identifies maker. State and audit use one locked transaction. Durable result-version authority/concurrency proof remains open."
+    },
+    {
+      "id": "R12",
+      "status": "open",
+      "title": "New API routes disagree with product callers"
+    },
+    {
+      "id": "R13",
+      "status": "open",
+      "title": "Payroll UI simulates successful computation and payment facts"
+    },
+    {
+      "id": "R14",
+      "status": "open",
+      "title": "API errors silently become sample employee records"
+    },
+    {
+      "id": "R15",
+      "status": "open",
+      "title": "New financial/lifecycle endpoints do not enforce ownership scope"
+    },
+    {
+      "id": "R16",
+      "status": "open",
+      "title": "F&F substitutes fixture salary, leave and payable days"
+    },
+    {
+      "id": "R17",
+      "status": "open",
+      "title": "F&F can mark paid and issue letters without approval/payment"
+    },
+    {
+      "id": "R18",
+      "status": "open",
+      "title": "Onboarding conversion is not atomic and creates unusable salary/login"
+    },
+    {
+      "id": "R19",
+      "status": "open",
+      "title": "Lifecycle approval and notification claims lack workflow records"
+    },
+    {
+      "id": "R20",
+      "status": "open",
+      "title": "Probation confirmation leaves a salary gap and zero components"
+    },
+    {
+      "id": "R21",
+      "status": "open",
+      "title": "Transfer e-codes use employee count instead of allocator"
+    },
+    {
+      "id": "R22",
+      "status": "open",
+      "title": "Future transfers mutate today and promotions do not change salary"
+    },
+    {
+      "id": "R23",
+      "status": "open",
+      "title": "ESS loan application bypasses eligibility and approval"
+    },
+    {
+      "id": "R24",
+      "status": "open",
+      "title": "Loan ledger is mutable and repeated deductions are not unique"
+    },
+    {
+      "id": "R25",
+      "status": "open",
+      "title": "General claims cannot insert into the actual budget-owned model"
+    },
+    {
+      "id": "R26",
+      "status": "open",
+      "title": "Claim routing declares paid before funds or batch lines exist"
+    },
+    {
+      "id": "R27",
+      "status": "open",
+      "title": "Entitlement policy is invented and the reservation check races"
+    },
+    {
+      "id": "R28",
+      "status": "open",
+      "title": "Year-end claim taxable recovery counts unrelated bills repeatedly"
+    },
+    {
+      "id": "R29",
+      "status": "open",
+      "title": "Parallel-run gate can pass with missing population or component errors"
+    },
+    {
+      "id": "R30",
+      "status": "open",
+      "title": "Opening YTD financial facts exist only in process memory"
+    },
+    {
+      "id": "R31",
+      "status": "open",
+      "title": "Apply-increment reports success without salary revisions"
+    },
+    {
+      "id": "R32",
+      "status": "open",
+      "title": "Executive financial KPIs silently substitute estimates"
+    },
+    {
+      "id": "R33",
+      "status": "open",
+      "title": "Output readiness and artifact ownership are inferred incorrectly"
+    },
+    {
+      "id": "R34",
+      "status": "open",
+      "title": "SAP mapping loses legal payer and cost-center dimensions"
+    },
+    {
+      "id": "R35",
+      "status": "open",
+      "title": "Prejoin single-use and at-rest token claims are inaccurate"
+    },
+    {
+      "id": "R36",
+      "status": "open",
+      "title": "Biometric verification stamps evidence without checking Kent"
+    },
+    {
+      "id": "R37",
+      "status": "open",
+      "title": "Completed-stage and UAT labels exceed verified behavior"
+    },
+    {
+      "id": "R38",
+      "status": "open",
+      "title": "Income-tax seed contradicts its cited reference and FY claim"
+    },
+    {
+      "id": "R39",
+      "title": "Salary assignment and payroll disagree on paise versus rupee units",
+      "status": "partial-repair-verified",
+      "evidence": [
+        "backend/tests/payroll-salary-snapshot.test.ts"
+      ]
+    },
+    {
+      "id": "R40",
+      "title": "Salary preview and assignment ignore configured amount rules",
+      "status": "open",
+      "evidence": [
+        "structure.service.ts assembleComponentNodes; salary.service.ts assignSalary; structure.router.ts accepts amount_rule"
+      ]
+    },
+    {
+      "id": "R41",
+      "title": "Probation scales earnings after dependent contributions have already been computed",
+      "status": "open",
+      "evidence": [
+        "Source ordering in resolveSalaryStructure; existing G6 test omits deduction/employer nodes"
+      ]
+    },
+    {
+      "id": "R42",
+      "title": "Configured PT slabs are accepted by the compute interface but never used",
+      "status": "open",
+      "evidence": [
+        "Compute input declaration and computePt call; statutory/pt.ts uses built-in WB table only"
+      ]
+    },
+    {
+      "id": "R43",
+      "title": "Generated timestamp and numeric aliases nest Kysely ColumnType wrappers",
+      "status": "partial-repair-verified",
+      "evidence": [
+        "backend/src/core/db/types.ts",
+        "backend/src/core/db/types.pay-claims.ts",
+        "backend/tests/payroll-run-boundary.integration.test.ts"
+      ]
+    },
+    {
+      "id": "R44",
+      "title": "Parallel comparison drops repeated lines of the same component",
+      "status": "partial-repair-verified",
+      "evidence": [
+        "backend/tests/payroll-component-totals.test.ts",
+        "backend/src/modules/payroll-core/parallel-run/variance-reporter.ts"
+      ]
+    },
+    {
+      "id": "R45",
+      "title": "Numeric SOW citations do not identify original requirements",
+      "status": "partial-repair-verified",
+      "evidence": [
+        "traceability-comment-repairs.json",
+        "plans/phase-2-payroll-statutory.md",
+        "plans/phase-3-lifecycle-assets-executive.md"
+      ]
+    },
+    {
+      "id": "R46",
+      "title": "Full integration results vary across repeated runs",
+      "status": "open",
+      "evidence": [
+        "http-repeat-probe.json",
+        "verification-failures.json"
+      ]
+    }
+  ],
+  "completed_work": [
+    "Restored13 migration source files from Git with commit hashes",
+    "Restored historical database type modules and merged132 relation declarations",
+    "Corrected GL typed columns to physical contract",
+    "Corrected payroll rollback ownership;48 up, no-op up,48 down and48 restored up passed on isolatedPG17.11",
+    "Fixed recovery classifications and PF wage adjustments with failing-then-passing independent goldens",
+    "Payroll approvals require valid maker and exact reconciliation evidence",
+    "SQL reconciliation classifies earnings/deductions separately and holds bad lines/negative net",
+    "Run creation and state transitions commit atomically with audit; computation locks run header",
+    "Salary run boundary preserves integer paise; no factor-of-100 conversion",
+    "Locked attendance uses real columns, weighted days, paid leave/weekoffs and completeness; tenancy gates fail closed",
+    "PostgreSQL16.15:48 up/no-op/down/up migration replay passes; native hrms unchanged",
+    "Database-to-run integration proves stored \u20b910,000 preserved,15 July joiner gross\u20b95,483.87, all-absent zero gross",
+    "Added exact decimal string/paise conversion at payroll input/result boundaries",
+    "Flattened154 Kysely timestamp declarations and defaulted FX numeric types",
+    "Reopened premature Phase2/3 delivery and G3 acceptance checkboxes",
+    "Forward migration closes two existing/fresh budget-claim columns without guessed funding backfill",
+    "Disposable existing-data upgrade rehearsal passes; original test database not migrated",
+    "Payroll state service321 lines, computation276 lines, read repository109 lines",
+    "Rebuilt Phase2/3 original SOW row maps and removed unverified backend numeric citations",
+    "Corrected stale exactly-ten-role assertions to verify every required role/permission while accepting runtime additions"
+  ],
+  "remaining_limitations": [
+    "Full backend gates remain red; source lint/legacy fixture tests need repair",
+    "Money/statutory diff requires human review; signed policy and external acceptance are not invented"
+  ],
+  "verification": {
+    "focused_tests": {
+      "passed": 47,
+      "files": 7
+    },
+    "typecheck": "passed",
+    "changed_file_lint": "passed for payroll/core Money/new migration/regression files",
+    "backend_verify": "failed:597 lint errors; gates are not waived",
+    "depcruise": "passed:209 modules/772 dependencies",
+    "build": "passed",
+    "full_tests": {
+      "passed": 423,
+      "failed": 13,
+      "skipped": 5,
+      "files_passed": 54,
+      "files_failed": 7,
+      "runtime": "Node24.21.0",
+      "status": "failed;variable HTTP failures remain unresolved"
+    },
+    "coverage": {
+      "statements": 75.08,
+      "lines": 75.08,
+      "branches": 70.53,
+      "functions": 78.24,
+      "required_floor": 80
+    },
+    "knip": "passed",
+    "migration_replay_pg16": "passed:49 up,0 no-op,49 down,49 restored up; zero column differences",
+    "payroll_targeted_tests": {
+      "passed": 107,
+      "files": 14
+    },
+    "runtime": "Node24.21.0 (keg-only; default Node installation unchanged)",
+    "existing_data_upgrade": "passed:full local test DB clone restored to disposable PG16,1 forward migration + no-op; clone and dump removed",
+    "type_compatibility": "132 relations;0 missing columns;0 probed nullability/NUMERIC SELECT mismatches. CHECK/enum domains still require deeper review",
+    "rbac_targeted_tests": {
+      "passed": 15,
+      "files": 2
+    },
+    "local_runtime_changes": "PostgreSQL16.15 and Node24.21.0 installed keg-only; scratch PG16/17 servers stopped; default Node and existing PostgreSQL14 service not replaced.",
+    "full_test_runs": [
+      {
+        "runtime": "Node24.21.0",
+        "passed": 435,
+        "failed": 6,
+        "skipped": 0
+      },
+      {
+        "runtime": "Node24.21.0",
+        "passed": 423,
+        "failed": 13,
+        "skipped": 5,
+        "independent_serialized_run": true
+      }
+    ]
+  },
+  "corrections": [
+    "R35 JSON.stringify alone does not establish JSONB double encoding; read-only bound-parameter probe returned object. Token-at-rest and single-use race findings remain valid."
+  ]
+}

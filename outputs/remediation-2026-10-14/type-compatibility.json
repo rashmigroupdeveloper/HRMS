@@ -1,0 +1,7 @@
+{
+  "method": "TypeScript compiler resolves Database fields and ColumnType SELECT projections versus 13 Oct read-only PostgreSQL catalog. Enum CHECK domains and INSERT defaults need separate proof.",
+  "typed_tables": 132,
+  "untyped_relations": [],
+  "differences": [],
+  "compatibility": []
+}

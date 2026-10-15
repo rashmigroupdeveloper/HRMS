@@ -3,7 +3,8 @@
  * Import direction is leave → workflows ONLY. Called from app assembly and
  * the worker — both processes finalize requests.
  */
-import { onWorkflowFinal } from '../workflows/index.js';
+import { onWorkflowFinal, onWorkflowResubmit } from '../workflows/index.js';
+import { resubmitLeave } from './leave-resubmit.service.js';
 import { applyCancelOnFinal, applyEncashmentOnFinal, applyLeaveOnFinal, applyRhOnFinal } from './leave-apply.service.js';
 
 let registered = false;
@@ -13,6 +14,8 @@ export function registerLeaveWorkflowHooks(): void {
   registered = true;
   onWorkflowFinal('leave', applyLeaveOnFinal);
   onWorkflowFinal('comp_off', applyLeaveOnFinal);
+  onWorkflowResubmit('leave', resubmitLeave);
+  onWorkflowResubmit('comp_off', resubmitLeave);
   onWorkflowFinal('leave_cancel', applyCancelOnFinal);
   onWorkflowFinal('leave_encashment', applyEncashmentOnFinal);
   onWorkflowFinal('restricted_holiday', applyRhOnFinal);
