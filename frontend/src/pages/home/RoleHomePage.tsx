@@ -168,7 +168,7 @@ function HrHome({ links, scoped }: { links: QuickLink[]; scoped: boolean }) {
   ) : null;
 }
 
-function ManagerHome({ subtree, links }: { subtree: boolean; links: QuickLink[] }) {
+function ManagerHome({ subtree, links, title }: { subtree: boolean; links: QuickLink[]; title?: string }) {
   const month = currentMonthIST();
   const query = new URLSearchParams({ month, subtree: String(subtree) });
   const resource = useDashboardResource<TeamMemberMonth[]>(`/api/my/team/grid?${query.toString()}`);
@@ -176,7 +176,7 @@ function ManagerHome({ subtree, links }: { subtree: boolean; links: QuickLink[] 
   if (resource.loading) return <DashboardSkeleton />;
   if (resource.error) return <DashboardError message={resource.error} onRetry={resource.reload} />;
   return resource.data ? (
-    <ManagerDashboard data={resource.data} today={today} quickLinks={links} />
+    <ManagerDashboard data={resource.data} today={today} quickLinks={links} {...(title === undefined ? {} : { title })} />
   ) : null;
 }
 
@@ -296,6 +296,8 @@ export function RoleHomePage({ user }: RoleHomePageProps) {
   }
   if (hasPermission(user, 'admin.devices')) return <DeviceHome links={links.it} />;
   if (hasPermission(user, 'attendance.team.read')) {
+    // HOD (C-02, derived role) reads the whole department subtree.
+    if (hasRole(user, 'hod')) return <ManagerHome subtree links={links.manager} title="Your department today" />;
     return <ManagerHome subtree={hasRole(user, 'senior_manager')} links={links.manager} />;
   }
   if (hasPermission(user, 'attendance.own')) return <EssHome links={links.ess} />;

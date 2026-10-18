@@ -1,0 +1,21 @@
+=== TYPE/NULL DIFF ===
+core.employees.dob: spec NOT NULL, live NULLABLE
+core.employees.mobile: spec NOT NULL, live NULLABLE
+core.employees.category: spec NOT NULL, live NULLABLE
+core.employees.contract_type: spec NOT NULL, live NULLABLE
+core.employees.doj: spec NOT NULL, live NULLABLE
+core.employees.designation_id: spec NOT NULL, live NULLABLE
+core.employees.department_id: spec NOT NULL, live NULLABLE
+core.employees.org_unit_id: spec NOT NULL, live NULLABLE
+core.employees.location_id: spec NOT NULL, live NULLABLE
+core.employees.cost_center_id: spec NOT NULL, live NULLABLE
+core.letters.document_id: spec NOT NULL, live NULLABLE
+core.letter_templates.body_docx_document_id: spec NOT NULL, live NULLABLE
+core.policies.document_id: spec NOT NULL, live NULLABLE
+att.holidays.location_id: spec NOT NULL, live NULLABLE
+pay.claims.claim_type_id: spec NOT NULL, live NULLABLE
+pay.claims.workflow_request_id: spec NOT NULL, live NULLABLE
+core.separations.workflow_request_id: spec NOT NULL, live NULLABLE
+eng.announcements.audience: spec nullable, live NOT NULL
+eng.surveys.open_till: spec NOT NULL, live NULLABLE
+eng.survey_responses.respondent_hash: spec NOT NULL, live NULLABLE

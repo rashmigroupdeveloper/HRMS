@@ -1,0 +1,239 @@
+===== SOW Tracker .xlsx
+--- sheet PROTIVITI SOW 1017 20
+ | MODULES | Status according to Protiviti | Status according to RML | Target Date | Remarks from RML | Remarks from Protiviti |  |  |  |  |  |  |  |  |  | NET_PROGRESS | Tasks Completed | Total Tasks | 
+ | 1.One Time setup |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 0.9314285714285714 | 1.5182285714285715 | 163 | 
+1 | perform changes on software as per client policies and requirements. | 0.5 | 0.5 |  | The required changes have not been fully implemented. |  |  |  |  |  |  |  |  |  |  |  |  | 154 | 
+2 | Setup of client, employees and compensation master | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 0.9447852760736196 | 355
+3 | Transfer of data for the previous months of the current financial year, the previous financial year any prior financial year before that as required in good faith. | 1 | 1 |  | complete data transfer done from adrenalin |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 2. CORE HR Module |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 2.1Employee Data Management |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | Management of centralized repository for employee master data, including personal, employment,  and financial details. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | Providing secure access controls based on roles and permissions | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | Integration with other Systems, as necessary. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 2.2Compensation Structuring on Tool |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | Defining multiple pay structures based on grades, job levels, and locations. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | handling basic pay, allowances, deductions, reimbursements, and performance-linked incentives. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | customization for CTC breakup, flexi-benefits, and perquisites | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | 2.3Policy Enforcement & Compliance Tracking |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | Platform automated policy updates on portal and employee communication | 1 | 1 |  | policy adherence is active , as per ready RML policies |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | Platform real-time tracking of policy adherence | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | Real-Time Policy Acknowledgement Tracking and automated alerts for non-compliance . | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+d | Platform Dashboard for HR and management reporting. | 0 | 0 | 2025-08-31 00:00:00 | not ready  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 3. WORKFORCE Module |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | 3.1Offer Management |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | Generation of offer letter and approvals. | 0.7 | 0.7 |  | Once the ATS get implemented it will get solved |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | Tracking appointment letters. | 1 | 1 |  | Letter is geting generated and is available on ESS portal |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | 3.2Onboarding & Employee Engagement |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | Updation of candidate information by capturing through personal email. | 1 | 1 |  | It has been observed that a few candidates are not receiving the pre-joining link required to fill in their details. |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | Platform auto CTC structuring based on predefined templates. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | Management of flexi-basket benefits and reimbursements. | 1 | 1 |  | RML to propose policy |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+d | Employee investment declarations for tax planning. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+e | Employee loan processing on ESS portal and approval workflow . | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+f | Payslip and tax sheet generation for onboarding employees. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+g | capturing previous employment details. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | 3.3Employee Confirmation Process |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | Probation review tracking and automated reminders | 0.7 | 0.7 | 2025-08-13 00:00:00 | Change of Approval flow & Team is working on it. |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | Updating multi-level approval workflows for employee confirmation | 0.7 | 0.7 |  | RML will know once probation is complete |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | 3.4Employee Transfers |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | Platform automated workflow for internal department/location transfers. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | Platform-driven approvals and documentation updates. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | compensation and role change updates in HRMS. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+5 | 3.5Employee Separation & Exit Management |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | • Resignation initiation, tracking, and approval workflows. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | • Digital clearance process across departments (IT, Admin, Finance) | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | • Final settlement and compliance with statutory requirements. | 0.7 | 0.7 | 2025-08-18 00:00:00 | FnF to run for 1st time in Aug 25 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+6 | 3.6Employee Letters Management |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | • Generation of various employee-related letters, including:  o Experience letters  o Relieving letters  o Salary certificates | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 4. Leave& Attendance Management Module |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Shift Management |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | Defining and configuring multiple shift types (fixed, rotational, flexible, night shifts, etc.). | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | Platform automated shift scheduling and roster management. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | Integration with biometric systems. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Attendance Tracking |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | management of real-time biometric attendance integration in system. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | integration with access control systems for seamless tracking. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | Platform automated late coming and early leaving reports. | 1 | 1 |  | policy adhered |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+d | Platform alerts for absenteeism, regularization requests, and policy violations | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | Leave Management |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | Configuration of leave types (annual, sick, maternity, casual, etc.). | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | holiday calendar configuration by location and department. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | • leave request and approval workflows with multi-level authorizations. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+d | Platform automated leave balance tracking and accruals. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+e | Leave encashment and carry-forward policies | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | Overtime & Comp-Offs Management |  |  |  | Comm-off is working but OT module is not working |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | • overtime tracking based on pre-approved policies. | 0.5 | 0.5 |  | OT module implemented , automated application is not possible , manual done by Pro |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | Platform auto-calculation of compensatory offs and extra working hours. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | approval workflows for overtime requests. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+d | integration with payroll for overtime | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+5 | Attendance Policy & Compliance |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | enforcement of attendance policies (minimum working hours, grace period, break time tracking). | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | Platform automated deductions and penalties for attendance violations. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | Preparation of reports and dashboards for HR and management monitoring. | 0 |  |  | only leave dash board NA |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 5. Monthly payroll processing & Statutory Compliances |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 5.1 Payroll Processing |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Payroll Inputs Collection & Validation: Protiviti manages payroll inputs (new joiners, salary revisions, variable pay, deductions, loss of pay, etc.) in a predefined format. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Investment & flexi declarations: Tax computation based on employee declarations via ESS portal | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | • Payroll processing & review:  o Salary calculations with deductions and allowances.  o Draft payroll reports for approval.  o Final payroll processing after client confirmation | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | Performing Payroll deliverables:  o Final Pay Register.  o Bank Transfer File.  o Journal Voucher Report.  o Payslip & Tax computation slip via ESS.  o Reimbursement & variance reports. | 1 | 1 |  | Working day logic corrected as per RML which will reflected from Aug payroll |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+5 | Preparation of standard & customized Reports:  o Standard: TDS report, PF report, PT report, ESIC report, LWF report, Variance report, CTC report.  o Customized: Cost Centre, Location, Department-wise reports. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+6 | • Calculation of OT(Over Time) charges and cross verifying with the attendance system and validate the OT charge | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+7 | • Protiviti should Handle the payroll Queries | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+8 | Protiviti should Validate attendance by verifying data or biometric records | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 5.2 Verification of Inputs |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+9 | • The Protiviti should handle the end-to-end payroll process, from collecting inputs to preparing the final register | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Effective date of salary revision. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Duplication of Employee Code / Number / ID. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | Whether any employees are minor based on the date of birth. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | Length of bank account. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+5 | IFSC code. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+6 | Permanent Account Number (PAN). | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+7 | Aadhaar number. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+8 | Duplication of ESI number. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+9 | Check that the CTC matches with break up shared by the Rashmi Metaliks Limited | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+10 | Identification of duplicate inputs. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+11 | Special Character for designation, Department - like" & " , ' ". These are not accepted and would be removed. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+12 | Check whether an employee is in Active or Inactive statusfor variable inputs. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 5.3 Entity Transfer of Employes |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Payroll Input | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Draft Pay sheet | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | Observations if any | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | Finaly pay Register | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+5 | Bank Transfer File | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+6 | Payslip and Tax planner | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+7 | JV report, Standard report and Customised Reports | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | 5.4 Pro rating Salary / Calculation of Arrears: |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | Mid-month new joiner | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | Mid-month leaver | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | Loss of Pay calculations | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+d | Loss of Pay reversals | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+e | Previous month Loss of Pay | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | 5.4 Pro rating Salary / Calculation of Arrears: |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | Actual calendar days in the month | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | Actual calendar days in the month less weekends | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | Fixed days like 30, 31 (this cannot change between months) without decimals. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | Pro rating the salary based on the following factors is not possible: |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a | Actual calendar days less alternate weekends | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b | Actual calendar days less holidays | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c | Fixed days that vary month on month. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | If the period for which salary is pro rated pertains to the period prior to go live with vendor, then the client would need provide arrear break up component wise to enable vendor to include in the current month payroll. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | 5.5 Loans and Advances |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Vendor would handle the Loan scheduler with the following options: | 0.7 | 0.7 |  | Loan / Advances before May 25 need to be integrated from SAP  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a. | Diminishing | 1 | 1 | 2025-08-31 00:00:00 | Loan eligibility is being calc to Basic  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b. | Flat | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c. | Only EMI without Interest | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | vendor would calculate perquisites as per SBI lending rates. This is applicable only if the client provides the loan input to be recovered using vendor loan scheduler. If the client is giving the loan recovery amount month on month, then the client should provide the perquisite value. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | In order to claim tax exemption for Home Loan & Interest employees would need to submit relevant proof to claim under Section 24 during end of year process. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+5 | Deductions against Salary advance should be provided as monthly inputs. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+6 | Vendor will not liaise with any third parties to deduct or remit loans and advances. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | 5.6 Process for New Joiners: |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a. | Throughout the month through Client portal | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b. | As part of monthly input through the excel format | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+c. | Through HR connector if integration is in scope | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | New joiner details for the purpose of ESI IP generation need to be provided by the client once in a week. Flexi would be activated for new joiners after the first month payroll is processed. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | ESS portal would be activated for new joiners |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+a. | When client approves new joiner inputs via client portal | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+b. | After first month payroll is processed if inputs are provided through excel format | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | At agreed interval if new joiner information is provided via HR connector | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 5.7– Process for Salary hold and release |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Scenario 1 (Payment hold) - To hold payment of any specific salary(s) vendor will process salary as instructed by the Rashmi Metaliks Limited. The salary transfer details in bank file will be removed. All statutory payments (PF, PT, ESI, LWF) would be remitted normally. In order to release the salary, Protiviti implant should add the net pay value of the employee as part of respective month's input | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Scenario 2 (Process hold) - To hold processing of any specific salary(s) for absconding employees, etc., the Protiviti should include full month LOP input for this employee until the defined date. If the defined date is not known, Protiviti to give LOP input month on month. In order to release the salary, Protiviti should provide LOP reversal inputs in the respective month of release. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | 5.8 Additional General Scope: |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Vendor would provide documentation support for any internal Audits and third-party requirements | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | Any data / reports requirement to support audit needs to be shared in advance with vendor and turnaround time to deliver will be mutually agreed. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | Payroll processing for Interns / Trainees and apply statutory contributions (including tax) as applicable. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+5 | Payroll processing for Apprentice as per the Apprenticeship act without any statutory deduction. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+6 | Additional ad hoc/On Demand reports can be provided by vendor subject to feasibility. Timeline to build the report and commercials to be mutually agreed. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 5.9 Payroll Compliance & Statutory Reporting         |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Monthly Income TDS deductions and tax reporting | 1 | 1 |  | Handling only white collars |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Quarterly filings (Form 24Q) & Annual Form 16 generation | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | Reconciliation of tax deductions vs. paid challans | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 5.10 Provident Fund – In Scope |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | UAN generation & KYC updating. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | PF challan & return filing | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | Inspection support & statutory queries resolution.is received in the mobile number registered in the EPFO Portal | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | EDLI Returns (Form 7IF)  | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+5 | Date of Leaving updating – Date of leaving and the reason for leaving will be updated in the EPFO portal by Protiviti | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+6 | Form 5A updating (Ownership Details) | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+7 | Modify Establishment Details | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+8 | Joint Declaration Submission | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+9 | Death Claim Submission | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+10 | Support in case of claim rejection by the EPFO | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+11 | Inspection Assistance / Response to the Notices | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+12 | Legislative Notification / Amendments | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 5.10 Employee State Insurance (ESIC) Compliance: |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | IP number generation, e-Pehchan card issuance. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | ESIC contributions reporting & challan generation | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | ESIC half-yearly submission & compliance audits | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | Updating of family members details | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+5 | Sharing ESIC Remitted Challan – Once the payment is made, Rashmi Metaliks Limited to download the paid challan from the ESIC Portal. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+6 | Documents Submission to ESIC Office for Employee Name, DOJ & Gender Correction (Protiviti Presence location) | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+7 | Updating of Employer Details (Company Name, Address) | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 5.10 Professional Tax (PT) Compliance: |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | PT computation, reporting & online remittance support | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | PT enrollment & renewal processing | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | PT - Enrolment Certificate - Remittance | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | PT - Enrolment Certificate - Returns | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+5 | Company Tax Remittance | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+6 | Sharing remitted /acknowledged challans | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+7 | Inspection Assistance / Response to the Notices | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 5.11 Labor Welfare Fund (LWF) Compliance |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | LWF data upload, challan generation & payment facilitation | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | LWF inspection assistance & compliance reporting | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 5.13 Employee Self-Service (ESS) & Support |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | providing Employee Access:   Payslips, tax computation slips, Form 16.   Investment declarations & reimbursement claims.   Tax calculator & helpdesk ticketing | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | providing HR & Payroll SPOC Access:   Bulk download of payroll & compliance reports.   Employee onboarding & document management.  Payroll discrepancy tracking & query resolution | 1 | 1 |  | We can make mandatory data for old employee fill by employee before using ESS portal |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 5.14 Annual Processing & Compliance |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Annual Bonus & Increment Processing: | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Tax Deduction & Year-End Adjustments | 0.5 | 0.5 |  | tax deductions being done / yr end adjustment no use case came |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 6.Salary related reimbursement processing |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Protiviti team should provide the following: > Reimbursement bank transfer > Reimbursement Register > Submission of reimbursement pay slip to employees via the Platform. > Calculation of TDS on the unclaimed entitlement at the year end or as per the Client policy > Assistance for management and resolution of desk queries raised by employees. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 7.Engagement Module |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 7.1Employee Engagement Initiatives |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Broadcasting company news and updates in an engaging format. | 1 | 1 |  | module ready  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Enabling HR teams to share information and conduct opinion polls. | 0 | 0 | 2025-08-12 00:00:00 | protiviti satisfaction poll to be initiated  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 7.2 Employee Feedback & Pulse Surveys |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Conducting structured surveys for feedback collection. | 0 | 0 |  | protiviti satisfaction feedback to be initiated  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | HR receives data-driven recommendations for improvements. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 8. Asset Management |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 8.1 Asset Allocation & Tracking |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Platform for Asset Assignment | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Platform for management of Employee Asset Directory | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 8.2 Asset Maintenance & Compliance |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Platform for Asset Maintenance Scheduling | 0.5 | 0.5 |  | actual demo to be done in ESS |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Platform for Incident & Damage Reporting | 0.5 | 0.5 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 8.3 Asset Retrieval & Exit Clearance |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Platform for Asset Return Process | 0.5 | 0.5 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Platform for Clearance Workflows | 0.5 | 0.5 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | Platform for Lost or Unreturned Assets Management | 0.5 | 0.5 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 9. Helpdesk |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 9.1 Ticketing System & Query Management |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Ticket Categories: Categorization of queries | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Platform Auto-Acknowledgment & Assignment:  | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 9.2 Escalation & Resolution Workflow |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Escalation Matrix: Automated escalation of unresolved tickets based on pre-set SLAs | 1 | 1 |  | this has to be tested  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 9.3 Helpdesk Reporting & Analytics |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Real-time tracking of open, pending, and resolved tickets. | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Monthly Performance Reports | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 9.4 Compliance & Audit Support |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Helpdesk Query Logs | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Regulatory Query Handling | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | Employee & Case Management | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 10. Process Related to Final Settlement Processing |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 10.1 Process Related to Final settlement Process: |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Settlement Input in Excel Format as shared by Protiviti viz – Number of days payable, Salary hold release, Leave Encashment days/Notice Pay recovery, Other Payments& Deductions, Gratuity, LTA claimed in previous employment | 0.5 | 0.5 | 2025-08-31 00:00:00 | 1st FnF will be process in AUg 25  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | Communication Protocol: SFTP/ Protiviti’s CRM/ Rashmi Metaliks Limited Portal | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | Rashmi Metaliks Limited Employees to update investment proofs in ESS portal and submit any pending reimbursement claims | 1 | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | Protiviti should process payroll based on clarifications received (post verification of investment proofs and reimbursement claims submitted) and share the Final Settlement workings for confirmation | 0.5 | 0.5 |  | 1st FnF will be process in AUg 25  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+5 | On receipt of confirmation, the following deliverables to be shared with the Rashmi Metaliks Limited SPOC | 0.5 | 0.5 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 10.2 Full and Final Settlement Process-General |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+1 | Protiviti should offers 2 Full and Final cycle. | 0.5 | 0.5 |  | 1st FnF will be process in AUg 25  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+2 | The turnaround time to process Full and Final is 3 working days. | 0.5 | 0.5 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+3 | Protiviti would not interact with resigned employees and details would be shared only to SPOC. | 0.5 | 0.5 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+4 | “Alumni portal” access to exit employees need to be confirmedly Rashmi Metaliks Limited for RML to download | 0.5 | 0.5 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Total percentage completed | 0.9314285714285714 | 0.9314285714285714 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  | 176 | 175 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  | 163 | 163 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  | 0.9261363636363636 | 0.9314285714285714 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  | 164 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  | 154.5 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  | 0.9261363636363636 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 

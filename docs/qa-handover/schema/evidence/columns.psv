@@ -1,0 +1,1549 @@
+ast|assets|id|bigint|int8||64|0|NO|
+ast|assets|asset_no|text|text||||NO|
+ast|assets|category|text|text||||NO|
+ast|assets|description|text|text||||YES|
+ast|assets|serial_no|text|text||||YES|
+ast|assets|purchase_date|date|date||||YES|
+ast|assets|warranty_till|date|date||||YES|
+ast|assets|status|text|text||||NO|'in_stock'::text
+ast|assets|location_id|bigint|int8||64|0|YES|
+ast|assets|company_id|bigint|int8||64|0|NO|
+ast|assets|created_by|bigint|int8||64|0|YES|
+ast|assets|created_at|timestamp with time zone|timestamptz||||NO|now()
+ast|assets|updated_at|timestamp with time zone|timestamptz||||NO|now()
+ast|assignments|id|bigint|int8||64|0|NO|
+ast|assignments|asset_id|bigint|int8||64|0|NO|
+ast|assignments|holder_kind|text|text||||NO|
+ast|assignments|employee_id|bigint|int8||64|0|YES|
+ast|assignments|third_party_name|text|text||||YES|
+ast|assignments|third_party_org|text|text||||YES|
+ast|assignments|assigned_at|timestamp with time zone|timestamptz||||NO|now()
+ast|assignments|returned_at|timestamp with time zone|timestamptz||||YES|
+ast|assignments|return_condition|text|text||||YES|
+ast|assignments|notes|text|text||||YES|
+ast|assignments|assigned_by|bigint|int8||64|0|NO|
+ast|assignments|returned_by|bigint|int8||64|0|YES|
+ast|assignments|created_at|timestamp with time zone|timestamptz||||NO|now()
+ast|maintenance|id|bigint|int8||64|0|NO|
+ast|maintenance|asset_id|bigint|int8||64|0|NO|
+ast|maintenance|kind|text|text||||NO|
+ast|maintenance|scheduled_for|date|date||||YES|
+ast|maintenance|reported_by|bigint|int8||64|0|YES|
+ast|maintenance|description|text|text||||NO|
+ast|maintenance|resolved_at|timestamp with time zone|timestamptz||||YES|
+ast|maintenance|resolution|text|text||||YES|
+ast|maintenance|cost|numeric|numeric||12|2|YES|
+ast|maintenance|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|absence_cases|id|bigint|int8||64|0|NO|
+att|absence_cases|employee_id|bigint|int8||64|0|NO|
+att|absence_cases|start_date|date|date||||NO|
+att|absence_cases|days_absent|smallint|int2||16|0|NO|
+att|absence_cases|stage|text|text||||NO|'watch'::text
+att|absence_cases|letter_id|bigint|int8||64|0|YES|
+att|absence_cases|hr_owner_id|bigint|int8||64|0|YES|
+att|absence_cases|resolution|text|text||||YES|
+att|absence_cases|closed_at|timestamp with time zone|timestamptz||||YES|
+att|absence_cases|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|absence_cases|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|coverage_targets|id|bigint|int8||64|0|NO|
+att|coverage_targets|location_id|bigint|int8||64|0|NO|
+att|coverage_targets|department_id|bigint|int8||64|0|YES|
+att|coverage_targets|shift_id|bigint|int8||64|0|NO|
+att|coverage_targets|weekday|smallint|int2||16|0|NO|
+att|coverage_targets|sanctioned|integer|int4||32|0|NO|
+att|coverage_targets|updated_by|bigint|int8||64|0|YES|
+att|coverage_targets|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|coverage_targets|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|day_records|id|bigint|int8||64|0|NO|
+att|day_records|employee_id|bigint|int8||64|0|NO|
+att|day_records|work_date|date|date||||NO|
+att|day_records|shift_id|bigint|int8||64|0|YES|
+att|day_records|status|USER-DEFINED|day_status||||NO|
+att|day_records|leave_type_id|bigint|int8||64|0|YES|
+att|day_records|first_in|timestamp with time zone|timestamptz||||YES|
+att|day_records|last_out|timestamp with time zone|timestamptz||||YES|
+att|day_records|worked_minutes|integer|int4||32|0|YES|
+att|day_records|late_minutes|smallint|int2||16|0|NO|0
+att|day_records|early_exit_minutes|smallint|int2||16|0|NO|0
+att|day_records|ot_minutes|smallint|int2||16|0|NO|0
+att|day_records|weekoff_paid|boolean|bool||||YES|
+att|day_records|session_statuses|jsonb|jsonb||||YES|
+att|day_records|scheme_code|text|text||||YES|
+att|day_records|penalty_flag|boolean|bool||||NO|false
+att|day_records|source|text|text||||NO|'auto'::text
+att|day_records|override_reason|text|text||||YES|
+att|day_records|is_locked|boolean|bool||||NO|false
+att|day_records|computed_at|timestamp with time zone|timestamptz||||YES|
+att|day_records|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|day_records|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|device_watermarks|device_id|bigint|int8||64|0|NO|
+att|device_watermarks|watermark_ts|timestamp with time zone|timestamptz||||NO|
+att|device_watermarks|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|devices|id|bigint|int8||64|0|NO|
+att|devices|source|text|text||||NO|'kent'::text
+att|devices|door_code|text|text||||NO|
+att|devices|location_id|bigint|int8||64|0|YES|
+att|devices|last_seen_at|timestamp with time zone|timestamptz||||YES|
+att|devices|expected_hourly_swipes|numeric|numeric||8|2|YES|
+att|devices|is_active|boolean|bool||||NO|true
+att|devices|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|devices|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|devices|alerted_silent_at|timestamp with time zone|timestamptz||||YES|
+att|employee_shifts|employee_id|bigint|int8||64|0|NO|
+att|employee_shifts|weekday_shift_id|bigint|int8||64|0|NO|
+att|employee_shifts|saturday_shift_id|bigint|int8||64|0|YES|
+att|employee_shifts|updated_by|bigint|int8||64|0|YES|
+att|employee_shifts|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|employee_shifts|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|holidays|id|bigint|int8||64|0|NO|
+att|holidays|location_id|bigint|int8||64|0|YES|
+att|holidays|holiday_date|date|date||||NO|
+att|holidays|name|text|text||||NO|
+att|holidays|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|holidays|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|ingest_watermarks|source|text|text||||NO|
+att|ingest_watermarks|watermark_ts|timestamp with time zone|timestamptz||||NO|
+att|ingest_watermarks|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|leave_blackouts|id|bigint|int8||64|0|NO|
+att|leave_blackouts|blackout_date|date|date||||NO|
+att|leave_blackouts|location_id|bigint|int8||64|0|YES|
+att|leave_blackouts|name|text|text||||NO|
+att|leave_blackouts|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|leave_blackouts|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|manager_month_approvals|id|bigint|int8||64|0|NO|
+att|manager_month_approvals|company_id|bigint|int8||64|0|NO|
+att|manager_month_approvals|month|date|date||||NO|
+att|manager_month_approvals|manager_employee_id|bigint|int8||64|0|NO|
+att|manager_month_approvals|approved_by_user_id|bigint|int8||64|0|YES|
+att|manager_month_approvals|approved_at|timestamp with time zone|timestamptz||||NO|now()
+att|manager_month_approvals|note|text|text||||YES|
+att|manager_month_approvals|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|manager_month_approvals|event_type|text|text||||NO|'approve'::text
+att|month_locks|id|bigint|int8||64|0|NO|
+att|month_locks|company_id|bigint|int8||64|0|NO|
+att|month_locks|month|date|date||||NO|
+att|month_locks|locked_by|bigint|int8||64|0|NO|
+att|month_locks|locked_at|timestamp with time zone|timestamptz||||NO|now()
+att|month_locks|checklist|jsonb|jsonb||||NO|'{}'::jsonb
+att|month_locks|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|overtime_entries|id|bigint|int8||64|0|NO|
+att|overtime_entries|employee_id|bigint|int8||64|0|NO|
+att|overtime_entries|work_date|date|date||||NO|
+att|overtime_entries|detected_minutes|smallint|int2||16|0|NO|
+att|overtime_entries|claimed_minutes|smallint|int2||16|0|NO|
+att|overtime_entries|approved_minutes|smallint|int2||16|0|YES|
+att|overtime_entries|status|text|text||||NO|'pending'::text
+att|overtime_entries|manager_id|bigint|int8||64|0|YES|
+att|overtime_entries|decided_at|timestamp with time zone|timestamptz||||YES|
+att|overtime_entries|deadline_at|timestamp with time zone|timestamptz||||NO|
+att|overtime_entries|workflow_request_id|bigint|int8||64|0|YES|
+att|overtime_entries|comp_off_credit_id|bigint|int8||64|0|YES|
+att|overtime_entries|payroll_item_id|bigint|int8||64|0|YES|
+att|overtime_entries|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|overtime_entries|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|quarantined_swipes|id|bigint|int8||64|0|NO|
+att|quarantined_swipes|employee_no|text|text||||NO|
+att|quarantined_swipes|swipe_ts|timestamp with time zone|timestamptz||||NO|
+att|quarantined_swipes|door_code|text|text||||YES|
+att|quarantined_swipes|direction|text|text||||YES|
+att|quarantined_swipes|swipe_type|text|text||||YES|
+att|quarantined_swipes|received_at|timestamp with time zone|timestamptz||||NO|
+att|quarantined_swipes|source|text|text||||NO|
+att|quarantined_swipes|reason|text|text||||NO|
+att|quarantined_swipes|reviewed|boolean|bool||||NO|false
+att|quarantined_swipes|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|recompute_queue|employee_id|bigint|int8||64|0|NO|
+att|recompute_queue|work_date|date|date||||NO|
+att|recompute_queue|queued_at|timestamp with time zone|timestamptz||||NO|now()
+att|regularizations|id|bigint|int8||64|0|NO|
+att|regularizations|employee_id|bigint|int8||64|0|NO|
+att|regularizations|kind|text|text||||NO|
+att|regularizations|from_date|date|date||||NO|
+att|regularizations|to_date|date|date||||NO|
+att|regularizations|from_time|time without time zone|time||||YES|
+att|regularizations|to_time|time without time zone|time||||YES|
+att|regularizations|reason|text|text||||NO|
+att|regularizations|requested_status|USER-DEFINED|day_status||||NO|
+att|regularizations|workflow_request_id|bigint|int8||64|0|NO|
+att|regularizations|applied|boolean|bool||||NO|false
+att|regularizations|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|regularizations|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|regularizations|day_portion|text|text||||NO|'full_day'::text
+att|roster_publications|id|bigint|int8||64|0|NO|
+att|roster_publications|manager_employee_id|bigint|int8||64|0|NO|
+att|roster_publications|period_from|date|date||||NO|
+att|roster_publications|period_to|date|date||||NO|
+att|roster_publications|published_at|timestamp with time zone|timestamptz||||NO|now()
+att|roster_publications|published_by|bigint|int8||64|0|NO|
+att|roster_publications|revision|integer|int4||32|0|NO|1
+att|roster_publications|reason|text|text||||YES|
+att|roster_revisions|id|bigint|int8||64|0|NO|
+att|roster_revisions|employee_id|bigint|int8||64|0|NO|
+att|roster_revisions|work_date|date|date||||NO|
+att|roster_revisions|old_shift_id|bigint|int8||64|0|YES|
+att|roster_revisions|new_shift_id|bigint|int8||64|0|YES|
+att|roster_revisions|old_week_off|boolean|bool||||NO|
+att|roster_revisions|new_week_off|boolean|bool||||NO|
+att|roster_revisions|reason|text|text||||NO|
+att|roster_revisions|changed_by|bigint|int8||64|0|NO|
+att|roster_revisions|changed_at|timestamp with time zone|timestamptz||||NO|now()
+att|rosters|id|bigint|int8||64|0|NO|
+att|rosters|employee_id|bigint|int8||64|0|NO|
+att|rosters|work_date|date|date||||NO|
+att|rosters|shift_id|bigint|int8||64|0|YES|
+att|rosters|is_week_off|boolean|bool||||NO|false
+att|rosters|set_by|bigint|int8||64|0|YES|
+att|rosters|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|rosters|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|shift_patterns|id|bigint|int8||64|0|NO|
+att|shift_patterns|code|text|text||||NO|
+att|shift_patterns|name|text|text||||NO|
+att|shift_patterns|cycle|jsonb|jsonb||||NO|
+att|shift_patterns|created_by|bigint|int8||64|0|YES|
+att|shift_patterns|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|shift_patterns|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|shift_swaps|id|bigint|int8||64|0|NO|
+att|shift_swaps|requester_employee_id|bigint|int8||64|0|NO|
+att|shift_swaps|counterpart_employee_id|bigint|int8||64|0|YES|
+att|shift_swaps|work_date|date|date||||NO|
+att|shift_swaps|requester_shift_id|bigint|int8||64|0|YES|
+att|shift_swaps|counterpart_shift_id|bigint|int8||64|0|YES|
+att|shift_swaps|kind|text|text||||NO|
+att|shift_swaps|workflow_request_id|bigint|int8||64|0|NO|
+att|shift_swaps|applied|boolean|bool||||NO|false
+att|shift_swaps|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|shifts|id|bigint|int8||64|0|NO|
+att|shifts|code|text|text||||NO|
+att|shifts|name|text|text||||NO|
+att|shifts|start_time|time without time zone|time||||NO|
+att|shifts|end_time|time without time zone|time||||NO|
+att|shifts|crosses_midnight|boolean|bool||||NO|false
+att|shifts|session_split|time without time zone|time||||YES|
+att|shifts|grace_in_minutes|smallint|int2||16|0|NO|0
+att|shifts|grace_out_minutes|smallint|int2||16|0|NO|0
+att|shifts|min_half_day_hours|numeric|numeric||4|2|NO|
+att|shifts|min_full_day_hours|numeric|numeric||4|2|NO|
+att|shifts|break_minutes|smallint|int2||16|0|NO|0
+att|shifts|is_active|boolean|bool||||NO|true
+att|shifts|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|shifts|updated_at|timestamp with time zone|timestamptz||||NO|now()
+att|shifts|break_paid|boolean|bool||||NO|false
+att|shifts|ot_start_offset_minutes|smallint|int2||16|0|NO|0
+att|shifts|late_slabs|jsonb|jsonb||||NO|'[]'::jsonb
+att|shifts|early_exit_slabs|jsonb|jsonb||||NO|'[]'::jsonb
+att|shifts|allowance_component_code|text|text||||YES|
+att|shifts|session2_start|time without time zone|time||||YES|
+att|shifts|session2_end|time without time zone|time||||YES|
+att|swipe_events|id|bigint|int8||64|0|NO|
+att|swipe_events|employee_id|bigint|int8||64|0|YES|
+att|swipe_events|employee_no|text|text||||NO|
+att|swipe_events|access_card|text|text||||YES|
+att|swipe_events|shift_label|text|text||||YES|
+att|swipe_events|swipe_ts|timestamp with time zone|timestamptz||||NO|
+att|swipe_events|door_code|text|text||||YES|
+att|swipe_events|longitude|numeric|numeric||9|6|YES|
+att|swipe_events|latitude|numeric|numeric||9|6|YES|
+att|swipe_events|location_type|text|text||||YES|
+att|swipe_events|mobile_device_name|text|text||||YES|
+att|swipe_events|mobile_device_id|text|text||||YES|
+att|swipe_events|swipe_type|text|text||||YES|
+att|swipe_events|direction|text|text||||YES|
+att|swipe_events|remarks|text|text||||YES|
+att|swipe_events|permission_reason|text|text||||YES|
+att|swipe_events|signed_by|text|text||||YES|
+att|swipe_events|received_at|timestamp with time zone|timestamptz||||NO|
+att|swipe_events|source|text|text||||NO|'kent'::text
+att|swipe_events|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|swipe_events_202610|id|bigint|int8||64|0|NO|
+att|swipe_events_202610|employee_id|bigint|int8||64|0|YES|
+att|swipe_events_202610|employee_no|text|text||||NO|
+att|swipe_events_202610|access_card|text|text||||YES|
+att|swipe_events_202610|shift_label|text|text||||YES|
+att|swipe_events_202610|swipe_ts|timestamp with time zone|timestamptz||||NO|
+att|swipe_events_202610|door_code|text|text||||YES|
+att|swipe_events_202610|longitude|numeric|numeric||9|6|YES|
+att|swipe_events_202610|latitude|numeric|numeric||9|6|YES|
+att|swipe_events_202610|location_type|text|text||||YES|
+att|swipe_events_202610|mobile_device_name|text|text||||YES|
+att|swipe_events_202610|mobile_device_id|text|text||||YES|
+att|swipe_events_202610|swipe_type|text|text||||YES|
+att|swipe_events_202610|direction|text|text||||YES|
+att|swipe_events_202610|remarks|text|text||||YES|
+att|swipe_events_202610|permission_reason|text|text||||YES|
+att|swipe_events_202610|signed_by|text|text||||YES|
+att|swipe_events_202610|received_at|timestamp with time zone|timestamptz||||NO|
+att|swipe_events_202610|source|text|text||||NO|'kent'::text
+att|swipe_events_202610|created_at|timestamp with time zone|timestamptz||||NO|now()
+att|swipe_events_202611|id|bigint|int8||64|0|NO|
+att|swipe_events_202611|employee_id|bigint|int8||64|0|YES|
+att|swipe_events_202611|employee_no|text|text||||NO|
+att|swipe_events_202611|access_card|text|text||||YES|
+att|swipe_events_202611|shift_label|text|text||||YES|
+att|swipe_events_202611|swipe_ts|timestamp with time zone|timestamptz||||NO|
+att|swipe_events_202611|door_code|text|text||||YES|
+att|swipe_events_202611|longitude|numeric|numeric||9|6|YES|
+att|swipe_events_202611|latitude|numeric|numeric||9|6|YES|
+att|swipe_events_202611|location_type|text|text||||YES|
+att|swipe_events_202611|mobile_device_name|text|text||||YES|
+att|swipe_events_202611|mobile_device_id|text|text||||YES|
+att|swipe_events_202611|swipe_type|text|text||||YES|
+att|swipe_events_202611|direction|text|text||||YES|
+att|swipe_events_202611|remarks|text|text||||YES|
+att|swipe_events_202611|permission_reason|text|text||||YES|
+att|swipe_events_202611|signed_by|text|text||||YES|
+att|swipe_events_202611|received_at|timestamp with time zone|timestamptz||||NO|
+att|swipe_events_202611|source|text|text||||NO|'kent'::text
+att|swipe_events_202611|created_at|timestamp with time zone|timestamptz||||NO|now()
+cmp|calendar_items|id|bigint|int8||64|0|NO|
+cmp|calendar_items|company_id|bigint|int8||64|0|NO|
+cmp|calendar_items|obligation_code|text|text||||NO|
+cmp|calendar_items|title|text|text||||NO|
+cmp|calendar_items|frequency|text|text||||NO|
+cmp|calendar_items|period_label|text|text||||NO|
+cmp|calendar_items|due_on|date|date||||NO|
+cmp|calendar_items|owner_user_id|bigint|int8||64|0|YES|
+cmp|calendar_items|status|text|text||||NO|'due'::text
+cmp|calendar_items|registration_id|bigint|int8||64|0|YES|
+cmp|calendar_items|filed_at|timestamp with time zone|timestamptz||||YES|
+cmp|calendar_items|filed_by_user_id|bigint|int8||64|0|YES|
+cmp|calendar_items|waived_reason|text|text||||YES|
+cmp|calendar_items|waived_by_user_id|bigint|int8||64|0|YES|
+cmp|calendar_items|waived_at|timestamp with time zone|timestamptz||||YES|
+cmp|calendar_items|created_at|timestamp with time zone|timestamptz||||NO|now()
+cmp|calendar_items|updated_at|timestamp with time zone|timestamptz||||NO|now()
+cmp|filing_evidence|id|bigint|int8||64|0|NO|
+cmp|filing_evidence|calendar_item_id|bigint|int8||64|0|NO|
+cmp|filing_evidence|reference|text|text||||NO|
+cmp|filing_evidence|document_path|text|text||||YES|
+cmp|filing_evidence|remark|text|text||||YES|
+cmp|filing_evidence|filed_by_user_id|bigint|int8||64|0|NO|
+cmp|filing_evidence|recorded_at|timestamp with time zone|timestamptz||||NO|now()
+cmp|registrations|id|bigint|int8||64|0|NO|
+cmp|registrations|company_id|bigint|int8||64|0|NO|
+cmp|registrations|location_id|bigint|int8||64|0|YES|
+cmp|registrations|kind|text|text||||NO|
+cmp|registrations|registration_no|text|text||||NO|
+cmp|registrations|issuing_authority|text|text||||YES|
+cmp|registrations|valid_from|date|date||||NO|
+cmp|registrations|valid_to|date|date||||YES|
+cmp|registrations|renewal_owner_user_id|bigint|int8||64|0|YES|
+cmp|registrations|document_path|text|text||||YES|
+cmp|registrations|notes|text|text||||YES|
+cmp|registrations|is_active|boolean|bool||||NO|true
+cmp|registrations|created_at|timestamp with time zone|timestamptz||||NO|now()
+cmp|registrations|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|audit_log|id|bigint|int8||64|0|NO|
+core|audit_log|actor_user_id|bigint|int8||64|0|YES|
+core|audit_log|action|text|text||||NO|
+core|audit_log|entity|text|text||||NO|
+core|audit_log|entity_id|bigint|int8||64|0|YES|
+core|audit_log|field|text|text||||YES|
+core|audit_log|old_value|text|text||||YES|
+core|audit_log|new_value|text|text||||YES|
+core|audit_log|ip|inet|inet||||YES|
+core|audit_log|at|timestamp with time zone|timestamptz||||NO|now()
+core|audit_log|prev_hash|text|text||||NO|
+core|audit_log|row_hash|text|text||||NO|
+core|audit_log|scope_org_unit_id|bigint|int8||64|0|YES|
+core|audit_log|hash_version|smallint|int2||16|0|NO|2
+core|audit_log|chain_seq|bigint|int8||64|0|NO|
+core|clearances|id|bigint|int8||64|0|NO|
+core|clearances|separation_id|bigint|int8||64|0|NO|
+core|clearances|department|text|text||||NO|
+core|clearances|status|text|text||||NO|'pending'::text
+core|clearances|remarks|text|text||||YES|
+core|clearances|unreturned_assets|jsonb|jsonb||||YES|
+core|clearances|recovery_amount|numeric|numeric||14|2|NO|0
+core|clearances|cleared_by|bigint|int8||64|0|YES|
+core|clearances|cleared_at|timestamp with time zone|timestamptz||||YES|
+core|clearances|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|clearances|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|companies|id|bigint|int8||64|0|NO|
+core|companies|code|text|text||||NO|
+core|companies|name|text|text||||NO|
+core|companies|ecode_prefix|text|text||||NO|
+core|companies|ecode_next_seq|integer|int4||32|0|NO|1
+core|companies|is_india_payroll|boolean|bool||||NO|true
+core|companies|gstin|text|text||||YES|
+core|companies|pan|text|text||||YES|
+core|companies|pf_establishment_code|text|text||||YES|
+core|companies|esic_code|text|text||||YES|
+core|companies|pt_registration_no|text|text||||YES|
+core|companies|tan|text|text||||YES|
+core|companies|address|text|text||||YES|
+core|companies|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|companies|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|companies|sap_company_code|text|text||||YES|
+core|cost_centers|id|bigint|int8||64|0|NO|
+core|cost_centers|company_id|bigint|int8||64|0|NO|
+core|cost_centers|code|text|text||||NO|
+core|cost_centers|name|text|text||||NO|
+core|cost_centers|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|cost_centers|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|cost_centers|plant_id|bigint|int8||64|0|YES|
+core|departments|id|bigint|int8||64|0|NO|
+core|departments|name|text|text||||NO|
+core|departments|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|departments|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|departments|mis_code_id|bigint|int8||64|0|YES|
+core|designations|id|bigint|int8||64|0|NO|
+core|designations|name|text|text||||NO|
+core|designations|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|designations|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|documents|id|bigint|int8||64|0|NO|
+core|documents|owner_employee_id|bigint|int8||64|0|YES|
+core|documents|kind|text|text||||NO|
+core|documents|path|text|text||||NO|
+core|documents|original_name|text|text||||NO|
+core|documents|mime|text|text||||NO|
+core|documents|size_bytes|integer|int4||32|0|NO|
+core|documents|uploaded_by|bigint|int8||64|0|YES|
+core|documents|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|documents|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|documents|expires_on|date|date||||YES|
+core|documents|status|text|text||||NO|'active'::text
+core|employee_family|id|bigint|int8||64|0|NO|
+core|employee_family|employee_id|bigint|int8||64|0|NO|
+core|employee_family|name|text|text||||NO|
+core|employee_family|relation|text|text||||NO|
+core|employee_family|dob|date|date||||YES|
+core|employee_family|aadhaar|text|text||||YES|
+core|employee_family|is_esic_dependent|boolean|bool||||NO|false
+core|employee_family|is_nominee|boolean|bool||||NO|false
+core|employee_family|nominee_share_pct|numeric|numeric||5|2|YES|
+core|employee_family|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|employee_family|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|employee_history|id|bigint|int8||64|0|NO|
+core|employee_history|employee_id|bigint|int8||64|0|NO|
+core|employee_history|effective_date|date|date||||NO|
+core|employee_history|change_type|text|text||||NO|
+core|employee_history|field|text|text||||NO|
+core|employee_history|old_value|text|text||||YES|
+core|employee_history|new_value|text|text||||YES|
+core|employee_history|reference_id|bigint|int8||64|0|YES|
+core|employee_history|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|employee_history|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|employees|id|bigint|int8||64|0|NO|
+core|employees|ecode|text|text||||NO|
+core|employees|company_id|bigint|int8||64|0|NO|
+core|employees|first_name|text|text||||NO|
+core|employees|last_name|text|text||||YES|
+core|employees|photo_path|text|text||||YES|
+core|employees|gender|text|text||||YES|
+core|employees|dob|date|date||||YES|
+core|employees|marital_status|text|text||||YES|
+core|employees|blood_group|text|text||||YES|
+core|employees|personal_email|text|text||||YES|
+core|employees|work_email|USER-DEFINED|citext||||YES|
+core|employees|mobile|text|text||||YES|
+core|employees|emergency_contact_name|text|text||||YES|
+core|employees|emergency_contact_phone|text|text||||YES|
+core|employees|present_address|text|text||||YES|
+core|employees|permanent_address|text|text||||YES|
+core|employees|category|USER-DEFINED|employment_category||||YES|
+core|employees|contract_type|USER-DEFINED|contract_type||||YES|
+core|employees|contract_end_date|date|date||||YES|
+core|employees|doj|date|date||||YES|
+core|employees|dol|date|date||||YES|
+core|employees|status|USER-DEFINED|employee_status||||NO|'onboarding'::core.employee_status
+core|employees|exit_reason|text|text||||YES|
+core|employees|designation_id|bigint|int8||64|0|YES|
+core|employees|department_id|bigint|int8||64|0|YES|
+core|employees|org_unit_id|bigint|int8||64|0|YES|
+core|employees|location_id|bigint|int8||64|0|YES|
+core|employees|cost_center_id|bigint|int8||64|0|YES|
+core|employees|grade_id|bigint|int8||64|0|YES|
+core|employees|reporting_manager_id|bigint|int8||64|0|YES|
+core|employees|functional_manager_id|bigint|int8||64|0|YES|
+core|employees|probation_months|smallint|int2||16|0|YES|
+core|employees|probation_salary_pct|smallint|int2||16|0|YES|
+core|employees|probation_due_date|date|date||||YES|
+core|employees|confirmation_date|date|date||||YES|
+core|employees|pan|text|text||||YES|
+core|employees|aadhaar|text|text||||YES|
+core|employees|uan|text|text||||YES|
+core|employees|pf_number|text|text||||YES|
+core|employees|esic_ip_number|text|text||||YES|
+core|employees|pf_applicable|boolean|bool||||NO|true
+core|employees|esic_applicable|boolean|bool||||NO|false
+core|employees|pt_applicable|boolean|bool||||NO|true
+core|employees|lwf_applicable|boolean|bool||||NO|true
+core|employees|tax_regime|text|text||||NO|'new'::text
+core|employees|bank_name|text|text||||YES|
+core|employees|bank_account|text|text||||YES|
+core|employees|bank_ifsc|text|text||||YES|
+core|employees|payment_mode|text|text||||NO|'bank'::text
+core|employees|access_card_no|text|text||||YES|
+core|employees|biometric_registered|boolean|bool||||NO|false
+core|employees|attendance_mode|text|text||||NO|'biometric'::text
+core|employees|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|employees|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|employees|plant_id|bigint|int8||64|0|YES|
+core|employees|hod_employee_id|bigint|int8||64|0|YES|
+core|grades|id|bigint|int8||64|0|NO|
+core|grades|code|text|text||||NO|
+core|grades|name|text|text||||NO|
+core|grades|rank|smallint|int2||16|0|NO|
+core|grades|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|grades|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|letter_templates|id|bigint|int8||64|0|NO|
+core|letter_templates|code|text|text||||NO|
+core|letter_templates|name|text|text||||NO|
+core|letter_templates|body_template|text|text||||NO|
+core|letter_templates|body_docx_document_id|bigint|int8||64|0|YES|
+core|letter_templates|merge_fields|jsonb|jsonb||||NO|
+core|letter_templates|is_active|boolean|bool||||NO|true
+core|letter_templates|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|letter_templates|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|letters|id|bigint|int8||64|0|NO|
+core|letters|employee_id|bigint|int8||64|0|NO|
+core|letters|template_code|text|text||||NO|
+core|letters|document_id|bigint|int8||64|0|YES|
+core|letters|issued_by|bigint|int8||64|0|YES|
+core|letters|issued_at|timestamp with time zone|timestamptz||||YES|
+core|letters|workflow_request_id|bigint|int8||64|0|YES|
+core|letters|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|letters|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|letters|body_rendered|text|text||||NO|
+core|letters|status|text|text||||NO|'issued'::text
+core|locations|id|bigint|int8||64|0|NO|
+core|locations|company_id|bigint|int8||64|0|NO|
+core|locations|name|text|text||||NO|
+core|locations|state_code|text|text||||NO|
+core|locations|timezone|text|text||||NO|'Asia/Kolkata'::text
+core|locations|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|locations|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|mis_codes|id|bigint|int8||64|0|NO|
+core|mis_codes|company_id|bigint|int8||64|0|NO|
+core|mis_codes|code|text|text||||NO|
+core|mis_codes|name|text|text||||NO|
+core|mis_codes|parent_id|bigint|int8||64|0|YES|
+core|mis_codes|is_active|boolean|bool||||NO|true
+core|mis_codes|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|mis_codes|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|onboarding_candidates|id|bigint|int8||64|0|NO|
+core|onboarding_candidates|ats_candidate_id|bigint|int8||64|0|YES|
+core|onboarding_candidates|loi_reference|text|text||||YES|
+core|onboarding_candidates|full_name|text|text||||NO|
+core|onboarding_candidates|personal_email|text|text||||NO|
+core|onboarding_candidates|mobile|text|text||||NO|
+core|onboarding_candidates|dob|date|date||||YES|
+core|onboarding_candidates|address|text|text||||YES|
+core|onboarding_candidates|total_experience_years|numeric|numeric||4|1|YES|
+core|onboarding_candidates|previous_company|text|text||||YES|
+core|onboarding_candidates|current_salary|numeric|numeric||14|2|YES|
+core|onboarding_candidates|expected_salary|numeric|numeric||14|2|YES|
+core|onboarding_candidates|position_title|text|text||||NO|
+core|onboarding_candidates|department|text|text||||YES|
+core|onboarding_candidates|org_unit|text|text||||YES|
+core|onboarding_candidates|designation|text|text||||YES|
+core|onboarding_candidates|company_id|bigint|int8||64|0|YES|
+core|onboarding_candidates|category|USER-DEFINED|employment_category||||NO|'white_collar'::core.employment_category
+core|onboarding_candidates|replacement_of_ecode|text|text||||YES|
+core|onboarding_candidates|offered_ctc|numeric|numeric||14|2|NO|
+core|onboarding_candidates|probation_months|smallint|int2||16|0|YES|6
+core|onboarding_candidates|probation_salary_pct|smallint|int2||16|0|YES|100
+core|onboarding_candidates|proposed_doj|date|date||||NO|
+core|onboarding_candidates|offer_date|date|date||||NO|
+core|onboarding_candidates|work_location|text|text||||YES|
+core|onboarding_candidates|prejoin_link_token|text|text||||YES|
+core|onboarding_candidates|prejoin_token_hash|text|text||||YES|
+core|onboarding_candidates|prejoin_token_expires_at|timestamp with time zone|timestamptz||||YES|
+core|onboarding_candidates|prejoin_link_sent_at|timestamp with time zone|timestamptz||||YES|
+core|onboarding_candidates|prejoin_completed_at|timestamp with time zone|timestamptz||||YES|
+core|onboarding_candidates|prejoin_submitted_data|jsonb|jsonb||||YES|
+core|onboarding_candidates|status|text|text||||NO|'awaiting_prejoin'::text
+core|onboarding_candidates|employee_id|bigint|int8||64|0|YES|
+core|onboarding_candidates|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|onboarding_candidates|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|onboarding_tasks|id|bigint|int8||64|0|NO|
+core|onboarding_tasks|employee_id|bigint|int8||64|0|NO|
+core|onboarding_tasks|candidate_id|bigint|int8||64|0|YES|
+core|onboarding_tasks|task_code|text|text||||NO|
+core|onboarding_tasks|task_name|text|text||||NO|
+core|onboarding_tasks|department|text|text||||NO|
+core|onboarding_tasks|owner_role|text|text||||NO|
+core|onboarding_tasks|due_date|date|date||||NO|
+core|onboarding_tasks|sla_hours|integer|int4||32|0|NO|48
+core|onboarding_tasks|status|text|text||||NO|'open'::text
+core|onboarding_tasks|escalated_at|timestamp with time zone|timestamptz||||YES|
+core|onboarding_tasks|done_by|bigint|int8||64|0|YES|
+core|onboarding_tasks|done_at|timestamp with time zone|timestamptz||||YES|
+core|onboarding_tasks|notes|text|text||||YES|
+core|onboarding_tasks|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|onboarding_tasks|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|org_units|id|bigint|int8||64|0|NO|
+core|org_units|company_id|bigint|int8||64|0|NO|
+core|org_units|parent_id|bigint|int8||64|0|YES|
+core|org_units|name|text|text||||NO|
+core|org_units|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|org_units|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|password_reset_tokens|id|bigint|int8||64|0|NO|
+core|password_reset_tokens|user_id|bigint|int8||64|0|NO|
+core|password_reset_tokens|token_hash|text|text||||NO|
+core|password_reset_tokens|expires_at|timestamp with time zone|timestamptz||||NO|
+core|password_reset_tokens|used_at|timestamp with time zone|timestamptz||||YES|
+core|password_reset_tokens|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|permissions|id|bigint|int8||64|0|NO|
+core|permissions|code|text|text||||NO|
+core|permissions|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|permissions|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|plants|id|bigint|int8||64|0|NO|
+core|plants|company_id|bigint|int8||64|0|NO|
+core|plants|plant_code|text|text||||NO|
+core|plants|name|text|text||||NO|
+core|plants|location_id|bigint|int8||64|0|YES|
+core|plants|is_active|boolean|bool||||NO|true
+core|plants|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|plants|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|policies|id|bigint|int8||64|0|NO|
+core|policies|title|text|text||||NO|
+core|policies|document_id|bigint|int8||64|0|YES|
+core|policies|effective_date|date|date||||NO|
+core|policies|requires_acknowledgment|boolean|bool||||NO|true
+core|policies|audience|jsonb|jsonb||||YES|
+core|policies|is_active|boolean|bool||||NO|true
+core|policies|created_by|bigint|int8||64|0|YES|
+core|policies|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|policies|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|policies|body_summary|text|text||||YES|
+core|policy_acknowledgments|id|bigint|int8||64|0|NO|
+core|policy_acknowledgments|policy_id|bigint|int8||64|0|NO|
+core|policy_acknowledgments|employee_id|bigint|int8||64|0|NO|
+core|policy_acknowledgments|acknowledged_at|timestamp with time zone|timestamptz||||NO|now()
+core|probation_reviews|id|bigint|int8||64|0|NO|
+core|probation_reviews|employee_id|bigint|int8||64|0|NO|
+core|probation_reviews|due_date|date|date||||NO|
+core|probation_reviews|manager_recommendation|text|text||||YES|
+core|probation_reviews|extension_months|smallint|int2||16|0|YES|
+core|probation_reviews|review_notes|text|text||||YES|
+core|probation_reviews|ratings|jsonb|jsonb||||YES|
+core|probation_reviews|status|text|text||||NO|'pending'::text
+core|probation_reviews|outcome|text|text||||YES|
+core|probation_reviews|decided_by|bigint|int8||64|0|YES|
+core|probation_reviews|decided_at|timestamp with time zone|timestamptz||||YES|
+core|probation_reviews|confirmation_date|date|date||||YES|
+core|probation_reviews|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|probation_reviews|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|profile_change_requests|id|bigint|int8||64|0|NO|
+core|profile_change_requests|employee_id|bigint|int8||64|0|NO|
+core|profile_change_requests|field|text|text||||NO|
+core|profile_change_requests|old_value|text|text||||YES|
+core|profile_change_requests|new_value|text|text||||NO|
+core|profile_change_requests|status|text|text||||NO|'pending'::text
+core|profile_change_requests|workflow_request_id|bigint|int8||64|0|YES|
+core|profile_change_requests|decided_by|bigint|int8||64|0|YES|
+core|profile_change_requests|decided_at|timestamp with time zone|timestamptz||||YES|
+core|profile_change_requests|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|reporting_tree|manager_id|bigint|int8||64|0|NO|
+core|reporting_tree|employee_id|bigint|int8||64|0|NO|
+core|reporting_tree|depth|smallint|int2||16|0|NO|
+core|role_permissions|id|bigint|int8||64|0|NO|
+core|role_permissions|role_id|bigint|int8||64|0|NO|
+core|role_permissions|permission_id|bigint|int8||64|0|NO|
+core|role_permissions|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|role_permissions|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|role_permissions|scope|text|text||||NO|'all'::text
+core|roles|id|bigint|int8||64|0|NO|
+core|roles|code|text|text||||NO|
+core|roles|name|text|text||||NO|
+core|roles|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|roles|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|separations|id|bigint|int8||64|0|NO|
+core|separations|employee_id|bigint|int8||64|0|NO|
+core|separations|initiated_at|timestamp with time zone|timestamptz||||NO|now()
+core|separations|initiated_by|text|text||||NO|
+core|separations|reason|text|text||||NO|
+core|separations|resignation_date|date|date||||NO|
+core|separations|notice_period_days|smallint|int2||16|0|NO|
+core|separations|requested_lwd|date|date||||NO|
+core|separations|approved_lwd|date|date||||YES|
+core|separations|shortfall_days|numeric|numeric||4|1|NO|0
+core|separations|workflow_request_id|bigint|int8||64|0|YES|
+core|separations|status|text|text||||NO|'pending'::text
+core|separations|fnf_id|bigint|int8||64|0|YES|
+core|separations|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|separations|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|settings|key|text|text||||NO|
+core|settings|value|jsonb|jsonb||||NO|
+core|settings|value_type|text|text||||NO|
+core|settings|description|text|text||||NO|
+core|settings|updated_by|bigint|int8||64|0|YES|
+core|settings|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|settings|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|transfers|id|bigint|int8||64|0|NO|
+core|transfers|employee_id|bigint|int8||64|0|NO|
+core|transfers|transfer_type|text|text||||NO|
+core|transfers|effective_date|date|date||||NO|
+core|transfers|status|text|text||||NO|'pending'::text
+core|transfers|current_company_id|bigint|int8||64|0|NO|
+core|transfers|current_department_id|bigint|int8||64|0|YES|
+core|transfers|current_location_id|bigint|int8||64|0|YES|
+core|transfers|current_designation_id|bigint|int8||64|0|YES|
+core|transfers|current_grade_id|bigint|int8||64|0|YES|
+core|transfers|current_reporting_manager_id|bigint|int8||64|0|YES|
+core|transfers|current_ecode|text|text||||NO|
+core|transfers|target_company_id|bigint|int8||64|0|YES|
+core|transfers|target_department_id|bigint|int8||64|0|YES|
+core|transfers|target_location_id|bigint|int8||64|0|YES|
+core|transfers|target_designation_id|bigint|int8||64|0|YES|
+core|transfers|target_grade_id|bigint|int8||64|0|YES|
+core|transfers|target_reporting_manager_id|bigint|int8||64|0|YES|
+core|transfers|target_ecode|text|text||||YES|
+core|transfers|salary_revision_amount|numeric|numeric||12|2|YES|
+core|transfers|leave_treatment|text|text||||NO|'transfer'::text
+core|transfers|reason|text|text||||NO|
+core|transfers|remarks|text|text||||YES|
+core|transfers|approved_by|bigint|int8||64|0|YES|
+core|transfers|approved_at|timestamp with time zone|timestamptz||||YES|
+core|transfers|notified_at|timestamp with time zone|timestamptz||||YES|
+core|transfers|created_by|bigint|int8||64|0|NO|
+core|transfers|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|transfers|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|user_roles|id|bigint|int8||64|0|NO|
+core|user_roles|user_id|bigint|int8||64|0|NO|
+core|user_roles|role_id|bigint|int8||64|0|NO|
+core|user_roles|scope_org_unit_id|bigint|int8||64|0|YES|
+core|user_roles|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|user_roles|updated_at|timestamp with time zone|timestamptz||||NO|now()
+core|users|id|bigint|int8||64|0|NO|
+core|users|employee_id|bigint|int8||64|0|YES|
+core|users|email|USER-DEFINED|citext||||NO|
+core|users|password_hash|text|text||||NO|
+core|users|is_active|boolean|bool||||NO|true
+core|users|last_login_at|timestamp with time zone|timestamptz||||YES|
+core|users|failed_attempts|smallint|int2||16|0|NO|0
+core|users|locked_until|timestamp with time zone|timestamptz||||YES|
+core|users|created_at|timestamp with time zone|timestamptz||||NO|now()
+core|users|updated_at|timestamp with time zone|timestamptz||||NO|now()
+doc|types|code|text|text||||NO|
+doc|types|name|text|text||||NO|
+doc|types|typically_expires|boolean|bool||||NO|false
+doc|types|retention_class|text|text||||YES|
+doc|types|mandatory_for|text|text||||NO|''::text
+doc|types|sort_order|smallint|int2||16|0|NO|100
+doc|types|is_active|boolean|bool||||NO|true
+doc|types|created_at|timestamp with time zone|timestamptz||||NO|now()
+doc|types|updated_at|timestamp with time zone|timestamptz||||NO|now()
+eng|announcements|id|bigint|int8||64|0|NO|
+eng|announcements|title|text|text||||NO|
+eng|announcements|body|text|text||||NO|
+eng|announcements|audience|jsonb|jsonb||||NO|'{}'::jsonb
+eng|announcements|published_by|bigint|int8||64|0|NO|
+eng|announcements|published_at|timestamp with time zone|timestamptz||||NO|now()
+eng|announcements|expires_at|timestamp with time zone|timestamptz||||YES|
+eng|announcements|is_active|boolean|bool||||NO|true
+eng|announcements|created_at|timestamp with time zone|timestamptz||||NO|now()
+eng|announcements|attachment_document_id|bigint|int8||64|0|YES|
+eng|poll_responses|id|bigint|int8||64|0|NO|
+eng|poll_responses|poll_id|bigint|int8||64|0|NO|
+eng|poll_responses|respondent_user_id|bigint|int8||64|0|YES|
+eng|poll_responses|option_index|smallint|int2||16|0|NO|
+eng|poll_responses|comment|text|text||||YES|
+eng|poll_responses|created_at|timestamp with time zone|timestamptz||||NO|now()
+eng|poll_responses|respondent_hash|text|text||||YES|
+eng|polls|id|bigint|int8||64|0|NO|
+eng|polls|question|text|text||||NO|
+eng|polls|options|jsonb|jsonb||||NO|
+eng|polls|kind|text|text||||NO|'poll'::text
+eng|polls|is_anonymous|boolean|bool||||NO|false
+eng|polls|audience|jsonb|jsonb||||NO|'{}'::jsonb
+eng|polls|created_by|bigint|int8||64|0|NO|
+eng|polls|opens_at|timestamp with time zone|timestamptz||||NO|now()
+eng|polls|closes_at|timestamp with time zone|timestamptz||||YES|
+eng|polls|is_active|boolean|bool||||NO|true
+eng|polls|created_at|timestamp with time zone|timestamptz||||NO|now()
+eng|survey_responses|id|bigint|int8||64|0|NO|
+eng|survey_responses|survey_id|bigint|int8||64|0|NO|
+eng|survey_responses|respondent_user_id|bigint|int8||64|0|YES|
+eng|survey_responses|respondent_hash|text|text||||YES|
+eng|survey_responses|answers|jsonb|jsonb||||NO|
+eng|survey_responses|created_at|timestamp with time zone|timestamptz||||NO|now()
+eng|surveys|id|bigint|int8||64|0|NO|
+eng|surveys|title|text|text||||NO|
+eng|surveys|description|text|text||||YES|
+eng|surveys|questions|jsonb|jsonb||||NO|
+eng|surveys|audience|jsonb|jsonb||||NO|'{}'::jsonb
+eng|surveys|created_by|bigint|int8||64|0|NO|
+eng|surveys|open_from|timestamp with time zone|timestamptz||||NO|now()
+eng|surveys|open_till|timestamp with time zone|timestamptz||||YES|
+eng|surveys|is_anonymous|boolean|bool||||NO|true
+eng|surveys|is_active|boolean|bool||||NO|true
+eng|surveys|created_at|timestamp with time zone|timestamptz||||NO|now()
+eng|surveys|updated_at|timestamp with time zone|timestamptz||||NO|now()
+hd|categories|id|bigint|int8||64|0|NO|
+hd|categories|code|text|text||||NO|
+hd|categories|name|text|text||||NO|
+hd|categories|assignee_role_code|text|text||||YES|
+hd|categories|sla_hours|integer|int4||32|0|NO|24
+hd|categories|escalate_after_hours|integer|int4||32|0|YES|
+hd|categories|is_active|boolean|bool||||NO|true
+hd|categories|created_at|timestamp with time zone|timestamptz||||NO|now()
+hd|categories|updated_at|timestamp with time zone|timestamptz||||NO|now()
+hd|categories|escalate_to_role_code|text|text||||YES|'hr_head'::text
+hd|ticket_messages|id|bigint|int8||64|0|NO|
+hd|ticket_messages|ticket_id|bigint|int8||64|0|NO|
+hd|ticket_messages|author_user_id|bigint|int8||64|0|NO|
+hd|ticket_messages|body|text|text||||NO|
+hd|ticket_messages|is_internal|boolean|bool||||NO|false
+hd|ticket_messages|created_at|timestamp with time zone|timestamptz||||NO|now()
+hd|tickets|id|bigint|int8||64|0|NO|
+hd|tickets|ticket_no|text|text||||NO|
+hd|tickets|raised_by|bigint|int8||64|0|NO|
+hd|tickets|category_id|bigint|int8||64|0|NO|
+hd|tickets|subject|text|text||||NO|
+hd|tickets|body|text|text||||NO|
+hd|tickets|assignee_user_id|bigint|int8||64|0|YES|
+hd|tickets|status|text|text||||NO|'open'::text
+hd|tickets|priority|text|text||||NO|'normal'::text
+hd|tickets|sla_due_at|timestamp with time zone|timestamptz||||NO|
+hd|tickets|escalated_level|smallint|int2||16|0|NO|0
+hd|tickets|escalated_at|timestamp with time zone|timestamptz||||YES|
+hd|tickets|acknowledged_at|timestamp with time zone|timestamptz||||YES|
+hd|tickets|resolved_at|timestamp with time zone|timestamptz||||YES|
+hd|tickets|resolution|text|text||||YES|
+hd|tickets|created_at|timestamp with time zone|timestamptz||||NO|now()
+hd|tickets|updated_at|timestamp with time zone|timestamptz||||NO|now()
+hd|tickets|first_response_at|timestamp with time zone|timestamptz||||YES|
+hd|tickets|reopen_count|integer|int4||32|0|NO|0
+hd|tickets|escalated_to_user_id|bigint|int8||64|0|YES|
+ird|grievances|id|bigint|int8||64|0|NO|
+ird|grievances|case_ref|text|text||||NO|
+ird|grievances|status|text|text||||NO|'submitted'::text
+ird|grievances|filed_at|timestamp with time zone|timestamptz||||NO|now()
+ird|grievances|filed_by_user_id|bigint|int8||64|0|NO|
+ird|grievances|summary|text|text||||NO|
+ird|grievances|created_at|timestamp with time zone|timestamptz||||NO|now()
+ird|ic_members|id|bigint|int8||64|0|NO|
+ird|ic_members|employee_id|bigint|int8||64|0|NO|
+ird|ic_members|role|text|text||||NO|
+ird|ic_members|active|boolean|bool||||NO|true
+ird|ic_members|appointed_on|date|date||||NO|
+ird|ic_members|created_at|timestamp with time zone|timestamptz||||NO|now()
+ird|posh_case_access_log|id|bigint|int8||64|0|NO|
+ird|posh_case_access_log|case_id|bigint|int8||64|0|NO|
+ird|posh_case_access_log|actor_user_id|bigint|int8||64|0|NO|
+ird|posh_case_access_log|opened_at|timestamp with time zone|timestamptz||||NO|now()
+ird|posh_case_access_log|ip|text|text||||YES|
+ird|posh_case_access_log|outcome|text|text||||NO|'opened'::text
+ird|posh_cases|id|bigint|int8||64|0|NO|
+ird|posh_cases|case_ref|text|text||||NO|
+ird|posh_cases|status|text|text||||NO|'submitted'::text
+ird|posh_cases|filed_at|timestamp with time zone|timestamptz||||NO|now()
+ird|posh_cases|filed_by_user_id|bigint|int8||64|0|YES|
+ird|posh_cases|is_anonymous|boolean|bool||||NO|false
+ird|posh_cases|summary_encrypted_or_text|text|text||||NO|
+ird|posh_cases|anonymous_token_hash|text|text||||YES|
+ird|posh_cases|created_at|timestamp with time zone|timestamptz||||NO|now()
+ird|whistleblower_reports|id|bigint|int8||64|0|NO|
+ird|whistleblower_reports|anonymous_token_hash|text|text||||NO|
+ird|whistleblower_reports|status|text|text||||NO|'submitted'::text
+ird|whistleblower_reports|filed_at|timestamp with time zone|timestamptz||||NO|now()
+ird|whistleblower_reports|summary|text|text||||NO|
+ird|whistleblower_reports|created_at|timestamp with time zone|timestamptz||||NO|now()
+lv|applications|id|bigint|int8||64|0|NO|
+lv|applications|employee_id|bigint|int8||64|0|NO|
+lv|applications|leave_type_id|bigint|int8||64|0|NO|
+lv|applications|from_date|date|date||||NO|
+lv|applications|to_date|date|date||||NO|
+lv|applications|from_half|boolean|bool||||NO|false
+lv|applications|to_half|boolean|bool||||NO|false
+lv|applications|days|numeric|numeric||4|1|NO|
+lv|applications|reason|text|text||||YES|
+lv|applications|status|text|text||||NO|'pending'::text
+lv|applications|workflow_request_id|bigint|int8||64|0|NO|
+lv|applications|cancel_workflow_request_id|bigint|int8||64|0|YES|
+lv|applications|ledger_txn_id|bigint|int8||64|0|YES|
+lv|applications|created_at|timestamp with time zone|timestamptz||||NO|now()
+lv|applications|updated_at|timestamp with time zone|timestamptz||||NO|now()
+lv|leave_types|id|bigint|int8||64|0|NO|
+lv|leave_types|code|text|text||||NO|
+lv|leave_types|name|text|text||||NO|
+lv|leave_types|is_paid|boolean|bool||||NO|true
+lv|leave_types|accrual_per_month|numeric|numeric||5|2|NO|0
+lv|leave_types|accrual_requires_service_months|smallint|int2||16|0|NO|0
+lv|leave_types|max_carry_forward|numeric|numeric||5|2|YES|
+lv|leave_types|encashable|boolean|bool||||NO|false
+lv|leave_types|max_per_request|numeric|numeric||4|1|YES|
+lv|leave_types|allow_half_day|boolean|bool||||NO|true
+lv|leave_types|sandwich_rule|text|text||||NO|'exclude'::text
+lv|leave_types|applicable_categories|ARRAY|_employment_category||||YES|
+lv|leave_types|applicable_gender|text|text||||YES|
+lv|leave_types|is_active|boolean|bool||||NO|true
+lv|leave_types|created_at|timestamp with time zone|timestamptz||||NO|now()
+lv|leave_types|updated_at|timestamp with time zone|timestamptz||||NO|now()
+lv|ledger|id|bigint|int8||64|0|NO|
+lv|ledger|employee_id|bigint|int8||64|0|NO|
+lv|ledger|leave_type_id|bigint|int8||64|0|NO|
+lv|ledger|txn_type|text|text||||NO|
+lv|ledger|delta|numeric|numeric||5|2|NO|
+lv|ledger|effective_date|date|date||||NO|
+lv|ledger|expiry_date|date|date||||YES|
+lv|ledger|reference_id|bigint|int8||64|0|YES|
+lv|ledger|note|text|text||||YES|
+lv|ledger|created_by|bigint|int8||64|0|YES|
+lv|ledger|created_at|timestamp with time zone|timestamptz||||NO|now()
+lv|restricted_holidays|id|bigint|int8||64|0|NO|
+lv|restricted_holidays|holiday_date|date|date||||NO|
+lv|restricted_holidays|name|text|text||||NO|
+lv|restricted_holidays|location_id|bigint|int8||64|0|YES|
+lv|restricted_holidays|created_at|timestamp with time zone|timestamptz||||NO|now()
+lv|rh_selections|id|bigint|int8||64|0|NO|
+lv|rh_selections|employee_id|bigint|int8||64|0|NO|
+lv|rh_selections|restricted_holiday_id|bigint|int8||64|0|NO|
+lv|rh_selections|workflow_request_id|bigint|int8||64|0|NO|
+lv|rh_selections|applied|boolean|bool||||NO|false
+lv|rh_selections|created_at|timestamp with time zone|timestamptz||||NO|now()
+lv|rh_selections|updated_at|timestamp with time zone|timestamptz||||NO|now()
+pay|arrears|id|bigint|int8||64|0|NO|
+pay|arrears|employee_id|bigint|int8||64|0|NO|
+pay|arrears|source_salary_id|bigint|int8||64|0|NO|
+pay|arrears|for_month|date|date||||NO|
+pay|arrears|paid_in_run_id|bigint|int8||64|0|YES|
+pay|arrears|component_code|text|text||||NO|
+pay|arrears|amount|numeric|numeric||14|2|NO|
+pay|arrears|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|bank_batches|id|bigint|int8||64|0|NO|
+pay|bank_batches|run_id|bigint|int8||64|0|NO|
+pay|bank_batches|file_document_id|bigint|int8||64|0|NO|
+pay|bank_batches|total_amount|numeric|numeric||16|2|NO|
+pay|bank_batches|record_count|integer|int4||32|0|NO|
+pay|bank_batches|generated_by|bigint|int8||64|0|NO|
+pay|bank_batches|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|budget_categories|id|bigint|int8||64|0|NO|
+pay|budget_categories|budget_id|bigint|int8||64|0|NO|
+pay|budget_categories|claim_type_id|bigint|int8||64|0|NO|
+pay|budget_categories|allowance|numeric|numeric||14|2|NO|
+pay|budgets|id|bigint|int8||64|0|NO|
+pay|budgets|reference|text|text||||NO|
+pay|budgets|title|text|text||||NO|
+pay|budgets|purpose|text|text||||YES|
+pay|budgets|employee_id|bigint|int8||64|0|NO|
+pay|budgets|company_id|bigint|int8||64|0|NO|
+pay|budgets|cost_center_id|bigint|int8||64|0|YES|
+pay|budgets|period_from|date|date||||NO|
+pay|budgets|period_to|date|date||||NO|
+pay|budgets|travel_type|text|text||||YES|
+pay|budgets|region|text|text||||YES|
+pay|budgets|from_location|text|text||||YES|
+pay|budgets|to_location|text|text||||YES|
+pay|budgets|travel_start|date|date||||YES|
+pay|budgets|travel_end|date|date||||YES|
+pay|budgets|nights|smallint|int2||16|0|YES|
+pay|budgets|desk_books_air|boolean|bool||||NO|false
+pay|budgets|desk_books_hotel|boolean|bool||||NO|false
+pay|budgets|desk_books_visa|boolean|bool||||NO|false
+pay|budgets|own_arrangement_reason|text|text||||YES|
+pay|budgets|limit_exceed_reason|text|text||||YES|
+pay|budgets|allowance|numeric|numeric||14|2|NO|
+pay|budgets|approved_allowance|numeric|numeric||14|2|YES|
+pay|budgets|currency|text|text||||NO|'INR'::text
+pay|budgets|fx_rate_to_inr|numeric|numeric||14|6|NO|1
+pay|budgets|fx_rate_date|date|date||||YES|
+pay|budgets|status|text|text||||NO|'draft'::text
+pay|budgets|workflow_request_id|bigint|int8||64|0|YES|
+pay|budgets|approved_by_user_id|bigint|int8||64|0|YES|
+pay|budgets|approved_at|timestamp with time zone|timestamptz||||YES|
+pay|budgets|rejection_reason|text|text||||YES|
+pay|budgets|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|budgets|updated_at|timestamp with time zone|timestamptz||||NO|now()
+pay|budgets|overspend_allowed|boolean|bool||||NO|false
+pay|claim_bills|id|bigint|int8||64|0|NO|
+pay|claim_bills|claim_id|bigint|int8||64|0|NO|
+pay|claim_bills|document_id|bigint|int8||64|0|NO|
+pay|claim_bills|bill_no|text|text||||YES|
+pay|claim_bills|bill_date|date|date||||YES|
+pay|claim_bills|amount|numeric|numeric||14|2|NO|
+pay|claim_bills|verified|boolean|bool||||NO|false
+pay|claim_bills|verified_by|bigint|int8||64|0|YES|
+pay|claim_bills|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|claim_entitlements|id|bigint|int8||64|0|NO|
+pay|claim_entitlements|claim_type_id|bigint|int8||64|0|NO|
+pay|claim_entitlements|grade_id|bigint|int8||64|0|YES|
+pay|claim_entitlements|amount|numeric|numeric||14|2|NO|
+pay|claim_entitlements|effective_from|date|date||||NO|
+pay|claim_entitlements|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|claim_lines|id|bigint|int8||64|0|NO|
+pay|claim_lines|claim_id|bigint|int8||64|0|NO|
+pay|claim_lines|claim_type_id|bigint|int8||64|0|NO|
+pay|claim_lines|description|text|text||||YES|
+pay|claim_lines|spent_on|date|date||||NO|
+pay|claim_lines|bill_no|text|text||||YES|
+pay|claim_lines|original_amount|numeric|numeric||14|2|NO|
+pay|claim_lines|original_currency|text|text||||NO|'INR'::text
+pay|claim_lines|fx_rate_to_inr|numeric|numeric||14|6|NO|1
+pay|claim_lines|amount|numeric|numeric||14|2|NO|
+pay|claim_lines|document_path|text|text||||YES|
+pay|claim_lines|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|claim_reservations|id|bigint|int8||64|0|NO|
+pay|claim_reservations|budget_id|bigint|int8||64|0|NO|
+pay|claim_reservations|claim_id|bigint|int8||64|0|NO|
+pay|claim_reservations|movement|text|text||||NO|
+pay|claim_reservations|amount|numeric|numeric||14|2|NO|
+pay|claim_reservations|by_category|jsonb|jsonb||||YES|
+pay|claim_reservations|reason|text|text||||NO|
+pay|claim_reservations|actor_user_id|bigint|int8||64|0|YES|
+pay|claim_reservations|occurred_at|timestamp with time zone|timestamptz||||NO|now()
+pay|claim_types|id|bigint|int8||64|0|NO|
+pay|claim_types|code|text|text||||NO|
+pay|claim_types|name|text|text||||NO|
+pay|claim_types|requires_bill|boolean|bool||||NO|true
+pay|claim_types|is_taxable|boolean|bool||||NO|false
+pay|claim_types|is_active|boolean|bool||||NO|true
+pay|claim_types|sort_order|smallint|int2||16|0|NO|100
+pay|claim_types|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|claim_types|updated_at|timestamp with time zone|timestamptz||||NO|now()
+pay|claim_types|entitlement_basis|text|text||||NO|'monthly'::text
+pay|claim_types|bill_required|boolean|bool||||NO|true
+pay|claim_types|taxable_if_unsubstantiated|boolean|bool||||NO|true
+pay|claim_types|payout_component_code|text|text||||NO|'REIMB'::text
+pay|claims|id|bigint|int8||64|0|NO|
+pay|claims|reference|text|text||||YES|
+pay|claims|employee_id|bigint|int8||64|0|NO|
+pay|claims|budget_id|bigint|int8||64|0|YES|
+pay|claims|reserved_budget_id|bigint|int8||64|0|YES|
+pay|claims|period_from|date|date||||NO|
+pay|claims|period_to|date|date||||NO|
+pay|claims|claimed_amount|numeric|numeric||14|2|NO|
+pay|claims|approved_amount|numeric|numeric||14|2|YES|
+pay|claims|display_currency|text|text||||NO|'INR'::text
+pay|claims|fx_rates_to_inr|jsonb|jsonb||||YES|
+pay|claims|fx_rate_date|date|date||||YES|
+pay|claims|settlement_status|text|text||||NO|'unsettled'::text
+pay|claims|settlement_mode|text|text||||YES|
+pay|claims|settlement_amount|numeric|numeric||14|2|YES|
+pay|claims|net_payable|numeric|numeric||14|2|YES|
+pay|claims|settled_by_user_id|bigint|int8||64|0|YES|
+pay|claims|settled_at|timestamp with time zone|timestamptz||||YES|
+pay|claims|status|text|text||||NO|'draft'::text
+pay|claims|workflow_request_id|bigint|int8||64|0|YES|
+pay|claims|rejection_reason|text|text||||YES|
+pay|claims|submitted_at|timestamp with time zone|timestamptz||||YES|
+pay|claims|decided_at|timestamp with time zone|timestamptz||||YES|
+pay|claims|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|claims|updated_at|timestamp with time zone|timestamptz||||NO|now()
+pay|claims|claim_type_id|bigint|int8||64|0|YES|
+pay|claims|advance_loan_id|bigint|int8||64|0|YES|
+pay|claims|paid_in_run_id|bigint|int8||64|0|YES|
+pay|claims|paid_in_batch_id|bigint|int8||64|0|YES|
+pay|claims|funding_kind|text|text||||NO|'budget'::text
+pay|employee_salaries|id|bigint|int8||64|0|NO|
+pay|employee_salaries|employee_id|bigint|int8||64|0|NO|
+pay|employee_salaries|structure_id|bigint|int8||64|0|NO|
+pay|employee_salaries|effective_from|date|date||||NO|
+pay|employee_salaries|effective_to|date|date||||NO|'9999-12-31'::date
+pay|employee_salaries|annual_ctc|numeric|numeric||14|2|NO|
+pay|employee_salaries|phase|text|text||||NO|'confirmed'::text
+pay|employee_salaries|component_amounts|jsonb|jsonb||||NO|
+pay|employee_salaries|probation_percent|numeric|numeric||5|2|YES|
+pay|employee_salaries|revision_reason|text|text||||YES|
+pay|employee_salaries|approved_by|bigint|int8||64|0|YES|
+pay|employee_salaries|approved_at|timestamp with time zone|timestamptz||||YES|
+pay|employee_salaries|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|fnf_settlements|id|bigint|int8||64|0|NO|
+pay|fnf_settlements|employee_id|bigint|int8||64|0|NO|
+pay|fnf_settlements|separation_id|bigint|int8||64|0|NO|
+pay|fnf_settlements|run_id|bigint|int8||64|0|YES|
+pay|fnf_settlements|last_working_day|date|date||||NO|
+pay|fnf_settlements|days_payable|numeric|numeric||4|1|NO|
+pay|fnf_settlements|leave_encash_days|numeric|numeric||5|2|NO|0
+pay|fnf_settlements|notice_recovery_days|numeric|numeric||4|1|NO|0
+pay|fnf_settlements|gratuity_amount|numeric|numeric||14|2|NO|0
+pay|fnf_settlements|other_payments|numeric|numeric||14|2|NO|0
+pay|fnf_settlements|other_deductions|numeric|numeric||14|2|NO|0
+pay|fnf_settlements|held_salary_released|numeric|numeric||14|2|NO|0
+pay|fnf_settlements|status|text|text||||NO|'draft'::text
+pay|fnf_settlements|tat_due_date|date|date||||YES|
+pay|fnf_settlements|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|fnf_settlements|leave_encash_amount|numeric|numeric||14|2|NO|0
+pay|fnf_settlements|notice_recovery_amount|numeric|numeric||14|2|NO|0
+pay|fnf_settlements|gross_payable|numeric|numeric||14|2|NO|0
+pay|fnf_settlements|total_deductions|numeric|numeric||14|2|NO|0
+pay|fnf_settlements|net_payable|numeric|numeric||14|2|NO|0
+pay|fnf_settlements|paid_at|timestamp with time zone|timestamptz||||YES|
+pay|fnf_settlements|relieving_letter_id|bigint|int8||64|0|YES|
+pay|fnf_settlements|service_certificate_id|bigint|int8||64|0|YES|
+pay|fnf_settlements|calc_breakdown|jsonb|jsonb||||YES|
+pay|gl_accounts|id|bigint|int8||64|0|NO|
+pay|gl_accounts|company_code|text|text||||NO|
+pay|gl_accounts|plant_code|text|text||||NO|
+pay|gl_accounts|cost_center_code|text|text||||NO|
+pay|gl_accounts|component_code|text|text||||NO|
+pay|gl_accounts|gl_code|text|text||||NO|
+pay|gl_accounts|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|inputs|id|bigint|int8||64|0|NO|
+pay|inputs|run_id|bigint|int8||64|0|NO|
+pay|inputs|employee_id|bigint|int8||64|0|NO|
+pay|inputs|component_code|text|text||||NO|
+pay|inputs|amount|numeric|numeric||14|2|NO|
+pay|inputs|note|text|text||||NO|
+pay|inputs|entered_by|bigint|int8||64|0|NO|
+pay|inputs|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|investment_declarations|id|bigint|int8||64|0|NO|
+pay|investment_declarations|employee_id|bigint|int8||64|0|NO|
+pay|investment_declarations|fy|text|text||||NO|
+pay|investment_declarations|section|text|text||||NO|
+pay|investment_declarations|declared_amount|numeric|numeric||14|2|NO|
+pay|investment_declarations|proof_document_id|bigint|int8||64|0|YES|
+pay|investment_declarations|verified_amount|numeric|numeric||14|2|YES|
+pay|investment_declarations|verified_by|bigint|int8||64|0|YES|
+pay|investment_declarations|verified_at|timestamp with time zone|timestamptz||||YES|
+pay|investment_declarations|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|it_slabs|id|bigint|int8||64|0|NO|
+pay|it_slabs|fy|text|text||||NO|
+pay|it_slabs|regime|text|text||||NO|
+pay|it_slabs|slab_from|numeric|numeric||14|2|NO|
+pay|it_slabs|slab_to|numeric|numeric||14|2|YES|
+pay|it_slabs|rate|numeric|numeric||6|4|NO|
+pay|it_slabs|surcharge_rules|jsonb|jsonb||||YES|
+pay|it_slabs|cess_rate|numeric|numeric||6|4|NO|0.04
+pay|it_slabs|standard_deduction|numeric|numeric||14|2|NO|
+pay|it_slabs|rebate_87a|jsonb|jsonb||||YES|
+pay|it_slabs|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|loan_postings|id|bigint|int8||64|0|NO|
+pay|loan_postings|loan_id|bigint|int8||64|0|NO|
+pay|loan_postings|run_id|bigint|int8||64|0|NO|
+pay|loan_postings|principal_part|numeric|numeric||14|2|NO|
+pay|loan_postings|interest_part|numeric|numeric||14|2|NO|
+pay|loan_postings|perquisite_value|numeric|numeric||14|2|NO|0
+pay|loan_postings|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|loans|id|bigint|int8||64|0|NO|
+pay|loans|employee_id|bigint|int8||64|0|NO|
+pay|loans|loan_type|text|text||||NO|
+pay|loans|principal|numeric|numeric||14|2|NO|
+pay|loans|interest_rate|numeric|numeric||6|3|NO|0
+pay|loans|emi|numeric|numeric||14|2|NO|
+pay|loans|start_month|date|date||||NO|
+pay|loans|tenure_months|smallint|int2||16|0|NO|
+pay|loans|outstanding|numeric|numeric||14|2|NO|
+pay|loans|perquisite_applicable|boolean|bool||||NO|false
+pay|loans|source|text|text||||NO|'hrms'::text
+pay|loans|workflow_request_id|bigint|int8||64|0|YES|
+pay|loans|status|text|text||||NO|'active'::text
+pay|loans|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|payroll_item_lines|id|bigint|int8||64|0|NO|
+pay|payroll_item_lines|item_id|bigint|int8||64|0|NO|
+pay|payroll_item_lines|component_code|text|text||||NO|
+pay|payroll_item_lines|amount|numeric|numeric||14|2|NO|
+pay|payroll_item_lines|calc_note|text|text||||YES|
+pay|payroll_item_lines|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|payroll_items|id|bigint|int8||64|0|NO|
+pay|payroll_items|run_id|bigint|int8||64|0|NO|
+pay|payroll_items|employee_id|bigint|int8||64|0|NO|
+pay|payroll_items|days_in_month|numeric|numeric||4|1|NO|
+pay|payroll_items|payable_days|numeric|numeric||4|1|NO|
+pay|payroll_items|lop_days|numeric|numeric||4|1|NO|0
+pay|payroll_items|lop_reversal_days|numeric|numeric||4|1|NO|0
+pay|payroll_items|ot_minutes|integer|int4||32|0|NO|0
+pay|payroll_items|gross|numeric|numeric||14|2|NO|
+pay|payroll_items|total_deductions|numeric|numeric||14|2|NO|
+pay|payroll_items|net_pay|numeric|numeric||14|2|NO|
+pay|payroll_items|payment_status|text|text||||NO|'payable'::text
+pay|payroll_items|payslip_document_id|bigint|int8||64|0|YES|
+pay|payroll_items|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|payroll_runs|id|bigint|int8||64|0|NO|
+pay|payroll_runs|company_id|bigint|int8||64|0|NO|
+pay|payroll_runs|month|date|date||||NO|
+pay|payroll_runs|run_type|text|text||||NO|'regular'::text
+pay|payroll_runs|status|text|text||||NO|'draft'::text
+pay|payroll_runs|attendance_lock_id|bigint|int8||64|0|YES|
+pay|payroll_runs|computed_at|timestamp with time zone|timestamptz||||YES|
+pay|payroll_runs|approved_at|timestamp with time zone|timestamptz||||YES|
+pay|payroll_runs|approved_by|bigint|int8||64|0|YES|
+pay|payroll_runs|finalized_at|timestamp with time zone|timestamptz||||YES|
+pay|payroll_runs|finalized_by|bigint|int8||64|0|YES|
+pay|payroll_runs|notes|text|text||||YES|
+pay|payroll_runs|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|payroll_runs|updated_at|timestamp with time zone|timestamptz||||NO|now()
+pay|pt_slabs|id|bigint|int8||64|0|NO|
+pay|pt_slabs|state_code|text|text||||NO|
+pay|pt_slabs|min_monthly|numeric|numeric||14|2|NO|
+pay|pt_slabs|max_monthly|numeric|numeric||14|2|YES|
+pay|pt_slabs|amount|numeric|numeric||8|2|NO|
+pay|pt_slabs|effective_from|date|date||||NO|
+pay|salary_components|code|text|text||||NO|
+pay|salary_components|name|text|text||||NO|
+pay|salary_components|kind|text|text||||NO|
+pay|salary_components|formula|text|text||||YES|
+pay|salary_components|rounding|text|text||||NO|'round'::text
+pay|salary_components|taxable|boolean|bool||||NO|true
+pay|salary_components|part_of_gross|boolean|bool||||NO|true
+pay|salary_components|part_of_pf_wages|boolean|bool||||NO|false
+pay|salary_components|prorate_on_lop|boolean|bool||||NO|true
+pay|salary_components|display_order|smallint|int2||16|0|NO|
+pay|salary_components|is_active|boolean|bool||||NO|true
+pay|salary_components|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|salary_holds|id|bigint|int8||64|0|NO|
+pay|salary_holds|employee_id|bigint|int8||64|0|NO|
+pay|salary_holds|hold_type|text|text||||NO|
+pay|salary_holds|reason|text|text||||NO|
+pay|salary_holds|start_month|date|date||||NO|
+pay|salary_holds|released_month|date|date||||YES|
+pay|salary_holds|created_by|bigint|int8||64|0|NO|
+pay|salary_holds|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|salary_structures|id|bigint|int8||64|0|NO|
+pay|salary_structures|name|text|text||||NO|
+pay|salary_structures|company_id|bigint|int8||64|0|NO|
+pay|salary_structures|description|text|text||||YES|
+pay|salary_structures|components|jsonb|jsonb||||NO|
+pay|salary_structures|is_active|boolean|bool||||NO|true
+pay|salary_structures|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|salary_structures|updated_at|timestamp with time zone|timestamptz||||NO|now()
+pay|statutory_rates|id|bigint|int8||64|0|NO|
+pay|statutory_rates|scheme|text|text||||NO|
+pay|statutory_rates|param|text|text||||NO|
+pay|statutory_rates|value|numeric|numeric||14|4|NO|
+pay|statutory_rates|effective_from|date|date||||NO|
+pay|statutory_rates|source_note|text|text||||NO|
+pay|statutory_rates|created_at|timestamp with time zone|timestamptz||||NO|now()
+pay|tds_challans|id|bigint|int8||64|0|NO|
+pay|tds_challans|company_id|bigint|int8||64|0|NO|
+pay|tds_challans|month|date|date||||NO|
+pay|tds_challans|amount|numeric|numeric||14|2|NO|
+pay|tds_challans|challan_no|text|text||||NO|
+pay|tds_challans|bsr_code|text|text||||YES|
+pay|tds_challans|paid_on|date|date||||NO|
+pay|tds_challans|created_at|timestamp with time zone|timestamptz||||NO|now()
+prv|breach_register|id|bigint|int8||64|0|NO|
+prv|breach_register|discovered_at|timestamp with time zone|timestamptz||||NO|now()
+prv|breach_register|summary|text|text||||NO|
+prv|breach_register|notified_board_at|timestamp with time zone|timestamptz||||YES|
+prv|breach_register|notified_principals_at|timestamp with time zone|timestamptz||||YES|
+prv|breach_register|recorded_by|bigint|int8||64|0|NO|
+prv|consent_events|id|bigint|int8||64|0|NO|
+prv|consent_events|employee_id|bigint|int8||64|0|NO|
+prv|consent_events|purpose|text|text||||NO|
+prv|consent_events|action|text|text||||NO|
+prv|consent_events|actor_user_id|bigint|int8||64|0|NO|
+prv|consent_events|occurred_at|timestamp with time zone|timestamptz||||NO|now()
+prv|consents|id|bigint|int8||64|0|NO|
+prv|consents|employee_id|bigint|int8||64|0|NO|
+prv|consents|purpose|text|text||||NO|
+prv|consents|granted|boolean|bool||||NO|
+prv|consents|updated_at|timestamp with time zone|timestamptz||||NO|now()
+prv|legal_holds|id|bigint|int8||64|0|NO|
+prv|legal_holds|employee_id|bigint|int8||64|0|NO|
+prv|legal_holds|data_class|text|text||||YES|
+prv|legal_holds|reason|text|text||||NO|
+prv|legal_holds|placed_by|bigint|int8||64|0|NO|
+prv|legal_holds|released_at|timestamp with time zone|timestamptz||||YES|
+prv|legal_holds|created_at|timestamp with time zone|timestamptz||||NO|now()
+prv|notice_acks|id|bigint|int8||64|0|NO|
+prv|notice_acks|notice_id|bigint|int8||64|0|NO|
+prv|notice_acks|user_id|bigint|int8||64|0|NO|
+prv|notice_acks|acknowledged_at|timestamp with time zone|timestamptz||||NO|now()
+prv|notice_acks|ip|text|text||||YES|
+prv|notices|id|bigint|int8||64|0|NO|
+prv|notices|version|integer|int4||32|0|NO|
+prv|notices|principal_class|text|text||||NO|
+prv|notices|title|text|text||||NO|
+prv|notices|body|text|text||||NO|
+prv|notices|effective_from|timestamp with time zone|timestamptz||||NO|now()
+prv|notices|is_current|boolean|bool||||NO|true
+prv|notices|created_at|timestamp with time zone|timestamptz||||NO|now()
+prv|processing_register|id|bigint|int8||64|0|NO|
+prv|processing_register|data_class|text|text||||NO|
+prv|processing_register|purpose|text|text||||NO|
+prv|processing_register|lawful_basis|text|text||||NO|
+prv|processing_register|retention_days|integer|int4||32|0|NO|
+prv|processing_register|recipients|text|text||||NO|
+prv|processing_register|created_at|timestamp with time zone|timestamptz||||NO|now()
+prv|processing_register|updated_at|timestamp with time zone|timestamptz||||NO|now()
+prv|processors|id|bigint|int8||64|0|NO|
+prv|processors|name|text|text||||NO|
+prv|processors|purpose|text|text||||NO|
+prv|processors|dpa_status|text|text||||NO|
+prv|processors|dpa_expires_on|date|date||||YES|
+prv|processors|owner_email|text|text||||YES|
+prv|processors|created_at|timestamp with time zone|timestamptz||||NO|now()
+prv|processors|updated_at|timestamp with time zone|timestamptz||||NO|now()
+prv|purge_log|id|bigint|int8||64|0|NO|
+prv|purge_log|proposal_id|bigint|int8||64|0|NO|
+prv|purge_log|data_class|text|text||||NO|
+prv|purge_log|row_count|integer|int4||32|0|NO|
+prv|purge_log|rule|text|text||||NO|
+prv|purge_log|executed_at|timestamp with time zone|timestamptz||||NO|now()
+prv|purge_proposals|id|bigint|int8||64|0|NO|
+prv|purge_proposals|data_class|text|text||||NO|
+prv|purge_proposals|row_count|integer|int4||32|0|NO|
+prv|purge_proposals|excluded_holds|integer|int4||32|0|NO|0
+prv|purge_proposals|proposed_by|bigint|int8||64|0|NO|
+prv|purge_proposals|proposed_at|timestamp with time zone|timestamptz||||NO|now()
+prv|purge_proposals|confirmed_by|bigint|int8||64|0|YES|
+prv|purge_proposals|confirmed_at|timestamp with time zone|timestamptz||||YES|
+prv|retention_rules|id|bigint|int8||64|0|NO|
+prv|retention_rules|data_class|text|text||||NO|
+prv|retention_rules|retention_days|integer|int4||32|0|NO|
+prv|retention_rules|created_at|timestamp with time zone|timestamptz||||NO|now()
+prv|rights_requests|id|bigint|int8||64|0|NO|
+prv|rights_requests|employee_id|bigint|int8||64|0|NO|
+prv|rights_requests|kind|text|text||||NO|
+prv|rights_requests|status|text|text||||NO|'open'::text
+prv|rights_requests|reason|text|text||||YES|
+prv|rights_requests|refusal_reason|text|text||||YES|
+prv|rights_requests|workflow_request_id|bigint|int8||64|0|YES|
+prv|rights_requests|due_at|timestamp with time zone|timestamptz||||NO|
+prv|rights_requests|closed_at|timestamp with time zone|timestamptz||||YES|
+prv|rights_requests|created_at|timestamp with time zone|timestamptz||||NO|now()
+public|pgmigrations|id|integer|int4||32|0|NO|nextval('pgmigrations_id_seq'::regclass)
+public|pgmigrations|name|character varying|varchar|255|||NO|
+public|pgmigrations|run_on|timestamp without time zone|timestamp||||NO|
+reporting|kpi_daily|id|bigint|int8||64|0|NO|
+reporting|kpi_daily|snapshot_date|date|date||||NO|
+reporting|kpi_daily|company_id|bigint|int8||64|0|YES|
+reporting|kpi_daily|category|text|text||||NO|'total'::text
+reporting|kpi_daily|metric|text|text||||NO|
+reporting|kpi_daily|value|numeric|numeric||18|4|YES|
+reporting|kpi_daily|unavailable_reason|text|text||||YES|
+reporting|kpi_daily|computed_at|timestamp with time zone|timestamptz||||NO|now()
+reporting|muster_month|id|bigint|int8||64|0|NO|
+reporting|muster_month|company_id|bigint|int8||64|0|NO|
+reporting|muster_month|month|date|date||||NO|
+reporting|muster_month|employee_id|bigint|int8||64|0|NO|
+reporting|muster_month|ecode|text|text||||NO|
+reporting|muster_month|employee_name|text|text||||NO|
+reporting|muster_month|reporting_manager|text|text||||YES|
+reporting|muster_month|functional_manager|text|text||||YES|
+reporting|muster_month|department|text|text||||YES|
+reporting|muster_month|designation|text|text||||YES|
+reporting|muster_month|org_unit|text|text||||YES|
+reporting|muster_month|cost_center|text|text||||YES|
+reporting|muster_month|contact|text|text||||YES|
+reporting|muster_month|category|text|text||||YES|
+reporting|muster_month|day_statuses|jsonb|jsonb||||NO|'{}'::jsonb
+reporting|muster_month|present|smallint|int2||16|0|NO|0
+reporting|muster_month|absent|smallint|int2||16|0|NO|0
+reporting|muster_month|half_days|smallint|int2||16|0|NO|0
+reporting|muster_month|weekoffs|smallint|int2||16|0|NO|0
+reporting|muster_month|weekoffs_unpaid|smallint|int2||16|0|NO|0
+reporting|muster_month|holidays|smallint|int2||16|0|NO|0
+reporting|muster_month|leave_days|numeric|numeric||5|1|NO|0
+reporting|muster_month|od_days|smallint|int2||16|0|NO|0
+reporting|muster_month|co_days|smallint|int2||16|0|NO|0
+reporting|muster_month|uab_days|smallint|int2||16|0|NO|0
+reporting|muster_month|lop_days|numeric|numeric||5|1|NO|0
+reporting|muster_month|ot_hours|numeric|numeric||8|2|NO|0
+reporting|muster_month|built_at|timestamp with time zone|timestamptz||||NO|now()
+sec|access_events|id|bigint|int8||64|0|NO|
+sec|access_events|occurred_at|timestamp with time zone|timestamptz||||NO|now()
+sec|access_events|actor_user_id|bigint|int8||64|0|NO|
+sec|access_events|session_sid|uuid|uuid||||YES|
+sec|access_events|subject_employee_id|bigint|int8||64|0|YES|
+sec|access_events|resource|text|text||||NO|
+sec|access_events|field_class|text|text||||NO|
+sec|access_events|purpose|text|text||||NO|
+sec|access_events|record_count|integer|int4||32|0|NO|1
+sec|access_events|ip|inet|inet||||YES|
+sec|access_events_202610|id|bigint|int8||64|0|NO|
+sec|access_events_202610|occurred_at|timestamp with time zone|timestamptz||||NO|now()
+sec|access_events_202610|actor_user_id|bigint|int8||64|0|NO|
+sec|access_events_202610|session_sid|uuid|uuid||||YES|
+sec|access_events_202610|subject_employee_id|bigint|int8||64|0|YES|
+sec|access_events_202610|resource|text|text||||NO|
+sec|access_events_202610|field_class|text|text||||NO|
+sec|access_events_202610|purpose|text|text||||NO|
+sec|access_events_202610|record_count|integer|int4||32|0|NO|1
+sec|access_events_202610|ip|inet|inet||||YES|
+sec|access_events_202611|id|bigint|int8||64|0|NO|
+sec|access_events_202611|occurred_at|timestamp with time zone|timestamptz||||NO|now()
+sec|access_events_202611|actor_user_id|bigint|int8||64|0|NO|
+sec|access_events_202611|session_sid|uuid|uuid||||YES|
+sec|access_events_202611|subject_employee_id|bigint|int8||64|0|YES|
+sec|access_events_202611|resource|text|text||||NO|
+sec|access_events_202611|field_class|text|text||||NO|
+sec|access_events_202611|purpose|text|text||||NO|
+sec|access_events_202611|record_count|integer|int4||32|0|NO|1
+sec|access_events_202611|ip|inet|inet||||YES|
+sec|mfa_enrolments|id|bigint|int8||64|0|NO|
+sec|mfa_enrolments|user_id|bigint|int8||64|0|NO|
+sec|mfa_enrolments|secret|text|text||||NO|
+sec|mfa_enrolments|confirmed_at|timestamp with time zone|timestamptz||||YES|
+sec|mfa_enrolments|disabled_at|timestamp with time zone|timestamptz||||YES|
+sec|mfa_enrolments|disabled_by_user_id|bigint|int8||64|0|YES|
+sec|mfa_enrolments|last_used_step|bigint|int8||64|0|YES|
+sec|mfa_enrolments|created_at|timestamp with time zone|timestamptz||||NO|now()
+sec|mfa_enrolments|updated_at|timestamp with time zone|timestamptz||||NO|now()
+sec|mfa_recovery_codes|id|bigint|int8||64|0|NO|
+sec|mfa_recovery_codes|enrolment_id|bigint|int8||64|0|NO|
+sec|mfa_recovery_codes|code_hash|text|text||||NO|
+sec|mfa_recovery_codes|used_at|timestamp with time zone|timestamptz||||YES|
+sec|mfa_recovery_codes|created_at|timestamp with time zone|timestamptz||||NO|now()
+sec|password_history|id|bigint|int8||64|0|NO|
+sec|password_history|user_id|bigint|int8||64|0|NO|
+sec|password_history|password_hash|text|text||||NO|
+sec|password_history|changed_at|timestamp with time zone|timestamptz||||NO|now()
+sec|password_history|changed_by_user_id|bigint|int8||64|0|YES|
+sec|sessions|id|bigint|int8||64|0|NO|
+sec|sessions|sid|uuid|uuid||||NO|gen_random_uuid()
+sec|sessions|user_id|bigint|int8||64|0|NO|
+sec|sessions|created_at|timestamp with time zone|timestamptz||||NO|now()
+sec|sessions|last_seen_at|timestamp with time zone|timestamptz||||NO|now()
+sec|sessions|expires_at|timestamp with time zone|timestamptz||||NO|
+sec|sessions|revoked_at|timestamp with time zone|timestamptz||||YES|
+sec|sessions|revoked_by_user_id|bigint|int8||64|0|YES|
+sec|sessions|revoke_reason|text|text||||YES|
+sec|sessions|ip|inet|inet||||YES|
+sec|sessions|user_agent|text|text||||YES|
+sec|sessions|device_label|text|text||||YES|
+sec|sessions|stepped_up_at|timestamp with time zone|timestamptz||||YES|
+sec|sessions|stepped_up_until|timestamp with time zone|timestamptz||||YES|
+sec|sessions|refresh_token_hash|text|text||||YES|
+te|advances|id|bigint|int8||64|0|NO|
+te|advances|trip_id|bigint|int8||64|0|NO|
+te|advances|employee_id|bigint|int8||64|0|NO|
+te|advances|amount_paise|bigint|int8||64|0|NO|
+te|advances|purpose|text|text||||NO|
+te|advances|status|text|text||||NO|'requested'::text
+te|advances|workflow_request_id|bigint|int8||64|0|YES|
+te|advances|disbursed_at|timestamp with time zone|timestamptz||||YES|
+te|advances|created_at|timestamp with time zone|timestamptz||||NO|now()
+te|advances|updated_at|timestamp with time zone|timestamptz||||NO|now()
+te|budgets|id|bigint|int8||64|0|NO|
+te|budgets|grade_level|text|text||||NO|
+te|budgets|travel_type|text|text||||NO|
+te|budgets|flight_class|text|text||||NO|'economy'::text
+te|budgets|hotel_per_night_paise|bigint|int8||64|0|NO|400000
+te|budgets|daily_allowance_paise|bigint|int8||64|0|NO|150000
+te|budgets|local_conveyance_paise|bigint|int8||64|0|NO|100000
+te|budgets|is_active|boolean|bool||||NO|true
+te|claim_items|id|bigint|int8||64|0|NO|
+te|claim_items|claim_id|bigint|int8||64|0|NO|
+te|claim_items|category|text|text||||NO|
+te|claim_items|item_date|date|date||||NO|
+te|claim_items|amount_paise|bigint|int8||64|0|NO|
+te|claim_items|currency|text|text||||NO|'INR'::text
+te|claim_items|fx_rate_to_inr|numeric|numeric||10|4|NO|1.0000
+te|claim_items|inr_amount_paise|bigint|int8||64|0|NO|
+te|claim_items|receipt_document_id|bigint|int8||64|0|YES|
+te|claim_items|receipt_url|text|text||||YES|
+te|claim_items|description|text|text||||YES|
+te|claim_items|created_at|timestamp with time zone|timestamptz||||NO|now()
+te|claims|id|bigint|int8||64|0|NO|
+te|claims|reference_no|text|text||||NO|
+te|claims|trip_id|bigint|int8||64|0|NO|
+te|claims|employee_id|bigint|int8||64|0|NO|
+te|claims|total_claimed_paise|bigint|int8||64|0|NO|0
+te|claims|approved_amount_paise|bigint|int8||64|0|NO|0
+te|claims|advance_adjusted_paise|bigint|int8||64|0|NO|0
+te|claims|net_payable_paise|bigint|int8||64|0|NO|0
+te|claims|net_recoverable_paise|bigint|int8||64|0|NO|0
+te|claims|status|text|text||||NO|'draft'::text
+te|claims|settlement_status|text|text||||NO|'unsettled'::text
+te|claims|workflow_request_id|bigint|int8||64|0|YES|
+te|claims|created_at|timestamp with time zone|timestamptz||||NO|now()
+te|claims|updated_at|timestamp with time zone|timestamptz||||NO|now()
+te|settlements|id|bigint|int8||64|0|NO|
+te|settlements|claim_id|bigint|int8||64|0|NO|
+te|settlements|trip_id|bigint|int8||64|0|NO|
+te|settlements|employee_id|bigint|int8||64|0|NO|
+te|settlements|settlement_mode|text|text||||NO|'AUTO'::text
+te|settlements|claimed_amount_paise|bigint|int8||64|0|NO|
+te|settlements|advance_amount_paise|bigint|int8||64|0|NO|
+te|settlements|net_payable_paise|bigint|int8||64|0|NO|0
+te|settlements|net_recoverable_paise|bigint|int8||64|0|NO|0
+te|settlements|recovery_channel|text|text||||YES|'payroll_deduction'::text
+te|settlements|settled_by|bigint|int8||64|0|YES|
+te|settlements|settled_at|timestamp with time zone|timestamptz||||NO|now()
+te|settlements|status|text|text||||NO|'settled'::text
+te|trip_itineraries|id|bigint|int8||64|0|NO|
+te|trip_itineraries|trip_id|bigint|int8||64|0|NO|
+te|trip_itineraries|segment_type|text|text||||NO|
+te|trip_itineraries|origin|text|text||||NO|
+te|trip_itineraries|destination|text|text||||NO|
+te|trip_itineraries|departure_date|timestamp with time zone|timestamptz||||NO|
+te|trip_itineraries|arrival_date|timestamp with time zone|timestamptz||||YES|
+te|trip_itineraries|provider|text|text||||YES|
+te|trip_itineraries|booking_reference|text|text||||YES|
+te|trip_itineraries|estimated_cost_paise|bigint|int8||64|0|NO|0
+te|trip_itineraries|actual_cost_paise|bigint|int8||64|0|NO|0
+te|trip_itineraries|created_at|timestamp with time zone|timestamptz||||NO|now()
+te|trips|id|bigint|int8||64|0|NO|
+te|trips|reference_no|text|text||||NO|
+te|trips|employee_id|bigint|int8||64|0|NO|
+te|trips|company_id|bigint|int8||64|0|NO|
+te|trips|trip_name|text|text||||NO|
+te|trips|travel_type|text|text||||NO|
+te|trips|purpose|text|text||||NO|
+te|trips|destination_country|text|text||||NO|'India'::text
+te|trips|destination_city|text|text||||NO|
+te|trips|start_date|date|date||||NO|
+te|trips|end_date|date|date||||NO|
+te|trips|visa_required|boolean|bool||||NO|false
+te|trips|visa_status|text|text||||YES|'not_applicable'::text
+te|trips|status|text|text||||NO|'draft'::text
+te|trips|estimated_budget_paise|bigint|int8||64|0|NO|0
+te|trips|approved_budget_paise|bigint|int8||64|0|NO|0
+te|trips|cancellation_reason|text|text||||YES|
+te|trips|cancellation_cost_paise|bigint|int8||64|0|YES|0
+te|trips|workflow_request_id|bigint|int8||64|0|YES|
+te|trips|created_at|timestamp with time zone|timestamptz||||NO|now()
+te|trips|updated_at|timestamp with time zone|timestamptz||||NO|now()
+te|wallet_transactions|id|bigint|int8||64|0|NO|
+te|wallet_transactions|wallet_id|bigint|int8||64|0|NO|
+te|wallet_transactions|employee_id|bigint|int8||64|0|NO|
+te|wallet_transactions|trip_id|bigint|int8||64|0|YES|
+te|wallet_transactions|source|text|text||||NO|
+te|wallet_transactions|type|text|text||||NO|
+te|wallet_transactions|amount_paise|bigint|int8||64|0|NO|
+te|wallet_transactions|balance_after_paise|bigint|int8||64|0|NO|
+te|wallet_transactions|transaction_reference|text|text||||NO|
+te|wallet_transactions|notes|text|text||||YES|
+te|wallet_transactions|created_at|timestamp with time zone|timestamptz||||NO|now()
+te|wallets|id|bigint|int8||64|0|NO|
+te|wallets|employee_id|bigint|int8||64|0|NO|
+te|wallets|balance_paise|bigint|int8||64|0|NO|0
+te|wallets|updated_at|timestamp with time zone|timestamptz||||NO|now()
+wf|definitions|code|text|text||||NO|
+wf|definitions|name|text|text||||NO|
+wf|definitions|steps|jsonb|jsonb||||NO|
+wf|definitions|is_active|boolean|bool||||NO|true
+wf|definitions|created_at|timestamp with time zone|timestamptz||||NO|now()
+wf|definitions|updated_at|timestamp with time zone|timestamptz||||NO|now()
+wf|delegations|id|bigint|int8||64|0|NO|
+wf|delegations|from_user_id|bigint|int8||64|0|NO|
+wf|delegations|to_user_id|bigint|int8||64|0|NO|
+wf|delegations|from_date|date|date||||NO|
+wf|delegations|to_date|date|date||||NO|
+wf|delegations|created_at|timestamp with time zone|timestamptz||||NO|now()
+wf|delegations|updated_at|timestamp with time zone|timestamptz||||NO|now()
+wf|event_subscriptions|id|bigint|int8||64|0|NO|
+wf|event_subscriptions|event_code|text|text||||NO|
+wf|event_subscriptions|recipient_kind|text|text||||NO|
+wf|event_subscriptions|recipient_ref|text|text||||NO|
+wf|event_subscriptions|created_at|timestamp with time zone|timestamptz||||NO|now()
+wf|event_subscriptions|updated_at|timestamp with time zone|timestamptz||||NO|now()
+wf|notifications|id|bigint|int8||64|0|NO|
+wf|notifications|recipient_user_id|bigint|int8||64|0|YES|
+wf|notifications|recipient_email|text|text||||YES|
+wf|notifications|channel|text|text||||NO|
+wf|notifications|template_code|text|text||||NO|
+wf|notifications|payload|jsonb|jsonb||||NO|
+wf|notifications|status|text|text||||NO|'queued'::text
+wf|notifications|attempts|smallint|int2||16|0|NO|0
+wf|notifications|last_error|text|text||||YES|
+wf|notifications|sent_at|timestamp with time zone|timestamptz||||YES|
+wf|notifications|read_at|timestamp with time zone|timestamptz||||YES|
+wf|notifications|created_at|timestamp with time zone|timestamptz||||NO|now()
+wf|notifications|updated_at|timestamp with time zone|timestamptz||||NO|now()
+wf|request_steps|id|bigint|int8||64|0|NO|
+wf|request_steps|request_id|bigint|int8||64|0|NO|
+wf|request_steps|step_no|smallint|int2||16|0|NO|
+wf|request_steps|approver_user_id|bigint|int8||64|0|NO|
+wf|request_steps|delegated_from|bigint|int8||64|0|YES|
+wf|request_steps|action|text|text||||YES|
+wf|request_steps|comment|text|text||||YES|
+wf|request_steps|notified_at|timestamp with time zone|timestamptz||||NO|
+wf|request_steps|acted_at|timestamp with time zone|timestamptz||||YES|
+wf|request_steps|sla_due_at|timestamp with time zone|timestamptz||||NO|
+wf|request_steps|created_at|timestamp with time zone|timestamptz||||NO|now()
+wf|request_steps|approver_spec|text|text||||YES|
+wf|requests|id|bigint|int8||64|0|NO|
+wf|requests|definition_code|text|text||||NO|
+wf|requests|subject_employee_id|bigint|int8||64|0|NO|
+wf|requests|requested_by|bigint|int8||64|0|NO|
+wf|requests|payload|jsonb|jsonb||||NO|
+wf|requests|current_step|smallint|int2||16|0|NO|1
+wf|requests|status|text|text||||NO|'pending'::text
+wf|requests|decided_at|timestamp with time zone|timestamptz||||YES|
+wf|requests|created_at|timestamp with time zone|timestamptz||||NO|now()
+wf|requests|updated_at|timestamp with time zone|timestamptz||||NO|now()

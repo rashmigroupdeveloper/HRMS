@@ -1,0 +1,7 @@
+reporting.muster_month_lookup_idx|reporting.muster_month_company_id_month_employee_id_key|CREATE INDEX muster_month_lookup_idx ON reporting.muster_month USING btree (company_id, month)
+att.manager_month_approvals_lookup_idx|att.manager_month_approvals_latest_idx|CREATE INDEX manager_month_approvals_lookup_idx ON att.manager_month_approvals USING btree (company_id, month)
+pay.payroll_runs_company_month_idx|pay.payroll_runs_company_id_month_run_type_key|CREATE INDEX payroll_runs_company_month_idx ON pay.payroll_runs USING btree (company_id, month)
+pay.payroll_items_run_idx|pay.payroll_items_run_id_employee_id_key|CREATE INDEX payroll_items_run_idx ON pay.payroll_items USING btree (run_id)
+pay.claims_emp_idx|pay.claims_employee_idx|CREATE INDEX claims_emp_idx ON pay.claims USING btree (employee_id, status)
+core.idx_clearances_separation|core.uq_separation_department|CREATE INDEX idx_clearances_separation ON core.clearances USING btree (separation_id)
+te.idx_te_wallets_employee|te.wallets_employee_id_key|CREATE INDEX idx_te_wallets_employee ON te.wallets USING btree (employee_id)

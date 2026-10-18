@@ -1,0 +1,1331 @@
+[
+ {
+  "ecode": "RML033625",
+  "name": "Prateek Kumar Singh",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2024-09-20",
+  "dol": null,
+  "loc": "KGP",
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "comp": {
+   "BASIC": 32286,
+   "HRA": 16143,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 2689,
+   "SPECIAL_ALLOW": 12005
+  },
+  "case": "SAMPLE row (Report 4) - must net 59124",
+  "att": {},
+  "inputs": [
+   [
+    "CANTEEN",
+    1375,
+    "Canteen recovery Jun-26"
+   ]
+  ],
+  "uan": "102325126388",
+  "bank": [
+   "HDFC Bank",
+   "50100491237371",
+   "HDFC0009686"
+  ],
+  "pan": "DPKPS4417M",
+  "dept": "ERP-CELL",
+  "desig": "Junior Graduate Engineer",
+  "grade": "Junior Grade",
+  "cc": "ERP-CELL",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033625@qa-payroll.rashmi.test",
+  "gross": 64573
+ },
+ {
+  "ecode": "RML033901",
+  "name": "Ananya Ghosh",
+  "gender": "Female",
+  "co": "RML",
+  "doj": "2023-07-10",
+  "loc": "KGP",
+  "esic": true,
+  "comp": {
+   "BASIC": 9250,
+   "HRA": 4625,
+   "SPECIAL_ALLOW": 4625
+  },
+  "case": "ESI eligible (gross 18,500)",
+  "att": {},
+  "inputs": [
+   [
+    "CANTEEN",
+    650,
+    "Canteen recovery"
+   ]
+  ],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033901@qa-payroll.rashmi.test",
+  "pan": "WZCPG1037T",
+  "uan": "101800007932",
+  "bank": [
+   "State Bank of India",
+   "34500007331",
+   "SBIN0001867"
+  ],
+  "gross": 18500,
+  "esi_no": "6612345011"
+ },
+ {
+  "ecode": "RML033902",
+  "name": "Rakesh Mahato",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2022-01-03",
+  "loc": "KGP",
+  "esic": true,
+  "comp": {
+   "BASIC": 10500,
+   "HRA": 5250,
+   "SPECIAL_ALLOW": 5250
+  },
+  "case": "ESI boundary 21,000 + 2 LOP days (absent)",
+  "att": {
+   "absent": [
+    "2026-06-09",
+    "2026-06-10"
+   ]
+  },
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033902@qa-payroll.rashmi.test",
+  "pan": "WYCPM1074G",
+  "uan": "101800015851",
+  "bank": [
+   "State Bank of India",
+   "34500014662",
+   "SBIN0001867"
+  ],
+  "gross": 21000,
+  "esi_no": "6612345022"
+ },
+ {
+  "ecode": "RML033903",
+  "name": "Soumen Bera",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2021-11-15",
+  "loc": "KGP",
+  "esic": false,
+  "comp": {
+   "BASIC": 10500,
+   "HRA": 5250,
+   "SPECIAL_ALLOW": 5251
+  },
+  "case": "ESI ineligible (gross 21,001)",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033903@qa-payroll.rashmi.test",
+  "pan": "EEHPB1111F",
+  "uan": "101800023770",
+  "bank": [
+   "HDFC Bank",
+   "50100491205739",
+   "HDFC0009686"
+  ],
+  "gross": 21001
+ },
+ {
+  "ecode": "RML033904",
+  "name": "Arpita Mondal",
+  "gender": "Female",
+  "co": "RML",
+  "doj": "2020-03-02",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 22500,
+   "HRA": 11250,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1874,
+   "SPECIAL_ALLOW": 7926
+  },
+  "case": "Maternity leave from 08-Jun (female)",
+  "att": {
+   "leave": [
+    [
+     "ML",
+     "2026-06-08",
+     "2026-06-30"
+    ]
+   ]
+  },
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033904@qa-payroll.rashmi.test",
+  "pan": "YBUPM1148V",
+  "uan": "101800031689",
+  "bank": [
+   "State Bank of India",
+   "34500029324",
+   "SBIN0001867"
+  ],
+  "gross": 45000
+ },
+ {
+  "ecode": "RML033905",
+  "name": "Vikram Jha",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2019-08-19",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 22000,
+   "HRA": 11000,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1833,
+   "SPECIAL_ALLOW": 15717
+  },
+  "case": "PF wage > 15,000 (Basic 22,000; ACTUAL vs restricted)",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033905@qa-payroll.rashmi.test",
+  "pan": "AZKPJ1185M",
+  "uan": "101800039608",
+  "bank": [
+   "State Bank of India",
+   "34500036655",
+   "SBIN0001867"
+  ],
+  "gross": 52000
+ },
+ {
+  "ecode": "RML033906",
+  "name": "Sneha Kumari",
+  "gender": "Female",
+  "co": "RML",
+  "doj": "2024-02-12",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 14000,
+   "HRA": 7000,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1166,
+   "SPECIAL_ALLOW": 6384
+  },
+  "case": "PF wage < 15,000 (Basic 14,000)",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033906@qa-payroll.rashmi.test",
+  "pan": "QUEPK1222H",
+  "uan": "101800047527",
+  "bank": [
+   "HDFC Bank",
+   "50100491211478",
+   "HDFC0009686"
+  ],
+  "gross": 30000
+ },
+ {
+  "ecode": "RML033907",
+  "name": "Rohit Das",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2025-12-01",
+  "loc": "KGP",
+  "cat": "trainee",
+  "contract": "apprentice",
+  "comp": {
+   "STIPEND": 15000
+  },
+  "case": "Apprentice on stipend - no PF/ESI/Bonus",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033907@qa-payroll.rashmi.test",
+  "pan": "XLJPD1259T",
+  "uan": "101800055446",
+  "bank": [
+   "State Bank of India",
+   "34500051317",
+   "SBIN0001867"
+  ],
+  "gross": 15000
+ },
+ {
+  "ecode": "RML033908",
+  "name": "Mohit Agarwal",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2026-06-16",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 20000,
+   "HRA": 10000,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1666,
+   "SPECIAL_ALLOW": 6884
+  },
+  "case": "Mid-month joiner (16-Jun) pro-rata",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033908@qa-payroll.rashmi.test",
+  "pan": "FWFPA1296U",
+  "uan": "101800063365",
+  "bank": [
+   "State Bank of India",
+   "34500058648",
+   "SBIN0001867"
+  ],
+  "gross": 40000
+ },
+ {
+  "ecode": "RML033909",
+  "name": "Priyanka Dutta",
+  "gender": "Female",
+  "co": "RML",
+  "doj": "2023-05-08",
+  "dol": "2026-06-20",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 21000,
+   "HRA": 10500,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1749,
+   "SPECIAL_ALLOW": 7301
+  },
+  "case": "Mid-month leaver (LWD 20-Jun) + notice recovery + F&F",
+  "att": {},
+  "inputs": [
+   [
+    "NOTICE_RECOVERY",
+    7000,
+    "Notice shortfall 10 days x Basic/30"
+   ]
+  ],
+  "sep": true,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "email": "rml033909@qa-payroll.rashmi.test",
+  "pan": "TVNPD1333H",
+  "uan": "101800071284",
+  "bank": [
+   "State Bank of India",
+   "34500065979",
+   "SBIN0001867"
+  ],
+  "gross": 42000
+ },
+ {
+  "ecode": "RML033910",
+  "name": "Sanjay Paul",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2022-09-05",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 18000,
+   "HRA": 9000,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1499,
+   "SPECIAL_ALLOW": 6051
+  },
+  "case": "Partial LOP: 3 absent days",
+  "att": {
+   "absent": [
+    "2026-06-17",
+    "2026-06-18",
+    "2026-06-19"
+   ]
+  },
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033910@qa-payroll.rashmi.test",
+  "pan": "NWNPP1370P",
+  "uan": "101800079203",
+  "bank": [
+   "State Bank of India",
+   "34500073310",
+   "SBIN0001867"
+  ],
+  "gross": 36000
+ },
+ {
+  "ecode": "RML033911",
+  "name": "Abhijit Sen",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2021-04-12",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 16500,
+   "HRA": 8250,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1374,
+   "SPECIAL_ALLOW": 5426
+  },
+  "case": "Full-month LOP (no attendance at all)",
+  "att": {
+   "absent": "ALL"
+  },
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033911@qa-payroll.rashmi.test",
+  "pan": "NCZPS1407T",
+  "uan": "101800087122",
+  "bank": [
+   "State Bank of India",
+   "34500080641",
+   "SBIN0001867"
+  ],
+  "gross": 33000
+ },
+ {
+  "ecode": "RML033912",
+  "name": "Tanmoy Sarkar",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2026-03-02",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 15000,
+   "HRA": 7500,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1250,
+   "SPECIAL_ALLOW": 4800
+  },
+  "prob": 80,
+  "case": "Probation 80%",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "hold": null,
+  "sep": false,
+  "email": "rml033912@qa-payroll.rashmi.test",
+  "pan": "TJDPS1444H",
+  "uan": "101800095041",
+  "bank": [
+   "HDFC Bank",
+   "50100491222956",
+   "HDFC0009686"
+  ],
+  "gross": 30000
+ },
+ {
+  "ecode": "RML033913",
+  "name": "Rina Halder",
+  "gender": "Female",
+  "co": "RML",
+  "doj": "2026-02-02",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 12500,
+   "HRA": 6250,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1041,
+   "SPECIAL_ALLOW": 3759
+  },
+  "prob": 70,
+  "esic": true,
+  "case": "Probation 70% (probation gross 17,500 -> ESI)",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "regime": "new",
+  "hold": null,
+  "sep": false,
+  "email": "rml033913@qa-payroll.rashmi.test",
+  "pan": "SRYPH1481T",
+  "uan": "101800102960",
+  "bank": [
+   "HDFC Bank",
+   "50100491224869",
+   "HDFC0009686"
+  ],
+  "gross": 25000,
+  "esi_no": "6612345143"
+ },
+ {
+  "ecode": "RML033914",
+  "name": "Debashis Pal",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2026-01-05",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 25000,
+   "HRA": 12500,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 2082,
+   "SPECIAL_ALLOW": 8968
+  },
+  "prob": 90,
+  "case": "Probation 90%",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "hold": null,
+  "sep": false,
+  "email": "rml033914@qa-payroll.rashmi.test",
+  "pan": "LSAPP1518S",
+  "uan": "101800110879",
+  "bank": [
+   "HDFC Bank",
+   "50100491226782",
+   "HDFC0009686"
+  ],
+  "gross": 50000
+ },
+ {
+  "ecode": "RML033915",
+  "name": "Kunal Chatterjee",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2018-06-11",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 30000,
+   "HRA": 15000,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 2499,
+   "SPECIAL_ALLOW": 11051
+  },
+  "case": "Incentive + arrears + other earnings",
+  "att": {},
+  "inputs": [
+   [
+    "INCENTIVE",
+    5000,
+    "Q1 incentive"
+   ],
+   [
+    "ARREARS",
+    2000,
+    "Apr-May revision arrears"
+   ],
+   [
+    "OTHER_EARNINGS",
+    1000,
+    "Shift allowance"
+   ]
+  ],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033915@qa-payroll.rashmi.test",
+  "pan": "XGCPC1555M",
+  "uan": "101800118798",
+  "bank": [
+   "Axis Bank",
+   "900020100004695",
+   "UTIB0000245"
+  ],
+  "gross": 60000
+ },
+ {
+  "ecode": "RML033916",
+  "name": "Nilanjan Bose",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2020-10-01",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 24000,
+   "HRA": 12000,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1999,
+   "SPECIAL_ALLOW": 8551
+  },
+  "case": "Salary on payment HOLD",
+  "att": {},
+  "inputs": [],
+  "hold": "payment",
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "sep": false,
+  "email": "rml033916@qa-payroll.rashmi.test",
+  "pan": "LYYPB1592R",
+  "uan": "101800126717",
+  "bank": [
+   "Axis Bank",
+   "900020100005008",
+   "UTIB0000245"
+  ],
+  "gross": 48000
+ },
+ {
+  "ecode": "RML033917",
+  "name": "Amitava Roy",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2019-02-18",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 27500,
+   "HRA": 13750,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 2291,
+   "SPECIAL_ALLOW": 10009
+  },
+  "case": "Loan EMI (app loan) + guest house",
+  "att": {},
+  "inputs": [
+   [
+    "GUEST_HOUSE",
+    2500,
+    "Guest house Jun-26"
+   ]
+  ],
+  "loan": {
+   "loanType": "emi_no_interest",
+   "principalRupees": 60000,
+   "tenureMonths": 12,
+   "startMonth": "2026-06-01"
+  },
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033917@qa-payroll.rashmi.test",
+  "pan": "QQCPR1629V",
+  "uan": "101800134636",
+  "bank": [
+   "Axis Bank",
+   "900020100005321",
+   "UTIB0000245"
+  ],
+  "gross": 55000
+ },
+ {
+  "ecode": "RML033918",
+  "name": "Suresh Yadav",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2017-12-04",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 19000,
+   "HRA": 9500,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1583,
+   "SPECIAL_ALLOW": 6467
+  },
+  "case": "Travel advance + misc recovery",
+  "att": {},
+  "inputs": [
+   [
+    "TRAVEL_ADV_RECOVERY",
+    3000,
+    "Travel advance TA-118"
+   ],
+   [
+    "MISC_RECOVERY",
+    500,
+    "ID card replacement"
+   ]
+  ],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033918@qa-payroll.rashmi.test",
+  "pan": "UTBPY1666F",
+  "uan": "101800142555",
+  "bank": [
+   "HDFC Bank",
+   "50100491234434",
+   "HDFC0009686"
+  ],
+  "gross": 38000
+ },
+ {
+  "ecode": "RML033919",
+  "name": "Ritika Jain",
+  "gender": "Female",
+  "co": "RML",
+  "doj": "2016-07-25",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 60000,
+   "HRA": 30000,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 4998,
+   "SPECIAL_ALLOW": 23552
+  },
+  "regime": "old",
+  "case": "TDS old regime (80C 1.5L declared)",
+  "att": {},
+  "inputs": [],
+  "decl80c": 150000,
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033919@qa-payroll.rashmi.test",
+  "pan": "CANPJ1703S",
+  "uan": "101800150474",
+  "bank": [
+   "Axis Bank",
+   "900020100005947",
+   "UTIB0000245"
+  ],
+  "gross": 120000
+ },
+ {
+  "ecode": "RML033920",
+  "name": "Arnab Mukherjee",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2018-01-08",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 55000,
+   "HRA": 27500,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 4582,
+   "SPECIAL_ALLOW": 21468
+  },
+  "regime": "new",
+  "case": "TDS new regime",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033920@qa-payroll.rashmi.test",
+  "pan": "KBGPM1740J",
+  "uan": "101800158393",
+  "bank": [
+   "Axis Bank",
+   "900020100006260",
+   "UTIB0000245"
+  ],
+  "gross": 110000
+ },
+ {
+  "ecode": "RML033921",
+  "name": "Rajiv Bhattacharya",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2015-04-01",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 225000,
+   "HRA": 112500,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 18742,
+   "SPECIAL_ALLOW": 92308
+  },
+  "regime": "new",
+  "case": "High earner (surcharge band)",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033921@qa-payroll.rashmi.test",
+  "pan": "LUKPB1777R",
+  "uan": "101800166312",
+  "bank": [
+   "HDFC Bank",
+   "50100491240173",
+   "HDFC0009686"
+  ],
+  "gross": 450000
+ },
+ {
+  "ecode": "RML033922",
+  "name": "Kaushik Dey",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2024-08-19",
+  "loc": "KGP",
+  "esic": true,
+  "comp": {
+   "BASIC": 6000,
+   "HRA": 3000,
+   "SPECIAL_ALLOW": 3000
+  },
+  "case": "Negative net: 20 LOP days + recoveries",
+  "att": {
+   "absent": [
+    "2026-06-01",
+    "2026-06-02",
+    "2026-06-03",
+    "2026-06-04",
+    "2026-06-05",
+    "2026-06-06",
+    "2026-06-08",
+    "2026-06-09",
+    "2026-06-10",
+    "2026-06-11",
+    "2026-06-12",
+    "2026-06-13",
+    "2026-06-15",
+    "2026-06-16",
+    "2026-06-17",
+    "2026-06-18",
+    "2026-06-19",
+    "2026-06-20",
+    "2026-06-22",
+    "2026-06-23"
+   ]
+  },
+  "inputs": [
+   [
+    "CANTEEN",
+    1375,
+    "Canteen"
+   ],
+   [
+    "LOAN_EMI",
+    6000,
+    "Legacy salary advance recovery"
+   ]
+  ],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033922@qa-payroll.rashmi.test",
+  "pan": "QDMPD1814W",
+  "uan": "101800174231",
+  "bank": [
+   "Axis Bank",
+   "900020100006886",
+   "UTIB0000245"
+  ],
+  "gross": 12000,
+  "esi_no": "6612345242"
+ },
+ {
+  "ecode": "RML033923",
+  "name": "Pooja Singh",
+  "gender": "Female",
+  "co": "RML",
+  "doj": "2023-10-16",
+  "loc": "BBS",
+  "comp": {
+   "BASIC": 17500,
+   "HRA": 8750,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1458,
+   "SPECIAL_ALLOW": 5842
+  },
+  "case": "Other-state PT (Odisha, Bhubaneswar office)",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033923@qa-payroll.rashmi.test",
+  "pan": "GVVPS1851X",
+  "uan": "101800182150",
+  "bank": [
+   "Axis Bank",
+   "900020100007199",
+   "UTIB0000245"
+  ],
+  "gross": 35000
+ },
+ {
+  "ecode": "RML033924",
+  "name": "Sayan Majumdar",
+  "gender": "Male",
+  "co": "RML",
+  "doj": "2022-06-13",
+  "loc": "KGP",
+  "comp": {
+   "BASIC": 17000,
+   "HRA": 8500,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1416,
+   "SPECIAL_ALLOW": 5634
+  },
+  "case": "Paid leave CL2+SL1 and 1 day LWP",
+  "att": {
+   "leave": [
+    [
+     "CL",
+     "2026-06-02",
+     "2026-06-03"
+    ],
+    [
+     "SL",
+     "2026-06-11",
+     "2026-06-11"
+    ],
+    [
+     "LWP",
+     "2026-06-25",
+     "2026-06-25"
+    ]
+   ]
+  },
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rml033924@qa-payroll.rashmi.test",
+  "pan": "MPBPM1888W",
+  "uan": "101800190069",
+  "bank": [
+   "Axis Bank",
+   "900020100007512",
+   "UTIB0000245"
+  ],
+  "gross": 34000
+ },
+ {
+  "ecode": "RGH033901",
+  "name": "Bikash Behera",
+  "gender": "Male",
+  "co": "RGH",
+  "doj": "2024-05-06",
+  "loc": "KGP_RGH",
+  "comp": {
+   "BASIC": 27500,
+   "HRA": 13750,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 2291,
+   "SPECIAL_ALLOW": 10009
+  },
+  "case": "Overtime 4h approved (Sat 13-Jun)",
+  "att": {
+   "ot": "2026-06-13"
+  },
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rgh033901@qa-payroll.rashmi.test",
+  "pan": "DCYPB1925P",
+  "uan": "101800197988",
+  "bank": [
+   "State Bank of India",
+   "34500183275",
+   "SBIN0001867"
+  ],
+  "gross": 55000
+ },
+ {
+  "ecode": "RGH033902",
+  "name": "Mamata Nayak",
+  "gender": "Female",
+  "co": "RGH",
+  "doj": "2024-07-01",
+  "loc": "KGP_RGH",
+  "esic": true,
+  "comp": {
+   "BASIC": 8000,
+   "HRA": 4000,
+   "SPECIAL_ALLOW": 4000
+  },
+  "case": "ESI eligible RGH",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rgh033902@qa-payroll.rashmi.test",
+  "pan": "EABPN1962Z",
+  "uan": "101800205907",
+  "bank": [
+   "Axis Bank",
+   "900020100008138",
+   "UTIB0000245"
+  ],
+  "gross": 16000,
+  "esi_no": "6612345286"
+ },
+ {
+  "ecode": "RGH033903",
+  "name": "Pradeep Sahu",
+  "gender": "Male",
+  "co": "RGH",
+  "doj": "2026-06-10",
+  "loc": "KGP_RGH",
+  "comp": {
+   "BASIC": 22500,
+   "HRA": 11250,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1874,
+   "SPECIAL_ALLOW": 7926
+  },
+  "case": "Mid-month joiner (10-Jun)",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rgh033903@qa-payroll.rashmi.test",
+  "pan": "DMQPS1999A",
+  "uan": "101800213826",
+  "bank": [
+   "HDFC Bank",
+   "50100491251651",
+   "HDFC0009686"
+  ],
+  "gross": 45000
+ },
+ {
+  "ecode": "RGH033904",
+  "name": "Lipika Das",
+  "gender": "Female",
+  "co": "RGH",
+  "doj": "2023-03-13",
+  "loc": "KGP_RGH",
+  "comp": {
+   "BASIC": 16000,
+   "HRA": 8000,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1333,
+   "SPECIAL_ALLOW": 5217
+  },
+  "case": "5 LOP days",
+  "att": {
+   "absent": [
+    "2026-06-22",
+    "2026-06-23",
+    "2026-06-24",
+    "2026-06-25",
+    "2026-06-26"
+   ]
+  },
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rgh033904@qa-payroll.rashmi.test",
+  "pan": "ERJPD2036W",
+  "uan": "101800221745",
+  "bank": [
+   "HDFC Bank",
+   "50100491253564",
+   "HDFC0009686"
+  ],
+  "gross": 32000
+ },
+ {
+  "ecode": "RGH033905",
+  "name": "Satyajit Mohanty",
+  "gender": "Male",
+  "co": "RGH",
+  "doj": "2021-09-20",
+  "loc": "KGP_RGH",
+  "comp": {
+   "BASIC": 30000,
+   "HRA": 15000,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 2499,
+   "SPECIAL_ALLOW": 26051
+  },
+  "case": "PF ACTUAL on Basic 30,000 + TDS new",
+  "att": {},
+  "inputs": [],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rgh033905@qa-payroll.rashmi.test",
+  "pan": "YQNPM2073W",
+  "uan": "101800229664",
+  "bank": [
+   "Axis Bank",
+   "900020100009077",
+   "UTIB0000245"
+  ],
+  "gross": 75000
+ },
+ {
+  "ecode": "RGH033906",
+  "name": "Jyoti Prakash Rout",
+  "gender": "Male",
+  "co": "RGH",
+  "doj": "2020-01-06",
+  "dol": "2026-06-15",
+  "loc": "KGP_RGH",
+  "comp": {
+   "BASIC": 25000,
+   "HRA": 12500,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 2082,
+   "SPECIAL_ALLOW": 8968
+  },
+  "case": "Leaver LWD 15-Jun + F&F (gratuity eligible 6y5m)",
+  "att": {},
+  "inputs": [],
+  "sep": true,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "email": "rgh033906@qa-payroll.rashmi.test",
+  "pan": "DTUPR2110Y",
+  "uan": "101800237583",
+  "bank": [
+   "Axis Bank",
+   "900020100009390",
+   "UTIB0000245"
+  ],
+  "gross": 50000
+ },
+ {
+  "ecode": "RGH033907",
+  "name": "Smita Panda",
+  "gender": "Female",
+  "co": "RGH",
+  "doj": "2025-01-20",
+  "loc": "KGP_RGH",
+  "comp": {
+   "BASIC": 14000,
+   "HRA": 7000,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1166,
+   "SPECIAL_ALLOW": 4384
+  },
+  "case": "Canteen + guest house recoveries",
+  "att": {},
+  "inputs": [
+   [
+    "CANTEEN",
+    1375,
+    "Canteen"
+   ],
+   [
+    "GUEST_HOUSE",
+    2500,
+    "Guest house"
+   ]
+  ],
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "hold": null,
+  "sep": false,
+  "email": "rgh033907@qa-payroll.rashmi.test",
+  "pan": "CNKPP2147C",
+  "uan": "101800245502",
+  "bank": [
+   "Axis Bank",
+   "900020100009703",
+   "UTIB0000245"
+  ],
+  "gross": 28000
+ },
+ {
+  "ecode": "RGH033908",
+  "name": "Ashok Pradhan",
+  "gender": "Male",
+  "co": "RGH",
+  "doj": "2022-11-07",
+  "loc": "KGP_RGH",
+  "comp": {
+   "BASIC": 20000,
+   "HRA": 10000,
+   "EDUCATION_ALLOW": 200,
+   "MEDICAL_ALLOW": 1250,
+   "STATUTORY_BONUS": 1666,
+   "SPECIAL_ALLOW": 6884
+  },
+  "case": "Salary PROCESS hold",
+  "att": {},
+  "inputs": [],
+  "hold": "process",
+  "dol": null,
+  "cat": "white_collar",
+  "contract": "permanent",
+  "esic": false,
+  "regime": "new",
+  "prob": null,
+  "sep": false,
+  "email": "rgh033908@qa-payroll.rashmi.test",
+  "pan": "KYGPP2184G",
+  "uan": "101800253421",
+  "bank": [
+   "Axis Bank",
+   "900020100010016",
+   "UTIB0000245"
+  ],
+  "gross": 40000
+ }
+]

@@ -55,10 +55,12 @@ export function ManagerDashboard({
   data,
   today,
   quickLinks,
+  title = 'Your team today',
 }: {
   data: TeamMemberMonth[];
   today: string;
   quickLinks?: QuickLink[] | undefined;
+  title?: string;
 }) {
   const todayRows = data.map((member) => ({ member, day: member.days[today] }));
   const present = todayRows.filter(({ day }) => day?.status === 'P' || day?.status === 'HD').length;
@@ -77,7 +79,7 @@ export function ManagerDashboard({
       <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
         <PageHeader
           eyebrow={todayLongIST()}
-          title="Your team today"
+          title={title}
           description="Direct-report attendance from the current processed month. Names open the person; the gold path opens the month you sign."
         />
 
