@@ -219,7 +219,7 @@ export function PrejoinPortalPage() {
         </div>
 
         <DarkCard padded={false} className="p-8">
-          <p className="text-xs uppercase tracking-widest text-hero-muted font-semibold">
+          <p className="text-sm font-medium text-hero-muted">
             Welcome to Rashmi Group
           </p>
           <h2 className="mt-2 text-3xl font-light text-hero-ink">

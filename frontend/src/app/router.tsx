@@ -52,12 +52,15 @@ const AccessControlPage = lazy(() => import('../pages/admin/AccessControlPage').
 const SettingsPage = lazy(() => import('../pages/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const AuditLogPage = lazy(() => import('../pages/admin/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
 const WorkflowsPage = lazy(() => import('../pages/admin/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage })));
+const OrgMastersPage = lazy(() => import('../pages/admin/OrgMastersPage').then((m) => ({ default: m.OrgMastersPage })));
 const DepartmentHeadsPage = lazy(() => import('../pages/admin/DepartmentHeadsPage').then((m) => ({ default: m.DepartmentHeadsPage })));
 const AttendanceMastersPage = lazy(() => import('../pages/admin/AttendanceMastersPage').then((m) => ({ default: m.AttendanceMastersPage })));
 const PayrollPage = lazy(() => import('../pages/payroll/PayrollPage').then((m) => ({ default: m.PayrollPage })));
 const SalaryStructuresPage = lazy(() => import('../pages/payroll/SalaryStructuresPage').then((m) => ({ default: m.SalaryStructuresPage })));
 const SalaryRevisionsPage = lazy(() => import('../pages/payroll/SalaryRevisionsPage').then((m) => ({ default: m.SalaryRevisionsPage })));
 const ParallelRunPage = lazy(() => import('../pages/payroll/ParallelRunPage').then((m) => ({ default: m.ParallelRunPage })));
+const TaxDeclarationPage = lazy(() => import('../pages/tax/TaxDeclarationPage').then((m) => ({ default: m.TaxDeclarationPage })));
+const TdsCompliancePage = lazy(() => import('../pages/tax/TdsCompliancePage').then((m) => ({ default: m.TdsCompliancePage })));
 const MyPayPage = lazy(() => import('../pages/payroll/MyPayPage').then((m) => ({ default: m.MyPayPage })));
 const ClaimsPage = lazy(() => import('../pages/payroll/ClaimsPage').then((m) => ({ default: m.ClaimsPage })));
 const LoansPage = lazy(() => import('../pages/payroll/LoansPage').then((m) => ({ default: m.LoansPage })));
@@ -82,9 +85,9 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
     <Routes>
       <Route element={<AppShell user={user} onSignedOut={onSignedOut} />}>
         <Route index element={<RoleHomePage user={user} />} />
-        <Route path="me" element={<ProfilePage self />} />
-        <Route path="people" element={<DirectoryPage />} />
-        <Route path="people/:ecode" element={<ProfilePage />} />
+        <Route path="me" element={<ProfilePage self user={user} />} />
+        <Route path="people" element={<DirectoryPage user={user} />} />
+        <Route path="people/:ecode" element={<ProfilePage user={user} />} />
 
         <Route path="approvals" element={<ApprovalsPage />} />
         <Route path="approvals/:id" element={<ApprovalsPage />} />
@@ -92,6 +95,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="my/attendance" element={<MyAttendancePage />} />
         <Route path="my/leave" element={<MyLeavePage />} />
         <Route path="my/pay" element={<MyPayPage />} />
+        <Route path="my/tax" element={<TaxDeclarationPage />} />
         <Route path="my/claims" element={<ClaimsPage />} />
         <Route path="my/team" element={<TeamPage user={user} />} />
         <Route path="my/team/overtime" element={<OtDecisionsPage />} />
@@ -108,6 +112,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
 
         <Route path="leave" element={<LeaveAdminPage />} />
         <Route path="payroll" element={<PayrollPage user={user} />} />
+        <Route path="payroll/tds" element={<TdsCompliancePage />} />
         <Route path="payroll/structures" element={<SalaryStructuresPage />} />
         <Route path="payroll/revisions" element={<SalaryRevisionsPage />} />
         <Route path="payroll/parallel-run" element={<ParallelRunPage />} />
@@ -144,6 +149,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="admin/imports" element={<DataImportsPage />} />
         <Route path="admin/workflows" element={<WorkflowsPage user={user} />} />
         <Route path="admin/department-heads" element={<DepartmentHeadsPage />} />
+        <Route path="admin/org-masters" element={<OrgMastersPage user={user} />} />
         <Route path="admin/masters" element={<AttendanceMastersPage user={user} />} />
 
         <Route path="travel/*" element={<TravelPage />} />

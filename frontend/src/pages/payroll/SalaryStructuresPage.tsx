@@ -490,7 +490,7 @@ export function SalaryStructuresPage() {
               {/* Summary Tiles */}
               <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="p-4">
-                  <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
+                  <div className="text-xs text-ink-muted font-semibold">
                     Monthly Gross
                   </div>
                   <div className="text-2xl font-bold font-mono mt-1 text-ink">
@@ -502,7 +502,7 @@ export function SalaryStructuresPage() {
                 </Card>
 
                 <Card className="p-4">
-                  <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
+                  <div className="text-xs text-ink-muted font-semibold">
                     Monthly Deductions
                   </div>
                   <div className="text-2xl font-bold font-mono mt-1 text-warning-ink">
@@ -514,7 +514,7 @@ export function SalaryStructuresPage() {
                 </Card>
 
                 <Card className="p-4">
-                  <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
+                  <div className="text-xs text-ink-muted font-semibold">
                     Net Take-Home
                   </div>
                   <div className="text-2xl font-bold font-mono mt-1 text-positive-ink">
@@ -526,7 +526,7 @@ export function SalaryStructuresPage() {
                 </Card>
 
                 <Card className="p-4">
-                  <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
+                  <div className="text-xs text-ink-muted font-semibold">
                     Employer Costs
                   </div>
                   <div className="text-2xl font-bold font-mono mt-1 text-ink-muted">

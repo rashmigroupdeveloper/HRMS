@@ -244,7 +244,7 @@ export function SupportingReportPage<T extends object>({
       <Card>
         <CardHeader
           title={`${rows.length.toLocaleString('en-IN')} rows`}
-          subtitle="On-screen table and Excel use the same query and filters (RPT-06)."
+          subtitle="On-screen table and Excel use the same query and filters."
         />
       </Card>
 

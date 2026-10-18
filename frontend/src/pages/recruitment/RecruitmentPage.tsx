@@ -45,7 +45,7 @@ export function RecruitmentPage() {
       />
 
       <DarkCard padded={false} className="p-8 md:p-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+        <p className="text-sm font-medium text-hero-muted">
           What you will do here
         </p>
         <h2 className="mt-4 max-w-xl text-4xl font-light tracking-tight text-hero-ink">

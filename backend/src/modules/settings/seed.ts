@@ -198,6 +198,10 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
     valueType: 'number',
     description: 'LV-04: restricted holidays an employee may take per calendar year',
   },
+  { key: 'tax.declaration_open', value: '04-01', valueType: 'string', description: 'TDS: investment declaration / regime window opens (MM-DD within the FY)' },
+  { key: 'tax.declaration_close', value: '01-15', valueType: 'string', description: 'TDS: investment declaration / regime window closes (MM-DD within the FY)' },
+  { key: 'tax.proof_open', value: '01-01', valueType: 'string', description: 'TDS: investment proof submission window opens (MM-DD within the FY)' },
+  { key: 'tax.proof_close', value: '02-28', valueType: 'string', description: 'TDS: investment proof submission window closes (MM-DD within the FY)' },
 ];
 
 export async function seedPolicySettings(): Promise<{ total: number; inserted: number }> {

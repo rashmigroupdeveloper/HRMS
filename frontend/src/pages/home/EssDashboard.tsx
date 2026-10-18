@@ -13,6 +13,7 @@ import {
   StatusBadge,
   formatDateIN,
   QuickLinks,
+  CardLink,
 } from '../../ui';
 import type { QuickLink } from '../../ui';
 import type { AttendanceRequest } from '../attendance/attendance-types';
@@ -105,13 +106,6 @@ function buildPendingRows(
   return { rows: rows.slice(0, 5), openCount: rows.length };
 }
 
-function statusTone(status: string | undefined) {
-  if (status === 'P') return 'positive' as const;
-  if (status === 'A' || status === 'UAB') return 'negative' as const;
-  if (status === 'HD' || status === 'L') return 'warning' as const;
-  return 'neutral' as const;
-}
-
 function todayCopy(data: EssDashboardData): string {
   const status = data.todayStatus?.status;
   if (status === 'A' || status === 'UAB') {
@@ -121,7 +115,7 @@ function todayCopy(data: EssDashboardData): string {
     return `You were in at ${formatTime(data.todayStatus?.firstIn ?? null)}. Open the month if a day looks wrong.`;
   }
   if (status === 'L') {
-    return 'You are on leave today. Balances below are the ledger — not a guess.';
+    return 'You are on leave today. Your balances are below.';
   }
   return 'Today’s attendance has not been processed yet. Your shift is still the plan for the day.';
 }
@@ -285,12 +279,11 @@ export function EssDashboard({
       <div className="grid gap-6 lg:grid-cols-12">
         <DarkCard className="grid gap-8 lg:col-span-5 md:grid-cols-[1.3fr_1fr] lg:grid-cols-1 xl:grid-cols-[1.3fr_1fr]">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+            <p className="text-sm font-medium text-hero-muted">
               Today’s attendance
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <h2 className="text-3xl font-light">{statusWords}</h2>
-              <StatusBadge tone={statusTone(data.todayStatus?.status)}>{statusWords}</StatusBadge>
             </div>
             <p className="mt-3 max-w-xl text-sm leading-6 text-hero-muted">{todayCopy(data)}</p>
             {attendanceGold ? (
@@ -313,15 +306,11 @@ export function EssDashboard({
           <dl className="grid grid-cols-2 gap-3 self-end">
             <div className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)] p-4">
               <dt className="text-xs text-hero-muted">First in</dt>
-              <dd className="mt-1 tabular-nums text-xl font-semibold">
-                {formatTime(data.todayStatus?.firstIn ?? null)}
-              </dd>
+              <PunchTime value={data.todayStatus?.firstIn ?? null} />
             </div>
             <div className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)] p-4">
               <dt className="text-xs text-hero-muted">Last out</dt>
-              <dd className="mt-1 tabular-nums text-xl font-semibold">
-                {formatTime(data.todayStatus?.lastOut ?? null)}
-              </dd>
+              <PunchTime value={data.todayStatus?.lastOut ?? null} />
             </div>
           </dl>
         </DarkCard>
@@ -333,16 +322,11 @@ export function EssDashboard({
             <Card>
               <CardHeader
                 title="This month’s pay"
-                subtitle="Opens the payslip when payroll has run. Nothing invented in the meantime."
+                subtitle="Your payslip appears here once this month’s payroll is finalized."
                 action={
-                  <Link to="/my/pay" className="text-sm font-medium text-ink hover:underline">
-                    Open
-                  </Link>
+<CardLink to="/my/pay" label="Open my pay" />
                 }
               />
-              <p className="text-sm leading-6 text-ink-muted">
-                Net pay, deductions and the PDF live on My Pay once the run is finalized.
-              </p>
             </Card>
           )}
         </div>
@@ -351,7 +335,7 @@ export function EssDashboard({
           <Card>
             <CardHeader
               title="Leave balances"
-              subtitle="Ledger-derived available days by type — already yours before you apply."
+              subtitle="Days available by leave type, net of anything already approved."
               action={
                 <div className="flex flex-wrap gap-3">
                   <Link
@@ -403,5 +387,14 @@ export function EssDashboard({
         </div>
       </div>
     </div>
+  );
+}
+
+/** A punch time, or a quiet "Not yet" that never overflows the tile. */
+function PunchTime({ value }: { value: string | null }) {
+  return value ? (
+    <dd className="mt-1 tabular-nums text-xl font-semibold">{formatTime(value)}</dd>
+  ) : (
+    <dd className="mt-1 text-base font-medium text-hero-muted">Not yet</dd>
   );
 }

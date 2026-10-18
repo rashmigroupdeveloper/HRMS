@@ -459,7 +459,7 @@ export function ClaimsPage() {
         <div className="space-y-6">
           {/* Entitlement Cards Grid */}
           <div>
-            <h3 className="text-sm font-semibold text-ink mb-3 uppercase tracking-wider">
+            <h3 className="text-sm font-semibold text-ink mb-3">
               Entitlement & Available Balances
             </h3>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -467,7 +467,7 @@ export function ClaimsPage() {
                 <Card key={e.claimTypeCode} className="p-5 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between">
-                      <p className="text-xs uppercase tracking-wider text-ink-muted">{e.claimTypeName}</p>
+                      <p className="text-xs font-medium text-ink-muted">{e.claimTypeName}</p>
                       <StatusBadge tone="neutral">{e.basis}</StatusBadge>
                     </div>
                     <p className="mt-3 text-2xl font-light text-ink">{formatINR(e.availableBalanceRupees)}</p>
@@ -539,11 +539,11 @@ export function ClaimsPage() {
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="p-5">
-              <p className="text-xs uppercase tracking-wider text-ink-muted">Approved Claims</p>
+              <p className="text-xs font-medium text-ink-muted">Approved Claims</p>
               <p className="mt-2 text-2xl font-light text-ink">{approvedForPayout.length}</p>
             </Card>
             <Card className="p-5">
-              <p className="text-xs uppercase tracking-wider text-ink-muted">Total Ready for Payout</p>
+              <p className="text-xs font-medium text-ink-muted">Total Ready for Payout</p>
               <p className="mt-2 text-2xl font-light text-accent-ink">
                 {formatINR(
                   approvedForPayout.reduce((sum, c) => sum + (c.approvedAmountRupees ?? 0), 0)
@@ -551,7 +551,7 @@ export function ClaimsPage() {
               </p>
             </Card>
             <Card className="p-5">
-              <p className="text-xs uppercase tracking-wider text-ink-muted">Payout Routing Mode</p>
+              <p className="text-xs font-medium text-ink-muted">Payout Routing Mode</p>
               <p className="mt-2 text-xs text-ink-muted">
                 Route to regular run (posts into salary inputs) OR off-cycle bank batch (XOR enforced).
               </p>

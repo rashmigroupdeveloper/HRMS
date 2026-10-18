@@ -515,7 +515,7 @@ export function DataTable<T>({
           <div
             role="row"
             aria-rowindex={1}
-            className="grid items-center gap-3 border-b border-line px-4 py-3 text-xs font-semibold uppercase tracking-wide text-ink-muted"
+            className="grid items-center gap-3 border-b border-line px-4 py-3 text-xs font-medium text-ink-muted"
             style={{ gridTemplateColumns: gridTemplate }}
           >
             {selectable && (
@@ -554,7 +554,7 @@ export function DataTable<T>({
                         );
                       }}
                       className={cn(
-                        'group -mx-1 inline-flex items-center gap-1 rounded-md px-1 uppercase tracking-wide hover:text-ink',
+                        'group -mx-1 inline-flex items-center gap-1 rounded-md px-1 hover:text-ink',
                         dir !== null && 'text-ink',
                       )}
                     >

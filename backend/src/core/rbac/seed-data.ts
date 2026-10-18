@@ -95,6 +95,8 @@ export const PERMISSIONS = [
   'admin.devices',
   'admin.integrations',
   'audit.read',
+  // Handover item 2: org masters CRUD (super_admin only; super_admin inherits every permission).
+  'org.masters.manage',
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number];

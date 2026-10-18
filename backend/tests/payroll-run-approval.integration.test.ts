@@ -239,7 +239,7 @@ describe.skipIf(!url)('Payroll Run Maker-Checker and Co-Sign Authorization', () 
         expect(approvalAudit).toBeDefined();
         expect(approvalAudit?.actor_user_id).toBe(hrHeadUser.id);
 
-        // Scenario D: Checker is a super_admin -> must also succeed
+        // Scenario D: Checker is a super_admin -> refused unless break-glass is enabled
         const superAdminRole = await trx
           .selectFrom('core.roles')
           .select('id')
@@ -251,7 +251,8 @@ describe.skipIf(!url)('Payroll Run Maker-Checker and Co-Sign Authorization', () 
           .values({
             email: `superadmin-${stamp}@example.com`,
             password_hash: '!test!',
-            employee_id: hrHeadEmp.id,
+            // users_employee_unique: one login per employee — the break-glass admin has none.
+            employee_id: null,
             is_active: true,
           })
           .returning('id')
@@ -287,7 +288,15 @@ describe.skipIf(!url)('Payroll Run Maker-Checker and Co-Sign Authorization', () 
           })
           .execute();
 
-        await service.approveRun(run2.id, superAdminUser.id);
+        // CD-1 (docs/08 §2): super_admin break-glass co-sign is refused by default…
+        await expect(service.approveRun(run2.id, superAdminUser.id)).rejects.toThrow(/Only the HR Head/);
+        // …and allowed only when the client opts in.
+        process.env['PAYROLL_SUPER_ADMIN_COSIGN'] = 'true';
+        try {
+          await service.approveRun(run2.id, superAdminUser.id);
+        } finally {
+          delete process.env['PAYROLL_SUPER_ADMIN_COSIGN'];
+        }
 
         const updatedRun2 = await trx
           .selectFrom('pay.payroll_runs')

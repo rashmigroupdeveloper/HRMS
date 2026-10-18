@@ -177,7 +177,7 @@ export function EngagementPage({ user }: { user?: SessionUser }) {
       />
 
       <DarkCard padded={false} className="p-8 md:p-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+        <p className="text-xs font-semibold text-hero-muted">
           Rashmi Engagement Protocol
         </p>
         <h2 className="mt-4 max-w-xl text-3xl font-light tracking-tight text-hero-ink">
@@ -637,7 +637,7 @@ function PollsTab({
                     {p.options.map((opt, idx) => (
                       <label
                         key={idx}
-                        className={`flex cursor-pointer items-center gap-3 rounded-row border p-3 text-sm transition-all ${
+                        className={`flex cursor-pointer items-center gap-3 rounded-row border p-3 text-sm transition-[background-color,border-color,color] duration-(--motion-micro) ${
                           selectedOption[p.id] === idx
                             ? 'border-accent bg-[color-mix(in_srgb,var(--accent)_8%,var(--surface))] font-medium text-ink'
                             : 'border-line hover:border-line-strong text-ink-muted'
@@ -740,8 +740,8 @@ function PollsTab({
                     </div>
                     <div className="h-3 w-full overflow-hidden rounded-full bg-surface-2">
                       <div
-                        className="h-full bg-accent transition-all duration-500"
-                        style={{ width: `${String(pct)}%` }}
+                        className="h-full w-full origin-left bg-accent transition-transform duration-(--motion-medium) ease-(--ease-out-strong)"
+                        style={{ transform: `scaleX(${String(pct / 100)})` }}
                       />
                     </div>
                   </div>
@@ -751,7 +751,7 @@ function PollsTab({
 
             {activeResult.comments.length > 0 && (
               <div className="border-t border-line pt-4 space-y-3">
-                <h5 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                <h5 className="text-xs font-semibold text-ink-muted">
                   Feedback Comments ({activeResult.comments.length})
                 </h5>
                 <div className="space-y-2">
@@ -1165,7 +1165,7 @@ function SurveysTab({
                     {(q.choices ?? []).map((ch, chIdx) => (
                       <label
                         key={chIdx}
-                        className={`flex cursor-pointer items-center gap-3 rounded-row border p-2.5 text-sm transition-all ${
+                        className={`flex cursor-pointer items-center gap-3 rounded-row border p-2.5 text-sm transition-[background-color,border-color,color] duration-(--motion-micro) ${
                           surveyAnswers[q.id] === ch
                             ? 'border-accent bg-[color-mix(in_srgb,var(--accent)_8%,var(--surface))] font-medium text-ink'
                             : 'border-line text-ink-muted'
@@ -1276,7 +1276,7 @@ function SurveysTab({
 
                 {qr.type === 'text' && (
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                    <p className="text-xs font-semibold text-ink-muted">
                       Sample Responses ({(qr.textSamples ?? []).length})
                     </p>
                     <div className="space-y-1.5">
@@ -1424,7 +1424,7 @@ function CreateSurveyDrawer({
 
         <div className="space-y-4 border-t border-line pt-4">
           <div className="flex items-center justify-between">
-            <h5 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+            <h5 className="text-xs font-semibold text-ink-muted">
               Questions ({questions.length})
             </h5>
             <div className="flex gap-1.5">
