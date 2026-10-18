@@ -8,8 +8,8 @@ type Db = Kysely<Database> | Transaction<Database>;
  *  chain DATA (editable via the definitions API). */
 export const DEFAULT_STEP_SLA_HOURS = 48;
 
-const approverSpec = z.string().regex(/^(reporting_manager|functional_manager|department_head|role:[A-Za-z0-9_.-]+|user:[1-9]\d*)$/,
-  'Use a reporting manager, functional manager, role code or positive user ID')
+const approverSpec = z.string().regex(/^(reporting_manager|functional_manager|department_head|travel_admin|travel_sea_manager|travel_africa_reviewer|role:[A-Za-z0-9_.-]+|user:[1-9]\d*|setting:[A-Za-z0-9_.-]+)$/,
+  'Use a reporting manager, functional manager, department head, travel approver, role code, setting key or positive user ID')
   .refine(value => !value.startsWith('user:') || Number.isSafeInteger(Number(value.slice(5))), 'User ID is out of range');
 
 const stepSpecSchema = z.object({

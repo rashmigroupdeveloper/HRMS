@@ -1,4 +1,5 @@
 /** LC-01: candidate table columns use actual source values and explicit actions. */
+import { PrejoinLinkAction } from './PrejoinLinkAction';
 import { formatCalendarDate } from '../../lib/date';
 import { ArrowRight } from 'lucide-react';
 import { Button, StatusBadge, type Column } from '../../ui';
@@ -7,6 +8,7 @@ export function onboardingColumns(
   companies: ReferenceCatalog['companies'] | undefined,
   onCheckDuplicate: (candidate: CandidateItem) => Promise<void>,
   onConvert: (candidate: CandidateItem) => void,
+  onIssueLink?: (candidate: CandidateItem) => Promise<void>,
 ): Column<CandidateItem>[] {
   return [
     {
@@ -99,6 +101,7 @@ export function onboardingColumns(
             </Button>
           )}
 
+          {['awaiting_prejoin','link_sent'].includes(c.status) && onIssueLink && <PrejoinLinkAction candidate={c} issue={onIssueLink} />}
           {c.status === 'converted' && <StatusBadge tone="positive">Employee created</StatusBadge>}
         </div>
       ),

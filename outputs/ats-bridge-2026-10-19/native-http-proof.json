@@ -1,0 +1,18 @@
+{
+  "syntheticOnly": true,
+  "sourceRoute": "ATS HR records consent -> source receipt/outbox -> signed HTTP -> HRMS separate prejoin receipt",
+  "firstHttpStatus": 201,
+  "replayHttpStatus": 200,
+  "changedSnapshotStatus": 409,
+  "sourceReceiptCount": 1,
+  "hrmsReceiptCount": 1,
+  "employeeCount": 0,
+  "prejoinStatus": "awaiting_prejoin",
+  "rawTokenAbsent": true,
+  "deliveryTimestampAbsent": true,
+  "sourceTransactions": "real PostgreSQL savepoints inside rollback-only fixture",
+  "hrmsTransaction": "real PostgreSQL rollback-only fixture",
+  "productionAcceptance": false,
+  "sharedLoginImplemented": false,
+  "cleanup": "both outer transactions rolled back; listeners closed"
+}

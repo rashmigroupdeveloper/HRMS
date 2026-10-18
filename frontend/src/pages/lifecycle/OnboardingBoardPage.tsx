@@ -262,7 +262,15 @@ export function OnboardingBoardPage() {
     }
   };
 
-  const columns = onboardingColumns(references.data?.companies, handleCheckDuplicate, openConvertWizard);
+  const issuingLink=useRef(false);
+  async function issuePrejoinLink(candidate:CandidateItem){
+    if(issuingLink.current)throw new Error('Another prejoin link is being created. Please try again.');issuingLink.current=true;
+    try{
+      const result=await apiFetch<{rawToken:string;expiresAt:string}>(`/api/lifecycle/candidates/${String(candidate.id)}/prejoin-link`,{method:'POST',body:JSON.stringify({candidateId:candidate.id})});
+      setCopiedToken(result.rawToken);toast.success('New prejoin link created. Any earlier unsubmitted link is now invalid.');
+    }finally{issuingLink.current=false;}
+  }
+  const columns = onboardingColumns(references.data?.companies, handleCheckDuplicate, openConvertWizard, issuePrejoinLink);
 
   return (
     <div className="space-y-8">

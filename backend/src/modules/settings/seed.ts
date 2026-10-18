@@ -54,6 +54,31 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
     valueType: 'number',
     description: 'ATT-02: hours before shift start a swipe still belongs to that shift',
   },
+  // ── Travel & Expense (TE-01..12, Live EMS Routing) ────────────────────────
+  {
+    key: 'te.admin_employee_id',
+    value: '',
+    valueType: 'string',
+    description: 'TE-01/10: Ecode or numeric ID of the primary Travel/Org Admin approver (legacy RML000435); empty falls back to hr_head / super_admin',
+  },
+  {
+    key: 'te.sea_manager_employee_id',
+    value: '',
+    valueType: 'string',
+    description: 'TE-02: Ecode or numeric ID of the South-East Asia regional manager for international travel budgets/claims in SEA region',
+  },
+  {
+    key: 'te.africa_reviewer_employee_id',
+    value: '',
+    valueType: 'string',
+    description: 'TE-02: Ecode or numeric ID of the Africa regional reviewer for international travel budgets/claims in Africa region',
+  },
+  {
+    key: 'te.closed_travel_month',
+    value: '2026-06',
+    valueType: 'string',
+    description: 'TE-10: Closed travel month (YYYY-MM); travel dates on or before this month cannot be claimed as drafts',
+  },
   {
     key: 'att.swipe_window_late_hours',
     value: 8,

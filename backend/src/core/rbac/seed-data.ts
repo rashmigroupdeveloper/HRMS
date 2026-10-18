@@ -54,6 +54,7 @@ export const ROLES: readonly RoleSeed[] = [
 ] as const;
 
 export const PERMISSIONS = [
+  'auth.sso',
   'employee.read',
   'employee.write',
   'employee.compensation.read',
@@ -122,11 +123,13 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'employee.read', scope: 'own' },
     { permission: 'employee.compensation.read', scope: 'own', note: 'own payslip only' },
     { permission: 'employee.statutory_ids.read', scope: 'own' },
+    { permission: 'auth.sso', scope: 'all' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
   ],
   manager: [
     { permission: 'employee.read', scope: 'subtree' },
+    { permission: 'auth.sso', scope: 'all' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
     { permission: 'attendance.team.read', scope: 'subtree' },
@@ -140,6 +143,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
   ],
   senior_manager: [
     { permission: 'employee.read', scope: 'subtree' },
+    { permission: 'auth.sso', scope: 'all' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
     { permission: 'attendance.team.read', scope: 'subtree', note: 'entire subtree (KQ)' },
@@ -154,6 +158,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
   hr_ops: [
     { permission: 'employee.read', scope: 'org_unit' },
     { permission: 'employee.write', scope: 'org_unit' },
+    { permission: 'auth.sso', scope: 'all' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
     { permission: 'attendance.team.read', scope: 'org_unit' },
@@ -176,6 +181,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'employee.read', scope: 'all' },
     { permission: 'employee.write', scope: 'all' },
     { permission: 'employee.compensation.read', scope: 'all' },
+    { permission: 'auth.sso', scope: 'all' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
     { permission: 'attendance.team.read', scope: 'all' },
@@ -208,6 +214,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'employee.read', scope: 'all' },
     { permission: 'employee.compensation.read', scope: 'all' },
     { permission: 'employee.statutory_ids.read', scope: 'all', note: 'the only unmasked role besides super_admin' },
+    { permission: 'auth.sso', scope: 'all' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
     { permission: 'attendance.team.read', scope: 'readonly' },
@@ -225,6 +232,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
   ],
   plant_head: [
     { permission: 'employee.read', scope: 'org_unit', note: 'read-only' },
+    { permission: 'auth.sso', scope: 'all' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
     { permission: 'attendance.team.read', scope: 'org_unit', note: 'read-only' },
@@ -234,6 +242,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
   ceo_cell: [
     { permission: 'employee.read', scope: 'readonly' },
     { permission: 'employee.compensation.read', scope: 'readonly', note: 'aggregates only — never individual salaries' },
+    { permission: 'auth.sso', scope: 'all' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
     { permission: 'attendance.team.read', scope: 'readonly' },
@@ -242,6 +251,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
   ],
   it_admin: [
     { permission: 'employee.read', scope: 'readonly', note: 'directory basics; NO salary/statutory visibility' },
+    { permission: 'auth.sso', scope: 'all' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
     { permission: 'assets.manage', scope: 'all' },
@@ -257,6 +267,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     // Department-scoped: people, team attendance, approvals and HR reports for the
     // HOD's department only. No attendance edits, no compensation (ROLE_TASKS §4).
     { permission: 'employee.read', scope: 'department' },
+    { permission: 'auth.sso', scope: 'all' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
     { permission: 'attendance.team.read', scope: 'department' },
