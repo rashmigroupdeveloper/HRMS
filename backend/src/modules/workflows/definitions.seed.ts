@@ -100,6 +100,12 @@ export const WORKFLOW_DEFINITIONS: readonly DefinitionSeed[] = [
     ],
   },
   {
+    // RQ-CORE-025: ESS family / nominee change → HR ops approves before the master changes.
+    code: 'family_update',
+    name: 'Family / Nominee Update',
+    steps: [{ step: 1, approver: 'role:hr_ops', slaHours: 72, onBreach: 'escalate' }],
+  },
+  {
     code: 'letter_signature',
     name: 'Letter Signature Approval',
     steps: [

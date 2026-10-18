@@ -1,3 +1,5 @@
+import { registerEmployeesWorkflowHooks } from './modules/employees/index.js';
+import { sql } from 'kysely';
 import { registerLoansWorkflowHooks } from './modules/loans/index.js';
 import { registerTravelWorkflowHooks } from './modules/travel/index.js';
 import { registerLifecycleWorkflowHooks } from './modules/lifecycle/index.js';
@@ -93,6 +95,7 @@ export function createApp(deps?: Partial<AppDeps>): Express {
   registerLeaveWorkflowHooks();
   registerLettersWorkflowHooks();
   registerLifecycleWorkflowHooks();
+  registerEmployeesWorkflowHooks();
   registerTravelWorkflowHooks();
   registerLoansWorkflowHooks();
 
@@ -201,6 +204,25 @@ export function createApp(deps?: Partial<AppDeps>): Express {
       .catch(next);
   });
 
+  /**
+   * Readiness (MNC hardening): the load balancer only routes to an instance
+   * whose database answers. Liveness (/health) stays dependency-free.
+   */
+  app.get('/health/ready', (req, res) => {
+    const requestId = (req as Request & { id?: string }).id ?? null;
+    const started = Date.now();
+    const db = resolved.db;
+    const check = db === null ? Promise.resolve(false) : sql`select 1`.execute(db).then(() => true, () => false);
+    void check.then((ok) => {
+      res.status(ok ? 200 : 503).json({
+        success: ok,
+        data: { status: ok ? 'ready' : 'unavailable', service: 'hrms-api', checks: { database: ok ? 'ok' : 'down' }, latencyMs: Date.now() - started },
+        error: ok ? null : 'Database unavailable',
+        meta: { ts: new Date().toISOString(), requestId },
+      });
+    });
+  });
+
   app.get('/health', (_req, res) => {
     res.json({
       success: true,
@@ -236,7 +258,8 @@ export function createApp(deps?: Partial<AppDeps>): Express {
         ? err.status
         : 500;
 
-    logger.error({ path: req.path, method: req.method, status }, 'unhandled request error');
+    const requestId = (req as Request & { id?: string }).id ?? null;
+    logger.error({ path: req.path, method: req.method, status, requestId }, 'unhandled request error');
 
     res.status(status).json({
       success: false,
@@ -244,7 +267,8 @@ export function createApp(deps?: Partial<AppDeps>): Express {
       // A stack never crosses the wire. 5xx says nothing at all: the detail is
       // in the server log, correlated by the log line above.
       error: status >= 500 ? 'Something went wrong on our side.' : 'Invalid request.',
-      meta: null,
+      // Quote this id to support; it correlates with the server log line above.
+      meta: { requestId },
     });
   });
 

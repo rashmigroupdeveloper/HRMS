@@ -28,7 +28,9 @@ const rpcHandler = new OpenAPIHandler(appRouter, {
       const status = error instanceof ORPCError ? error.status : 500;
       if (status >= 500) {
         const url = options.request.url.pathname;
-        logger.error({ err: error, cause: error instanceof ORPCError ? error.cause : undefined, url }, 'unhandled API error');
+        const ctx: unknown = (options as { context?: unknown }).context;
+        const requestId = typeof ctx === 'object' && ctx !== null && 'req' in ctx ? (ctx.req as { id?: string } | undefined)?.id : undefined;
+        logger.error({ err: error, cause: error instanceof ORPCError ? error.cause : undefined, url, requestId }, 'unhandled API error');
       }
     }),
   ],

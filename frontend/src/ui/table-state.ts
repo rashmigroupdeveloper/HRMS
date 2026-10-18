@@ -43,7 +43,9 @@ export const saveViews = (tableId: string, views: TableView[]): void => {
 /** RFC 4180 CSV with a UTF-8 BOM so Excel on Windows keeps ₹ and Indic names intact. */
 export function toCsv(header: string[], rows: (string | number | null)[][]): string {
   const esc = (v: string | number | null): string => {
-    const s = v === null ? '' : String(v);
+    const raw = v === null ? '' : String(v);
+    // CSV/formula-injection guard: text a spreadsheet would execute gets a leading apostrophe.
+    const s = typeof v === 'string' && /^[=+\-@\t\r]/.test(raw) && !/^[+-]?[\d\s().]+$/.test(raw) ? `'${raw}` : raw;
     return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return `\uFEFF${[header, ...rows].map((r) => r.map(esc).join(',')).join('\r\n')}`;
