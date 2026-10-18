@@ -4,6 +4,7 @@ export { MockKentConnector, type KentConnector, type RawSwipe } from './kent-con
 export { runKentSync, KENT_SOURCE } from './kent-sync.job.js';
 export { kentConnectorFromEnv, kentConfigFromEnv, KentHttpConnector, KentFeedError } from './kent-http-connector.js';
 export { createKentSimulator } from './kent-simulator.js';
+export { queueMissingDays, queueRecentMissingDays } from './day-materialize.js';
 export { attendanceRouter } from './attendance.router.js';
 export { attendanceConfigRouter } from './attendance-config.router.js';
 export { attendanceRequestsRouter } from './attendance-requests.router.js';
