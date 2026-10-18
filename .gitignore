@@ -30,3 +30,5 @@ coverage/
 
 # local object-storage dev root (SeaweedFS stand-in — docs/14 §4)
 backend/var/
+docs/qa-handover/fix-verify/recon/out/
+__pycache__/

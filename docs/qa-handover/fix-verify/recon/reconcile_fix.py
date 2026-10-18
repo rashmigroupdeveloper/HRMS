@@ -4,9 +4,10 @@ Conventions: docs/10 + sample register (PF 12% of ACTUAL earned basic, no ceilin
 import json, subprocess, math, csv, io, os, sys
 DB = sys.argv[1] if len(sys.argv) > 1 else 'hrms_fix_recon'
 RUNS = sys.argv[2] if len(sys.argv) > 2 else '4,5'
-OUT = sys.argv[3] if len(sys.argv) > 3 else '/workspace/hrms-test/fix-verify/recon/reconciliation.json'
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUT = sys.argv[3] if len(sys.argv) > 3 else os.path.join(HERE, 'reconciliation.json')
 from decimal import Decimal, ROUND_HALF_UP
-os.chdir('/workspace/hrms-test/payroll')
+os.chdir(os.path.join(HERE, '../../payroll'))  # cohort.json
 ENV = dict(os.environ, PGPASSWORD='hrms_local_dev')
 def q(sql):
     out = subprocess.run(['psql','-h','localhost','-U','hrms','-d',DB,'--csv','-c',sql],capture_output=True,text=True,env=ENV,check=True).stdout
@@ -24,8 +25,9 @@ lines = {}
 for x in q(f"select item_id, component_code, amount from pay.payroll_item_lines where item_id in (select id from pay.payroll_items where run_id in ({RUNS}))"):
     lines.setdefault(x['item_id'], {})[x['component_code']] = float(x['amount'])
 first = {}
-for row in open('logs/items_first_compute.tsv'):
-    p = row.rstrip('\n').split('\t'); first[p[1]] = {'net': float(p[6]), 'lines': json.loads(p[8])}
+if os.path.exists('logs/items_first_compute.tsv'):  # tester-only artefact (not shipped); informational
+    for row in open('logs/items_first_compute.tsv'):
+        p = row.rstrip('\n').split('\t'); first[p[1]] = {'net': float(p[6]), 'lines': json.loads(p[8])}
 
 # Expected payable days (independent, from the attendance plan + policy)
 EXP_DAYS = {'RML033902':28,'RML033904':30,'RML033908':15,'RML033909':20,'RML033910':27,'RML033911':0,'RML033922':7,
