@@ -2,10 +2,12 @@ import { defineConfig, devices } from '@playwright/test';
 
 const chrome = { launchOptions: { executablePath: process.env.E2E_CHROME ?? '/usr/bin/google-chrome' } };
 const desktop = { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 }, ...chrome };
+/** E2E_PROD=1: production-readiness pass on a fresh empty DB (scripts/prod-reset.sh); runs only the `prod` project. */
+const PROD = process.env.E2E_PROD === '1';
 
 export default defineConfig({
   testDir: './tests',
-  globalSetup: './lib/global-setup.ts',
+  globalSetup: PROD ? undefined : './lib/global-setup.ts',
   outputDir: './reports/artifacts',
   timeout: 90_000,
   expect: { timeout: 8_000 },
@@ -27,7 +29,7 @@ export default defineConfig({
     locale: 'en-IN',
     timezoneId: 'Asia/Kolkata',
   },
-  projects: [
+  projects: PROD ? [{ name: 'prod', testMatch: /prod\/.*\.spec\.ts/, use: { ...desktop } }] : [
     { name: 'api', testMatch: /api\/(?!concurrency).*\.spec\.ts/, use: { ...desktop } },
     // Parallel-request races on payroll/F&F/imports: after the stateful payroll project.
     { name: 'concurrency', testMatch: /api\/concurrency\.spec\.ts/, dependencies: ['payroll'], use: { ...desktop } },

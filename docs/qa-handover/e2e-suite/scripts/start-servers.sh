@@ -11,6 +11,11 @@ PORT=$E2E_BACKEND_PORT DATABASE_URL=$E2E_DATABASE_URL CORS_ORIGIN=http://localho
   RATE_LIMIT_AUTH_PER_IDENTIFIER=${RATE_LIMIT_AUTH_PER_IDENTIFIER:-10000} RATE_LIMIT_AUTH_PER_ADDRESS=100000 RATE_LIMIT_GLOBAL_PER_ADDRESS=1000000 \
   nohup node --import tsx ./src/index.ts > $E2E_LOGS/backend.log 2>&1 &
 echo $! > $E2E_LOGS/backend.pid
+# E2E_WORKER=1: also run the pg-boss worker (recompute queue, accruals, Kent sync) as production does.
+if [ "${E2E_WORKER:-0}" = 1 ]; then
+  DATABASE_URL=$E2E_DATABASE_URL STORAGE_DIR=$E2E_ROOT/.storage E2E_INSTANCE=1 nohup node --import tsx ./src/jobs/worker.ts > $E2E_LOGS/worker.log 2>&1 &
+  echo $! > $E2E_LOGS/worker.pid
+fi
 cd "$E2E_ROOT/.app/frontend"
 VITE_API_TARGET=http://localhost:$E2E_BACKEND_PORT nohup node "$E2E_ROOT/.app/frontend/node_modules/vite/bin/vite.js" --port $E2E_FRONTEND_PORT --strictPort > $E2E_LOGS/frontend.log 2>&1 &
 echo $! > $E2E_LOGS/frontend.pid

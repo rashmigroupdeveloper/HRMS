@@ -55,3 +55,16 @@ feedback is missing or unclear). Overall = mean, shown per task in E2E_RESULTS.m
 
 ## Dev helpers
 `tools/explore.mjs` (nav + ARIA dump per role), `tools/explore-click.mjs` (open a drawer and dump it), `tools/probe.mjs` (API status matrix).
+
+## Production-readiness pass (fresh empty DB)
+`scripts/run-prod.sh` drops/creates `hrms_e2e_prod` EMPTY, runs migrations and the app seeds twice (idempotency), creates the
+break-glass admin with `backend/scripts/create-admin.ts`, starts backend + **worker** + frontend on it and runs
+`tests/prod/production-readiness.spec.ts` (`E2E_PROD=1`): org masters → employees → logins (forced password change) → roles →
+opening balances → holidays → salary → Kent sync → punches → leave → muster/sign-off/lock → payroll → payslip, then a UI sweep
+of every persona's nav for crashes / "coming soon" / mock copy. Product gaps bridged with SQL so later steps still run are
+annotated `WORKAROUND E2E-0xx` and listed in `.logs/prod-gaps.txt`. Servers are put back on `hrms_e2e` afterwards.
+
+## Concurrency
+`tests/api/concurrency.spec.ts` (project `concurrency`, runs after `payroll`) fires the same state change in parallel:
+leave submit, workflow approve, approve-vs-reject, bulk commit, overlapping punch uploads, payroll compute/approve/finalize,
+payslip + bank-file generation, mark-paid, clearance sign-off, F&F pay. Each must win exactly once and leave no duplicates.

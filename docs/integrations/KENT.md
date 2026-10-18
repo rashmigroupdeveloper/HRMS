@@ -44,5 +44,17 @@ curl -XPOST localhost:5199/_sim/punches -d '[{"employeeNo":"RML033625","punchTim
 `KENT_SIM_FAIL_EVERY=3` makes every third call return 503 to exercise retries. Tests:
 `backend/tests/kent-adapter.integration.test.ts` (paging, retry, auth, device map, ingest, dedupe, unmatched).
 
+## From punches to payroll (month close)
+- A swipe dirties its own day (and the previous day, for night-shift attribution); `kent-sync` recomputes them.
+- Days with **no** swipe (absence, week-off, holiday) are created by the hourly `attendance-materialize` job
+  (last `att.materialize_lookback_days`, default 45, up to yesterday) or on demand with
+  `POST /api/attendance/recompute {"companyId", "from", "until"}` (≤ 62 days, entity-scoped).
+- An absence is final only when every active door of the employee's location is complete through shift end
+  (`completeThrough` from `/devices`); until then the day is held. A door without a location in
+  Admin → Attendance masters holds every absence at that location and blocks the month lock.
+- Week close (Monday 02:00) decides paid/forfeited week-offs; month lock freezes the attendance window
+  (`att.cycle_start_day`); muster LOP equals the payroll deduction.
+- Proven end to end by scenario-matrix cases K01–K03 (`docs/qa-handover/attendance-payroll/scripts`).
+
 ## Go-live checklist with the real API
 1. Get base URL, key, field names, device list from Kent/IT. 2. Fill `KENT_DEVICE_MAP` so every device maps to a door in Admin → Attendance masters. 3. Point at a staging DB, run Sync now, compare one day's muster with Kent's own report. 4. Backfill the current month. 5. Enable in production.

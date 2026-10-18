@@ -158,9 +158,105 @@ cases += [
       params={'basic': 30000, 'gross': 50000, 'daysPayable': 20, 'elBalanceDays': 15, 'shortfallDays': 10, 'doj': '2019-07-01', 'lwd': '2026-06-20'}, expect={'gratuity': 121154, 'leaveEncashment': 15000, 'noticeRecovery': 10000, 'net': 159487}),
 ]
 
+# ── Kent feed end to end (owner bar #2): simulator punches → adapter → ingest/dedupe → day
+# status → no-swipe days materialised → week close → month lock → muster → payroll.
+# Shift used by these cases: 09:00–18:00, unpaid break 60 min, full day ≥ 8 h, half day ≥ 4 h.
+KENT_SHIFT = {'start': '09:00', 'end': '18:00', 'break': 60, 'full': 8, 'half': 4}
+PATTERNS = {  # pattern → punches [(device, HH:MM)], all FILO on the same day
+    'P':     [('G1', '09:02'), ('G1', '18:05')],          # 543 − 60 = 483 ≥ 480 → P
+    'P2':    [('G1', '08:55'), ('G2', '18:01')],          # in at one door, out at another: 546 − 60 = 486 → P
+    'HD':    [('G1', '09:00'), ('G1', '14:00')],          # 300 − 60 = 240 ≥ 240 → HD
+    'SHORT': [('G1', '09:00'), ('G1', '12:30')],          # 210 − 60 = 150 < 240 → A
+    'IN':    [('G1', '09:00')],                           # single punch, no out → A
+    'DUP':   [('G1', '09:02'), ('G1', '18:05')],          # P, every punch delivered twice → deduped
+    'LATE':  [('G1', '09:02'), ('G1', '18:05')],          # P, buffered by the device, arrives in the 2nd sync
+    'NONE':  [],
+}
+def kstatus(pattern):
+    pts = PATTERNS[pattern]
+    if len(pts) < 2: return 'A'
+    mins = lambda t: int(t[:2]) * 60 + int(t[3:])
+    worked = mins(pts[-1][1]) - mins(pts[0][1]) - KENT_SHIFT['break']
+    return 'P' if worked >= KENT_SHIFT['full'] * 60 else 'HD' if worked >= KENT_SHIFT['half'] * 60 else 'A'
+
+def iso_days(a, b):
+    d = dt.date.fromisoformat(a)
+    while d.isoformat() < b:
+        yield d; d += dt.timedelta(days=1)
+
+def K(cid, title, derivation, month, window, plan, settings=None, through=None, backfill=(), unmapped=False):
+    """window = attendance window [from, until); through = last punch date (after-cut-off days)."""
+    punches, batch2, days = [], [], {}
+    last = through or window[1]
+    for d in iso_days(window[0], last):
+        iso = d.isoformat(); sunday = d.weekday() == 6
+        pat = plan.get(iso, 'NONE' if sunday else 'P')
+        for dev, hm in PATTERNS[pat]:
+            pt_ = f'{iso} {hm}:00'
+            rec = (dt.datetime.fromisoformat(f'{iso}T{hm}') + dt.timedelta(minutes=1)).isoformat() + '+05:30'
+            item = {'employeeNo': 'SELF', 'deviceId': dev, 'punchTime': pt_, 'direction': 'in' if hm < '13:00' else 'out'}
+            if pat == 'LATE':
+                batch2.append({**item, 'receivedAt': f'{dt.date.fromisoformat(last).isoformat()}T10:00:00+05:30'})
+            else:
+                punches.append({**item, 'receivedAt': rec})
+                if pat == 'DUP': punches.append({**item, 'receivedAt': rec})
+        if iso < window[1]:
+            days[iso] = 'WO' if sunday else kstatus(pat)
+    # Week close (ATT-09): WO paid when ≥ 1 present day (P/HD/H/OD/CO) in its Mon–Sun week, among window days.
+    for iso, code in list(days.items()):
+        if code == 'WO':
+            sun = dt.date.fromisoformat(iso)
+            week = [(sun - dt.timedelta(days=k)).isoformat() for k in range(7)]
+            if not any(days.get(w) in ('P', 'HD') for w in week): days[iso] = 'WO:unpaid'
+    unpaid = sum({'A': 1, 'HD': 0.5, 'WO:unpaid': 1}.get(c, 0) for c in days.values())
+    m0 = dt.date.fromisoformat(month); m1 = (m0.replace(day=28) + dt.timedelta(days=4)).replace(day=1)
+    div = (m1 - m0).days
+    payable = div - unpaid
+    unique = len({(p['punchTime'], p['deviceId']) for p in punches})
+    c = dict(id=cid, kind='kent', title=title, derivation=derivation, month=month, settings=settings or {}, employee={}, salary=S30,
+             shift=KENT_SHIFT, window={'from': window[0], 'until': window[1]}, punches=punches, backfill=batch2, unmappedDevice=unmapped,
+             expect=dict(days_in_month=div, payable_days=payable))
+    c['expect'].update(payroll(c))
+    c['expectDays'] = days
+    # After the cut-off: a day gets an (unlocked) record when it has punches, or when the next day's
+    # punch dirties it (the engine re-evaluates the previous day for night-shift attribution).
+    pat_of = lambda d: plan.get(d.isoformat(), 'NONE' if d.weekday() == 6 else 'P')
+    after = {}
+    for d in iso_days(window[1], last):
+        nxt = d + dt.timedelta(days=1)
+        if pat_of(d) != 'NONE' or (nxt.isoformat() < last and pat_of(nxt) != 'NONE'):
+            after[d.isoformat()] = 'WO' if d.weekday() == 6 else kstatus(pat_of(d))
+    c['expectAfterCutoff'] = after
+    c['expectMuster'] = dict(present=sum(v == 'P' for v in days.values()), absent=sum(v == 'A' for v in days.values()),
+                             halfDays=sum(v == 'HD' for v in days.values()), weekoffs=sum(v.startswith('WO') for v in days.values()),
+                             weekoffsUnpaid=sum(v == 'WO:unpaid' for v in days.values()), lopDays=unpaid)
+    c['expectSync'] = dict(firstFetched=len(punches), firstInserted=unique, secondInserted=len(batch2) + 2, thirdInserted=0, unmatched=['KENTHB01'])
+    return c
+
+cases += [
+ K('K01', 'Kent feed → muster → payroll: calendar month with absences, half day, dedupe and backfill',
+   'June 2026 via the simulator: P on two doors 1 Jun; no punch 2 Jun (A); 09:00–14:00 3 Jun (240 min → HD); in-only 4 Jun (A); duplicate delivery 5 Jun (P, deduped); '
+   '09:00–12:30 6 Jun (150 min → A); no punches 8–13 Jun (6 A) → Sun 14 Jun forfeited; 16 Jun buffered, arrives in the 2nd sync (P). '
+   'LOP = 9 A + 0.5 HD + 1 unpaid WO = 10.5 → 19.5/30; gross 19500; PT 130 (15k–25k)',
+   '2026-06-01', ('2026-06-01', '2026-07-01'),
+   {'2026-06-01': 'P2', '2026-06-02': 'NONE', '2026-06-03': 'HD', '2026-06-04': 'IN', '2026-06-05': 'DUP', '2026-06-06': 'SHORT',
+    **{f'2026-06-{d:02d}': 'NONE' for d in range(8, 14)}, '2026-06-16': 'LATE'}),
+ K('K02', 'Kent feed with a 26–25 cycle: only window punches reach payroll',
+   'att.cycle_start_day=26, July payroll: window 26 Jun–25 Jul. A 29 Jun + A 14 Jul + HD 20 Jul (09:00–14:00) → LOP 2.5 → 28.5/31. '
+   'Punches 26–31 Jul (incl. a missed 28 Jul) are after the cut-off: they stay unlocked and are counted in August',
+   '2026-07-01', ('2026-06-26', '2026-07-26'),
+   {'2026-06-29': 'NONE', '2026-07-14': 'NONE', '2026-07-20': 'HD', '2026-07-28': 'NONE'}, settings={'att.cycle_start_day': 26}, through='2026-08-01'),
+ K('K03', 'Kent door not mapped to a location: absences are held and the month cannot lock until HR maps it',
+   'Door G1 has no location: the no-punch day 2 Jun stays held (no day record), the lock is refused (attendance_complete, recompute_drained, sync_watermark). '
+   'After HR maps the door the day resolves to A, the month locks and pays 29/30',
+   '2026-06-01', ('2026-06-01', '2026-07-01'), {'2026-06-02': 'NONE'}, unmapped=True),
+]
+for c in cases:
+    if c['id'] == 'K03': c['expectBlocked'] = ['attendance_complete', 'recompute_drained', 'sync_watermark']
+
 out = Path(__file__).with_name('scenario-matrix.json')
 out.write_text(json.dumps({'generated_by': 'build_matrix.py', 'cases': cases}, indent=1, ensure_ascii=False) + '\n')
 print(f'{len(cases)} cases → {out}')
 for c in cases:
-    if c['kind'] == 'payroll':
+    if c['kind'] in ('payroll', 'kent'):
         e = c['expect']; print(c['id'], e['payable_days'], '/', e['days_in_month'], 'gross', e['gross'], 'pf', e['PF_EE'], 'esi', e['ESI_EE'], 'pt', e['PT'], 'tds', e['TDS'], 'net', e['net'])

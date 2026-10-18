@@ -106,12 +106,30 @@ function sandwichedDays(facts: readonly DayFact[], weights: number[]): Set<numbe
   return out;
 }
 
+/** Per-day unpaid weights after the sandwich rule (calendar-type divisors only). */
+function weighFacts(sortedFacts: readonly DayFact[], divisor: LopDivisor, sandwichRule: boolean) {
+  const weights = sortedFacts.map(unpaidWeight);
+  const calendarDivisor = divisor === 'CALENDAR' || divisor === 'FIXED_30';
+  const sandwich = sandwichRule && calendarDivisor ? sandwichedDays(sortedFacts, weights) : new Set<number>();
+  for (const k of sandwich) weights[k] = 1;
+  return { weights, sandwich, calendarDivisor };
+}
+
+/**
+ * LOP day-equivalents of a set of window facts exactly as payroll deducts them —
+ * the muster's LOP column uses this so muster and payslip never disagree.
+ * Calendar-type divisors count every unpaid day; FIXED_26/WORKING_DAYS only
+ * unpaid working days (an unpaid WO is not a working day there).
+ */
+export function unpaidDayEquivalents(facts: readonly DayFact[], divisor: LopDivisor, sandwichRule: boolean): number {
+  const sorted = [...facts].sort((a, b) => a.iso.localeCompare(b.iso));
+  const { weights, calendarDivisor } = weighFacts(sorted, divisor, sandwichRule);
+  return sorted.reduce((s, f, k) => (calendarDivisor || !OFF.includes(f.status) ? s + (weights[k] ?? 0) : s), 0);
+}
+
 export function evaluatePayableDays(input: PayableInput): PayableResult {
   const facts = [...input.facts].sort((a, b) => a.iso.localeCompare(b.iso));
-  const weights = facts.map(unpaidWeight);
-  const calendarDivisor = input.divisor === 'CALENDAR' || input.divisor === 'FIXED_30';
-  const sandwich = input.sandwich && calendarDivisor ? sandwichedDays(facts, weights) : new Set<number>();
-  for (const k of sandwich) weights[k] = 1;
+  const { weights, sandwich } = weighFacts(facts, input.divisor, input.sandwich);
 
   const isOff = (iso: string): boolean => {
     const fact = facts.find((f) => f.iso === iso);
