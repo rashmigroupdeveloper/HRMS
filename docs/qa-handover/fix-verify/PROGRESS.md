@@ -42,3 +42,5 @@ New directives queued (parent steering 23:21–23:27):
   Importers: payroll inputs/recoveries (+Report 4 layout), parallel-run register (Report 4), salary assignment/revision, employee master,
   punches (Kent EmployeeSwipeDetails layout), leave balance adjustments, loans, statutory rates/PT slabs, holidays, assets, F&F inputs (SOW-221).
 - DOCS_READ §D items 1–18.
+
+E2E (job/e2e, 01:40 IST 19-Oct): baseline on main c1cfe2c with the snapshot was 269 tests: 196 pass, 69 fail, 4 skip. Added scope and concurrency specs. Concurrency found E2E-022 (F&F double pay → 5 letters), E2E-023 (duplicate bank batches) and E2E-024 (overlapping punch uploads fail with 409). Production-readiness pass is next.
