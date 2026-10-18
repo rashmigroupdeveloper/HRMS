@@ -120,6 +120,9 @@ const revokeProcedure = guard()
     });
   });
 
+/** Roles whose authority is one entity (docs/08 §2 owner rule); a grant must name the org unit. */
+const ENTITY_SCOPED_ROLES = new Set(['hr_ops', 'payroll_admin', 'plant_head']);
+
 const assignRoleProcedure = guard()
   .route({ method: 'POST', path: '/rbac/user-roles', summary: 'Assign a role to a user (runtime, audited)' })
   .input(
@@ -137,6 +140,10 @@ const assignRoleProcedure = guard()
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
 
     await assertRoleDelegation(db, context.user.id, input.userId, role.id);
+    // E2E-010 (RQ-RBAC-004): entity-scoped roles never silently become group-wide.
+    if (ENTITY_SCOPED_ROLES.has(input.role) && (input.scopeOrgUnitId ?? null) === null) {
+      throw new ORPCError('BAD_REQUEST', { message: `${input.role} is entity-scoped: choose the org unit (company) this grant covers` });
+    }
     await assignRoleToUser(db, input.userId, role.id, input.scopeOrgUnitId ?? null);
     await writeAudit(db, {
       actorUserId: context.user.id,

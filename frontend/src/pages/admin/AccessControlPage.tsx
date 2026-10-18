@@ -48,6 +48,9 @@ interface DirectoryUser {
 }
 
 /** `attendance.roster.write` → "attendance" — the module the permission guards. */
+/** Mirrors the API rule (E2E-010): these roles must name the entity they cover. */
+const ENTITY_SCOPED_ROLES = new Set(['hr_ops', 'payroll_admin', 'plant_head']);
+
 function domainOf(permission: string): string {
   const dot = permission.indexOf('.');
   return dot === -1 ? 'general' : permission.slice(0, dot);
@@ -288,12 +291,20 @@ function PeoplePanel() {
     description: r.code,
   }));
 
+  const [orgUnits, setOrgUnits] = useState<SelectOption[]>([]);
+  const [addScope, setAddScope] = useState<Record<number, string>>({});
+  useEffect(() => {
+    apiFetch<{ orgUnits: { id: number; name: string; companyCode: string }[] }>('/api/core/org-units')
+      .then((r) => { setOrgUnits(r.orgUnits.map((o) => ({ value: String(o.id), label: `${o.companyCode} · ${o.name}` }))); })
+      .catch(() => { setOrgUnits([]); });
+  }, []);
+
   const mutate = async (user: DirectoryUser, role: string, add: boolean) => {
     setBusy(user.userId);
     try {
       await apiFetch('/api/rbac/user-roles', {
         method: add ? 'POST' : 'DELETE',
-        body: JSON.stringify(add ? { userId: user.userId, role } : { userId: user.userId, role }),
+        body: JSON.stringify(add ? { userId: user.userId, role, ...(addScope[user.userId] ? { scopeOrgUnitId: Number(addScope[user.userId]) } : {}) } : { userId: user.userId, role }),
       });
       toast.success(add ? 'Role assigned' : 'Role removed', {
         description: `${user.name ?? user.email} · ${role}. Effective next request; audited.`,
@@ -357,11 +368,21 @@ function PeoplePanel() {
                         setAddRole((prev) => ({ ...prev, [user.userId]: value }));
                       }}
                     />
+                    {ENTITY_SCOPED_ROLES.has(addRole[user.userId] ?? '') && (
+                      <Select
+                        label="Entity (org unit)"
+                        required
+                        value={addScope[user.userId] ?? ''}
+                        placeholder="Choose…"
+                        options={orgUnits}
+                        onChange={(value) => { setAddScope((prev) => ({ ...prev, [user.userId]: value })); }}
+                      />
+                    )}
                     <Button
                       size="sm"
                       variant="primary"
                       loading={busy === user.userId}
-                      disabled={(addRole[user.userId] ?? '') === ''}
+                      disabled={(addRole[user.userId] ?? '') === '' || (ENTITY_SCOPED_ROLES.has(addRole[user.userId] ?? '') && !addScope[user.userId])}
                       onClick={() => {
                         void mutate(user, addRole[user.userId] ?? '', true);
                       }}

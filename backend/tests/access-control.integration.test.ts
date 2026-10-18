@@ -124,6 +124,10 @@ run('central access control (live Postgres)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ userId: opsId, role: 'it_admin' });
     expect(assign.status).toBe(200);
+    // E2E-010: entity-scoped roles need an org unit; a duplicate NULL-scope grant is a no-op (E2E-018).
+    const unscoped = await (await httpRequest(app)).post('/api/rbac/user-roles').set('Authorization', `Bearer ${adminToken}`).send({ userId: opsId, role: 'payroll_admin' });
+    expect(unscoped.status).toBe(400);
+    expect((await (await httpRequest(app)).post('/api/rbac/user-roles').set('Authorization', `Bearer ${adminToken}`).send({ userId: opsId, role: 'it_admin' })).status).toBe(200);
 
     const opsToken = await loginToken(opsEmail);
     expect((await putSetting(opsToken)).status).toBe(200); // it_admin holds admin.settings
