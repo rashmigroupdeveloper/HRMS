@@ -25,6 +25,7 @@ import {
   runAbsenceScan,
   kentConnectorFromEnv,
   runKentSync,
+  queueRecentMissingDays,
   sendOvertimeSummaries,
 } from '../modules/attendance/index.js';
 import { registerLeaveWorkflowHooks, runCompOffExpiry, runMonthlyAccrual } from '../modules/leave/index.js';
@@ -43,6 +44,7 @@ import { istDateString, previousWeekStartIso } from '../core/dates.js';
 
 const KENT_SYNC_QUEUE = 'kent-sync';
 const RECOMPUTE_QUEUE = 'attendance-recompute';
+const MATERIALIZE_QUEUE = 'attendance-materialize';
 const WEEK_CLOSE_QUEUE = 'attendance-week-close';
 const ROSTER_REMINDER_QUEUE = 'roster-reminder';
 const WF_ESCALATION_QUEUE = 'workflow-escalation';
@@ -81,6 +83,7 @@ async function main(): Promise<void> {
   const queues = [
     KENT_SYNC_QUEUE,
     RECOMPUTE_QUEUE,
+    MATERIALIZE_QUEUE,
     WEEK_CLOSE_QUEUE,
     ROSTER_REMINDER_QUEUE,
     WF_ESCALATION_QUEUE,
@@ -180,6 +183,15 @@ async function main(): Promise<void> {
   await boss.schedule(RECOMPUTE_QUEUE, '* * * * *');
   await boss.work(RECOMPUTE_QUEUE, async () => {
     await drainRecomputeQueue(db);
+  });
+
+  // Days with no swipe (absence, week-off, holiday) get a day record too, hourly
+  // and before the 06:00 absence scan, so a Kent-fed month can close (owner bar #2).
+  await boss.schedule(MATERIALIZE_QUEUE, '10 * * * *');
+  await boss.work(MATERIALIZE_QUEUE, async () => {
+    const queued = await queueRecentMissingDays(db);
+    const processed = await drainRecomputeQueue(db);
+    logger.info({ queued, processed }, 'attendance days materialised');
   });
 
   // Week-off eligibility for the JUST-FINISHED week, Monday 02:00 IST (ATT-09).

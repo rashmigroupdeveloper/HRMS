@@ -18,6 +18,8 @@
  * Reads precomputed `reporting.kpi_daily` rows — no live aggregation on CEO
  * open (CLAUDE.md §1.9), with the snapshot timestamp shown on the page.
  */
+import type { SessionUser } from '../../lib/session';
+import { LeadershipInsights } from '../home/LeadershipInsights';
 import { useState } from 'react';
 import { Activity, Gauge, RefreshCw, TrendingDown, Users, UserX } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
@@ -51,7 +53,10 @@ const DEMOGRAPHIC_ROWS = [
   { label: 'Tenure', formula: 'AVG(age(doj)) of active, by category' },
   { label: 'Leadership %', formula: 'Active with grade.rank ≥ leadership cutoff ÷ active' },
   { label: 'Gender diversity %', formula: 'Active female employees ÷ total headcount' },
-  { label: 'Contract dependency ratio', formula: 'Contract count ÷ total manpower (contract staff not tracked yet)' },
+  {
+    label: 'Contract dependency ratio',
+    formula: 'Contract count ÷ total manpower (contract staff not tracked yet)',
+  },
   { label: 'Average CTC', formula: 'AVG(annual_ctc) by category and grade band' },
 ];
 
@@ -232,7 +237,9 @@ const leaverColumns: Column<LeaverRow>[] = [
     render: (r) => (
       <div>
         <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode} · {r.department ?? '—'}</p>
+        <p className="text-xs text-ink-muted">
+          {r.ecode} · {r.department ?? '—'}
+        </p>
       </div>
     ),
   },
@@ -248,10 +255,15 @@ const leaverColumns: Column<LeaverRow>[] = [
   },
   { key: 'resDate', header: 'Resigned', width: '100px', render: (r) => r.resignationDate },
   { key: 'lwd', header: 'LWD', width: '100px', render: (r) => r.lwd ?? '—' },
-  { key: 'reason', header: 'Reason', width: 'minmax(140px,1fr)', render: (r) => <span className="text-xs text-ink-muted">{r.reason ?? '—'}</span> },
+  {
+    key: 'reason',
+    header: 'Reason',
+    width: 'minmax(140px,1fr)',
+    render: (r) => <span className="text-xs text-ink-muted">{r.reason ?? '—'}</span>,
+  },
 ];
 
-export function ExecutivePage() {
+export function ExecutivePage({ user }: { user?: SessionUser }) {
   const [rebuilding, setRebuilding] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [leavers, setLeavers] = useState<LeaverRow[]>([]);
@@ -284,6 +296,7 @@ export function ExecutivePage() {
       ? undefined
       : kpis.data.metrics.find((m) => m.metric === metric && m.category === category);
 
+  const noSnapshot = kpis.data === null && !kpis.loading;
   const burnoutMetric = find('burnout_index');
   const headcount = find('manpower_count')?.value ?? null;
 
@@ -310,327 +323,389 @@ export function ExecutivePage() {
       <PageHeader
         eyebrow="Executive"
         title="Group dashboard"
-        description="Headcount, cost, absence and attrition across the group, from last night’s snapshot."
+        description={
+          noSnapshot
+            ? 'Headcount, movement and attrition across the group, live from HR reports.'
+            : 'Headcount, cost, absence and attrition across the group, from last night’s snapshot.'
+        }
         actions={
-          <div className="flex items-center gap-2">
-            {kpis.data === null ? (
-              <StatusBadge tone="neutral">No snapshot yet</StatusBadge>
-            ) : (
-              <StatusBadge tone="positive">Snapshot {kpis.data.snapshotDate}</StatusBadge>
-            )}
-            <Button
-              variant="secondary"
-              size="sm"
-              loading={rebuilding}
-              leadingIcon={<RefreshCw className="size-3.5" />}
-              onClick={() => { void handleRebuild(); }}
-            >
-              Rebuild snapshot
-            </Button>
-          </div>
+          noSnapshot ? undefined : (
+            <div className="flex items-center gap-2">
+              {kpis.data !== null && (
+                <StatusBadge tone="positive">Snapshot {kpis.data.snapshotDate}</StatusBadge>
+              )}
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={rebuilding}
+                leadingIcon={<RefreshCw className="size-3.5" />}
+                onClick={() => {
+                  void handleRebuild();
+                }}
+              >
+                Rebuild snapshot
+              </Button>
+            </div>
+          )
         }
       />
 
-      {/* Group hero (docs/06 §4, docs/12 Crextio): the one charcoal surface
+      {noSnapshot ? (
+        <>
+          <DarkCard className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-xl">
+              <p className="text-sm text-hero-muted">Group snapshot</p>
+              <h2 className="mt-3 text-3xl font-light tracking-tight text-hero-ink sm:text-4xl">
+                Tonight’s snapshot will fill in the group numbers.
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-hero-muted">
+                Cost, absenteeism, overtime and demographics come from a nightly snapshot that has
+                not run yet. The live trends below are already up to date.
+              </p>
+            </div>
+            <Button
+              variant="primary"
+              loading={rebuilding}
+              leadingIcon={<RefreshCw className="size-4" />}
+              onClick={() => {
+                void handleRebuild();
+              }}
+            >
+              Build it now
+            </Button>
+          </DarkCard>
+          {user && (
+            <LeadershipInsights
+              user={user}
+              title="The last twelve months"
+              subtitle="Live from the HR reports — no snapshot needed."
+            />
+          )}
+        </>
+      ) : (
+        <>
+          {/* Group hero (docs/06 §4, docs/12 Crextio): the one charcoal surface
           carries the headline number; tiles are the four the CEO asks first.
           A dash is "not measured yet", never a made-up figure. */}
-      <DarkCard className="grid gap-8 lg:grid-cols-[1.1fr_1.4fr]">
-        <div className="flex flex-col justify-between gap-6">
-          <div>
-            <p className="text-sm text-hero-muted">People on rolls · all companies</p>
-            <p className="mt-3 text-6xl font-light tabular-nums tracking-tight text-hero-ink sm:text-7xl">
-              {headcount === null ? '—' : <KpiNumber value={headcount} />}
-            </p>
-          </div>
-          <p className="max-w-md text-sm leading-6 text-hero-muted">
-            From last night’s snapshot. A dash means
-            not measured yet.
-          </p>
-        </div>
-        <dl className="u-stagger grid grid-cols-2 gap-3">
-          {(
-            [
-              ['Gross salary MTD', 'gross_salary_cost_mtd', '₹', '', 0],
-              ['Average CTC', 'average_ctc', '₹', '', 0],
-              ['Absenteeism', 'absenteeism_pct', '', '%', 1],
-              ['Attrition (annualised)', 'attrition_rate_annualised_pct', '', '%', 1],
-            ] as const
-          ).map(([label, metric, prefix, suffix, precision]) => {
-            const value = find(metric)?.value ?? null;
-            return (
-              <div
-                key={metric}
-                className="min-w-0 rounded-tile bg-[color-mix(in_srgb,var(--surface)_8%,transparent)] p-3.5 sm:p-5"
-              >
-                <dt className="text-xs text-hero-muted">{label}</dt>
-                <dd className="mt-3 truncate text-xl font-light tabular-nums text-hero-ink sm:text-3xl">
-                  {value === null ? (
-                    '—'
-                  ) : (
-                    <KpiNumber value={value} prefix={prefix} suffix={suffix} precision={precision} />
-                  )}
-                </dd>
+          <DarkCard className="grid gap-8 lg:grid-cols-[1.1fr_1.4fr]">
+            <div className="flex flex-col justify-between gap-6">
+              <div>
+                <p className="text-sm text-hero-muted">People on rolls · all companies</p>
+                <p className="mt-3 text-6xl font-light tabular-nums tracking-tight text-hero-ink sm:text-7xl">
+                  {headcount === null ? '—' : <KpiNumber value={headcount} />}
+                </p>
               </div>
-            );
-          })}
-        </dl>
-      </DarkCard>
-
-      {/* ── Band 1: manpower demographics ─────────────────────────────────── */}
-      <Card padded={false}>
-        <div className="p-6 pb-0">
-          <CardHeader
-            title="Manpower & demographics"
-            subtitle="By employment category. Contract staff are not tracked in HRMS yet, so that column stays blank rather than estimated."
-          />
-        </div>
-        <div className="overflow-x-auto" role="region" aria-label="Manpower and demographics table" tabIndex={0}>
-          <div className="min-w-max p-6 pt-2">
-            <div
-              className="grid text-sm"
-              style={{ gridTemplateColumns: `minmax(240px,1.4fr) repeat(${String(CATEGORIES.length)}, minmax(120px,1fr))` }}
-            >
-              <div className="border-b border-line px-3 py-3 text-xs font-medium text-ink-muted">
-                Metric
-              </div>
-              {CATEGORIES.map((category) => (
-                <div
-                  key={category}
-                  className="border-b border-line px-3 py-3 text-right text-xs font-medium text-ink-muted"
-                >
-                  {category}
-                </div>
-              ))}
-
-              {DEMOGRAPHIC_ROWS.map((row) => (
-                <div key={row.label} className="contents">
-                  <div className="border-b border-line/50 px-3 py-3">
-                    <Tooltip label={row.formula}>
-                      <span className="font-medium text-ink">{row.label}</span>
-                    </Tooltip>
+              <p className="max-w-md text-sm leading-6 text-hero-muted">
+                From last night’s snapshot. A dash means not measured yet.
+              </p>
+            </div>
+            <dl className="u-stagger grid grid-cols-2 gap-3">
+              {(
+                [
+                  ['Gross salary MTD', 'gross_salary_cost_mtd', '₹', '', 0],
+                  ['Average CTC', 'average_ctc', '₹', '', 0],
+                  ['Absenteeism', 'absenteeism_pct', '', '%', 1],
+                  ['Attrition (annualised)', 'attrition_rate_annualised_pct', '', '%', 1],
+                ] as const
+              ).map(([label, metric, prefix, suffix, precision]) => {
+                const value = find(metric)?.value ?? null;
+                return (
+                  <div
+                    key={metric}
+                    className="min-w-0 rounded-tile bg-[color-mix(in_srgb,var(--surface)_8%,transparent)] p-3.5 sm:p-5"
+                  >
+                    <dt className="text-xs text-hero-muted">{label}</dt>
+                    <dd className="mt-3 truncate text-xl font-light tabular-nums text-hero-ink sm:text-3xl">
+                      {value === null ? (
+                        '—'
+                      ) : (
+                        <KpiNumber
+                          value={value}
+                          prefix={prefix}
+                          suffix={suffix}
+                          precision={precision}
+                        />
+                      )}
+                    </dd>
                   </div>
-                  {CATEGORIES.map((category, colIndex) => {
-                    // docs/05 §4.8, verbatim: the Contract column reads
-                    // "Phase 4" until that module exists — never estimated.
-                    if (category === 'Contract') {
-                      return (
-                        <div
-                          key={category}
-                          className="border-b border-line/50 px-3 py-3 text-right"
-                        >
-                          <Pill>Not tracked yet</Pill>
-                        </div>
-                      );
-                    }
-                    const metricKey = DEMOGRAPHIC_METRIC[row.label] ?? '';
-                    const cell = find(metricKey, CATEGORY_KEY[category] ?? 'total');
-                    return (
-                      <div
-                        key={category}
-                        className="border-b border-line/50 px-3 py-3 text-right tabular-nums"
-                      >
-                        {cell?.value === undefined || cell.value === null ? (
-                          <Tooltip label={cell?.unavailableReason ?? 'Not measured in this snapshot'}>
-                            <span>
-                              <NoValue label={`${row.label}, ${category}`} />
-                            </span>
-                          </Tooltip>
-                        ) : (
-                          <KpiNumber
-                            value={cell.value}
-                            precision={row.label === 'Manpower count' ? 0 : 1}
-                            suffix={row.label.includes('%') ? '%' : undefined}
-                            delay={staggerDelay(colIndex)}
-                          />
-                        )}
+                );
+              })}
+            </dl>
+          </DarkCard>
+
+          {/* ── Band 1: manpower demographics ─────────────────────────────────── */}
+          <Card padded={false}>
+            <div className="p-6 pb-0">
+              <CardHeader
+                title="Manpower & demographics"
+                subtitle="By employment category. Contract staff are not tracked in HRMS yet, so that column stays blank rather than estimated."
+              />
+            </div>
+            <div
+              className="overflow-x-auto"
+              role="region"
+              aria-label="Manpower and demographics table"
+              tabIndex={0}
+            >
+              <div className="min-w-max p-6 pt-2">
+                <div
+                  className="grid text-sm"
+                  style={{
+                    gridTemplateColumns: `minmax(240px,1.4fr) repeat(${String(CATEGORIES.length)}, minmax(120px,1fr))`,
+                  }}
+                >
+                  <div className="border-b border-line px-3 py-3 text-xs font-medium text-ink-muted">
+                    Metric
+                  </div>
+                  {CATEGORIES.map((category) => (
+                    <div
+                      key={category}
+                      className="border-b border-line px-3 py-3 text-right text-xs font-medium text-ink-muted"
+                    >
+                      {category}
+                    </div>
+                  ))}
+
+                  {DEMOGRAPHIC_ROWS.map((row) => (
+                    <div key={row.label} className="contents">
+                      <div className="border-b border-line/50 px-3 py-3">
+                        <Tooltip label={row.formula}>
+                          <span className="font-medium text-ink">{row.label}</span>
+                        </Tooltip>
                       </div>
-                    );
-                  })}
+                      {CATEGORIES.map((category, colIndex) => {
+                        // docs/05 §4.8, verbatim: the Contract column reads
+                        // "Phase 4" until that module exists — never estimated.
+                        if (category === 'Contract') {
+                          return (
+                            <div
+                              key={category}
+                              className="border-b border-line/50 px-3 py-3 text-right"
+                            >
+                              <Pill>Not tracked yet</Pill>
+                            </div>
+                          );
+                        }
+                        const metricKey = DEMOGRAPHIC_METRIC[row.label] ?? '';
+                        const cell = find(metricKey, CATEGORY_KEY[category] ?? 'total');
+                        return (
+                          <div
+                            key={category}
+                            className="border-b border-line/50 px-3 py-3 text-right tabular-nums"
+                          >
+                            {cell?.value === undefined || cell.value === null ? (
+                              <Tooltip
+                                label={cell?.unavailableReason ?? 'Not measured in this snapshot'}
+                              >
+                                <span>
+                                  <NoValue label={`${row.label}, ${category}`} />
+                                </span>
+                              </Tooltip>
+                            ) : (
+                              <KpiNumber
+                                value={cell.value}
+                                precision={row.label === 'Manpower count' ? 0 : 1}
+                                suffix={row.label.includes('%') ? '%' : undefined}
+                                delay={staggerDelay(colIndex)}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* ── Band 2: productivity & cost ───────────────────────────────────── */}
+          <Card>
+            <CardHeader
+              title="Productivity & cost"
+              subtitle="Month by month, from the nightly snapshot."
+              action={<Gauge className="size-5 text-ink-subtle" />}
+            />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {PRODUCTIVITY.map((metric, index) => (
+                <div key={metric.label} className="rounded-row bg-surface-2 p-4">
+                  <p className="text-xs font-medium text-ink-muted">{metric.label}</p>
+                  <p className="mt-2 text-3xl font-light tabular-nums text-ink">
+                    <Metric
+                      metric={find(PRODUCTIVITY_METRIC[metric.label] ?? '')}
+                      index={index}
+                      label={metric.label}
+                    />
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-ink-muted">{metric.formula}</p>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* ── Band 2: productivity & cost ───────────────────────────────────── */}
-      <Card>
-        <CardHeader
-          title="Productivity & cost"
-          subtitle="Month by month, from the nightly snapshot."
-          action={<Gauge className="size-5 text-ink-subtle" />}
-        />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {PRODUCTIVITY.map((metric, index) => (
-            <div key={metric.label} className="rounded-row bg-surface-2 p-4">
-              <p className="text-xs font-medium text-ink-muted">
-                {metric.label}
-              </p>
-              <p className="mt-2 text-3xl font-light tabular-nums text-ink">
-                <Metric
-                  metric={find(PRODUCTIVITY_METRIC[metric.label] ?? '')}
-                  index={index}
-                  label={metric.label}
-                />
-              </p>
-              <p className="mt-1 text-xs leading-5 text-ink-muted">{metric.formula}</p>
-            </div>
-          ))}
-        </div>
-        <p className="mt-4 text-xs leading-5 text-ink-muted">
-          Production output is a monthly figure in <code>core.settings</code> until the ERP feed
-          exists — the source is stated rather than assumed.
-        </p>
-      </Card>
-
-      {/* ── Band 3: attendance & engagement ───────────────────────────────── */}
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <Card>
-          <CardHeader
-            title="Attendance & attrition"
-            subtitle="Absenteeism trend, voluntary/involuntary attrition and 30/90/180/365d cohorts."
-            action={
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  leadingIcon={<UserX className="size-3.5" />}
-                  onClick={() => void openLeaversDrawer()}
-                >
-                  View leavers
-                </Button>
-                <TrendingDown className="size-5 text-ink-subtle" />
-              </div>
-            }
-          />
-          <div className="space-y-2">
-            {ENGAGEMENT.map((metric, index) => (
-              <div
-                key={metric.label}
-                className="flex items-center justify-between gap-4 rounded-row bg-surface-2 px-4 py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-ink">{metric.label}</p>
-                  <p className="mt-0.5 text-xs leading-5 text-ink-muted">{metric.formula}</p>
-                </div>
-                <span className="shrink-0 text-2xl font-light tabular-nums">
-                  <Metric
-                    metric={find(ENGAGEMENT_METRIC[metric.label] ?? '')}
-                    index={index}
-                    label={metric.label}
-                  />
-                </span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card>
-          <CardHeader
-            title="Burnout index"
-            subtitle="A composite proxy — labelled an index, never presented as a survey result."
-            action={<Activity className="size-5 text-ink-subtle" />}
-          />
-          <p className="text-5xl font-light tabular-nums text-ink">
-            {burnoutMetric?.value !== null && burnoutMetric?.value !== undefined ? (
-              <KpiNumber value={burnoutMetric.value} precision={1} />
-            ) : (
-              <NoValue label="Burnout index" />
-            )}
-          </p>
-          <div className="mt-4 space-y-2 text-xs leading-5 text-ink-muted">
-            <p>Weighted z-score of:</p>
-            <ul className="space-y-1">
-              <li className="flex items-center gap-2">
-                <Users className="size-3.5 shrink-0" /> OT hours per head
-              </li>
-              <li className="flex items-center gap-2">
-                <Users className="size-3.5 shrink-0" /> Consecutive-workday streaks
-              </li>
-              <li className="flex items-center gap-2">
-                <Users className="size-3.5 shrink-0" /> Unused-leave percentage
-              </li>
-              <li className="flex items-center gap-2">
-                <Users className="size-3.5 shrink-0" /> Late-night swipe frequency
-              </li>
-            </ul>
-            <p className="pt-1">
-              The weights live in <code>core.settings</code>, so the definition is auditable and
-              tunable without a deploy.
+            <p className="mt-4 text-xs leading-5 text-ink-muted">
+              Production output is a monthly figure in <code>core.settings</code> until the ERP feed
+              exists — the source is stated rather than assumed.
             </p>
+          </Card>
+
+          {/* ── Band 3: attendance & engagement ───────────────────────────────── */}
+          <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+            <Card>
+              <CardHeader
+                title="Attendance & attrition"
+                subtitle="Absenteeism trend, voluntary/involuntary attrition and 30/90/180/365d cohorts."
+                action={
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      leadingIcon={<UserX className="size-3.5" />}
+                      onClick={() => void openLeaversDrawer()}
+                    >
+                      View leavers
+                    </Button>
+                    <TrendingDown className="size-5 text-ink-subtle" />
+                  </div>
+                }
+              />
+              <div className="space-y-2">
+                {ENGAGEMENT.map((metric, index) => (
+                  <div
+                    key={metric.label}
+                    className="flex items-center justify-between gap-4 rounded-row bg-surface-2 px-4 py-3"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-ink">{metric.label}</p>
+                      <p className="mt-0.5 text-xs leading-5 text-ink-muted">{metric.formula}</p>
+                    </div>
+                    <span className="shrink-0 text-2xl font-light tabular-nums">
+                      <Metric
+                        metric={find(ENGAGEMENT_METRIC[metric.label] ?? '')}
+                        index={index}
+                        label={metric.label}
+                      />
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card>
+              <CardHeader
+                title="Burnout index"
+                subtitle="A composite proxy — labelled an index, never presented as a survey result."
+                action={<Activity className="size-5 text-ink-subtle" />}
+              />
+              <p className="text-5xl font-light tabular-nums text-ink">
+                {burnoutMetric?.value !== null && burnoutMetric?.value !== undefined ? (
+                  <KpiNumber value={burnoutMetric.value} precision={1} />
+                ) : (
+                  <NoValue label="Burnout index" />
+                )}
+              </p>
+              <div className="mt-4 space-y-2 text-xs leading-5 text-ink-muted">
+                <p>Weighted z-score of:</p>
+                <ul className="space-y-1">
+                  <li className="flex items-center gap-2">
+                    <Users className="size-3.5 shrink-0" /> OT hours per head
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Users className="size-3.5 shrink-0" /> Consecutive-workday streaks
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Users className="size-3.5 shrink-0" /> Unused-leave percentage
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Users className="size-3.5 shrink-0" /> Late-night swipe frequency
+                  </li>
+                </ul>
+                <p className="pt-1">
+                  The weights live in <code>core.settings</code>, so the definition is auditable and
+                  tunable without a deploy.
+                </p>
+              </div>
+            </Card>
           </div>
-        </Card>
-      </div>
 
-      {/* ── Trends — the locked two-series palette, gold = subject ────────── */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader
-            title="Absenteeism trend"
-            subtitle="Absent and unauthorised-absent days ÷ scheduled working days, by month"
-          />
-          <TrendChart
-            points={absenteeism.data ?? []}
-            seriesLabel="Absenteeism %"
-            unit="%"
-            precision={1}
-            emptyMessage="No monthly snapshots yet — the nightly job builds these."
-            tableAlternative={<TrendTable points={absenteeism.data ?? []} unit="%" />}
-          />
-        </Card>
+          {/* ── Trends — the locked two-series palette, gold = subject ────────── */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader
+                title="Absenteeism trend"
+                subtitle="Absent and unauthorised-absent days ÷ scheduled working days, by month"
+              />
+              <TrendChart
+                points={absenteeism.data ?? []}
+                seriesLabel="Absenteeism %"
+                unit="%"
+                precision={1}
+                emptyMessage="No monthly snapshots yet — the nightly job builds these."
+                tableAlternative={<TrendTable points={absenteeism.data ?? []} unit="%" />}
+              />
+            </Card>
 
-        <Card>
-          <CardHeader
-            title="Overtime hours"
-            subtitle="Σ approved OT minutes ÷ 60, by month"
-          />
-          <TrendChart
-            points={overtime.data ?? []}
-            seriesLabel="OT hours"
-            unit=" h"
-            emptyMessage="No monthly snapshots yet — the nightly job builds these."
-            tableAlternative={<TrendTable points={overtime.data ?? []} unit="hours" />}
-          />
-        </Card>
-      </div>
+            <Card>
+              <CardHeader title="Overtime hours" subtitle="Σ approved OT minutes ÷ 60, by month" />
+              <TrendChart
+                points={overtime.data ?? []}
+                seriesLabel="OT hours"
+                unit=" h"
+                emptyMessage="No monthly snapshots yet — the nightly job builds these."
+                tableAlternative={<TrendTable points={overtime.data ?? []} unit="hours" />}
+              />
+            </Card>
+          </div>
 
-      <Card>
-        <CardHeader
-          title="Manpower by category"
-          subtitle="Active employees at the snapshot date — the same numbers as the table above."
-        />
-        <BarChart
-          points={CATEGORIES.filter((c) => c !== 'Contract' && c !== 'Total').map((category) => ({
-            label: category,
-            value: find('manpower_count', CATEGORY_KEY[category] ?? 'total')?.value ?? null,
-          }))}
-          seriesLabel="Headcount"
-          tableAlternative={
-            <p className="text-xs text-ink-muted">
-              The demographics table above is this chart&rsquo;s data table — same snapshot, same
-              numbers.
+          <Card>
+            <CardHeader
+              title="Manpower by category"
+              subtitle="Active employees at the snapshot date — the same numbers as the table above."
+            />
+            <BarChart
+              points={CATEGORIES.filter((c) => c !== 'Contract' && c !== 'Total').map(
+                (category) => ({
+                  label: category,
+                  value: find('manpower_count', CATEGORY_KEY[category] ?? 'total')?.value ?? null,
+                }),
+              )}
+              seriesLabel="Headcount"
+              tableAlternative={
+                <p className="text-xs text-ink-muted">
+                  The demographics table above is this chart&rsquo;s data table — same snapshot,
+                  same numbers.
+                </p>
+              }
+              emptyMessage="No snapshot yet."
+            />
+          </Card>
+
+          {kpis.data === null ? (
+            <PendingModule
+              phase="Phase 3"
+              task="RPT-03"
+              description="Group KPIs appear here once the first nightly snapshot is built. Until then, dashes mean not measured."
+            />
+          ) : (
+            <p className="text-xs leading-5 text-ink-muted">
+              Read from the nightly snapshot. A dash means not measured yet (hover for the reason) —
+              it is not the same as zero.
             </p>
-          }
-          emptyMessage="No snapshot yet."
-        />
-      </Card>
+          )}
 
-      {kpis.data === null ? (
-        <PendingModule
-          phase="Phase 3"
-          task="RPT-03"
-          description="Group KPIs appear here once the first nightly snapshot is built. Until then, dashes mean not measured."
-        />
-      ) : (
-        <p className="text-xs leading-5 text-ink-muted">
-          Read from the nightly snapshot. A dash means not measured yet (hover for the reason) — it
-          is not the same as zero.
-        </p>
+          {user && (
+            <LeadershipInsights
+              user={user}
+              title="The last twelve months"
+              subtitle="Live from the HR reports — no snapshot needed."
+            />
+          )}
+        </>
       )}
 
       <Drawer
         open={drawerOpen}
-        onClose={() => { setDrawerOpen(false); }}
+        onClose={() => {
+          setDrawerOpen(false);
+        }}
         title="Recent leavers & attrition drill-down"
         subtitle="Employees separated in the current period with recorded notice and reasons."
         width={640}
@@ -638,7 +713,9 @@ export function ExecutivePage() {
         {loadingLeavers ? (
           <div className="py-8 text-center text-sm text-ink-muted">Loading leavers...</div>
         ) : leavers.length === 0 ? (
-          <div className="py-8 text-center text-sm text-ink-muted">No recorded leavers in the current period.</div>
+          <div className="py-8 text-center text-sm text-ink-muted">
+            No recorded leavers in the current period.
+          </div>
         ) : (
           <DataTable
             rows={leavers}

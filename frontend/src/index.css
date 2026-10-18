@@ -339,6 +339,18 @@ body {
   transform-origin: left center;
   animation: u-gold-sweep var(--motion-medium) var(--ease-out-strong) both;
 }
+.u-grow-y {
+  transform-origin: center bottom;
+  animation: u-grow-y var(--motion-medium) var(--ease-out-strong) both;
+}
+@keyframes u-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
 /* Dot-grid cells fade+scale in, staggered by --i (capped by the caller). */
 .u-dot-in {
   animation: u-pop var(--motion-short) var(--ease-out-strong) both;
@@ -433,6 +445,10 @@ body {
   .u-grow-x {
     animation: none;
     transform: scaleX(1);
+  }
+  .u-grow-y {
+    animation: none;
+    transform: none;
   }
   .u-dot-in,
   .u-fade-late,

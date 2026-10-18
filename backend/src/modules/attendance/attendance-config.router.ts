@@ -27,6 +27,7 @@ import {
   setManualStatus,
 } from './day-status.service.js';
 import { applyRosterEntries } from './roster.service.js';
+import { queueMissingDays } from './day-materialize.js';
 import { assignEmployeeScheme } from './scheme.service.js';
 import { AttendanceMutationError } from './attendance-mutation.js';
 import { readSessionStatuses, sessionStatusesSchema, validateSessionSummary } from './session-status.js';
@@ -496,8 +497,12 @@ const overrideDay = withPermission('attendance.manual_override')
   });
 
 const recompute = withPermission('admin.integrations')
-  .route({ method: 'POST', path: '/attendance/recompute', summary: 'Recompute a day or drain the dirty queue' })
-  .input(z.object({ employeeId: z.number().int().positive(), date: isoDate }).optional())
+  .route({ method: 'POST', path: '/attendance/recompute', summary: 'Recompute a day, materialise a company period, or drain the dirty queue' })
+  .input(z.union([
+    z.object({ employeeId: z.number().int().positive(), date: isoDate }),
+    // Materialise: queue every employment day of [from, until) without a day record, then drain.
+    z.object({ companyId: z.number().int().positive(), from: isoDate, until: isoDate }),
+  ]).optional())
   .output(
     z.object({
       processed: z.number(),
@@ -505,9 +510,15 @@ const recompute = withPermission('admin.integrations')
     }),
   )
   .handler(async ({ input, context }) => {
-    if (input) {
+    if (input && 'employeeId' in input) {
       const outcome = await recomputeDay(context.db, input.employeeId, input.date);
       return { processed: 1, outcome };
+    }
+    if (input) {
+      const span = (Date.parse(input.until) - Date.parse(input.from)) / 86_400_000;
+      if (span <= 0 || span > 62) throw new ORPCError('BAD_REQUEST', { message: 'from must be before until, at most 62 days' });
+      await assertCompanyInScope(context.db, { ...context.permissionAccess, actorEmployeeId: context.user.employee_id }, input.companyId);
+      await queueMissingDays(context.db, { companyId: input.companyId, from: input.from, until: input.until });
     }
     return { processed: await drainRecomputeQueue(context.db), outcome: null };
   });

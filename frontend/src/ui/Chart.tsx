@@ -65,6 +65,46 @@ function axisMax(values: number[]): number {
 }
 
 /**
+ * Calm empty state for a chart with nothing measured yet: a faint dashed
+ * baseline sketch and one sentence; the table alternative folds away behind
+ * "Show months" (§7 `empty-data-state`).
+ */
+function ChartEmpty({
+  message,
+  className,
+  children,
+}: {
+  message: string;
+  className?: string | undefined;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn('u-fade rounded-row bg-surface-2 px-6 py-8 text-center', className)}>
+      <svg aria-hidden="true" viewBox="0 0 120 32" className="mx-auto h-8 w-32 text-ink-muted">
+        <path
+          d="M2 26 C 22 26, 26 14, 44 16 S 70 24, 84 12 S 108 8, 118 6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeDasharray="3 4"
+          strokeLinecap="round"
+          opacity="0.5"
+        />
+        <line x1="2" x2="118" y1="30" y2="30" stroke="currentColor" strokeWidth="1" opacity="0.25" />
+      </svg>
+      <p className="mt-3 text-sm text-ink">{message}</p>
+      {/* The table alternative is still offered, just folded away (§7). */}
+      <details className="mt-3 text-left">
+        <summary className="mx-auto w-fit cursor-pointer rounded-full px-3 py-1 text-xs text-ink-muted hover:text-ink">
+          Show months
+        </summary>
+        <div className="mt-3">{children}</div>
+      </details>
+    </div>
+  );
+}
+
+/**
  * Line/area trend. Used for absenteeism %, OT hours, attrition — anything with
  * a time axis (docs/06 §4).
  */
@@ -87,10 +127,9 @@ export function TrendChart({
   // Never a blank axis frame (§7 `empty-data-state`).
   if (measured.length === 0) {
     return (
-      <div className={cn('rounded-row bg-surface-2 p-6 text-center', className)}>
-        <p className="text-sm text-ink-muted">{emptyMessage}</p>
-        <div className="mt-4">{tableAlternative}</div>
-      </div>
+      <ChartEmpty message={emptyMessage} className={className}>
+        {tableAlternative}
+      </ChartEmpty>
     );
   }
 
@@ -328,10 +367,9 @@ export function BarChart({
   const measured = points.filter((p) => p.value !== null);
   if (measured.length === 0) {
     return (
-      <div className={cn('rounded-row bg-surface-2 p-6 text-center', className)}>
-        <p className="text-sm text-ink-muted">{emptyMessage}</p>
-        <div className="mt-4">{tableAlternative}</div>
-      </div>
+      <ChartEmpty message={emptyMessage} className={className}>
+        {tableAlternative}
+      </ChartEmpty>
     );
   }
 
