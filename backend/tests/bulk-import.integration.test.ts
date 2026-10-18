@@ -291,6 +291,13 @@ describe.skipIf(!DB_URL)('bulk imports (CSV + Excel)', () => {
     // Overlapping re-upload (different file): existing punch skipped, new one added.
     const pj2 = (await preview('opsA', 'punches', 'swipes2.xlsx', await xlsx([kent, [emp['A1'] ?? '', 'A1', 'C1', 'G', '16 Jun 2026 09:02:11', 'GATE-1', 'IN', 'OK'], [emp['A1'] ?? '', 'A1', 'C1', 'G', '16 Jun 2026 18:07:45', 'GATE-1', 'OUT', 'OK']]))).body as Job;
     expect(((await post('opsA', `/api/bulk/punches/jobs/${String(pj2.jobId)}/commit`, {})).body as Job).result).toMatchObject({ created: 1, skipped: 1 });
+    // Real greytHR/Kent export: Swipe Type = "Astra" (source tag), direction from Status, Received On kept.
+    const real = ['Employee No', 'Employee Name', 'Swipe Date', 'Door/Address', 'Swipe Type', 'Status', 'Received On'];
+    const pj3 = (await preview('opsA', 'punches', 'astra.xlsx', await xlsx([real, [emp['A1'] ?? '', 'A1', '17 Jun 2026 18:30:00', 'Seamless-Plant_S4', 'Astra', 'OUT', '17 Jun 2026 18:41:00'], [emp['A1'] ?? '', 'A1', '17 Jun 2026 09:00:00', 'Seamless-Plant_S4', 'Astra', '', '']]))).body as Job;
+    expect(((await post('opsA', `/api/bulk/punches/jobs/${String(pj3.jobId)}/commit`, {})).body as Job).result?.created).toBe(2);
+    const astra = await tx.selectFrom('att.swipe_events').select(['swipe_ts', 'direction', 'swipe_type', 'received_at']).where('employee_no', '=', emp['A1'] ?? '').where('door_code', '=', 'Seamless-Plant_S4').orderBy('swipe_ts').execute();
+    expect(astra.map((a) => [a.direction, a.swipe_type])).toEqual([[null, 'Astra'], ['out', 'Astra']]);
+    expect(new Date(astra[1]?.received_at ?? 0).toISOString()).toBe('2026-06-17T13:11:00.000Z');
   });
 
   it('jobs are private to the uploader; discard; listing', async () => {

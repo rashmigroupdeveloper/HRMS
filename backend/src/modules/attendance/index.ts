@@ -2,7 +2,8 @@
 export { ingestOnce, findSilentDevices, alertSilentDevices, reingestQuarantined } from './ingest.service.js';
 export { MockKentConnector, type KentConnector, type RawSwipe } from './kent-connector.js';
 export { runKentSync, KENT_SOURCE } from './kent-sync.job.js';
-export { kentConnectorFromEnv, kentConfigFromEnv, KentHttpConnector, KentFeedError } from './kent-http-connector.js';
+export { kentConfigFromEnv, KentHttpConnector, KentFeedError } from './kent-http-connector.js';
+export { kentConnectorFromEnv, kentModeFromEnv } from './kent-source-connectors.js';
 export { createKentSimulator } from './kent-simulator.js';
 export { attendanceRouter } from './attendance.router.js';
 export { attendanceConfigRouter } from './attendance-config.router.js';

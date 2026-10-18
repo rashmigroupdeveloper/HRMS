@@ -12,7 +12,7 @@ Linux server, Node 24, PostgreSQL 17, nginx (TLS), a backup disk + off-site copy
 | `APP_BASE_URL` | public https URL (links in mail) |
 | `SMTP_HOST/PORT/SECURE/USER/PASS/FROM` | mail delivery; unset = mail is logged, not sent |
 | `STORAGE_DIR` | document store (letters, payslips, proofs) — include in backups |
-| `KENT_*` | attendance feed — see docs/integrations/KENT.md |
+| `KENT_*` | Kent CamAttendance feed: webhook (`KENT_WEBHOOK_TOKEN`) + pull mode api/db/csv — see docs/integrations/KENT.md |
 | `PAYROLL_SUPER_ADMIN_COSIGN` | default `false` (client decision CD-1) |
 | `RATE_LIMIT_*` | leave defaults in production |
 Frontend: `npm run build` → serve `frontend/dist` from nginx; proxy `/api` and `/health` to the backend port.

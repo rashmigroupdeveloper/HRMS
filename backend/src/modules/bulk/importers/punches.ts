@@ -16,6 +16,16 @@ const noContext = z.object({}).strict();
 type NoCtx = z.infer<typeof noContext>;
 const SOURCE = 'excel_import';
 
+/** Direction comes from Status (KENT_RESEARCH §4.8); legacy templates that put IN/OUT in Swipe Type still work. */
+function directionOf(status: Parameters<typeof str>[0], swipeType: Parameters<typeof str>[0]): 'in' | 'out' | null {
+  for (const v of [status, swipeType]) {
+    const t = str(v).trim().toLowerCase();
+    if (t === 'in' || t === 'check in' || t === 'checkin') return 'in';
+    if (t === 'out' || t === 'check out' || t === 'checkout') return 'out';
+  }
+  return null;
+}
+
 export const punchesImporter: BulkImporter<NoCtx> = {
   key: 'punches',
   title: 'Attendance punches (biometric / Kent)',
@@ -30,7 +40,9 @@ export const punchesImporter: BulkImporter<NoCtx> = {
     { key: 'door', header: 'Door/Address', aliases: ['door', 'door code', 'device', 'address'], type: 'string', maxLength: 120, help: 'Door or device (blank = manual upload).' },
     { key: 'access_card', header: 'Access Card', aliases: ['card', 'card no'], type: 'string', maxLength: 40, help: 'Optional.' },
     { key: 'shift', header: 'Shift', type: 'string', maxLength: 40, help: 'Optional shift label from the device.' },
-    { key: 'swipe_type', header: 'Swipe Type', aliases: ['type', 'direction', 'in out'], type: 'string', maxLength: 20, help: 'IN / OUT if the device records it.' },
+    { key: 'swipe_type', header: 'Swipe Type', aliases: ['type'], type: 'string', maxLength: 20, help: 'Source tag from the export (e.g. "Astra" = greytHR sync agent). Not a direction.' },
+    { key: 'status', header: 'Status', aliases: ['direction', 'in out', 'in/out'], type: 'string', maxLength: 20, help: 'IN / OUT when the device records it. Blank = first-in/last-out.' },
+    { key: 'received_on', header: 'Received On', aliases: ['received at', 'received'], type: 'datetime', help: 'When the swipe reached the cloud (keeps the device-to-cloud lag). Blank = upload time.' },
     { key: 'longitude', header: 'Longitude', type: 'number', min: -180, max: 180, help: 'Mobile punches only.' },
     { key: 'latitude', header: 'Latitude', type: 'number', min: -90, max: 90, help: 'Mobile punches only.' },
     { key: 'location_type', header: 'Location Type', type: 'string', maxLength: 40, help: 'Optional.' },
@@ -42,8 +54,8 @@ export const punchesImporter: BulkImporter<NoCtx> = {
   ],
   instructions: ['Times are local to the employee\'s entity (e.g. IST for Indian units).', 'Punches already in the system are skipped, so re-uploading a day is safe.', 'Months whose attendance is locked cannot take new punches.'],
   samples: [
-    { ecode: 'RML033625', name: 'Prateek Kumar Singh', swipe_at: '16 Jun 2026 09:02:11', door: 'KGP-MAIN-GATE-1', swipe_type: 'IN' },
-    { ecode: 'RML033625', name: 'Prateek Kumar Singh', swipe_at: '16 Jun 2026 18:07:45', door: 'KGP-MAIN-GATE-1', swipe_type: 'OUT' },
+    { ecode: 'RML033625', name: 'Prateek Kumar Singh', swipe_at: '16 Jun 2026 09:02:11', door: 'KGP-MAIN-GATE-1', swipe_type: 'Kent', status: 'IN', received_on: '16 Jun 2026 09:04:30' },
+    { ecode: 'RML033625', name: 'Prateek Kumar Singh', swipe_at: '16 Jun 2026 18:07:45', door: 'KGP-MAIN-GATE-1', swipe_type: 'Kent', status: 'OUT' },
   ],
   rowKey: (v) => `${str(v['ecode']).toUpperCase()}|${str(v['swipe_at'])}|${str(v['door']).toUpperCase()}`,
   contextKey: () => 'punches',
@@ -94,11 +106,13 @@ export const punchesImporter: BulkImporter<NoCtx> = {
         mobile_device_name: opt(r.values['device_name']),
         mobile_device_id: opt(r.values['device_id']),
         swipe_type: opt(r.values['swipe_type']),
-        direction: /^in$/i.test(str(r.values['swipe_type'])) ? 'in' : /^out$/i.test(str(r.values['swipe_type'])) ? 'out' : null,
+        direction: directionOf(r.values['status'], r.values['swipe_type']),
         remarks: opt(r.values['remarks']),
         permission_reason: opt(r.values['permission_reason']),
         signed_by: opt(r.values['signed_by']),
-        received_at: sql<Date>`now()` as unknown as Date,
+        received_at: (opt(r.values['received_on'])
+          ? sql<Date>`(${str(r.values['received_on'])}::timestamp AT TIME ZONE ${str(r.values['timezone'])})`
+          : sql<Date>`now()`) as unknown as Date,
         source: SOURCE,
       }))).onConflict((oc) => oc.columns(['employee_no', 'swipe_ts', 'door_code']).doNothing()).executeTakeFirst();
       created += Number(res.numInsertedOrUpdatedRows ?? 0n);

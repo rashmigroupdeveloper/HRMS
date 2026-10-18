@@ -41,6 +41,7 @@ describe.skipIf(!DB_URL)('sessions view and revoke', () => {
     try { if (transaction && !transaction.isRolledBack && !transaction.isCommitted) await transaction.rollback().execute(); }
     finally { await db.destroy(); }
   });
+  const tx = (): ControlledTransaction<Database> => { if (!transaction) throw new Error('no tx'); return transaction; };
   const get = async (who: string, path: string) => (await httpRequest(app)).get(path).set('Authorization', `Bearer ${t[who] ?? ''}`);
   const post = async (who: string, path: string) => (await httpRequest(app)).post(path).set('Authorization', `Bearer ${t[who] ?? ''}`).send({});
 
@@ -59,6 +60,18 @@ describe.skipIf(!DB_URL)('sessions view and revoke', () => {
     expect((await post('it', `/api/auth/users/${String(uid['emp'])}/sessions/revoke`)).body).toEqual({ revoked: 1 });
     expect((await get('emp', '/api/auth/sessions/mine')).status).toBe(401);
     expect((await post('it', `/api/auth/users/${String(uid['boss'])}/sessions/revoke`)).status).toBe(403);
+  });
+
+  it('E2E-006: it_admin creates a login by e-code; unknown e-code is 404', async () => {
+    const emp = await tx().selectFrom('core.employees').select('ecode').limit(1).executeTakeFirst();
+    const send = async (body: object) => (await httpRequest(app)).post('/api/auth/users').set('Authorization', `Bearer ${t['it'] ?? ''}`).send(body);
+    expect((await send({ email: `nx${randomUUID().slice(0, 6)}@hrms.invalid`, ecode: 'NOPE-XYZ' })).status).toBe(404);
+    if (emp) {
+      await tx().updateTable('core.users').set({ employee_id: null }).where('employee_id', 'in', (eb) => eb.selectFrom('core.employees').select('id').where('ecode', '=', emp.ecode)).execute();
+      const r = await send({ email: `ok${randomUUID().slice(0, 6)}@hrms.invalid`, ecode: emp.ecode.toLowerCase() });
+      expect(r.status).toBe(200);
+      expect(typeof (r.body as { temporaryPassword: string }).temporaryPassword).toBe('string');
+    }
   });
 
   it('anyone sees and ends only their own sessions', async () => {

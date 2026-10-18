@@ -31,6 +31,8 @@ export interface KentConnector {
   /** All swipes RECEIVED after `since` (device buffering means swipe_ts may be older). */
   fetchSince(since: Date): Promise<RawSwipe[]>;
   listDevices(): Promise<DeviceInfo[]>;
+  /** Called only after the fetched batch is committed (e.g. archive processed CSV drops). */
+  afterIngest?(): Promise<void>;
 }
 
 /** Deterministic PRNG so mock data is reproducible run-to-run (no Date.now/Math.random). */

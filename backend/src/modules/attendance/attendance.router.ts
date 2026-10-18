@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { getTypedSetting } from '../settings/index.js';
 import { runKentSync, KentIntegrationUnavailable } from './kent-sync.job.js';
-import { kentConnectorFromEnv } from './kent-http-connector.js';
+import { kentConnectorFromEnv } from './kent-source-connectors.js';
 import { reingestQuarantined } from './ingest.service.js';
 import { listFinalizationHolds } from './day-status.service.js';
 
