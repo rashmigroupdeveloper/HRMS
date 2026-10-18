@@ -124,7 +124,7 @@ export function ConfirmModal({
               autoFocus
               className={cn(
                 'w-full rounded-row bg-surface-2 px-3 py-2 text-sm text-ink outline-none',
-                'ring-1 ring-inset ring-[var(--line-strong)] focus:ring-2 focus:ring-accent',
+                'ring-1 ring-inset ring-[var(--line-strong)] focus:ring-2 focus:ring-focus',
               )}
             />
           </div>

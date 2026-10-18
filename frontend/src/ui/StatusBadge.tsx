@@ -24,12 +24,12 @@ export type StatusTone =
 
 const TONE_STYLE: Record<StatusTone, string> = {
   positive:
-    'bg-[color-mix(in_srgb,var(--positive)_16%,var(--surface))] text-positive',
+    'bg-[color-mix(in_srgb,var(--positive)_16%,var(--surface))] text-positive-ink',
   warning:
-    'bg-[color-mix(in_srgb,var(--warning)_18%,var(--surface))] text-warning',
+    'bg-[color-mix(in_srgb,var(--warning)_18%,var(--surface))] text-warning-ink',
   negative:
-    'bg-[color-mix(in_srgb,var(--negative)_16%,var(--surface))] text-negative',
-  info: 'bg-[color-mix(in_srgb,var(--info)_16%,var(--surface))] text-info',
+    'bg-[color-mix(in_srgb,var(--negative)_16%,var(--surface))] text-negative-ink',
+  info: 'bg-[color-mix(in_srgb,var(--info)_16%,var(--surface))] text-info-ink',
   neutral: 'bg-surface-2 text-ink-muted',
 };
 

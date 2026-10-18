@@ -443,7 +443,7 @@ export function MusterPage() {
           </Button>
         </div>
         {error && valid ? (
-          <p className="mt-3 text-sm text-negative" role="alert">
+          <p className="mt-3 text-sm text-negative-ink" role="alert">
             {error}
           </p>
         ) : null}

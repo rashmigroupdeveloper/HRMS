@@ -11,7 +11,10 @@ import {
   PageHeader,
   Pill,
   StatusBadge,
+  formatDateIN,
+  QuickLinks,
 } from '../../ui';
+import type { QuickLink } from '../../ui';
 import type { HrDashboardData } from './dashboard-types';
 
 const GOLD =
@@ -23,7 +26,23 @@ function stageLabel(stage: string): string {
   return stage.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase());
 }
 
-export function HrOpsDashboard({ data }: { data: HrDashboardData }) {
+/** `white_collar` → `White collar`: master codes are never shown raw. */
+function humanizeCategory(category: string | null): string {
+  if (category === null || category === '') return 'Unclassified';
+  const words = category.replace(/[_-]+/g, ' ').trim().toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+export function HrOpsDashboard({
+  data,
+  quickLinks,
+  scopeLabel,
+}: {
+  data: HrDashboardData;
+  quickLinks?: QuickLink[] | undefined;
+  /** Company scope from the masthead switcher; undefined = HR ops' own scope. */
+  scopeLabel?: string | undefined;
+}) {
   const headcount = data.headcountByCategory.reduce((sum, row) => sum + row.count, 0);
   const openAbsences = data.openAbsenceByStage.reduce((sum, row) => sum + row.count, 0);
   const absentIsTheJob = data.absentToday > 0;
@@ -33,39 +52,51 @@ export function HrOpsDashboard({ data }: { data: HrDashboardData }) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-      <PageHeader
-        eyebrow={todayLongIST()}
-        title="HR operations"
-        description={`Company-wide signals as of ${data.asOf}. Every tile opens the list behind the number.`}
-      />
+        <PageHeader
+          eyebrow={todayLongIST()}
+          title="HR operations"
+          description={`${scopeLabel ?? 'Your scope'} · signals as of ${formatDateIN(data.asOf)}. Every tile opens the list behind the number.`}
+        />
 
-      <KpiPillRow
-        pills={[
-          { label: 'Headcount', value: headcount, state: 'filled', icon: <Users />, to: '/people' },
-          {
-            label: 'Absent today',
-            value: data.absentToday,
-            state: absentIsTheJob ? 'accent' : 'outline',
-            icon: <AlertTriangle />,
-            to: '/attendance',
-          },
-          {
-            label: 'Pending approvals',
-            value: data.pendingApprovals,
-            state: approvalsAreTheJob ? 'accent' : data.pendingApprovals > 0 ? 'hatched' : 'outline',
-            icon: <CheckCircle2 />,
-            to: '/approvals',
-          },
-          {
-            label: 'Exits MTD',
-            value: data.exitsMtd,
-            state: 'outline',
-            icon: <UserMinus />,
-            to: '/people',
-          },
-        ]}
-      />
+        <KpiPillRow
+          pills={[
+            {
+              label: 'Headcount',
+              value: headcount,
+              state: 'filled',
+              icon: <Users />,
+              to: '/people',
+            },
+            {
+              label: 'Absent today',
+              value: data.absentToday,
+              state: absentIsTheJob ? 'accent' : 'outline',
+              icon: <AlertTriangle />,
+              to: '/attendance',
+            },
+            {
+              label: 'Pending approvals',
+              value: data.pendingApprovals,
+              state: approvalsAreTheJob
+                ? 'accent'
+                : data.pendingApprovals > 0
+                  ? 'hatched'
+                  : 'outline',
+              icon: <CheckCircle2 />,
+              to: '/approvals',
+            },
+            {
+              label: 'Exits MTD',
+              value: data.exitsMtd,
+              state: 'outline',
+              icon: <UserMinus />,
+              to: '/people',
+            },
+          ]}
+        />
       </div>
+
+      {quickLinks && quickLinks.length > 0 ? <QuickLinks links={quickLinks} /> : null}
 
       <DarkCard className="grid gap-8 md:grid-cols-[1.4fr_1fr]">
         <div>
@@ -125,7 +156,10 @@ export function HrOpsDashboard({ data }: { data: HrDashboardData }) {
             title="Absence cases"
             subtitle="Open cases by action stage"
             action={
-              <Link to="/attendance/absence-cases" className="text-sm font-semibold text-ink hover:underline">
+              <Link
+                to="/attendance/absence-cases"
+                className="text-sm font-semibold text-ink hover:underline"
+              >
                 Open queue
               </Link>
             }
@@ -163,7 +197,7 @@ export function HrOpsDashboard({ data }: { data: HrDashboardData }) {
               return (
                 <div key={row.category ?? 'Unclassified'}>
                   <div className="flex justify-between gap-4 text-sm">
-                    <span className="font-medium text-ink">{row.category ?? 'Unclassified'}</span>
+                    <span className="font-medium text-ink">{humanizeCategory(row.category)}</span>
                     <span className="tabular-nums text-ink-muted">
                       {row.count.toLocaleString('en-IN')}
                     </span>

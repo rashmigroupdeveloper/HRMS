@@ -52,9 +52,9 @@ const baseline: EmployeeComputeInput = {
   salaryComponentsPaise: { BASIC: paise(1000000) },
   daysInMonth: 30,
   payableDays: 30,
-  pfWageCeilingPaise: null,
-  esicGrossThresholdPaise: paise(0),
-  projectedMonthlyTdsPaise: paise(0),
+  pf: { applicable: true, wageBasis: 'ACTUAL' },
+  esicCovered: false,
+  monthlyTdsPaise: paise(0),
   lwfPaise: paise(0),
   stateCode: 'WB',
 };

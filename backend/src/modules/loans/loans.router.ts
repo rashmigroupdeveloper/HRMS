@@ -1,7 +1,10 @@
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { authed, withPermission } from '../../api/orpc.js';
-import { LoansService } from './loans.service.js';
+import { assertEmployeesInScope } from '../../core/rbac/employee-scope.js';
+import { getUserPermissionAccess } from '../../core/rbac/permissions.service.js';
+import { ForbiddenError } from '../../core/errors/index.js';
+import { LoansService, policyInterestRate } from './loans.service.js';
 
 function requireEmployeeId(user: { employee_id: number | null }): number {
   if (user.employee_id === null) {
@@ -18,7 +21,7 @@ const loanTypeSchema = z.enum([
   'travel_advance',
 ]);
 
-const loanStatusSchema = z.enum(['active', 'closed', 'written_off']);
+const loanStatusSchema = z.enum(['pending', 'active', 'closed', 'written_off', 'rejected', 'cancelled']);
 
 const loanSummarySchema = z.object({
   loanId: z.number(),
@@ -69,7 +72,7 @@ export const loansRouter = {
       z.object({
         loanType: loanTypeSchema,
         principalRupees: z.number().positive(),
-        annualInterestRate: z.number().min(0).default(0),
+        annualInterestRate: z.number().min(0).optional(),
         tenureMonths: z.number().int().min(1).max(60),
       })
     )
@@ -103,7 +106,7 @@ export const loansRouter = {
         loanType: input.loanType,
         principalRupees: input.principalRupees,
         tenureMonths: input.tenureMonths,
-        annualInterestRate: input.annualInterestRate,
+        annualInterestRate: await policyInterestRate(context.db, input.loanType),
       });
 
       return {
@@ -138,8 +141,9 @@ export const loansRouter = {
     .input(
       z.object({
         loanType: loanTypeSchema,
-        principalRupees: z.number().positive(),
-        annualInterestRate: z.number().min(0).default(0),
+        principalRupees: z.number().positive().max(10_000_000),
+        /** Ignored: interest comes from policy (loans.interest_rate_pct). Kept for older clients. */
+        annualInterestRate: z.number().min(0).optional(),
         tenureMonths: z.number().int().min(1).max(60),
         startMonth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       })
@@ -158,9 +162,9 @@ export const loansRouter = {
         employeeId,
         loanType: input.loanType,
         principalRupees: input.principalRupees,
-        annualInterestRate: input.annualInterestRate,
         tenureMonths: input.tenureMonths,
         startMonth: input.startMonth,
+        requestedByUserId: context.user.id,
       });
 
       return {
@@ -179,7 +183,7 @@ export const loansRouter = {
       path: '/loans/{loanId}/ledger',
       summary: 'Get loan ledger with immutable recovery postings',
     })
-    .input(z.object({ loanId: z.number() }))
+    .input(z.object({ loanId: z.coerce.number().int().positive() }))
     .output(
       loanSummarySchema.extend({
         postings: z.array(
@@ -197,6 +201,12 @@ export const loansRouter = {
     .handler(async ({ input, context }) => {
       const service = new LoansService(context.db);
       const res = await service.getLoanLedger(input.loanId);
+      // Loan ledgers are the borrower's own data; payroll sees those in scope.
+      if (res.employeeId !== context.user.employee_id) {
+        const access = await getUserPermissionAccess(context.db, context.user.id, 'payroll.run.view', 'read');
+        if (!access) throw new ForbiddenError('You can only view your own loan ledger');
+        await assertEmployeesInScope(context.db, { ...access, actorEmployeeId: context.user.employee_id }, [res.employeeId]);
+      }
       return {
         ...res,
         postings: res.postings.map((p) => ({

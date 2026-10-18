@@ -214,7 +214,14 @@ run('database integration (live Postgres)', () => {
 
     const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
     const token = (login.body as { accessToken: string }).accessToken;
+    // Settings are an admin surface: a plain login is refused (security fix),
+    // an HR head (admin.settings) reads it.
+    const refused = await (await httpRequest(app)).get(`/api/settings/${key}`).set('Authorization', `Bearer ${token}`);
+    expect(refused.status).toBe(403);
+    const hrHead = await db.selectFrom('core.roles').select('id').where('code', '=', 'hr_head').executeTakeFirstOrThrow();
+    await db.insertInto('core.user_roles').values({ user_id: userId, role_id: hrHead.id, scope_org_unit_id: null }).execute();
     const res = await (await httpRequest(app)).get(`/api/settings/${key}`).set('Authorization', `Bearer ${token}`);
+    await db.deleteFrom('core.user_roles').where('user_id', '=', userId).where('role_id', '=', hrHead.id).execute();
     expect(res.status).toBe(200);
     expect((res.body as { value: number }).value).toBe(42);
 

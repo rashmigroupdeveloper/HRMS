@@ -20,6 +20,7 @@ import type {
 import { writeAudit } from '../../../core/audit/audit.service.js';
 import { formatDbDate } from '../../../core/dates.js';
 import { allocateEmployeeCode } from '../../../core/employee-code.js';
+import { inTransaction } from '../../../core/db/database.js';
 
 export interface CreateTransferInput {
   employeeId: number;
@@ -225,7 +226,7 @@ export async function approveTransferRequest(
   actorUserId: number,
   ip: string | null = null,
 ): Promise<{ success: boolean; newEcode: string | null }> {
-  return await db.transaction().execute(async (trx) => {
+  return await inTransaction(db, async (trx) => {
     const transfer = await trx
       .selectFrom('core.transfers')
       .selectAll()

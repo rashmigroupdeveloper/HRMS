@@ -30,3 +30,50 @@ export async function assertApprovalSpanWritable(
     .orderBy('work_date').forUpdate().executeTakeFirst();
   if (protectedDay) throw new Error('Attendance contains a locked day or HR override — contact HR before approval');
 }
+
+/** Statuses that count as presence for week-off eligibility (docs/04 §1.2; H keeps a holiday week paid). */
+const WEEKOFF_PRESENT_STATUSES = ['P', 'HD', 'OD', 'CO', 'H'] as const;
+
+/**
+ * Week-off eligibility for one week (ATT-09): a WO is paid when the employee
+ * was present (or on paid leave) on at least `minWorked` days that week.
+ * Optionally for one employee — used when a leave decision lands after the
+ * week was already closed, so its week-offs follow the new facts.
+ */
+export async function closeWeekOffs(
+  db: Kysely<Database>, weekStartIso: string, minWorked: number, employeeId?: number,
+): Promise<number> {
+  const presentList = WEEKOFF_PRESENT_STATUSES.join(',');
+  const result = await sql<{ id: number }>`
+    UPDATE att.day_records d
+    SET weekoff_paid = (w.present >= ${minWorked})
+    FROM (
+      SELECT dr.employee_id,
+             COUNT(*) FILTER (
+               WHERE dr.status = ANY (string_to_array(${presentList}, ',')::att.day_status[])
+                  OR (dr.status = 'L' AND EXISTS (
+                        SELECT 1 FROM lv.leave_types lt
+                        WHERE lt.id = dr.leave_type_id AND lt.is_paid = true
+                      ))
+             ) AS present
+      FROM att.day_records dr
+      WHERE dr.work_date >= ${weekStartIso}::date AND dr.work_date < ${weekStartIso}::date + 7
+        AND dr.is_locked = false
+        AND (${employeeId ?? null}::bigint IS NULL OR dr.employee_id = ${employeeId ?? null}::bigint)
+      GROUP BY dr.employee_id
+    ) w
+    WHERE d.employee_id = w.employee_id
+      AND d.status = 'WO'
+      AND d.work_date >= ${weekStartIso}::date AND d.work_date < ${weekStartIso}::date + 7
+      AND d.is_locked = false
+    RETURNING d.id
+  `.execute(db);
+  return result.rows.length;
+}
+
+/** Monday of the IST week containing an ISO date. */
+export function weekStartOf(isoDate: string): string {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}

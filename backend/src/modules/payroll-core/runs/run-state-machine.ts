@@ -33,8 +33,8 @@ export interface TransitionValidationResult {
 const VALID_TRANSITIONS: Record<PayrollRunStatus, PayrollRunStatus[]> = {
   draft: ['inputs_locked'],
   inputs_locked: ['computed', 'draft'],
-  computed: ['under_review', 'inputs_locked'],
-  under_review: ['approved', 'computed', 'inputs_locked'],
+  computed: ['under_review', 'inputs_locked', 'draft'],
+  under_review: ['approved', 'computed', 'inputs_locked', 'draft'],
   approved: ['finalized', 'under_review', 'reopened'],
   finalized: ['paid', 'reopened'],
   paid: [],

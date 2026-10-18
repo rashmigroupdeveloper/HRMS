@@ -57,14 +57,12 @@ export function CardHeader({
 }) {
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
   return (
-    <div className="mb-4 flex items-start justify-between gap-4">
-      <div>
+    <div className="mb-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+      <div className="min-w-0 flex-1 basis-56">
         <Heading className="text-lg font-light text-ink">{title}</Heading>
-        {subtitle && (
-          <p className="mt-0.5 text-sm text-ink-muted">{subtitle}</p>
-        )}
+        {subtitle && <p className="mt-0.5 text-sm text-ink-muted">{subtitle}</p>}
       </div>
-      {action}
+      {action ? <div className="shrink-0 whitespace-nowrap">{action}</div> : null}
     </div>
   );
 }

@@ -25,6 +25,7 @@ import { useDashboardResource } from '../home/useDashboardResource';
 import { AttendanceRequestDrawer } from './AttendanceRequestDrawer';
 import type { AttendanceMonthRow, AttendanceRequest, OvertimeEntry } from './attendance-types';
 import { attendanceSessionDescription, attendanceSessionGlyph } from './attendance-session-format';
+import { takeActionParam } from '../_shared/action-param';
 
 const MONTH_TITLE_IST = new Intl.DateTimeFormat('en-IN', {
   month: 'long',
@@ -147,7 +148,7 @@ function HolidayYearCard({ year, today, rows }: { year: number; today: string; r
 export function MyAttendancePage() {
   const [month, setMonth] = useState(() => currentMonthIST());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [requestOpen, setRequestOpen] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(() => takeActionParam('request'));
   const attendance = useDashboardResource<AttendanceMonthRow[]>(
     `/api/my/attendance?month=${month}`,
   );
@@ -353,7 +354,7 @@ export function MyAttendancePage() {
                       {kindLabel(request.kind)} · {formatDateIN(request.fromDate)} · {dayPortionLabel(request.dayPortion)}
                     </p>
                     <p className="mt-0.5 text-xs text-ink-muted">{request.reason}</p>
-                    <Link className="mt-1 inline-block rounded-control text-xs font-semibold underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-accent"
+                    <Link className="mt-1 inline-block rounded-control text-xs font-semibold underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-focus"
                       to={`/approvals/${String(request.workflowRequestId)}`}>View request and decisions</Link>
                   </div>
                   <StatusBadge

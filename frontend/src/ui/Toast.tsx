@@ -34,10 +34,10 @@ export function Toaster() {
       gap={10}
       visibleToasts={4}
       icons={{
-        success: <CheckCircle2 className="text-positive" aria-hidden />,
-        error: <XCircle className="text-negative" aria-hidden />,
-        warning: <AlertTriangle className="text-warning" aria-hidden />,
-        info: <Info className="text-info" aria-hidden />,
+        success: <CheckCircle2 className="text-positive-ink" aria-hidden />,
+        error: <XCircle className="text-negative-ink" aria-hidden />,
+        warning: <AlertTriangle className="text-warning-ink" aria-hidden />,
+        info: <Info className="text-info-ink" aria-hidden />,
         loading: <Loader2 className="animate-spin text-ink-muted" aria-hidden />,
       }}
       toastOptions={{

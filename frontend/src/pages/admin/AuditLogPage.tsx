@@ -139,7 +139,9 @@ export function AuditLogPage() {
   const verify = async () => {
     setVerifying(true);
     try {
-      const result = await apiFetch<{ intact: boolean; brokenAtId: number | null }>('/api/audit/verify');
+      const result = await apiFetch<{ intact: boolean; brokenAtId: number | null }>(
+        '/api/audit/verify',
+      );
       setChain(result);
       if (result.intact) {
         toast.success('Audit chain intact', {
@@ -171,59 +173,80 @@ export function AuditLogPage() {
   const columns: Column<AuditEntry>[] = [
     {
       key: 'at',
+      sortValue: (row) => row.at,
+      mobile: 'subtitle',
       header: 'When (IST)',
       width: '160px',
       render: (row) => <span className="tabular-nums text-ink">{formatStamp(row.at)}</span>,
     },
     {
       key: 'actor',
+      sortValue: (row) =>
+        row.actorName ?? (row.actorUserId === null ? 'system' : `user ${String(row.actorUserId)}`),
+      mobile: 'title',
       header: 'Who',
       width: 'minmax(170px,1fr)',
       render: (row) => (
         <span className="text-ink">
-          {row.actorName ?? (row.actorUserId === null ? 'system' : `user ${String(row.actorUserId)}`)}
+          {row.actorName ??
+            (row.actorUserId === null ? 'system' : `user ${String(row.actorUserId)}`)}
         </span>
       ),
     },
     {
       key: 'action',
+      sortValue: (row) => row.action,
+      mobile: 'badge',
       header: 'Action',
       width: '128px',
       render: (row) => <StatusBadge tone={actionTone(row.action)}>{row.action}</StatusBadge>,
     },
     {
       key: 'entity',
+      sortValue: (row) =>
+        row.entityId === null ? row.entity : `${row.entity} #${String(row.entityId)}`,
       header: 'Entity',
       width: 'minmax(180px,1fr)',
       render: (row) => (
         <div>
           <code className="text-xs text-ink">{row.entity}</code>
-          {row.entityId !== null && <span className="ml-1 text-xs text-ink-muted">#{row.entityId}</span>}
+          {row.entityId !== null && (
+            <span className="ml-1 text-xs text-ink-muted">#{row.entityId}</span>
+          )}
         </div>
       ),
     },
     {
       key: 'field',
+      exportValue: (row) => row.field,
       header: 'Field',
       width: '150px',
-      render: (row) => (row.field === null ? <span className="text-ink-faint">—</span> : <Pill>{row.field}</Pill>),
+      render: (row) =>
+        row.field === null ? <span className="text-ink-subtle">—</span> : <Pill>{row.field}</Pill>,
     },
     {
       key: 'change',
+      exportValue: (row) => `${row.oldValue ?? ''} → ${row.newValue ?? ''}`,
       header: 'Change (old → new)',
       width: 'minmax(240px,1.6fr)',
       render: (row) => (
         <div className="flex items-center gap-2 text-xs">
-          <span className="max-w-[150px] truncate text-ink-muted line-through">{row.oldValue ?? '—'}</span>
-          <span aria-hidden="true" className="text-ink-faint">
+          <span className="max-w-[150px] truncate text-ink-muted line-through">
+            {row.oldValue ?? '—'}
+          </span>
+          <span aria-hidden="true" className="text-ink-subtle">
             →
           </span>
-          <span className="max-w-[150px] truncate font-semibold text-ink">{row.newValue ?? '—'}</span>
+          <span className="max-w-[150px] truncate font-semibold text-ink">
+            {row.newValue ?? '—'}
+          </span>
         </div>
       ),
     },
     {
       key: 'ip',
+      exportValue: (row) => row.ip,
+      defaultHidden: true,
       header: 'IP',
       width: '120px',
       render: (row) => <span className="text-xs text-ink-muted">{row.ip ?? '—'}</span>,
@@ -248,7 +271,11 @@ export function AuditLogPage() {
           variant={chain?.intact === false ? 'danger' : 'secondary'}
           loading={verifying}
           leadingIcon={
-            chain?.intact === false ? <ShieldAlert className="size-4" /> : <ShieldCheck className="size-4" />
+            chain?.intact === false ? (
+              <ShieldAlert className="size-4" />
+            ) : (
+              <ShieldCheck className="size-4" />
+            )
           }
           onClick={() => void verify()}
         >
@@ -260,9 +287,9 @@ export function AuditLogPage() {
         <Card>
           <div className="flex items-start gap-3">
             {chain.intact ? (
-              <ShieldCheck className="mt-0.5 size-5 shrink-0 text-positive" />
+              <ShieldCheck className="mt-0.5 size-5 shrink-0 text-positive-ink" />
             ) : (
-              <ShieldAlert className="mt-0.5 size-5 shrink-0 text-negative" />
+              <ShieldAlert className="mt-0.5 size-5 shrink-0 text-negative-ink" />
             )}
             <div>
               <p className="text-sm font-semibold text-ink">
@@ -289,18 +316,8 @@ export function AuditLogPage() {
               setSearch(e.currentTarget.value);
             }}
           />
-          <Select
-            label="Entity"
-            value={entity}
-            options={entityOptions}
-            onChange={setEntity}
-          />
-          <Select
-            label="Action"
-            value={action}
-            options={actionOptions}
-            onChange={setAction}
-          />
+          <Select label="Entity" value={entity} options={entityOptions} onChange={setEntity} />
+          <Select label="Action" value={action} options={actionOptions} onChange={setAction} />
           <TextField
             label="From"
             type="date"
@@ -356,6 +373,9 @@ export function AuditLogPage() {
           rows={rows}
           columns={columns}
           rowKey={(row) => String(row.id)}
+          tableId="admin.audit"
+          caption="Audit log"
+          exportName="audit-log"
           maxHeight={640}
           empty={
             <EmptyState

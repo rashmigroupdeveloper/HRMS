@@ -1,6 +1,7 @@
 /** CORE-02: every caller uses the same DB-locked per-company sequence. */
 import { sql, type Kysely } from 'kysely';
 import type { Database } from './db/types.js';
+import { inTransaction } from './db/database.js';
 
 async function allocate(db: Kysely<Database>, companyId: number): Promise<string> {
   await db.selectFrom('core.companies').select('id')
@@ -22,5 +23,5 @@ async function allocate(db: Kysely<Database>, companyId: number): Promise<string
 }
 
 export async function allocateEmployeeCode(db: Kysely<Database>, companyId: number): Promise<string> {
-  return db.isTransaction ? allocate(db, companyId) : db.transaction().execute(tx => allocate(tx, companyId));
+  return db.isTransaction ? allocate(db, companyId) : inTransaction(db, tx => allocate(tx, companyId));
 }

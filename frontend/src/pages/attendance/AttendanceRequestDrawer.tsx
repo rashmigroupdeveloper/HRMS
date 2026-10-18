@@ -257,7 +257,7 @@ export function AttendanceRequestDrawer({
           onChange={value => { setDayPortion(readDayPortion(value)); }} options={portionOptions}
           disabled={schedule.loading || portionOptions.length === 0} hint={schedule.loading ? 'Loading your assigned shift…' : schedule.data?.shiftName ?? undefined} />}
         {kind !== 'PERMISSION' && <div className="rounded-row bg-surface-2 px-4 py-3 text-sm" aria-live="polite">
-          {schedule.error ? <p role="alert" className="text-negative">{schedule.error}</p> : schedule.loading
+          {schedule.error ? <p role="alert" className="text-negative-ink">{schedule.error}</p> : schedule.loading
             ? <p className="text-ink-muted">Loading shift timings…</p>
             : selectedWindow ? <>
               <p className="font-semibold text-ink">{dayPortionLabel(dayPortion)} · {windowTiming(selectedWindow)}</p>

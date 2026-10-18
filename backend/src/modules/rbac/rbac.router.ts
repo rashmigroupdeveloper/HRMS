@@ -24,6 +24,7 @@ import {
   removeRoleFromUser,
   searchUsersWithRoles,
 } from './rbac.repository.js';
+import { inTransaction } from '../../core/db/database.js';
 
 const guard = () => withPermission('admin.roles');
 
@@ -37,7 +38,7 @@ const matrixProcedure = guard()
         z.object({
           role: z.string(),
           permission: z.string(),
-          scope: z.enum(['all', 'subtree', 'own', 'org_unit', 'readonly']),
+          scope: z.enum(['all', 'subtree', 'own', 'org_unit', 'readonly', 'department']),
         }),
       ),
     }),
@@ -59,7 +60,7 @@ const matrixProcedure = guard()
 const grantInput = z.object({
   role: z.string().min(1),
   permission: z.string().min(1),
-  scope: z.enum(['all', 'subtree', 'own', 'org_unit', 'readonly']).default('all'),
+  scope: z.enum(['all', 'subtree', 'own', 'org_unit', 'readonly', 'department']).default('all'),
 });
 
 const grantProcedure = guard()
@@ -67,7 +68,7 @@ const grantProcedure = guard()
   .input(grantInput)
   .output(z.object({ changed: z.boolean() }))
   .handler(async ({ input, context }) => {
-    return context.db.transaction().execute(async (db) => {
+    return inTransaction(context.db, async (db) => {
 
     const role = await findRoleByCode(db, input.role);
     const permission = await findPermissionByCode(db, input.permission);
@@ -95,7 +96,7 @@ const revokeProcedure = guard()
   .input(grantInput)
   .output(z.object({ changed: z.boolean() }))
   .handler(async ({ input, context }) => {
-    return context.db.transaction().execute(async (db) => {
+    return inTransaction(context.db, async (db) => {
 
     const role = await findRoleByCode(db, input.role);
     const permission = await findPermissionByCode(db, input.permission);
@@ -130,7 +131,7 @@ const assignRoleProcedure = guard()
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    return context.db.transaction().execute(async (db) => {
+    return inTransaction(context.db, async (db) => {
 
     const role = await findRoleByCode(db, input.role);
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
@@ -155,7 +156,7 @@ const removeRoleProcedure = guard()
   .input(z.object({ userId: z.number().int().positive(), role: z.string().min(1) }))
   .output(z.object({ changed: z.boolean() }))
   .handler(async ({ input, context }) => {
-    return context.db.transaction().execute(async (db) => {
+    return inTransaction(context.db, async (db) => {
 
     const role = await findRoleByCode(db, input.role);
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });

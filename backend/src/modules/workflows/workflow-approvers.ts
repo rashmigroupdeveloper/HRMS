@@ -31,6 +31,8 @@ export async function resolveApprover(db: Db, spec: string, subjectEmployeeId: n
         .executeTakeFirst();
       userId = user?.id ?? null;
     }
+  } else if (spec === 'department_head') {
+    userId = await resolveDepartmentHead(db, subjectEmployeeId);
   } else if (spec.startsWith('role:')) {
     const roleCode = spec.slice('role:'.length);
     const candidates = db
@@ -39,6 +41,7 @@ export async function resolveApprover(db: Db, spec: string, subjectEmployeeId: n
       .innerJoin('core.users as u', 'u.id', 'ur.user_id')
       .where('r.code', '=', roleCode)
       .where('u.is_active', '=', true)
+      .where((eb) => eb.or([eb('u.employee_id', 'is', null), eb('u.employee_id', '!=', subjectEmployeeId)]))
       .select('u.id')
       .orderBy('u.id');
     const user = await candidates.where(workflowRoleSql(sql.ref<number>('u.id'), spec, definitionCode, subjectEmployeeId))
@@ -80,10 +83,40 @@ export async function resolveApprover(db: Db, spec: string, subjectEmployeeId: n
       .select('id')
       .where('id', '=', delegation.to_user_id)
       .where('is_active', '=', true)
+      // A delegate is never routed a request about themselves (C-07).
+      .where((eb) => eb.or([eb('employee_id', 'is', null), eb('employee_id', '!=', subjectEmployeeId)]))
       .executeTakeFirst();
     if (delegate) return { userId: delegate.id, delegatedFrom: userId };
   }
   return { userId, delegatedFrom: null };
+}
+
+/**
+ * C-02: the subject's head of department — the per-employee override
+ * (hod_employee_id) first, else a designated head of the subject's department,
+ * company-specific before group-wide, lowest id first. Never the subject.
+ */
+async function resolveDepartmentHead(db: Db, subjectEmployeeId: number): Promise<number | null> {
+  const subject = await db.selectFrom('core.employees')
+    .select(['hod_employee_id', 'department_id', 'company_id'])
+    .where('id', '=', subjectEmployeeId).executeTakeFirst();
+  if (!subject) return null;
+  const activeUser = (employeeId: number) => db.selectFrom('core.users').select('id')
+    .where('employee_id', '=', employeeId).where('is_active', '=', true).executeTakeFirst();
+  if (subject.hod_employee_id !== null) return (await activeUser(subject.hod_employee_id))?.id ?? null;
+  if (subject.department_id === null) return null;
+  const head = await db.selectFrom('core.department_heads as dh')
+    .innerJoin('core.users as u', 'u.employee_id', 'dh.employee_id')
+    .innerJoin('core.employees as he', 'he.id', 'dh.employee_id')
+    .where('dh.department_id', '=', subject.department_id)
+    .where((eb) => eb.or([eb('dh.company_id', 'is', null), eb('dh.company_id', '=', subject.company_id)]))
+    .where('dh.employee_id', '!=', subjectEmployeeId)
+    .where('u.is_active', '=', true)
+    .where('he.status', 'in', ['active', 'on_notice'])
+    .select('u.id')
+    .orderBy(sql`dh.company_id IS NULL`).orderBy('dh.id')
+    .executeTakeFirst();
+  return head?.id ?? null;
 }
 
 /** May this actor act on this step? The named approver, or (role queue) any

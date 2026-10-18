@@ -253,7 +253,7 @@ export function ApprovalsPage() {
                     />
                     <button
                       type="button"
-                      className="min-w-0 flex-1 rounded-control text-left outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      className="min-w-0 flex-1 rounded-control text-left outline-none focus-visible:ring-2 focus-visible:ring-focus"
                       aria-current={selected ? 'true' : undefined}
                       onClick={() => { void navigate(`/approvals/${String(row.requestId)}`); }}
                     >

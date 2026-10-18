@@ -87,7 +87,7 @@ export function AttendanceMastersPage({ user }: { user: SessionUser }) {
             non-working. Both are data — no deploy needed.
           </p>
         </div>
-        <div className="flex rounded-full bg-surface-2 p-1">
+        <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
           <Button
             size="sm"
             variant={tab === 'shifts' ? 'primary' : 'ghost'}
@@ -437,7 +437,7 @@ function ShiftEditor({
         />
 
         {error !== null && (
-          <p className="text-sm text-negative" role="alert">
+          <p className="text-sm text-negative-ink" role="alert">
             {error}
           </p>
         )}
@@ -525,7 +525,7 @@ function HolidaysPanel({ canEdit }: { canEdit: boolean }) {
           subtitle="att.holidays — a holiday makes the day non-working for the day-status processor."
           action={
             <div className="flex items-center gap-2">
-              <div className="flex rounded-full bg-surface-2 p-1">
+              <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
                 {years.map((y) => (
                   <Button
                     key={y}
@@ -611,7 +611,7 @@ function HolidaysPanel({ canEdit }: { canEdit: boolean }) {
             }}
           />
           {error !== null && (
-            <p className="text-sm text-negative" role="alert">
+            <p className="text-sm text-negative-ink" role="alert">
               {error}
             </p>
           )}

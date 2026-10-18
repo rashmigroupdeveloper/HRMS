@@ -15,6 +15,7 @@ import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { formatDbDate, istDateString } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
+import { inTransaction } from '../../core/db/database.js';
 
 /** Reason strings are stable so the UI can key off them. */
 const NEEDS_PAYROLL = 'Requires the Phase-2 payroll tables (pay.*)';
@@ -431,7 +432,7 @@ export async function buildKpiSnapshot(
 
   // Replace the day's rows atomically — a half-written snapshot would be read
   // by the dashboard as though it were complete.
-  await db.transaction().execute(async (trx) => {
+  await inTransaction(db, async (trx) => {
     await trx
       .deleteFrom('reporting.kpi_daily')
       .where('snapshot_date', '=', sql<Date>`${date}::date`)

@@ -33,11 +33,11 @@ interface TextFieldProps
 
 const FIELD_BASE =
   'peer h-11 w-full rounded-row bg-surface-2 text-sm text-ink ' +
-  'placeholder:text-ink-faint outline-none transition-[box-shadow,background-color] ' +
+  'placeholder:text-ink-subtle outline-none transition-[box-shadow,background-color] ' +
   'duration-[var(--motion-micro)] ease-[var(--ease-std)] ' +
-  'ring-1 ring-inset ring-transparent ' +
+  'ring-1 ring-inset ring-line-strong ' +
   'hover:bg-[color-mix(in_srgb,var(--ink)_4%,var(--surface-2))] ' +
-  'focus:bg-surface focus:ring-2 focus:ring-accent ' +
+  'focus:bg-surface focus:ring-2 focus:ring-focus ' +
   'disabled:cursor-not-allowed disabled:opacity-50';
 
 const FIELD_ERROR =
@@ -70,7 +70,7 @@ export function TextField({
       >
         {label}
         {required && (
-          <span className="ml-0.5 text-negative" aria-hidden>
+          <span className="ml-0.5 text-negative-ink" aria-hidden>
             *
           </span>
         )}
@@ -79,7 +79,7 @@ export function TextField({
       <div className="relative">
         {leadingIcon && (
           <span
-            className="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-ink-faint peer-focus:text-ink-muted [&_svg]:size-[1.1rem]"
+            className="pointer-events-none absolute inset-y-0 left-3 grid place-items-center text-ink-subtle peer-focus:text-ink-muted [&_svg]:size-[1.1rem]"
             aria-hidden
           >
             {leadingIcon}
@@ -110,7 +110,7 @@ export function TextField({
             disabled={disabled}
             aria-label={revealed ? 'Hide password' : 'Show password'}
             aria-pressed={revealed}
-            className="u-press absolute inset-y-0 right-1 grid w-9 place-items-center rounded-row text-ink-faint hover:text-ink [&_svg]:size-[1.1rem]"
+            className="u-press absolute inset-y-0 right-1 grid w-9 place-items-center rounded-row text-ink-subtle hover:text-ink [&_svg]:size-[1.1rem]"
           >
             {revealed ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
           </button>
@@ -121,7 +121,7 @@ export function TextField({
         <p
           id={`${id}-error`}
           role="alert"
-          className="mt-1.5 text-xs font-medium text-negative"
+          className="mt-1.5 text-xs font-medium text-negative-ink"
         >
           {error}
         </p>

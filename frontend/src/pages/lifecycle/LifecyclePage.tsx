@@ -65,7 +65,7 @@ export function LifecyclePage() {
     <div className="space-y-8">
       {/* Top Level Board Switcher Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
-        <div className="flex rounded-full bg-surface-2 p-1">
+        <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
           {BOARDS.map((b) => (
             <Button
               key={b.code}

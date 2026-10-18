@@ -43,7 +43,7 @@ run('central access control (live Postgres)', () => {
   const opsEmail = `test-acl-ops-${stamp}@hrms.test`;
   let adminId: number;
   let opsId: number;
-  const settingKey = `test.acl_knob_${stamp}`;
+  const settingKey = `auth.acl_knob_${stamp}`; // technical namespace: it_admin owns it (settings-ownership)
 
   async function makeUser(email: string): Promise<number> {
     const row = await db

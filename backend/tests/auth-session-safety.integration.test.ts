@@ -42,7 +42,9 @@ describe.skipIf(!url)('NFR-03 native authentication safety', () => {
     const rotated = await refresh(db, secret, signed.refreshToken);
     expect(rotated.ok).toBe(true);
     expect((await refresh(db, secret, signed.refreshToken)).ok).toBe(false);
-    if (rotated.ok) expect((await refresh(db, secret, rotated.refreshToken)).ok).toBe(true);
+    // Replaying a consumed token revokes the whole session family (reuse detection),
+    // so even the legitimately rotated token stops working.
+    if (rotated.ok) expect((await refresh(db, secret, rotated.refreshToken)).ok).toBe(false);
   }));
   it('allows exactly one winner when the same refresh token is redeemed concurrently', async () => fixture(async (_id, email) => {
     const signed = await login(db, secret, email, password, null);

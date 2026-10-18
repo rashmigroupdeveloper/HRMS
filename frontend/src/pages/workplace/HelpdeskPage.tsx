@@ -133,7 +133,7 @@ export function HelpdeskPage({ user }: { user: SessionUser }) {
         description="Ask for help and see it through — every ticket has someone responsible and a clock, so it cannot sit unanswered."
         actions={
           <div className="flex items-center gap-2">
-            <div className="flex rounded-full bg-surface-2 p-1">
+            <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
               {tabs.map((t) => (
                 <Button
                   key={t.code}
@@ -160,7 +160,7 @@ export function HelpdeskPage({ user }: { user: SessionUser }) {
         }
       />
 
-      <DarkCard padded={false} className="p-8 md:p-10">
+      <DarkCard padded={false} className="hidden p-6 sm:block md:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
           Why this exists
         </p>
@@ -257,7 +257,7 @@ function TicketList({
 
   const columns: Column<Ticket>[] = [
     {
-      key: 'ticket',
+      key: 'ticket', sortValue: (r) => `${r.ticketNo} ${r.subject} ${r.categoryName}`, mobile: 'title',
       header: 'Ticket',
       width: 'minmax(240px,1.4fr)',
       render: (r) => (
@@ -280,13 +280,13 @@ function TicketList({
       ),
     },
     {
-      key: 'status',
+      key: 'status', sortValue: (r) => r.status, mobile: 'badge',
       header: 'Status',
       width: '120px',
       render: (r) => <StatusBadge tone={STATUS_TONE[r.status] ?? 'neutral'}>{r.status}</StatusBadge>,
     },
     {
-      key: 'sla',
+      key: 'sla', sortValue: (r) => r.slaDueAt,
       header: 'SLA',
       width: '140px',
       render: (r) => {
@@ -311,7 +311,7 @@ function TicketList({
         ]
       : []),
     {
-      key: 'esc',
+      key: 'esc', sortValue: (r) => r.escalatedLevel,
       header: 'Escalations',
       width: '130px',
       numeric: true,
@@ -319,11 +319,11 @@ function TicketList({
         r.escalatedLevel > 0 ? (
           <StatusBadge tone="warning">Escalated L{r.escalatedLevel}</StatusBadge>
         ) : (
-          <span className="text-ink-faint">—</span>
+          <span className="text-ink-subtle">—</span>
         ),
     },
     {
-      key: 'created',
+      key: 'created', sortValue: (r) => r.createdAt, mobile: 'subtitle',
       header: 'Raised',
       width: '130px',
       render: (r) => <span className="text-xs text-ink-muted">{stamp(r.createdAt)}</span>,
@@ -380,6 +380,11 @@ function TicketList({
           rowKey={(r) => String(r.id)}
           onRowClick={onOpen}
           maxHeight={600}
+          tableId={`helpdesk.${mode}`}
+          caption={mode === 'mine' ? 'My tickets' : 'Ticket queue'}
+          searchable
+          searchPlaceholder="Search subject, ticket no, category…"
+          exportName={mode === 'mine' ? 'my-tickets' : 'helpdesk-queue'}
           empty={
             <EmptyState
               icon={<Inbox />}
@@ -493,7 +498,7 @@ function RaiseDrawer({
                 Base SLA: <strong className="text-ink">{chosen.slaHours} hours</strong> · Priority SLA target:{' '}
                 <strong className="text-ink">{targetHours} hours</strong>.
               </p>
-              <p className="text-ink-faint">
+              <p className="text-ink-subtle">
                 {priority === 'urgent' || priority === 'high'
                   ? 'Urgent tickets alert designated management hierarchy immediately upon SLA breach.'
                   : 'The clock starts ticking as soon as the ticket is submitted.'}
@@ -528,7 +533,7 @@ function RaiseDrawer({
           onChange={setPriority}
         />
         {error !== null && (
-          <p className="text-sm text-negative" role="alert">
+          <p className="text-sm text-negative-ink" role="alert">
             {error}
           </p>
         )}
@@ -767,7 +772,7 @@ function TicketDrawer({
           )}
 
           {error !== null && (
-            <p className="text-sm text-negative" role="alert">
+            <p className="text-sm text-negative-ink" role="alert">
               {error}
             </p>
           )}
@@ -830,7 +835,7 @@ function PerformancePanel() {
       numeric: true,
       render: (r) =>
         r.avgFirstResponseHours === null ? (
-          <span className="text-ink-faint">—</span>
+          <span className="text-ink-subtle">—</span>
         ) : (
           <span className="tabular-nums">{r.avgFirstResponseHours.toFixed(1)} h</span>
         ),
@@ -842,7 +847,7 @@ function PerformancePanel() {
       numeric: true,
       render: (r) =>
         r.avgResolutionHours === null ? (
-          <span className="text-ink-faint">—</span>
+          <span className="text-ink-subtle">—</span>
         ) : (
           <span className="tabular-nums">{r.avgResolutionHours.toFixed(1)} h</span>
         ),

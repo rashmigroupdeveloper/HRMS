@@ -39,6 +39,7 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
   let managerUser: number;
   let hrUser: number;
   let delegateUser: number;
+  let delegateEmpId: number;
   const createdRequests: number[] = [];
 
   async function makeUser(email: string, employeeId?: number): Promise<number> {
@@ -92,7 +93,14 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     workerUser = await makeUser(`s13-worker-${stamp}@hrms.test`, workerEmpId);
     managerUser = await makeUser(`s13-manager-${stamp}@hrms.test`, managerEmpId);
     hrUser = await makeUser(`s13-hr-${stamp}@hrms.test`);
-    delegateUser = await makeUser(`s13-delegate-${stamp}@hrms.test`);
+    // A delegate must be an active colleague with an employee record (C-07).
+    const dlg = await db
+      .insertInto('core.employees')
+      .values({ ecode: `RML8${String(stamp).slice(-5)}D`, company_id: rml.id, first_name: 'S13 Delegate', status: 'active' })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    delegateEmpId = dlg.id;
+    delegateUser = await makeUser(`s13-delegate-${stamp}@hrms.test`, delegateEmpId);
     await giveRole(hrUser, 'hr_ops');
     // Test the configurable generic engine without bypassing the dedicated
     // leave/attendance APIs or editing shared default workflow definitions.
@@ -124,7 +132,7 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
       .set({ is_active: false, employee_id: null })
       .where('id', 'in', [workerUser, managerUser, hrUser, delegateUser])
       .execute();
-    await db.deleteFrom('core.employees').where('id', 'in', [workerEmpId, managerEmpId]).execute();
+    await db.deleteFrom('core.employees').where('id', 'in', [workerEmpId, managerEmpId, delegateEmpId]).execute();
     await db.destroy();
   });
 
@@ -490,6 +498,14 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
       act(db, {
         requestId: testReqId,
         actorUserId: workerUser,
+        action: 'approve',
+      })
+      // The worker is the subject: segregation of duties refuses first.
+    ).rejects.toThrow(/cannot approve or reject your own request/);
+    await expect(
+      act(db, {
+        requestId: testReqId,
+        actorUserId: delegateUser,
         action: 'approve',
       })
     ).rejects.toThrow(/Not the current approver/);

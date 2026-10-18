@@ -11,6 +11,7 @@ import { getSteps } from './workflow-definition.js';
 import { fireFinalHooks } from './workflow-hooks.js';
 import type { Selectable } from 'kysely';
 import type { WfRequestsTable } from '../../core/db/types.js';
+import { inTransaction } from '../../core/db/database.js';
 
 /** A hold is derived from existing state and audit evidence, not another status column. */
 export function routingHeldSql() {
@@ -47,7 +48,7 @@ export async function expireRoutingHolds(db: Kysely<Database>, asOf: Date) {
   let expired = 0;
   for (const row of held) {
     try {
-      await db.transaction().execute(async trx => {
+      await inTransaction(db, async trx => {
         const request = await lockWorkflowRequest(trx, row.id);
         if (!await trx.selectFrom('wf.requests as r').select('r.id').where('r.id', '=', row.id)
           .where(routingHeldSql()).executeTakeFirst()) return;
@@ -64,7 +65,7 @@ export async function expireRoutingHolds(db: Kysely<Database>, asOf: Date) {
 /** Re-evaluate the configured chain, never assign HR an implicit approval. */
 export async function retryRouting(db: Kysely<Database>, requestId: number, actorUserId: number, reason: string) {
   if (!reason.trim()) throw new Error('A routing repair reason is required');
-  return db.transaction().execute(async trx => {
+  return inTransaction(db, async trx => {
     const request = await lockWorkflowRequest(trx, requestId);
     const allowed = await trx.selectFrom('core.users').select('id').where('id', '=', actorUserId)
       .where(workflowAdministrationSql(actorUserId, request.subject_employee_id)).executeTakeFirst();

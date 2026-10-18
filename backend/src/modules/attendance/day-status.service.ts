@@ -15,6 +15,7 @@
  * day. All window margins + the session-presence fraction are POLICY read from
  * core.settings (review F10), never hardcoded.
  */
+import { closeWeekOffs } from '../../core/db/attendance-period.js';
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import type { AttShiftsTable, Database, DayStatus } from '../../core/db/types.js';
 import { getTypedSetting } from '../settings/index.js';
@@ -22,6 +23,7 @@ import { addDaysIso, formatDbDate, istDateTime, istDateString } from '../../core
 import { recordDetectedOvertime } from './overtime.service.js';
 import { approvedHalfRequests, overlayHalfRequests } from './half-requests.js';
 import { readSessionStatuses } from './session-status.js';
+import { inTransaction } from '../../core/db/database.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 type ShiftRow = Selectable<AttShiftsTable>;
@@ -29,7 +31,6 @@ type ShiftRow = Selectable<AttShiftsTable>;
 /** Statuses that count as "present for the week" in week-off eligibility
  *  (docs/04 §1.2: P, HD, OD, CO, H, L-paid). LWP is still status L but has
  *  is_paid=false on lv.leave_types — closeWeek joins that flag. */
-const WEEKOFF_PRESENT_STATUSES: readonly DayStatus[] = ['P', 'HD', 'OD', 'CO', 'H'];
 
 export interface AttendancePolicy {
   earlyMarginMs: number;
@@ -403,7 +404,7 @@ export async function recomputeDay(
 ): Promise<DayStatus | 'held' | 'skipped'> {
   const pol = policy ?? (await loadAttendancePolicy(db));
   if (!db.isTransaction) {
-    const result = await db.transaction().execute(tx => recomputeDay(tx, employeeId, isoDate, pol));
+    const result = await inTransaction(db, tx => recomputeDay(tx, employeeId, isoDate, pol));
     if (result !== 'held' && result !== 'skipped') {
       const posted = await db.selectFrom('att.day_records').select('ot_minutes').where('employee_id', '=', employeeId)
         .where('work_date', '=', sql<Date>`${isoDate}::date`).executeTakeFirst();
@@ -628,32 +629,5 @@ export { setManualStatus } from './manual-status.service.js';
  */
 export async function closeWeek(db: Kysely<Database>, weekStartIso: string): Promise<number> {
   const minWorked = await getTypedSetting(db, 'att.weekoff_min_worked_days', 'number', 1);
-  const presentList = WEEKOFF_PRESENT_STATUSES.join(',');
-
-  // Paid leave (L with lv.leave_types.is_paid) counts as present (docs/04 §1.2).
-  const result = await sql<{ id: number }>`
-    UPDATE att.day_records d
-    SET weekoff_paid = (w.present >= ${minWorked})
-    FROM (
-      SELECT dr.employee_id,
-             COUNT(*) FILTER (
-               WHERE dr.status = ANY (string_to_array(${presentList}, ',')::att.day_status[])
-                  OR (dr.status = 'L' AND EXISTS (
-                        SELECT 1 FROM lv.leave_types lt
-                        WHERE lt.id = dr.leave_type_id AND lt.is_paid = true
-                      ))
-             ) AS present
-      FROM att.day_records dr
-      WHERE dr.work_date >= ${weekStartIso}::date AND dr.work_date < ${weekStartIso}::date + 7
-        AND dr.is_locked = false
-      GROUP BY dr.employee_id
-    ) w
-    WHERE d.employee_id = w.employee_id
-      AND d.status = 'WO'
-      AND d.work_date >= ${weekStartIso}::date AND d.work_date < ${weekStartIso}::date + 7
-      AND d.is_locked = false
-    RETURNING d.id
-  `.execute(db);
-
-  return result.rows.length;
+  return closeWeekOffs(db, weekStartIso, minWorked);
 }

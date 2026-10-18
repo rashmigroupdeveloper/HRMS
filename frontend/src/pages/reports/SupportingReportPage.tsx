@@ -235,7 +235,7 @@ export function SupportingReportPage<T extends object>({
           {extraActions}
         </div>
         {error && companyOk ? (
-          <p className="mt-3 text-sm text-negative" role="alert">
+          <p className="mt-3 text-sm text-negative-ink" role="alert">
             {error}
           </p>
         ) : null}

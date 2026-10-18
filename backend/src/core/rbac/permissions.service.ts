@@ -17,6 +17,8 @@ export interface PermissionAccess {
   own: boolean;
   subtree: boolean;
   orgUnitIds: readonly number[];
+  /** HOD scope: subjects whose head of department is the actor. */
+  department?: boolean;
 }
 
 export type PermissionAction = 'read' | 'write';
@@ -59,7 +61,9 @@ export async function getUserPermissionAccess(
   const orgUnitIds = [
     ...new Set(
       rows
-        .filter((row) => row.scope === 'org_unit' || row.scope === 'readonly')
+        // An 'all' grant on an ENTITY-BOUND assignment (scope_org_unit_id set)
+        // is bounded to that entity: group scope = role assigned with no unit.
+        .filter((row) => row.scope === 'org_unit' || row.scope === 'readonly' || row.scope === 'all')
         .map((row) => row.scope_org_unit_id)
         .filter((id): id is number => id !== null),
     ),
@@ -67,10 +71,11 @@ export async function getUserPermissionAccess(
   return {
     // A readonly grant contributes only to reads, and its assigned unit still
     // bounds those reads. It must never widen an additive scoped write grant.
-    all: scopes.has('all') || rows.some(row => row.scope === 'readonly' && row.scope_org_unit_id === null),
+    all: rows.some(row => (row.scope === 'all' || row.scope === 'readonly') && row.scope_org_unit_id === null),
     own: scopes.has('own'),
     subtree: scopes.has('subtree'),
     orgUnitIds,
+    ...(scopes.has('department') ? { department: true } : {}),
   };
 }
 

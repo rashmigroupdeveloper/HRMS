@@ -42,9 +42,9 @@ interface SelectProps {
 const TRIGGER_BASE =
   'flex h-11 w-full items-center gap-2 rounded-row bg-surface-2 px-3.5 text-left text-sm ' +
   'outline-none transition-[box-shadow,background-color] duration-[var(--motion-micro)] ease-[var(--ease-std)] ' +
-  'ring-1 ring-inset ring-transparent ' +
+  'ring-1 ring-inset ring-line-strong ' +
   'hover:bg-[color-mix(in_srgb,var(--ink)_4%,var(--surface-2))] ' +
-  'focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-accent ' +
+  'focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-focus ' +
   'disabled:cursor-not-allowed disabled:opacity-50';
 
 const TRIGGER_ERROR =
@@ -185,7 +185,7 @@ export function Select({
       >
         {label}
         {required && (
-          <span className="ml-0.5 text-negative" aria-hidden>
+          <span className="ml-0.5 text-negative-ink" aria-hidden>
             *
           </span>
         )}
@@ -213,14 +213,14 @@ export function Select({
           className={cn(TRIGGER_BASE, error && TRIGGER_ERROR)}
         >
           {leadingIcon && (
-            <span className="text-ink-faint [&_svg]:size-[1.1rem]" aria-hidden>
+            <span className="text-ink-subtle [&_svg]:size-[1.1rem]" aria-hidden>
               {leadingIcon}
             </span>
           )}
           <span
             className={cn(
               'min-w-0 flex-1 truncate',
-              selected ? 'text-ink' : 'text-ink-faint',
+              selected ? 'text-ink' : 'text-ink-subtle',
             )}
           >
             {selected ? selected.label : placeholder}
@@ -228,7 +228,7 @@ export function Select({
           <ChevronDown
             aria-hidden
             className={cn(
-              'size-4 shrink-0 text-ink-faint transition-transform duration-[var(--motion-micro)] ease-[var(--ease-out-strong)]',
+              'size-4 shrink-0 text-ink-subtle transition-transform duration-[var(--motion-micro)] ease-[var(--ease-out-strong)]',
               open && 'rotate-180',
             )}
           />
@@ -296,7 +296,7 @@ export function Select({
         <p
           id={`${id}-error`}
           role="alert"
-          className="mt-1.5 text-xs font-medium text-negative"
+          className="mt-1.5 text-xs font-medium text-negative-ink"
         >
           {error}
         </p>

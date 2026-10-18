@@ -4,7 +4,10 @@
  * the current approver is, and every touch is audited + receipted.
  */
 import { ORPCError } from '@orpc/server';
+import { sql } from 'kysely';
 import { z } from 'zod';
+import { istDateString } from '../../core/dates.js';
+import { getTypedSetting } from '../settings/index.js';
 import { DOMAIN_RESERVED_DEFINITIONS } from './workflow-hooks.js';
 import { authed, withPermission } from '../../api/orpc.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
@@ -56,17 +59,13 @@ const createProcedure = authed
       }
     }
 
-    try {
-      const requestId = await createRequest(db, {
-        definitionCode: input.definitionCode,
-        subjectEmployeeId,
-        requestedByUserId: context.user.id,
-        payload: input.payload,
-      });
-      return { requestId };
-    } catch (err) {
-      throw new ORPCError('BAD_REQUEST', { message: err instanceof Error ? err.message : 'Invalid request' });
-    }
+    const requestId = await createRequest(db, {
+      definitionCode: input.definitionCode,
+      subjectEmployeeId,
+      requestedByUserId: context.user.id,
+      payload: input.payload,
+    });
+    return { requestId };
   });
 
 const inboxProcedure = authed
@@ -114,19 +113,14 @@ const actProcedure = authed
   .output(z.object({ outcome: z.enum(['advanced', 'approved', 'rejected', 'sent_back']) }))
   .handler(async ({ input, context }) => {
     const db = context.db;
-    try {
-      const outcome = await act(db, {
-        requestId: input.requestId,
-        actorUserId: context.user.id,
-        action: input.action,
-        comment: input.comment,
-      });
-      return { outcome };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Cannot act';
-      if (message.includes('Not the current approver')) throw new ORPCError('FORBIDDEN', { message });
-      throw new ORPCError('BAD_REQUEST', { message });
-    }
+    // Errors map centrally: 'Not the current approver' / SoD → 403, rules → 400.
+    const outcome = await act(db, {
+      requestId: input.requestId,
+      actorUserId: context.user.id,
+      action: input.action,
+      comment: input.comment,
+    });
+    return { outcome };
   });
 
 const resubmitProcedure = authed
@@ -135,12 +129,8 @@ const resubmitProcedure = authed
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
     const db = context.db;
-    try {
-      await resubmit(db, { requestId: input.requestId, requesterUserId: context.user.id, payload: input.payload });
-      return { ok: true as const };
-    } catch (err) {
-      throw new ORPCError('BAD_REQUEST', { message: err instanceof Error ? err.message : 'Cannot resubmit' });
-    }
+    await resubmit(db, { requestId: input.requestId, requesterUserId: context.user.id, payload: input.payload });
+    return { ok: true as const };
   });
 
 const timelineProcedure = authed
@@ -226,6 +216,39 @@ const setDelegation = authed
   .handler(async ({ input, context }) => {
     const db = context.db;
     if (input.toUserId === context.user.id) throw new ORPCError('BAD_REQUEST', { message: 'Cannot delegate to yourself' });
+    if (input.fromDate > input.toDate) throw new ORPCError('BAD_REQUEST', { message: 'fromDate must be on or before toDate' });
+    if (input.toDate < istDateString()) throw new ORPCError('BAD_REQUEST', { message: 'The delegation window has already ended' });
+    const maxDays = await getTypedSetting(db, 'wf.delegation_max_days', 'number', 90);
+    const spanDays = (Date.parse(`${input.toDate}T00:00:00Z`) - Date.parse(`${input.fromDate}T00:00:00Z`)) / 86_400_000 + 1;
+    if (spanDays > maxDays) throw new ORPCError('BAD_REQUEST', { message: `A delegation may cover at most ${String(maxDays)} days` });
+    // C-07 / B-03 / A-16: the delegate must be an ACTIVE colleague with an
+    // employee record, in the same company, and NOT someone whose requests
+    // the delegator approves (a report) — otherwise the delegate could approve
+    // their own leave.
+    const delegate = await db.selectFrom('core.users as u')
+      .leftJoin('core.employees as e', 'e.id', 'u.employee_id')
+      .select(['u.id', 'u.is_active', 'u.employee_id', 'e.company_id', 'e.status'])
+      .where('u.id', '=', input.toUserId).executeTakeFirst();
+    if (!delegate?.is_active || delegate.employee_id === null || delegate.status === 'exited') {
+      throw new ORPCError('BAD_REQUEST', { message: 'Delegate must be an active employee login' });
+    }
+    if (context.user.employee_id !== null) {
+      const me = await db.selectFrom('core.employees').select('company_id').where('id', '=', context.user.employee_id).executeTakeFirst();
+      if (me && me.company_id !== delegate.company_id) {
+        throw new ORPCError('FORBIDDEN', { message: 'Delegate must belong to your company' });
+      }
+      const report = await db.selectFrom('core.reporting_tree').select('employee_id')
+        .where('manager_id', '=', context.user.employee_id).where('employee_id', '=', delegate.employee_id).executeTakeFirst();
+      if (report) {
+        throw new ORPCError('FORBIDDEN', { message: 'You cannot delegate approvals to someone who reports to you' });
+      }
+    }
+    const overlap = await db.selectFrom('wf.delegations').select('id')
+      .where('from_user_id', '=', context.user.id)
+      .where('from_date', '<=', input.toDate as unknown as Date)
+      .where('to_date', '>=', input.fromDate as unknown as Date)
+      .executeTakeFirst();
+    if (overlap) throw new ORPCError('CONFLICT', { message: 'You already have a delegation overlapping these dates — revoke it first' });
     await db
       .insertInto('wf.delegations')
       .values({
@@ -240,8 +263,33 @@ const setDelegation = authed
       action: 'create',
       entity: 'wf.delegations',
       subjectEmployeeId: context.user.employee_id,
-      newValue: `→ user ${input.toUserId} (${input.fromDate}..${input.toDate})`,
+      newValue: `→ user ${String(input.toUserId)} (${input.fromDate}..${input.toDate})`,
     });
+    return { ok: true as const };
+  });
+
+const listDelegations = authed
+  .route({ method: 'GET', path: '/workflows/delegations', summary: 'My active and upcoming delegations' })
+  .output(z.array(z.object({ id: z.number(), toUserId: z.number(), toEmail: z.string(), fromDate: z.string(), toDate: z.string() })))
+  .handler(async ({ context }) => {
+    const rows = await context.db.selectFrom('wf.delegations as d').innerJoin('core.users as u', 'u.id', 'd.to_user_id')
+      .select(['d.id', 'd.to_user_id', 'u.email', sql<string>`d.from_date::text`.as('from_date'), sql<string>`d.to_date::text`.as('to_date')])
+      .where('d.from_user_id', '=', context.user.id)
+      .where('d.to_date', '>=', istDateString() as unknown as Date)
+      .orderBy('d.from_date').execute();
+    return rows.map((r) => ({ id: r.id, toUserId: r.to_user_id, toEmail: r.email, fromDate: r.from_date, toDate: r.to_date }));
+  });
+
+const revokeDelegation = authed
+  .route({ method: 'DELETE', path: '/workflows/delegations/{id}', summary: 'End one of my delegations today' })
+  .input(z.object({ id: z.number().int().positive() }))
+  .output(z.object({ ok: z.literal(true) }))
+  .handler(async ({ input, context }) => {
+    const row = await context.db.selectFrom('wf.delegations').select(['id', 'from_user_id'])
+      .where('id', '=', input.id).executeTakeFirst();
+    if (row?.from_user_id !== context.user.id) throw new ORPCError('NOT_FOUND', { message: 'Delegation not found' });
+    await context.db.deleteFrom('wf.delegations').where('id', '=', input.id).execute();
+    await writeAudit(context.db, { actorUserId: context.user.id, action: 'delete', entity: 'wf.delegations', entityId: input.id });
     return { ok: true as const };
   });
 
@@ -302,6 +350,8 @@ export const workflowsRouter = {
   resubmit: resubmitProcedure,
   timeline: timelineProcedure,
   setDelegation,
+  listDelegations,
+  revokeDelegation,
   listDefinitions,
   upsertDefinition,
   escalateNow,

@@ -70,7 +70,8 @@ export const WORKFLOW_DEFINITIONS: readonly DefinitionSeed[] = [
     name: 'Travel Advance (Domestic)',
     steps: [
       { step: 1, approver: 'reporting_manager', slaHours: 48, onBreach: 'escalate' },
-      { step: 2, approver: 'functional_manager', slaHours: 48, onBreach: 'escalate' },
+      // docs/01 TE-07: RM → HOD (C-02; was the functional-manager stand-in).
+      { step: 2, approver: 'department_head', slaHours: 48, onBreach: 'escalate' },
     ],
   },
   {
@@ -104,6 +105,32 @@ export const WORKFLOW_DEFINITIONS: readonly DefinitionSeed[] = [
     steps: [
       { step: 1, approver: 'role:hr_ops', slaHours: 48, onBreach: 'escalate' },
       { step: 2, approver: 'role:hr_head', slaHours: 48, onBreach: 'escalate' },
+    ],
+  },
+  {
+    code: 'travel_trip',
+    name: 'Travel Trip Approval',
+    steps: [{ step: 1, approver: 'reporting_manager', slaHours: 48, onBreach: 'escalate' }],
+  },
+  {
+    code: 'travel_claim',
+    name: 'Travel Expense Claim',
+    steps: [{ step: 1, approver: 'reporting_manager', slaHours: 72, onBreach: 'escalate' }],
+  },
+  {
+    code: 'requisition_approval',
+    name: 'Manpower Requisition',
+    steps: [
+      { step: 1, approver: 'reporting_manager', slaHours: 72, onBreach: 'escalate' },
+      { step: 2, approver: 'role:hr_head', slaHours: 72, onBreach: 'escalate' },
+    ],
+  },
+  {
+    code: 'offer_approval',
+    name: 'Offer / LOI Approval',
+    steps: [
+      { step: 1, approver: 'role:hr_head', slaHours: 48, onBreach: 'escalate' },
+      { step: 2, approver: 'role:ceo_cell', slaHours: 72, onBreach: 'escalate' },
     ],
   },
 ] as const;

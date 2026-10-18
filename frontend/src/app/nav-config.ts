@@ -21,8 +21,10 @@ import {
   CheckCheck,
   Coins,
   Contact,
+  FileSpreadsheet,
   FileClock,
   GitBranch,
+  Network,
   Home,
   Laptop,
   LayoutDashboard,
@@ -46,6 +48,9 @@ import {
 } from 'lucide-react';
 import type { SessionUser } from '../lib/session';
 import { hasAnyPermission, hasPermission, hasRole } from '../lib/session';
+
+/** Permissions that unlock at least one bulk import (mirrors backend importers). */
+const BULK_IMPORT_PERMISSIONS = ['employee.write', 'salary.write', 'payroll.run.manage', 'attendance.manual_override', 'leave.admin', 'admin.settings', 'assets.manage'] as const;
 
 export interface NavItem {
   label: string;
@@ -245,6 +250,12 @@ export function navForUser(user: SessionUser): NavItem[] {
         icon: SlidersHorizontal,
       }),
     );
+  }
+  if (hasPermission(user, 'employee.write')) {
+    push(grouped('Admin', { label: 'Heads of department', to: '/admin/department-heads', icon: Network }));
+  }
+  if (hasAnyPermission(user, BULK_IMPORT_PERMISSIONS)) {
+    push(grouped('Admin', { label: 'Data imports', to: '/admin/imports', icon: FileSpreadsheet }));
   }
   if (hasPermission(user, 'audit.read')) {
     push(grouped('Admin', { label: 'Audit log', to: '/admin/audit', icon: FileClock }));

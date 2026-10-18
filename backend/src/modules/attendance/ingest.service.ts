@@ -17,6 +17,7 @@ import type { Database } from '../../core/db/types.js';
 import { getTypedSetting } from '../settings/index.js';
 import { enqueueEvent } from '../notifications/index.js';
 import type { KentConnector, RawSwipe } from './kent-connector.js';
+import { inTransaction } from '../../core/db/database.js';
 
 const OVERLAP_MINUTES = 30;
 const EPOCH = new Date('2020-01-01T00:00:00Z');
@@ -90,7 +91,7 @@ export async function ingestOnce(
   for (const s of fetched) if (s.receivedAt > maxReceived) maxReceived = s.receivedAt;
   const nextSourceWatermark = fetched.length > 0 ? maxReceived : (wmRow?.watermark_ts ?? null);
 
-  await db.transaction().execute(async (trx) => {
+  await inTransaction(db, async (trx) => {
     if (quarantine.length > 0) {
       await trx
         .insertInto('att.quarantined_swipes')
@@ -233,7 +234,7 @@ export async function reingestQuarantined(
   let promoted = 0;
   let reviewed = 0;
 
-  await db.transaction().execute(async (trx) => {
+  await inTransaction(db, async (trx) => {
     let q = trx.selectFrom('att.quarantined_swipes').selectAll().where('reviewed', '=', false);
     if (ids && ids.length > 0) q = q.where('id', 'in', ids);
     const rows = await q.execute();

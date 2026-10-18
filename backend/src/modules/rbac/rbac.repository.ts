@@ -34,7 +34,7 @@ export async function insertGrant(
   db: Kysely<Database>,
   roleId: number,
   permissionId: number,
-  scope: 'all' | 'subtree' | 'own' | 'org_unit' | 'readonly',
+  scope: 'all' | 'subtree' | 'own' | 'org_unit' | 'readonly' | 'department',
 ): Promise<boolean> {
   const res = await db
     .insertInto('core.role_permissions')

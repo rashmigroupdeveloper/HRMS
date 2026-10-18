@@ -3,7 +3,11 @@
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
+import type { Kysely } from 'kysely';
 import { withPermission } from '../../../api/orpc.js';
+import type { Database } from '../../../core/db/types.js';
+import { getUserPermissionAccess } from '../../../core/rbac/permissions.service.js';
+import { assertEmployeesInScope } from '../../../core/rbac/employee-scope.js';
 import {
   assignSalary,
   getEffectiveSalary,
@@ -78,14 +82,28 @@ const salaryRevisionDiffSchema = z.object({
   retro_months_affected: z.array(z.string()),
 });
 
+/**
+ * C-14 / A-09 / B-13: individual compensation needs a NON-readonly grant.
+ * ceo_cell's grant is readonly "aggregates only" — it may see its own salary
+ * (employee role, own scope) but never another person's breakup.
+ */
+async function assertIndividualCompensation(
+  db: Kysely<Database>, user: { id: number; employee_id: number | null }, employeeId: number,
+): Promise<void> {
+  if (user.employee_id === employeeId) return;
+  const access = await getUserPermissionAccess(db, user.id, 'employee.compensation.read', 'write');
+  if (!access || (!access.all && !access.subtree && access.orgUnitIds.length === 0)) {
+    throw new ORPCError('FORBIDDEN', { message: 'Individual compensation is not visible to your role — use aggregate reports' });
+  }
+  await assertEmployeesInScope(db, { ...access, actorEmployeeId: user.employee_id }, [employeeId]);
+}
+
 const getEffectiveSalaryProcedure = withPermission('employee.compensation.read')
   .route({ method: 'GET', path: '/payroll/salaries/effective/{employee_id}', summary: 'Get current effective salary for an employee' })
   .input(z.object({ employee_id: z.number().int().positive(), as_of_date: z.string().optional() }))
   .output(effectiveSalaryOutputSchema)
   .handler(async ({ input, context }) => {
-    if (context.permissionAccess.own && !context.permissionAccess.all && context.user.employee_id !== input.employee_id) {
-      throw new ORPCError('FORBIDDEN', { message: 'Can only view your own compensation details' });
-    }
+    await assertIndividualCompensation(context.db, context.user, input.employee_id);
     const res = await getEffectiveSalary(context.db, input.employee_id, input.as_of_date ?? undefined);
     return {
       salary: res.salary
@@ -112,9 +130,7 @@ const getSalaryHistoryProcedure = withPermission('employee.compensation.read')
   .input(z.object({ employee_id: z.number().int().positive() }))
   .output(z.array(salaryRevisionDiffSchema))
   .handler(async ({ input, context }) => {
-    if (context.permissionAccess.own && !context.permissionAccess.all && context.user.employee_id !== input.employee_id) {
-      throw new ORPCError('FORBIDDEN', { message: 'Can only view your own compensation history' });
-    }
+    await assertIndividualCompensation(context.db, context.user, input.employee_id);
     return getSalaryRevisionHistory(context.db, input.employee_id);
   });
 

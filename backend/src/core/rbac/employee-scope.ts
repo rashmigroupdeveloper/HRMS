@@ -2,6 +2,7 @@
 import { sql, type Kysely, type RawBuilder } from 'kysely';
 import type { Database } from '../db/types.js';
 import type { PermissionAccess } from './permissions.service.js';
+import { ForbiddenError } from '../errors/index.js';
 
 export interface EmployeeScope extends PermissionAccess {
   actorEmployeeId: number | null;
@@ -28,12 +29,29 @@ export function employeeScopeSql(
       )`,
     );
   }
+  if (scope.department === true && scope.actorEmployeeId !== null) {
+    conditions.push(departmentHeadSql(sql.ref(employeeAlias), scope.actorEmployeeId));
+  }
   if (scope.orgUnitIds.length > 0) {
     conditions.push(sql`${orgUnitId} IN (${sql.join(scope.orgUnitIds)})`);
   }
   return conditions.length > 0
     ? sql<boolean>`(${sql.join(conditions, sql` OR `)})`
     : sql<boolean>`false`;
+}
+
+/**
+ * C-02: is `actorEmployeeId` the head of department of the subject row? Either
+ * named on the employee (hod_employee_id, the live-EMS override) or a designated
+ * head of the subject's department in the same company (or in every company).
+ */
+function departmentHeadSql(subject: RawBuilder<unknown>, actorEmployeeId: number | RawBuilder<unknown>): RawBuilder<boolean> {
+  return sql<boolean>`(${subject}.hod_employee_id = ${actorEmployeeId} OR EXISTS (
+    SELECT 1 FROM core.department_heads dh
+     WHERE dh.employee_id = ${actorEmployeeId}
+       AND dh.department_id = ${subject}.department_id
+       AND (dh.company_id IS NULL OR dh.company_id = ${subject}.company_id)
+  ))`;
 }
 
 export async function assertEmployeesInScope(
@@ -51,6 +69,6 @@ export async function assertEmployeesInScope(
     .executeTakeFirstOrThrow();
   const allowed = typeof row.n === 'number' ? row.n : Number(row.n);
   if (allowed !== ids.length) {
-    throw new Error('One or more employees are outside your permitted data scope');
+    throw new ForbiddenError('One or more employees are outside your permitted data scope');
   }
 }

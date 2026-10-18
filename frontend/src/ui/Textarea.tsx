@@ -23,11 +23,11 @@ interface TextareaProps
 
 const AREA_BASE =
   'w-full resize-y rounded-row bg-surface-2 px-3.5 py-2.5 text-sm text-ink ' +
-  'placeholder:text-ink-faint outline-none transition-[box-shadow,background-color] ' +
+  'placeholder:text-ink-subtle outline-none transition-[box-shadow,background-color] ' +
   'duration-[var(--motion-micro)] ease-[var(--ease-std)] ' +
-  'ring-1 ring-inset ring-transparent ' +
+  'ring-1 ring-inset ring-line-strong ' +
   'hover:bg-[color-mix(in_srgb,var(--ink)_4%,var(--surface-2))] ' +
-  'focus:bg-surface focus:ring-2 focus:ring-accent ' +
+  'focus:bg-surface focus:ring-2 focus:ring-focus ' +
   'disabled:cursor-not-allowed disabled:opacity-50';
 
 const AREA_ERROR =
@@ -66,7 +66,7 @@ export function Textarea({
         <label htmlFor={id} className="block text-sm font-medium text-ink">
           {label}
           {required && (
-            <span className="ml-0.5 text-negative" aria-hidden>
+            <span className="ml-0.5 text-negative-ink" aria-hidden>
               *
             </span>
           )}
@@ -75,7 +75,7 @@ export function Textarea({
           <span
             className={cn(
               'text-xs tabular-nums',
-              nearLimit ? 'font-medium text-warning' : 'text-ink-faint',
+              nearLimit ? 'font-medium text-warning-ink' : 'text-ink-subtle',
             )}
             aria-hidden
           >
@@ -107,7 +107,7 @@ export function Textarea({
         <p
           id={`${id}-error`}
           role="alert"
-          className="mt-1.5 text-xs font-medium text-negative"
+          className="mt-1.5 text-xs font-medium text-negative-ink"
         >
           {error}
         </p>

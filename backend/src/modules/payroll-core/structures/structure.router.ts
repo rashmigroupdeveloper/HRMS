@@ -3,7 +3,7 @@
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { authed, withPermission } from '../../../api/orpc.js';
+import { withAnyPermission, withPermission } from '../../../api/orpc.js';
 import {
   listStructures,
   getStructure,
@@ -72,7 +72,7 @@ const structureBreakupOutputSchema = z.object({
   }),
 });
 
-const listStructuresProcedure = authed
+const listStructuresProcedure = withAnyPermission('salary.write', 'payroll.run.view')
   .route({ method: 'GET', path: '/payroll/structures', summary: 'List salary structures' })
   .input(
     z
@@ -90,7 +90,7 @@ const listStructuresProcedure = authed
     return listStructures(context.db, options);
   });
 
-const getStructureProcedure = authed
+const getStructureProcedure = withAnyPermission('salary.write', 'payroll.run.view')
   .route({ method: 'GET', path: '/payroll/structures/{id}', summary: 'Get a salary structure by id' })
   .input(z.object({ id: z.number().int().positive() }))
   .output(salaryStructureSchema)
@@ -118,7 +118,7 @@ const updateStructureProcedure = withPermission('salary.write')
     return updateStructure(context.db, input.id, input, context.user.id);
   });
 
-const previewBreakupProcedure = authed
+const previewBreakupProcedure = withPermission('salary.write', 'read')
   .route({ method: 'POST', path: '/payroll/structures/preview', summary: 'Simulate CTC component breakup' })
   .input(previewBreakupInputSchema)
   .output(structureBreakupOutputSchema)

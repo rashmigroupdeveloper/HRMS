@@ -11,6 +11,7 @@
 import type { Kysely } from 'kysely';
 import type { Database, ClaimStatus } from '../../core/db/types.js';
 import { EntitlementService } from './entitlement.service.js';
+import { inTransaction } from '../../core/db/database.js';
 
 export interface SubmitBillInput {
   documentId: number;
@@ -137,7 +138,7 @@ export class ClaimsService {
     }
 
     // 3. Atomically persist claim and bills
-    return await this.db.transaction().execute(async (trx) => {
+    return await inTransaction(this.db, async (trx) => {
       const inserted = await trx
         .insertInto('pay.claims')
         .values({
@@ -192,7 +193,7 @@ export class ClaimsService {
       billVerifications = [],
     } = params;
 
-    return await this.db.transaction().execute(async (trx) => {
+    return await inTransaction(this.db, async (trx) => {
       const claim = await trx
         .selectFrom('pay.claims')
         .selectAll()
@@ -280,7 +281,7 @@ export class ClaimsService {
       throw new Error('batchId is required when paying through off-cycle bank batch');
     }
 
-    return await this.db.transaction().execute(async (trx) => {
+    return await inTransaction(this.db, async (trx) => {
       const claim = await trx
         .selectFrom('pay.claims')
         .innerJoin('pay.claim_types', 'pay.claim_types.id', 'pay.claims.claim_type_id')

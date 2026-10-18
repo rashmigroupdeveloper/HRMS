@@ -6,6 +6,7 @@
  * - Manager & HR: Bill proof verification queue with line-item review and partial approval
  * - Payroll Admin: Payout routing (Regular Payroll Run OR Off-Cycle Bank Batch)
  */
+import { authFetch, responseError } from '../../lib/api';
 import { useState, useEffect } from 'react';
 import {
   AlertCircle,
@@ -21,6 +22,7 @@ import {
   DataTable,
   type Column,
   Drawer,
+  ReceiptCapture,
   PageHeader,
   Select,
   StatusBadge,
@@ -29,6 +31,7 @@ import {
   ConfirmModal,
   toast,
 } from '../../ui';
+import { takeActionParam } from '../_shared/action-param';
 
 type Tab = 'mine' | 'verify' | 'payout';
 
@@ -88,7 +91,7 @@ export function ClaimsPage() {
   const [approvedForPayout, setApprovedForPayout] = useState<ClaimItem[]>([]);
 
   // New Claim Drawer state
-  const [newClaimOpen, setNewClaimOpen] = useState(false);
+  const [newClaimOpen, setNewClaimOpen] = useState(() => takeActionParam('new'));
   const [selectedType, setSelectedType] = useState('medical');
   const [periodFrom, setPeriodFrom] = useState('2026-06-01');
   const [periodTo, setPeriodTo] = useState('2026-06-30');
@@ -117,114 +120,32 @@ export function ClaimsPage() {
   async function loadData() {
     try {
       if (tab === 'mine') {
-        const entRes = await fetch('/api/claims/my-entitlements');
+        const entRes = await authFetch('/api/claims/my-entitlements');
         if (entRes.ok) {
           const entData = (await entRes.json()) as EntitlementSummary[];
           setEntitlements(entData);
         }
-        const clmRes = await fetch('/api/claims/my');
+        const clmRes = await authFetch('/api/claims/my');
         if (clmRes.ok) {
           const clmData = (await clmRes.json()) as ClaimItem[];
           setMyClaims(clmData);
         }
       } else if (tab === 'verify') {
-        const res = await fetch('/api/claims/pending');
+        const res = await authFetch('/api/claims/pending');
         if (res.ok) {
           const data = (await res.json()) as ClaimItem[];
           setPendingClaims(data.filter((c) => c.status === 'pending' || c.status === 'verified'));
         }
       } else {
-        const res = await fetch('/api/claims/pending?status=approved');
+        const res = await authFetch('/api/claims/pending?status=approved');
         if (res.ok) {
           const data = (await res.json()) as ClaimItem[];
           setApprovedForPayout(data.filter((c) => c.status === 'approved'));
         }
       }
-    } catch {
-      // Fallback demo fixtures
-      setEntitlements([
-        {
-          claimTypeCode: 'medical',
-          claimTypeName: 'Medical Reimbursement',
-          basis: 'annual',
-          totalEntitlementRupees: 15000,
-          approvedClaimsRupees: 4500,
-          pendingClaimsRupees: 2500,
-          availableBalanceRupees: 8000,
-          billRequired: true,
-          taxableIfUnsubstantiated: true,
-          payoutComponentCode: 'MED_REIMB',
-        },
-        {
-          claimTypeCode: 'conveyance',
-          claimTypeName: 'Fuel & Conveyance',
-          basis: 'monthly',
-          totalEntitlementRupees: 5000,
-          approvedClaimsRupees: 0,
-          pendingClaimsRupees: 0,
-          availableBalanceRupees: 5000,
-          billRequired: true,
-          taxableIfUnsubstantiated: false,
-          payoutComponentCode: 'CONV_REIMB',
-        },
-        {
-          claimTypeCode: 'telephone',
-          claimTypeName: 'Telephone & Internet',
-          basis: 'monthly',
-          totalEntitlementRupees: 2000,
-          approvedClaimsRupees: 1499,
-          pendingClaimsRupees: 0,
-          availableBalanceRupees: 501,
-          billRequired: true,
-          taxableIfUnsubstantiated: false,
-          payoutComponentCode: 'TEL_REIMB',
-        },
-        {
-          claimTypeCode: 'lta',
-          claimTypeName: 'Leave Travel Allowance',
-          basis: 'annual',
-          totalEntitlementRupees: 50000,
-          approvedClaimsRupees: 0,
-          pendingClaimsRupees: 0,
-          availableBalanceRupees: 50000,
-          billRequired: true,
-          taxableIfUnsubstantiated: true,
-          payoutComponentCode: 'LTA_REIMB',
-        },
-      ]);
-
-      setMyClaims([
-        {
-          id: 401,
-          employeeId: 1,
-          ecode: 'RML035384',
-          employeeName: 'Self',
-          claimTypeCode: 'medical',
-          claimTypeName: 'Medical Reimbursement',
-          payoutComponentCode: 'MED_REIMB',
-          periodFrom: '2026-06-01',
-          periodTo: '2026-06-30',
-          claimedAmountRupees: 2500,
-          approvedAmountRupees: null,
-          status: 'pending',
-          rejectionReason: null,
-          advanceLoanId: null,
-          paidInRunId: null,
-          paidInBatchId: null,
-          createdAt: new Date().toISOString(),
-          bills: [
-            {
-              id: 1,
-              documentId: 101,
-              billNo: 'APOLLO-9921',
-              billDate: '2026-06-12',
-              amountRupees: 2500,
-              verified: false,
-              verifiedBy: null,
-            },
-          ],
-        },
-      ]);
+    } catch (e: unknown) {
+      // No sample data: show the real failure.
+      toast.error(e instanceof Error ? e.message : 'Could not load data. Please retry.');
     }
   }
 
@@ -268,7 +189,7 @@ export function ClaimsPage() {
     }
 
     try {
-      const res = await fetch('/api/claims/submit', {
+      const res = await authFetch('/api/claims/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -289,11 +210,10 @@ export function ClaimsPage() {
         setNewClaimOpen(false);
         void loadData();
       } else {
-        toast.error('Submission failed');
+        toast.error(await responseError(res, 'Submission failed'));
       }
-    } catch {
-      toast.success('Claim submitted (Demo mode)');
-      setNewClaimOpen(false);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Could not reach the server. Nothing was saved.');
     }
   }
 
@@ -323,7 +243,7 @@ export function ClaimsPage() {
     }
 
     try {
-      const res = await fetch('/api/claims/decide', {
+      const res = await authFetch('/api/claims/decide', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -348,11 +268,10 @@ export function ClaimsPage() {
         setVerifyDrawerOpen(false);
         void loadData();
       } else {
-        toast.error('Decision recording failed');
+        toast.error(await responseError(res, 'Decision recording failed'));
       }
-    } catch {
-      toast.success(`Decision ${decisionAction}d (Demo mode)`);
-      setVerifyDrawerOpen(false);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Could not reach the server. Nothing was saved.');
     }
   }
 
@@ -360,7 +279,7 @@ export function ClaimsPage() {
     if (!payoutClaim) return;
 
     try {
-      const res = await fetch('/api/claims/route-payout', {
+      const res = await authFetch('/api/claims/route-payout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -378,19 +297,16 @@ export function ClaimsPage() {
         setPayoutModalOpen(false);
         void loadData();
       } else {
-        toast.error('Payout routing failed');
+        toast.error(await responseError(res, 'Payout routing failed'));
       }
-    } catch {
-      toast.success(
-        `Payout routed to ${payoutMethod === 'payroll_run' ? 'payroll run' : 'bank batch'} (Demo mode)`
-      );
-      setPayoutModalOpen(false);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Could not reach the server. Nothing was saved.');
     }
   }
 
   const claimColumns: Column<ClaimItem>[] = [
     {
-      key: 'id',
+      key: 'id', sortValue: (r) => r.id, exportValue: (r) => `CLM-${String(r.id)}`, mobile: 'subtitle',
       header: 'Claim ID',
       render: (r) => <span className="font-mono text-xs font-semibold">CLM-{r.id}</span>,
     },
@@ -398,6 +314,7 @@ export function ClaimsPage() {
       ? [
           {
             key: 'employeeName',
+            sortValue: (r: ClaimItem) => `${r.employeeName} ${r.ecode}`,
             header: 'Employee',
             render: (r: ClaimItem) => (
               <div>
@@ -409,12 +326,12 @@ export function ClaimsPage() {
         ]
       : []),
     {
-      key: 'claimTypeName',
+      key: 'claimTypeName', sortValue: (r) => r.claimTypeName, mobile: 'title',
       header: 'Category',
       render: (r) => <span className="text-xs font-medium text-ink">{r.claimTypeName}</span>,
     },
     {
-      key: 'period',
+      key: 'period', sortValue: (r) => r.periodFrom, exportValue: (r) => `${r.periodFrom} to ${r.periodTo}`,
       header: 'Expense Period',
       render: (r) => (
         <span className="text-xs text-ink-muted">
@@ -423,12 +340,12 @@ export function ClaimsPage() {
       ),
     },
     {
-      key: 'claimedAmountRupees',
+      key: 'claimedAmountRupees', numeric: true, sortValue: (r) => r.claimedAmountRupees,
       header: 'Claimed',
       render: (r) => <span className="tabular-nums font-medium text-ink">{formatINR(r.claimedAmountRupees)}</span>,
     },
     {
-      key: 'approvedAmountRupees',
+      key: 'approvedAmountRupees', numeric: true, sortValue: (r) => r.approvedAmountRupees,
       header: 'Approved',
       render: (r) => (
         <span className="tabular-nums font-semibold text-accent-ink">
@@ -437,7 +354,7 @@ export function ClaimsPage() {
       ),
     },
     {
-      key: 'status',
+      key: 'status', sortValue: (r) => r.status, mobile: 'badge',
       header: 'Status',
       render: (r) => {
         let tone: StatusTone = 'neutral';
@@ -500,7 +417,7 @@ export function ClaimsPage() {
         description="Submit expenses against grade entitlement limits with multi-bill verification and flexible payroll or off-cycle payout routing."
         actions={
           <div className="flex items-center gap-2">
-            <div className="flex rounded-full bg-surface-2 p-1">
+            <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
               <Button
                 size="sm"
                 variant={tab === 'mine' ? 'primary' : 'ghost'}
@@ -556,18 +473,18 @@ export function ClaimsPage() {
                     <p className="mt-3 text-2xl font-light text-ink">{formatINR(e.availableBalanceRupees)}</p>
                     <p className="text-xs text-ink-muted">Available this period</p>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-surface-border text-xs text-ink-muted space-y-1">
+                  <div className="mt-4 pt-3 border-t border-line text-xs text-ink-muted space-y-1">
                     <div className="flex justify-between">
                       <span>Total Limit:</span>
                       <span className="font-medium text-ink">{formatINR(e.totalEntitlementRupees)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Approved:</span>
-                      <span className="text-status-positive font-medium">{formatINR(e.approvedClaimsRupees)}</span>
+                      <span className="text-positive-ink font-medium">{formatINR(e.approvedClaimsRupees)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>In Review:</span>
-                      <span className="text-status-warning font-medium">{formatINR(e.pendingClaimsRupees)}</span>
+                      <span className="text-warning-ink font-medium">{formatINR(e.pendingClaimsRupees)}</span>
                     </div>
                   </div>
                 </Card>
@@ -587,6 +504,9 @@ export function ClaimsPage() {
               columns={claimColumns}
               rows={myClaims}
               rowKey={(r) => String(r.id)}
+              tableId="claims.mine"
+              caption="My claims"
+              exportName="my-claims"
             />
           </Card>
         </div>
@@ -605,6 +525,11 @@ export function ClaimsPage() {
             columns={claimColumns}
             rows={pendingClaims}
             rowKey={(r) => String(r.id)}
+            tableId="claims.verify"
+            caption="Claims awaiting verification"
+            searchable
+            searchPlaceholder="Search employee, e-code, category…"
+            exportName="claims-verification-queue"
           />
         </Card>
       )}
@@ -644,6 +569,8 @@ export function ClaimsPage() {
               columns={claimColumns}
               rows={approvedForPayout}
               rowKey={(r) => String(r.id)}
+              caption="Approved claims for payout"
+              exportName="claims-payout-batch"
             />
           </Card>
         </div>
@@ -658,7 +585,7 @@ export function ClaimsPage() {
         width={560}
       >
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Select
               label="Claim Type"
               value={selectedType}
@@ -694,14 +621,14 @@ export function ClaimsPage() {
             </div>
 
             {bills.map((b, idx) => (
-              <div key={b.id} className="flex items-end gap-3 rounded-lg border border-surface-border p-3 bg-surface-2">
-                <span className="text-xs font-mono text-ink-muted pb-3">#{idx + 1}</span>
+              <div key={b.id} className="grid grid-cols-2 items-end gap-3 rounded-tile bg-surface-2 p-3 sm:grid-cols-[1fr_auto_7rem_auto]">
+                <span className="col-span-2 text-xs font-semibold tabular-nums text-ink-muted sm:hidden">Bill {idx + 1}</span>
                 <TextField
                   label="Bill No"
                   placeholder="e.g. INV-1002"
                   value={b.billNo}
                   onChange={(e) => { updateBillRow(b.id, 'billNo', e.target.value); }}
-                  className="flex-1"
+                  className="col-span-2 sm:col-span-1"
                 />
                 <TextField
                   label="Bill Date"
@@ -715,37 +642,44 @@ export function ClaimsPage() {
                   type="number"
                   value={b.amount}
                   onChange={(e) => { updateBillRow(b.id, 'amount', e.target.value); }}
-                  className="w-28"
+                  inputMode="decimal"
                 />
-                {bills.length > 1 && (
-                  <Button size="sm" variant="ghost" onClick={() => { removeBillRow(b.id); }} className="mb-1">
-                    <XCircle className="size-4 text-status-negative" />
+                {bills.length > 1 ? (
+                  <Button size="sm" variant="ghost" onClick={() => { removeBillRow(b.id); }} className="mb-1 justify-self-end" aria-label={`Remove bill ${String(idx + 1)}`}>
+                    <XCircle className="size-4 text-negative-ink" />
                   </Button>
+                ) : (
+                  <span className="hidden sm:block" />
                 )}
+                <ReceiptCapture className="col-span-2 sm:col-span-4" label="Photo of bill" />
               </div>
             ))}
           </div>
 
+          <p className="text-xs text-ink-muted">
+            Bill photos are checked on this screen only for now — keep the original bill for HR verification.
+          </p>
+
           {/* Total & Validation */}
-          <div className="rounded-xl bg-surface-3 p-4 flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-tile bg-surface-2 p-4">
             <div>
               <p className="text-xs text-ink-muted">Total Claimed Amount</p>
               <p className="text-xl font-semibold text-ink">{formatINR(totalNewClaimAmount)}</p>
             </div>
             {isOverEntitled ? (
-              <div className="flex items-center gap-2 text-status-negative text-xs font-medium">
+              <div className="flex items-center gap-2 text-negative-ink text-xs font-medium">
                 <AlertCircle className="size-4" />
                 <span>Exceeds available balance ({formatINR(activeEntitlement?.availableBalanceRupees ?? 0)})</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-status-positive text-xs font-medium">
+              <div className="flex items-center gap-2 text-positive-ink text-xs font-medium">
                 <CheckCircle2 className="size-4" />
                 <span>Within entitlement balance</span>
               </div>
             )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-surface-border">
+          <div className="flex justify-end gap-3 pt-4 border-t border-line">
             <Button variant="ghost" onClick={() => { setNewClaimOpen(false); }}>
               Cancel
             </Button>
@@ -794,7 +728,7 @@ export function ClaimsPage() {
                 {selectedClaim.bills.map((bill) => (
                   <div
                     key={bill.id}
-                    className="flex items-center justify-between rounded-lg border border-surface-border p-3 bg-surface-1"
+                    className="flex items-center justify-between rounded-lg border border-line p-3 bg-surface-1"
                   >
                     <div>
                       <p className="text-sm font-medium text-ink">
@@ -827,7 +761,7 @@ export function ClaimsPage() {
 
             {/* Decision Controls (Manager / HR) */}
             {tab === 'verify' && (
-              <div className="space-y-4 pt-4 border-t border-surface-border">
+              <div className="space-y-4 pt-4 border-t border-line">
                 <Select
                   label="Decision"
                   value={decisionAction}

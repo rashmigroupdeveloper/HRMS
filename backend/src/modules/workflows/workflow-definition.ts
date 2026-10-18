@@ -8,13 +8,13 @@ type Db = Kysely<Database> | Transaction<Database>;
  *  chain DATA (editable via the definitions API). */
 export const DEFAULT_STEP_SLA_HOURS = 48;
 
-const approverSpec = z.string().regex(/^(reporting_manager|functional_manager|role:[A-Za-z0-9_.-]+|user:[1-9]\d*)$/,
+const approverSpec = z.string().regex(/^(reporting_manager|functional_manager|department_head|role:[A-Za-z0-9_.-]+|user:[1-9]\d*)$/,
   'Use a reporting manager, functional manager, role code or positive user ID')
   .refine(value => !value.startsWith('user:') || Number.isSafeInteger(Number(value.slice(5))), 'User ID is out of range');
 
 const stepSpecSchema = z.object({
   step: z.number().int().positive(),
-  /** 'reporting_manager' | 'functional_manager' | 'role:<code>' | 'user:<id>' */
+  /** 'reporting_manager' | 'functional_manager' | 'department_head' | 'role:<code>' | 'user:<id>' */
   approver: approverSpec,
   slaHours: z.number().positive().default(DEFAULT_STEP_SLA_HOURS),
   onBreach: z.enum(['escalate', 'auto_reject', 'lapse', 'auto_approve']).default('escalate'),

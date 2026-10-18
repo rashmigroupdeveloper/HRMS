@@ -235,7 +235,7 @@ export function OtDecisionsPage() {
                       onClick={() => {
                         openEntry(row);
                       }}
-                      className="min-w-0 flex-1 rounded-row text-left outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                      className="min-w-0 flex-1 rounded-row text-left outline-none focus-visible:ring-2 focus-visible:ring-focus"
                     >
                       <p className="text-sm font-semibold text-ink">
                         Employee #{String(row.employeeId)}

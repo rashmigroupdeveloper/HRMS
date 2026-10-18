@@ -3,69 +3,74 @@
  * Every product route resolves to a real page. Surfaces whose BACKEND lands in
  * a later phase render their real layout plus an honest pending panel — never
  * invented data (docs/05 §4.8).
+ *
+ * Route-level code splitting (docs/05 §7 `bundle-splitting`): every page
+ * except the role landing is a lazy chunk, so Payroll's heavy grids never
+ * slow the ESS phone. AppShell owns the Suspense boundary + skeleton.
  */
+import { lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import type { SessionUser } from '../lib/session';
 import { hasRole } from '../lib/session';
 import { AppShell } from './AppShell';
 import { RoleHomePage } from '../pages/home/RoleHomePage';
-import { DirectoryPage } from '../pages/people/DirectoryPage';
-import { ProfilePage } from '../pages/people/ProfilePage';
-import { GalleryPage } from '../pages/dev/GalleryPage';
-import { ApprovalsPage } from '../pages/approvals/ApprovalsPage';
-import { AttendanceOpsPage } from '../pages/attendance/AttendanceOpsPage';
-import { DeviceHealthPage } from '../pages/attendance/DeviceHealthPage';
-import { ExceptionsPage } from '../pages/attendance/ExceptionsPage';
-import { MonthLockPage } from '../pages/attendance/MonthLockPage';
-import { MyAttendancePage } from '../pages/attendance/MyAttendancePage';
-import { MyLeavePage } from '../pages/leave/MyLeavePage';
-import { LeaveAdminPage } from '../pages/leave/LeaveAdminPage';
-import { MusterPage } from '../pages/reports/MusterPage';
-import { ReportsPage } from '../pages/reports/ReportsPage';
-import {
-  R2SwipesPage,
-  R3RegularizationsPage,
-  R4ExceptionsPage,
-  R5OtPage,
-  R6AbsencePage,
-  R21OffersPage,
-  R23TransfersPage,
-  R24BoardingPage,
-  R25ProbationPage,
-  R26AttritionPage,
-  R27HeadcountPage,
-  R28AssetsPage,
-  R29HelpdeskPage,
-  R30PoliciesPage,
-  R31ClaimsPage,
-} from '../pages/reports/SupportingReports';
-import { TeamPage } from '../pages/team/TeamPage';
-import { OtDecisionsPage } from '../pages/team/OtDecisionsPage';
-import { AbsenceCasesPage } from '../pages/attendance/AbsenceCasesPage';
-import { PoliciesPage } from '../pages/policies/PoliciesPage';
-import { LettersPage } from '../pages/letters/LettersPage';
-import { MyLettersPage } from '../pages/letters/MyLettersPage';
-import { AccessControlPage } from '../pages/admin/AccessControlPage';
-import { SettingsPage } from '../pages/admin/SettingsPage';
-import { AuditLogPage } from '../pages/admin/AuditLogPage';
-import { WorkflowsPage } from '../pages/admin/WorkflowsPage';
-import { AttendanceMastersPage } from '../pages/admin/AttendanceMastersPage';
-import { PayrollPage } from '../pages/payroll/PayrollPage';
-import { SalaryStructuresPage } from '../pages/payroll/SalaryStructuresPage';
-import { SalaryRevisionsPage } from '../pages/payroll/SalaryRevisionsPage';
-import { ParallelRunPage } from '../pages/payroll/ParallelRunPage';
-import { MyPayPage } from '../pages/payroll/MyPayPage';
-import { ClaimsPage } from '../pages/payroll/ClaimsPage';
-import { LoansPage } from '../pages/payroll/LoansPage';
-import { LifecyclePage } from '../pages/lifecycle/LifecyclePage';
-import { PrejoinPortalPage } from '../pages/lifecycle/PrejoinPortalPage';
-import { AlumniPortalPage } from '../pages/lifecycle/AlumniPortalPage';
-import { AssetsPage } from '../pages/workplace/AssetsPage';
-import { HelpdeskPage } from '../pages/workplace/HelpdeskPage';
-import { EngagementPage } from '../pages/workplace/EngagementPage';
-import { ExecutivePage } from '../pages/executive/ExecutivePage';
-import { TravelPage } from '../pages/travel/TravelPage';
-import { RecruitmentPage } from '../pages/recruitment/RecruitmentPage';
+const DirectoryPage = lazy(() => import('../pages/people/DirectoryPage').then((m) => ({ default: m.DirectoryPage })));
+const ProfilePage = lazy(() => import('../pages/people/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const GalleryPage = lazy(() => import('../pages/dev/GalleryPage').then((m) => ({ default: m.GalleryPage })));
+const ApprovalsPage = lazy(() => import('../pages/approvals/ApprovalsPage').then((m) => ({ default: m.ApprovalsPage })));
+const AttendanceOpsPage = lazy(() => import('../pages/attendance/AttendanceOpsPage').then((m) => ({ default: m.AttendanceOpsPage })));
+const DeviceHealthPage = lazy(() => import('../pages/attendance/DeviceHealthPage').then((m) => ({ default: m.DeviceHealthPage })));
+const ExceptionsPage = lazy(() => import('../pages/attendance/ExceptionsPage').then((m) => ({ default: m.ExceptionsPage })));
+const MonthLockPage = lazy(() => import('../pages/attendance/MonthLockPage').then((m) => ({ default: m.MonthLockPage })));
+const MyAttendancePage = lazy(() => import('../pages/attendance/MyAttendancePage').then((m) => ({ default: m.MyAttendancePage })));
+const MyLeavePage = lazy(() => import('../pages/leave/MyLeavePage').then((m) => ({ default: m.MyLeavePage })));
+const LeaveAdminPage = lazy(() => import('../pages/leave/LeaveAdminPage').then((m) => ({ default: m.LeaveAdminPage })));
+const MusterPage = lazy(() => import('../pages/reports/MusterPage').then((m) => ({ default: m.MusterPage })));
+const ReportsPage = lazy(() => import('../pages/reports/ReportsPage').then((m) => ({ default: m.ReportsPage })));
+const R2SwipesPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R2SwipesPage })));
+const R3RegularizationsPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R3RegularizationsPage })));
+const R4ExceptionsPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R4ExceptionsPage })));
+const R5OtPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R5OtPage })));
+const R6AbsencePage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R6AbsencePage })));
+const R21OffersPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R21OffersPage })));
+const R23TransfersPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R23TransfersPage })));
+const R24BoardingPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R24BoardingPage })));
+const R25ProbationPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R25ProbationPage })));
+const R26AttritionPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R26AttritionPage })));
+const R27HeadcountPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R27HeadcountPage })));
+const R28AssetsPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R28AssetsPage })));
+const R29HelpdeskPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R29HelpdeskPage })));
+const R30PoliciesPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R30PoliciesPage })));
+const R31ClaimsPage = lazy(() => import('../pages/reports/SupportingReports').then((m) => ({ default: m.R31ClaimsPage })));
+const TeamPage = lazy(() => import('../pages/team/TeamPage').then((m) => ({ default: m.TeamPage })));
+const OtDecisionsPage = lazy(() => import('../pages/team/OtDecisionsPage').then((m) => ({ default: m.OtDecisionsPage })));
+const AbsenceCasesPage = lazy(() => import('../pages/attendance/AbsenceCasesPage').then((m) => ({ default: m.AbsenceCasesPage })));
+const PoliciesPage = lazy(() => import('../pages/policies/PoliciesPage').then((m) => ({ default: m.PoliciesPage })));
+const LettersPage = lazy(() => import('../pages/letters/LettersPage').then((m) => ({ default: m.LettersPage })));
+const MyLettersPage = lazy(() => import('../pages/letters/MyLettersPage').then((m) => ({ default: m.MyLettersPage })));
+const AccessControlPage = lazy(() => import('../pages/admin/AccessControlPage').then((m) => ({ default: m.AccessControlPage })));
+const SettingsPage = lazy(() => import('../pages/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const AuditLogPage = lazy(() => import('../pages/admin/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
+const WorkflowsPage = lazy(() => import('../pages/admin/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage })));
+const DepartmentHeadsPage = lazy(() => import('../pages/admin/DepartmentHeadsPage').then((m) => ({ default: m.DepartmentHeadsPage })));
+const AttendanceMastersPage = lazy(() => import('../pages/admin/AttendanceMastersPage').then((m) => ({ default: m.AttendanceMastersPage })));
+const PayrollPage = lazy(() => import('../pages/payroll/PayrollPage').then((m) => ({ default: m.PayrollPage })));
+const SalaryStructuresPage = lazy(() => import('../pages/payroll/SalaryStructuresPage').then((m) => ({ default: m.SalaryStructuresPage })));
+const SalaryRevisionsPage = lazy(() => import('../pages/payroll/SalaryRevisionsPage').then((m) => ({ default: m.SalaryRevisionsPage })));
+const ParallelRunPage = lazy(() => import('../pages/payroll/ParallelRunPage').then((m) => ({ default: m.ParallelRunPage })));
+const MyPayPage = lazy(() => import('../pages/payroll/MyPayPage').then((m) => ({ default: m.MyPayPage })));
+const ClaimsPage = lazy(() => import('../pages/payroll/ClaimsPage').then((m) => ({ default: m.ClaimsPage })));
+const LoansPage = lazy(() => import('../pages/payroll/LoansPage').then((m) => ({ default: m.LoansPage })));
+const LifecyclePage = lazy(() => import('../pages/lifecycle/LifecyclePage').then((m) => ({ default: m.LifecyclePage })));
+const PrejoinPortalPage = lazy(() => import('../pages/lifecycle/PrejoinPortalPage').then((m) => ({ default: m.PrejoinPortalPage })));
+const AlumniPortalPage = lazy(() => import('../pages/lifecycle/AlumniPortalPage').then((m) => ({ default: m.AlumniPortalPage })));
+const AssetsPage = lazy(() => import('../pages/workplace/AssetsPage').then((m) => ({ default: m.AssetsPage })));
+const HelpdeskPage = lazy(() => import('../pages/workplace/HelpdeskPage').then((m) => ({ default: m.HelpdeskPage })));
+const EngagementPage = lazy(() => import('../pages/workplace/EngagementPage').then((m) => ({ default: m.EngagementPage })));
+const ExecutivePage = lazy(() => import('../pages/executive/ExecutivePage').then((m) => ({ default: m.ExecutivePage })));
+const TravelPage = lazy(() => import('../pages/travel/TravelPage').then((m) => ({ default: m.TravelPage })));
+const RecruitmentPage = lazy(() => import('../pages/recruitment/RecruitmentPage').then((m) => ({ default: m.RecruitmentPage })));
+const DataImportsPage = lazy(() => import('../pages/imports/DataImportsPage').then((m) => ({ default: m.DataImportsPage })));
 
 interface AppRouterProps {
   user: SessionUser;
@@ -102,7 +107,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="attendance/absence-cases" element={<AbsenceCasesPage user={user} />} />
 
         <Route path="leave" element={<LeaveAdminPage />} />
-        <Route path="payroll" element={<PayrollPage />} />
+        <Route path="payroll" element={<PayrollPage user={user} />} />
         <Route path="payroll/structures" element={<SalaryStructuresPage />} />
         <Route path="payroll/revisions" element={<SalaryRevisionsPage />} />
         <Route path="payroll/parallel-run" element={<ParallelRunPage />} />
@@ -136,7 +141,9 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="admin/users" element={<AccessControlPage />} />
         <Route path="admin/settings" element={<SettingsPage user={user} />} />
         <Route path="admin/audit" element={<AuditLogPage />} />
+        <Route path="admin/imports" element={<DataImportsPage />} />
         <Route path="admin/workflows" element={<WorkflowsPage user={user} />} />
+        <Route path="admin/department-heads" element={<DepartmentHeadsPage />} />
         <Route path="admin/masters" element={<AttendanceMastersPage user={user} />} />
 
         <Route path="travel/*" element={<TravelPage />} />

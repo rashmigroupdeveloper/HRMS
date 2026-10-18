@@ -54,6 +54,7 @@ interface Definition {
 const APPROVER_PRESETS: SelectOption[] = [
   { value: 'reporting_manager', label: 'Reporting manager', description: 'The employee’s RM at request time' },
   { value: 'functional_manager', label: 'Functional manager', description: 'Dotted-line manager' },
+  { value: 'department_head', label: 'Head of department', description: 'The employee’s HOD (own field, else the department’s designated head)' },
   { value: 'role:hr_ops', label: 'Role — HR Ops' },
   { value: 'role:hr_head', label: 'Role — HR Head' },
   { value: 'role:payroll_admin', label: 'Role — Payroll Admin' },
@@ -123,13 +124,13 @@ export function WorkflowsPage({ user }: { user: SessionUser }) {
       width: 'minmax(280px,2fr)',
       render: (row) => {
         const steps = parseSteps(row.steps);
-        if (steps.length === 0) return <span className="text-ink-faint">Routing requires HR review</span>;
+        if (steps.length === 0) return <span className="text-ink-subtle">Routing requires HR review</span>;
         return (
           <div className="flex flex-wrap items-center gap-1.5">
             {steps.map((s, i) => (
               <span key={`${String(s.step)}-${s.approver}`} className="flex items-center gap-1.5">
                 {i > 0 && (
-                  <span aria-hidden="true" className="text-ink-faint">
+                  <span aria-hidden="true" className="text-ink-subtle">
                     →
                   </span>
                 )}
@@ -148,7 +149,7 @@ export function WorkflowsPage({ user }: { user: SessionUser }) {
       render: (row) => {
         const steps = parseSteps(row.steps);
         const last = steps.at(-1);
-        if (!last) return <span className="text-ink-faint">—</span>;
+        if (!last) return <span className="text-ink-subtle">—</span>;
         return (
           <StatusBadge tone={last.onBreach === 'lapse' ? 'negative' : 'neutral'}>{last.onBreach}</StatusBadge>
         );
@@ -392,7 +393,7 @@ function ChainEditor({
           </Button>
 
           {error !== null && (
-            <p className="text-sm text-negative" role="alert">
+            <p className="text-sm text-negative-ink" role="alert">
               {error}
             </p>
           )}

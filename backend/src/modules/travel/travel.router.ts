@@ -14,6 +14,7 @@ import { authed, withPermission } from '../../api/orpc.js';
 import { TravelService } from './travel.service.js';
 import { WalletService } from './wallet.service.js';
 import { SettlementService } from './settlement.service.js';
+import { assertTravelReadable, requireSelf, resolveListSubject } from './travel-access.js';
 
 const tripItemSchema = z.object({
   id: z.number(),
@@ -124,12 +125,13 @@ export const travelRouter = {
   // ── Trips ─────────────────────────────────────────────────────────────
   listTrips: authed
     .route({ method: 'GET', path: '/travel/trips', summary: 'List travel trips' })
-    .input(z.object({ employeeId: z.number().optional(), status: z.enum(['draft','submitted','approved','rejected','in_progress','completed','cancelled','all']).optional() }).optional())
+    .input(z.object({ employeeId: z.coerce.number().int().positive().optional(), status: z.enum(['draft','submitted','approved','rejected','in_progress','completed','cancelled','all']).optional() }).optional())
     .output(z.object({ trips: z.array(tripItemSchema), items: z.array(tripItemSchema) }))
     .handler(async ({ input, context }) => {
       const service = new TravelService(context.db);
-      const empId = input?.employeeId ?? context.user.employee_id ?? undefined;
-      const trips = await service.getTrips({ employeeId: empId, status: input?.status });
+      const subject = await resolveListSubject(context, input?.employeeId);
+      if (subject.none) return { trips: [], items: [] };
+      const trips = await service.getTrips({ employeeId: subject.employeeId, scope: subject.scope, status: input?.status });
       const mapped = trips.map((t) => ({
         id: t.id,
         referenceNo: t.reference_no,
@@ -157,7 +159,7 @@ export const travelRouter = {
 
   getTripById: authed
     .route({ method: 'GET', path: '/travel/trips/{id}', summary: 'Get trip details with itineraries and advances' })
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.coerce.number().int().positive() }))
     .output(
       z.object({
         trip: tripItemSchema,
@@ -168,6 +170,7 @@ export const travelRouter = {
     .handler(async ({ input, context }) => {
       const service = new TravelService(context.db);
       const res = await service.getTripById(input.id);
+      await assertTravelReadable(context, res.trip.employee_id, true);
       return {
         trip: {
           ...res.trip,
@@ -231,17 +234,17 @@ export const travelRouter = {
         startDate: z.string(),
         endDate: z.string(),
         visaRequired: z.boolean().optional(),
-        companyId: z.number().optional(),
       })
     )
     .output(z.object({ trip: tripItemSchema }))
     .handler(async ({ input, context }) => {
       const service = new TravelService(context.db);
-      const empId = context.user.employee_id;
-      if (!empId) throw new Error('Action requires an associated employee profile');
+      const empId = requireSelf(context);
+      const employee = await context.db.selectFrom('core.employees').select('company_id').where('id', '=', empId).executeTakeFirstOrThrow();
       const trip = await service.createTrip({
         employeeId: empId,
-        companyId: input.companyId ?? 1,
+        companyId: employee.company_id,
+        requestedByUserId: context.user.id,
         tripName: input.tripName,
         travelType: input.travelType,
         purpose: input.purpose,
@@ -295,7 +298,7 @@ export const travelRouter = {
     .output(z.object({ itinerary: itineraryItemSchema }))
     .handler(async ({ input, context }) => {
       const service = new TravelService(context.db);
-      const it = await service.addItinerary(input);
+      const it = await service.addItinerary({ ...input, actorEmployeeId: context.user.employee_id });
       return {
         itinerary: {
           id: it.id,
@@ -339,12 +342,13 @@ export const travelRouter = {
   // ── Advances ───────────────────────────────────────────────────────────
   listAdvances: authed
     .route({ method: 'GET', path: '/travel/advances', summary: 'List travel advances' })
-    .input(z.object({ employeeId: z.number().optional(), tripId: z.number().optional() }).optional())
+    .input(z.object({ employeeId: z.coerce.number().int().positive().optional(), tripId: z.coerce.number().int().positive().optional() }).optional())
     .output(z.object({ advances: z.array(advanceItemSchema), items: z.array(advanceItemSchema) }))
     .handler(async ({ input, context }) => {
       const service = new TravelService(context.db);
-      const empId = input?.employeeId ?? context.user.employee_id ?? undefined;
-      const advances = await service.getAdvances({ employeeId: empId, tripId: input?.tripId });
+      const subject = await resolveListSubject(context, input?.employeeId);
+      if (subject.none) return { advances: [], items: [] };
+      const advances = await service.getAdvances({ employeeId: subject.employeeId, scope: subject.scope, tripId: input?.tripId });
       const mapped = advances.map((a) => ({
         id: a.id,
         tripId: a.trip_id,
@@ -371,11 +375,11 @@ export const travelRouter = {
     .output(z.object({ advance: advanceItemSchema }))
     .handler(async ({ input, context }) => {
       const service = new TravelService(context.db);
-      const empId = context.user.employee_id;
-      if (!empId) throw new Error('Action requires an associated employee profile');
+      const empId = requireSelf(context);
       const advance = await service.requestAdvance({
         tripId: input.tripId,
         employeeId: empId,
+        requestedByUserId: context.user.id,
         amountPaise: input.amountPaise,
         purpose: input.purpose,
       });
@@ -395,7 +399,7 @@ export const travelRouter = {
     }),
 
   approveAdvance: withPermission('payroll.run.manage')
-    .route({ method: 'POST', path: '/travel/advances/{advanceId}/approve', summary: 'Approve advance and disburse into wallet' })
+    .route({ method: 'POST', path: '/travel/advances/{advanceId}/approve', summary: 'Disburse an advance approved by the RM chain into the wallet' })
     .input(z.object({ advanceId: z.number() }))
     .output(z.object({ advance: advanceItemSchema }))
     .handler(async ({ input, context }) => {
@@ -419,12 +423,13 @@ export const travelRouter = {
   // ── Claims & Settlement ────────────────────────────────────────────────
   listClaims: authed
     .route({ method: 'GET', path: '/travel/claims', summary: 'List travel expense claims' })
-    .input(z.object({ employeeId: z.number().optional(), tripId: z.number().optional() }).optional())
+    .input(z.object({ employeeId: z.coerce.number().int().positive().optional(), tripId: z.coerce.number().int().positive().optional() }).optional())
     .output(z.object({ claims: z.array(claimSchema), items: z.array(claimSchema) }))
     .handler(async ({ input, context }) => {
       const service = new SettlementService(context.db);
-      const empId = input?.employeeId ?? context.user.employee_id ?? undefined;
-      const claims = await service.getClaims({ employeeId: empId, tripId: input?.tripId });
+      const subject = await resolveListSubject(context, input?.employeeId);
+      if (subject.none) return { claims: [], items: [] };
+      const claims = await service.getClaims({ employeeId: subject.employeeId, scope: subject.scope, tripId: input?.tripId });
       const mapped = claims.map((c) => ({
         id: c.id,
         referenceNo: c.reference_no,
@@ -449,8 +454,7 @@ export const travelRouter = {
     .output(z.object({ claim: claimSchema }))
     .handler(async ({ input, context }) => {
       const service = new SettlementService(context.db);
-      const empId = context.user.employee_id;
-      if (!empId) throw new Error('Action requires an associated employee profile');
+      const empId = requireSelf(context);
       const claim = await service.createClaim({
         tripId: input.tripId,
         employeeId: empId,
@@ -491,7 +495,7 @@ export const travelRouter = {
     .output(z.object({ item: claimItemDetailSchema }))
     .handler(async ({ input, context }) => {
       const service = new SettlementService(context.db);
-      const item = await service.addClaimItem(input);
+      const item = await service.addClaimItem({ ...input, actorEmployeeId: context.user.employee_id });
       return {
         item: {
           id: item.id,
@@ -505,6 +509,23 @@ export const travelRouter = {
           receiptUrl: item.receipt_url,
           description: item.description,
           createdAt: item.created_at,
+        },
+      };
+    }),
+
+  submitClaim: authed
+    .route({ method: 'POST', path: '/travel/claims/{claimId}/submit', summary: 'Submit my claim for reporting-manager approval' })
+    .input(z.object({ claimId: z.coerce.number().int().positive() }))
+    .output(z.object({ claim: claimSchema }))
+    .handler(async ({ input, context }) => {
+      const c = await new SettlementService(context.db).submitClaim({ claimId: input.claimId, actorEmployeeId: context.user.employee_id, actorUserId: context.user.id });
+      return {
+        claim: {
+          id: c.id, referenceNo: c.reference_no, tripId: c.trip_id, employeeId: c.employee_id,
+          totalClaimedPaise: c.total_claimed_paise, approvedAmountPaise: c.approved_amount_paise,
+          advanceAdjustedPaise: c.advance_adjusted_paise, netPayablePaise: c.net_payable_paise,
+          netRecoverablePaise: c.net_recoverable_paise, status: c.status, settlementStatus: c.settlement_status,
+          createdAt: c.created_at, updatedAt: c.updated_at,
         },
       };
     }),
@@ -549,7 +570,7 @@ export const travelRouter = {
   // ── Wallet Ledger ──────────────────────────────────────────────────────
   getWallet: authed
     .route({ method: 'GET', path: '/travel/wallet', summary: 'Get employee travel wallet balance' })
-    .input(z.object({ employeeId: z.number().optional() }).optional())
+    .input(z.object({ employeeId: z.coerce.number().int().positive().optional() }).optional())
     .output(
       z.object({
         balancePaise: z.number(),
@@ -559,8 +580,8 @@ export const travelRouter = {
     )
     .handler(async ({ input, context }) => {
       const service = new WalletService(context.db);
-      const empId = input?.employeeId ?? context.user.employee_id;
-      if (!empId) throw new Error('Employee ID required');
+      const empId = input?.employeeId ?? requireSelf(context);
+      await assertTravelReadable(context, empId);
       const wallet = await service.getOrCreateWallet(empId);
       const balance = wallet.balance_paise;
       return {
@@ -572,12 +593,12 @@ export const travelRouter = {
 
   getWalletLedger: authed
     .route({ method: 'GET', path: '/travel/wallet/ledger', summary: 'Get immutable wallet transaction ledger' })
-    .input(z.object({ employeeId: z.number().optional() }).optional())
+    .input(z.object({ employeeId: z.coerce.number().int().positive().optional() }).optional())
     .output(z.object({ transactions: z.array(walletTransactionSchema) }))
     .handler(async ({ input, context }) => {
       const service = new WalletService(context.db);
-      const empId = input?.employeeId ?? context.user.employee_id;
-      if (!empId) throw new Error('Employee ID required');
+      const empId = input?.employeeId ?? requireSelf(context);
+      await assertTravelReadable(context, empId);
       const txs = await service.getTransactions(empId);
       return {
         transactions: txs.map((t) => ({

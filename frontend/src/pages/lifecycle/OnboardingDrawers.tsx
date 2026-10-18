@@ -147,12 +147,12 @@ export function OnboardingDrawers({
           />
 
           {ingestError && (
-            <p role="alert" className="text-sm text-negative">
+            <p role="alert" className="text-sm text-negative-ink">
               {ingestError}
             </p>
           )}
           {references.error && (
-            <p role="alert" className="text-sm text-negative">
+            <p role="alert" className="text-sm text-negative-ink">
               Master choices unavailable: {references.error}
             </p>
           )}
@@ -277,12 +277,12 @@ export function OnboardingDrawers({
             />
 
             {conversionError && (
-              <p role="alert" className="text-sm text-negative">
+              <p role="alert" className="text-sm text-negative-ink">
                 {conversionError}
               </p>
             )}
             {references.error && (
-              <p role="alert" className="text-sm text-negative">
+              <p role="alert" className="text-sm text-negative-ink">
                 Master choices unavailable: {references.error}
               </p>
             )}

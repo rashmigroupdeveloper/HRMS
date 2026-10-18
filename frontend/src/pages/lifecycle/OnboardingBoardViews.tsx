@@ -23,7 +23,7 @@ export function OnboardingTasks({
       />
 
       {taskError && (
-        <p role="alert" className="text-sm text-negative">
+        <p role="alert" className="text-sm text-negative-ink">
           {taskError}
         </p>
       )}

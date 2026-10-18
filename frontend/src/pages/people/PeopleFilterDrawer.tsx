@@ -179,7 +179,7 @@ export function PeopleFilterDrawer({
         }}
       >
         {error !== null && (
-          <p className="mb-3 text-sm text-negative" role="alert">
+          <p className="mb-3 text-sm text-negative-ink" role="alert">
             {error}
           </p>
         )}

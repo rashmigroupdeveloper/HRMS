@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { withPermission } from '../../../api/orpc.js';
 import { PayrollRunService } from './run.service.js';
 import { ReconciliationService } from '../reconciliation/reconciliation.service.js';
+import { companiesInScope, requireCompanyInScope, requireRunInScope } from '../../../core/rbac/company-scope.js';
 
 const RunSummarySchema = z.object({
   id: z.number(),
@@ -51,13 +52,21 @@ export const payrollRunsRouter = {
     .output(z.array(RunSummarySchema))
     .handler(async ({ context, input }) => {
       const service = new PayrollRunService(context.db);
-      return await service.listRuns(input.company_id);
+      const allowed = await companiesInScope(context);
+      if (input.company_id !== undefined) {
+        // Group scope: an unknown company simply has no runs (no existence leak).
+        if (allowed !== null) await requireCompanyInScope(context, input.company_id);
+        return await service.listRuns(input.company_id);
+      }
+      const runs = await service.listRuns(undefined);
+      return allowed === null ? runs : runs.filter((r) => allowed.includes(r.companyId));
     }),
 
   get: withPermission('payroll.run.view', 'read')
     .input(z.object({ id: z.number() }))
     .output(RunSummarySchema.nullable())
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.id);
       const service = new PayrollRunService(context.db);
       return await service.getRun(input.id);
     }),
@@ -74,6 +83,7 @@ export const payrollRunsRouter = {
     )
     .output(z.object({ id: z.number() }))
     .handler(async ({ context, input }) => {
+      await requireCompanyInScope(context, input.company_id);
       const service = new PayrollRunService(context.db);
       const id = await service.createRun({
         companyId: input.company_id,
@@ -90,6 +100,7 @@ export const payrollRunsRouter = {
     .input(z.object({ id: z.number() }))
     .output(z.object({ success: z.boolean() }))
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.id);
       const service = new PayrollRunService(context.db);
       await service.lockInputs(input.id, context.user.id);
       return { success: true };
@@ -103,9 +114,12 @@ export const payrollRunsRouter = {
         grossPaise: z.number(),
         netPaise: z.number(),
         negativeNetCount: z.number(),
+        employerCostPaise: z.number(),
+        exceptions: z.array(z.object({ employeeId: z.number(), ecode: z.string(), reason: z.string() })),
       })
     )
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.id);
       const service = new PayrollRunService(context.db);
       return await service.computeRun(input.id, context.user.id);
     }),
@@ -114,15 +128,17 @@ export const payrollRunsRouter = {
     .input(z.object({ id: z.number() }))
     .output(z.object({ success: z.boolean() }))
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.id);
       const service = new PayrollRunService(context.db);
       await service.reviewRun(input.id, context.user.id);
       return { success: true };
     }),
 
-  approve: withPermission('payroll.run.finalize')
+  approve: withPermission('payroll.run.cosign')
     .input(z.object({ id: z.number() }))
     .output(z.object({ success: z.boolean() }))
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.id);
       const service = new PayrollRunService(context.db);
       await service.approveRun(input.id, context.user.id);
       return { success: true };
@@ -132,8 +148,27 @@ export const payrollRunsRouter = {
     .input(z.object({ id: z.number() }))
     .output(z.object({ success: z.boolean() }))
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.id);
       const service = new PayrollRunService(context.db);
       await service.finalizeRun(input.id, context.user.id);
+      return { success: true };
+    }),
+
+  markPaid: withPermission('payroll.run.finalize')
+    .input(z.object({ id: z.number(), paymentReference: z.string().trim().min(3).max(120) }))
+    .output(z.object({ success: z.boolean() }))
+    .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.id);
+      await new PayrollRunService(context.db).markPaid(input.id, context.user.id, input.paymentReference);
+      return { success: true };
+    }),
+
+  returnToDraft: withPermission('payroll.run.manage')
+    .input(z.object({ id: z.number(), reason: z.string().trim().min(5).max(500) }))
+    .output(z.object({ success: z.boolean() }))
+    .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.id);
+      await new PayrollRunService(context.db).returnToDraft(input.id, context.user.id, input.reason);
       return { success: true };
     }),
 
@@ -146,6 +181,7 @@ export const payrollRunsRouter = {
     )
     .output(z.object({ success: z.boolean() }))
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.id);
       const service = new PayrollRunService(context.db);
       await service.reopenRun(input.id, input.reason, context.user.id);
       return { success: true };
@@ -155,6 +191,7 @@ export const payrollRunsRouter = {
     .input(z.object({ id: z.number() }))
     .output(ReconciliationReportSchema)
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.id);
       const service = new ReconciliationService(context.db);
       return await service.reconcileRun(input.id);
     }),

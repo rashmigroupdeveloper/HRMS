@@ -275,7 +275,7 @@ export function SalaryStructuresPage() {
             {row.formula}
           </code>
         ) : (
-          <span className="text-xs text-ink-faint">Fixed / Override</span>
+          <span className="text-xs text-ink-subtle">Fixed / Override</span>
         ),
     },
     {
@@ -321,7 +321,7 @@ export function SalaryStructuresPage() {
       />
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-line pb-2">
+      <div className="flex gap-2 overflow-x-auto border-b border-line pb-2 [scrollbar-width:none] [&>*]:shrink-0">
         <button
           onClick={() => {
             setActiveTab('structures');
@@ -505,7 +505,7 @@ export function SalaryStructuresPage() {
                   <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
                     Monthly Deductions
                   </div>
-                  <div className="text-2xl font-bold font-mono mt-1 text-warning">
+                  <div className="text-2xl font-bold font-mono mt-1 text-warning-ink">
                     ₹{breakup.monthlyDeductions.toLocaleString('en-IN')}
                   </div>
                   <div className="text-xs text-ink-muted mt-1">
@@ -517,7 +517,7 @@ export function SalaryStructuresPage() {
                   <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
                     Net Take-Home
                   </div>
-                  <div className="text-2xl font-bold font-mono mt-1 text-positive">
+                  <div className="text-2xl font-bold font-mono mt-1 text-positive-ink">
                     ₹{breakup.monthlyNet.toLocaleString('en-IN')}
                   </div>
                   <div className="text-xs text-ink-muted mt-1">
@@ -543,15 +543,15 @@ export function SalaryStructuresPage() {
                 <div
                   className={`p-4 rounded-card flex items-center justify-between border ${
                     breakup.validation.valid
-                      ? 'bg-[color-mix(in_srgb,var(--positive)_12%,var(--surface))] border-positive text-positive'
-                      : 'bg-[color-mix(in_srgb,var(--negative)_12%,var(--surface))] border-negative text-negative'
+                      ? 'bg-[color-mix(in_srgb,var(--positive)_12%,var(--surface))] border-positive text-positive-ink'
+                      : 'bg-[color-mix(in_srgb,var(--negative)_12%,var(--surface))] border-negative text-negative-ink'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     {breakup.validation.valid ? (
-                      <CheckCircle2 className="size-5 text-positive" />
+                      <CheckCircle2 className="size-5 text-positive-ink" />
                     ) : (
-                      <AlertTriangle className="size-5 text-negative" />
+                      <AlertTriangle className="size-5 text-negative-ink" />
                     )}
                     <div>
                       <div className="font-semibold text-sm">
@@ -628,7 +628,7 @@ export function SalaryStructuresPage() {
                         <span className="font-mono font-semibold text-ink">
                           {code}
                         </span>
-                        <ArrowRight className="size-3 ml-auto text-ink-faint" />
+                        <ArrowRight className="size-3 ml-auto text-ink-subtle" />
                         <span className="font-mono font-medium text-accent">
                           ₹{(breakup.monthly[code] ?? 0).toLocaleString('en-IN')}
                         </span>

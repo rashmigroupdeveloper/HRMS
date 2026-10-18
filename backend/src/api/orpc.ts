@@ -14,17 +14,47 @@ import type { Database, UsersTable } from '../core/db/types.js';
 import { verifyToken } from '../core/auth/jwt.js';
 import { getUserPermissionAccess, getUserPermissions, type PermissionAction } from '../core/rbac/permissions.service.js';
 import type { PermissionCode } from '../core/rbac/seed-data.js';
+import { mapError } from '../core/errors/index.js';
+import { logger } from '../core/logger.js';
 
 /** Per-request context assembled by the Express middleware (handler.ts). */
 export interface AppContext {
   db: Kysely<Database> | null;
   jwtSecret: string;
   secureCookies: boolean;
+  /** Public SPA origin for e-mailed links. */
+  appBaseUrl?: string;
   req: Request;
   res: Response;
 }
 
-export const base = os.$context<AppContext>();
+/**
+ * Error firewall (C-20): every procedure runs inside this middleware, so a
+ * business-rule refusal thrown as a plain/domain Error becomes a 4xx with its
+ * authored message, Postgres errors become friendly 400/409s (raw driver text
+ * never leaks), and genuine defects are logged with stack + request id.
+ */
+export const base = os.$context<AppContext>().use(async ({ context, next, path }) => {
+  try {
+    return await next();
+  } catch (err: unknown) {
+    const requestId = (context.req as Request & { id?: string }).id;
+    const route = path.join('.');
+    if (err instanceof ORPCError) {
+      if (err.status >= 500) {
+        logger.error({ err, requestId, route, cause: (err as { cause?: unknown }).cause }, 'procedure failed');
+      }
+      throw err;
+    }
+    const mapped = mapError(err);
+    if (mapped.defect) {
+      logger.error({ err, requestId, route }, 'procedure failed with an unexpected error');
+    } else {
+      logger.info({ requestId, route, status: mapped.status, reason: mapped.message }, 'request refused');
+    }
+    throw new ORPCError(mapped.code, { message: mapped.message, cause: err });
+  }
+});
 
 export type AuthedUser = Selectable<UsersTable>;
 

@@ -8,8 +8,10 @@
 import { z } from 'zod';
 import { withPermission } from '../../../api/orpc.js';
 import { parseAndValidateProtivitiRegister } from './parallel-import.js';
+import { parseRegisterUpload } from './register-upload.js';
 import { ParallelRunVarianceService } from './variance-reporter.js';
 import { YtdHistoricalLoader } from './ytd-loader.js';
+import { requireRunInScope } from '../../../core/rbac/company-scope.js';
 
 const ProtivitiRowSchema = z.object({
   ecode: z.string(),
@@ -49,6 +51,12 @@ const YtdOpeningSchema = z.object({
 });
 
 export const parallelRunRouter = {
+  /** Parse an uploaded vendor register (.xlsx / .csv, template or Report 4 layout) into register rows. */
+  parseRegister: withPermission('payroll.run.view', 'read')
+    .input(z.object({ filename: z.string().min(1).max(255), base64: z.string().min(4).max(11_500_000) }))
+    .output(z.object({ layout: z.string(), rows: z.array(ProtivitiRowSchema), issues: z.array(z.object({ rowNumber: z.number(), column: z.string().nullable(), message: z.string() })) }))
+    .handler(({ input }) => parseRegisterUpload(input.filename, input.base64)),
+
   /**
    * Validate and inspect an imported Protiviti pay register before comparison.
    */
@@ -145,6 +153,7 @@ export const parallelRunRouter = {
       })
     )
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.runId);
       const parsedRegister = parseAndValidateProtivitiRegister(
         input.month,
         input.sourceFileName,

@@ -12,6 +12,7 @@
  * (docs/06 preamble).
  */
 import ExcelJS from 'exceljs';
+import { formulaSafe } from '../bulk/normalize.js';
 
 export interface ExcelColumn {
   header: string;
@@ -21,12 +22,12 @@ export interface ExcelColumn {
 
 function cellValue(value: unknown): string | number | boolean {
   if (value === null || value === undefined) return '';
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return value;
-  }
+  // Formula-injection guard: text starting with = + - @ is never executed by Excel.
+  if (typeof value === 'string') return formulaSafe(value);
+  if (typeof value === 'number' || typeof value === 'boolean') return value;
   if (value instanceof Date) return value.toISOString();
   if (typeof value === 'bigint') return value.toString();
-  return JSON.stringify(value);
+  return formulaSafe(JSON.stringify(value));
 }
 
 /** Build a single-sheet xlsx from already-filtered rows. */

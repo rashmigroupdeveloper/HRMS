@@ -6,13 +6,25 @@
 import { ORPCError } from '@orpc/server';
 import type { Response } from 'express';
 import { z } from 'zod';
-import { authed, base } from '../../api/orpc.js';
+import { authed, base, withPermission } from '../../api/orpc.js';
+import { verifyToken } from '../../core/auth/jwt.js';
+import { ForbiddenError } from '../../core/errors/index.js';
 import {
   getUserPermissions,
   getUserRoleCodes,
 } from '../../core/rbac/permissions.service.js';
 import { revokeSession } from './auth.sessions.js';
 import { login, refresh } from './auth.service.js';
+import {
+  adminResetPassword,
+  changePassword,
+  createUser,
+  listUsers,
+  requestPasswordReset,
+  resetPasswordWithToken,
+  setUserActive,
+  unlockUser,
+} from './auth.passwords.js';
 
 const REFRESH_COOKIE = 'hrms_refresh';
 
@@ -99,6 +111,7 @@ const meOutput = z.object({
   employeeId: z.number().int().nullable(),
   roles: z.array(z.string()),
   permissions: z.array(z.string()),
+  mustChangePassword: z.boolean(),
 });
 
 const meProcedure = authed
@@ -119,7 +132,107 @@ const meProcedure = authed
       employeeId: context.user.employee_id,
       roles: [...roles].sort(),
       permissions: [...permissions].sort(),
+      mustChangePassword: context.user.must_change_password,
     };
+  });
+
+const changePasswordProcedure = authed
+  .route({ method: 'POST', path: '/auth/change-password', summary: 'Change your own password (C-34); other sessions are signed out' })
+  .input(z.object({ currentPassword: z.string().min(1), newPassword: z.string().min(1).max(128) }))
+  .output(z.object({ ok: z.literal(true) }))
+  .handler(async ({ input, context }) => {
+    const header = context.req.headers.authorization;
+    const claims = header?.startsWith('Bearer ') ? await verifyToken(header.slice(7), context.jwtSecret) : null;
+    await changePassword(context.db, {
+      userId: context.user.id, currentPassword: input.currentPassword, newPassword: input.newPassword,
+      sid: claims?.sid, ip: context.req.ip ?? null,
+    });
+    return { ok: true as const };
+  });
+
+const forgotPasswordProcedure = base
+  .route({ method: 'POST', path: '/auth/forgot-password', summary: 'E-mail a single-use reset link (same answer whether or not the account exists)' })
+  .input(z.object({ identifier: z.string().min(4).max(254) }))
+  .output(z.object({ ok: z.literal(true) }))
+  .handler(async ({ input, context }) => {
+    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
+    await requestPasswordReset(context.db, {
+      identifier: input.identifier, ip: context.req.ip ?? null, resetUrlBase: context.appBaseUrl ?? 'http://localhost:5173',
+    });
+    return { ok: true as const };
+  });
+
+const resetPasswordProcedure = base
+  .route({ method: 'POST', path: '/auth/reset-password', summary: 'Set a new password with a reset token' })
+  .input(z.object({ token: z.string().min(20).max(200), newPassword: z.string().min(1).max(128) }))
+  .output(z.object({ ok: z.literal(true) }))
+  .handler(async ({ input, context }) => {
+    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
+    await resetPasswordWithToken(context.db, { token: input.token, newPassword: input.newPassword, ip: context.req.ip ?? null });
+    return { ok: true as const };
+  });
+
+/** it_admin may only manage accounts whose roles it holds itself (grant ≤ own level). */
+async function assertManageable(db: Parameters<typeof getUserRoleCodes>[0], actorUserId: number, targetUserId: number) {
+  const [mine, theirs] = await Promise.all([getUserRoleCodes(db, actorUserId), getUserRoleCodes(db, targetUserId)]);
+  const above = [...theirs].filter((r) => !mine.has(r) && r !== 'employee' && r !== 'manager' && r !== 'senior_manager');
+  if (above.length > 0) throw new ForbiddenError(`You cannot manage an account holding ${above.join(', ')}`);
+}
+
+const userRow = z.object({
+  id: z.number(), email: z.string(), isActive: z.boolean(), locked: z.boolean(), failedAttempts: z.number(),
+  lastLoginAt: z.string().nullable(), mustChangePassword: z.boolean(), ecode: z.string().nullable(), name: z.string().nullable(),
+});
+
+const listUsersProcedure = withPermission('admin.users')
+  .route({ method: 'GET', path: '/auth/users', summary: 'Login accounts (IT admin user lifecycle)' })
+  .input(z.object({ q: z.string().max(100).optional(), limit: z.coerce.number().int().min(1).max(200).default(50) }))
+  .output(z.array(userRow))
+  .handler(async ({ input, context }) => {
+    const rows = await listUsers(context.db, input);
+    return rows.map((r) => ({
+      id: r.id, email: r.email, isActive: r.is_active,
+      locked: r.locked_until !== null && r.locked_until.getTime() > Date.now(),
+      failedAttempts: r.failed_attempts, lastLoginAt: r.last_login_at?.toISOString() ?? null,
+      mustChangePassword: r.must_change_password, ecode: r.ecode,
+      name: [r.first_name, r.last_name].filter(Boolean).join(' ') || null,
+    }));
+  });
+
+const createUserProcedure = withPermission('admin.users')
+  .route({ method: 'POST', path: '/auth/users', summary: 'Create a login (temporary password, forced change on first login)' })
+  .input(z.object({ email: z.string().email().max(254), employeeId: z.number().int().positive().nullable().default(null) }))
+  .output(z.object({ userId: z.number(), temporaryPassword: z.string() }))
+  .handler(async ({ input, context }) => createUser(context.db, { ...input, actorUserId: context.user.id, ip: context.req.ip ?? null }));
+
+const setActiveProcedure = withPermission('admin.users')
+  .route({ method: 'POST', path: '/auth/users/{userId}/active', summary: 'Activate or deactivate a login (deactivation revokes sessions)' })
+  .input(z.object({ userId: z.number().int().positive(), active: z.boolean() }))
+  .output(z.object({ ok: z.literal(true) }))
+  .handler(async ({ input, context }) => {
+    await assertManageable(context.db, context.user.id, input.userId);
+    await setUserActive(context.db, { ...input, actorUserId: context.user.id, ip: context.req.ip ?? null });
+    return { ok: true as const };
+  });
+
+const adminResetProcedure = withPermission('admin.users')
+  .route({ method: 'POST', path: '/auth/users/{userId}/reset-password', summary: 'Issue a temporary password (forced change)' })
+  .input(z.object({ userId: z.number().int().positive() }))
+  .output(z.object({ temporaryPassword: z.string() }))
+  .handler(async ({ input, context }) => {
+    if (input.userId === context.user.id) throw new ForbiddenError('Use change password for your own account');
+    await assertManageable(context.db, context.user.id, input.userId);
+    return adminResetPassword(context.db, { userId: input.userId, actorUserId: context.user.id, ip: context.req.ip ?? null });
+  });
+
+const unlockProcedure = withPermission('admin.users')
+  .route({ method: 'POST', path: '/auth/users/{userId}/unlock', summary: 'Clear a lockout' })
+  .input(z.object({ userId: z.number().int().positive() }))
+  .output(z.object({ ok: z.literal(true) }))
+  .handler(async ({ input, context }) => {
+    await assertManageable(context.db, context.user.id, input.userId);
+    await unlockUser(context.db, { userId: input.userId, actorUserId: context.user.id, ip: context.req.ip ?? null });
+    return { ok: true as const };
   });
 
 export const authRouter = {
@@ -127,4 +240,12 @@ export const authRouter = {
   refresh: refreshProcedure,
   logout: logoutProcedure,
   me: meProcedure,
+  changePassword: changePasswordProcedure,
+  forgotPassword: forgotPasswordProcedure,
+  resetPassword: resetPasswordProcedure,
+  listUsers: listUsersProcedure,
+  createUser: createUserProcedure,
+  setUserActive: setActiveProcedure,
+  adminResetPassword: adminResetProcedure,
+  unlockUser: unlockProcedure,
 };

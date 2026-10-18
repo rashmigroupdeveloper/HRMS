@@ -1,4 +1,5 @@
 /** LV-03 / WF-01: application and revision use the same authoritative rules. */
+import { DomainError } from '../../core/errors/index.js';
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { addDaysIso } from '../../core/dates.js';
@@ -79,23 +80,24 @@ export interface ApplyLeaveParams {
 }
 
 export async function validateLeaveApplication(db: Db, params: ApplyLeaveParams, excludeApplicationId?: number) {
-  if (params.fromDate > params.toDate) throw new Error('fromDate must be on or before toDate');
+  if (params.fromDate > params.toDate) throw new DomainError('fromDate must be on or before toDate');
   const type = await getLeaveType(db, params.leaveTypeCode);
   const fromHalf = params.fromHalf ?? false;
   const toHalf = params.toHalf ?? false;
-  if ((fromHalf || toHalf) && !type.allow_half_day) throw new Error(`${type.code} does not allow half days`);
-  if (fromHalf && toHalf && params.fromDate === params.toDate) throw new Error('A single day cannot be two halves');
+  if ((fromHalf || toHalf) && !type.allow_half_day) throw new DomainError(`${type.code} does not allow half days`);
+  if (fromHalf && toHalf && params.fromDate === params.toDate) throw new DomainError('A single day cannot be two halves');
 
   const employee = await db
     .selectFrom('core.employees')
     .select(['id', 'location_id', 'gender', 'category'])
     .where('id', '=', params.employeeId)
     .executeTakeFirstOrThrow();
-  if (type.applicable_gender !== null && employee.gender !== type.applicable_gender) {
-    throw new Error(`${type.name} is not applicable for this employee`);
+  // P-07: employee gender is stored as 'Female'/'Male', leave types use 'F'/'M'.
+  if (type.applicable_gender !== null && genderCode(employee.gender) !== genderCode(type.applicable_gender)) {
+    throw new DomainError(`${type.name} is not applicable for this employee`);
   }
   if (type.applicable_categories !== null && (employee.category === null || !type.applicable_categories.includes(employee.category))) {
-    throw new Error(`${type.name} is not applicable for this employee category`);
+    throw new DomainError(`${type.name} is not applicable for this employee category`);
   }
 
   const locked = await db
@@ -106,7 +108,7 @@ export async function validateLeaveApplication(db: Db, params: ApplyLeaveParams,
     .where('work_date', '<=', sql<Date>`${params.toDate}::date`)
     .where('is_locked', '=', true)
     .executeTakeFirst();
-  if (locked) throw new Error('The period is locked for payroll — contact HR');
+  if (locked) throw new DomainError('The period is locked for payroll — contact HR');
 
   const overlap = await db
     .selectFrom('lv.applications')
@@ -117,20 +119,26 @@ export async function validateLeaveApplication(db: Db, params: ApplyLeaveParams,
     .where('from_date', '<=', sql<Date>`${params.toDate}::date`)
     .where('to_date', '>=', sql<Date>`${params.fromDate}::date`)
     .executeTakeFirst();
-  if (overlap) throw new Error('An open or approved leave already covers these dates');
+  if (overlap) throw new DomainError('An open or approved leave already covers these dates');
 
   const { days } = await computeLeaveSpan(db, employee, type, params.fromDate, params.toDate, fromHalf, toHalf);
-  if (days <= 0) throw new Error('The requested span contains no countable leave days');
+  if (days <= 0) throw new DomainError('The requested span contains no countable leave days');
   if (type.max_per_request !== null && days > Number(type.max_per_request)) {
-    throw new Error(`${type.code} allows at most ${Number(type.max_per_request)} days per request`);
+    throw new DomainError(`${type.code} allows at most ${Number(type.max_per_request)} days per request`);
   }
   if (type.is_paid) {
     const { available } = await getBalance(db, params.employeeId, type.id);
     const previous = excludeApplicationId === undefined ? undefined : await db.selectFrom('lv.applications')
       .select(['days', 'leave_type_id']).where('id', '=', excludeApplicationId).executeTakeFirst();
     const reservation = previous?.leave_type_id === type.id ? Number(previous.days) : 0;
-    if (available + reservation < days) throw new Error(`Insufficient ${type.code} balance: ${available} available, ${days} requested`);
+    if (available + reservation < days) throw new DomainError(`Insufficient ${type.code} balance: ${available} available, ${days} requested`);
   }
 
   return { type, fromHalf, toHalf, days };
+}
+
+/** Normalises 'Female' / 'female' / 'F' → 'F' (and so on) for gender-restricted leave. */
+function genderCode(value: string | null): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed.charAt(0).toUpperCase() : null;
 }

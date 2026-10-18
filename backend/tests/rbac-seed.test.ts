@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { PERMISSIONS, ROLES, ROLE_GRANTS } from '../src/core/rbac/seed-data.js';
 
 describe('RBAC seed integrity', () => {
-  it('has exactly the ten roles of docs/08 §1', () => {
+  it('has the ten roles of docs/08 §1 plus the derived HOD (C-02)', () => {
     expect(ROLES.map((r) => r.code)).toEqual([
       'employee',
       'manager',
@@ -17,6 +17,7 @@ describe('RBAC seed integrity', () => {
       'ceo_cell',
       'it_admin',
       'super_admin',
+      'hod',
     ]);
   });
 

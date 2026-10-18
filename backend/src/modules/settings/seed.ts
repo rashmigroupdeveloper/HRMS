@@ -36,6 +36,17 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
   { key: 'auth.lock_max_minutes', value: 120, valueType: 'number', description: 'NFR-03: maximum lockout duration' },
   { key: 'auth.access_ttl_seconds', value: 900, valueType: 'number', description: 'NFR-03: access token lifetime, bounded by session expiry' },
   { key: 'auth.refresh_ttl_seconds', value: 604800, valueType: 'number', description: 'NFR-03: absolute session lifetime from login' },
+  { key: 'auth.password_min_length', value: 10, valueType: 'number', description: 'NFR-03: minimum password length for set/change/reset' },
+  { key: 'auth.password_history_depth', value: 5, valueType: 'number', description: 'NFR-03: recent passwords that cannot be reused' },
+  { key: 'auth.reset_token_minutes', value: 30, valueType: 'number', description: 'NFR-03: password-reset link validity in minutes' },
+  { key: 'wf.delegation_max_days', value: 90, valueType: 'number', description: 'WF-05: longest allowed approval delegation window' },
+  { key: 'lifecycle.notice_days_white_collar', value: 90, valueType: 'number', description: 'LC-07: notice period (days) for white-collar staff' },
+  { key: 'lifecycle.notice_days_default', value: 30, valueType: 'number', description: 'LC-07: notice period (days) for everyone else' },
+  { key: 'pay.pf_wage_base', value: 'ACTUAL', valueType: 'string', description: 'P-01: default PF wage basis (ACTUAL or CEILING_15000); company and employee pf_wage_basis override it' },
+  { key: 'pay.lwf_deduct_in_payroll', value: false, valueType: 'boolean', description: 'LWF deducted through monthly payroll (off: the client remits LWF outside the salary register)' },
+  { key: 'pay.negative_net_policy', value: 'carry_forward', valueType: 'string', description: 'P-14: carry_forward trims recoveries so net is never negative and recovers the rest next run; flag blocks finalize for review' },
+  { key: 'loans.interest_rate_pct', value: 0, valueType: 'number', description: 'LN-02: policy annual interest % on interest-bearing staff loans (interest-free types always 0)' },
+  { key: 'loans.max_emi_pct_of_gross', value: 30, valueType: 'number', description: 'LN-01: EMI cap as % of monthly gross for eligibility' },
   // ── Attendance: swipe ingestion + quarantine (ATT-01/02) ──────────────────
   {
     key: 'att.swipe_window_early_hours',

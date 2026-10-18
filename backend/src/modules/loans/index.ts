@@ -19,3 +19,4 @@ export {
 } from './loans.service.js';
 
 export { loansRouter } from './loans.router.js';
+export { registerLoansWorkflowHooks } from './workflow-hooks.js';

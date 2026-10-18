@@ -26,6 +26,8 @@ export interface FnfComputeParams {
   grossMonthlyPaise: number;
   elBalanceDays: number;
   shortfallDays: number;
+  /** Notice recovery already deducted through payroll (never recovered twice). */
+  noticeAlreadyRecoveredPaise?: number | undefined;
   unreturnedAssetRecoveryPaise?: number;
   loanOutstandingPaise?: number;
   travelAdvanceDebitPaise?: number;
@@ -132,7 +134,7 @@ export function computeFnfSettlement(params: FnfComputeParams): FnfSettlementCal
   const leaveEncashmentPaise = Math.round((wageBasePaise / 30) * Math.max(0, params.elBalanceDays));
 
   // 3. Notice Period Shortfall Recovery: (Basic / 30) × shortfall_days
-  const noticeRecoveryPaise = Math.round((basicPaise / 30) * Math.max(0, params.shortfallDays));
+  const noticeRecoveryPaise = Math.max(0, Math.round((basicPaise / 30) * Math.max(0, params.shortfallDays)) - (params.noticeAlreadyRecoveredPaise ?? 0));
 
   // 4. Gratuity Calculation (Golden Fixture G8)
   const gratuityDetail = calculateGratuity({
@@ -210,7 +212,7 @@ export function computeFnfSettlement(params: FnfComputeParams): FnfSettlementCal
       category: 'deduction',
       amountPaise: noticeRecoveryPaise,
       amountRupees: Math.round(noticeRecoveryPaise / 100),
-      calcNote: `Basic ₹${(basicPaise / 100).toLocaleString('en-IN')} / 30 × ${params.shortfallDays} shortfall days`,
+      calcNote: `Basic ₹${(basicPaise / 100).toLocaleString('en-IN')} / 30 × ${params.shortfallDays} shortfall days${params.noticeAlreadyRecoveredPaise ? `, less ₹${(params.noticeAlreadyRecoveredPaise / 100).toLocaleString('en-IN')} already recovered in payroll` : ''}`,
     });
   }
 

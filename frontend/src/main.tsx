@@ -11,3 +11,10 @@ createRoot(rootEl).render(
     <App />
   </StrictMode>,
 );
+
+// PWA: app-shell service worker in production builds only (never caches /api).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+  });
+}

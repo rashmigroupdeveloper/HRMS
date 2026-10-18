@@ -22,6 +22,7 @@ import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
 import { useDashboardResource } from '../home/useDashboardResource';
 import { LeaveApplyDrawer } from './LeaveApplyDrawer';
 import type { LeaveTypeOption } from './LeaveApplyDrawer';
+import { takeActionParam } from '../_shared/action-param';
 
 interface LeaveBalance {
   leaveType: string;
@@ -96,7 +97,7 @@ function orderFloating(rows: RestrictedHoliday[], today: string): RestrictedHoli
 }
 
 export function MyLeavePage() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(() => takeActionParam('apply'));
   const [pickingId, setPickingId] = useState<number | null>(null);
   const balances = useDashboardResource<LeaveBalance[]>('/api/leave/balances');
   const types = useDashboardResource<LeaveType[]>('/api/leave/types');
@@ -123,7 +124,7 @@ export function MyLeavePage() {
   const timeline: TimelineStep[] = (applications.data ?? []).slice(0, 8).map(item => {
     const status = item.status === 'pending' ? item.workflowStatus ?? item.status : item.status;
     return { id: String(item.id),
-      title: <Link className="rounded-control underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-accent"
+      title: <Link className="rounded-control underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-focus"
         to={`/approvals/${String(item.workflowRequestId)}`}>{item.leaveType} · {formatDateIN(item.fromDate)} to {formatDateIN(item.toDate)} · View decisions</Link>,
       description: `${String(item.days)} days ${item.status === 'pending' ? 'reserved' : item.status}`,
       timestamp: status.replaceAll('_', ' '),

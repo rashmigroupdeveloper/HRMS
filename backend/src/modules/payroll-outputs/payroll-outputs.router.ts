@@ -12,6 +12,7 @@ import { BankFileService } from './bank/bank-file.service.js';
 import { SapJvService } from './gl/sap-jv.service.js';
 import { VarianceReportService } from './variance/variance.service.js';
 import { OutputsBundleService } from './outputs-bundle.service.js';
+import { requireRunInScope } from '../../core/rbac/company-scope.js';
 
 const PayslipEmployeeSchema = z.object({
   id: z.number(),
@@ -164,6 +165,7 @@ export const payrollOutputsRouter = {
       })
     )
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.runId);
       const service = new PayslipGeneratorService(context.db);
       const data = await service.assemblePayslipData(
         input.runId,
@@ -215,7 +217,7 @@ export const payrollOutputsRouter = {
         .selectFrom('pay.payroll_runs')
         .select(['id'])
         .where('company_id', '=', emp.company_id)
-        .where('status', 'in', ['approved', 'finalized', 'paid']);
+        .where('status', 'in', ['finalized', 'paid']); // never show a payslip that can still change
 
       if (input.month) {
         runQuery = runQuery.where('month', '=', `${input.month}-01` as unknown as Date);
@@ -256,6 +258,7 @@ export const payrollOutputsRouter = {
       })
     )
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.runId);
       const service = new PayslipGeneratorService(context.db);
       const res = await service.generateRunPayslips(input.runId, context.user.id);
       return { success: true, ...res };
@@ -278,6 +281,7 @@ export const payrollOutputsRouter = {
       })
     )
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.runId);
       const service = new BankFileService(context.db);
       const res = await service.generateBankBatch(input.runId, context.user.id);
       return {
@@ -307,6 +311,7 @@ export const payrollOutputsRouter = {
       })
     )
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.runId);
       const service = new SapJvService(context.db);
       const res = await service.generateSapJv(input.runId, context.user.id);
       return {
@@ -332,6 +337,7 @@ export const payrollOutputsRouter = {
     )
     .output(VarianceReportSummarySchema)
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.runId);
       const service = new VarianceReportService(context.db);
       return await service.generateVarianceReport(
         input.runId,
@@ -347,6 +353,7 @@ export const payrollOutputsRouter = {
     .input(z.object({ runId: z.number() }))
     .output(RunOutputsStatusSchema)
     .handler(async ({ context, input }) => {
+      await requireRunInScope(context, input.runId);
       const service = new OutputsBundleService(context.db);
       return await service.getRunOutputsStatus(input.runId);
     }),

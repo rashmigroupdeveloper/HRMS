@@ -14,20 +14,18 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
+/**
+ * Authenticated drop-in for `fetch`: Bearer token, refresh cookie, one retry
+ * after a 401 refresh. Returns the raw Response (callers check `res.ok`).
+ */
+export async function authFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
-  if (!headers.has('Content-Type') && init.body !== undefined) {
+  if (!headers.has('Content-Type') && init.body !== undefined && !(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
-
   let token = getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
-
   let res = await fetch(path, { ...init, headers, credentials: 'include' });
-
   if (res.status === 401 && !path.startsWith('/api/auth/')) {
     token = await refreshAccessToken(token);
     if (token) {
@@ -37,7 +35,14 @@ export async function apiFetch<T>(
       clearAccessToken();
     }
   }
+  return res;
+}
 
+export async function apiFetch<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const res = await authFetch(path, init);
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { message?: string } | null;
     throw new ApiError(body?.message ?? `Request failed (${String(res.status)})`, res.status);
@@ -45,4 +50,10 @@ export async function apiFetch<T>(
 
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+/** Server-supplied error message from a failed Response, or the fallback. */
+export async function responseError(res: Response, fallback: string): Promise<string> {
+  const body = (await res.json().catch(() => null)) as { message?: string } | null;
+  return body?.message ?? fallback;
 }

@@ -2,11 +2,16 @@
  * App root — session gate + router (docs/05 deep links).
  * Product chrome lives in AppShell; design-system gallery at /dev/gallery.
  */
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { LoginPage } from './pages/auth/LoginPage';
-import { PrejoinPortalPage } from './pages/lifecycle/PrejoinPortalPage';
-import { AppRouter } from './app/router';
+
+// The signed-in app and the candidate portal are separate chunks: the login
+// screen (the first paint on every phone) ships only what it needs.
+const AppRouter = lazy(() => import('./app/router').then((m) => ({ default: m.AppRouter })));
+const PrejoinPortalPage = lazy(() =>
+  import('./pages/lifecycle/PrejoinPortalPage').then((m) => ({ default: m.PrejoinPortalPage })),
+);
 import {
   loadSession,
   restoreSession,
@@ -20,23 +25,14 @@ export function App() {
     void restoreSession().then(setSession);
   }, []);
 
-  if (session === 'checking') {
-    return (
-      <div className="grid min-h-screen place-items-center">
-        <div className="flex items-center gap-2.5 opacity-70">
-          <span className="grid size-9 animate-pulse place-items-center rounded-full bg-hero text-sm font-bold text-hero-ink">
-            R
-          </span>
-          <span className="text-sm font-semibold text-ink">Rashmi HRMS</span>
-        </div>
-      </div>
-    );
-  }
+  if (session === 'checking') return <Splash />;
 
   if (window.location.pathname.startsWith('/onboard/prejoin')) {
     return (
       <BrowserRouter>
-        <PrejoinPortalPage />
+        <Suspense fallback={<Splash />}>
+          <PrejoinPortalPage />
+        </Suspense>
       </BrowserRouter>
     );
   }
@@ -54,12 +50,27 @@ export function App() {
 
   return (
     <BrowserRouter>
-      <AppRouter
-        user={session}
-        onSignedOut={() => {
-          setSession(null);
-        }}
-      />
+      <Suspense fallback={<Splash />}>
+        <AppRouter
+          user={session}
+          onSignedOut={() => {
+            setSession(null);
+          }}
+        />
+      </Suspense>
     </BrowserRouter>
+  );
+}
+
+function Splash() {
+  return (
+    <div role="status" aria-label="Loading Rashmi HRMS" className="grid min-h-screen place-items-center">
+      <div className="flex items-center gap-2.5 opacity-70">
+        <span className="grid size-9 animate-pulse place-items-center rounded-full bg-hero text-sm font-bold text-hero-ink">
+          R
+        </span>
+        <span className="text-sm font-semibold text-ink">Rashmi HRMS</span>
+      </div>
+    </div>
   );
 }

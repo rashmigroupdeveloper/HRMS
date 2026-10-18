@@ -1,20 +1,45 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover: the shell pads itself with safe-area insets (notch,
+         home indicator, Android gesture bar). Zoom is never disabled (WCAG 1.4.4). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Rashmi HRMS</title>
-    <meta name="theme-color" content="#ecebe6" />
+    <meta name="description" content="Rashmi Group HRMS — attendance, leave, pay, claims and approvals in one calm workspace." />
+    <meta name="theme-color" content="#ecebe6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#141416" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Rashmi HR" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Manrope = UI/body (sans); Fraunces = Warm Editorial display face for
-         headings & the ESS greeting (docs/05 §6 "light-weight display type"). -->
+    <!-- Manrope variable (200–800): light display headings at 300 + crisp
+         400–700 UI text. Fraunces is the ESS greeting face only (docs/12 §2). -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Fraunces:opsz,wght@9..144,300;9..144,400&display=swap"
       rel="stylesheet"
     />
+    <script>
+      // Apply the saved/system theme before first paint — no light flash for
+      // dark-mode users (the React toggle takes over after hydration).
+      (function () {
+        try {
+          var m = localStorage.getItem('hrms-theme');
+          var dark = m === 'dark' || ((m === null || m === 'system') && matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
+    <noscript>Rashmi HRMS needs JavaScript enabled.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

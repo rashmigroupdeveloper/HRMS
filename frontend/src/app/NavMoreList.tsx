@@ -42,7 +42,7 @@ export function NavMoreList({ items, pathname, onNavigate }: NavMoreListProps) {
                 aria-current={active ? 'page' : undefined}
                 onClick={onNavigate}
                 className={cn(
-                  'u-press flex items-center gap-2.5 rounded-row px-3 py-2 text-sm font-medium',
+                  'u-press flex min-h-11 items-center gap-2.5 rounded-row px-3 py-2 text-sm font-medium lg:min-h-0',
                   active ? 'bg-hero text-hero-ink' : 'text-ink hover:bg-surface-2',
                 )}
               >

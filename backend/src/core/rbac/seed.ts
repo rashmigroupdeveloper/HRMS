@@ -56,9 +56,13 @@ async function main(): Promise<void> {
       .insertInto('core.role_permissions')
       .values(pairs)
       .onConflict((oc) =>
-        oc.columns(['role_id', 'permission_id']).doUpdateSet((eb) => ({
-          scope: eb.ref('excluded.scope'),
-        })),
+        oc
+          .columns(['role_id', 'permission_id'])
+          .doUpdateSet((eb) => ({ scope: eb.ref('excluded.scope') }))
+          // Only rewrite rows whose scope actually changed: a no-op UPDATE still
+          // fires the last-super-admin guard, which made re-seeding a fresh
+          // database (no users yet) fail.
+          .where((eb) => eb('core.role_permissions.scope', 'is distinct from', eb.ref('excluded.scope'))),
       )
       .execute();
 

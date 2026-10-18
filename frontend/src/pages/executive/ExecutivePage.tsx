@@ -147,7 +147,7 @@ const CATEGORY_KEY: Record<string, string> = {
  *  — zero is a measurement, absence is not. */
 function NoValue({ label }: { label?: string }) {
   return (
-    <span className="text-ink-faint" aria-label={label ?? 'No data yet'}>
+    <span className="text-ink-subtle" aria-label={label ?? 'No data yet'}>
       —
     </span>
   );
@@ -215,7 +215,7 @@ function TrendTable({ points, unit }: { points: TrendPoint[]; unit: string }) {
       numeric: true,
       render: (r) =>
         r.value === null ? (
-          <span className="text-ink-faint">not measured</span>
+          <span className="text-ink-subtle">not measured</span>
         ) : (
           <span>{r.value.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</span>
         ),
@@ -285,6 +285,7 @@ export function ExecutivePage() {
       : kpis.data.metrics.find((m) => m.metric === metric && m.category === category);
 
   const burnoutMetric = find('burnout_index');
+  const headcount = find('manpower_count')?.value ?? null;
 
   const handleRebuild = async () => {
     setRebuilding(true);
@@ -330,18 +331,49 @@ export function ExecutivePage() {
         }
       />
 
-      <DarkCard padded={false} className="p-8 md:p-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
-          What you will see here
-        </p>
-        <h2 className="mt-4 max-w-xl text-4xl font-light tracking-tight text-hero-ink">
-          How the group is doing — without guessing.
-        </h2>
-        <p className="mt-4 max-w-xl text-sm leading-7 text-hero-muted">
-          You will read headcount, cost, absence and attrition from last night’s snapshot. A dash
-          means not measured yet — never a made-up number. Opening this page never runs a heavy
-          query.
-        </p>
+      {/* Group hero (docs/06 §4, docs/12 Crextio): the one charcoal surface
+          carries the headline number; tiles are the four the CEO asks first.
+          A dash is "not measured yet", never a made-up figure. */}
+      <DarkCard className="grid gap-8 lg:grid-cols-[1.1fr_1.4fr]">
+        <div className="flex flex-col justify-between gap-6">
+          <div>
+            <p className="text-sm text-hero-muted">People on rolls · all companies</p>
+            <p className="mt-3 text-6xl font-light tabular-nums tracking-tight text-hero-ink sm:text-7xl">
+              {headcount === null ? '—' : <KpiNumber value={headcount} />}
+            </p>
+          </div>
+          <p className="max-w-md text-sm leading-6 text-hero-muted">
+            From last night’s snapshot — opening this page never runs a heavy query. A dash means
+            not measured yet.
+          </p>
+        </div>
+        <dl className="u-stagger grid grid-cols-2 gap-3">
+          {(
+            [
+              ['Gross salary MTD', 'gross_salary_cost_mtd', '₹', '', 0],
+              ['Average CTC', 'average_ctc', '₹', '', 0],
+              ['Absenteeism', 'absenteeism_pct', '', '%', 1],
+              ['Attrition (annualised)', 'attrition_rate_annualised_pct', '', '%', 1],
+            ] as const
+          ).map(([label, metric, prefix, suffix, precision]) => {
+            const value = find(metric)?.value ?? null;
+            return (
+              <div
+                key={metric}
+                className="min-w-0 rounded-tile bg-[color-mix(in_srgb,var(--surface)_8%,transparent)] p-3.5 sm:p-5"
+              >
+                <dt className="text-xs text-hero-muted">{label}</dt>
+                <dd className="mt-3 truncate text-xl font-light tabular-nums text-hero-ink sm:text-3xl">
+                  {value === null ? (
+                    '—'
+                  ) : (
+                    <KpiNumber value={value} prefix={prefix} suffix={suffix} precision={precision} />
+                  )}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
       </DarkCard>
 
       {/* ── Band 1: manpower demographics ─────────────────────────────────── */}
@@ -426,7 +458,7 @@ export function ExecutivePage() {
         <CardHeader
           title="Productivity & cost"
           subtitle="Two-series gold/charcoal charts only — the locked chart palette (docs/05 §4.8)."
-          action={<Gauge className="size-5 text-ink-faint" />}
+          action={<Gauge className="size-5 text-ink-subtle" />}
         />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {PRODUCTIVITY.map((metric, index) => (
@@ -467,7 +499,7 @@ export function ExecutivePage() {
                 >
                   View leavers
                 </Button>
-                <TrendingDown className="size-5 text-ink-faint" />
+                <TrendingDown className="size-5 text-ink-subtle" />
               </div>
             }
           />
@@ -497,7 +529,7 @@ export function ExecutivePage() {
           <CardHeader
             title="Burnout index"
             subtitle="A composite proxy — labelled an index, never presented as a survey result."
-            action={<Activity className="size-5 text-ink-faint" />}
+            action={<Activity className="size-5 text-ink-subtle" />}
           />
           <p className="text-5xl font-light tabular-nums text-ink">
             {burnoutMetric?.value !== null && burnoutMetric?.value !== undefined ? (

@@ -21,6 +21,7 @@ import { enqueue } from '../notifications/index.js';
 import { act, createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
 import { compOffDaysForMinutes, creditCompOffForOvertime } from '../leave/index.js';
 import { attendanceTransaction, lockAttendanceEmployee } from './attendance-mutation.js';
+import { inTransaction } from '../../core/db/database.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 type OvertimeEntry = Selectable<AttOvertimeEntriesTable>;
@@ -257,7 +258,7 @@ export async function decideOvertime(db: Kysely<Database>, params: DecideOvertim
   // The entry mutation AND the ledger credit are ONE transaction, so a
   // converted entry ALWAYS carries its comp-off credit (or neither commits) —
   // the OT minutes can never vanish between the two writes (money atomicity).
-  await db.transaction().execute(async (trx) => {
+  await inTransaction(db, async (trx) => {
     let update = trx
       .updateTable('att.overtime_entries')
       .set({

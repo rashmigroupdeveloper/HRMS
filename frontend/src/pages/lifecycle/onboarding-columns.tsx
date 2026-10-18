@@ -16,7 +16,7 @@ export function onboardingColumns(
         <div>
           <p className="font-medium text-ink">{c.fullName}</p>
           <p className="text-xs text-ink-muted">{c.positionTitle}</p>
-          <div className="mt-1 flex items-center gap-2 text-[11px] text-ink-faint">
+          <div className="mt-1 flex items-center gap-2 text-[11px] text-ink-subtle">
             <span>{c.mobile}</span>
             <span>•</span>
             <span>{c.personalEmail}</span>

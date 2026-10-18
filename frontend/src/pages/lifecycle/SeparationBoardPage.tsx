@@ -5,7 +5,7 @@
  * 1. Resignation tracking, notice shortfall estimation, and approval drawer (LC-06).
  * 2. HR Absconding / Termination Initiation path (ATT-10 / SOW-5.7.2).
  * 3. Multi-department clearance queue (IT, Admin, Finance, HR) with C18 unreturned asset recovery rule.
- * 4. F&F Settlement Engine workbench with Golden G8 gratuity, 3-working-day statutory TAT tracking,
+ * 4. F&F Settlement Engine workbench with statutory gratuity, 3-working-day statutory TAT tracking,
  *    and automated Exit Day Cascade triggering (LC-07).
  */
 
@@ -29,6 +29,8 @@ import {
   CardHeader,
   DataTable,
   Drawer,
+  EmptyState,
+  Textarea,
   PageHeader,
   StatusBadge,
   TextField,
@@ -110,6 +112,13 @@ interface FnfCalculationBreakdown {
 
 type TabMode = 'resignations' | 'clearances' | 'fnf';
 
+interface HeldAsset {
+  assignmentId: number;
+  assetNo: string;
+  category: string;
+  assignedAt: string | null;
+}
+
 export function SeparationBoardPage() {
   const [activeTab, setActiveTab] = useState<TabMode>('resignations');
   const [separations, setSeparations] = useState<SeparationItem[]>([]);
@@ -143,18 +152,20 @@ export function SeparationBoardPage() {
   // Clearances State
   const [clearances, setClearances] = useState<ClearanceItem[]>([]);
   const [selectedClearanceDept, setSelectedClearanceDept] = useState<string>('all');
-  const [flaggingAsset] = useState<{
-    assetTag: string;
-    modelName: string;
-    recoveryRupees: string;
-  }>({ assetTag: 'AST-LT-092', modelName: 'Dell Latitude 5420', recoveryRupees: '35000' });
+  // Flag-unreturned-assets drawer: real assets the leaver still holds.
+  const [flagTarget, setFlagTarget] = useState<ClearanceItem | null>(null);
+  const [heldAssets, setHeldAssets] = useState<HeldAsset[]>([]);
+  const [heldLoading, setHeldLoading] = useState(false);
+  const [flagRecovery, setFlagRecovery] = useState<Record<number, string>>({});
+  const [flagRemarks, setFlagRemarks] = useState('');
 
   // F&F State
   const [fnfBreakdown, setFnfBreakdown] = useState<FnfCalculationBreakdown | null>(null);
-  const [fnfDaysPayable, setFnfDaysPayable] = useState('15');
-  const [fnfElDays, setFnfElDays] = useState('12');
-  const [fnfTds, setFnfTds] = useState('0');
-  const [paymentRef, setPaymentRef] = useState('NEFT-HDFC-882190');
+  const [fnfDaysPayable, setFnfDaysPayable] = useState('');
+  const [fnfElDays, setFnfElDays] = useState('');
+  const [fnfTds, setFnfTds] = useState('');
+  const [fnfSeparationId, setFnfSeparationId] = useState('');
+  const [paymentRef, setPaymentRef] = useState('');
   const [isComputingFnf, setIsComputingFnf] = useState(false);
   const [isSettlingFnf, setIsSettlingFnf] = useState(false);
   const [settledLetterResult, setSettledLetterResult] = useState<{
@@ -179,86 +190,11 @@ export function SeparationBoardPage() {
       if (Array.isArray(res.items)) {
         setSeparations(res.items);
       } else {
-        // Fallback sample data for preview if API returned empty
-        setSeparations([
-          {
-            id: 1,
-            employeeId: 301,
-            ecode: 'RML035100',
-            name: 'Arjun Das',
-            department: 'Production',
-            designation: 'Senior Plant Supervisor',
-            initiatedAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-            initiatedBy: 'employee',
-            reason: 'Career opportunity in native town',
-            resignationDate: '2024-03-01',
-            noticePeriodDays: 90,
-            requestedLwd: '2024-03-31',
-            approvedLwd: '2024-03-31',
-            shortfallDays: 60,
-            status: 'approved',
-            fnfId: null,
-          },
-          {
-            id: 2,
-            employeeId: 302,
-            ecode: 'RML035210',
-            name: 'Sunil Karmakar',
-            department: 'Quality Assurance',
-            designation: 'Chemist',
-            initiatedAt: new Date(Date.now() - 12 * 86400000).toISOString(),
-            initiatedBy: 'hr',
-            reason: 'Consecutive absence over 10 days without intimation',
-            resignationDate: '2024-02-20',
-            noticePeriodDays: 0,
-            requestedLwd: '2024-02-15',
-            approvedLwd: '2024-02-15',
-            shortfallDays: 0,
-            status: 'approved',
-            fnfId: null,
-          },
-          {
-            id: 3,
-            employeeId: 303,
-            ecode: 'RML034980',
-            name: 'Priyanka Ghosh',
-            department: 'Finance',
-            designation: 'Accountant',
-            initiatedAt: new Date().toISOString(),
-            initiatedBy: 'employee',
-            reason: 'Personal reasons & higher studies',
-            resignationDate: new Date().toISOString().slice(0, 10),
-            noticePeriodDays: 90,
-            requestedLwd: new Date(Date.now() + 45 * 86400000).toISOString().slice(0, 10),
-            approvedLwd: null,
-            shortfallDays: 45,
-            status: 'pending',
-            fnfId: null,
-          },
-        ]);
+        setSeparations([]);
       }
-    } catch {
-      // Graceful fallback for offline dev
-      setSeparations([
-        {
-          id: 1,
-          employeeId: 301,
-          ecode: 'RML035100',
-          name: 'Arjun Das',
-          department: 'Production',
-          designation: 'Senior Plant Supervisor',
-          initiatedAt: new Date(Date.now() - 5 * 86400000).toISOString(),
-          initiatedBy: 'employee',
-          reason: 'Career opportunity in native town',
-          resignationDate: '2024-03-01',
-          noticePeriodDays: 90,
-          requestedLwd: '2024-03-31',
-          approvedLwd: '2024-03-31',
-          shortfallDays: 60,
-          status: 'approved',
-          fnfId: null,
-        },
-      ]);
+    } catch (e: unknown) {
+      setSeparations([]);
+      toast.error(e instanceof Error ? e.message : 'Could not load separations.');
     }
   }, []);
 
@@ -270,53 +206,7 @@ export function SeparationBoardPage() {
       if (Array.isArray(res.items)) {
         setClearances(res.items);
       } else {
-        // Fallback sample clearance rows
-        setClearances([
-          {
-            id: 101,
-            separationId,
-            department: 'IT',
-            status: 'pending',
-            remarks: 'Laptop AST-LT-092 pending physical return inspection',
-            recoveryAmount: '0.00',
-            unreturnedAssets: null,
-            clearedBy: null,
-            clearedAt: null,
-          },
-          {
-            id: 102,
-            separationId,
-            department: 'Admin',
-            status: 'cleared',
-            remarks: 'Plant ID badge surrendered, locker key deposited',
-            recoveryAmount: '0.00',
-            unreturnedAssets: null,
-            clearedBy: 1,
-            clearedAt: new Date().toISOString(),
-          },
-          {
-            id: 103,
-            separationId,
-            department: 'Finance',
-            status: 'pending',
-            remarks: 'No active staff loan; checking Yatra Avedan travel wallet balance',
-            recoveryAmount: '0.00',
-            unreturnedAssets: null,
-            clearedBy: null,
-            clearedAt: null,
-          },
-          {
-            id: 104,
-            separationId,
-            department: 'HR',
-            status: 'cleared',
-            remarks: 'Exit interview completed; documentation verified',
-            recoveryAmount: '0.00',
-            unreturnedAssets: null,
-            clearedBy: 2,
-            clearedAt: new Date().toISOString(),
-          },
-        ]);
+        setClearances([]);
       }
     } catch {
       setClearances([]);
@@ -364,7 +254,7 @@ export function SeparationBoardPage() {
       await apiFetch('/api/lifecycle/separations/absconding', {
         method: 'POST',
         body: JSON.stringify({
-          employeeId: Number(abscondingEmpId),
+          ecode: abscondingEmpId.trim(),
           reason: abscondingReason,
           lastWorkingDay: abscondingLwd,
         }),
@@ -402,6 +292,31 @@ export function SeparationBoardPage() {
   };
 
   // Handle Clearance Update with C18 Check
+  const openFlagDrawer = async (clearance: ClearanceItem) => {
+    setFlagTarget(clearance);
+    setFlagRecovery({});
+    setFlagRemarks('');
+    setHeldAssets([]);
+    if (!selectedSeparation) return;
+    setHeldLoading(true);
+    try {
+      const rows = await apiFetch<HeldAsset[]>(
+        `/api/assets/held-by/${String(selectedSeparation.employeeId)}`
+      );
+      setHeldAssets(rows);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Could not load assets held by this employee.');
+    } finally {
+      setHeldLoading(false);
+    }
+  };
+
+  const flagSelectionCount = Object.keys(flagRecovery).length;
+  const flagInvalid =
+    flagSelectionCount === 0 ||
+    flagRemarks.trim().length < 5 ||
+    Object.values(flagRecovery).some((v) => !/^\d+(\.\d{1,2})?$/.test(v));
+
   const handleUpdateClearanceStatus = async (
     clearance: ClearanceItem,
     status: 'cleared' | 'flagged',
@@ -416,17 +331,17 @@ export function SeparationBoardPage() {
       };
 
       if (status === 'flagged') {
-        body['unreturnedAssets'] = [
-          {
-            assetId: 101,
-            assetTag: flaggingAsset.assetTag,
-            modelName: flaggingAsset.modelName,
-            condition: 'unreturned',
-            recoveryAmountRupees: Number(flaggingAsset.recoveryRupees) || 0,
-          },
-        ];
-        body['recoveryAmountRupees'] = Number(flaggingAsset.recoveryRupees) || 0;
-        body['remarks'] = `Asset ${flaggingAsset.assetTag} unreturned. Recovery ₹${flaggingAsset.recoveryRupees} flagged for F&F deduction.`;
+        const picked = heldAssets.filter((a) => flagRecovery[a.assignmentId] !== undefined);
+        const items = picked.map((a) => ({
+          assetId: a.assignmentId,
+          assetTag: a.assetNo,
+          modelName: a.category,
+          condition: 'unreturned' as const,
+          recoveryAmountRupees: Number(flagRecovery[a.assignmentId]) || 0,
+        }));
+        body['unreturnedAssets'] = items;
+        body['recoveryAmountRupees'] = items.reduce((sum, a) => sum + a.recoveryAmountRupees, 0);
+        body['remarks'] = flagRemarks.trim();
       }
 
       await apiFetch('/api/lifecycle/clearances/update', {
@@ -446,7 +361,7 @@ export function SeparationBoardPage() {
       void loadClearances(clearance.separationId);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Cannot clear with unreturned assets without Finance sign-off.';
-      toast.error('Action Blocked by C18 Integrity Rule', {
+      toast.error('Action blocked: unreturned assets', {
         description: msg,
       });
     }
@@ -457,53 +372,20 @@ export function SeparationBoardPage() {
     setIsComputingFnf(true);
     setSelectedSeparation(separation);
     try {
-      const res = await apiFetch<FnfCalculationBreakdown>(
+      // Blank overrides let the server derive days payable (locked attendance)
+      // and the EL balance (leave ledger) itself.
+      const overrides: Record<string, number> = {};
+      if (fnfDaysPayable.trim() !== '') overrides['daysPayable'] = Number(fnfDaysPayable);
+      if (fnfElDays.trim() !== '') overrides['elBalanceDays'] = Number(fnfElDays);
+      if (fnfTds.trim() !== '') overrides['tdsRupees'] = Number(fnfTds);
+      const res = await apiFetch<{ calculation: FnfCalculationBreakdown }>(
         `/api/lifecycle/separations/${String(separation.id)}/compute-fnf`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            daysPayable: Number(fnfDaysPayable),
-            elBalanceDays: Number(fnfElDays),
-            tdsRupees: Number(fnfTds),
-          }),
-        }
+        { method: 'POST', body: JSON.stringify(overrides) }
       );
-      setFnfBreakdown(res);
+      setFnfBreakdown(res.calculation);
       setShowFnfDrawer(true);
-    } catch {
-      // Mock calculation preview with Golden Fixture G8 for demonstration
-      setFnfBreakdown({
-        employeeId: separation.employeeId,
-        separationId: separation.id,
-        approvedLwd: separation.approvedLwd ?? separation.requestedLwd,
-        daysPayable: Number(fnfDaysPayable),
-        earnings: {
-          proratedSalaryPaise: 3228600, // ₹32,286
-          leaveEncashmentPaise: 2582880, // ₹25,829
-          gratuityPaise: 16763900, // Golden G8: ₹1,67,639
-          heldSalaryReleasedPaise: 0,
-          grossPayablePaise: 22575380, // ₹2,25,754
-        },
-        deductions: {
-          noticeRecoveryPaise: 1076200, // ₹10,762 (shortfall recovery)
-          assetRecoveryPaise: 3500000, // ₹35,000 (C18 asset deduction)
-          loanRecoveryPaise: 0,
-          travelAdvanceRecoveryPaise: 0,
-          tdsPaise: Number(fnfTds) * 100,
-          totalDeductionsPaise: 4576200, // ₹45,762
-        },
-        netPayablePaise: 17999180, // ₹1,79,992
-        netPayableRupees: 179992,
-        gratuityDetail: {
-          isEligible: true,
-          completedYearsRounded: 9, // 8y 7m rounds to 9y
-          gratuityRupees: 167639,
-          cappedAtCeiling: false,
-          calcNote: 'Golden Fixture G8: (15 × ₹32,286 × 9 years) / 26 = ₹1,67,639',
-        },
-        tatDueDate: new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
-      });
-      setShowFnfDrawer(true);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'F&F computation failed.');
     } finally {
       setIsComputingFnf(false);
     }
@@ -535,20 +417,14 @@ export function SeparationBoardPage() {
         description: 'Employee exited, DOL committed, relieving & service certificates issued, role switched to alumni.',
       });
       void loadSeparations();
-    } catch {
-      // Mock success for local dev preview
-      setSettledLetterResult({
-        relievingLetterId: 901,
-        serviceCertificateId: 902,
-      });
-      toast.success('F&F Settled & Exit Day Cascade Executed', {
-        description: 'Employee exited, DOL committed, relieving & service certificates issued, role switched to alumni.',
-      });
-      void loadSeparations();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Settlement failed. Nothing was paid.');
     } finally {
       setIsSettlingFnf(false);
     }
   };
+
+  const fnfCandidates = separations.filter((x) => x.status === 'approved');
 
   const filteredSeparations = separations.filter(
     (s) =>
@@ -679,7 +555,7 @@ export function SeparationBoardPage() {
         <PageHeader
           eyebrow="Lifecycle / Separation & Settlement"
           title="Separation, Clearances & F&F Console"
-          description="Orchestrates ESS resignation approval, 4-tier departmental clearances (IT/Admin/Finance/HR), C18 unreturned asset recovery, and 3-day statutory F&F settlement with Exit Day Cascade (LC-06, LC-07, PAY-15)."
+          description="Orchestrates ESS resignation approval, 4-tier departmental clearances (IT/Admin/Finance/HR), unreturned asset recovery, and 3-day statutory F&F settlement with Exit Day Cascade (LC-06, LC-07, PAY-15)."
         />
         <div className="flex items-center gap-2">
           <Button
@@ -687,7 +563,7 @@ export function SeparationBoardPage() {
             size="sm"
             onClick={() => { setShowAbscondingDrawer(true); }}
           >
-            <UserX className="h-4 w-4 mr-1.5 text-warning" />
+            <UserX className="h-4 w-4 mr-1.5 text-warning-ink" />
             HR Absconding (ATT-10)
           </Button>
           <Button
@@ -760,7 +636,7 @@ export function SeparationBoardPage() {
               : 'border-transparent text-ink-muted hover:text-ink'
           }`}
         >
-          Departmental Clearances & C18 Assets
+          Clearances & assets
         </button>
         <button
           type="button"
@@ -771,7 +647,7 @@ export function SeparationBoardPage() {
               : 'border-transparent text-ink-muted hover:text-ink'
           }`}
         >
-          F&F Settlement Engine & Golden G8
+          F&F settlement
         </button>
       </div>
 
@@ -813,17 +689,17 @@ export function SeparationBoardPage() {
           <Card>
             <CardHeader
               title="Departmental Clearance Workbench"
-              subtitle="Enforces 4-department sign-off (IT, Admin, Finance, HR) and C18 unreturned asset deduction integrity."
+              subtitle="Enforces 4-department sign-off (IT, Admin, Finance, HR) and unreturned asset recovery."
             />
             <div className="space-y-4 mt-4">
               <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg bg-surface-2">
                 <div>
                   <span className="text-xs uppercase text-ink-muted">Selected Employee: </span>
                   <span className="font-semibold text-ink">
-                    {selectedSeparation ? `${selectedSeparation.name} (${selectedSeparation.ecode})` : 'Arjun Das (RML035100)'}
+                    {selectedSeparation ? `${selectedSeparation.name} (${selectedSeparation.ecode})` : 'None selected'}
                   </span>
                   <span className="text-xs text-ink-muted ml-3">
-                    LWD: {selectedSeparation?.approvedLwd ?? '2024-03-31'}
+                    LWD: {selectedSeparation?.approvedLwd ?? '—'}
                   </span>
                 </div>
                 <div className="w-56">
@@ -883,7 +759,7 @@ export function SeparationBoardPage() {
                         <span className="font-medium">Remarks: </span>
                         {item.remarks ?? 'Requisition pending inspection.'}
                         {Number(item.recoveryAmount) > 0 && (
-                          <div className="mt-1 font-semibold text-negative">
+                          <div className="mt-1 font-semibold text-negative-ink">
                             Flagged Recovery Amount: ₹{Number(item.recoveryAmount).toLocaleString('en-IN')}
                           </div>
                         )}
@@ -896,11 +772,11 @@ export function SeparationBoardPage() {
                             size="sm"
                             variant="secondary"
                             onClick={() => {
-                              void handleUpdateClearanceStatus(item, 'flagged');
+                              void openFlagDrawer(item);
                             }}
                           >
-                            <ShieldAlert className="h-3.5 w-3.5 mr-1 text-negative" />
-                            Flag Unreturned Laptop (₹35k)
+                            <ShieldAlert className="h-3.5 w-3.5 mr-1 text-negative-ink" />
+                            Flag unreturned assets
                           </Button>
                         )}
 
@@ -931,7 +807,7 @@ export function SeparationBoardPage() {
                               Mark Cleared
                             </Button>
                           ) : (
-                            <div className="text-xs text-positive flex items-center">
+                            <div className="text-xs text-positive-ink flex items-center">
                               <CheckCircle2 className="h-4 w-4 mr-1" />
                               Signed off
                             </div>
@@ -952,18 +828,17 @@ export function SeparationBoardPage() {
           <Card>
             <CardHeader
               title="Full & Final (F&F) Settlement Workbench"
-              subtitle="Calculates Golden Fixture G8 Gratuity, EL encashment, notice recovery, and enforces 3-day statutory TAT."
+              subtitle="Calculates gratuity, EL encashment and notice recovery, and tracks the 3-working-day statutory TAT."
             />
             <div className="space-y-6 mt-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="p-4 bg-surface-2 border border-line">
-                  <div className="text-xs uppercase text-ink-muted">Golden Fixture G8 Gratuity Rule</div>
+                  <div className="text-xs uppercase text-ink-muted">Gratuity rule</div>
                   <div className="mt-2 text-sm text-ink space-y-1">
-                    <div>• Monthly Basic: ₹32,286 | DA: ₹0</div>
-                    <div>• Service Tenure: 8 years 7 months</div>
-                    <div>• Rounding rule: ≥6 months rounds UP to 9 years</div>
-                    <div>• Formula: (15 × ₹32,286 × 9) / 26</div>
-                    <div className="font-bold text-accent-ink mt-1">= ₹1,67,639 (Exact to the rupee)</div>
+                    <div>• Eligible after 5 years of continuous service</div>
+                    <div>• Part year of 6 months or more rounds up</div>
+                    <div>• Formula: (15 × last Basic+DA × years) / 26</div>
+                    <div className="font-bold text-accent-ink mt-1">Capped at the statutory ceiling</div>
                   </div>
                 </Card>
 
@@ -973,7 +848,7 @@ export function SeparationBoardPage() {
                     <div>• Required Notice: 90 days (white collar)</div>
                     <div>• Shortfall days deducted at Basic/30 per day</div>
                     <div>• Automatically deducted from Gross F&F</div>
-                    <div className="font-bold text-negative mt-1">Recovery = (Basic / 30) × shortfall</div>
+                    <div className="font-bold text-negative-ink mt-1">Recovery = (Basic / 30) × shortfall</div>
                   </div>
                 </Card>
 
@@ -983,27 +858,54 @@ export function SeparationBoardPage() {
                     <div>• Mandated under Code on Wages §17(2)</div>
                     <div>• Excluding Sundays & gazetted holidays</div>
                     <div>• Real-time countdown timer & breach alert</div>
-                    <div className="font-bold text-positive mt-1">TAT SLA: ≤ 3 working days from LWD</div>
+                    <div className="font-bold text-positive-ink mt-1">TAT SLA: ≤ 3 working days from LWD</div>
                   </div>
                 </Card>
               </div>
 
-              {/* Action Trigger */}
-              <div className="flex items-center justify-between p-4 rounded-lg bg-surface-1 border border-line">
-                <div>
-                  <div className="font-medium text-ink">Compute Settlement for Arjun Das (RML035100)</div>
-                  <div className="text-xs text-ink-muted">Approved LWD: 2024-03-31 · Notice Shortfall: 60 days</div>
-                </div>
+              {/* Action Trigger: pick a real approved separation */}
+              <div className="grid gap-3 p-4 rounded-lg bg-surface-1 border border-line md:grid-cols-[2fr_1fr_1fr_1fr_auto] md:items-end">
+                <Select
+                  label="Approved separation"
+                  value={fnfSeparationId}
+                  onChange={(v) => {
+                    setFnfSeparationId(v);
+                  }}
+                  placeholder={fnfCandidates.length ? 'Choose an employee' : 'No approved separations'}
+                  options={fnfCandidates.map((c) => ({
+                    value: String(c.id),
+                    label: `${c.name} (${c.ecode}) · LWD ${c.approvedLwd ?? c.requestedLwd}`,
+                  }))}
+                />
+                <TextField
+                  label="Days payable (optional)"
+                  inputMode="numeric"
+                  value={fnfDaysPayable}
+                  onChange={(e) => { setFnfDaysPayable(e.target.value); }}
+                  placeholder="From attendance"
+                />
+                <TextField
+                  label="EL balance (optional)"
+                  inputMode="decimal"
+                  value={fnfElDays}
+                  onChange={(e) => { setFnfElDays(e.target.value); }}
+                  placeholder="From leave ledger"
+                />
+                <TextField
+                  label="TDS ₹ (optional)"
+                  inputMode="decimal"
+                  value={fnfTds}
+                  onChange={(e) => { setFnfTds(e.target.value); }}
+                />
                 <Button
                   variant="primary"
                   onClick={() => {
-                    if (separations[0]) {
-                      void handleComputeFnf(separations[0]);
-                    }
+                    const target = fnfCandidates.find((c) => String(c.id) === fnfSeparationId);
+                    if (target) void handleComputeFnf(target);
                   }}
-                  disabled={isComputingFnf}
+                  disabled={isComputingFnf || !fnfSeparationId}
                 >
-                  {isComputingFnf ? 'Computing…' : 'Compute & Preview Settlement'}
+                  {isComputingFnf ? 'Computing…' : 'Compute & preview'}
                 </Button>
               </div>
             </div>
@@ -1034,7 +936,7 @@ export function SeparationBoardPage() {
           <div className="p-3 rounded-lg bg-surface-2 text-xs space-y-1 border border-line">
             <div className="font-medium text-ink">Notice Period Policy Check:</div>
             <div>Standard Notice Period: 90 days</div>
-            <div className={estimatedShortfall > 0 ? 'text-negative font-bold' : 'text-positive'}>
+            <div className={estimatedShortfall > 0 ? 'text-negative-ink font-bold' : 'text-positive-ink'}>
               {estimatedShortfall > 0
                 ? `Notice Shortfall: ${String(estimatedShortfall)} days (will be recovered in F&F at Basic/30 rate)`
                 : 'Full 90 days notice satisfied without shortfall recovery.'}
@@ -1062,10 +964,10 @@ export function SeparationBoardPage() {
       >
         <div className="space-y-4">
           <TextField
-            label="Employee ID (from absence cases)"
+            label="Employee e-code"
             value={abscondingEmpId}
-            onChange={(e) => { setAbscondingEmpId(e.target.value); }}
-            placeholder="e.g. 302"
+            onChange={(e) => { setAbscondingEmpId(e.target.value.toUpperCase()); }}
+            placeholder="e.g. RML035384"
           />
           <TextField
             label="Effective Last Working Day"
@@ -1131,36 +1033,19 @@ export function SeparationBoardPage() {
           setSettledLetterResult(null);
         }}
         title="Full & Final (F&F) Settlement Statement"
-        subtitle="Detailed calculation breakdown, Golden G8 gratuity, statutory TAT, and Exit Day Cascade execution."
+        subtitle="Calculation breakdown, gratuity, statutory TAT and exit-day cascade."
       >
         {fnfBreakdown && (
           <div className="space-y-6">
             {/* Statutory TAT SLA Pill */}
             <div className="flex items-center justify-between p-3 rounded-lg bg-surface-2 border border-line">
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-positive" />
+                <Clock className="h-4 w-4 text-positive-ink" />
                 <span className="text-xs font-medium text-ink">Statutory 3-Working-Day SLA</span>
               </div>
-              <StatusBadge tone="positive">Within TAT · Due: {fnfBreakdown.tatDueDate}</StatusBadge>
-            </div>
-
-            {/* Configurable Parameters */}
-            <div className="grid grid-cols-3 gap-2">
-              <TextField
-                label="Days Payable"
-                value={fnfDaysPayable}
-                onChange={(e) => { setFnfDaysPayable(e.target.value); }}
-              />
-              <TextField
-                label="EL Balance Days"
-                value={fnfElDays}
-                onChange={(e) => { setFnfElDays(e.target.value); }}
-              />
-              <TextField
-                label="TDS (₹)"
-                value={fnfTds}
-                onChange={(e) => { setFnfTds(e.target.value); }}
-              />
+              <StatusBadge tone={fnfBreakdown.tatDueDate < new Date().toISOString().slice(0, 10) ? 'negative' : 'positive'}>
+                {fnfBreakdown.tatDueDate < new Date().toISOString().slice(0, 10) ? 'TAT breached' : 'Within TAT'} · Due: {fnfBreakdown.tatDueDate}
+              </StatusBadge>
             </div>
 
             {/* Earnings Breakdown */}
@@ -1170,15 +1055,15 @@ export function SeparationBoardPage() {
               </div>
               <div className="space-y-1.5 text-xs text-ink">
                 <div className="flex justify-between">
-                  <span>Prorated Salary ({fnfDaysPayable} days):</span>
+                  <span>Prorated Salary ({String(fnfBreakdown.daysPayable)} days):</span>
                   <span className="font-mono">₹{(fnfBreakdown.earnings.proratedSalaryPaise / 100).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Earned Leave (EL) Encashment ({fnfElDays}d × (Basic+DA)/30):</span>
+                  <span>Earned Leave (EL) encashment ((Basic+DA)/30 per day):</span>
                   <span className="font-mono">₹{(fnfBreakdown.earnings.leaveEncashmentPaise / 100).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between font-medium text-accent-ink">
-                  <span>Statutory Gratuity (Golden G8 - 9y service):</span>
+                  <span>Statutory gratuity ({fnfBreakdown.gratuityDetail.isEligible ? `${String(fnfBreakdown.gratuityDetail.completedYearsRounded)}y service` : 'not eligible'}):</span>
                   <span className="font-mono">₹{(fnfBreakdown.earnings.gratuityPaise / 100).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="text-xs text-ink-muted pl-2">
@@ -1197,17 +1082,17 @@ export function SeparationBoardPage() {
                 B. Recoveries & Deductions
               </div>
               <div className="space-y-1.5 text-xs text-ink">
-                <div className="flex justify-between text-negative">
+                <div className="flex justify-between text-negative-ink">
                   <span>Notice Shortfall Recovery (60d shortfall):</span>
                   <span className="font-mono">-₹{(fnfBreakdown.deductions.noticeRecoveryPaise / 100).toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between text-negative">
-                  <span>Unreturned Hardware (C18 / AST-04 Laptop):</span>
+                <div className="flex justify-between text-negative-ink">
+                  <span>Unreturned assets:</span>
                   <span className="font-mono">-₹{(fnfBreakdown.deductions.assetRecoveryPaise / 100).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between font-bold pt-1 border-t border-line">
                   <span>Total Deductions:</span>
-                  <span className="font-mono text-negative">
+                  <span className="font-mono text-negative-ink">
                     -₹{(fnfBreakdown.deductions.totalDeductionsPaise / 100).toLocaleString('en-IN')}
                   </span>
                 </div>
@@ -1228,7 +1113,7 @@ export function SeparationBoardPage() {
             {/* Post-Settlement Letters Issued Alert */}
             {settledLetterResult && (
               <div className="p-4 rounded-lg bg-surface-2 border border-positive space-y-2">
-                <div className="flex items-center gap-2 text-positive font-semibold text-sm">
+                <div className="flex items-center gap-2 text-positive-ink font-semibold text-sm">
                   <CheckCircle2 className="h-4 w-4" />
                   Exit Day Cascade Completed Successfully
                 </div>
@@ -1263,7 +1148,7 @@ export function SeparationBoardPage() {
                   className="w-full"
                   variant="primary"
                   onClick={() => { void handlePayAndExitCascade(); }}
-                  disabled={isSettlingFnf}
+                  disabled={isSettlingFnf || paymentRef.trim().length < 4}
                 >
                   {isSettlingFnf ? 'Settling & Executing Cascade…' : 'Disburse F&F & Execute Exit Day Cascade (LC-07)'}
                 </Button>
@@ -1271,6 +1156,100 @@ export function SeparationBoardPage() {
             )}
           </div>
         )}
+      </Drawer>
+
+      <Drawer
+        open={flagTarget !== null}
+        onClose={() => {
+          setFlagTarget(null);
+        }}
+        title="Flag unreturned assets"
+        subtitle={selectedSeparation ? `${selectedSeparation.name} (${selectedSeparation.ecode})` : ''}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setFlagTarget(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              disabled={flagInvalid}
+              onClick={() => {
+                if (!flagTarget) return;
+                const target = flagTarget;
+                void handleUpdateClearanceStatus(target, 'flagged').then(() => {
+                  setFlagTarget(null);
+                });
+              }}
+            >
+              Flag {flagSelectionCount > 0 ? `${String(flagSelectionCount)} asset(s)` : 'assets'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 text-sm">
+          <p className="text-ink-muted">
+            Pick each asset the employee has not returned and enter the amount to recover. The total is
+            deducted in the F&amp;F settlement.
+          </p>
+          {heldLoading && <p className="text-ink-muted">Loading assets…</p>}
+          {!heldLoading && heldAssets.length === 0 && (
+            <EmptyState
+              title="No assets on record"
+              description="This employee holds no assigned assets, so there is nothing to flag. Clear the IT clearance instead."
+            />
+          )}
+          {heldAssets.map((a) => {
+            const checked = flagRecovery[a.assignmentId] !== undefined;
+            return (
+              <div key={a.assignmentId} className="rounded-md border border-line p-3">
+                <label className="flex items-center gap-2 font-medium text-ink">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => {
+                      const on = e.target.checked;
+                      setFlagRecovery((prev) =>
+                        on
+                          ? { ...prev, [a.assignmentId]: '' }
+                          : Object.fromEntries(
+                              Object.entries(prev).filter(([k]) => k !== String(a.assignmentId))
+                            )
+                      );
+                    }}
+                  />
+                  <span className="font-mono">{a.assetNo}</span>
+                  <span className="text-ink-muted">· {a.category}</span>
+                </label>
+                {checked && (
+                  <div className="mt-2">
+                    <TextField
+                      label="Recovery amount (₹)"
+                      inputMode="decimal"
+                      value={flagRecovery[a.assignmentId] ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setFlagRecovery((prev) => ({ ...prev, [a.assignmentId]: v }));
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <Textarea
+            label="Remarks (required)"
+            value={flagRemarks}
+            onChange={(e) => {
+              setFlagRemarks(e.target.value);
+            }}
+            placeholder="e.g. Laptop not returned at exit interview"
+          />
+        </div>
       </Drawer>
     </div>
   );

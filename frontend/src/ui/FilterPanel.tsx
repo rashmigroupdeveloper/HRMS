@@ -101,7 +101,7 @@ export function FilterSection({
         <ChevronDown
           aria-hidden
           className={cn(
-            'size-4 text-ink-faint transition-transform duration-[var(--motion-micro)] ease-[var(--ease-out-strong)]',
+            'size-4 text-ink-subtle transition-transform duration-[var(--motion-micro)] ease-[var(--ease-out-strong)]',
             open && 'rotate-180',
           )}
         />

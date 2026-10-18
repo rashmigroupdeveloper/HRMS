@@ -8,6 +8,9 @@
  *
  * Run: npm run worker
  */
+import { registerLoansWorkflowHooks } from '../modules/loans/index.js';
+import { registerTravelWorkflowHooks } from '../modules/travel/index.js';
+import { registerLifecycleWorkflowHooks } from '../modules/lifecycle/index.js';
 import 'dotenv/config';
 import { PgBoss } from 'pg-boss';
 import { loadEnv } from '../core/config/env.js';
@@ -61,6 +64,9 @@ async function main(): Promise<void> {
   registerAttendanceWorkflowHooks();
   registerLeaveWorkflowHooks();
   registerLettersWorkflowHooks();
+  registerLifecycleWorkflowHooks();
+  registerTravelWorkflowHooks();
+  registerLoansWorkflowHooks();
 
   const boss = new PgBoss({ connectionString: env.DATABASE_URL });
   boss.on('error', (err: Error) => {

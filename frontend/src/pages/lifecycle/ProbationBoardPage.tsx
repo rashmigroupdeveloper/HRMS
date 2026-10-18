@@ -122,58 +122,9 @@ export function ProbationBoardPage() {
     try {
       const rRes = await apiFetch<{ reviews: ProbationReviewItem[] }>('/api/lifecycle/probation/reviews');
       setReviews(rRes.reviews);
-    } catch {
-      // Mock data fallback in dev
-      setReviews([
-        {
-          id: 1001,
-          employeeId: 45,
-          ecode: 'RML035384',
-          name: 'Sunil Kumar Soren',
-          department: 'Blast Furnace & Production',
-          designation: 'Graduate Engineer Trainee',
-          doj: '2026-05-01',
-          dueDate: '2026-11-01',
-          managerRecommendation: 'confirm',
-          extensionMonths: null,
-          reviewNotes: 'Consistent attendance, completed technical training on time.',
-          status: 'under_review',
-          outcome: null,
-          confirmationDate: null,
-        },
-        {
-          id: 1002,
-          employeeId: 46,
-          ecode: 'RML035385',
-          name: 'Priyanka Mukherjee',
-          department: 'Quality Assurance',
-          designation: 'Chemist',
-          doj: '2026-05-15',
-          dueDate: '2026-11-15',
-          managerRecommendation: null,
-          extensionMonths: null,
-          reviewNotes: null,
-          status: 'pending',
-          outcome: null,
-          confirmationDate: null,
-        },
-        {
-          id: 1003,
-          employeeId: 47,
-          ecode: 'RCL012940',
-          name: 'Bikash Das',
-          department: 'Maintenance',
-          designation: 'Mechanical Fitter',
-          doj: '2026-04-01',
-          dueDate: '2026-10-01',
-          managerRecommendation: 'confirm',
-          extensionMonths: null,
-          reviewNotes: 'Confirmed permanently.',
-          status: 'completed',
-          outcome: 'confirmed',
-          confirmationDate: '2026-10-01',
-        },
-      ]);
+    } catch (e: unknown) {
+      // No sample data: show the real failure.
+      toast.error(e instanceof Error ? e.message : 'Could not load data. Please retry.');
     }
 
     try {
@@ -319,7 +270,7 @@ export function ProbationBoardPage() {
       header: 'Manager Recommendation',
       render: (r) => {
         if (!r.managerRecommendation) {
-          return <span className="text-xs text-ink-faint italic">Pending submission</span>;
+          return <span className="text-xs text-ink-subtle italic">Pending submission</span>;
         }
         if (r.managerRecommendation === 'confirm') {
           return <StatusBadge tone="positive">Confirm (Permanent)</StatusBadge>;
@@ -404,12 +355,12 @@ export function ProbationBoardPage() {
           </div>
         </Card>
 
-        <Card className="border border-amber-300 bg-amber-50/50 p-4">
+        <Card className="bg-[color-mix(in_srgb,var(--warning)_14%,var(--surface))] p-4">
           <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600" />
+            <AlertTriangle className="h-5 w-5 text-warning-ink" />
             <div>
-              <p className="text-xs uppercase tracking-wider text-amber-800">Due in 14 Days (Urgent)</p>
-              <p className="text-2xl font-light text-amber-900">{alerts.d14.length} Employees</p>
+              <p className="text-xs uppercase tracking-wider text-warning-ink">Due in 14 Days (Urgent)</p>
+              <p className="text-2xl font-light text-ink">{alerts.d14.length} Employees</p>
             </div>
           </div>
         </Card>

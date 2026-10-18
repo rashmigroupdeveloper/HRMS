@@ -141,7 +141,7 @@ export function EngagementPage({ user }: { user?: SessionUser }) {
         description="Targeted announcements, cryptographic anonymous pulse polls, and structured workplace surveys."
         actions={
           <div className="flex items-center gap-2">
-            <div className="flex rounded-full bg-surface-2 p-1">
+            <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
               <Button
                 size="sm"
                 variant={tab === 'announcements' ? 'hero' : 'ghost'}
@@ -338,7 +338,7 @@ function AnnouncementsTab({
                   </div>
                 )}
               </div>
-              <div className="mt-5 flex items-center justify-between border-t border-line pt-3 text-xs text-ink-faint">
+              <div className="mt-5 flex items-center justify-between border-t border-line pt-3 text-xs text-ink-subtle">
                 <span>By {item.publishedByEmail ?? 'System'}</span>
                 {canPublish && item.isActive && (
                   <Button
@@ -481,7 +481,7 @@ function PublishAnnouncementDrawer({
             })}
           </div>
         </div>
-        {error && <p className="text-xs text-negative">{error}</p>}
+        {error && <p className="text-xs text-negative-ink">{error}</p>}
       </div>
     </Drawer>
   );
@@ -668,7 +668,7 @@ function PollsTab({
                   </div>
                 ) : (
                   <div className="mt-4 rounded-row bg-surface-2 p-4 text-center">
-                    <CheckCircle2 className="mx-auto size-6 text-positive" />
+                    <CheckCircle2 className="mx-auto size-6 text-positive-ink" />
                     <p className="mt-1 text-sm font-semibold text-ink">You have answered this poll</p>
                     <p className="text-xs text-ink-muted">
                       Your response has been safely sealed and factored into the aggregate tally.
@@ -758,7 +758,7 @@ function PollsTab({
                   {activeResult.comments.map((c, i) => (
                     <div key={i} className="rounded-row bg-surface-2 p-3 text-xs">
                       <p className="text-ink">{c.comment}</p>
-                      <p className="mt-1 text-ink-faint">
+                      <p className="mt-1 text-ink-subtle">
                         {c.byEmail ? `By ${c.byEmail}` : 'Anonymous respondent'}
                       </p>
                     </div>
@@ -920,7 +920,7 @@ function CreatePollDrawer({
           )}
         </div>
 
-        {error && <p className="text-xs text-negative">{error}</p>}
+        {error && <p className="text-xs text-negative-ink">{error}</p>}
       </div>
     </Drawer>
   );
@@ -1462,7 +1462,7 @@ function CreateSurveyDrawer({
           ))}
         </div>
 
-        {error && <p className="text-xs text-negative">{error}</p>}
+        {error && <p className="text-xs text-negative-ink">{error}</p>}
       </div>
     </Drawer>
   );

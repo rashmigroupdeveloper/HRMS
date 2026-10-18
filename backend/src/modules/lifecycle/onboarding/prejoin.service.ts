@@ -12,6 +12,7 @@ import type { Kysely } from 'kysely';
 import { writeAudit } from '../../../core/audit/audit.service.js';
 import { PrejoinSubmissionSchema } from './prejoin-schema.js';
 import type { Database } from '../../../core/db/types.js';
+import { inTransaction } from '../../../core/db/database.js';
 
 export class PrejoinInputError extends Error {}
 export class PrejoinConfigurationError extends Error {}
@@ -154,6 +155,6 @@ export const PrejoinService = {
       });
       return { success: true, candidateId: candidate.id };
     };
-    return db.isTransaction ? submit(db) : db.transaction().execute(submit);
+    return db.isTransaction ? submit(db) : inTransaction(db, submit);
   },
 };

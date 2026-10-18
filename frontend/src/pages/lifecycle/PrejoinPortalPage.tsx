@@ -175,10 +175,10 @@ export function PrejoinPortalPage() {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-surface-1 p-6">
         <Card className="max-w-md p-8 text-center space-y-4">
-          <AlertCircle className="mx-auto h-12 w-12 text-warning" />
+          <AlertCircle className="mx-auto h-12 w-12 text-warning-ink" />
           <h2 className="text-xl font-light text-ink">Pre-join Link Invalid</h2>
           <p className="text-sm text-ink-muted leading-relaxed">{tokenError}</p>
-          <p className="text-xs text-ink-faint">
+          <p className="text-xs text-ink-subtle">
             Please contact Rashmi Group HR Operations to request a new pre-joining link.
           </p>
         </Card>
@@ -190,7 +190,7 @@ export function PrejoinPortalPage() {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-surface-1 p-6">
         <Card className="max-w-md p-8 text-center space-y-4 border-line">
-          <CheckCircle2 className="mx-auto h-12 w-12 text-positive" />
+          <CheckCircle2 className="mx-auto h-12 w-12 text-positive-ink" />
           <h2 className="text-2xl font-light text-ink">Details Submitted!</h2>
           <p className="text-sm text-ink-muted leading-relaxed">
             Thank you, {candidateInfo?.candidateName ?? 'Candidate'}. Your statutory, contact, and
@@ -241,7 +241,7 @@ export function PrejoinPortalPage() {
         {error && (
           <Card className="border-line bg-surface-2 p-4">
             <div className="flex items-center gap-3 text-ink text-sm">
-              <AlertCircle className="h-5 w-5 text-warning shrink-0" />
+              <AlertCircle className="h-5 w-5 text-warning-ink shrink-0" />
               <span>{error}</span>
             </div>
           </Card>
@@ -384,7 +384,7 @@ export function PrejoinPortalPage() {
           </Card>
 
           <div className="flex items-center justify-between pt-4">
-            <div className="flex items-center gap-2 text-xs text-ink-faint">
+            <div className="flex items-center gap-2 text-xs text-ink-subtle">
               <Lock className="h-4 w-4" />
               <span>Personal details are collected for HR review.</span>
             </div>

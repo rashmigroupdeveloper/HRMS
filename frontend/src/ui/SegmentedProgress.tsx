@@ -47,7 +47,7 @@ export function SegmentedProgress({
             className="text-sm tabular-nums text-ink-muted"
           >
             {fmt(primary + secondary, locale, prefix)}
-            <span className="text-ink-faint">
+            <span className="text-ink-subtle">
               {' / '}
               {fmt(denom, locale, prefix)}
             </span>

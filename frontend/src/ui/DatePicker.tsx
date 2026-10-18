@@ -41,9 +41,9 @@ interface DatePickerProps {
 const TRIGGER_BASE =
   'flex h-11 w-full items-center gap-2.5 rounded-row bg-surface-2 px-3.5 text-left text-sm ' +
   'outline-none transition-[box-shadow,background-color] duration-[var(--motion-micro)] ease-[var(--ease-std)] ' +
-  'ring-1 ring-inset ring-transparent ' +
+  'ring-1 ring-inset ring-line-strong ' +
   'hover:bg-[color-mix(in_srgb,var(--ink)_4%,var(--surface-2))] ' +
-  'focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-accent ' +
+  'focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-focus ' +
   'disabled:cursor-not-allowed disabled:opacity-50';
 
 const TRIGGER_ERROR =
@@ -182,7 +182,7 @@ export function DatePicker({
       >
         {label}
         {required && (
-          <span className="ml-0.5 text-negative" aria-hidden>
+          <span className="ml-0.5 text-negative-ink" aria-hidden>
             *
           </span>
         )}
@@ -202,8 +202,8 @@ export function DatePicker({
           }}
           className={cn(TRIGGER_BASE, error && TRIGGER_ERROR)}
         >
-          <CalendarDays aria-hidden className="size-[1.1rem] shrink-0 text-ink-faint" />
-          <span className={value !== null ? 'text-ink' : 'text-ink-faint'}>
+          <CalendarDays aria-hidden className="size-[1.1rem] shrink-0 text-ink-subtle" />
+          <span className={value !== null ? 'text-ink' : 'text-ink-subtle'}>
             {value !== null ? formatDateIN(value) : placeholder}
           </span>
         </button>
@@ -245,7 +245,7 @@ export function DatePicker({
               {WEEKDAYS_MIN.map((wd) => (
                 <span
                   key={wd}
-                  className="grid h-7 place-items-center text-[11px] font-medium text-ink-faint"
+                  className="grid h-7 place-items-center text-[11px] font-medium text-ink-subtle"
                 >
                   {wd}
                 </span>
@@ -278,7 +278,7 @@ export function DatePicker({
                     className={cn(
                       'u-press grid h-9 place-items-center rounded-[10px] text-sm tabular-nums',
                       'transition-colors duration-[var(--motion-micro)] ease-[var(--ease-std)]',
-                      cell.inMonth ? 'text-ink' : 'text-ink-faint',
+                      cell.inMonth ? 'text-ink' : 'text-ink-subtle',
                       isSelected ? 'bg-accent font-semibold text-accent-ink' : 'hover:bg-surface-2',
                       isToday && !isSelected && 'ring-1 ring-inset ring-line-strong',
                       blocked && 'pointer-events-none opacity-35',
@@ -294,7 +294,7 @@ export function DatePicker({
       </div>
 
       {error ? (
-        <p id={`${id}-error`} role="alert" className="mt-1.5 text-xs font-medium text-negative">
+        <p id={`${id}-error`} role="alert" className="mt-1.5 text-xs font-medium text-negative-ink">
           {error}
         </p>
       ) : (

@@ -53,6 +53,9 @@ export type { Column } from './DataTable';
 export { Drawer } from './Drawer';
 export { ConfirmModal } from './ConfirmModal';
 export { EmptyState } from './EmptyState';
+export { QuickLinks } from './QuickLinks';
+export { ReceiptCapture } from './ReceiptCapture';
+export type { QuickLink } from './QuickLinks';
 export { Timeline } from './Timeline';
 export type { TimelineStep, TimelineState } from './Timeline';
 

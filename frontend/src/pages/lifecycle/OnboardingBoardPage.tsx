@@ -281,7 +281,7 @@ export function OnboardingBoardPage() {
         }
       />
 
-      {candidateError && <div role="alert" className="space-y-2"><p className="text-sm text-negative">{candidateError}</p><Button variant="secondary" onClick={()=>{void loadData();}}>Retry onboarding data</Button></div>}
+      {candidateError && <div role="alert" className="space-y-2"><p className="text-sm text-negative-ink">{candidateError}</p><Button variant="secondary" onClick={()=>{void loadData();}}>Retry onboarding data</Button></div>}
       {/* Quick KPI stats row */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card className="p-5">
@@ -290,7 +290,7 @@ export function OnboardingBoardPage() {
         </Card>
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-ink-muted">Pre-join Completed</p>
-          <p className="mt-2 text-3xl font-light text-positive">
+          <p className="mt-2 text-3xl font-light text-positive-ink">
             {candidateError ? '—' : candidates.filter((c) => c.status === 'prejoin_done').length}
           </p>
         </Card>
@@ -302,7 +302,7 @@ export function OnboardingBoardPage() {
         </Card>
         <Card className="p-5">
           <p className="text-xs uppercase tracking-wider text-ink-muted">Open IT/Admin Tasks</p>
-          <p className="mt-2 text-3xl font-light text-warning">
+          <p className="mt-2 text-3xl font-light text-warning-ink">
             {taskError ? '—' : tasks.filter((t) => t.status === 'open' || t.status === 'escalated').length}
           </p>
         </Card>
@@ -340,9 +340,9 @@ export function OnboardingBoardPage() {
         <Card className={`p-4 border ${dupResult.isDup ? 'border-line bg-surface-2' : 'border-line bg-surface-2'}`}>
           <div className="flex items-center gap-3">
             {dupResult.isDup ? (
-              <ShieldAlert className="h-5 w-5 text-warning" />
+              <ShieldAlert className="h-5 w-5 text-warning-ink" />
             ) : (
-              <ShieldCheck className="h-5 w-5 text-positive" />
+              <ShieldCheck className="h-5 w-5 text-positive-ink" />
             )}
             <p className={`text-sm ${dupResult.isDup ? 'text-ink' : 'text-ink'}`}>
               {dupResult.detail}

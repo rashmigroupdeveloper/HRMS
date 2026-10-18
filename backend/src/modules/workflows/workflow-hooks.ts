@@ -40,6 +40,10 @@ export async function fireFinalHooks(db: Db, requestId: number, status: Workflow
 export const DOMAIN_RESERVED_DEFINITIONS = new Set([
   'leave', 'leave_cancel', 'leave_encashment', 'comp_off', 'restricted_holiday',
   'regularization', 'od', 'overtime',
+  // Domain-owned chains: their requests are only created by the owning module,
+  // so a final approval always has a real domain row behind it.
+  'loan', 'resignation', 'confirmation', 'transfer', 'claim', 'travel_advance_domestic',
+  'travel_claim', 'letter_signature', 'offer_approval', 'requisition_approval',
 ]);
 type ResubmitHook = (db: Db, request: RequestRow, payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
 const resubmitHooks = new Map<string, ResubmitHook>();

@@ -5,6 +5,9 @@
  * archives to core.documents via StorageAdapter, and updates payslip_document_id.
  */
 
+import { inTransaction } from '../../../core/db/database.js';
+import { ConflictError, NotFoundError } from '../../../core/errors/index.js';
+import { writeAudit } from '../../../core/audit/audit.service.js';
 import type { Kysely } from 'kysely';
 import type { Database } from '../../../core/db/types.js';
 import { createDocument } from '../../../core/storage/index.js';
@@ -285,21 +288,30 @@ export class PayslipGeneratorService {
     const html = renderPayslipHtml(data);
     const pdfBuffer = renderPayslipPdf(data);
 
-    const docId = await createDocument(this.db, {
-      ownerEmployeeId: employeeId,
-      kind: 'payslip',
-      originalName: `payslip-${data.monthStr}-${data.employee.ecode}.pdf`,
-      mime: 'application/pdf',
-      content: pdfBuffer,
-      uploadedBy: actorUserId ?? null,
+    // P-09: the document row and the item link commit together (no orphans);
+    // the immutability trigger allows exactly this one post-finalize link.
+    const docId = await inTransaction(this.db, async (trx) => {
+      const id = await createDocument(trx, {
+        ownerEmployeeId: employeeId,
+        kind: 'payslip',
+        originalName: `payslip-${data.monthStr}-${data.employee.ecode}.pdf`,
+        mime: 'application/pdf',
+        content: pdfBuffer,
+        uploadedBy: actorUserId ?? null,
+      });
+      const linked = await trx
+        .updateTable('pay.payroll_items')
+        .set({ payslip_document_id: id })
+        .where('run_id', '=', runId)
+        .where('employee_id', '=', employeeId)
+        .where('payslip_document_id', 'is', null)
+        .executeTakeFirst();
+      if (Number(linked.numUpdatedRows) !== 1) throw new ConflictError('This payslip is already archived');
+      if (actorUserId !== undefined) {
+        await writeAudit(trx, { actorUserId, action: 'create', entity: 'core.documents', entityId: id, newValue: `payslip run ${String(runId)} employee ${String(employeeId)}` });
+      }
+      return id;
     });
-
-    await this.db
-      .updateTable('pay.payroll_items')
-      .set({ payslip_document_id: docId })
-      .where('run_id', '=', runId)
-      .where('employee_id', '=', employeeId)
-      .execute();
 
     return {
       payslipData: data,
@@ -319,10 +331,16 @@ export class PayslipGeneratorService {
     totalItems: number;
     generatedCount: number;
   }> {
+    const run = await this.db.selectFrom('pay.payroll_runs').select('status').where('id', '=', runId).executeTakeFirst();
+    if (!run) throw new NotFoundError(`Payroll run #${String(runId)} not found`);
+    if (run.status !== 'finalized' && run.status !== 'paid') throw new ConflictError('Payslips are archived only after the run is finalized');
+    // Idempotent: already-archived payslips are skipped.
     const items = await this.db
       .selectFrom('pay.payroll_items')
       .select(['employee_id'])
       .where('run_id', '=', runId)
+      .where('payslip_document_id', 'is', null)
+      .where('payment_status', '!=', 'hold_process')
       .execute();
 
     let generatedCount = 0;

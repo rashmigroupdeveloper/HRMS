@@ -29,6 +29,7 @@ import { PrejoinService, PrejoinConfigurationError } from './prejoin.service.js'
 import { lockOnboardingIdentities } from './onboarding-locks.js';
 import { readCompletedApplication, validateJoiningAssignments } from './joining-validation.js';
 import { TaskFanoutService } from './task-fanout.service.js';
+import { inTransaction } from '../../../core/db/database.js';
 
 export interface IngestCandidateInput {
   atsCandidateId?: number | null | undefined;
@@ -418,6 +419,6 @@ export const OnboardingService = {
     });
     return { employeeId, ecode };
     };
-    return db.isTransaction ? convert(db) : db.transaction().execute(convert);
+    return db.isTransaction ? convert(db) : inTransaction(db, convert);
   },
 };

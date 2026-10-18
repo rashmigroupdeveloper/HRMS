@@ -60,7 +60,7 @@ export function RecruitmentPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         {ALREADY_TRUE.map((item) => (
           <Card key={item.title}>
-            <item.icon className="size-5 text-ink-faint" />
+            <item.icon className="size-5 text-ink-subtle" />
             <p className="mt-3 text-sm font-semibold text-ink">{item.title}</p>
             <p className="mt-1 text-sm leading-6 text-ink-muted">{item.body}</p>
           </Card>

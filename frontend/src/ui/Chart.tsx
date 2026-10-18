@@ -94,7 +94,9 @@ export function TrendChart({
     );
   }
 
-  const all = points.flatMap((p) => [p.value, p.compare ?? null]).filter((v): v is number => v !== null);
+  const all = points
+    .flatMap((p) => [p.value, p.compare ?? null])
+    .filter((v): v is number => v !== null);
   const max = axisMax(all);
   const W = 100;
   const H = 100;
@@ -117,6 +119,25 @@ export function TrendChart({
       }, [])
       .filter((s) => s !== '')
       .join(' ');
+
+  /** Closed area under the first contiguous run of the subject line. */
+  const areaFor = (): string => {
+    const all = coords('value');
+    const start = all.findIndex((c) => c !== null);
+    const stop = all.findIndex((c, i) => i > start && c === null);
+    const run = all
+      .slice(start, stop === -1 ? undefined : stop)
+      .filter((c): c is NonNullable<typeof c> => c !== null);
+    const first = run[0];
+    const last = run.at(-1);
+    if (first === undefined || last === undefined || run.length < 2) return '';
+    const line = run
+      .map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(2)} ${c.y.toFixed(2)}`)
+      .join(' ');
+    return `${line} L${last.x.toFixed(2)} ${String(H)} L${first.x.toFixed(2)} ${String(H)} Z`;
+  };
+
+  const solo = measured.length === 1 ? (measured[0]?.value ?? null) : null;
 
   const hasCompare = points.some((p) => p.compare !== null && p.compare !== undefined);
   const activePoint = active === null ? undefined : points[active];
@@ -141,7 +162,7 @@ export function TrendChart({
         )}
       </div>
 
-      <div className="relative">
+      <div className="relative" role="group" aria-label={summary}>
         <svg
           viewBox={`0 0 ${String(W)} ${String(H)}`}
           preserveAspectRatio="none"
@@ -151,9 +172,15 @@ export function TrendChart({
           // image may not contain interactive descendants (axe:
           // nested-interactive). A group keeps the summary label while still
           // letting a keyboard user step through the data (§7).
-          role="group"
-          aria-label={summary}
+          aria-hidden
+          focusable="false"
         >
+          <defs>
+            <linearGradient id={`${id}-wash`} x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.28" />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
           {/* Low-contrast gridlines (§7 `gridline-subtle`). */}
           {[0, 0.25, 0.5, 0.75, 1].map((t) => (
             <line
@@ -179,6 +206,8 @@ export function TrendChart({
               strokeLinecap="round"
             />
           )}
+          {/* Soft gold wash under the subject line — area, not a second hue. */}
+          {measured.length > 1 && <path d={areaFor()} fill={`url(#${id}-wash)`} stroke="none" />}
           <path
             d={pathFor('value')}
             fill="none"
@@ -188,40 +217,54 @@ export function TrendChart({
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-
-          {/* Every point is a keyboard stop (§7 — tooltips keyboard-reachable). */}
-          {coords('value').map((c) =>
-            c === null ? null : (
-              <circle
-                key={c.i}
-                cx={c.x}
-                cy={c.y}
-                r={active === c.i ? 3 : 2}
-                fill="var(--accent)"
-                stroke="var(--surface)"
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
-                tabIndex={0}
-                role="button"
-                aria-label={`${points[c.i]?.label ?? ''}: ${formatValue(c.raw, unit, precision)}`}
-                aria-describedby={`${id}-tip`}
-                onMouseEnter={() => {
-                  setActive(c.i);
-                }}
-                onMouseLeave={() => {
-                  setActive(null);
-                }}
-                onFocus={() => {
-                  setActive(c.i);
-                }}
-                onBlur={() => {
-                  setActive(null);
-                }}
-                className="cursor-pointer outline-none focus-visible:stroke-[var(--ink)]"
-              />
-            ),
-          )}
         </svg>
+
+        {/* Points are HTML, not SVG circles: the plot stretches
+            (preserveAspectRatio="none") and circles would smear into dashes.
+            Every point is a keyboard stop (§7 — tooltips keyboard-reachable). */}
+        {coords('value').map((c) =>
+          c === null ? null : (
+            <button
+              key={c.i}
+              type="button"
+              data-point
+              aria-label={`${points[c.i]?.label ?? ''}: ${formatValue(c.raw, unit, precision)}`}
+              aria-describedby={`${id}-tip`}
+              onMouseEnter={() => {
+                setActive(c.i);
+              }}
+              onMouseLeave={() => {
+                setActive(null);
+              }}
+              onFocus={() => {
+                setActive(c.i);
+              }}
+              onBlur={() => {
+                setActive(null);
+              }}
+              style={{ left: `${String(c.x)}%`, top: `${String(c.y)}%` }}
+              className="group absolute -ml-3 -mt-3 grid size-6 cursor-pointer place-items-center rounded-full"
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  'block rounded-full bg-accent ring-2 ring-surface transition-transform duration-[var(--motion-micro)] ease-[var(--ease-out)]',
+                  measured.length === 1 ? 'size-3' : 'size-2',
+                  active === c.i && 'scale-150',
+                )}
+              />
+            </button>
+          ),
+        )}
+        {solo !== null && (
+          <p
+            className="pointer-events-none absolute right-0 text-sm font-semibold tabular-nums text-ink"
+            style={{ top: `calc(${String(H - (solo / max) * H)}% + 10px)` }}
+          >
+            {formatValue(solo, unit, precision)}
+            <span className="ml-1 font-normal text-ink-muted">· first month on record</span>
+          </p>
+        )}
 
         {/* Tooltip shows EXACT values (§7 `direct-labeling`). */}
         <div
@@ -297,7 +340,10 @@ export function BarChart({
         {points.map((p) => {
           const pct = p.value === null ? 0 : (p.value / max) * 100;
           return (
-            <li key={p.label} className="grid grid-cols-[minmax(90px,auto)_1fr_auto] items-center gap-3">
+            <li
+              key={p.label}
+              className="grid grid-cols-[minmax(90px,auto)_1fr_auto] items-center gap-3"
+            >
               <span className="truncate text-xs text-ink-muted">{p.label}</span>
               <span
                 className="h-2.5 rounded-full bg-surface-2"

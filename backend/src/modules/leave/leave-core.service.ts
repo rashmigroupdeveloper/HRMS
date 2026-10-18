@@ -85,7 +85,7 @@ export async function runMonthlyAccrual(db: Kysely<Database>, monthStartIso?: st
         OR (e.doj IS NOT NULL
             AND e.doj + make_interval(months => t.accrual_requires_service_months) <= ${monthStart}::date)
       )
-      AND (t.applicable_gender IS NULL OR e.gender = t.applicable_gender)
+      AND (t.applicable_gender IS NULL OR upper(left(trim(e.gender), 1)) = upper(left(trim(t.applicable_gender), 1)))
       AND (t.applicable_categories IS NULL OR e.category = ANY (t.applicable_categories))
     ON CONFLICT (employee_id, leave_type_id, effective_date) WHERE txn_type = 'accrual' DO NOTHING
     RETURNING id

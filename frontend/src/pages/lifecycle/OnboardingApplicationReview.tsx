@@ -39,7 +39,7 @@ export function OnboardingApplicationReview({
   if (resource.error)
     return (
       <div role="alert" className="space-y-2">
-        <p className="text-sm text-negative">Application could not be loaded: {resource.error}</p>
+        <p className="text-sm text-negative-ink">Application could not be loaded: {resource.error}</p>
         <Button variant="secondary" onClick={resource.reload}>
           Retry application
         </Button>

@@ -341,7 +341,7 @@ function SettingEditor({
           />
 
           {error !== null && (
-            <p className="text-sm text-negative" role="alert">
+            <p className="text-sm text-negative-ink" role="alert">
               {error}
             </p>
           )}

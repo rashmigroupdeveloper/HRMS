@@ -113,7 +113,7 @@ function OnLeaveThisWeekStrip({
             >
               <Link
                 to={`/people/${member.ecode}`}
-                className="min-w-0 rounded-row text-sm font-semibold text-ink outline-none hover:underline focus-visible:ring-2 focus-visible:ring-accent"
+                className="min-w-0 rounded-row text-sm font-semibold text-ink outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus"
               >
                 {member.name}
               </Link>
@@ -133,14 +133,14 @@ function statusStyle(status: string | undefined): string {
   if (status === 'A' || status === 'UAB') return 'bg-negative text-surface';
   if (status === 'L') return 'bg-info text-surface';
   if (status === 'H' || status === 'WO') return 'u-hatch bg-surface-2 text-ink-muted';
-  return 'bg-surface-2 text-ink-faint';
+  return 'bg-surface-2 text-ink-subtle';
 }
 
 function EmployeeLink({ ecode, name }: { ecode: string; name: string }) {
   return (
     <Link
       to={`/people/${ecode}`}
-      className="block min-w-0 rounded-row outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className="block min-w-0 rounded-row outline-none focus-visible:ring-2 focus-visible:ring-focus"
     >
       <p className="truncate text-sm font-semibold text-ink">{name}</p>
       <p className="text-xs text-ink-muted">{ecode}</p>
@@ -400,7 +400,7 @@ export function TeamPage({ user }: { user: SessionUser }) {
                 }}
               />
             )}
-            <div className="flex rounded-full bg-surface-2 p-1">
+            <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
               <Button
                 size="sm"
                 variant={tab === 'attendance' ? 'hero' : 'ghost'}

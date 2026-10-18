@@ -18,6 +18,7 @@ import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import type { Database, WfRequestsTable, WfRequestStepsTable } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { logger } from '../../core/logger.js';
+import { ForbiddenError } from '../../core/errors/index.js';
 import { enqueue } from '../notifications/index.js';
 import { workflowPermissionSql, workflowRoleSql } from './workflow-access.js';
 import { resolveApprover, canActOnStep, type ResolvedApprover } from './workflow-approvers.js';
@@ -28,6 +29,7 @@ import { expireRoutingHolds } from './workflow-holds.service.js';
 export { stepsSchema } from './workflow-definition.js';
 export type { StepSpec } from './workflow-definition.js';
 import { fireFinalHooks, prepareResubmission } from './workflow-hooks.js';
+import { inTransaction } from '../../core/db/database.js';
 export { onWorkflowFinal, clearWorkflowFinalHooks, onWorkflowResubmit } from './workflow-hooks.js';
 export type { WorkflowFinalStatus } from './workflow-hooks.js';
 
@@ -45,7 +47,7 @@ export async function createRequest(
 ): Promise<number> {
   await getSteps(db, params.definitionCode); // validate existence + shape before opening a tx
 
-  return db.transaction().execute(async (trx) => {
+  return inTransaction(db, async (trx) => {
     await lockWorkflowSubject(trx, params.subjectEmployeeId);
     const request = await trx
       .insertInto('wf.requests')
@@ -72,7 +74,7 @@ export async function act(
   if (params.action !== 'approve' && !params.comment?.trim()) {
     throw new Error('A decision reason is required when rejecting or sending back');
   }
-  return db.transaction().execute(async (trx) => {
+  return inTransaction(db, async (trx) => {
     const request = await lockWorkflowRequest(trx, params.requestId);
     if (request.status !== 'pending') throw new Error(`Request is ${request.status}, not actionable`);
 
@@ -87,6 +89,12 @@ export async function act(
       .forUpdate()
       .executeTakeFirst();
     if (!step) throw new Error('No pending step');
+    // C-07 / B-03: segregation of duties — nobody decides a request about
+    // themselves, whatever route (delegation, role queue) put it in front of them.
+    const actor = await trx.selectFrom('core.users').select('employee_id').where('id', '=', params.actorUserId).executeTakeFirst();
+    if (actor?.employee_id !== null && actor?.employee_id === request.subject_employee_id) {
+      throw new ForbiddenError('You cannot approve or reject your own request');
+    }
     if (!(await canActOnStep(trx, step, params.actorUserId, request))) {
       throw new Error('Not the current approver'); // routers map this to FORBIDDEN
     }
@@ -132,12 +140,42 @@ export async function act(
   });
 }
 
+/** Requester withdrawal (or domain cancellation) of a request that has not
+ *  reached a final decision. Closes the open step so it leaves every inbox. */
+export async function cancelRequest(
+  db: Db,
+  params: { requestId: number; actorUserId: number; reason: string },
+): Promise<void> {
+  const request = await lockWorkflowRequest(db, params.requestId);
+  if (request.status !== 'pending' && request.status !== 'sent_back') {
+    throw new Error(`Request is ${request.status}, it can no longer be withdrawn`);
+  }
+  await db
+    .updateTable('wf.request_steps')
+    .set({ action: 'skipped', comment: `Withdrawn: ${params.reason}`, acted_at: new Date() })
+    .where('request_id', '=', params.requestId)
+    .where('action', 'is', null)
+    .execute();
+  await db
+    .updateTable('wf.requests')
+    .set({ status: 'cancelled', decided_at: new Date() })
+    .where('id', '=', params.requestId)
+    .execute();
+  await writeAudit(db, {
+    actorUserId: params.actorUserId,
+    action: 'cancel',
+    entity: 'wf.requests',
+    entityId: params.requestId,
+    newValue: params.reason,
+  });
+}
+
 /** After send_back: requester edits and the chain restarts from step 1 (doc 11 §4b). */
 export async function resubmit(
   db: Kysely<Database>,
   params: { requestId: number; requesterUserId: number; payload: Record<string, unknown> },
 ): Promise<void> {
-  await db.transaction().execute(async (trx) => {
+  await inTransaction(db, async (trx) => {
     const request = await lockWorkflowRequest(trx, params.requestId);
     if (request.status !== 'sent_back') throw new Error('Only sent-back requests can be resubmitted');
     if (request.requested_by !== params.requesterUserId) throw new Error('Only the requester can resubmit');
@@ -183,7 +221,7 @@ export async function runEscalations(db: Kysely<Database>, asOf = new Date()): P
       const spec = steps.find((s) => s.step === row.step_no);
       const onBreach = spec?.onBreach ?? 'escalate';
 
-      await db.transaction().execute(async (trx) => {
+      await inTransaction(db, async (trx) => {
         const request = await lockWorkflowRequest(trx, row.request_id);
         if (request.status !== 'pending') return;
         // Re-check the step is still open under the row lock (it may have been
@@ -271,6 +309,8 @@ export async function inbox(db: Kysely<Database>, userId: number) {
     .innerJoin('core.employees as e', 'e.id', 'r.subject_employee_id')
     .where('s.action', 'is', null)
     .where('r.status', '=', 'pending')
+    // Never show me a request about myself (SoD, C-07).
+    .where(sql<boolean>`NOT EXISTS (SELECT 1 FROM core.users me WHERE me.id = ${userId} AND me.employee_id = r.subject_employee_id)`)
     .where(sql<boolean>`(
       (s.approver_user_id = ${userId}
         AND ${workflowPermissionSql(sql<number>`coalesce(s.delegated_from, ${userId})`, sql.ref<string>('r.definition_code'), sql.ref<number>('r.subject_employee_id'))}

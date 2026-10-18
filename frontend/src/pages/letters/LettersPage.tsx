@@ -166,7 +166,7 @@ export function LettersPage() {
                 {!t.isActive && <StatusBadge tone="neutral">inactive</StatusBadge>}
               </div>
               <p className="mt-1 text-xs text-ink-muted">{t.code}</p>
-              <p className="mt-2 text-xs text-ink-faint">{t.mergeFields.join(' · ')}</p>
+              <p className="mt-2 text-xs text-ink-subtle">{t.mergeFields.join(' · ')}</p>
             </div>
           ))}
         </div>

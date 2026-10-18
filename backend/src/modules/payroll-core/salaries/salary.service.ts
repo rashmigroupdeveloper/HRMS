@@ -18,6 +18,7 @@ import {
   insertSalaryRevision,
   type EmployeeSalaryRow,
 } from './assignment.repository.js';
+import { inTransaction } from '../../../core/db/database.js';
 
 export interface AssignSalaryInput {
   employee_id: number;
@@ -101,7 +102,7 @@ export async function assignSalary(
     componentAmounts[code] = paiseAmt;
   }
 
-  return db.transaction().execute(async (trx) => {
+  return inTransaction(db, async (trx) => {
     const inserted = await insertSalaryRevision(trx, {
       employee_id: input.employee_id,
       structure_id: input.structure_id,

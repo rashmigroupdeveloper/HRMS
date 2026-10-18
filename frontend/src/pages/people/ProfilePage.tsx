@@ -85,7 +85,7 @@ function toneForStatus(label: string): StatusTone {
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-ink-faint">{label}</dt>
+      <dt className="text-xs font-medium uppercase tracking-wide text-ink-subtle">{label}</dt>
       <dd className="mt-0.5 text-sm text-ink">{value && value !== '' ? value : '—'}</dd>
     </div>
   );

@@ -190,9 +190,9 @@ export function MonthLockPage() {
             {checklist.items.map((item) => (
               <div key={item.code} className="flex items-start gap-3 rounded-row bg-surface-2 p-4">
                 {item.ok ? (
-                  <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-positive" />
+                  <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-positive-ink" />
                 ) : (
-                  <XCircle className="mt-0.5 size-5 shrink-0 text-negative" />
+                  <XCircle className="mt-0.5 size-5 shrink-0 text-negative-ink" />
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-ink">{item.label}</p>

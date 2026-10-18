@@ -12,7 +12,7 @@ import { addDaysIso, formatDbDate, istDateString } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
 import { createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
 import { getBalance, getLeaveType } from './leave-core.service.js';
-import { assertApprovalSpanWritable } from '../../core/db/attendance-period.js';
+import { assertApprovalSpanWritable, closeWeekOffs, weekStartOf } from '../../core/db/attendance-period.js';
 import { computeLeaveSpan, validateLeaveApplication, type ApplyLeaveParams } from './leave-validation.js';
 export { computeLeaveSpan } from './leave-validation.js';
 export type { ApplyLeaveParams } from './leave-validation.js';
@@ -128,6 +128,25 @@ export async function applyLeaveOnFinal(db: Db, request: RequestRow, status: Wor
       )
       .returning('id').executeTakeFirst();
     if (!applied) throw new Error('Attendance changed during leave approval — refresh and contact HR');
+  }
+  await recloseDecidedWeeks(db, app.employee_id, span.map((d) => d.iso));
+}
+
+/**
+ * Leave decided after its week closed: re-evaluate that week's week-offs for
+ * this employee (paid leave counts as presence), so e.g. Sundays inside a
+ * maternity leave are paid. Weeks not closed yet are left to the weekly job.
+ */
+async function recloseDecidedWeeks(db: Db, employeeId: number, isoDays: string[]): Promise<void> {
+  const weeks = [...new Set(isoDays.map(weekStartOf))];
+  if (weeks.length === 0) return;
+  const minWorked = await getTypedSetting(db, 'att.weekoff_min_worked_days', 'number', 1);
+  for (const week of weeks) {
+    const decided = await db.selectFrom('att.day_records').select('id')
+      .where('employee_id', '=', employeeId).where('status', '=', 'WO').where('weekoff_paid', 'is not', null)
+      .where('work_date', '>=', sql<Date>`${week}::date`).where('work_date', '<', sql<Date>`${week}::date + 7`)
+      .executeTakeFirst();
+    if (decided) await closeWeekOffs(db, week, minWorked, employeeId);
   }
 }
 

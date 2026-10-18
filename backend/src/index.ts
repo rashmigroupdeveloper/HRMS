@@ -11,6 +11,7 @@ const app = createApp({
   db,
   jwtSecret: env.JWT_SECRET,
   secureCookies: env.NODE_ENV === 'production',
+  appBaseUrl: env.APP_BASE_URL,
 });
 
 app.listen(env.PORT, () => {

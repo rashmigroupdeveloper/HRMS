@@ -11,7 +11,8 @@
  * Hard rules (docs/08 §2): it_admin NEVER holds compensation.read (separation
  * of duties) · managers NEVER hold attendance.manual_override (PP-v2-18) ·
  * payroll.run.finalize needs payroll_admin action PLUS hr_head co-sign ·
- * payroll.run.reopen is super_admin only.
+ * payroll.run.reopen is super_admin only · payroll.run.cosign (approve) is
+ * hr_head only — super_admin and ceo_cell cannot co-sign (docs/08 §2, C-04).
  */
 
 export type RoleCode =
@@ -24,9 +25,11 @@ export type RoleCode =
   | 'plant_head'
   | 'ceo_cell'
   | 'it_admin'
-  | 'super_admin';
+  | 'super_admin'
+  | 'hod';
 
-export type Scope = 'all' | 'subtree' | 'own' | 'org_unit' | 'readonly';
+/** `department` = subjects whose HOD is the actor (hod_employee_id or a designated department head). */
+export type Scope = 'all' | 'subtree' | 'own' | 'org_unit' | 'readonly' | 'department';
 
 export interface RoleSeed {
   code: RoleCode;
@@ -46,6 +49,8 @@ export const ROLES: readonly RoleSeed[] = [
   { code: 'ceo_cell', name: 'CEO Cell / Executive' },
   { code: 'it_admin', name: 'IT / System Administrator' },
   { code: 'super_admin', name: 'Super Administrator (break-glass)' },
+  // C-02 / ROLE_TASKS §4: derived from core.department_heads + employees.hod_employee_id.
+  { code: 'hod', name: 'Head of Department (derived)' },
 ] as const;
 
 export const PERMISSIONS = [
@@ -70,6 +75,7 @@ export const PERMISSIONS = [
   'payroll.run.manage',
   'payroll.run.finalize',
   'payroll.run.reopen',
+  'payroll.run.cosign',
   'payroll.reports',
   'salary.write',
   'lifecycle.onboard.convert',
@@ -182,6 +188,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'leave.admin', scope: 'all' },
     { permission: 'payroll.run.view', scope: 'readonly' },
     { permission: 'payroll.run.finalize', scope: 'all', note: 'co-sign — two-person rule' },
+    { permission: 'payroll.run.cosign', scope: 'all', note: 'docs/08 §2: only hr_head co-signs (approves) a computed run' },
     { permission: 'payroll.reports', scope: 'all' },
     { permission: 'salary.write', scope: 'all', note: 'approval of revisions' },
     { permission: 'lifecycle.onboard.convert', scope: 'all' },
@@ -245,6 +252,18 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'admin.devices', scope: 'all' },
     { permission: 'admin.integrations', scope: 'all' },
     { permission: 'audit.read', scope: 'all' },
+  ],
+  hod: [
+    // Department-scoped: people, team attendance, approvals and HR reports for the
+    // HOD's department only. No attendance edits, no compensation (ROLE_TASKS §4).
+    { permission: 'employee.read', scope: 'department' },
+    { permission: 'attendance.own', scope: 'all' },
+    { permission: 'leave.own', scope: 'all' },
+    { permission: 'attendance.team.read', scope: 'department' },
+    { permission: 'attendance.muster.export', scope: 'department' },
+    ...grants(APPROVAL_PERMS, 'department'),
+    { permission: 'claims.approve', scope: 'department' },
+    { permission: 'reports.hr', scope: 'department' },
   ],
   super_admin: [
     // Everything, incl. the two powers no one else has. All actions audit-logged;

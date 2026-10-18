@@ -20,6 +20,10 @@ export function effectiveRoleGrants(userId: number | RawBuilder<number>) {
          (role.code = 'senior_manager' AND EXISTS (
            SELECT 1 FROM core.reporting_tree tree
             WHERE tree.manager_id = manager.id AND tree.depth >= 2
+         )) OR
+         (role.code = 'hod' AND (
+           EXISTS (SELECT 1 FROM core.department_heads dh WHERE dh.employee_id = manager.id)
+           OR EXISTS (SELECT 1 FROM core.employees sub WHERE sub.hod_employee_id = manager.id)
          ))
        )
   )`;

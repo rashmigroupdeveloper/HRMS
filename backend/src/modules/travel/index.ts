@@ -8,3 +8,4 @@ export { travelRouter } from './travel.router.js';
 export { TravelService } from './travel.service.js';
 export { WalletService } from './wallet.service.js';
 export { SettlementService } from './settlement.service.js';
+export { registerTravelWorkflowHooks } from './workflow-hooks.js';

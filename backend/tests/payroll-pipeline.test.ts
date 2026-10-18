@@ -281,6 +281,18 @@ describe('Payroll Compute Engine (docs/04 §3 & docs/10)', () => {
         displayOrder: 40,
       },
     ],
+    [
+      'MISC_RECOVERY',
+      {
+        code: 'MISC_RECOVERY',
+        name: 'Misc Recovery',
+        kind: 'deduction',
+        partOfGross: false,
+        partOfPfWages: false,
+        prorateOnLop: false,
+        displayOrder: 160,
+      },
+    ],
   ]);
 
   it('computes exact statutory deductions and net pay (G1 Baseline)', () => {
@@ -298,7 +310,7 @@ describe('Payroll Compute Engine (docs/04 §3 & docs/10)', () => {
         },
         daysInMonth: 31,
         payableDays: 31,
-        pfWageCeilingPaise: paise(1500000), // ₹15,000 cap
+        pf: { applicable: true, wageBasis: 'CEILING_15000' }, // ₹15,000 restricted wages
       },
       catalog
     );
@@ -355,7 +367,7 @@ describe('Payroll Compute Engine (docs/04 §3 & docs/10)', () => {
         payableDays: 10, // Prorated Basic = ₹3,333.33 -> 333333 p
         otherDeductions: [
           {
-            componentCode: 'RECOVERY',
+            componentCode: 'MISC_RECOVERY',
             amountPaise: paise(500000), // ₹5,000 deduction
             note: 'Advance recovery shortfall',
           },

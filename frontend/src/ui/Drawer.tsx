@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from './cn';
 import { IconButton } from './IconButton';
+import { useMedia } from './useMedia';
 
 /**
  * Drawer — right-sliding detail panel (docs/05 §3: "drawers slide from right
@@ -36,6 +37,7 @@ export function Drawer({
   children,
 }: DrawerProps) {
   const [mounted, setMounted] = useState(open);
+  const sheet = useMedia('(max-width: 639px)');
   const [entered, setEntered] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
@@ -108,18 +110,27 @@ export function Drawer({
         ref={panelRef}
         tabIndex={-1}
         className={cn(
-          'absolute right-0 top-0 flex h-full flex-col bg-surface outline-none',
+          'absolute flex flex-col bg-surface outline-none',
+          // Phones: a bottom sheet within thumb reach (docs/05 §8); desktop: right drawer.
+          sheet
+            ? 'pb-safe inset-x-0 bottom-0 max-h-[92dvh] rounded-t-[var(--radius-card)]'
+            : 'right-0 top-0 h-full',
           'shadow-[0_0_60px_-12px_color-mix(in_srgb,var(--ink)_40%,transparent)]',
           'transition-transform duration-[var(--motion-medium)] ease-[var(--ease-drawer)]',
           'will-change-transform',
         )}
-        style={{
-          width: `min(${String(width)}px, 100vw)`,
-          transform: entered ? 'translateX(0)' : 'translateX(100%)',
-        }}
+        style={
+          sheet
+            ? { transform: entered ? 'translateY(0)' : 'translateY(100%)' }
+            : {
+                width: `min(${String(width)}px, 100vw)`,
+                transform: entered ? 'translateX(0)' : 'translateX(100%)',
+              }
+        }
       >
-        <div className="flex items-start justify-between gap-4 px-6 pb-4 pt-5">
-          <div>
+        {sheet && <span aria-hidden className="mx-auto mt-2.5 block h-1 w-10 rounded-full bg-line-strong" />}
+        <div className={cn('flex items-start justify-between gap-4 pb-4', sheet ? 'px-4 pt-3' : 'px-6 pt-5')}>
+          <div className="min-w-0">
             {title && (
               <h2 id="drawer-title" className="text-lg font-semibold text-ink">
                 {title}
@@ -130,9 +141,13 @@ export function Drawer({
           <IconButton label="Close" icon={<X />} size="sm" onClick={onClose} />
         </div>
 
-        <div className="flex-1 overflow-auto px-6 pb-6">{children}</div>
+        <div className={cn('flex-1 overflow-auto overscroll-contain pb-6', sheet ? 'px-4' : 'px-6')}>
+          {children}
+        </div>
 
-        {footer && <div className="border-t border-line bg-surface px-6 py-4">{footer}</div>}
+        {footer && (
+          <div className={cn('border-t border-line bg-surface py-4', sheet ? 'px-4' : 'px-6')}>{footer}</div>
+        )}
       </div>
     </div>,
     document.body,

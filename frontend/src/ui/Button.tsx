@@ -49,7 +49,7 @@ const VARIANTS: Record<Variant, string> = {
   ghost:
     'bg-transparent text-ink-muted hover:bg-surface-2 hover:text-ink',
   danger:
-    'bg-[color-mix(in_srgb,var(--negative)_14%,var(--surface))] text-negative ' +
+    'bg-[color-mix(in_srgb,var(--negative)_14%,var(--surface))] text-negative-ink ' +
     'hover:bg-[color-mix(in_srgb,var(--negative)_22%,var(--surface))]',
 };
 

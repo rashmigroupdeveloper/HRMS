@@ -1,10 +1,28 @@
 import { AlertTriangle, CheckCircle2, DatabaseZap, RadioTower } from 'lucide-react';
 import { todayLongIST } from '../../lib/date';
-import { Card, CardHeader, DarkCard, EmptyState, KpiPillRow, PageHeader, StatusBadge } from '../../ui';
+import {
+  Card,
+  CardHeader,
+  DarkCard,
+  EmptyState,
+  KpiPillRow,
+  PageHeader,
+  StatusBadge,
+  QuickLinks,
+} from '../../ui';
+import type { QuickLink } from '../../ui';
 import type { DeviceHealth } from './dashboard-types';
 import { formatTimestamp } from './dashboard-format';
 
-export function DeviceHealthDashboard({ data }: { data: DeviceHealth[] }) {
+export function DeviceHealthDashboard({
+  data,
+  quickLinks,
+  title = 'Device health',
+}: {
+  data: DeviceHealth[];
+  quickLinks?: QuickLink[] | undefined;
+  title?: string;
+}) {
   const active = data.filter((device) => device.isActive);
   const silent = active.filter((device) => device.silent);
   const missingWatermarks = active.filter((device) => device.watermarkAt === null);
@@ -14,7 +32,7 @@ export function DeviceHealthDashboard({ data }: { data: DeviceHealth[] }) {
     <div className="space-y-6">
       <PageHeader
         eyebrow={todayLongIST()}
-        title="Device health"
+        title={title}
         description="Kent doors, last contact and per-device ingestion watermarks. Month lock waits on every expected door."
       />
 
@@ -36,6 +54,8 @@ export function DeviceHealthDashboard({ data }: { data: DeviceHealth[] }) {
           },
         ]}
       />
+
+      {quickLinks && quickLinks.length > 0 ? <QuickLinks links={quickLinks} /> : null}
 
       <DarkCard>
         <div className="flex flex-wrap items-start justify-between gap-6">

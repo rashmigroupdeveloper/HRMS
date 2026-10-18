@@ -182,7 +182,7 @@ export function CommandPalette({ open, onClose, user }: CommandPaletteProps) {
       />
       <div className="u-shadow-float relative w-full max-w-xl overflow-hidden rounded-card bg-surface">
         <div className="flex items-center gap-3 border-b border-line/70 px-4">
-          <Search className="size-4 shrink-0 text-ink-faint" aria-hidden />
+          <Search className="size-4 shrink-0 text-ink-subtle" aria-hidden />
           <input
             ref={inputRef}
             value={query}
@@ -205,7 +205,7 @@ export function CommandPalette({ open, onClose, user }: CommandPaletteProps) {
               }
             }}
             placeholder="Jump to a page or a person…"
-            className="h-14 w-full bg-transparent text-[0.95rem] text-ink outline-none placeholder:text-ink-faint"
+            className="h-14 w-full bg-transparent text-[0.95rem] text-ink outline-none placeholder:text-ink-subtle"
             aria-label="Jump to a page or a person"
           />
           <kbd className="hidden rounded bg-surface-2 px-1.5 py-0.5 text-[10px] font-semibold text-ink-muted sm:block">
@@ -239,7 +239,7 @@ export function CommandPalette({ open, onClose, user }: CommandPaletteProps) {
                       className={
                         index === active
                           ? 'ml-2 text-[11px] text-accent-ink/70'
-                          : 'ml-2 text-[11px] text-ink-faint'
+                          : 'ml-2 text-[11px] text-ink-subtle'
                       }
                     >
                       {command.hint}
@@ -247,7 +247,7 @@ export function CommandPalette({ open, onClose, user }: CommandPaletteProps) {
                   )}
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
-                  <span className={index === active ? 'text-[11px] text-accent-ink/70' : 'text-[11px] text-ink-faint'}>
+                  <span className={index === active ? 'text-[11px] text-accent-ink/70' : 'text-[11px] text-ink-subtle'}>
                     {command.group}
                   </span>
                   {index === active && <CornerDownLeft className="size-3.5" aria-hidden />}

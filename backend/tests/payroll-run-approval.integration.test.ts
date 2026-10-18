@@ -1,7 +1,8 @@
 /**
  * PAY-03 / docs/14 §3: Payroll maker-checker approval authorization tests.
  * - Two-person rule: maker cannot self-approve.
- * - Approver must hold an authorized HR/Executive co-sign role (hr_head, super_admin, or ceo_cell).
+ * - Approver must hold payroll.run.cosign — hr_head only (docs/08 §2, C-04);
+ *   super_admin and ceo_cell cannot co-sign.
  * - Approval state transition updates run and records hash-chained audit evidence.
  */
 import 'dotenv/config';
@@ -183,8 +184,36 @@ describe.skipIf(!url)('Payroll Run Maker-Checker and Co-Sign Authorization', () 
 
         // Scenario B: Checker has only regular 'employee' role -> must reject
         await expect(service.approveRun(run.id, regularUser.id)).rejects.toThrow(
-          /lacks the required role \(hr_head, super_admin, or ceo_cell\)/,
+          /Only the HR Head can co-sign/,
         );
+
+        // Scenario B2: super_admin and ceo_cell do not hold the co-sign either (C-04).
+        for (const code of ['super_admin', 'ceo_cell']) {
+          const role = await trx.selectFrom('core.roles').select('id').where('code', '=', code).executeTakeFirstOrThrow();
+          await trx.insertInto('core.user_roles').values({ user_id: regularUser.id, role_id: role.id }).execute();
+          await expect(service.approveRun(run.id, regularUser.id)).rejects.toThrow(/Only the HR Head can co-sign/);
+        }
+        // Break-glass opt-in (client decision) lets super_admin pass the role gate; the
+        // two-person rule still applies, so the maker can never co-sign its own run.
+        process.env['PAYROLL_SUPER_ADMIN_COSIGN'] = 'true';
+        try {
+          const sa = await trx.selectFrom('core.roles').select('id').where('code', '=', 'super_admin').executeTakeFirstOrThrow();
+          await trx.insertInto('core.user_roles').values({ user_id: makerUser.id, role_id: sa.id }).execute();
+          await expect(service.approveRun(run.id, makerUser.id)).rejects.toThrow(/Two-person authorization violation/);
+          const run2 = await trx.insertInto('pay.payroll_runs').values({
+            company_id: company.id, month: '2026-10-01' as unknown as Date, run_type: 'off_cycle',
+            status: 'under_review', attendance_lock_id: lock.id, notes: 'Break-glass test run',
+          }).returning('id').executeTakeFirstOrThrow();
+          await trx.insertInto('core.audit_log').values({
+            actor_user_id: makerUser.id, entity: 'pay.payroll_runs', entity_id: run2.id, action: 'payroll_run_computed',
+            prev_hash: '0'.repeat(64), row_hash: '2'.repeat(64),
+          }).execute();
+          await service.approveRun(run2.id, regularUser.id);
+          const approved = await trx.selectFrom('pay.payroll_runs').select('status').where('id', '=', run2.id).executeTakeFirstOrThrow();
+          expect(approved.status).toBe('approved');
+        } finally {
+          delete process.env['PAYROLL_SUPER_ADMIN_COSIGN'];
+        }
 
         // Scenario C: Checker is an authorized hr_head -> must succeed!
         await service.approveRun(run.id, hrHeadUser.id);

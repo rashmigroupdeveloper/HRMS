@@ -172,7 +172,7 @@ export function R2SwipesPage() {
       <Drawer open={selected !== null} onClose={() => { setSelected(null); }}
         title={selected ? `${selected.ecode} · ${formatDateIN(selected.workDate)}` : 'Raw swipes'}
         subtitle="All Kent fields retained exactly as ingested">
-        {rawError ? <p className="text-sm text-negative" role="alert">{rawError}</p> : null}
+        {rawError ? <p className="text-sm text-negative-ink" role="alert">{rawError}</p> : null}
         <div className="space-y-3">
           {raw.map((swipe, index) => (
             <div key={`${swipe.swipeTs}-${String(index)}`} className="rounded-tile bg-surface-2 p-4">

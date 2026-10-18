@@ -8,6 +8,7 @@ import type { Database } from '../../core/db/types.js';
 import { formatDbDate } from '../../core/dates.js';
 import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { attendanceGlyph, monthStart, nextMonthStart } from '../attendance/index.js';
+import { inTransaction } from '../../core/db/database.js';
 
 function fullName(first: string, last: string | null): string {
   return last ? `${first} ${last}` : first;
@@ -240,7 +241,7 @@ export async function buildMusterMonth(
     }
   };
   if (db.isTransaction) await saveSnapshot(db);
-  else await db.transaction().execute(saveSnapshot);
+  else await inTransaction(db, saveSnapshot);
   return values.length;
 }
 

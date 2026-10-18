@@ -8,7 +8,12 @@
  * - Payroll deduction synchronization
  * - Legacy SAP / greytHR historical loan import
  */
-import type { Kysely } from 'kysely';
+import { sql, type Kysely, type Transaction } from 'kysely';
+import { writeAudit } from '../../core/audit/audit.service.js';
+import { formatDbDate, istDateString } from '../../core/dates.js';
+import { ConflictError, DomainError, NotFoundError } from '../../core/errors/index.js';
+import { getTypedSetting } from '../settings/index.js';
+import { createRequest } from '../workflows/index.js';
 import type { Database, LoanStatus, LoanType } from '../../core/db/types.js';
 import {
   fromRupees,
@@ -20,6 +25,7 @@ import {
   generateAmortizationSchedule,
   type AmortizationSchedule,
 } from './amortization.js';
+import { inTransaction } from '../../core/db/database.js';
 
 export interface ApplyLoanParams {
   employeeId: number;
@@ -29,7 +35,7 @@ export interface ApplyLoanParams {
   tenureMonths: number;
   startMonth: string; // 'YYYY-MM-01'
   perquisiteApplicable?: boolean;
-  workflowRequestId?: number | null;
+  requestedByUserId: number;
 }
 
 export interface LegacyLoanImportParams {
@@ -60,6 +66,24 @@ export interface LoanLedgerSummary {
   status: LoanStatus;
   source: string;
   postingsCount: number;
+}
+
+type Db = Kysely<Database> | Transaction<Database>;
+
+/** 'loan' chain (RM → HR head → payroll) final hook — a loan only starts on approval (P-08). */
+export async function applyLoanOnFinal(db: Db, request: { id: number }, status: 'approved' | 'rejected' | 'lapsed'): Promise<void> {
+  await db
+    .updateTable('pay.loans')
+    .set({ status: status === 'approved' ? 'active' : 'rejected' })
+    .where('workflow_request_id', '=', request.id)
+    .where('status', '=', 'pending')
+    .execute();
+}
+
+/** Policy interest (LN-02): the employee never chooses the rate. */
+export async function policyInterestRate(db: Db, loanType: LoanType): Promise<number> {
+  if (loanType === 'emi_no_interest' || loanType === 'salary_advance' || loanType === 'travel_advance') return 0;
+  return getTypedSetting<number>(db, 'loans.interest_rate_pct', 'number', 0);
 }
 
 export class LoansService {
@@ -132,7 +156,7 @@ export class LoansService {
       .selectFrom('pay.loans')
       .select(['id', 'loan_type', 'outstanding', 'status'])
       .where('employee_id', '=', employeeId)
-      .where('status', '=', 'active')
+      .where('status', 'in', ['active', 'pending'])
       .execute();
 
     const existingSameCategory = activeLoans.filter((l) =>
@@ -148,15 +172,23 @@ export class LoansService {
     }
 
     // 3. Compensation & EMI ratio
+    const today = istDateString();
     const latestSalary = await this.db
       .selectFrom('pay.employee_salaries')
-      .select(['annual_ctc'])
+      .select(['component_amounts'])
       .where('employee_id', '=', employeeId)
+      .where('effective_from', '<=', sql<Date>`${today}::date`)
       .orderBy('effective_from', 'desc')
       .executeTakeFirst();
-
-    const annualCtc = latestSalary ? Number(latestSalary.annual_ctc) : 0;
-    const monthlyGrossRupees = annualCtc > 0 ? Math.round(annualCtc / 12) : 50000; // fallback benchmark if salary row pending
+    let monthlyGrossRupees = 0;
+    if (latestSalary) {
+      const grossCodes = await this.db.selectFrom('pay.salary_components').select('code').where('kind', '=', 'earning').where('part_of_gross', '=', true).execute();
+      const codes = new Set(grossCodes.map((c) => c.code));
+      const amounts = latestSalary.component_amounts;
+      monthlyGrossRupees = Math.round(Object.entries(amounts).filter(([c]) => codes.has(c)).reduce((sum, [, v]) => sum + v, 0) / 100);
+    } else {
+      reasons.push('No salary is on record for this employee yet.');
+    }
 
     const principalPaise = fromRupees(principalRupees);
     const schedule = generateAmortizationSchedule({
@@ -167,11 +199,12 @@ export class LoansService {
     });
 
     const projectedEmiRupees = toRupees(schedule.monthlyEmi);
-    const maxAllowedEmiRupees = Math.round(monthlyGrossRupees * 0.3); // 30% cap
+    const emiCapPct = await getTypedSetting<number>(this.db, 'loans.max_emi_pct_of_gross', 'number', 30);
+    const maxAllowedEmiRupees = Math.round((monthlyGrossRupees * emiCapPct) / 100);
 
     if (projectedEmiRupees > maxAllowedEmiRupees) {
       reasons.push(
-        `Projected EMI (₹${projectedEmiRupees.toLocaleString('en-IN')}) exceeds 30% of monthly gross salary (Max allowable: ₹${maxAllowedEmiRupees.toLocaleString('en-IN')}).`
+        `Projected EMI (₹${projectedEmiRupees.toLocaleString('en-IN')}) exceeds ${String(emiCapPct)}% of monthly gross salary (Max allowable: ₹${maxAllowedEmiRupees.toLocaleString('en-IN')}).`
       );
     }
 
@@ -188,59 +221,56 @@ export class LoansService {
   /**
    * Applies for a loan. If eligible or forced by admin, records loan in pay.loans.
    */
-  async applyLoan(params: ApplyLoanParams): Promise<{
-    loanId: number;
-    schedule: AmortizationSchedule;
-  }> {
-    const {
-      employeeId,
-      loanType,
-      principalRupees,
-      annualInterestRate = 0,
-      tenureMonths,
-      startMonth,
-      perquisiteApplicable = annualInterestRate < 8.5 && principalRupees > 20000,
-      workflowRequestId = null,
-    } = params;
-
-    const principalPaise = fromRupees(principalRupees);
-    const schedule = generateAmortizationSchedule({
-      loanType,
-      principal: principalPaise,
-      annualInterestRate,
-      tenureMonths,
-    });
-
+  /**
+   * Applies for a loan/advance: eligibility is ENFORCED, interest comes from
+   * policy, and the loan stays 'pending' until the RM → HR head → payroll
+   * chain approves it (P-08). No instant activation.
+   */
+  async applyLoan(params: ApplyLoanParams): Promise<{ loanId: number; schedule: AmortizationSchedule }> {
+    const { employeeId, loanType, principalRupees, tenureMonths, startMonth } = params;
+    if (!/^\d{4}-\d{2}-01$/.test(startMonth)) throw new DomainError('Start month must be the first day of a month (YYYY-MM-01)');
+    if (startMonth < `${istDateString().slice(0, 7)}-01`) throw new DomainError('Recovery cannot start in a past month');
+    const annualInterestRate = await policyInterestRate(this.db, loanType);
+    const eligibility = await this.checkEligibility({ employeeId, loanType, principalRupees, tenureMonths, annualInterestRate });
+    if (!eligibility.eligible) throw new DomainError(`Not eligible: ${eligibility.reasons.join(' ')}`);
+    const schedule = eligibility.schedule;
+    const perquisiteApplicable = params.perquisiteApplicable ?? (annualInterestRate < 8.5 && principalRupees > 20000);
     const monthlyEmiRupees = toRupees(schedule.monthlyEmi);
-
-    const inserted = await this.db
-      .insertInto('pay.loans')
-      .values({
-        employee_id: employeeId,
-        loan_type: loanType,
-        principal: principalRupees.toFixed(2),
-        interest_rate: annualInterestRate.toFixed(3),
-        emi: monthlyEmiRupees.toFixed(2),
-        start_month: new Date(startMonth),
-        tenure_months: tenureMonths,
-        outstanding: principalRupees.toFixed(2),
-        perquisite_applicable: perquisiteApplicable,
-        source: 'hrms',
-        workflow_request_id: workflowRequestId,
-        status: 'active',
-      })
-      .returning(['id'])
-      .executeTakeFirstOrThrow();
-
-    return {
-      loanId: inserted.id,
-      schedule,
-    };
+    let loanId = 0;
+    await createRequest(
+      this.db,
+      {
+        definitionCode: 'loan',
+        subjectEmployeeId: employeeId,
+        requestedByUserId: params.requestedByUserId,
+        payload: { loanType, principalRupees, tenureMonths, startMonth, annualInterestRate, monthlyEmiRupees },
+      },
+      async (trx, requestId) => {
+        const inserted = await trx
+          .insertInto('pay.loans')
+          .values({
+            employee_id: employeeId,
+            loan_type: loanType,
+            principal: principalRupees.toFixed(2),
+            interest_rate: annualInterestRate.toFixed(3),
+            emi: monthlyEmiRupees.toFixed(2),
+            start_month: sql<Date>`${startMonth}::date`,
+            tenure_months: tenureMonths,
+            outstanding: principalRupees.toFixed(2),
+            perquisite_applicable: perquisiteApplicable,
+            source: 'hrms',
+            workflow_request_id: requestId,
+            status: 'pending',
+          })
+          .returning(['id'])
+          .executeTakeFirstOrThrow();
+        loanId = inserted.id;
+        await writeAudit(trx, { actorUserId: params.requestedByUserId, action: 'create', entity: 'pay.loans', entityId: inserted.id, newValue: JSON.stringify({ loanType, principalRupees, tenureMonths }) });
+      },
+    );
+    return { loanId, schedule };
   }
 
-  /**
-   * Imports a legacy loan from SAP or greytHR with verified opening figures.
-   */
   async importLegacyLoan(params: LegacyLoanImportParams): Promise<{ loanId: number }> {
     const {
       employeeId,
@@ -253,6 +283,11 @@ export class LoansService {
       startMonth,
       sourceReference,
     } = params;
+    if (outstandingBalanceRupees > originalPrincipalRupees) throw new DomainError('Outstanding balance cannot exceed the original principal');
+    const employee = await this.db.selectFrom('core.employees').select('id').where('id', '=', employeeId).executeTakeFirst();
+    if (!employee) throw new NotFoundError(`Employee #${String(employeeId)} not found`);
+    const duplicate = await this.db.selectFrom('pay.loans').select('id').where('employee_id', '=', employeeId).where('source_reference', '=', sourceReference).executeTakeFirst();
+    if (duplicate) throw new ConflictError(`Legacy loan ${sourceReference} was already imported (loan #${String(duplicate.id)})`);
 
     const inserted = await this.db
       .insertInto('pay.loans')
@@ -266,7 +301,8 @@ export class LoansService {
         tenure_months: remainingTenureMonths,
         outstanding: outstandingBalanceRupees.toFixed(2),
         perquisite_applicable: annualInterestRate < 8.5 && originalPrincipalRupees > 20000,
-        source: `sap_legacy:${sourceReference}`,
+        source: 'sap_legacy',
+        source_reference: sourceReference,
         status: outstandingBalanceRupees <= 0 ? 'closed' : 'active',
       })
       .returning(['id'])
@@ -293,7 +329,7 @@ export class LoansService {
       perquisiteValueRupees = 0,
     } = params;
 
-    return await this.db.transaction().execute(async (trx) => {
+    return await inTransaction(this.db, async (trx) => {
       const loan = await trx
         .selectFrom('pay.loans')
         .selectAll()
@@ -364,7 +400,8 @@ export class LoansService {
       .selectFrom('pay.loans')
       .selectAll()
       .where('id', '=', loanId)
-      .executeTakeFirstOrThrow();
+      .executeTakeFirst();
+    if (!loan) throw new NotFoundError(`Loan #${String(loanId)} not found`);
 
     const postings = await this.db
       .selectFrom('pay.loan_postings')
@@ -396,10 +433,7 @@ export class LoansService {
       };
     });
 
-    const startMonthStr =
-      loan.start_month instanceof Date
-        ? loan.start_month.toISOString().slice(0, 10)
-        : String(loan.start_month).slice(0, 10);
+    const startMonthStr = formatDbDate(loan.start_month);
 
     return {
       loanId: loan.id,

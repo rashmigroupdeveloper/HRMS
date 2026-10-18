@@ -3,7 +3,7 @@
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { authed, withPermission } from '../../../api/orpc.js';
+import { withAnyPermission, withPermission } from '../../../api/orpc.js';
 import {
   salaryComponentSchema,
   updateComponentInputSchema,
@@ -15,7 +15,7 @@ import {
   updateComponent,
 } from './component.service.js';
 
-const listComponentsProcedure = authed
+const listComponentsProcedure = withAnyPermission('salary.write', 'payroll.run.view')
   .route({ method: 'GET', path: '/payroll/components', summary: 'List salary components' })
   .input(z.object({ activeOnly: z.boolean().optional() }).optional())
   .output(z.array(salaryComponentSchema))
@@ -25,7 +25,7 @@ const listComponentsProcedure = authed
     return listComponents(context.db, options);
   });
 
-const getComponentProcedure = authed
+const getComponentProcedure = withAnyPermission('salary.write', 'payroll.run.view')
   .route({ method: 'GET', path: '/payroll/components/{code}', summary: 'Get a salary component by code' })
   .input(z.object({ code: z.string().min(1) }))
   .output(salaryComponentSchema)

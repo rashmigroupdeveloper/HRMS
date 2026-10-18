@@ -15,6 +15,11 @@ import {
   recordLoginSuccess,
   type UserRow,
 } from './auth.repository.js';
+import { inTransaction } from '../../core/db/database.js';
+
+/** A real bcrypt hash of a random string: comparing against it costs the same
+ *  as a real account, closing the unknown-identifier timing oracle (A-27). */
+const DUMMY_HASH = bcrypt.hashSync(`timing-equaliser-${String(Date.now())}`, 10);
 
 export type LoginResult =
   | { ok: true; user: UserRow; accessToken: string; refreshToken: string; refreshExpiresAt: Date }
@@ -33,16 +38,19 @@ export async function login(
     // Uniform failure path: same audit + same response whether the account
     // exists or not (no user-enumeration oracle).
     if (!user) {
+      await bcrypt.compare(password, DUMMY_HASH);
       await writeAudit(tx, { action: 'login_failed', entity: 'core.users', ip, newValue: 'unknown identifier' });
       return { ok: false, reason: 'invalid_credentials' };
     }
 
     if (!user.is_active) {
+      await bcrypt.compare(password, DUMMY_HASH);
       await writeAudit(tx, { action: 'login_failed', entity: 'core.users', entityId: user.id, ip, newValue: 'inactive account' });
       return { ok: false, reason: 'inactive' };
     }
 
     if (user.locked_until && user.locked_until.getTime() > Date.now()) {
+      await bcrypt.compare(password, DUMMY_HASH);
       await writeAudit(tx, { action: 'login_failed', entity: 'core.users', entityId: user.id, ip, newValue: 'locked' });
       return { ok: false, reason: 'locked', lockedUntil: user.locked_until };
     }
@@ -67,7 +75,7 @@ export async function login(
     const pair = await createSession(tx, user, jwtSecret, ip, await readAuthPolicy(tx));
     return { ok: true, user, ...pair };
   };
-  return db.isTransaction ? attempt(db) : db.transaction().execute(attempt);
+  return db.isTransaction ? attempt(db) : inTransaction(db, attempt);
 }
 
 export type RefreshResult =

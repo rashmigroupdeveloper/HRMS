@@ -12,7 +12,9 @@ import {
   PageHeader,
   Pill,
   StatusBadge,
+  QuickLinks,
 } from '../../ui';
+import type { QuickLink } from '../../ui';
 import type { TeamMemberMonth } from './dashboard-types';
 import { attendanceDot, attendanceLabel, formatTime } from './dashboard-format';
 
@@ -49,7 +51,15 @@ function membersOnLeaveThisWeek(members: TeamMemberMonth[], week: string[]) {
     .filter((row) => row.dates.length > 0);
 }
 
-export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; today: string }) {
+export function ManagerDashboard({
+  data,
+  today,
+  quickLinks,
+}: {
+  data: TeamMemberMonth[];
+  today: string;
+  quickLinks?: QuickLink[] | undefined;
+}) {
   const todayRows = data.map((member) => ({ member, day: member.days[today] }));
   const present = todayRows.filter(({ day }) => day?.status === 'P' || day?.status === 'HD').length;
   const absent = todayRows.filter(({ day }) => day?.status === 'A' || day?.status === 'UAB').length;
@@ -65,45 +75,47 @@ export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; tod
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-      <PageHeader
-        eyebrow={todayLongIST()}
-        title="Your team today"
-        description="Direct-report attendance from the current processed month. Names open the person; the gold path opens the month you sign."
-      />
+        <PageHeader
+          eyebrow={todayLongIST()}
+          title="Your team today"
+          description="Direct-report attendance from the current processed month. Names open the person; the gold path opens the month you sign."
+        />
 
-      <KpiPillRow
-        pills={[
-          {
-            label: 'Team members',
-            value: data.length,
-            state: 'filled',
-            icon: <Users />,
-            to: '/my/team',
-          },
-          {
-            label: 'Present today',
-            value: present,
-            state: 'outline',
-            icon: <CheckCircle2 />,
-            to: '/my/team',
-          },
-          {
-            label: 'Absent / UAB',
-            value: absent,
-            state: absentIsTheJob ? 'accent' : 'outline',
-            icon: <AlertTriangle />,
-            to: '/my/team',
-          },
-          {
-            label: 'Awaiting record',
-            value: awaiting,
-            state: awaiting > 0 ? 'hatched' : 'outline',
-            icon: <Clock3 />,
-            to: '/my/team',
-          },
-        ]}
-      />
+        <KpiPillRow
+          pills={[
+            {
+              label: 'Team members',
+              value: data.length,
+              state: 'filled',
+              icon: <Users />,
+              to: '/my/team',
+            },
+            {
+              label: 'Present today',
+              value: present,
+              state: 'outline',
+              icon: <CheckCircle2 />,
+              to: '/my/team',
+            },
+            {
+              label: 'Absent / UAB',
+              value: absent,
+              state: absentIsTheJob ? 'accent' : 'outline',
+              icon: <AlertTriangle />,
+              to: '/my/team',
+            },
+            {
+              label: 'Awaiting record',
+              value: awaiting,
+              state: awaiting > 0 ? 'hatched' : 'outline',
+              icon: <Clock3 />,
+              to: '/my/team',
+            },
+          ]}
+        />
       </div>
+
+      {quickLinks && quickLinks.length > 0 ? <QuickLinks links={quickLinks} /> : null}
 
       <DarkCard className="grid gap-8 md:grid-cols-[1.25fr_1fr]">
         <div>
@@ -160,7 +172,7 @@ export function ManagerDashboard({ data, today }: { data: TeamMemberMonth[]; tod
                 >
                   <Link
                     to={`/people/${member.ecode}`}
-                    className="min-w-0 rounded-row outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    className="min-w-0 rounded-row outline-none focus-visible:ring-2 focus-visible:ring-focus"
                   >
                     <p className="truncate text-sm font-semibold text-ink">{member.name}</p>
                     <p className="text-xs text-ink-muted">{member.ecode}</p>

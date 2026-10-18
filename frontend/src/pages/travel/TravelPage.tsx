@@ -166,39 +166,9 @@ export function TravelPage() {
       if (Array.isArray(ledgerRes.transactions)) {
         setWalletLedger(ledgerRes.transactions);
       }
-    } catch {
-      // Fallback sample data if offline/mock environment
-      setTrips([
-        {
-          id: 1,
-          referenceNo: 'TRIP-2024-0104',
-          tripName: 'Kalinganagar Blast Furnace Inspection',
-          travelType: 'domestic',
-          purpose: 'Quarterly technical safety and output verification audit',
-          destinationCountry: 'India',
-          destinationCity: 'Jajpur',
-          startDate: '2024-05-10',
-          endDate: '2024-05-14',
-          visaRequired: false,
-          status: 'approved',
-          estimatedBudgetPaise: 3500000,
-          approvedBudgetPaise: 3500000,
-          createdAt: new Date().toISOString(),
-        },
-      ]);
-      setWalletBalancePaise(1500000);
-      setWalletLedger([
-        {
-          id: 1,
-          source: 'ADVANCE',
-          type: 'credit',
-          amountPaise: 1500000,
-          balanceAfterPaise: 1500000,
-          transactionReference: 'TX-ADV-2024-001',
-          notes: 'Travel advance for Kalinganagar Inspection',
-          createdAt: new Date().toISOString(),
-        },
-      ]);
+    } catch (e: unknown) {
+      // No sample data: show the real failure.
+      toast.error(e instanceof Error ? e.message : 'Could not load data. Please retry.');
     } finally {
       setIsLoading(false);
     }
@@ -441,14 +411,14 @@ export function TravelPage() {
       render: (r: ClaimItem) => {
         if (r.netPayablePaise > 0) {
           return (
-            <span className="font-mono text-xs text-positive font-medium">
+            <span className="font-mono text-xs text-positive-ink font-medium">
               +₹{(r.netPayablePaise / 100).toLocaleString('en-IN')} (Payable)
             </span>
           );
         }
         if (r.netRecoverablePaise > 0) {
           return (
-            <span className="font-mono text-xs text-negative font-medium">
+            <span className="font-mono text-xs text-negative-ink font-medium">
               -₹{(r.netRecoverablePaise / 100).toLocaleString('en-IN')} (Payroll Deduction)
             </span>
           );
@@ -504,7 +474,7 @@ export function TravelPage() {
       numeric: true,
       render: (r: WalletLedgerItem) => {
         const prefix = r.type === 'credit' ? '+' : '-';
-        const color = r.type === 'credit' ? 'text-positive' : 'text-negative';
+        const color = r.type === 'credit' ? 'text-positive-ink' : 'text-negative-ink';
         return (
           <span className={`font-mono text-xs font-semibold ${color}`}>
             {prefix}₹{(r.amountPaise / 100).toLocaleString('en-IN')}
@@ -536,7 +506,7 @@ export function TravelPage() {
               <RefreshCw className={`h-4 w-4 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
               Sync
             </Button>
-            <div className="flex rounded-full bg-surface-2 p-1">
+            <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
               {TABS.map((t) => {
                 const Icon = t.icon;
                 return (
@@ -583,7 +553,7 @@ export function TravelPage() {
           <p className="text-xs uppercase font-medium text-ink-muted tracking-wider">Pending Claims</p>
           <div className="mt-2 flex items-baseline justify-between">
             <KpiNumber value={claims.filter((c) => c.settlementStatus === 'unsettled').length} />
-            <Clock className="h-5 w-5 text-warning opacity-60" />
+            <Clock className="h-5 w-5 text-warning-ink opacity-60" />
           </div>
         </Card>
 

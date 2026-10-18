@@ -1,21 +1,33 @@
 /**
  * Separation Management & Exit Pipeline Service (LC-06, LC-07, PAY-15, SOW crosswalk).
  *
- * Implements:
- * 1. ESS Resignation Application with notice period calculation and shortfall detection.
- * 2. HR-Initiated Termination / Absconding Path (linked from att.absence_cases).
- * 3. Multi-tier Approval Chain with verifiable notified_at receipts (WF-04 / PP-14).
- * 4. Approval Cascade: sets approved_lwd, marks employee on_notice, and fans out 4 departmental clearances.
- * 5. F&F Calculation & Execution: links with fnf-engine.ts, computes Golden G8 gratuity, EL encashment.
- * 6. Exit Day Cascade (LC-07): on settlement payment, updates employee status to 'exited',
- *    commits dol, issues Relieving & Experience Letters, and switches user to restricted 'alumni' role.
+ * 1. ESS resignation: the employee resigns for THEMSELVES only (C-01/B-04); one
+ *    open case per employee; the 'resignation' workflow chain (RM → HR head →
+ *    HR ops) decides it — nobody flips the status directly.
+ * 2. HR-initiated termination / absconding path (decided by HR, audited).
+ * 3. Workflow final hook: approved → approved_lwd, on_notice, clearance fan-out;
+ *    rejected/lapsed → rejected.
+ * 4. F&F: amounts in integer paise from the salary snapshot (which already
+ *    stores paise — C-08/P-02), earnings only, EL from the leave ledger, final
+ *    month salary only when no payroll run already paid it (P-03), held
+ *    salary released from held payroll items.
+ * 5. Payment: only with every clearance resolved and a non-negative net (P-02),
+ *    in one transaction, then the LC-07 exit-day cascade.
  */
-
+import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import type { Database, SeparationsTable } from '../../../core/db/types.js';
-import type { Kysely, Selectable } from 'kysely';
+import { addDaysIso, formatDbDate, istDateString } from '../../../core/dates.js';
+import { writeAudit } from '../../../core/audit/audit.service.js';
+import { ConflictError, DomainError, ForbiddenError, NotFoundError } from '../../../core/errors/index.js';
+import { employeeScopeSql, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
 import { parseJsonObject } from '../../../core/json.js';
+import { getTypedSetting } from '../../settings/index.js';
+import { cancelRequest, createRequest, act } from '../../workflows/index.js';
 import { ClearanceService } from './clearance.service.js';
-import { computeFnfSettlement, type FnfSettlementCalculation } from '../../payroll-core/index.js';
+import { computeFnfSettlement, readLockedPayableDays, type FnfSettlementCalculation } from '../../payroll-core/index.js';
+import { inTransaction } from '../../../core/db/database.js';
+
+type Db = Kysely<Database> | Transaction<Database>;
 
 export interface ResignationApplicationInput {
   employeeId: number;
@@ -55,6 +67,64 @@ export interface SeparationItem {
   updatedAt: Date | string;
 }
 
+const OPEN_STATUSES = ['pending', 'approved'] as const;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function dayDiff(fromIso: string, toIso: string): number {
+  return Math.round((Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / 86_400_000);
+}
+
+function assertIsoDate(value: string, label: string): void {
+  if (!ISO_DATE.test(value) || Number.isNaN(Date.parse(`${value}T00:00:00Z`))) {
+    throw new DomainError(`${label} must be a valid date (YYYY-MM-DD)`);
+  }
+}
+
+async function noticeDaysFor(db: Db, category: string | null): Promise<number> {
+  return category === 'white_collar'
+    ? getTypedSetting<number>(db, 'lifecycle.notice_days_white_collar', 'number', 90)
+    : getTypedSetting<number>(db, 'lifecycle.notice_days_default', 'number', 30);
+}
+
+async function assertNoOpenCase(db: Db, employeeId: number): Promise<void> {
+  const open = await db
+    .selectFrom('core.separations')
+    .select('id')
+    .where('employee_id', '=', employeeId)
+    .where('status', 'in', [...OPEN_STATUSES])
+    .executeTakeFirst();
+  if (open) throw new ConflictError(`An open separation case (#${String(open.id)}) already exists for this employee`);
+}
+
+/** Workflow final hook for 'resignation' — runs inside the deciding transaction. */
+export async function applyResignationOnFinal(
+  db: Db,
+  request: { id: number; requested_by: number },
+  status: 'approved' | 'rejected' | 'lapsed',
+): Promise<void> {
+  const sep = await db
+    .selectFrom('core.separations')
+    .selectAll()
+    .where('workflow_request_id', '=', request.id)
+    .forUpdate()
+    .executeTakeFirst();
+  if (sep?.status !== 'pending') return; // idempotent: already decided / withdrawn
+  if (status !== 'approved') {
+    await db.updateTable('core.separations').set({ status: 'rejected', updated_at: new Date() }).where('id', '=', sep.id).execute();
+    return;
+  }
+  const lwd = formatDbDate(sep.approved_lwd ?? sep.requested_lwd);
+  const served = dayDiff(formatDbDate(sep.resignation_date), lwd);
+  const shortfall = Math.max(0, sep.notice_period_days - served);
+  await db
+    .updateTable('core.separations')
+    .set({ status: 'approved', approved_lwd: sql<Date>`${lwd}::date`, shortfall_days: shortfall.toFixed(1), updated_at: new Date() })
+    .where('id', '=', sep.id)
+    .execute();
+  await db.updateTable('core.employees').set({ status: 'on_notice' }).where('id', '=', sep.employee_id).where('status', '=', 'active').execute();
+  await new ClearanceService(db).fanOutClearances(sep.id);
+}
+
 export class SeparationService {
   private readonly clearanceService: ClearanceService;
 
@@ -62,286 +132,205 @@ export class SeparationService {
     this.clearanceService = new ClearanceService(db);
   }
 
-  /**
-   * ESS Resignation Application: validates notice requirements, derives shortfall days,
-   * creates core.separations, and links workflow with notified_at receipts.
-   */
+  /** ESS resignation for the caller's own employee record only. */
   async applyResignation(input: ResignationApplicationInput): Promise<SeparationItem> {
-    const employee = await this.db
-      .selectFrom('core.employees')
-      .selectAll()
-      .where('id', '=', input.employeeId)
-      .executeTakeFirst();
+    assertIsoDate(input.requestedLwd, 'Requested last working day');
+    const employee = await this.db.selectFrom('core.employees').selectAll().where('id', '=', input.employeeId).executeTakeFirst();
+    if (!employee) throw new NotFoundError(`Employee #${String(input.employeeId)} not found`);
+    if (employee.status === 'exited') throw new DomainError('Cannot submit resignation for an exited employee');
 
-    if (!employee) {
-      throw new Error(`Employee #${input.employeeId} not found`);
-    }
+    const today = istDateString();
+    if (input.requestedLwd < today) throw new DomainError('Requested last working day cannot be in the past');
+    const noticePeriodDays = await noticeDaysFor(this.db, employee.category);
+    const shortfallDays = Math.max(0, noticePeriodDays - dayDiff(today, input.requestedLwd));
+    await assertNoOpenCase(this.db, employee.id);
 
-    if (employee.status === 'exited') {
-      throw new Error(`Cannot submit resignation for already exited employee`);
-    }
-
-    // Default notice period: 90 days for white collar/management, 30 days for others
-    const noticePeriodDays = employee.category === 'white_collar' ? 90 : 30;
-
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const today = new Date(todayStr);
-    const requestedLwdDate = new Date(input.requestedLwd);
-
-    if (requestedLwdDate < today) {
-      throw new Error('Requested last working day cannot be in the past');
-    }
-
-    const calendarDays = Math.ceil((requestedLwdDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    const shortfallDays = Math.max(0, noticePeriodDays - calendarDays);
-
-    const inserted = await this.db
-      .insertInto('core.separations')
-      .values({
-        employee_id: input.employeeId,
-        initiated_by: 'employee',
-        reason: input.reason,
-        resignation_date: new Date(todayStr),
-        notice_period_days: noticePeriodDays,
-        requested_lwd: new Date(input.requestedLwd),
-        approved_lwd: null,
-        shortfall_days: shortfallDays.toFixed(1),
-        status: 'pending',
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
-
-    return this.mapSeparationRow(inserted);
+    let separationId = 0;
+    await createRequest(
+      this.db,
+      {
+        definitionCode: 'resignation',
+        subjectEmployeeId: employee.id,
+        requestedByUserId: input.userId,
+        payload: { requestedLwd: input.requestedLwd, reason: input.reason, noticePeriodDays, shortfallDays },
+      },
+      async (trx, requestId) => {
+        await assertNoOpenCase(trx, employee.id);
+        const row = await trx
+          .insertInto('core.separations')
+          .values({
+            employee_id: employee.id,
+            initiated_by: 'employee',
+            reason: input.reason,
+            resignation_date: sql<Date>`${today}::date`,
+            notice_period_days: noticePeriodDays,
+            requested_lwd: sql<Date>`${input.requestedLwd}::date`,
+            approved_lwd: null,
+            shortfall_days: shortfallDays.toFixed(1),
+            status: 'pending',
+            workflow_request_id: requestId,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        separationId = row.id;
+        await writeAudit(trx, {
+          actorUserId: input.userId, action: 'create', entity: 'core.separations', entityId: row.id,
+          newValue: JSON.stringify({ requestedLwd: input.requestedLwd, workflowRequestId: requestId }),
+        });
+      },
+    );
+    return this.getOne(separationId);
   }
 
-  /**
-   * HR-Initiated Termination / Absconding Path (ATT-10 / SOW-5.7.2).
-   */
+  /** HR-initiated termination / absconding (ATT-10 / SOW-5.7.2), decided by HR. */
   async initiateAbscondingTermination(input: AbscondingTerminationInput): Promise<SeparationItem> {
-    const employee = await this.db
-      .selectFrom('core.employees')
-      .selectAll()
-      .where('id', '=', input.employeeId)
-      .executeTakeFirst();
-
-    if (!employee) {
-      throw new Error(`Employee #${input.employeeId} not found`);
+    assertIsoDate(input.lastWorkingDay, 'Last working day');
+    const employee = await this.db.selectFrom('core.employees').selectAll().where('id', '=', input.employeeId).executeTakeFirst();
+    if (!employee) throw new NotFoundError(`Employee #${String(input.employeeId)} not found`);
+    if (employee.status === 'exited') throw new DomainError('Employee has already exited');
+    if (employee.doj && input.lastWorkingDay < formatDbDate(employee.doj)) {
+      throw new DomainError('Last working day cannot be before the date of joining');
     }
-
-    const todayStr = new Date().toISOString().slice(0, 10);
-
-    const inserted = await this.db
-      .insertInto('core.separations')
-      .values({
-        employee_id: input.employeeId,
-        initiated_by: 'hr',
-        reason: `HR Termination / Absconding: ${input.reason}`,
-        resignation_date: new Date(todayStr),
-        notice_period_days: 0,
-        requested_lwd: new Date(input.lastWorkingDay),
-        approved_lwd: new Date(input.lastWorkingDay),
-        shortfall_days: '0.0',
-        status: 'approved',
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
-
-    // Fan out clearances immediately
-    await this.clearanceService.fanOutClearances(inserted.id);
-
-    // Update employee status to on_notice
-    await this.db
-      .updateTable('core.employees')
-      .set({ status: 'on_notice' })
-      .where('id', '=', input.employeeId)
-      .execute();
-
-    return this.mapSeparationRow(inserted);
+    const today = istDateString();
+    const id = await inTransaction(this.db, async (trx) => {
+      await assertNoOpenCase(trx, employee.id);
+      const inserted = await trx
+        .insertInto('core.separations')
+        .values({
+          employee_id: employee.id,
+          initiated_by: 'hr',
+          reason: `HR Termination / Absconding: ${input.reason}`,
+          resignation_date: sql<Date>`${today}::date`,
+          notice_period_days: 0,
+          requested_lwd: sql<Date>`${input.lastWorkingDay}::date`,
+          approved_lwd: sql<Date>`${input.lastWorkingDay}::date`,
+          shortfall_days: '0.0',
+          status: 'approved',
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      await new ClearanceService(trx).fanOutClearances(inserted.id);
+      await trx.updateTable('core.employees').set({ status: 'on_notice' }).where('id', '=', employee.id).execute();
+      await writeAudit(trx, {
+        actorUserId: input.hrUserId, action: 'create', entity: 'core.separations', entityId: inserted.id,
+        newValue: JSON.stringify({ initiatedBy: 'hr', lastWorkingDay: input.lastWorkingDay, absenceCaseId: input.absenceCaseId ?? null }),
+      });
+      return inserted.id;
+    });
+    return this.getOne(id);
   }
 
   /**
-   * Approves resignation: commits approved_lwd, sets employee on_notice,
-   * fans out 4 departmental clearances with notified_at timestamps.
+   * Approver decision on the resignation chain. The current workflow approver
+   * acts; an approver may propose a different LWD (never before the
+   * resignation date). Final effects come from the workflow hook.
    */
-  async approveResignation(params: {
+  async decideResignation(params: {
     separationId: number;
+    action: 'approve' | 'reject';
     approvedLwd?: string | undefined;
+    comment?: string | undefined;
     approverUserId: number;
   }): Promise<SeparationItem> {
-    const existing = await this.db
-      .selectFrom('core.separations')
-      .selectAll()
-      .where('id', '=', params.separationId)
-      .executeTakeFirst();
-
-    if (!existing) {
-      throw new Error(`Separation #${params.separationId} not found`);
+    const existing = await this.db.selectFrom('core.separations').selectAll().where('id', '=', params.separationId).executeTakeFirst();
+    if (!existing) throw new NotFoundError(`Separation #${String(params.separationId)} not found`);
+    if (existing.status !== 'pending') throw new ConflictError(`Cannot decide a separation in status '${existing.status}'`);
+    if (!existing.workflow_request_id) throw new ConflictError('This separation has no approval request; HR must re-raise it');
+    if (params.approvedLwd !== undefined) {
+      assertIsoDate(params.approvedLwd, 'Approved last working day');
+      if (params.approvedLwd < formatDbDate(existing.resignation_date)) {
+        throw new DomainError('Approved last working day cannot be before the resignation date');
+      }
     }
-
-    if (existing.status !== 'pending') {
-      throw new Error(`Cannot approve separation in status '${existing.status}'`);
-    }
-
-    const finalApprovedLwd = params.approvedLwd ?? (typeof existing.requested_lwd === 'string'
-      ? existing.requested_lwd
-      : (existing.requested_lwd).toISOString().slice(0, 10));
-
-    // Recompute shortfall against final approved LWD
-    const resDate = new Date(existing.resignation_date);
-    const approvedDate = new Date(finalApprovedLwd);
-    const servedDays = Math.ceil((approvedDate.getTime() - resDate.getTime()) / (1000 * 60 * 60 * 24));
-    const finalShortfall = Math.max(0, existing.notice_period_days - servedDays);
-
-    const updated = await this.db
-      .updateTable('core.separations')
-      .set({
-        status: 'approved',
-        approved_lwd: new Date(finalApprovedLwd),
-        shortfall_days: finalShortfall.toFixed(1),
-      })
-      .where('id', '=', params.separationId)
-      .returningAll()
-      .executeTakeFirstOrThrow();
-
-    // 1. Set employee status to on_notice
-    await this.db
-      .updateTable('core.employees')
-      .set({ status: 'on_notice' })
-      .where('id', '=', existing.employee_id)
-      .execute();
-
-    // 2. Fan out clearances to IT, Admin, Finance, HR
-    await this.clearanceService.fanOutClearances(params.separationId);
-
-    return this.mapSeparationRow(updated);
+    await inTransaction(this.db, async (trx) => {
+      if (params.approvedLwd !== undefined && params.action === 'approve') {
+        await trx.updateTable('core.separations').set({ approved_lwd: sql<Date>`${params.approvedLwd}::date` }).where('id', '=', existing.id).execute();
+      }
+    });
+    await act(this.db, {
+      requestId: existing.workflow_request_id,
+      actorUserId: params.approverUserId,
+      action: params.action,
+      comment: params.comment,
+    });
+    return this.getOne(existing.id);
   }
 
-  /**
-   * Withdraws or rejects resignation application.
-   */
-  async withdrawResignation(separationId: number, reason: string): Promise<SeparationItem> {
-    const existing = await this.db
-      .selectFrom('core.separations')
-      .selectAll()
-      .where('id', '=', separationId)
-      .executeTakeFirst();
-
-    if (!existing) {
-      throw new Error(`Separation #${separationId} not found`);
+  /** Withdrawal by the employee (own case) or HR, before the exit is settled. */
+  async withdrawResignation(params: { separationId: number; reason: string; actorUserId: number; actorEmployeeId: number | null; isHr: boolean }): Promise<SeparationItem> {
+    const existing = await this.db.selectFrom('core.separations').selectAll().where('id', '=', params.separationId).executeTakeFirst();
+    if (!existing) throw new NotFoundError(`Separation #${String(params.separationId)} not found`);
+    const own = params.actorEmployeeId !== null && params.actorEmployeeId === existing.employee_id;
+    if (!own && !params.isHr) throw new ForbiddenError('You can only withdraw your own resignation');
+    if (existing.status !== 'pending' && existing.status !== 'approved') {
+      throw new ConflictError(`Cannot withdraw a separation in status '${existing.status}'`);
     }
-
-    if (existing.status === 'completed') {
-      throw new Error('Cannot withdraw completed and settled separation');
-    }
-
-    const updated = await this.db
-      .updateTable('core.separations')
-      .set({
-        status: 'withdrawn',
-        reason: `${existing.reason} [Withdrawn: ${reason}]`,
-      })
-      .where('id', '=', separationId)
-      .returningAll()
-      .executeTakeFirstOrThrow();
-
-    // Revert employee status to active
-    await this.db
-      .updateTable('core.employees')
-      .set({ status: 'active' })
-      .where('id', '=', existing.employee_id)
-      .execute();
-
-    return this.mapSeparationRow(updated);
+    if (existing.fnf_id) throw new ConflictError('F&F has already been computed for this separation; it cannot be withdrawn');
+    await inTransaction(this.db, async (trx) => {
+      if (existing.workflow_request_id && existing.status === 'pending') {
+        await cancelRequest(trx, { requestId: existing.workflow_request_id, actorUserId: params.actorUserId, reason: params.reason });
+      }
+      await trx
+        .updateTable('core.separations')
+        .set({ status: 'withdrawn', reason: `${existing.reason} [Withdrawn: ${params.reason}]`, updated_at: new Date() })
+        .where('id', '=', existing.id)
+        .execute();
+      await trx.updateTable('core.employees').set({ status: 'active' }).where('id', '=', existing.employee_id).where('status', '=', 'on_notice').execute();
+      await trx.deleteFrom('core.clearances').where('separation_id', '=', existing.id).where('status', '=', 'pending').execute();
+      await writeAudit(trx, {
+        actorUserId: params.actorUserId, action: 'withdraw', entity: 'core.separations', entityId: existing.id, newValue: params.reason,
+      });
+    });
+    return this.getOne(existing.id);
   }
 
-  /**
-   * Retrieves separations list.
-   */
-  async getSeparations(filter?: { status?: string | undefined; employeeId?: number | undefined }  ): Promise<SeparationItem[]> {
+  /** Scoped list (C-16): callers only see employees inside their data scope. */
+  async getSeparations(filter: { status?: string | undefined; employeeId?: number | undefined; scope?: EmployeeScope | undefined } = {}): Promise<SeparationItem[]> {
     let query = this.db
       .selectFrom('core.separations as s')
       .innerJoin('core.employees as e', 'e.id', 's.employee_id')
+      .leftJoin('core.departments as d', 'd.id', 'e.department_id')
+      .leftJoin('core.designations as g', 'g.id', 'e.designation_id')
       .selectAll('s')
-      .select([
-        'e.ecode',
-        'e.first_name',
-        'e.last_name',
-        'e.company_id',
-      ]);
-
-    if (filter?.status && filter.status !== 'all') {
-      query = query.where('s.status', '=', filter.status as SeparationItem['status']);
-    }
-    if (filter?.employeeId) {
-      query = query.where('s.employee_id', '=', filter.employeeId);
-    }
-
+      .select(['e.ecode', 'e.first_name', 'e.last_name', 'e.company_id', 'd.name as department_name', 'g.name as designation_name'])
+      .where(employeeScopeSql(filter.scope, 'e'));
+    if (filter.status && filter.status !== 'all') query = query.where('s.status', '=', filter.status as SeparationItem['status']);
+    if (filter.employeeId) query = query.where('s.employee_id', '=', filter.employeeId);
     const rows = await query.orderBy('s.id', 'desc').execute();
-
     return rows.map((r) => ({
-      id: r.id,
-      employeeId: r.employee_id,
+      ...this.mapSeparationRow(r),
       ecode: r.ecode,
       employeeName: `${r.first_name} ${r.last_name ?? ''}`.trim(),
-      departmentName: 'Operations',
-      designationName: 'Staff',
-      companyId: r.company_id ? r.company_id : 1,
-      initiatedAt: (r.initiated_at),
-      initiatedBy: r.initiated_by,
-      reason: r.reason,
-      resignationDate: typeof r.resignation_date === 'string'
-        ? r.resignation_date
-        : (r.resignation_date).toISOString().slice(0, 10),
-      noticePeriodDays: r.notice_period_days,
-      requestedLwd: typeof r.requested_lwd === 'string'
-        ? r.requested_lwd
-        : (r.requested_lwd).toISOString().slice(0, 10),
-      approvedLwd: r.approved_lwd
-        ? (typeof r.approved_lwd === 'string'
-            ? r.approved_lwd
-            : (r.approved_lwd).toISOString().slice(0, 10))
-        : null,
-      shortfallDays: Number(r.shortfall_days),
-      workflowRequestId: r.workflow_request_id ?? null,
-      status: r.status,
-      fnfId: r.fnf_id ?? null,
-      createdAt: (r.created_at),
-      updatedAt: (r.updated_at),
+      ...(r.department_name ? { departmentName: r.department_name } : {}),
+      ...(r.designation_name ? { designationName: r.designation_name } : {}),
+      companyId: r.company_id,
     }));
   }
 
-  /**
-   * Retrieves single separation record with departmental clearances and settlement info.
-   */
-  async getSeparationById(id: number): Promise<{
+  private async getOne(id: number, scope?: EmployeeScope): Promise<SeparationItem> {
+    const rows = await this.db
+      .selectFrom('core.separations')
+      .select('id')
+      .where('id', '=', id)
+      .execute();
+    if (rows.length === 0) throw new NotFoundError(`Separation #${String(id)} not found`);
+    const [item] = (await this.getSeparations({ scope })).filter((s) => s.id === id);
+    if (!item) throw new NotFoundError(`Separation #${String(id)} not found`);
+    return item;
+  }
+
+  async getSeparationById(id: number, scope?: EmployeeScope): Promise<{
     separation: SeparationItem;
     clearances: ReturnType<ClearanceService['mapClearanceRow']>[];
     fnfSettlement?: unknown;
   }> {
-    const rows = await this.getSeparations();
-    const separation = rows.find((s) => s.id === id);
-    if (!separation) {
-      throw new Error(`Separation #${id} not found`);
-    }
-
+    const separation = await this.getOne(id, scope);
     const clearances = await this.clearanceService.getClearancesBySeparation(id);
-
-    const fnf = await this.db
-      .selectFrom('pay.fnf_settlements')
-      .selectAll()
-      .where('separation_id', '=', id)
-      .executeTakeFirst();
-
-    return {
-      separation,
-      clearances,
-      fnfSettlement: fnf ?? null,
-    };
+    const fnf = await this.db.selectFrom('pay.fnf_settlements').selectAll().where('separation_id', '=', id).executeTakeFirst();
+    return { separation, clearances, fnfSettlement: fnf ?? null };
   }
 
-  /**
-   * Generates / computes F&F settlement for an approved separation.
-   */
+  /** F&F in integer paise (C-08 / P-02 / P-03). */
   async computeFnf(params: {
     separationId: number;
     daysPayable?: number | undefined;
@@ -349,170 +338,169 @@ export class SeparationService {
     tdsRupees?: number | undefined;
     userId?: number | undefined;
   }): Promise<FnfSettlementCalculation> {
-    const separation = await this.db
-      .selectFrom('core.separations')
-      .selectAll()
-      .where('id', '=', params.separationId)
-      .executeTakeFirst();
-
-    if (!separation) {
-      throw new Error(`Separation #${params.separationId} not found`);
-    }
-
+    const separation = await this.db.selectFrom('core.separations').selectAll().where('id', '=', params.separationId).executeTakeFirst();
+    if (!separation) throw new NotFoundError(`Separation #${String(params.separationId)} not found`);
     if (separation.status !== 'approved') {
-      throw new Error(`Cannot compute F&F for separation in status '${separation.status}' (must be 'approved')`);
+      throw new ConflictError(`Cannot compute F&F for separation in status '${separation.status}' (must be 'approved')`);
     }
+    const existingFnf = await this.db.selectFrom('pay.fnf_settlements').select(['id', 'status']).where('separation_id', '=', separation.id).executeTakeFirst();
+    if (existingFnf?.status === 'paid') throw new ConflictError('F&F is already paid; it cannot be recomputed');
 
-    const employee = await this.db
-      .selectFrom('core.employees')
-      .selectAll()
-      .where('id', '=', separation.employee_id)
-      .executeTakeFirstOrThrow();
+    const employee = await this.db.selectFrom('core.employees').selectAll().where('id', '=', separation.employee_id).executeTakeFirstOrThrow();
+    if (!employee.doj) throw new DomainError('Employee has no date of joining; F&F cannot be computed');
+    const lwdStr = formatDbDate(separation.approved_lwd ?? separation.requested_lwd);
+    const monthStart = `${lwdStr.slice(0, 7)}-01`;
 
-    const lwd = separation.approved_lwd ?? separation.requested_lwd;
-    const lwdStr = typeof lwd === 'string' ? lwd : (lwd).toISOString().slice(0, 10);
-
-    // Fetch employee salary components
+    // Salary in force on the LWD. component_amounts already holds integer paise.
     const salary = await this.db
       .selectFrom('pay.employee_salaries')
       .selectAll()
-      .where('employee_id', '=', separation.employee_id)
+      .where('employee_id', '=', employee.id)
+      .where('effective_from', '<=', sql<Date>`${lwdStr}::date`)
       .orderBy('effective_from', 'desc')
       .executeTakeFirst();
+    if (!salary) throw new DomainError('Employee has no salary in force on the last working day');
+    const components = parseJsonObject(salary.component_amounts);
+    const catalog = await this.db.selectFrom('pay.salary_components').select(['code', 'kind', 'part_of_gross']).execute();
+    const earningGross = new Set(catalog.filter((c) => c.kind === 'earning' && c.part_of_gross).map((c) => c.code));
+    const amount = (code: string) => Math.round(Number(components[code] ?? 0));
+    const basicMonthlyPaise = amount('BASIC');
+    const daMonthlyPaise = amount('DA');
+    const grossMonthlyPaise = Object.keys(components).filter((c) => earningGross.has(c)).reduce((sum, c) => sum + amount(c), 0);
 
-    // Default to Golden Fixture G8 base if no custom components in dev
-    let basicMonthlyPaise = 3228600; // ₹32,286
-    let grossMonthlyPaise = 6457300; // ₹64,573
-    let daMonthlyPaise = 0;
+    // P-03: if a payroll run for the LWD month already paid this employee, the
+    // final-month salary is not paid again in the F&F.
+    const paidInRun = await this.db
+      .selectFrom('pay.payroll_items as i')
+      .innerJoin('pay.payroll_runs as r', 'r.id', 'i.run_id')
+      .select(['r.id as run_id'])
+      .where('i.employee_id', '=', employee.id)
+      .where('r.month', '=', sql<Date>`${monthStart}::date`)
+      .where('r.status', 'in', ['computed', 'under_review', 'approved', 'finalized', 'paid'])
+      .executeTakeFirst();
+    const daysInMonth = new Date(Date.UTC(Number(lwdStr.slice(0, 4)), Number(lwdStr.slice(5, 7)), 0)).getUTCDate();
+    let daysPayable: number;
+    if (paidInRun) {
+      daysPayable = 0;
+    } else if (params.daysPayable !== undefined) {
+      daysPayable = params.daysPayable;
+    } else {
+      const lock = await this.db
+        .selectFrom('att.month_locks')
+        .select('id')
+        .where('company_id', '=', employee.company_id)
+        .where('month', '=', sql<Date>`${monthStart}::date`)
+        .executeTakeFirst();
+      const from = formatDbDate(employee.doj) > monthStart ? formatDbDate(employee.doj) : monthStart;
+      daysPayable = lock ? await readLockedPayableDays(this.db, employee.id, from, addDaysIso(lwdStr, 1)) : dayDiff(from, lwdStr) + 1;
+    }
+    if (daysPayable < 0 || daysPayable > daysInMonth) throw new DomainError('Days payable must be within the final month');
 
-    if (salary?.component_amounts) {
-      const components = parseJsonObject(salary.component_amounts);
-
-      if (components['BASIC']) basicMonthlyPaise = Math.round(Number(components['BASIC']) * 100);
-      if (components['DA']) daMonthlyPaise = Math.round(Number(components['DA']) * 100);
-      const vals = Object.values(components).map((v) => Number(v) || 0);
-      const gross = vals.reduce((sum, v) => sum + v, 0);
-      if (gross > 0) grossMonthlyPaise = Math.round(gross * 100);
+    // EL balance from the leave ledger unless HR overrides it.
+    let elBalanceDays = params.elBalanceDays;
+    if (elBalanceDays === undefined) {
+      const el = await this.db
+        .selectFrom('lv.ledger as l')
+        .innerJoin('lv.leave_types as t', 't.id', 'l.leave_type_id')
+        .select(sql<string>`coalesce(sum(l.delta), 0)`.as('days'))
+        .where('l.employee_id', '=', employee.id)
+        .where('t.code', '=', 'EL')
+        .executeTakeFirst();
+      elBalanceDays = Math.max(0, Number(el?.days ?? 0));
     }
 
-    // Check clearances for unreturned asset recovery amount
-    const clearanceResolution = await this.clearanceService.areAllClearancesResolved(params.separationId);
+    const clearanceResolution = await this.clearanceService.areAllClearancesResolved(separation.id);
     const unreturnedAssetRecoveryPaise = Math.round(clearanceResolution.totalRecoveryAmountRupees * 100);
-
-    // Active loans outstanding
-    const loans = await this.db
-      .selectFrom('pay.loans')
-      .select(['outstanding'])
-      .where('employee_id', '=', separation.employee_id)
-      .where('status', '=', 'active')
-      .execute();
-    const loanOutstandingPaise = Math.round(loans.reduce((sum, l) => sum + Number(l.outstanding), 0) * 100);
-
-    // Salary holds liabilities
-    const holds = await this.db
-      .selectFrom('pay.salary_holds')
-      .select(['id'])
-      .where('employee_id', '=', separation.employee_id)
-      .where('released_month', 'is', null)
-      .execute();
-    const heldSalaryPaise = holds.length > 0 ? 0 : 0;
-
-    const daysPayable = params.daysPayable ?? 15; // default 15 days in final partial month
-    const elBalanceDays = params.elBalanceDays ?? 12; // default 12 EL days
-    const shortfallDays = Number(separation.shortfall_days);
+    const loans = await this.db.selectFrom('pay.loans').select(['outstanding']).where('employee_id', '=', employee.id).where('status', '=', 'active').execute();
+    const loanOutstandingPaise = loans.reduce((sum, l) => sum + Math.round(Number(l.outstanding) * 100), 0);
+    // Held salary: payment-held items from finalized runs are released in the F&F.
+    const held = await this.db
+      .selectFrom('pay.payroll_items as i')
+      .innerJoin('pay.payroll_runs as r', 'r.id', 'i.run_id')
+      .select(sql<string>`coalesce(sum(i.net_pay), 0)`.as('net'))
+      .where('i.employee_id', '=', employee.id)
+      .where('i.payment_status', '=', 'hold_payment')
+      .where('r.status', 'in', ['finalized', 'paid'])
+      .executeTakeFirst();
+    const heldSalaryPaise = Math.round(Number(held?.net ?? 0) * 100);
+    // Notice recovery the final payroll runs already deducted is not recovered again.
+    const noticeStart = addDaysIso(monthStart, -92);
+    const noticeInRuns = await this.db
+      .selectFrom('pay.payroll_item_lines as l')
+      .innerJoin('pay.payroll_items as i', 'i.id', 'l.item_id')
+      .innerJoin('pay.payroll_runs as r', 'r.id', 'i.run_id')
+      .select(sql<string>`coalesce(sum(l.amount), 0)`.as('amount'))
+      .where('i.employee_id', '=', employee.id)
+      .where('l.component_code', '=', 'NOTICE_RECOVERY')
+      .where('r.status', 'in', ['computed', 'under_review', 'approved', 'finalized', 'paid'])
+      .where('r.month', '>=', sql<Date>`${noticeStart}::date`)
+      .where('r.month', '<=', sql<Date>`${monthStart}::date`)
+      .executeTakeFirst();
+    const noticeAlreadyRecoveredPaise = Math.round(Number(noticeInRuns?.amount ?? 0) * 100);
 
     const calculation = computeFnfSettlement({
-      employeeId: separation.employee_id,
+      employeeId: employee.id,
       separationId: separation.id,
-      doj: employee.doj ?? '2018-03-01',
+      doj: formatDbDate(employee.doj),
       approvedLwd: lwdStr,
       daysPayable,
+      daysInMonth,
       basicMonthlyPaise,
       daMonthlyPaise,
       grossMonthlyPaise,
       elBalanceDays,
-      shortfallDays,
+      shortfallDays: Number(separation.shortfall_days),
+      noticeAlreadyRecoveredPaise,
       unreturnedAssetRecoveryPaise,
       loanOutstandingPaise,
       heldSalaryPaise,
-      tdsPaise: (params.tdsRupees ?? 0) * 100,
+      tdsPaise: Math.round((params.tdsRupees ?? 0) * 100),
     });
-
-    // Save into pay.fnf_settlements
-    const existingSettlement = await this.db
-      .selectFrom('pay.fnf_settlements')
-      .select(['id'])
-      .where('separation_id', '=', separation.id)
-      .executeTakeFirst();
-
-    let fnfId: number;
-
-    if (existingSettlement) {
-      await this.db
-        .updateTable('pay.fnf_settlements')
-        .set({
-          last_working_day: new Date(lwdStr),
-          days_payable: daysPayable.toFixed(1),
-          leave_encash_days: elBalanceDays.toFixed(2),
-          leave_encash_amount: (calculation.earnings.leaveEncashmentPaise / 100).toFixed(2),
-          notice_recovery_days: shortfallDays.toFixed(1),
-          notice_recovery_amount: (calculation.deductions.noticeRecoveryPaise / 100).toFixed(2),
-          gratuity_amount: (calculation.earnings.gratuityPaise / 100).toFixed(2),
-          other_payments: (calculation.earnings.heldSalaryReleasedPaise / 100).toFixed(2),
-          other_deductions: ((calculation.deductions.assetRecoveryPaise + calculation.deductions.loanRecoveryPaise) / 100).toFixed(2),
-          gross_payable: (calculation.earnings.grossPayablePaise / 100).toFixed(2),
-          total_deductions: (calculation.deductions.totalDeductionsPaise / 100).toFixed(2),
-          net_payable: (calculation.netPayablePaise / 100).toFixed(2),
-          status: clearanceResolution.readyForFnf ? 'computed' : 'clearances_pending',
-          tat_due_date: new Date(calculation.tatDueDate),
-          calc_breakdown: JSON.stringify(calculation),
-        })
-        .where('id', '=', existingSettlement.id)
-        .execute();
-      fnfId = existingSettlement.id;
-    } else {
-      const inserted = await this.db
-        .insertInto('pay.fnf_settlements')
-        .values({
-          employee_id: separation.employee_id,
-          separation_id: separation.id,
-          last_working_day: new Date(lwdStr),
-          days_payable: daysPayable.toFixed(1),
-          leave_encash_days: elBalanceDays.toFixed(2),
-          leave_encash_amount: (calculation.earnings.leaveEncashmentPaise / 100).toFixed(2),
-          notice_recovery_days: shortfallDays.toFixed(1),
-          notice_recovery_amount: (calculation.deductions.noticeRecoveryPaise / 100).toFixed(2),
-          gratuity_amount: (calculation.earnings.gratuityPaise / 100).toFixed(2),
-          other_payments: (calculation.earnings.heldSalaryReleasedPaise / 100).toFixed(2),
-          other_deductions: ((calculation.deductions.assetRecoveryPaise + calculation.deductions.loanRecoveryPaise) / 100).toFixed(2),
-          gross_payable: (calculation.earnings.grossPayablePaise / 100).toFixed(2),
-          total_deductions: (calculation.deductions.totalDeductionsPaise / 100).toFixed(2),
-          net_payable: (calculation.netPayablePaise / 100).toFixed(2),
-          status: clearanceResolution.readyForFnf ? 'computed' : 'clearances_pending',
-          tat_due_date: new Date(calculation.tatDueDate),
-          calc_breakdown: JSON.stringify(calculation),
-        })
-        .returningAll()
-        .executeTakeFirstOrThrow();
-      fnfId = inserted.id;
-    }
-
-    // Link fnf_id on core.separations
-    await this.db
-      .updateTable('core.separations')
-      .set({ fnf_id: fnfId })
-      .where('id', '=', separation.id)
-      .execute();
-
+    const money = (p: number) => (p / 100).toFixed(2);
+    const values = {
+      last_working_day: sql<Date>`${lwdStr}::date`,
+      days_payable: daysPayable.toFixed(1),
+      leave_encash_days: elBalanceDays.toFixed(2),
+      leave_encash_amount: money(calculation.earnings.leaveEncashmentPaise),
+      notice_recovery_days: Number(separation.shortfall_days).toFixed(1),
+      notice_recovery_amount: money(calculation.deductions.noticeRecoveryPaise),
+      gratuity_amount: money(calculation.earnings.gratuityPaise),
+      held_salary_released: money(heldSalaryPaise),
+      other_payments: '0.00',
+      other_deductions: money(calculation.deductions.assetRecoveryPaise + calculation.deductions.loanRecoveryPaise + calculation.deductions.tdsPaise),
+      gross_payable: money(calculation.earnings.grossPayablePaise),
+      total_deductions: money(calculation.deductions.totalDeductionsPaise),
+      net_payable: money(calculation.netPayablePaise),
+      status: clearanceResolution.readyForFnf ? 'computed' : 'clearances_pending',
+      tat_due_date: sql<Date>`${calculation.tatDueDate}::date`,
+      calc_breakdown: JSON.stringify({ ...calculation, paidInRunId: paidInRun?.run_id ?? null }),
+      run_id: paidInRun?.run_id ?? null,
+    };
+    await inTransaction(this.db, async (trx) => {
+      let fnfId: number;
+      if (existingFnf) {
+        await trx.updateTable('pay.fnf_settlements').set(values).where('id', '=', existingFnf.id).execute();
+        fnfId = existingFnf.id;
+      } else {
+        const inserted = await trx
+          .insertInto('pay.fnf_settlements')
+          .values({ ...values, employee_id: employee.id, separation_id: separation.id })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        fnfId = inserted.id;
+      }
+      await trx.updateTable('core.separations').set({ fnf_id: fnfId }).where('id', '=', separation.id).execute();
+      await writeAudit(trx, {
+        actorUserId: params.userId ?? null, action: 'fnf_computed', entity: 'pay.fnf_settlements', entityId: fnfId,
+        newValue: JSON.stringify({ netPayablePaise: calculation.netPayablePaise, daysPayable, paidInRunId: paidInRun?.run_id ?? null }),
+      });
+    });
     return calculation;
   }
 
   /**
-   * Finalizes and pays F&F settlement. Triggers LC-07 Exit Day Cascade:
-   * 1. Marks pay.fnf_settlements as 'paid' with paid_at timestamp.
-   * 2. Marks core.separations as 'completed'.
-   * 3. Generates Relieving Letter & Service Certificate in core.letters.
-   * 4. Updates core.employees: status = 'exited', dol = approved_lwd.
+   * Pays the F&F and runs the LC-07 exit-day cascade, atomically. Refuses while
+   * clearances are pending or when the net is negative (recover first).
    */
   async finalizeAndPayFnf(params: {
     fnfId?: number | undefined;
@@ -527,168 +515,69 @@ export class SeparationService {
     serviceCertificateId: number;
     exitDayCommitted: boolean;
   }> {
-    let fnfId = params.fnfId;
-    if (!fnfId && params.separationId) {
-      const sep = await this.db
-        .selectFrom('core.separations')
-        .select(['fnf_id'])
-        .where('id', '=', params.separationId)
-        .executeTakeFirst();
-      if (sep?.fnf_id) {
-        fnfId = sep.fnf_id;
-      } else {
-        const fnfRow = await this.db
-          .selectFrom('pay.fnf_settlements')
-          .select(['id'])
-          .where('separation_id', '=', params.separationId)
-          .executeTakeFirst();
-        if (fnfRow) fnfId = fnfRow.id;
-      }
-    }
-
-    if (!fnfId) {
-      throw new Error(`F&F settlement not found`);
-    }
-
     const fnf = await this.db
       .selectFrom('pay.fnf_settlements')
       .selectAll()
-      .where('id', '=', fnfId)
+      .$if(params.fnfId !== undefined, (q) => q.where('id', '=', params.fnfId ?? 0))
+      .$if(params.fnfId === undefined, (q) => q.where('separation_id', '=', params.separationId ?? 0))
       .executeTakeFirst();
-
-    if (!fnf) {
-      throw new Error(`F&F settlement #${fnfId} not found`);
+    if (!fnf) throw new NotFoundError('F&F settlement not found; compute it first');
+    if (params.separationId !== undefined && fnf.separation_id !== params.separationId) {
+      throw new DomainError('The F&F settlement does not belong to this separation');
     }
+    if (fnf.status === 'paid') throw new ConflictError('F&F settlement is already paid');
+    const clearance = await this.clearanceService.areAllClearancesResolved(fnf.separation_id);
+    if (!clearance.readyForFnf) {
+      throw new ConflictError(`F&F cannot be paid while ${String(clearance.pendingCount)} clearance(s) are pending`);
+    }
+    if (Number(fnf.net_payable) < 0) {
+      throw new ConflictError('Net F&F is negative; record the recovery from the employee (or a waiver) before closing the settlement');
+    }
+    const employee = await this.db.selectFrom('core.employees').selectAll().where('id', '=', fnf.employee_id).executeTakeFirstOrThrow();
+    const lwdStr = formatDbDate(fnf.last_working_day);
+    const name = `${employee.first_name} ${employee.last_name ?? ''}`.trim();
 
-    const separation = await this.db
-      .selectFrom('core.separations')
-      .selectAll()
-      .where('id', '=', fnf.separation_id)
-      .executeTakeFirstOrThrow();
-
-    const employee = await this.db
-      .selectFrom('core.employees')
-      .selectAll()
-      .where('id', '=', fnf.employee_id)
-      .executeTakeFirstOrThrow();
-
-    const lwd = fnf.last_working_day;
-    const lwdStr = typeof lwd === 'string' ? lwd : (lwd).toISOString().slice(0, 10);
-
-    // 1. Issue Relieving Letter & Service Certificate in core.letters
-    const relievingLetter = await this.db
-      .insertInto('core.letters')
-      .values({
-        employee_id: fnf.employee_id,
-        template_code: 'relieving_letter',
-        body_rendered: JSON.stringify({
-          ecode: employee.ecode,
-          name: `${employee.first_name} ${employee.last_name ?? ''}`.trim(),
-          doj: employee.doj,
-          dol: lwdStr,
-          settlementId: fnf.id,
-          netPayable: fnf.net_payable,
-        }),
-        status: 'issued',
-        issued_by: params.paidByUserId,
-        issued_at: new Date(),
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
-
-    const serviceCertificate = await this.db
-      .insertInto('core.letters')
-      .values({
-        employee_id: fnf.employee_id,
-        template_code: 'service_certificate',
-        body_rendered: JSON.stringify({
-          ecode: employee.ecode,
-          name: `${employee.first_name} ${employee.last_name ?? ''}`.trim(),
-          doj: employee.doj,
-          dol: lwdStr,
-        }),
-        status: 'issued',
-        issued_by: params.paidByUserId,
-        issued_at: new Date(),
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
-
-    // 2. Mark pay.fnf_settlements paid
-    await this.db
-      .updateTable('pay.fnf_settlements')
-      .set({
-        status: 'paid',
-        paid_at: new Date(),
-        relieving_letter_id: relievingLetter.id,
-        service_certificate_id: serviceCertificate.id,
-      })
-      .where('id', '=', fnfId)
-      .execute();
-
-    // 3. Mark core.separations completed
-    await this.db
-      .updateTable('core.separations')
-      .set({ status: 'completed' })
-      .where('id', '=', separation.id)
-      .execute();
-
-    // 4. LC-07 Exit Day Automated Trigger:
-    // Update core.employees: status = 'exited', dol = lwd
-    await this.db
-      .updateTable('core.employees')
-      .set({
-        status: 'exited',
-        dol: new Date(lwdStr),
-      })
-      .where('id', '=', fnf.employee_id)
-      .execute();
-
-    // 5. Switch user to restricted 'alumni' role (LC-07)
-    const linkedUser = await this.db
-      .selectFrom('core.users')
-      .select(['id'])
-      .where('employee_id', '=', fnf.employee_id)
-      .executeTakeFirst();
-
-    if (linkedUser) {
-      const alumniRole = await this.db
-        .selectFrom('core.roles')
-        .select(['id'])
-        .where('code', '=', 'alumni')
-        .executeTakeFirst();
-
-      if (alumniRole) {
-        await this.db
-          .deleteFrom('core.user_roles')
-          .where('user_id', '=', linkedUser.id)
-          .execute();
-
-        await this.db
-          .insertInto('core.user_roles')
-          .values({
-            user_id: linkedUser.id,
-            role_id: alumniRole.id,
-            scope_org_unit_id: null,
-          })
-          .execute();
+    return inTransaction(this.db, async (trx) => {
+      const letter = (template: string, body: Record<string, unknown>) =>
+        trx
+          .insertInto('core.letters')
+          .values({ employee_id: fnf.employee_id, template_code: template, body_rendered: JSON.stringify(body), status: 'issued', issued_by: params.paidByUserId, issued_at: new Date() })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+      const doj = employee.doj ? formatDbDate(employee.doj) : null;
+      const relieving = await letter('relieving_letter', { ecode: employee.ecode, name, doj, dol: lwdStr, settlementId: fnf.id, netPayable: fnf.net_payable });
+      const certificate = await letter('service_certificate', { ecode: employee.ecode, name, doj, dol: lwdStr });
+      await trx
+        .updateTable('pay.fnf_settlements')
+        .set({ status: 'paid', paid_at: new Date(), relieving_letter_id: relieving.id, service_certificate_id: certificate.id })
+        .where('id', '=', fnf.id)
+        .execute();
+      await trx.updateTable('core.separations').set({ status: 'completed', updated_at: new Date() }).where('id', '=', fnf.separation_id).execute();
+      await trx.updateTable('core.employees').set({ status: 'exited', dol: sql<Date>`${lwdStr}::date` }).where('id', '=', fnf.employee_id).execute();
+      // Held payroll items are now released through the F&F.
+      await trx.updateTable('pay.salary_holds').set({ released_month: sql<Date>`date_trunc('month', ${lwdStr}::date)::date` }).where('employee_id', '=', fnf.employee_id).where('released_month', 'is', null).execute();
+      const linkedUser = await trx.selectFrom('core.users').select(['id']).where('employee_id', '=', fnf.employee_id).executeTakeFirst();
+      const alumniRole = await trx.selectFrom('core.roles').select(['id']).where('code', '=', 'alumni').executeTakeFirst();
+      if (linkedUser && alumniRole) {
+        await trx.deleteFrom('core.user_roles').where('user_id', '=', linkedUser.id).execute();
+        await trx.insertInto('core.user_roles').values({ user_id: linkedUser.id, role_id: alumniRole.id, scope_org_unit_id: null }).execute();
       }
-    }
-
-    return {
-      settlementId: fnfId,
-      employeeId: fnf.employee_id,
-      status: 'paid',
-      relievingLetterId: relievingLetter.id,
-      serviceCertificateId: serviceCertificate.id,
-      exitDayCommitted: true,
-    };
+      await writeAudit(trx, {
+        actorUserId: params.paidByUserId, action: 'fnf_paid', entity: 'pay.fnf_settlements', entityId: fnf.id,
+        newValue: JSON.stringify({ netPayable: fnf.net_payable, paymentReference: params.paymentReference ?? null }),
+      });
+      return {
+        settlementId: fnf.id,
+        employeeId: fnf.employee_id,
+        status: 'paid' as const,
+        relievingLetterId: relieving.id,
+        serviceCertificateId: certificate.id,
+        exitDayCommitted: true,
+      };
+    });
   }
 
-  /**
-   * CEO Executive Review (LC-06, SOW-221, G3 Exit gate):
-   * Executive review for high-value separations, shortfall waivers, or dispute settlements.
-   */
+  /** CEO executive review (LC-06, SOW-221): rejection or notice-recovery waiver. */
   async ceoReview(params: {
     separationId: number;
     decision: 'approved' | 'rejected' | 'waiver_granted';
@@ -696,101 +585,60 @@ export class SeparationService {
     remarks?: string | undefined;
     waivedRecoveryPaise?: number | undefined;
   }): Promise<SeparationItem> {
-    const existing = await this.db
-      .selectFrom('core.separations')
-      .selectAll()
-      .where('id', '=', params.separationId)
-      .executeTakeFirst();
-
-    if (!existing) {
-      throw new Error(`Separation #${params.separationId} not found`);
+    const existing = await this.db.selectFrom('core.separations').selectAll().where('id', '=', params.separationId).executeTakeFirst();
+    if (!existing) throw new NotFoundError(`Separation #${String(params.separationId)} not found`);
+    if (existing.status === 'completed' || existing.status === 'withdrawn') {
+      throw new ConflictError(`Cannot review a separation in status '${existing.status}'`);
     }
-
-    if (params.decision === 'rejected') {
-      const updated = await this.db
-        .updateTable('core.separations')
-        .set({
-          status: 'rejected',
-          updated_at: new Date(),
-        })
-        .where('id', '=', params.separationId)
-        .returningAll()
-        .executeTakeFirstOrThrow();
-
-      await this.db
-        .updateTable('core.employees')
-        .set({ status: 'active' })
-        .where('id', '=', existing.employee_id)
-        .execute();
-
-      return this.mapSeparationRow(updated);
-    }
-
-    if (params.decision === 'waiver_granted' && params.waivedRecoveryPaise) {
-      const fnf = await this.db
-        .selectFrom('pay.fnf_settlements')
-        .selectAll()
-        .where('separation_id', '=', params.separationId)
-        .executeTakeFirst();
-
-      if (fnf) {
-        const waivedRupees = (params.waivedRecoveryPaise / 100).toFixed(2);
-        const currentShortfall = Number(fnf.notice_recovery_amount);
-        const newShortfall = Math.max(0, currentShortfall - Number(waivedRupees));
-        const diff = currentShortfall - newShortfall;
-        const newDeductions = Math.max(0, Number(fnf.total_deductions) - diff);
-        const newNet = Number(fnf.gross_payable) - newDeductions;
-
-        await this.db
-          .updateTable('pay.fnf_settlements')
-          .set({
-            notice_recovery_amount: newShortfall.toFixed(2),
-            total_deductions: newDeductions.toFixed(2),
-            net_payable: newNet.toFixed(2),
-          })
-          .where('id', '=', fnf.id)
-          .execute();
+    await inTransaction(this.db, async (trx) => {
+      if (params.decision === 'rejected') {
+        if (existing.workflow_request_id && existing.status === 'pending') {
+          await cancelRequest(trx, { requestId: existing.workflow_request_id, actorUserId: params.ceoUserId, reason: params.remarks ?? 'Rejected on CEO review' });
+        }
+        await trx.updateTable('core.separations').set({ status: 'rejected', updated_at: new Date() }).where('id', '=', existing.id).execute();
+        await trx.updateTable('core.employees').set({ status: 'active' }).where('id', '=', existing.employee_id).where('status', '=', 'on_notice').execute();
+      } else if (params.decision === 'waiver_granted' && params.waivedRecoveryPaise) {
+        const fnf = await trx.selectFrom('pay.fnf_settlements').selectAll().where('separation_id', '=', existing.id).executeTakeFirst();
+        if (fnf && fnf.status !== 'paid') {
+          const currentPaise = Math.round(Number(fnf.notice_recovery_amount) * 100);
+          const waived = Math.min(currentPaise, params.waivedRecoveryPaise);
+          const newDeductions = Math.round(Number(fnf.total_deductions) * 100) - waived;
+          await trx
+            .updateTable('pay.fnf_settlements')
+            .set({
+              notice_recovery_amount: ((currentPaise - waived) / 100).toFixed(2),
+              total_deductions: (newDeductions / 100).toFixed(2),
+              net_payable: ((Math.round(Number(fnf.gross_payable) * 100) - newDeductions) / 100).toFixed(2),
+            })
+            .where('id', '=', fnf.id)
+            .execute();
+        }
       }
-    }
-
-    const updated = await this.db
-      .updateTable('core.separations')
-      .set({
-        status: 'approved',
-        updated_at: new Date(),
-      })
-      .where('id', '=', params.separationId)
-      .returningAll()
-      .executeTakeFirstOrThrow();
-
-    return this.mapSeparationRow(updated);
+      await writeAudit(trx, {
+        actorUserId: params.ceoUserId, action: `ceo_${params.decision}`, entity: 'core.separations', entityId: existing.id,
+        newValue: JSON.stringify({ remarks: params.remarks ?? null, waivedRecoveryPaise: params.waivedRecoveryPaise ?? null }),
+      });
+    });
+    return this.getOne(existing.id);
   }
 
   private mapSeparationRow(row: Selectable<SeparationsTable>): SeparationItem {
     return {
       id: row.id,
       employeeId: row.employee_id,
-      initiatedAt: (row.initiated_at),
+      initiatedAt: row.initiated_at,
       initiatedBy: row.initiated_by,
       reason: row.reason,
-      resignationDate: typeof row.resignation_date === 'string'
-        ? row.resignation_date
-        : (row.resignation_date).toISOString().slice(0, 10),
+      resignationDate: formatDbDate(row.resignation_date),
       noticePeriodDays: row.notice_period_days,
-      requestedLwd: typeof row.requested_lwd === 'string'
-        ? row.requested_lwd
-        : (row.requested_lwd).toISOString().slice(0, 10),
-      approvedLwd: row.approved_lwd
-        ? (typeof row.approved_lwd === 'string'
-            ? row.approved_lwd
-            : (row.approved_lwd).toISOString().slice(0, 10))
-        : null,
+      requestedLwd: formatDbDate(row.requested_lwd),
+      approvedLwd: row.approved_lwd ? formatDbDate(row.approved_lwd) : null,
       shortfallDays: Number(row.shortfall_days),
       workflowRequestId: row.workflow_request_id ?? null,
       status: row.status,
       fnfId: row.fnf_id ?? null,
-      createdAt: (row.created_at),
-      updatedAt: (row.updated_at),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     };
   }
 }

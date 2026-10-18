@@ -2,12 +2,13 @@
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { assertEmployeesInScope, type EmployeeScope } from '../../core/rbac/employee-scope.js';
+import { inTransaction } from '../../core/db/database.js';
 
 export class AttendanceMutationError extends Error {
   constructor(readonly code: 'BAD_REQUEST' | 'CONFLICT' | 'NOT_FOUND' | 'FORBIDDEN', message: string) { super(message); }
 }
 export function attendanceTransaction<T>(db: Kysely<Database>, run: (trx: Kysely<Database>) => Promise<T>): Promise<T> {
-  return db.isTransaction ? run(db) : db.transaction().execute(run);
+  return db.isTransaction ? run(db) : inTransaction(db, run);
 }
 export async function lockAttendanceEmployee(db: Kysely<Database>, employeeId: number, scope?: EmployeeScope) {
   const employee = await db.selectFrom('core.employees').select(['id', 'company_id', 'reporting_manager_id'])

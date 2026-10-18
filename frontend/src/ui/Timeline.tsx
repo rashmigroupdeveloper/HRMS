@@ -32,7 +32,7 @@ const NODE: Record<TimelineState, { ring: string; icon: ReactNode }> = {
     icon: <CircleDot />,
   },
   pending: {
-    ring: 'bg-surface-2 text-ink-faint ring-1 ring-inset ring-[var(--line-strong)]',
+    ring: 'bg-surface-2 text-ink-subtle ring-1 ring-inset ring-[var(--line-strong)]',
     icon: <Clock />,
   },
   rejected: {

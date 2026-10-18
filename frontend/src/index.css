@@ -39,16 +39,84 @@
   --color-negative: var(--negative);
   --color-warning: var(--warning);
   --color-info: var(--info);
+  --color-positive-ink: var(--positive-ink);
+  --color-negative-ink: var(--negative-ink);
+  --color-warning-ink: var(--warning-ink);
+  --color-info-ink: var(--info-ink);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-terracotta: var(--terracotta);
   --color-canvas-glow: var(--canvas-glow);
+  --color-focus: var(--focus-outline);
+  /* Aliases used by absorbed T&E / lifecycle screens — mapped onto the one
+     token set so they cannot drift into a second palette (docs/05 §0.1). */
+  --color-surface-1: var(--surface);
+  --color-rule: var(--line);
+  --radius-btn: 999px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
 
   --radius-card: 24px;
   --radius-tile: 18px;
   --radius-row: 14px;
 
-  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --radius-field: 14px;
+  --radius-control: 10px;
+
+  /* Windows-first stack: Manrope (variable 200–800) → a metric-matched local
+     fallback (no layout shift while the webfont swaps in) → Segoe UI Variable
+     / Segoe UI on Windows, SF on Apple, Roboto on Android. */
+  --font-sans: 'Manrope', 'Manrope Fallback', 'Segoe UI Variable Text', 'Segoe UI',
+    system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
   /* Warm Editorial display face — used by `font-serif` on page titles and the
      ESS greeting. Without this, Tailwind's font-serif falls back to Times. */
   --font-serif: 'Fraunces', ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+}
+
+/* Metric-matched fallback so the swap from local Segoe UI/Arial to Manrope
+   does not reflow the page (CLS < 0.1, docs/05 §7). */
+@font-face {
+  font-family: 'Manrope Fallback';
+  src: local('Segoe UI'), local('Arial'), local('Roboto'), local('Helvetica Neue');
+  size-adjust: 104%;
+  ascent-override: 102%;
+  descent-override: 29%;
+  line-gap-override: 0%;
+}
+
+html {
+  /* Windows classic scrollbars take ~17px: reserve the gutter so routes with
+     and without overflow never shift the masthead sideways. */
+  scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+/* Touch-first: no grey tap flash, no 300ms double-tap delay. */
+a,
+button,
+[role='button'],
+label,
+summary {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* The glow lives on a fixed, compositor-only layer instead of
+   `background-attachment: fixed`, which forces a full repaint on every scroll
+   frame (janky on mid-range Android and on Windows at 150% scaling). */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(120% 120% at 100% 100%, var(--canvas-glow) 0%, transparent 42%);
 }
 
 /* Editorial display headings: optical sizing + a slightly tighter set so the
@@ -62,17 +130,24 @@ body {
   font-family: var(--font-sans);
   /* Crextio signature: warm bottom-right gradient corner, not a flat cream fill
      (docs/05 §5). The glow is a token so it flips light↔dark. */
-  background:
-    radial-gradient(
-      120% 120% at 100% 100%,
-      var(--canvas-glow) 0%,
-      transparent 42%
-    ),
-    var(--canvas);
-  background-attachment: fixed;
+  background: var(--canvas);
   color: var(--ink);
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  /* macOS only; Windows ClearType ignores it, which is what we want there. */
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/* Inputs at 16px on phones so iOS Safari never zooms the page on focus. */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
 }
 
 /* Numbers that align or animate are always tabular (docs/05 §1 rule 5). */
@@ -89,14 +164,13 @@ body {
 
 /* Soft, borderless card shadow — separation by shadow + surface, never a 1px line. */
 .u-shadow-card {
-  box-shadow:
-    0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent),
-    0 8px 24px -12px color-mix(in srgb, var(--ink) 18%, transparent);
+  box-shadow: var(--shadow-1);
 }
 .u-shadow-float {
-  box-shadow:
-    0 2px 6px color-mix(in srgb, var(--ink) 8%, transparent),
-    0 16px 40px -16px color-mix(in srgb, var(--ink) 24%, transparent);
+  box-shadow: var(--shadow-2);
+}
+.u-shadow-lift {
+  box-shadow: var(--shadow-3);
 }
 
 /* Charcoal hero grain — a faint fibrous texture over the dark feature card
@@ -262,9 +336,141 @@ body {
   }
 }
 
-/* Visible focus ring in both themes — never remove focus, refine it (§7). */
-:where(a, button, [role='button'], [tabindex]):focus-visible {
-  outline: 2px solid var(--accent);
+/* Visible focus ring in both themes — never remove focus, refine it (§7).
+ * WCAG 2.2 (2.4.11/2.4.13): gold on cream is 1.6:1, so the light-theme ring is
+ * ink (≥ 12:1); dark theme keeps the gold ring (≥ 9:1 on charcoal). */
+:where(a, button, [role='button'], [role='tab'], [role='row'], [role='menuitem'], summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-outline);
   outline-offset: 2px;
-  border-radius: 6px;
+}
+:where(.bg-hero, .u-on-hero) :where(a, button, [role='button'], [tabindex]):focus-visible {
+  outline-color: var(--accent);
+}
+/* Programmatic focus targets (route-change <main>, dialog panels) are not
+   controls — announcing them is the point, drawing a ring is noise. */
+[tabindex='-1']:focus,
+[tabindex='-1']:focus-visible {
+  outline: none;
+}
+:where(input, select, textarea):focus-visible {
+  outline: 2px solid var(--focus-outline);
+  outline-offset: 1px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Shell + motion utilities (docs/05 §2): fast, transform/opacity only.
+ * ------------------------------------------------------------------------- */
+
+/* Route change — fade-through with a 6px rise (occasional → standard motion). */
+.u-route {
+  animation: u-route var(--motion-short) var(--ease-out-strong) both;
+}
+@keyframes u-route {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* List / card stagger: children rise in 40ms apart, capped at 8 items
+ * (≈ 300ms total, never blocking interaction — docs/05 §2.3). */
+.u-stagger > * {
+  animation: u-enter var(--motion-short) var(--ease-out-strong) both;
+}
+.u-stagger > :nth-child(2) { animation-delay: calc(var(--motion-stagger) * 1); }
+.u-stagger > :nth-child(3) { animation-delay: calc(var(--motion-stagger) * 2); }
+.u-stagger > :nth-child(4) { animation-delay: calc(var(--motion-stagger) * 3); }
+.u-stagger > :nth-child(5) { animation-delay: calc(var(--motion-stagger) * 4); }
+.u-stagger > :nth-child(6) { animation-delay: calc(var(--motion-stagger) * 5); }
+.u-stagger > :nth-child(7) { animation-delay: calc(var(--motion-stagger) * 6); }
+.u-stagger > :nth-child(n + 8) { animation-delay: calc(var(--motion-stagger) * 7); }
+
+/* Bottom sheet (mobile quick actions / More). */
+.u-sheet {
+  animation: u-slide-in-up var(--motion-medium) var(--ease-drawer) both;
+}
+.u-fade {
+  animation: u-fade var(--motion-short) var(--ease-std) both;
+}
+@keyframes u-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Safe-area helpers (notches, home indicator, Android gesture bar). */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.px-safe {
+  padding-left: max(var(--page-gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--page-gutter), env(safe-area-inset-right, 0px));
+}
+
+/* Masthead: transparent over the canvas at rest; a solid warm surface once
+ * content scrolls beneath it (state set by an IntersectionObserver, not a
+ * scroll listener — docs/05 §2.4). */
+.u-masthead {
+  transition:
+    background-color var(--motion-short) var(--ease-std),
+    box-shadow var(--motion-short) var(--ease-std);
+}
+.u-masthead[data-scrolled='true'] {
+  background-color: color-mix(in srgb, var(--canvas) 94%, transparent);
+  box-shadow: 0 10px 30px -24px color-mix(in srgb, var(--ink) 40%, transparent);
+}
+
+/* Coarse pointers get honest 44px targets on icon-only controls (WCAG 2.5.8). */
+@media (pointer: coarse) {
+  .u-tap {
+    min-width: var(--tap-min);
+    min-height: var(--tap-min);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .u-route,
+  .u-stagger > *,
+  .u-sheet {
+    animation-name: u-fade;
+  }
+}
+
+/* Charcoal hero surfaces stay dark in BOTH themes, so the text inks inside
+ * them always use the bright (dark-theme) partners. */
+.bg-hero,
+.u-on-hero {
+  --positive-ink: #5fd39e;
+  --negative-ink: #f0918a;
+  --warning-ink: #e8b675;
+  --info-ink: #93acd0;
+  --ink-subtle: var(--hero-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pill-thumb] {
+    transition: none !important;
+  }
+}
+
+/* Grid items default to `min-width: auto`, so one nowrap badge or long code
+   widens a whole column past a 360px phone. Let grid children shrink; their own
+   text wraps or truncates instead of pushing the page sideways. */
+:where(main) :where(.grid) > * {
+  min-width: 0;
+}
+
+/* Dark mode: the charcoal hero sits *below* the canvas, so (a) a hairline keeps
+   its edge legible and (b) tiles inside it mix with cream exactly as they do in
+   light mode — otherwise `surface 8%` over near-black disappears. */
+.dark .bg-hero {
+  --surface: #f4f1e9;
+  box-shadow: inset 0 0 0 1px #2c2a26;
 }

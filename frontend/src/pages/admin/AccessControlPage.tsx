@@ -68,7 +68,7 @@ export function AccessControlPage() {
             the next request and are audited.
           </p>
         </div>
-        <div className="flex rounded-full bg-surface-2 p-1">
+        <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
           <Button
             size="sm"
             variant={tab === 'permissions' ? 'primary' : 'ghost'}

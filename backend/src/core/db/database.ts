@@ -1,4 +1,4 @@
-import { Kysely, PostgresDialect } from 'kysely';
+import { Kysely, PostgresDialect, type Transaction } from 'kysely';
 import pg from 'pg';
 import type { Database } from './types.js';
 
@@ -23,4 +23,26 @@ export function createDatabase(connectionString: string): Kysely<Database> {
   return new Kysely<Database>({
     dialect: new PostgresDialect({ pool }),
   });
+}
+
+/**
+ * S-25: a DATE column is a calendar day, not an instant. pg's default parser
+ * builds a LOCAL-midnight Date, so `toISOString().slice(0, 10)` shifts the day
+ * back by one on any server east of UTC (IST). Parsing at UTC midnight makes
+ * both `toISOString()` and the local getters used by `formatDbDate` return the
+ * stored day for UTC and every UTC+ offset the product runs in.
+ */
+pg.types.setTypeParser(pg.types.builtins.DATE, (v) => (v === 'infinity' || v === '-infinity' ? new Date(NaN) : new Date(`${v}T00:00:00Z`)));
+
+/**
+ * Runs `fn` in a transaction, or directly in the caller's transaction when
+ * `db` already is one (services compose: a workflow request created inside a
+ * domain transaction must not try to open a second, independent one).
+ */
+export async function inTransaction<T>(
+  db: Kysely<Database> | Transaction<Database>,
+  fn: (trx: Transaction<Database>) => Promise<T>,
+): Promise<T> {
+  if (db.isTransaction) return fn(db as Transaction<Database>);
+  return db.transaction().execute(fn);
 }

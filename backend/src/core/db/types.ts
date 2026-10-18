@@ -4,6 +4,7 @@
  * vice versa) is a bug.
  */
 import type { ColumnType, Generated } from 'kysely';
+import type { CoreBulkJobsTable, CoreDepartmentHeadsTable } from './types.bulk.js';
 import type {
   CmpCalendarItemsTable,
   CmpFilingEvidenceTable,
@@ -54,6 +55,9 @@ export interface UsersTable {
   last_login_at: Timestamp | null;
   failed_attempts: Generated<number>;
   locked_until: Timestamp | null;
+  must_change_password: Generated<boolean>;
+  password_changed_at: Timestamp | null;
+  deactivated_at: Timestamp | null;
   created_at: DefaultedTimestamp;
   updated_at: DefaultedTimestamp;
 }
@@ -79,7 +83,7 @@ export interface RolePermissionsTable {
   id: Generated<number>;
   role_id: number;
   permission_id: number;
-  scope: Generated<'all' | 'subtree' | 'own' | 'org_unit' | 'readonly'>;
+  scope: Generated<'all' | 'subtree' | 'own' | 'org_unit' | 'readonly' | 'department'>;
   created_at: DefaultedTimestamp;
   updated_at: DefaultedTimestamp;
 }
@@ -222,6 +226,7 @@ export interface CompaniesTable {
   ecode_prefix: string;
   ecode_next_seq: Generated<number>;
   is_india_payroll: Generated<boolean>;
+  pf_wage_basis: PfWageBasisColumn | null;
   gstin: string | null;
   pan: string | null;
   pf_establishment_code: string | null;
@@ -234,6 +239,10 @@ export interface CompaniesTable {
 
 
   sap_company_code: string | null;
+  country_code: Generated<string>;
+  currency_code: Generated<string>;
+  timezone: Generated<string>;
+  locale: Generated<string>;
 }
 
 export interface LocationsTable {
@@ -295,7 +304,8 @@ export interface GradesTable {
 
 export type EmploymentCategory = 'white_collar' | 'blue_collar' | 'trainee' | 'consultant' | 'contract';
 export type EmployeeStatus = 'onboarding' | 'active' | 'on_notice' | 'exited';
-export type ContractType = 'permanent' | 'temporary' | 'probationary' | 'consultant' | 'fixed_term';
+export type ContractType = 'permanent' | 'temporary' | 'probationary' | 'consultant' | 'fixed_term' | 'apprentice';
+export type PfWageBasisColumn = 'ACTUAL' | 'CEILING_15000';
 
 /** core.employees — THE master record (docs/03 §3). */
 export interface EmployeesTable {
@@ -340,6 +350,7 @@ export interface EmployeesTable {
   uan: string | null;
   pf_number: string | null;
   esic_ip_number: string | null;
+  pf_wage_basis: PfWageBasisColumn | null;
   pf_applicable: Generated<boolean>;
   esic_applicable: Generated<boolean>;
   pt_applicable: Generated<boolean>;
@@ -1187,6 +1198,8 @@ export interface Database {
   'ast.assignments': AssetAssignmentsTable;
   'ast.maintenance': AssetMaintenanceTable;
   'core.settings': SettingsTable;
+  'core.bulk_jobs': CoreBulkJobsTable;
+  'core.department_heads': CoreDepartmentHeadsTable;
   'core.companies': CompaniesTable;
   'core.locations': LocationsTable;
   'core.cost_centers': CostCentersTable;
@@ -1256,6 +1269,7 @@ export interface Database {
   'pay.fnf_settlements': FnfSettlementsTable;
   'pay.loans': LoansTable;
   'pay.loan_postings': LoanPostingsTable;
+  'pay.recovery_carry_forwards': RecoveryCarryForwardsTable;
   'pay.claim_types': ClaimTypesTable;
   'pay.claim_entitlements': ClaimEntitlementsTable;
   'pay.claims': ClaimsTable;
@@ -1383,7 +1397,7 @@ export type LoanType =
   | 'emi_no_interest'
   | 'salary_advance'
   | 'travel_advance';
-export type LoanStatus = 'active' | 'closed' | 'written_off';
+export type LoanStatus = 'pending' | 'active' | 'closed' | 'written_off' | 'rejected' | 'cancelled';
 export type ClaimBasis = 'annual' | 'monthly' | 'per_event';
 export type ClaimStatus = 'pending' | 'verified' | 'approved' | 'rejected' | 'paid';
 
@@ -1467,6 +1481,7 @@ export interface PayrollItemsTable {
   net_pay: string;
   payment_status: Generated<PayrollPaymentStatus>;
   payslip_document_id: number | null;
+  employer_cost: Generated<string>;
   created_at: DefaultedTimestamp;
 }
 
@@ -1476,6 +1491,8 @@ export interface PayrollItemLinesTable {
   component_code: string;
   amount: string;
   calc_note: string | null;
+  loan_id: number | null;
+  carry_forward_id: number | null;
   created_at: DefaultedTimestamp;
 }
 
@@ -1529,6 +1546,18 @@ export interface PtSlabsTable {
   max_monthly: string | null;
   amount: string;
   effective_from: Timestamp;
+  basis: Generated<'earned_monthly' | 'contracted_monthly'>;
+}
+
+export interface RecoveryCarryForwardsTable {
+  id: Generated<number>;
+  employee_id: number;
+  component_code: string;
+  amount: string;
+  from_run_id: number;
+  consumed_run_id: number | null;
+  note: string;
+  created_at: DefaultedTimestamp;
 }
 
 export interface ItSlabsTable {
@@ -1629,6 +1658,7 @@ export interface LoansTable {
   outstanding: string;
   perquisite_applicable: Generated<boolean>;
   source: Generated<string>;
+  source_reference: string | null;
   workflow_request_id: number | null;
   status: Generated<LoanStatus>;
   created_at: DefaultedTimestamp;

@@ -21,89 +21,50 @@ export interface RunSummary {
   netPayRupees: number;
 }
 
-export async function readRunSummary(
-  db: Kysely<Database>,
-  runId: number,
-): Promise<RunSummary | null> {
-  const run = await db
-    .selectFrom('pay.payroll_runs')
-    .selectAll()
-    .where('id', '=', runId)
-    .executeTakeFirst();
-
-  if (!run) return null;
-
-  const stats = await db
-    .selectFrom('pay.payroll_items')
-    .where('run_id', '=', runId)
+/**
+ * One aggregate query for any number of runs (no N+1 per run — the list stays
+ * flat as months and entities accumulate).
+ */
+async function readSummaries(db: Kysely<Database>, filter: { runId?: number; companyId?: number }): Promise<RunSummary[]> {
+  let query = db
+    .selectFrom('pay.payroll_runs as r')
+    .leftJoin('pay.payroll_items as i', 'i.run_id', 'r.id')
     .select([
-      sql<number>`count(*)::int`.as('count'),
-      sql<number>`coalesce(sum(gross), 0)::float`.as('sum_gross'),
-      sql<number>`coalesce(sum(total_deductions), 0)::float`.as('sum_deductions'),
-      sql<number>`coalesce(sum(net_pay), 0)::float`.as('sum_net'),
+      'r.id', 'r.company_id', 'r.month', 'r.run_type', 'r.status', 'r.attendance_lock_id',
+      'r.computed_at', 'r.approved_at', 'r.approved_by', 'r.finalized_at', 'r.finalized_by',
+      sql<number>`count(i.id)::int`.as('count'),
+      sql<number>`coalesce(sum(i.gross), 0)::float`.as('sum_gross'),
+      sql<number>`coalesce(sum(i.total_deductions), 0)::float`.as('sum_deductions'),
+      sql<number>`coalesce(sum(i.net_pay), 0)::float`.as('sum_net'),
     ])
-    .executeTakeFirst();
-
-  return {
-    id: run.id,
-    companyId: run.company_id,
-    month: formatDbDate(run.month),
-    runType: run.run_type,
-    status: run.status,
-    attendanceLockId: run.attendance_lock_id,
-    computedAt: run.computed_at ? run.computed_at.toISOString() : null,
-    approvedAt: run.approved_at ? run.approved_at.toISOString() : null,
-    approvedBy: run.approved_by,
-    finalizedAt: run.finalized_at ? run.finalized_at.toISOString() : null,
-    finalizedBy: run.finalized_by,
-    employeeCount: stats?.count ?? 0,
-    grossRupees: stats?.sum_gross ?? 0,
-    totalDeductionsRupees: stats?.sum_deductions ?? 0,
-    netPayRupees: stats?.sum_net ?? 0,
-  };
+    .groupBy('r.id');
+  if (filter.runId !== undefined) query = query.where('r.id', '=', filter.runId);
+  if (filter.companyId !== undefined) query = query.where('r.company_id', '=', filter.companyId);
+  const rows = await query.orderBy('r.month', 'desc').orderBy('r.id', 'desc').execute();
+  const iso = (d: Date | null) => (d ? d.toISOString() : null);
+  return rows.map((r) => ({
+    id: r.id,
+    companyId: r.company_id,
+    month: formatDbDate(r.month),
+    runType: r.run_type,
+    status: r.status,
+    attendanceLockId: r.attendance_lock_id,
+    computedAt: iso(r.computed_at),
+    approvedAt: iso(r.approved_at),
+    approvedBy: r.approved_by,
+    finalizedAt: iso(r.finalized_at),
+    finalizedBy: r.finalized_by,
+    employeeCount: r.count,
+    grossRupees: r.sum_gross,
+    totalDeductionsRupees: r.sum_deductions,
+    netPayRupees: r.sum_net,
+  }));
 }
 
-export async function readRunSummaries(
-  db: Kysely<Database>,
-  companyId?: number,
-): Promise<RunSummary[]> {
-  let query = db.selectFrom('pay.payroll_runs').selectAll();
-  if (companyId) {
-    query = query.where('company_id', '=', companyId);
-  }
-  const runs = await query.orderBy('month', 'desc').orderBy('id', 'desc').execute();
+export async function readRunSummary(db: Kysely<Database>, runId: number): Promise<RunSummary | null> {
+  return (await readSummaries(db, { runId }))[0] ?? null;
+}
 
-  const summaries: RunSummary[] = [];
-  for (const r of runs) {
-    const stats = await db
-      .selectFrom('pay.payroll_items')
-      .where('run_id', '=', r.id)
-      .select([
-        sql<number>`count(*)::int`.as('count'),
-        sql<number>`coalesce(sum(gross), 0)::float`.as('sum_gross'),
-        sql<number>`coalesce(sum(total_deductions), 0)::float`.as('sum_deductions'),
-        sql<number>`coalesce(sum(net_pay), 0)::float`.as('sum_net'),
-      ])
-      .executeTakeFirst();
-
-    summaries.push({
-      id: r.id,
-      companyId: r.company_id,
-      month: formatDbDate(r.month),
-      runType: r.run_type,
-      status: r.status,
-      attendanceLockId: r.attendance_lock_id,
-      computedAt: r.computed_at ? r.computed_at.toISOString() : null,
-      approvedAt: r.approved_at ? r.approved_at.toISOString() : null,
-      approvedBy: r.approved_by,
-      finalizedAt: r.finalized_at ? r.finalized_at.toISOString() : null,
-      finalizedBy: r.finalized_by,
-      employeeCount: stats?.count ?? 0,
-      grossRupees: stats?.sum_gross ?? 0,
-      totalDeductionsRupees: stats?.sum_deductions ?? 0,
-      netPayRupees: stats?.sum_net ?? 0,
-    });
-  }
-
-  return summaries;
+export async function readRunSummaries(db: Kysely<Database>, companyId?: number): Promise<RunSummary[]> {
+  return readSummaries(db, companyId === undefined ? {} : { companyId });
 }

@@ -1,3 +1,4 @@
+import { payrollConfigRouter } from './config/config.router.js';
 /**
  * @module payroll-core — Salary Components, Structures, Assignments & Pipeline Engine.
  * Public barrel for the payroll-core module (docs/14 §2).
@@ -20,6 +21,7 @@ export const payrollCoreRouter = {
   statutory: statutoryRouter,
   parallelRun: parallelRunRouter,
   annual: annualProcessesRouter,
+  config: payrollConfigRouter,
 };
 
 export {
@@ -227,3 +229,7 @@ export {
   type FnfBreakdownLine,
 } from './fnf/fnf-engine.js';
 
+export { readLockedPayableDays } from './runs/attendance.repository.js';
+
+// Bulk import (CSV/Excel) building blocks — consumed by modules/bulk.
+export { addRunInputs, runInputProblems, enterableComponentCodes, addStatutoryRate, setPtSlabs, STATUTORY_PARAMS } from './config/config.service.js';

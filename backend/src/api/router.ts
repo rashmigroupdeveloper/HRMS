@@ -29,6 +29,7 @@ import { loansRouter } from '../modules/loans/index.js';
 import { claimsRouter } from '../modules/claims/index.js';
 import { travelRouter } from '../modules/travel/index.js';
 import { coreRouter } from '../modules/core/index.js';
+import { bulkRouter } from '../modules/bulk/index.js';
 
 export const appRouter = {
   system: systemRouter,
@@ -60,6 +61,7 @@ export const appRouter = {
   loans: loansRouter,
   claims: claimsRouter,
   travel: travelRouter,
+  bulk: bulkRouter,
 };
 
 export type AppRouter = typeof appRouter;

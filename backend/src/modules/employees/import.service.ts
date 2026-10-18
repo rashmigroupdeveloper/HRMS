@@ -15,6 +15,7 @@ import {
   greythrRowSchema,
   type ImportException,
 } from './import.schemas.js';
+import { inTransaction } from '../../core/db/database.js';
 
 export interface EmsImportSummary {
   imported: number;
@@ -59,7 +60,7 @@ export async function importEmsSeed(db: Kysely<Database>, rawRows: unknown[]): P
   let usersCreated = 0;
   let managersLinked = 0;
 
-  await db.transaction().execute(async (trx) => {
+  await inTransaction(db, async (trx) => {
     const companies = await trx.selectFrom('core.companies').select(['id', 'name', 'ecode_prefix']).execute();
     const companyByName = new Map(companies.map((c) => [c.name, c]));
     const deptCache = new Map<string, number>();
@@ -187,7 +188,7 @@ export async function importGreythrEnrich(db: Kysely<Database>, rawRows: unknown
   const unmatched: string[] = [];
   let updated = 0;
 
-  await db.transaction().execute(async (trx) => {
+  await inTransaction(db, async (trx) => {
     for (const raw of rawRows) {
       const parsed = greythrRowSchema.safeParse(raw);
       if (!parsed.success) {

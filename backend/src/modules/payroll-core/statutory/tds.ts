@@ -166,12 +166,16 @@ function computeNewRegimeTax(taxableIncomePaise: Paise): AnnualTaxResult {
 
   // Surcharge (10% > 50L, 15% > 1Cr, 25% > 2Cr)
   let surchargePaise = paise(0);
-  if (taxableIncomePaise > paise(2000000000)) {
-    surchargePaise = mulDiv(paise(netTaxAfterRebate), 25, 100);
-  } else if (taxableIncomePaise > paise(1000000000)) {
-    surchargePaise = mulDiv(paise(netTaxAfterRebate), 15, 100);
-  } else if (taxableIncomePaise > paise(500000000)) {
-    surchargePaise = mulDiv(paise(netTaxAfterRebate), 10, 100);
+  const bands: [Paise, number][] = [[paise(2000000000), 25], [paise(1000000000), 15], [paise(500000000), 10]];
+  const band = bands.find(([threshold]) => taxableIncomePaise > threshold);
+  if (band) {
+    const [threshold, pct] = band;
+    surchargePaise = mulDiv(paise(netTaxAfterRebate), pct, 100);
+    // Marginal relief: tax + surcharge may not exceed the tax at the threshold
+    // (with that threshold's lower surcharge) plus the income above it.
+    const atThreshold = computeNewRegimeTax(threshold);
+    const ceiling = atThreshold.baseTaxPaise - atThreshold.rebate87aPaise + atThreshold.surchargePaise + (taxableIncomePaise - threshold);
+    if (netTaxAfterRebate + surchargePaise > ceiling) surchargePaise = paise(Math.max(0, ceiling - netTaxAfterRebate));
   }
 
   // 4% Health & Education Cess
@@ -294,7 +298,6 @@ export function computeHraExemption(input: HraExemptionInput): Paise {
 export function generateItStatementLines(input: ItStatementInput): ItStatementLayout {
   const {
     grossSalaryPaise,
-    standardDeductionPaise = NEW_REGIME_SD_PAISE,
     perquisitesPaise = paise(0),
     exemptionsSec10Paise = paise(0),
     previousEmployerIncomePaise = paise(0),
@@ -304,6 +307,8 @@ export function generateItStatementLines(input: ItStatementInput): ItStatementLa
     ytdTaxPaidPaise = paise(0),
     remainingMonths = 12,
   } = input;
+  // P-25: the standard deduction follows the regime (₹75k new, ₹50k old).
+  const standardDeductionPaise = input.standardDeductionPaise ?? (regime === 'old' ? OLD_REGIME_SD_PAISE : NEW_REGIME_SD_PAISE);
 
   const lineA = grossSalaryPaise;
   const lineB = paise(0);

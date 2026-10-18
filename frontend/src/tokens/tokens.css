@@ -1,22 +1,33 @@
 /**
- * Warm Editorial design tokens — ported VERBATIM from docs/05 §1 (the ATS set,
- * Crextio-inspired) + motion tokens from docs/05 §2.2.
+ * Warm Editorial design tokens — docs/05 §1 (the ATS set, Crextio-inspired)
+ * + motion tokens from docs/05 §2.2, extended into a complete system:
+ * type scale, spacing rhythm, elevation, z-layers, focus, layout and
+ * accessible text inks.
  *
  * THE LAW (docs/05 §1 rules, code-review enforced):
  *  - Never hardcode a hex in a component — semantic variables only.
  *  - One gold accent per view. At most one charcoal hero card per screen.
  *  - Warm greys only; near-black #1c1c1e, never #000.
  *  - Dark mode is first-class: `.dark` flips the semantic variables.
+ *
+ * WCAG 2.2 AA amendments (docs/05 §7 "contrast ≥ 4.5:1 in BOTH themes" wins
+ * over the verbatim ATS hex where they disagree):
+ *  - --ink-muted #6f6b62 measured 4.45:1 on the canvas → #67635a (5.0:1).
+ *  - Status hues are fills (dots, bars, tints). Text on light surfaces uses
+ *    the darker `-ink` partner (≥ 5:1 on its own pastel badge tint).
  */
 
 :root {
-  /* ---- Light ---- */
+  color-scheme: light;
+
+  /* ---- Light palette ---- */
   --canvas: #ecebe6;
   --surface: #fbf9f3;
   --surface-2: #f1eee5;
   --ink: #1c1c1e;
-  --ink-muted: #6f6b62;
-  --ink-faint: #a8a399;
+  --ink-muted: #67635a;
+  --ink-faint: #a8a399; /* decorative only — never load-bearing text */
+  --ink-subtle: #6f6b62; /* quiet secondary text (≥ 4.5:1 on surface & surface-2) */
   --line: #e7e2d6;
   --line-strong: #dcd5c4;
   --accent: #f4cb45;
@@ -29,14 +40,79 @@
   --negative: #d4574e;
   --warning: #c98b3a;
   --info: #5b7fa8;
+  --positive-ink: #1b6b4a;
+  --negative-ink: #a3392f;
+  --warning-ink: #7f5216;
+  --info-ink: #3b5f88;
+  /* Terracotta — illustration / empty-state warmth only (docs/12 §5), never UI. */
+  --terracotta: #de998f;
 
   /* Warm bottom-right canvas gradient corner (docs/05 §5 — "~#F7E9B0"). */
   --canvas-glow: #f7e9b0;
+  --scrim: color-mix(in srgb, var(--ink) 45%, transparent);
 
   /* ---- Radii ---- */
   --radius-card: 24px;
   --radius-tile: 18px;
   --radius-row: 14px;
+  --radius-field: 14px;
+  --radius-pill: 999px;
+
+  /* ---- Type scale (docs/05 §7b: fixed rem, ratio ~1.125–1.2, one family) ----
+   * Body never drops below 400 weight: light (300) is display-only (≥ 28px),
+   * where Windows ClearType still renders it crisply. */
+  --text-2xs: 0.6875rem; /* 11 — badges, bottom-bar labels */
+  --text-xs: 0.75rem; /* 12 */
+  --text-sm: 0.875rem; /* 14 — default UI */
+  --text-md: 1rem; /* 16 — mobile body / inputs (no iOS zoom) */
+  --text-lg: 1.125rem; /* 18 — card titles */
+  --text-xl: 1.375rem; /* 22 */
+  --text-2xl: 1.75rem; /* 28 — section display */
+  --text-3xl: 2.25rem; /* 36 — page title (mobile) */
+  --text-4xl: 3rem; /* 48 — page title (desktop) */
+  --text-display: 3.5rem; /* 56 — greeting / payday figure */
+  --leading-tight: 1.08;
+  --leading-snug: 1.3;
+  --leading-body: 1.55;
+  --tracking-display: -0.025em;
+
+  /* ---- Spacing rhythm (4px base; section gaps 24/32 per docs/05 §3) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --page-gutter: 16px;
+  --section-gap: 24px;
+  --content-max: 1320px;
+  --shell-max: 1440px;
+
+  /* ---- Elevation — soft, warm-tinted, never a harsh grey drop ---- */
+  --shadow-1: 0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent),
+    0 8px 24px -12px color-mix(in srgb, var(--ink) 18%, transparent);
+  --shadow-2: 0 2px 6px color-mix(in srgb, var(--ink) 8%, transparent),
+    0 16px 40px -16px color-mix(in srgb, var(--ink) 24%, transparent);
+  --shadow-3: 0 4px 12px color-mix(in srgb, var(--ink) 10%, transparent),
+    0 32px 64px -24px color-mix(in srgb, var(--ink) 34%, transparent);
+
+  /* ---- Z layers ---- */
+  --z-sticky: 20;
+  --z-nav: 30;
+  --z-popover: 40;
+  --z-overlay: 50;
+  --z-toast: 60;
+
+  /* ---- Focus (visible in both themes, never removed) ---- */
+  --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink);
+  --focus-outline: var(--ink);
+
+  /* ---- Touch ---- */
+  --tap-min: 44px;
+  --bottom-bar-h: 64px;
 
   /* ---- Motion (docs/05 §2.2 — custom curves, never stock ease-in) ---- */
   --motion-press: 140ms;
@@ -44,19 +120,34 @@
   --motion-short: 200ms;
   --motion-medium: 300ms; /* UI ceiling — never exceed for UI */
   --motion-counter: 800ms; /* KPI count-up, rare surfaces only */
+  --motion-stagger: 40ms; /* per item, capped at ~300ms total (docs/05 §2.3) */
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-inout-strong: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-std: ease;
 }
 
+@media (min-width: 640px) {
+  :root {
+    --page-gutter: 24px;
+  }
+}
+@media (min-width: 1280px) {
+  :root {
+    --page-gutter: 32px;
+    --section-gap: 32px;
+  }
+}
+
 .dark {
+  color-scheme: dark;
   --canvas: #141416;
   --surface: #1f1f22;
   --surface-2: #27272b;
   --ink: #f4f1e9;
   --ink-muted: #a8a29a;
   --ink-faint: #6d6a64;
+  --ink-subtle: #9a958c;
   --line: #34343a;
   --line-strong: #3f3f46;
   --accent: #f4cb45;
@@ -69,7 +160,22 @@
   --negative: #e87a72;
   --warning: #e0a960;
   --info: #7593b8;
+  --positive-ink: #5fd39e;
+  --negative-ink: #f0918a;
+  --warning-ink: #e8b675;
+  --info-ink: #93acd0;
+  --terracotta: #c98479;
 
   /* Dark canvas glow — a warm ember, far more restrained than the light corner. */
   --canvas-glow: #2a2410;
+  --scrim: color-mix(in srgb, #000 62%, transparent);
+
+  --shadow-1: 0 1px 2px color-mix(in srgb, #000 40%, transparent),
+    0 8px 24px -12px color-mix(in srgb, #000 60%, transparent);
+  --shadow-2: 0 2px 6px color-mix(in srgb, #000 45%, transparent),
+    0 16px 40px -16px color-mix(in srgb, #000 70%, transparent);
+  --shadow-3: 0 4px 12px color-mix(in srgb, #000 50%, transparent),
+    0 32px 64px -24px color-mix(in srgb, #000 80%, transparent);
+  --focus-outline: var(--accent);
+  --focus-ring: 0 0 0 2px var(--canvas), 0 0 0 4px var(--accent);
 }

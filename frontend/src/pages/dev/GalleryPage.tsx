@@ -185,7 +185,7 @@ function SectionHead({
     <div className="flex items-baseline justify-between gap-4">
       <div className="flex items-baseline gap-2">
         <h2 className="text-base font-semibold text-ink">{title}</h2>
-        {meta !== undefined && <span className="text-xs text-ink-faint">{meta}</span>}
+        {meta !== undefined && <span className="text-xs text-ink-subtle">{meta}</span>}
       </div>
       {action}
     </div>

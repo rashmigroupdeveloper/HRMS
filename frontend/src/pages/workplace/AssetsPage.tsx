@@ -78,7 +78,10 @@ const STATUS_LABEL: Record<AssetStatus, string> = {
 
 const STATUS_OPTIONS: SelectOption[] = [
   { value: '', label: 'Any status' },
-  ...(Object.keys(STATUS_LABEL) as AssetStatus[]).map((s) => ({ value: s, label: STATUS_LABEL[s] })),
+  ...(Object.keys(STATUS_LABEL) as AssetStatus[]).map((s) => ({
+    value: s,
+    label: STATUS_LABEL[s],
+  })),
 ];
 
 export function AssetsPage() {
@@ -103,7 +106,7 @@ export function AssetsPage() {
                 }}
               />
             </div>
-            <div className="flex rounded-full bg-surface-2 p-1">
+            <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
               <Button
                 size="sm"
                 variant={tab === 'register' ? 'hero' : 'ghost'}
@@ -127,7 +130,7 @@ export function AssetsPage() {
         }
       />
 
-      <DarkCard padded={false} className="p-8 md:p-10">
+      <DarkCard padded={false} className="hidden p-6 sm:block md:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
           Why this exists
         </p>
@@ -167,7 +170,9 @@ function RegisterPanel({ companyId }: { companyId: string }) {
       if (/^\d+$/.test(companyId)) params.set('companyId', companyId);
       if (q.trim() !== '') params.set('q', q.trim());
       if (status !== '') params.set('status', status);
-      const page = await apiFetch<{ rows: Asset[]; total: number }>(`/api/assets?${params.toString()}`);
+      const page = await apiFetch<{ rows: Asset[]; total: number }>(
+        `/api/assets?${params.toString()}`,
+      );
       setRows(page.rows);
       setTotal(page.total);
     } catch (cause) {
@@ -188,6 +193,9 @@ function RegisterPanel({ companyId }: { companyId: string }) {
   const columns: Column<Asset>[] = [
     {
       key: 'assetNo',
+      sortValue: (r) => r.assetNo,
+      mobile: 'title',
+      locked: true,
       header: 'Asset',
       width: 'minmax(180px,1fr)',
       render: (r) => (
@@ -197,26 +205,38 @@ function RegisterPanel({ companyId }: { companyId: string }) {
         </div>
       ),
     },
-    { key: 'category', header: 'Category', width: '120px', render: (r) => <Pill>{r.category}</Pill> },
+    {
+      key: 'category',
+      sortValue: (r) => r.category,
+      header: 'Category',
+      width: '120px',
+      render: (r) => <Pill>{r.category}</Pill>,
+    },
     {
       key: 'serial',
+      sortValue: (r) => r.serialNo,
       header: 'Serial',
       width: '150px',
       render: (r) => <span className="text-xs text-ink-muted">{r.serialNo ?? '—'}</span>,
     },
     {
       key: 'status',
+      sortValue: (r) => STATUS_LABEL[r.status],
+      mobile: 'badge',
       header: 'Status',
       width: '130px',
-      render: (r) => <StatusBadge tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</StatusBadge>,
+      render: (r) => (
+        <StatusBadge tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</StatusBadge>
+      ),
     },
     {
       key: 'holder',
+      sortValue: (r) => r.holderName,
       header: 'Held by',
       width: 'minmax(170px,1fr)',
       render: (r) =>
         r.holderName === null ? (
-          <span className="text-ink-faint">—</span>
+          <span className="text-ink-subtle">—</span>
         ) : (
           <div>
             <span className="text-ink">{r.holderName}</span>
@@ -228,6 +248,7 @@ function RegisterPanel({ companyId }: { companyId: string }) {
     },
     {
       key: 'warranty',
+      sortValue: (r) => r.warrantyTill,
       header: 'Warranty till',
       width: '130px',
       render: (r) => (
@@ -301,6 +322,9 @@ function RegisterPanel({ companyId }: { companyId: string }) {
           columns={columns}
           rowKey={(r) => String(r.id)}
           maxHeight={620}
+          tableId="workplace.assets"
+          caption="Asset register"
+          exportName="asset-register"
           empty={
             <EmptyState
               icon={<PackageSearch />}
@@ -379,7 +403,9 @@ function AssetEditor({
           companyId: Number(companyId),
         }),
       });
-      toast.success('Asset registered', { description: `${assetNo.trim()} is now in the register.` });
+      toast.success('Asset registered', {
+        description: `${assetNo.trim()} is now in the register.`,
+      });
       setAssetNo('');
       setSerialNo('');
       setDescription('');
@@ -451,7 +477,7 @@ function AssetEditor({
           }}
         />
         {error !== null && (
-          <p className="text-sm text-negative" role="alert">
+          <p className="text-sm text-negative-ink" role="alert">
             {error}
           </p>
         )}
@@ -574,7 +600,11 @@ function AllocationDrawer({
                 value={condition}
                 options={[
                   { value: 'ok', label: 'Returned — good condition' },
-                  { value: 'damaged', label: 'Returned — damaged', description: 'Goes to maintenance' },
+                  {
+                    value: 'damaged',
+                    label: 'Returned — damaged',
+                    description: 'Goes to maintenance',
+                  },
                   {
                     value: 'not_returned',
                     label: 'Not returned',
@@ -639,7 +669,7 @@ function AllocationDrawer({
           />
 
           {error !== null && (
-            <p className="text-sm text-negative" role="alert">
+            <p className="text-sm text-negative-ink" role="alert">
               {error}
             </p>
           )}
@@ -674,8 +704,18 @@ function OutstandingPanel({ companyId }: { companyId: string }) {
   }, [load]);
 
   const columns: Column<Outstanding>[] = [
-    { key: 'assetNo', header: 'Asset', width: '160px', render: (r) => <span className="font-semibold text-ink">{r.assetNo}</span> },
-    { key: 'category', header: 'Category', width: '120px', render: (r) => <Pill>{r.category}</Pill> },
+    {
+      key: 'assetNo',
+      header: 'Asset',
+      width: '160px',
+      render: (r) => <span className="font-semibold text-ink">{r.assetNo}</span>,
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      width: '120px',
+      render: (r) => <Pill>{r.category}</Pill>,
+    },
     {
       key: 'holder',
       header: 'Held by (exited)',
@@ -692,7 +732,9 @@ function OutstandingPanel({ companyId }: { companyId: string }) {
       header: 'Left on',
       width: '140px',
       render: (r) => (
-        <span className="tabular-nums text-ink-muted">{r.dol === null ? '—' : formatDateIN(r.dol)}</span>
+        <span className="tabular-nums text-ink-muted">
+          {r.dol === null ? '—' : formatDateIN(r.dol)}
+        </span>
       ),
     },
   ];
@@ -705,9 +747,9 @@ function OutstandingPanel({ companyId }: { companyId: string }) {
       <Card>
         <div className="flex items-start gap-3">
           {rows.length > 0 ? (
-            <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" />
+            <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning-ink" />
           ) : (
-            <Undo2 className="mt-0.5 size-5 shrink-0 text-positive" />
+            <Undo2 className="mt-0.5 size-5 shrink-0 text-positive-ink" />
           )}
           <div>
             <p className="text-sm font-semibold text-ink">

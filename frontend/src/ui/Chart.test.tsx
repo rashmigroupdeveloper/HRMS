@@ -51,11 +51,11 @@ describe('TrendChart', () => {
     );
     // 3 measured values (June is null).
     const dots = screen.getAllByRole('button');
-    const dataPoints = dots.filter((d) => d.tagName.toLowerCase() === 'circle');
+    const dataPoints = dots.filter((d) => d.hasAttribute('data-point'));
     expect(dataPoints).toHaveLength(3);
 
     await userEvent.tab();
-    expect(document.activeElement?.tagName.toLowerCase()).toBe('circle');
+    expect(document.activeElement?.hasAttribute('data-point')).toBe(true);
   });
 
   it('names the exact value on each point for assistive tech', () => {

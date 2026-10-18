@@ -121,41 +121,50 @@ function toneForStatus(label: string): StatusTone {
 const COLUMNS: Column<DirectoryItem>[] = [
   {
     key: 'ecode',
+    sortValue: (r) => r.ecode,
+    mobile: 'subtitle',
+    locked: true,
     header: 'E-code',
     width: '130px',
     render: (r) => <span className="tabular-nums text-ink-muted">{r.ecode}</span>,
   },
   {
     key: 'name',
+    sortValue: (r) => r.name,
+    mobile: 'title',
+    locked: true,
     header: 'Name',
     width: 'minmax(0,1.4fr)',
     render: (r) => <span className="font-medium text-ink">{r.name}</span>,
   },
   {
     key: 'designation',
+    sortValue: (r) => r.designation,
     header: 'Designation',
     width: 'minmax(0,1.2fr)',
     render: (r) => r.designation ?? '—',
   },
   {
     key: 'department',
+    sortValue: (r) => r.department,
     header: 'Department',
     width: 'minmax(0,1fr)',
     render: (r) => r.department ?? '—',
   },
   {
     key: 'entity',
+    exportValue: (r) => r.entity,
     header: 'Entity',
     width: '90px',
     render: (r) => <Pill>{r.entity}</Pill>,
   },
   {
     key: 'status',
+    sortValue: (r) => r.statusLabel,
+    mobile: 'badge',
     header: 'Status',
     width: '140px',
-    render: (r) => (
-      <StatusBadge tone={toneForStatus(r.statusLabel)}>{r.statusLabel}</StatusBadge>
-    ),
+    render: (r) => <StatusBadge tone={toneForStatus(r.statusLabel)}>{r.statusLabel}</StatusBadge>,
   },
 ];
 
@@ -331,6 +340,9 @@ export function DirectoryPage() {
             columns={COLUMNS}
             rows={data.items}
             rowKey={(r) => r.ecode}
+            tableId="people.directory"
+            caption="Employee directory"
+            exportName="employee-directory"
             onRowClick={(r) => {
               void navigate(`/people/${r.ecode}`);
             }}

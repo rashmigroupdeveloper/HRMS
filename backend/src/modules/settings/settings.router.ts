@@ -1,13 +1,16 @@
 /**
- * Settings procedures. Reads: any authenticated user. Writes: guarded by the
+ * Settings procedures. Reads AND writes require admin.settings (C-33 / B-31: policy values are not public). Writes: guarded by the
  * central permission gate (`admin.settings` — docs/08 §2) and audited old→new
  * into the hash chain.
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { authed, withPermission } from '../../api/orpc.js';
+import { withPermission } from '../../api/orpc.js';
 import { getSetting, listSettings } from './settings.repository.js';
 import { setSetting } from './settings.service.js';
+import { canEditSetting, settingOwners } from './settings-ownership.js';
+import { getUserRoleCodes } from '../../core/rbac/permissions.service.js';
+import { ForbiddenError } from '../../core/errors/index.js';
 
 const settingOutput = z.object({
   key: z.string(),
@@ -16,7 +19,7 @@ const settingOutput = z.object({
   description: z.string(),
 });
 
-const getProcedure = authed
+const getProcedure = withPermission('admin.settings', 'read')
   .route({ method: 'GET', path: '/settings/{key}', summary: 'Read one setting' })
   .input(z.object({ key: z.string().min(1) }))
   .output(settingOutput)
@@ -26,7 +29,7 @@ const getProcedure = authed
     return { key: row.key, value: row.value, valueType: row.value_type, description: row.description };
   });
 
-const listProcedure = authed
+const listProcedure = withPermission('admin.settings', 'read')
   .route({ method: 'GET', path: '/settings', summary: 'List all settings' })
   .output(z.array(settingOutput))
   .handler(async ({ context }) => {
@@ -51,6 +54,11 @@ const setProcedure = withPermission('admin.settings')
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
+    const roles = await getUserRoleCodes(context.db, context.user.id);
+    if (!canEditSetting(roles, input.key)) {
+      const owners = settingOwners(input.key);
+      throw new ForbiddenError(`${input.key} is owned by ${owners.length > 0 ? owners.join(' / ') : 'super_admin'}; your role cannot change it`);
+    }
     await setSetting(context.db, {
       key: input.key,
       value: input.value,

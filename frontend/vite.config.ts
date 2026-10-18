@@ -8,7 +8,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       // Same-origin API during development; production is a vhost proxy (docs/02 §2).
-      '/api': 'http://localhost:5100',
+      '/api': process.env['VITE_API_TARGET'] ?? 'http://localhost:5100',
     },
   },
 });

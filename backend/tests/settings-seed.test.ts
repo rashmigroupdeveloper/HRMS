@@ -35,7 +35,7 @@ interface Read {
 
 /** Every `getTypedSetting(db, 'key', 'type', fallback)` call in the source. */
 function collectPolicyReads(): Read[] {
-  const pattern = /getTypedSetting\(\s*[^,]+,\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*([^)]+)\)/g;
+  const pattern = /getTypedSetting(?:<[^>]+>)?\(\s*[^,]+,\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*([^)]+)\)/g;
   return walk(SRC).flatMap((file) => {
     const source = readFileSync(file, 'utf8');
     return [...source.matchAll(pattern)].map((m) => ({
@@ -73,6 +73,12 @@ describe('policy settings seed', () => {
       if (!policy) continue;
       // The fallback is a literal: 30, 0.5, 'GEN', true.
       const literal = read.fallback.replace(/^'(.*)'$/, '$1');
+      // A null fallback marks a REQUIRED setting (the code refuses without it):
+      // S1 already guarantees the seed row exists, so there is nothing to equal.
+      if (literal === 'null') {
+        expect(policy.valueType).toBe(read.type);
+        continue;
+      }
       const seededAsText =
         typeof policy.value === 'string' ? policy.value : JSON.stringify(policy.value);
       if (seededAsText !== literal) {

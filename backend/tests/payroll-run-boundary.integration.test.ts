@@ -128,8 +128,8 @@ describe.skipIf(!url)('Actual payroll run input boundaries', () => {
   it('preserves a stored ₹10,000 salary instead of producing ₹10 lakh', async () => {
     await fixture(1, 'P', '10000.00');
   });
-  it('includes a 15 July joiner: ₹10,000 × 17/31 = ₹5,483.87', async () => {
-    await fixture(15, 'P', '5483.87');
+  it('includes a 15 July joiner: ₹10,000 × 17/31 = ₹5,483.87, rupee-rounded to ₹5,484 (P-21)', async () => {
+    await fixture(15, 'P', '5484.00');
   });
   it('persists zero gross for a completely absent month', async () => {
     await fixture(1, 'A', '0.00');

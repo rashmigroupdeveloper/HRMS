@@ -18,6 +18,7 @@ import { sql, type Kysely, type Transaction } from 'kysely';
 import type { Database, TicketStatus } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { enqueue } from '../notifications/index.js';
+import { inTransaction } from '../../core/db/database.js';
 
 export interface TicketRow {
   id: number;
@@ -95,7 +96,7 @@ export async function raiseTicket(
     ip: string | null;
   },
 ): Promise<{ id: number; ticketNo: string; slaDueAt: string }> {
-  return db.transaction().execute(async (trx) => {
+  return inTransaction(db, async (trx) => {
     const category = await trx
       .selectFrom('hd.categories')
       .selectAll()

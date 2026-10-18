@@ -15,3 +15,4 @@ export {
   listTransfers,
   generateTargetEcode,
 } from './transfers/transfer.service.js';
+export { registerLifecycleWorkflowHooks } from './workflow-hooks.js';

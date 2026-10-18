@@ -165,9 +165,9 @@ export function TransfersPage() {
         `/api/lifecycle/transfers${typeFilter ? `?transferType=${typeFilter}` : ''}`,
       );
       setTransfers(res.rows);
-    } catch {
-      // Fallback demo dataset if backend empty
+    } catch (err: unknown) {
       setTransfers([]);
+      toast.error(err instanceof Error ? err.message : 'Could not load transfers.');
     } finally {
       setLoading(false);
     }
@@ -557,7 +557,7 @@ export function TransfersPage() {
 
       {/* Tabs & Search Filter */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-3">
-        <div className="flex rounded-full bg-surface-2 p-1">
+        <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
           {(
             [
               { id: 'all', label: 'All Transfers' },
@@ -593,7 +593,7 @@ export function TransfersPage() {
               onChange={(e) => {
                 setSearchQuery(e.target.value);
               }}
-              className="pl-9 pr-3 py-1.5 text-xs rounded-lg border border-line bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+              className="pl-9 pr-3 py-1.5 text-xs rounded-lg border border-line bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-focus"
             />
           </div>
           <Button

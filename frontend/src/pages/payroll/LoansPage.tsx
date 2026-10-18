@@ -6,6 +6,7 @@
  * - Live Loan Calculator & Application form with tenure and 30% salary eligibility checks
  * - Admin: Company loans registry, ledger inspection, and legacy SAP balance import
  */
+import { authFetch, responseError } from '../../lib/api';
 import { useState, useEffect } from 'react';
 import {
   FileSpreadsheet,
@@ -122,39 +123,21 @@ export function LoansPage() {
   async function loadData() {
     try {
       if (tab === 'my') {
-        const res = await fetch('/api/loans/my');
+        const res = await authFetch('/api/loans/my');
         if (res.ok) {
           const data = (await res.json()) as LoanSummary[];
           setMyLoans(data);
         }
       } else if (tab === 'admin') {
-        const res = await fetch('/api/loans/all');
+        const res = await authFetch('/api/loans/all');
         if (res.ok) {
           const data = (await res.json()) as LoanSummary[];
           setAllLoans(data);
         }
       }
-    } catch {
-      // Fallback local mockup for initial render
-      setMyLoans([
-        {
-          loanId: 101,
-          employeeId: 1,
-          loanType: 'loan_diminishing',
-          originalPrincipalRupees: 100000,
-          annualInterestRate: 8.5,
-          monthlyEmiRupees: 8722,
-          tenureMonths: 12,
-          startMonth: '2026-04-01',
-          currentOutstandingRupees: 68420,
-          totalRecoveredPrincipalRupees: 31580,
-          totalRecoveredInterestRupees: 3308,
-          totalPerquisiteValuedRupees: 0,
-          status: 'active',
-          source: 'hrms',
-          postingsCount: 4,
-        },
-      ]);
+    } catch (e: unknown) {
+      // No sample data: show the real failure.
+      toast.error(e instanceof Error ? e.message : 'Could not load data. Please retry.');
     }
   }
 
@@ -181,7 +164,7 @@ export function LoansPage() {
 
     setPreviewLoading(true);
     try {
-      const res = await fetch('/api/loans/preview', {
+      const res = await authFetch('/api/loans/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -196,55 +179,15 @@ export function LoansPage() {
         const data = (await res.json()) as SchedulePreviewResponse;
         setPreview(data);
       } else {
-        fallbackPreview(principalNum, tenureNum, rateNum);
+        setPreview(null);
+        toast.error(await responseError(res, 'Could not preview this loan.'));
       }
-    } catch {
-      fallbackPreview(principalNum, tenureNum, rateNum);
+    } catch (e: unknown) {
+      setPreview(null);
+      toast.error(e instanceof Error ? e.message : 'Could not preview this loan.');
     } finally {
       setPreviewLoading(false);
     }
-  }
-
-  function fallbackPreview(principal: number, tenure: number, rate: number) {
-    const monthlyRate = rate / 1200;
-    const factor = Math.pow(1 + monthlyRate, tenure);
-    const emi =
-      rate === 0
-        ? Math.round(principal / tenure)
-        : Math.round((principal * monthlyRate * factor) / (factor - 1));
-
-    let outstanding = principal;
-    const schedule: ScheduleItem[] = [];
-    let totInterest = 0;
-
-    for (let i = 1; i <= tenure; i++) {
-      const intPart = rate === 0 ? 0 : Math.round(outstanding * monthlyRate);
-      const isFinal = i === tenure;
-      const princPart = isFinal ? outstanding : emi - intPart;
-      outstanding = Math.max(0, outstanding - princPart);
-      totInterest += intPart;
-
-      schedule.push({
-        installmentNumber: i,
-        principalPart: princPart,
-        interestPart: intPart,
-        totalEmi: princPart + intPart,
-        closingOutstanding: outstanding,
-        perquisiteValue: 0,
-      });
-    }
-
-    setPreview({
-      eligible: true,
-      reasons: [],
-      monthlyGrossRupees: 65000,
-      projectedEmiRupees: emi,
-      maxAllowedEmiRupees: 19500,
-      monthlyEmi: emi,
-      totalInterest: totInterest,
-      totalPayment: principal + totInterest,
-      schedule,
-    });
   }
 
   async function handleApplySubmit() {
@@ -253,7 +196,7 @@ export function LoansPage() {
     const rateNum = parseFloat(applyRate) || 0;
 
     try {
-      const res = await fetch('/api/loans/apply', {
+      const res = await authFetch('/api/loans/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -272,15 +215,14 @@ export function LoansPage() {
         const err = (await res.json()) as { message?: string };
         toast.error(err.message ?? 'Application failed');
       }
-    } catch {
-      toast.success('Loan application recorded (Demo mode)');
-      setTab('my');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Could not reach the server. Nothing was saved.');
     }
   }
 
   async function handleImportSubmit() {
     try {
-      const res = await fetch('/api/loans/legacy-import', {
+      const res = await authFetch('/api/loans/legacy-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -301,21 +243,44 @@ export function LoansPage() {
         setImportModalOpen(false);
         void loadData();
       } else {
-        toast.error('Import failed');
+        toast.error(await responseError(res, 'Import failed'));
       }
-    } catch {
-      toast.success('Import recorded (Demo mode)');
-      setImportModalOpen(false);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Could not reach the server. Nothing was saved.');
     }
   }
 
-  function handleOpenLedger(loan: LoanSummary) {
+  async function handleOpenLedger(loan: LoanSummary) {
     setSelectedLoan(loan);
-    fallbackPreview(loan.originalPrincipalRupees, loan.tenureMonths, loan.annualInterestRate);
-    if (preview) {
-      setLoanSchedule(preview.schedule);
-    }
+    setLoanSchedule([]);
     setDrawerOpen(true);
+    // Show the recoveries actually posted by payroll runs (immutable ledger).
+    try {
+      const res = await authFetch(`/api/loans/${String(loan.loanId)}/ledger`);
+      if (!res.ok) {
+        toast.error(await responseError(res, 'Could not load the loan ledger.'));
+        return;
+      }
+      const data = (await res.json()) as {
+        postings: { id: number; principalPart: number; interestPart: number; perquisiteValue: number }[];
+      };
+      let balance = loan.originalPrincipalRupees;
+      setLoanSchedule(
+        data.postings.map((p, i) => {
+          balance = Math.max(0, balance - p.principalPart);
+          return {
+            installmentNumber: i + 1,
+            principalPart: p.principalPart,
+            interestPart: p.interestPart,
+            totalEmi: p.principalPart + p.interestPart,
+            closingOutstanding: balance,
+            perquisiteValue: p.perquisiteValue,
+          };
+        })
+      );
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Could not load the loan ledger.');
+    }
   }
 
   const columns: Column<LoanSummary>[] = [
@@ -378,7 +343,7 @@ export function LoansPage() {
       key: 'actions',
       header: 'Actions',
       render: (r) => (
-        <Button size="sm" variant="ghost" onClick={() => { handleOpenLedger(r); }}>
+        <Button size="sm" variant="ghost" onClick={() => { void handleOpenLedger(r); }}>
           View Ledger
         </Button>
       ),
@@ -393,7 +358,7 @@ export function LoansPage() {
         description="Transparent loan application, automated payroll EMI recovery, and immutable balance ledgers under Section 17(2)."
         actions={
           <div className="flex items-center gap-2">
-            <div className="flex rounded-full bg-surface-2 p-1">
+            <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
               <Button
                 size="sm"
                 variant={tab === 'my' ? 'primary' : 'ghost'}
@@ -552,7 +517,7 @@ export function LoansPage() {
                   Policy Eligibility Status
                 </p>
                 {preview.eligible ? (
-                  <div className="mt-3 flex items-center gap-2 text-sm text-status-positive font-medium">
+                  <div className="mt-3 flex items-center gap-2 text-sm text-positive-ink font-medium">
                     <StatusBadge tone="positive">Eligible</StatusBadge>
                     <span>EMI is within the 30% monthly salary ceiling</span>
                   </div>
@@ -560,13 +525,13 @@ export function LoansPage() {
                   <div className="mt-3 space-y-2">
                     <StatusBadge tone="negative">Ineligible</StatusBadge>
                     {preview.reasons.map((r, i) => (
-                      <p key={i} className="text-xs text-status-negative">
+                      <p key={i} className="text-xs text-negative-ink">
                         • {r}
                       </p>
                     ))}
                   </div>
                 )}
-                <div className="mt-4 pt-4 border-t border-surface-border text-xs text-ink-muted space-y-1">
+                <div className="mt-4 pt-4 border-t border-line text-xs text-ink-muted space-y-1">
                   <div className="flex justify-between">
                     <span>Monthly Salary Benchmark:</span>
                     <span className="font-medium text-ink">{formatINR(preview.monthlyGrossRupees)}</span>
@@ -607,9 +572,9 @@ export function LoansPage() {
                     </div>
                   </div>
 
-                  <div className="max-h-96 overflow-y-auto border border-surface-border rounded-lg">
+                  <div className="max-h-96 overflow-y-auto border border-line rounded-lg">
                     <table className="w-full text-left text-xs">
-                      <thead className="sticky top-0 bg-surface-3 text-ink-muted uppercase">
+                      <thead className="sticky top-0 bg-surface-2 text-ink-muted uppercase">
                         <tr>
                           <th className="p-2.5">#</th>
                           <th className="p-2.5">Principal</th>
@@ -618,7 +583,7 @@ export function LoansPage() {
                           <th className="p-2.5">Outstanding</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-surface-border">
+                      <tbody className="divide-y divide-line">
                         {preview.schedule.map((row) => (
                           <tr key={row.installmentNumber} className="hover:bg-surface-2">
                             <td className="p-2.5 font-mono">{row.installmentNumber}</td>
@@ -663,7 +628,7 @@ export function LoansPage() {
               </div>
               <div>
                 <span className="text-xs text-ink-muted">Principal Recovered</span>
-                <p className="text-sm font-medium text-status-positive">{formatINR(selectedLoan.totalRecoveredPrincipalRupees)}</p>
+                <p className="text-sm font-medium text-positive-ink">{formatINR(selectedLoan.totalRecoveredPrincipalRupees)}</p>
               </div>
               <div>
                 <span className="text-xs text-ink-muted">Interest Paid</span>
@@ -672,10 +637,10 @@ export function LoansPage() {
             </div>
 
             <div>
-              <h4 className="text-sm font-semibold text-ink mb-3">Installment Repayment Schedule</h4>
-              <div className="overflow-x-auto border border-surface-border rounded-lg">
+              <h4 className="text-sm font-semibold text-ink mb-3">Recoveries posted by payroll</h4>
+              <div className="overflow-x-auto border border-line rounded-lg">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-surface-3 text-ink-muted uppercase">
+                  <thead className="bg-surface-2 text-ink-muted uppercase">
                     <tr>
                       <th className="p-2">Installment</th>
                       <th className="p-2">Principal</th>
@@ -684,7 +649,7 @@ export function LoansPage() {
                       <th className="p-2">Balance</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-surface-border">
+                  <tbody className="divide-y divide-line">
                     {loanSchedule.map((s) => (
                       <tr key={s.installmentNumber}>
                         <td className="p-2 font-mono">Month {s.installmentNumber}</td>

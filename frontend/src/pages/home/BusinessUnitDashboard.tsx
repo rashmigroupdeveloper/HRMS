@@ -23,7 +23,9 @@ import {
   Pill,
   StatusBadge,
   TrendChart,
+  QuickLinks,
 } from '../../ui';
+import type { QuickLink } from '../../ui';
 import type { Column } from '../../ui';
 import { todayLongIST } from '../../lib/date';
 import { DashboardError, DashboardSkeleton } from './DashboardFeedback';
@@ -76,7 +78,7 @@ function TrendTable({ points, unit }: { points: TrendPoint[]; unit: string }) {
       numeric: true,
       render: (r) =>
         r.value === null ? (
-          <span className="text-ink-faint">not measured</span>
+          <span className="text-ink-subtle">not measured</span>
         ) : (
           <span>{r.value.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</span>
         ),
@@ -85,7 +87,7 @@ function TrendTable({ points, unit }: { points: TrendPoint[]; unit: string }) {
   return <DataTable rows={points} columns={columns} rowKey={(r) => r.date} maxHeight={220} />;
 }
 
-export function BusinessUnitDashboard() {
+export function BusinessUnitDashboard({ quickLinks }: { quickLinks?: QuickLink[] | undefined }) {
   const bu = useDashboardResource<BuDashboard>('/api/dashboards/business-unit');
   const absenteeism = useDashboardResource<TrendPoint[]>(
     '/api/reports/executive/trend?metric=absenteeism_pct&months=6',
@@ -108,6 +110,8 @@ export function BusinessUnitDashboard() {
         title="Business unit"
         description={`${data.scopeLabel} · every figure below is scoped to your unit (RPT-04).`}
       />
+
+      {quickLinks && quickLinks.length > 0 ? <QuickLinks links={quickLinks} /> : null}
 
       <DarkCard className="grid gap-8 md:grid-cols-[1.3fr_1fr]">
         <div>
@@ -145,7 +149,10 @@ export function BusinessUnitDashboard() {
             { icon: UserPlus, label: 'Joiners MTD', value: data.joinersMtd },
             { icon: UserMinus, label: 'Exits MTD', value: data.exitsMtd },
           ].map((tile) => (
-            <div key={tile.label} className="rounded-row bg-[color-mix(in_srgb,var(--surface)_10%,transparent)] p-4">
+            <div
+              key={tile.label}
+              className="rounded-row bg-[color-mix(in_srgb,var(--surface)_10%,transparent)] p-4"
+            >
               <dt className="flex items-center gap-2 text-xs text-hero-muted">
                 <tile.icon className="size-3.5" />
                 {tile.label}
@@ -168,7 +175,7 @@ export function BusinessUnitDashboard() {
             {data.presenceTodayPct !== null && data.presenceTodayPct !== undefined ? (
               <KpiNumber value={data.presenceTodayPct} precision={1} suffix="%" />
             ) : (
-              <span className="text-ink-faint">—</span>
+              <span className="text-ink-subtle">—</span>
             )}
           </p>
           <p className="mt-1 text-xs text-ink-muted">Active attendance vs scheduled</p>
@@ -179,10 +186,11 @@ export function BusinessUnitDashboard() {
             Shift compliance
           </p>
           <p className="mt-2 text-3xl font-light tabular-nums text-ink">
-            {data.shiftScheduleCompliancePct !== null && data.shiftScheduleCompliancePct !== undefined ? (
+            {data.shiftScheduleCompliancePct !== null &&
+            data.shiftScheduleCompliancePct !== undefined ? (
               <KpiNumber value={data.shiftScheduleCompliancePct} precision={1} suffix="%" />
             ) : (
-              <span className="text-ink-faint">—</span>
+              <span className="text-ink-subtle">—</span>
             )}
           </p>
           <p className="mt-1 text-xs text-ink-muted">Roster assignment adherence</p>
@@ -196,7 +204,7 @@ export function BusinessUnitDashboard() {
             {data.activeOvertimeHours !== null && data.activeOvertimeHours !== undefined ? (
               <KpiNumber value={data.activeOvertimeHours} precision={1} suffix=" h" />
             ) : (
-              <span className="text-ink-faint">—</span>
+              <span className="text-ink-subtle">—</span>
             )}
           </p>
           <p className="mt-1 text-xs text-ink-muted">Recorded overtime across unit</p>
@@ -212,7 +220,7 @@ export function BusinessUnitDashboard() {
             </p>
             <Link
               to="/attendance/exceptions"
-              className="text-xs font-medium text-accent hover:underline"
+              className="text-xs font-semibold text-ink underline decoration-accent decoration-2 underline-offset-4"
             >
               Review queue →
             </Link>
@@ -261,8 +269,8 @@ export function BusinessUnitDashboard() {
             emptyMessage="No employees mapped to this unit yet."
             tableAlternative={
               <p className="mt-3 text-xs text-ink-muted">
-                {data.headcountTotal.toLocaleString('en-IN')} people across{' '}
-                {data.headcount.length} categories.
+                {data.headcountTotal.toLocaleString('en-IN')} people across {data.headcount.length}{' '}
+                categories.
               </p>
             }
           />

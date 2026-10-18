@@ -4,6 +4,7 @@ export {
   createRequest,
   act,
   resubmit,
+  cancelRequest,
   runEscalations,
   inbox,
   timeline,

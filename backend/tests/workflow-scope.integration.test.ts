@@ -176,7 +176,8 @@ describe.skipIf(!url)('WF-01 scoped approvers against native PostgreSQL', () => 
       .where('work_date', '=', sql<Date>`${request.date}::date`).executeTakeFirst()).toBeUndefined();
   });
   it('rejects approval for a closed company-month even when that date has no day row', async () => {
-    const request = await pendingOd(addDaysIso(istDateString(), 10));
+    // A date no other case uses (today+10 collided with the first approved OD → flaky day-row assertion).
+    const request = await pendingOd(addDaysIso(istDateString(), 400));
     const month = `${request.date.slice(0, 7)}-01`;
     await db.insertInto('att.month_locks').values({ company_id: companyId,
       month: sql<Date>`${month}::date`, locked_by: insideUser,

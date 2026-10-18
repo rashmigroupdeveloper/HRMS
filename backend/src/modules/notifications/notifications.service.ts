@@ -18,6 +18,7 @@ import {
   type EnqueueInput,
   type NotificationRow,
 } from './notifications.repository.js';
+import { inTransaction } from '../../core/db/database.js';
 
 const MAX_ATTEMPTS = 5;
 
@@ -274,7 +275,7 @@ export async function processQueue(
   let sent = 0;
   let failed = 0;
 
-  await db.transaction().execute(async (trx) => {
+  await inTransaction(db, async (trx) => {
     const batch = await claimDeliverable(trx, batchSize);
     for (const notification of batch) {
       try {

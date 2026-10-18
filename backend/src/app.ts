@@ -1,3 +1,6 @@
+import { registerLoansWorkflowHooks } from './modules/loans/index.js';
+import { registerTravelWorkflowHooks } from './modules/travel/index.js';
+import { registerLifecycleWorkflowHooks } from './modules/lifecycle/index.js';
 import express, { type Express, type NextFunction, type Request, type Response } from 'express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -6,7 +9,7 @@ import rateLimit, { ipKeyGenerator, type Options as RateLimitOptions } from 'exp
 import { verifyToken } from './core/auth/jwt.js';
 import { logger } from './core/logger.js';
 import { rateLimitsFromEnv } from './api/rate-limits.js';
-import { getOpenApiSpec, orpcMiddleware, type AppDeps } from './api/handler.js';
+import { getOpenApiSpec, orpcMiddleware, requestIdMiddleware, type AppDeps } from './api/handler.js';
 import { registerAttendanceWorkflowHooks } from './modules/attendance/index.js';
 import { registerLeaveWorkflowHooks } from './modules/leave/index.js';
 import { registerLettersWorkflowHooks } from './modules/letters/index.js';
@@ -81,6 +84,7 @@ export function createApp(deps?: Partial<AppDeps>): Express {
     db: deps?.db ?? null,
     jwtSecret: deps?.jwtSecret ?? 'insecure-test-only-secret-never-in-production!',
     secureCookies: deps?.secureCookies ?? false,
+    appBaseUrl: deps?.appBaseUrl ?? 'http://localhost:5173',
   };
 
   // Domain reactions to workflow finals (approve → write-back) must be live
@@ -88,6 +92,9 @@ export function createApp(deps?: Partial<AppDeps>): Express {
   registerAttendanceWorkflowHooks();
   registerLeaveWorkflowHooks();
   registerLettersWorkflowHooks();
+  registerLifecycleWorkflowHooks();
+  registerTravelWorkflowHooks();
+  registerLoansWorkflowHooks();
 
   const app = express();
 
@@ -158,16 +165,29 @@ export function createApp(deps?: Partial<AppDeps>): Express {
    * and proves the limiter actually bites.
    */
   const limits = deps?.rateLimits ?? rateLimitsFromEnv();
-  app.use(
-    '/api/auth',
+  // C-18 / A-05: the tight credential limiter guards ONLY the endpoints that
+  // accept a secret. /auth/me, /auth/refresh and /auth/logout carry a session
+  // and are throttled per user/session by the global limiter below — sharing
+  // the login bucket logged out every user behind one office NAT.
+  const credentialLimiters = [
     limiter(60_000, limits.authPerIdentifier, 'Too many attempts for this account. Try again shortly.', identifierKey),
     limiter(15 * 60_000, limits.authPerAddress, 'Too many attempts from this address. Try again shortly.'),
-  );
+  ];
+  for (const path of ['/api/auth/login', '/api/auth/forgot-password', '/api/auth/reset-password', '/api/auth/change-password']) {
+    app.use(path, ...credentialLimiters);
+  }
+  app.use(requestIdMiddleware);
   app.use('/api', limiter(60_000, limits.globalPerAddress, 'Too many requests. Slow down and try again.', async (req) => {
     const header = req.headers.authorization;
     if (header?.startsWith('Bearer ')) {
       const claims = await verifyToken(header.slice(7), resolved.jwtSecret);
       if (claims?.typ === 'access') return `user:${String(claims.userId)}`;
+    }
+    const cookies: unknown = req.cookies;
+    const refresh = typeof cookies === 'object' && cookies !== null ? (cookies as Record<string, unknown>)['hrms_refresh'] : undefined;
+    if (typeof refresh === 'string' && refresh !== '') {
+      const claims = await verifyToken(refresh, resolved.jwtSecret);
+      if (claims?.typ === 'refresh') return `user:${String(claims.userId)}`;
     }
     return `address:${ipKeyGenerator(req.ip ?? 'unknown')}`;
   }));

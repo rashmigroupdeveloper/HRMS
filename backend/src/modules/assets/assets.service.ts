@@ -21,6 +21,7 @@ import type {
 } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
+import { inTransaction } from '../../core/db/database.js';
 
 export interface AssetRow {
   id: number;
@@ -264,7 +265,7 @@ export async function assignAsset(
     ip: string | null;
   },
 ): Promise<{ assignmentId: number }> {
-  return db.transaction().execute(async (trx) => {
+  return inTransaction(db, async (trx) => {
     const asset = await trx
       .selectFrom('ast.assets')
       .select(['id', 'asset_no', 'status'])
@@ -342,7 +343,7 @@ export async function returnAsset(
     ip: string | null;
   },
 ): Promise<{ ok: true }> {
-  return db.transaction().execute(async (trx) => {
+  return inTransaction(db, async (trx) => {
     const assignment = await trx
       .selectFrom('ast.assignments as asg')
       .innerJoin('ast.assets as a', 'a.id', 'asg.asset_id')
@@ -458,7 +459,7 @@ export async function logMaintenance(
     ip: string | null;
   },
 ): Promise<{ id: number }> {
-  return db.transaction().execute(async (trx) => {
+  return inTransaction(db, async (trx) => {
     const asset = await trx
       .selectFrom('ast.assets')
       .select(['id', 'asset_no'])

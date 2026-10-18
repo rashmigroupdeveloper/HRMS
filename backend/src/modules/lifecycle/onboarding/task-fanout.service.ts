@@ -11,6 +11,7 @@ import { sql, type Kysely } from 'kysely';
 import { writeAudit } from '../../../core/audit/audit.service.js';
 import { assertEmployeesInScope, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
 import type { Database } from '../../../core/db/types.js';
+import { inTransaction } from '../../../core/db/database.js';
 
 export class KentEnrollmentUnavailable extends Error {
   constructor() {super('Kent enrollment verification is unavailable until the authorized enrollment integration is connected');this.name='KentEnrollmentUnavailable';}
@@ -114,7 +115,7 @@ export const TaskFanoutService = {
       await db.updateTable('core.onboarding_tasks').set({status:'completed',done_by:userId,done_at:now,notes:notes??null,updated_at:now}).where('id','=',taskId).execute();
       await writeAudit(db,{actorUserId:userId,subjectEmployeeId:target.employee_id,action:'update',entity:'core.onboarding_tasks',entityId:taskId,field:'status',oldValue:task.status,newValue:'completed'});
     };
-    return db.isTransaction?complete(db):db.transaction().execute(complete);
+    return db.isTransaction?complete(db):inTransaction(db, complete);
   },
 
   /**

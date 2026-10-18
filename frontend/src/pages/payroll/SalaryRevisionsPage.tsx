@@ -103,8 +103,8 @@ export function SalaryRevisionsPage() {
       if (list.length > 0) {
         setSelectedStructureId(list[0]?.id);
       }
-    } catch {
-      // Fallback
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Could not load salary structures.');
     }
   }
 
@@ -370,8 +370,8 @@ export function SalaryRevisionsPage() {
                         <div
                           className={`flex items-center text-xs font-mono font-semibold px-2 py-1 rounded-row ${
                             rev.ctc_change_percent >= 0
-                              ? 'bg-[color-mix(in_srgb,var(--positive)_12%,var(--surface))] text-positive'
-                              : 'bg-[color-mix(in_srgb,var(--negative)_12%,var(--surface))] text-negative'
+                              ? 'bg-[color-mix(in_srgb,var(--positive)_12%,var(--surface))] text-positive-ink'
+                              : 'bg-[color-mix(in_srgb,var(--negative)_12%,var(--surface))] text-negative-ink'
                           }`}
                         >
                           <ArrowUpRight className="size-3.5 mr-0.5" />
@@ -384,7 +384,7 @@ export function SalaryRevisionsPage() {
 
                   {/* Retro period alert if applicable */}
                   {rev.retro_months_affected.length > 0 && (
-                    <div className="p-3 bg-[color-mix(in_srgb,var(--warning)_12%,var(--surface))] border border-warning rounded-row flex items-start gap-2.5 text-xs text-warning">
+                    <div className="p-3 bg-[color-mix(in_srgb,var(--warning)_12%,var(--surface))] border border-warning rounded-row flex items-start gap-2.5 text-xs text-warning-ink">
                       <ShieldAlert className="size-4 mt-0.5 shrink-0" />
                       <div>
                         <div className="font-semibold">
