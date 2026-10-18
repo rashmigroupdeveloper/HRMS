@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/env.sh"
-for f in backend frontend; do [ -f $E2E_LOGS/$f.pid ] && kill $(cat $E2E_LOGS/$f.pid) 2>/dev/null; done
+for f in backend frontend worker; do [ -f $E2E_LOGS/$f.pid ] && kill $(cat $E2E_LOGS/$f.pid) 2>/dev/null; done
 for p in $E2E_BACKEND_PORT $E2E_FRONTEND_PORT; do pid=$(ss -ltnp "sport = :$p" 2>/dev/null | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2); [ -n "$pid" ] && kill $pid; done
 sleep 1; true
