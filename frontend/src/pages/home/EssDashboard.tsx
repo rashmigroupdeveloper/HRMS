@@ -230,7 +230,7 @@ export function EssDashboard({
   const attendanceLabelText = needsRegularise ? 'Request regularisation' : 'Open my attendance';
 
   return (
-    <div className="space-y-6">
+    <div className="u-stagger space-y-6">
       <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
         <PageHeader
           tone="greeting"
