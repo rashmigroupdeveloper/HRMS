@@ -28,6 +28,10 @@ export interface PfComputeInput {
   unpaidWeekoffDays?: number | undefined;
   /** Establishment active employee headcount (for admin charge min ₹500 split) */
   headcount?: number | undefined;
+  /** REQ-003: EPS member this month (see eps-eligibility.ts); false → no EPS, the whole 12% to EPF. Default true. */
+  epsEligible?: boolean | undefined;
+  /** REQ-003: international worker — PF on full wages, no ceiling (EPS wages still capped). */
+  internationalWorker?: boolean | undefined;
 }
 
 export interface PfComputeResult {
@@ -71,17 +75,20 @@ export function computePf(input: PfComputeInput): PfComputeResult {
     lopDays = 0,
     unpaidWeekoffDays = 0,
     headcount = 1,
+    epsEligible = true,
+    internationalWorker = false,
   } = input;
 
   // 1. Employee EPF Base
   let eePfBasePaise = pfWagesPaise;
-  if (wageBaseMode === 'CEILING_15000') {
+  if (wageBaseMode === 'CEILING_15000' && !internationalWorker) {
     eePfBasePaise = min(pfWagesPaise, STATUTORY_PF_CEILING_PAISE);
   }
   const eePfPaise = roundPfContribution(mulDiv(eePfBasePaise, 12, 100));
 
   // 2. Employer EPS (8.33% capped at ₹15,000 wage ceiling -> max ₹1,250)
-  const epsWagesPaise = min(pfWagesPaise, STATUTORY_PF_CEILING_PAISE);
+  // EPS wages never exceed the ceiling; a non-member has no EPS wages (ECR column 5 = 0).
+  const epsWagesPaise = epsEligible ? min(pfWagesPaise, STATUTORY_PF_CEILING_PAISE) : paise(0);
   // 8.33% = 833 basis points
   const rawEpsPaise = mulDiv(epsWagesPaise, 833, 10000);
   const erEpsPaise = min(roundPfContribution(rawEpsPaise), MAX_EPS_MONTHLY_PAISE);

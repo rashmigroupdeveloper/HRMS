@@ -351,6 +351,12 @@ export interface EmployeesTable {
   pf_number: string | null;
   esic_ip_number: string | null;
   pf_wage_basis: PfWageBasisColumn | null;
+  /** REQ-003 EPF Form 11 facts (EPS membership). */
+  epf_member_before_sep2014: boolean | null;
+  epf_first_enrolled_on: Timestamp | null;
+  epf_first_wages: string | null;
+  international_worker: Generated<boolean>;
+  eps_eligible: boolean | null;
   pf_applicable: Generated<boolean>;
   esic_applicable: Generated<boolean>;
   pt_applicable: Generated<boolean>;

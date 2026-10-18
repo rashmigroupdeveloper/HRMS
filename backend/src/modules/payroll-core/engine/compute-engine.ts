@@ -115,7 +115,8 @@ export interface EmployeeComputeInput {
   hold?: { hasHold: boolean; holdType?: 'payment' | 'process' | undefined; reason?: string | undefined } | undefined;
   rates?: StatutoryRates | undefined;
   /** PF membership and wage basis (company/employee policy). Default: member, ACTUAL wages. */
-  pf?: { applicable: boolean; wageBasis: PfWageBasis } | undefined;
+  /** epsEligible (default true): REQ-003 EPS membership for the month; internationalWorker: PF on full wages, no ceiling. */
+  pf?: { applicable: boolean; wageBasis: PfWageBasis; epsEligible?: boolean | undefined; internationalWorker?: boolean | undefined } | undefined;
   /** ESIC coverage for the current contribution period, decided by the caller. Default false. */
   esicCovered?: boolean | undefined;
   ptSlabs?: PtSlabRow[] | undefined;
@@ -273,13 +274,18 @@ export function computeEmployeePayroll(
   const pfMember = pf.applicable && !apprentice;
   if (pfMember && pfWagesPaise > 0) {
     const ceiling = rates.pfWageCeilingPaise;
-    const eeBase = pf.wageBasis === 'CEILING_15000' ? min(pfWagesPaise, ceiling) : pfWagesPaise;
+    // International workers (para 83): PF on the full wages, no ₹15,000 ceiling.
+    const actual = pf.internationalWorker === true || pf.wageBasis !== 'CEILING_15000';
+    const eeBase = actual ? pfWagesPaise : min(pfWagesPaise, ceiling);
     const ee = roundPfContribution(mulDiv(eeBase, rates.pfEeBp, 10000));
-    stat('PF_EE', ee, `PF ${String(rates.pfEeBp / 100)}% of ${pf.wageBasis === 'ACTUAL' ? 'actual' : 'ceiling-restricted'} PF wages ₹${rupees(eeBase)}`, 100);
+    stat('PF_EE', ee, `PF ${String(rates.pfEeBp / 100)}% of ${pf.internationalWorker === true ? 'full (international worker)' : actual ? 'actual' : 'ceiling-restricted'} PF wages ₹${rupees(eeBase)}`, 100);
     const statutoryBase = min(pfWagesPaise, ceiling);
-    const eps = min(roundPfContribution(mulDiv(statutoryBase, rates.epsBp, 10000)), rates.epsCapPaise);
+    // REQ-003: EPS only for EPS members (not a post-Sep-2014 joiner above the ceiling, not 58+);
+    // EPS wages never exceed the ceiling. A non-member's whole employer share goes to EPF.
+    const epsMember = pf.epsEligible !== false;
+    const eps = epsMember ? min(roundPfContribution(mulDiv(statutoryBase, rates.epsBp, 10000)), rates.epsCapPaise) : paise(0);
     const erTotal = roundPfContribution(mulDiv(eeBase, rates.pfErBp, 10000));
-    er('PF_ER', paise(Math.max(0, erTotal - eps)), `Employer EPF ${String(rates.pfErBp / 100)}% − EPS on ₹${rupees(eeBase)}`, 200);
+    er('PF_ER', paise(Math.max(0, erTotal - eps)), epsMember ? `Employer EPF ${String(rates.pfErBp / 100)}% − EPS on ₹${rupees(eeBase)}` : `Employer EPF ${String(rates.pfErBp / 100)}% on ₹${rupees(eeBase)} (not an EPS member)`, 200);
     er('EPS_ER', eps, `EPS ${String(rates.epsBp / 100)}% of ₹${rupees(statutoryBase)} (cap ₹${rupees(rates.epsCapPaise)})`, 201);
     er('EDLI', min(roundPfContribution(mulDiv(statutoryBase, rates.edliBp, 10000)), rates.edliCapPaise), `EDLI ${String(rates.edliBp / 100)}% of ₹${rupees(statutoryBase)}`, 202);
     er('PF_ADMIN', roundPfContribution(mulDiv(eeBase, rates.pfAdminBp, 10000)), `EPF admin ${String(rates.pfAdminBp / 100)}%`, 203);
