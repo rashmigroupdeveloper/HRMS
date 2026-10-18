@@ -190,8 +190,8 @@ export function SalaryRevisionsPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <PageHeader
-        title="Employee Salary Revisions & History"
-        description="Effective-dated revisions, before/after CTC delta comparisons, retro lookback preview & probation auto-switch."
+        title="Salary revisions"
+        description="Effective-dated revisions with before-and-after CTC, arrears preview and the probation switch."
         actions={
           <div className="flex gap-2">
             <Button

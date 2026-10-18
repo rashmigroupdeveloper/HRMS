@@ -294,8 +294,8 @@ export function SalaryStructuresPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <PageHeader
-        title="Salary Structures & CTC Breakups"
-        description="Directed Acyclic Graph (DAG) formula evaluator, RML live component templates & probation scaling."
+        title="Salary structures"
+        description="Pay components, their formulas and how a CTC breaks down — including probation scaling."
         actions={
           <div className="flex gap-2">
             <Button

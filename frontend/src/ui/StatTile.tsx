@@ -66,7 +66,7 @@ export function StatTile({ label, value, prefix, suffix, precision, hint, icon, 
   const shell = cn('block rounded-tile p-5', SHELL[tone], className);
   if (to !== undefined) {
     return (
-      <Link to={to} className={cn(shell, 'u-press transition-shadow duration-(--motion-short) hover:u-shadow-float')}>
+      <Link to={to} className={cn(shell, 'u-lift')}>
         {body}
       </Link>
     );
