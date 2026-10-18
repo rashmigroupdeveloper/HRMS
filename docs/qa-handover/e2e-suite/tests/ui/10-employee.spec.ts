@@ -3,54 +3,58 @@ import { test, expect, task } from '../../lib/fixtures';
 import { choose, pickDate } from '../../lib/ui';
 import { cohort } from '../../lib/personas';
 import { decide } from '../../lib/ui';
+import { q } from '../../lib/db';
+import { recentWeekday, futureWeekday } from '../../lib/dates';
 
 test.describe('employee self-service', () => {
   test(task('employee', 'E9', 'apply for leave → manager approves → employee sees approved'), async ({ as, ux }) => {
     ux.start('Apply leave');
+    const d1 = futureWeekday(9);
     const s = await as('employee2');
     await s.step('My Leave → Apply for a day off', async () => {
       await s.nav('My Leave', '/my/leave');
-      await s.click(s.main().getByRole('button', { name: 'Apply for a day off' }));
+      await s.click(s.main().getByRole('button', { name: 'Apply for a day off' }).first());
     });
     const dlg = s.page.getByRole('dialog', { name: /apply for a day off/i });
     await s.step('fill leave type, dates, reason', async () => {
       await choose(s, dlg.getByRole('combobox', { name: 'Leave type' }), /Casual Leave/);
-      await pickDate(s, dlg.getByRole('button', { name: /^First day/ }), '28 Oct 2026');
-      await pickDate(s, dlg.getByRole('button', { name: /^Last day/ }), '28 Oct 2026');
+      await pickDate(s, dlg.getByRole('button', { name: /^First day/ }), d1.label);
+      await pickDate(s, dlg.getByRole('button', { name: /^Last day/ }), d1.label);
       await s.fill(dlg.getByRole('textbox', { name: /why are you taking/i }), 'E2E: family function');
       await expect(dlg).toContainText(/1 days? of Casual Leave/);
     });
     await s.step('send to manager and see it in motion', async () => {
       await s.click(dlg.getByRole('button', { name: 'Send to my manager' }));
       await s.expectToast(/sent|submitted|applied|manager/i);
-      await expect(s.main().getByRole('link', { name: /CL · 28 Oct 2026/ })).toBeVisible();
+      await expect(s.main().getByRole('link', { name: new RegExp(`CL · ${d1.label}`) })).toBeVisible();
     });
     const m = await as('manager');
     await m.step('manager approves it from the Approvals inbox', async () => {
-      await decide(m, /Priya Sharma.*Leave.*CL · 28 Oct 2026/s, 'Approve');
+      await decide(m, new RegExp(`Priya Sharma.*Leave.*CL · ${d1.label}`, 's'), 'Approve');
       await m.expectToast(/approved|decision|recorded/i);
     });
     await s.step('employee sees the leave approved', async () => {
       await s.page.reload(); await s.page.waitForLoadState('networkidle');
-      await expect(s.main().getByRole('listitem').filter({ hasText: /CL · 28 Oct 2026/ })).toContainText(/approved/i);
+      await expect(s.main().getByRole('listitem').filter({ hasText: new RegExp(`CL · ${d1.label}`) })).toContainText(/approved/i);
     });
   });
 
   test(task('employee', 'E9b', 'leave form validation: reason required, over-balance refused'), async ({ as, ux }) => {
     ux.start('Leave validation');
+    const v1 = futureWeekday(16), v4 = futureWeekday(16, 3);
     const s = await as('employee2');
     await s.nav('My Leave', '/my/leave');
-    await s.click(s.main().getByRole('button', { name: 'Apply for a day off' }));
+    await s.click(s.main().getByRole('button', { name: 'Apply for a day off' }).first());
     const dlg = s.page.getByRole('dialog', { name: /apply for a day off/i });
     await s.step('submit with no reason → inline error, nothing sent', async () => {
-      await pickDate(s, dlg.getByRole('button', { name: /^First day/ }), '27 Oct 2026');
-      await pickDate(s, dlg.getByRole('button', { name: /^Last day/ }), '27 Oct 2026');
+      await pickDate(s, dlg.getByRole('button', { name: /^First day/ }), v1.label);
+      await pickDate(s, dlg.getByRole('button', { name: /^Last day/ }), v1.label);
       await s.click(dlg.getByRole('button', { name: 'Send to my manager' }));
       await expect(dlg, 'drawer stays open with an explanation').toBeVisible();
       await expect(dlg.getByText(/reason|required|tell us why/i).first()).toBeVisible();
     });
     await s.step('request more CL days than available → refused with a message', async () => {
-      await pickDate(s, dlg.getByRole('button', { name: /^Last day/ }), '30 Oct 2026');
+      await pickDate(s, dlg.getByRole('button', { name: /^Last day/ }), v4.label);
       await s.fill(dlg.getByRole('textbox', { name: /why are you taking/i }), 'E2E over-balance');
       await expect(dlg.getByText(/exceed|insufficient|not enough|only|cap|balance/i).first()).toBeVisible();
     });
@@ -58,30 +62,33 @@ test.describe('employee self-service', () => {
 
   test(task('employee', 'E5', 'attendance correction (AR) → manager approves → day regularised'), async ({ as, ux }) => {
     ux.start('Attendance correction');
+    const day = recentWeekday(3);
     const s = await as('employee2');
-    await s.step('My Attendance → pick 17 Oct (absent) → Request a correction', async () => {
+    await s.step(`My Attendance → Request a correction for ${day.label}`, async () => {
       await s.nav('My Attendance', '/my/attendance');
-      await s.click(s.main().getByRole('button', { name: /^2026-10-17/ }));
-      await s.click(s.main().getByRole('button', { name: /request (a correction|regularisation) for (this day|17 Oct 2026)/i }).first());
+      await s.click(s.main().getByRole('button', { name: /^request a correction$/i }).first());
     });
-    const dlg = s.page.getByRole('dialog');
-    await s.step('fill reason and submit', async () => {
-      const reason = dlg.getByRole('textbox').last();
-      await s.fill(reason, 'E2E: forgot to swipe, was on shift');
-      await s.click(dlg.getByRole('button', { name: /send|submit/i }).last());
+    const dlg = s.page.getByRole('dialog', { name: /request regularisation/i });
+    await s.step('pick the day, whole day, give a reason and send', async () => {
+      await pickDate(s, dlg.getByRole('button', { name: 'From date' }), day.label);
+      await pickDate(s, dlg.getByRole('button', { name: 'To date' }), day.label);
+      await expect(dlg).toContainText(/requesting 1 day/i);
+      await s.fill(dlg.getByRole('textbox', { name: /why should this be approved/i }), 'E2E: forgot to swipe, was on shift');
+      await s.click(dlg.getByRole('button', { name: 'Send to my manager' }));
       await s.expectToast(/sent|submitted|manager/i);
     });
     await s.step('request listed under "Requests you have already sent"', async () => {
-      await expect(s.main()).toContainText(/17 Oct 2026/);
+      await expect(s.main()).toContainText(day.label);
     });
     const m = await as('manager');
     await m.step('manager approves the regularisation', async () => {
       await decide(m, /Priya Sharma.*(Regulari|AR|Attendance)/is, 'Approve');
       await m.expectToast(/approved|decision|recorded/i);
     });
-    await s.step('17 Oct now shows as present/regularised on the employee calendar', async () => {
-      await s.page.reload(); await s.page.waitForLoadState('networkidle');
-      await expect(s.main().getByRole('button', { name: /^2026-10-17/ })).not.toHaveAccessibleName(/Absent/);
+    await s.step(`${day.label} is no longer absent (DB day record after final approval)`, async () => {
+      await expect.poll(async () => (await q<{ status: string }>(
+        "SELECT d.status FROM att.day_records d JOIN core.employees e ON e.id=d.employee_id WHERE e.ecode='RML000009' AND d.work_date=$1", [day.iso]))[0]?.status ?? 'none',
+        { timeout: 15_000 }).toBe('P');
     });
   });
 

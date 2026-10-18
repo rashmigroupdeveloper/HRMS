@@ -1,5 +1,6 @@
 /** ATT-04/15/17, CORE-10/11: shared scope/transaction boundaries for HR writes. */
 import { sql, type Kysely } from 'kysely';
+import { loadCycleStartDay, periodMonthOf } from '../../core/db/attendance-cycle.js';
 import type { Database } from '../../core/db/types.js';
 import { assertEmployeesInScope, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { inTransaction } from '../../core/db/database.js';
@@ -21,7 +22,8 @@ export async function lockAttendanceEmployee(db: Kysely<Database>, employeeId: n
   return employee;
 }
 export async function assertAttendanceMonthOpen(db: Kysely<Database>, companyId: number, date: string) {
-  const month = `${date.slice(0, 7)}-01`;
+  // C-17: the lock key is the payroll month whose attendance cycle contains the date.
+  const month = periodMonthOf(date, await loadCycleStartDay(db));
   // Coordinate with lockMonth before inspecting/writing even an absent day row.
   await sql`SELECT pg_advisory_xact_lock(${companyId}, hashtext(${month}))`.execute(db);
   const locked = await db.selectFrom('att.month_locks').select('id').where('company_id', '=', companyId)

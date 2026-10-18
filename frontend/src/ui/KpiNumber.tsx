@@ -14,7 +14,7 @@ interface KpiNumberProps {
   value: number;
   /** e.g. '₹' */ prefix?: string | undefined;
   /** e.g. '%' or ' days' */ suffix?: string | undefined;
-  /** decimal places */ precision?: number | undefined;
+  /** decimal places; default: 0 for whole numbers, else up to 2 — a fractional value is never rounded away (12.9 must not read 13). */ precision?: number | undefined;
   /** ms; the rare 800ms count is reserved for payday/dashboard surfaces */
   duration?: number | undefined;
   /** ms before the count starts — the CEO dashboard staggers by 40ms/tile
@@ -42,13 +42,14 @@ export function KpiNumber({
   value,
   prefix,
   suffix,
-  precision = 0,
+  precision: precisionProp,
   duration = 800,
   delay = 0,
   animateOnMount = true,
   locale = 'en-IN',
   className,
 }: KpiNumberProps) {
+  const precision = precisionProp ?? inferPrecision(value);
   // Start at zero so the FIRST paint has somewhere to count up from. Seeding
   // `display` with `value` (as this did) made `from === to` on mount, so the
   // count-up never ran — the component animated only on later changes, which
@@ -98,14 +99,18 @@ export function KpiNumber({
   });
 
   return (
-    <span
-      data-numeric
-      className={cn('tabular-nums', className)}
-      aria-label={`${prefix ?? ''}${value.toLocaleString(locale)}${suffix ?? ''}`}
-    >
+    // No aria-label: it is prohibited on a role-less <span> (ARIA 1.2, axe
+    // "aria-prohibited-attr"). The count runs 800ms once, so AT reads the text.
+    <span data-numeric className={cn('tabular-nums', className)}>
       {prefix}
       {formatted}
       {suffix}
     </span>
   );
+}
+
+/** 0 for whole numbers; otherwise the decimals actually present, capped at 2. */
+function inferPrecision(value: number): number {
+  if (Number.isInteger(value)) return 0;
+  return Math.round(value * 10) / 10 === value ? 1 : 2;
 }

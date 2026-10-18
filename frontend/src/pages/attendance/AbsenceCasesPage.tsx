@@ -241,7 +241,7 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Attendance ops · ATT-10 / PP-7"
+        eyebrow="Attendance ops"
         title="Absence cases"
         description="Opened automatically by the daily scan; letters and escalations stay human decisions."
         actions={
@@ -256,7 +256,7 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
       />
 
       <DarkCard>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+        <p className="text-sm font-medium text-hero-muted">
           Letters still owed
         </p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-6">
@@ -368,7 +368,7 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
                 {selectedNext.kind === 'letter' ? selectedNext.title : 'Issue a letter'}
               </h3>
               <p className="mt-1 text-xs text-ink-muted">
-                Drafts against the case, walks hr_ops → hr_head, and is archived on the employee (CORE-09).
+                Drafts against the case, walks hr_ops → hr_head, and is archived on the employee.
               </p>
               <div className="mt-4 space-y-4">
                 <Select

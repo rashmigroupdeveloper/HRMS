@@ -13,6 +13,7 @@
  */
 import type { LucideIcon } from 'lucide-react';
 import {
+  Building2,
   BarChart3,
   Banknote,
   CalendarCheck,
@@ -113,6 +114,7 @@ export function navForUser(user: SessionUser): NavItem[] {
   }
   if (hasPermission(user, 'employee.compensation.read') && !isOps) {
     push({ label: 'My Pay', to: '/my/pay', icon: Wallet });
+    push({ label: 'My Tax', to: '/my/tax', icon: ReceiptText });
   }
   if (!isOps && !isCeo && !isIt) {
     push({ label: 'My Claims', to: '/my/claims', icon: ReceiptText });
@@ -196,6 +198,9 @@ export function navForUser(user: SessionUser): NavItem[] {
   if (hasPermission(user, 'payroll.run.view') || hasPermission(user, 'payroll.run.manage')) {
     push({ label: 'Payroll', to: '/payroll', match: '/payroll', icon: Banknote });
   }
+  if (hasPermission(user, 'payroll.run.view')) {
+    push({ label: 'TDS compliance', to: '/payroll/tds', icon: ReceiptText });
+  }
   if (
     hasPermission(user, 'payroll.run.manage') || hasPermission(user, 'payroll.reports')
   ) {
@@ -250,6 +255,9 @@ export function navForUser(user: SessionUser): NavItem[] {
         icon: SlidersHorizontal,
       }),
     );
+  }
+  if (hasPermission(user, 'org.masters.manage')) {
+    push(grouped('Admin', { label: 'Org masters', to: '/admin/org-masters', icon: Building2 }));
   }
   if (hasPermission(user, 'employee.write')) {
     push(grouped('Admin', { label: 'Heads of department', to: '/admin/department-heads', icon: Network }));

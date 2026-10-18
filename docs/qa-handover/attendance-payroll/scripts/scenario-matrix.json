@@ -1,0 +1,2621 @@
+{
+ "generated_by": "build_matrix.py",
+ "cases": [
+  {
+   "id": "M01",
+   "kind": "payroll",
+   "title": "Full month present (calendar divisor)",
+   "derivation": "June 30 days, Sundays paid WO; 30/30; PF 12% of 15000; WB PT 150 (25k–40k)",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 30000,
+    "PF_EE": 1800,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 28050
+   }
+  },
+  {
+   "id": "M02",
+   "kind": "payroll",
+   "title": "Two unexcused absences",
+   "derivation": "A on Tue 2 and Wed 3 Jun → 28/30; each component × 28/30",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-02": "A",
+    "2026-06-03": "A"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 28,
+    "gross": 28000,
+    "PF_EE": 1680,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 26170
+   }
+  },
+  {
+   "id": "M03",
+   "kind": "payroll",
+   "title": "Half day (worked half, no leave)",
+   "derivation": "HD Thu 4 Jun → 0.5 LOP → 29.5/30",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-04": "HD"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 29.5,
+    "gross": 29500,
+    "PF_EE": 1770,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 27580
+   }
+  },
+  {
+   "id": "M04",
+   "kind": "payroll",
+   "title": "Half-day paid CL + other half worked",
+   "derivation": "HD with CL, session 1 P → leave half paid + worked half paid → 30/30 (was 29.5 before item 4)",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-04": "HD:CL:worked"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 30000,
+    "PF_EE": 1800,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 28050
+   }
+  },
+  {
+   "id": "M05",
+   "kind": "payroll",
+   "title": "Half-day paid CL, other half not worked",
+   "derivation": "HD with CL, no punches → 0.5 paid leave + 0.5 LOP → 29.5/30",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-04": "HD:CL"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 29.5,
+    "gross": 29500,
+    "PF_EE": 1770,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 27580
+   }
+  },
+  {
+   "id": "M06",
+   "kind": "payroll",
+   "title": "Half-day LWP + other half worked",
+   "derivation": "HD with LWP, session 1 P → worked half paid, LWP half unpaid → 29.5/30",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-04": "HD:LWP:worked"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 29.5,
+    "gross": 29500,
+    "PF_EE": 1770,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 27580
+   }
+  },
+  {
+   "id": "M07",
+   "kind": "payroll",
+   "title": "Half-day LWP, other half not worked",
+   "derivation": "HD with LWP and no punches → full day unpaid → 29/30",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-04": "HD:LWP"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 29,
+    "gross": 29000,
+    "PF_EE": 1740,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 27110
+   }
+  },
+  {
+   "id": "M08",
+   "kind": "payroll",
+   "title": "Forfeited week-off + LWP day",
+   "derivation": "WO Sun 7 Jun unpaid (ATT-09 forfeiture) + LWP Mon 8 Jun → 28/30",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-07": "WO:unpaid",
+    "2026-06-08": "L:LWP"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 28,
+    "gross": 28000,
+    "PF_EE": 1680,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 26170
+   }
+  },
+  {
+   "id": "M09",
+   "kind": "payroll",
+   "title": "Three days paid CL",
+   "derivation": "L:CL 9–11 Jun are paid → 30/30",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-09": "L:CL",
+    "2026-06-10": "L:CL",
+    "2026-06-11": "L:CL"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 30000,
+    "PF_EE": 1800,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 28050
+   }
+  },
+  {
+   "id": "M10",
+   "kind": "payroll",
+   "title": "Paid holiday",
+   "derivation": "H Mon 15 Jun is paid → 30/30",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-15": "H"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 30000,
+    "PF_EE": 1800,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 28050
+   }
+  },
+  {
+   "id": "M11",
+   "kind": "payroll",
+   "title": "Joiner on 16 Jun (calendar)",
+   "derivation": "Employed 16–30 Jun = 15 days → 15/30; PT slab 10k–15k = 110",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "doj": "2026-06-16"
+   },
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 15,
+    "gross": 15000,
+    "PF_EE": 900,
+    "ESI_EE": 0,
+    "PT": 110,
+    "TDS": 0,
+    "net": 13990
+   }
+  },
+  {
+   "id": "M12",
+   "kind": "payroll",
+   "title": "Leaver LWD 20 Jun (calendar)",
+   "derivation": "Employed 1–20 Jun = 20 days → 20/30; PT 130",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "dol": "2026-06-20",
+    "status": "on_notice"
+   },
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 20,
+    "gross": 20000,
+    "PF_EE": 1200,
+    "ESI_EE": 0,
+    "PT": 130,
+    "TDS": 0,
+    "net": 18670
+   }
+  },
+  {
+   "id": "M13",
+   "kind": "payroll",
+   "title": "Sandwich rule OFF",
+   "derivation": "A Sat 6 + A Mon 8, Sun 7 paid WO → 28/30",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-06": "A",
+    "2026-06-08": "A"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 28,
+    "gross": 28000,
+    "PF_EE": 1680,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 26170
+   }
+  },
+  {
+   "id": "M14",
+   "kind": "payroll",
+   "title": "Sandwich rule ON: WO between two absences",
+   "derivation": "att.sandwich_rule=true: Sun 7 between A Sat 6 and A Mon 8 becomes LOP → 27/30",
+   "month": "2026-06-01",
+   "settings": {
+    "att.sandwich_rule": true
+   },
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-06": "A",
+    "2026-06-08": "A"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 27,
+    "gross": 27000,
+    "PF_EE": 1620,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 25230
+   }
+  },
+  {
+   "id": "M15",
+   "kind": "payroll",
+   "title": "Sandwich rule ON: present on one side",
+   "derivation": "A Sat 6, P Mon 8 → no sandwich → 29/30",
+   "month": "2026-06-01",
+   "settings": {
+    "att.sandwich_rule": true
+   },
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-06": "A"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 29,
+    "gross": 29000,
+    "PF_EE": 1740,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 27110
+   }
+  },
+  {
+   "id": "M16",
+   "kind": "payroll",
+   "title": "Sandwich rule ON: holiday + WO run between LWP days",
+   "derivation": "LWP Fri 12, H Sat 13, WO Sun 14, LWP Mon 15 → 2 LWP + 2 sandwiched → 26/30",
+   "month": "2026-06-01",
+   "settings": {
+    "att.sandwich_rule": true
+   },
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-12": "L:LWP",
+    "2026-06-13": "H",
+    "2026-06-15": "L:LWP"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 26,
+    "gross": 26000,
+    "PF_EE": 1560,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 24290
+   }
+  },
+  {
+   "id": "M17",
+   "kind": "payroll",
+   "title": "FIXED_30 divisor in a 31-day month",
+   "derivation": "pay.lop_divisor=FIXED_30, July: 30 − 2 A = 28/30",
+   "month": "2026-07-01",
+   "settings": {
+    "pay.lop_divisor": "FIXED_30"
+   },
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-07-07": "A",
+    "2026-07-08": "A"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 28,
+    "gross": 28000,
+    "PF_EE": 1680,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 26170
+   }
+  },
+  {
+   "id": "M18",
+   "kind": "payroll",
+   "title": "CALENDAR divisor in a 31-day month",
+   "derivation": "July 31 days, 2 A → 29/31; BASIC 15000×29/31 = 14032.26 → 14032",
+   "month": "2026-07-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-07-07": "A",
+    "2026-07-08": "A"
+   },
+   "expect": {
+    "days_in_month": 31,
+    "payable_days": 29,
+    "gross": 28064,
+    "PF_EE": 1684,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 26230
+   }
+  },
+  {
+   "id": "M19",
+   "kind": "payroll",
+   "title": "FIXED_30 joiner in a 31-day month",
+   "derivation": "DOJ 16 Jul: 15 days of July outside employment → 30 − 15 = 15/30",
+   "month": "2026-07-01",
+   "settings": {
+    "pay.lop_divisor": "FIXED_30"
+   },
+   "employee": {
+    "doj": "2026-07-16"
+   },
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 15,
+    "gross": 15000,
+    "PF_EE": 900,
+    "ESI_EE": 0,
+    "PT": 110,
+    "TDS": 0,
+    "net": 13990
+   }
+  },
+  {
+   "id": "M20",
+   "kind": "payroll",
+   "title": "FIXED_26 full month",
+   "derivation": "June working days = 30 − 4 Sundays = 26 → 26/26",
+   "month": "2026-06-01",
+   "settings": {
+    "pay.lop_divisor": "FIXED_26"
+   },
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 26,
+    "payable_days": 26,
+    "gross": 30000,
+    "PF_EE": 1800,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 28050
+   }
+  },
+  {
+   "id": "M21",
+   "kind": "payroll",
+   "title": "FIXED_26 with two absences",
+   "derivation": "26 − 2 = 24/26; BASIC 15000×24/26 = 13846.15 → 13846",
+   "month": "2026-06-01",
+   "settings": {
+    "pay.lop_divisor": "FIXED_26"
+   },
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-02": "A",
+    "2026-06-03": "A"
+   },
+   "expect": {
+    "days_in_month": 26,
+    "payable_days": 24,
+    "gross": 27692,
+    "PF_EE": 1662,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 25880
+   }
+  },
+  {
+   "id": "M22",
+   "kind": "payroll",
+   "title": "FIXED_26 joiner on 16 Jun",
+   "derivation": "Working days 1–15 Jun outside employment = 15 − 2 Sundays = 13 → 26 − 13 = 13/26",
+   "month": "2026-06-01",
+   "settings": {
+    "pay.lop_divisor": "FIXED_26"
+   },
+   "employee": {
+    "doj": "2026-06-16"
+   },
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 26,
+    "payable_days": 13,
+    "gross": 15000,
+    "PF_EE": 900,
+    "ESI_EE": 0,
+    "PT": 110,
+    "TDS": 0,
+    "net": 13990
+   }
+  },
+  {
+   "id": "M23",
+   "kind": "payroll",
+   "title": "WORKING_DAYS divisor with a company holiday",
+   "derivation": "Holiday Mon 15 Jun (company calendar): working days 30 − 4 − 1 = 25; 1 A → 24/25",
+   "month": "2026-06-01",
+   "settings": {
+    "pay.lop_divisor": "WORKING_DAYS"
+   },
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-15": "H",
+    "2026-06-02": "A"
+   },
+   "expect": {
+    "days_in_month": 25,
+    "payable_days": 24,
+    "gross": 28800,
+    "PF_EE": 1728,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 26922
+   },
+   "holidays": [
+    {
+     "date": "2026-06-15",
+     "scope": "company"
+    }
+   ]
+  },
+  {
+   "id": "M24",
+   "kind": "payroll",
+   "title": "26–25 cycle: LOP in both months of the window",
+   "derivation": "att.cycle_start_day=26: June window 26 May–25 Jun; A 28 May + A 10 Jun → 28/30; 26–30 Jun assumed present",
+   "month": "2026-06-01",
+   "settings": {
+    "att.cycle_start_day": 26
+   },
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-05-28": "A",
+    "2026-06-10": "A"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 28,
+    "gross": 28000,
+    "PF_EE": 1680,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 26170
+   }
+  },
+  {
+   "id": "M25",
+   "kind": "payroll",
+   "title": "26–25 cycle: absence after the cut-off",
+   "derivation": "A on 27 Jun is outside the June window (counted in July) → 30/30",
+   "month": "2026-06-01",
+   "settings": {
+    "att.cycle_start_day": 26
+   },
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 30000,
+    "PF_EE": 1800,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 28050
+   },
+   "afterCutoff": {
+    "2026-06-27": "A"
+   }
+  },
+  {
+   "id": "M26",
+   "kind": "payroll",
+   "title": "26–25 cycle: joiner after the cut-off",
+   "derivation": "DOJ 27 Jun: employed 27–30 Jun, no window facts → 4/30; PT 0 (≤10k)",
+   "month": "2026-06-01",
+   "settings": {
+    "att.cycle_start_day": 26
+   },
+   "employee": {
+    "doj": "2026-06-27"
+   },
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 4,
+    "gross": 4000,
+    "PF_EE": 240,
+    "ESI_EE": 0,
+    "PT": 0,
+    "TDS": 0,
+    "net": 3760
+   }
+  },
+  {
+   "id": "M27",
+   "kind": "payroll",
+   "title": "26–25 cycle: leaver inside the window",
+   "derivation": "LWD 20 Jun: employed 1–20 Jun (20 days); window facts 26 May–20 Jun with A on 27 May → 19/30",
+   "month": "2026-06-01",
+   "settings": {
+    "att.cycle_start_day": 26
+   },
+   "employee": {
+    "dol": "2026-06-20",
+    "status": "on_notice"
+   },
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-05-27": "A"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 19,
+    "gross": 19000,
+    "PF_EE": 1140,
+    "ESI_EE": 0,
+    "PT": 130,
+    "TDS": 0,
+    "net": 17730
+   }
+  },
+  {
+   "id": "M28",
+   "kind": "payroll",
+   "title": "PF on ceiling wages (₹15,000)",
+   "derivation": "BASIC 25000, pf_wage_basis CEILING_15000 → PF 1800; gross 50000 → PT 200; new regime taxable 5.25L ≤ 12L → 87A → TDS 0",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "pfBasis": "CEILING_15000"
+   },
+   "salary": {
+    "BASIC": 25000,
+    "HRA": 12500,
+    "SPECIAL_ALLOW": 12500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 50000,
+    "PF_EE": 1800,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 0,
+    "net": 48000,
+    "EPS_ER": 1250,
+    "PF_ER": 550
+   }
+  },
+  {
+   "id": "M29",
+   "kind": "payroll",
+   "title": "PF on actual wages",
+   "derivation": "Same pay, ACTUAL → PF 12% × 25000 = 3000; EPS capped 1250; ER EPF 1750",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "pfBasis": "ACTUAL"
+   },
+   "salary": {
+    "BASIC": 25000,
+    "HRA": 12500,
+    "SPECIAL_ALLOW": 12500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 50000,
+    "PF_EE": 3000,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 0,
+    "net": 46800,
+    "EPS_ER": 1250,
+    "PF_ER": 1750
+   }
+  },
+  {
+   "id": "M30",
+   "kind": "payroll",
+   "title": "ESIC covered at exactly ₹21,000",
+   "derivation": "Gross 21000 ≤ ceiling → ESI EE 0.75% = 157.50 → 158 (rounded up); ER 3.25% = 682.50 → 683",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "esic": true
+   },
+   "salary": {
+    "BASIC": 10500,
+    "HRA": 5250,
+    "SPECIAL_ALLOW": 5250
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 21000,
+    "PF_EE": 1260,
+    "ESI_EE": 158,
+    "PT": 130,
+    "TDS": 0,
+    "net": 19452,
+    "ESI_ER": 683
+   }
+  },
+  {
+   "id": "M31",
+   "kind": "payroll",
+   "title": "ESIC gate: ₹21,001 not covered",
+   "derivation": "Gross 21001 > ₹21,000 at period start → no ESIC",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "esic": true
+   },
+   "salary": {
+    "BASIC": 10500,
+    "HRA": 5250,
+    "SPECIAL_ALLOW": 5251
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 21001,
+    "PF_EE": 1260,
+    "ESI_EE": 0,
+    "PT": 130,
+    "TDS": 0,
+    "net": 19611
+   }
+  },
+  {
+   "id": "M32",
+   "kind": "payroll",
+   "title": "ESIC continues for the contribution period after a raise",
+   "derivation": "Covered at 1 Apr (gross 20000); raised to 24000 from 1 Jun → still covered until 30 Sep: ESI 0.75% × 24000 = 180",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "esic": true
+   },
+   "salary": {
+    "BASIC": 12000,
+    "HRA": 6000,
+    "SPECIAL_ALLOW": 6000
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 24000,
+    "PF_EE": 1440,
+    "ESI_EE": 180,
+    "PT": 130,
+    "TDS": 0,
+    "net": 22250
+   },
+   "salaryAtPeriodStart": {
+    "BASIC": 10000,
+    "HRA": 5000,
+    "SPECIAL_ALLOW": 5000
+   }
+  },
+  {
+   "id": "M33",
+   "kind": "payroll",
+   "title": "WB PT nil up to ₹10,000",
+   "derivation": "Gross 10000 → PT 0",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 5000,
+    "HRA": 2500,
+    "SPECIAL_ALLOW": 2500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 10000,
+    "PF_EE": 600,
+    "ESI_EE": 0,
+    "PT": 0,
+    "TDS": 0,
+    "net": 9400
+   }
+  },
+  {
+   "id": "M34",
+   "kind": "payroll",
+   "title": "WB PT on earned (not contracted) gross",
+   "derivation": "Contracted 30000, 14/30 payable → earned 14000 → PT 110",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {
+    "2026-06-01": "A",
+    "2026-06-02": "A",
+    "2026-06-03": "A",
+    "2026-06-04": "A",
+    "2026-06-05": "A",
+    "2026-06-06": "A",
+    "2026-06-08": "A",
+    "2026-06-09": "A",
+    "2026-06-10": "A",
+    "2026-06-11": "A",
+    "2026-06-12": "A",
+    "2026-06-13": "A",
+    "2026-06-15": "A",
+    "2026-06-16": "A",
+    "2026-06-17": "A",
+    "2026-06-18": "A"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 14,
+    "gross": 14000,
+    "PF_EE": 840,
+    "ESI_EE": 0,
+    "PT": 110,
+    "TDS": 0,
+    "net": 13050
+   }
+  },
+  {
+   "id": "M35",
+   "kind": "payroll",
+   "title": "TDS new regime above ₹12L",
+   "derivation": "Annual 15L − 75k SD = 14.25L: 20000 + 40000 + 33750 = 93750 + 4% cess = 97500 → 8125/month",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 62500,
+    "HRA": 31250,
+    "SPECIAL_ALLOW": 31250
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 125000,
+    "PF_EE": 7500,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 8125,
+    "net": 109175
+   }
+  },
+  {
+   "id": "M36",
+   "kind": "payroll",
+   "title": "TDS new regime marginal relief just above ₹12L",
+   "derivation": "Taxable 12.15L: slab tax 62250 capped at excess 15000 + cess 600 = 15600 → 1300/month",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 53750,
+    "HRA": 26875,
+    "SPECIAL_ALLOW": 26875
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 107500,
+    "PF_EE": 6450,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 1300,
+    "net": 99550
+   }
+  },
+  {
+   "id": "M37",
+   "kind": "payroll",
+   "title": "TDS old regime with 80C capped",
+   "derivation": "Old regime: 12L − 50k SD − PT 2400 − 80C 1.5L (declared 2L) = 9,97,600 → 112020 + cess = 116500.80 → 9708/month",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "regime": "old"
+   },
+   "salary": {
+    "BASIC": 50000,
+    "HRA": 25000,
+    "SPECIAL_ALLOW": 25000
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 100000,
+    "PF_EE": 6000,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 9708,
+    "net": 84092
+   },
+   "declarations": [
+    {
+     "section": "80C",
+     "amount": 200000
+    }
+   ]
+  },
+  {
+   "id": "M38",
+   "kind": "payroll",
+   "title": "TDS old regime surcharge above ₹50L",
+   "derivation": "Old regime: 60L − 50k − 2400 = 59,47,600 → slab 1596780 + 10% surcharge 159678 + 4% cess → 1826716.32 → 152226/month",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "regime": "old"
+   },
+   "salary": {
+    "BASIC": 250000,
+    "HRA": 125000,
+    "SPECIAL_ALLOW": 125000
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 500000,
+    "PF_EE": 30000,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 152226,
+    "net": 317574
+   }
+  },
+  {
+   "id": "M39",
+   "kind": "payroll",
+   "title": "Approved overtime (Basic/208 × 2)",
+   "derivation": "240 approved minutes: 15000/208 × 2 × 4 h = 576.92 → 577; PF on BASIC only",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 30577,
+    "PF_EE": 1800,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 28627
+   },
+   "otMinutes": 240
+  },
+  {
+   "id": "M40",
+   "kind": "payroll",
+   "title": "TDS prorated for LOP",
+   "derivation": "New regime 15L case with 2 A: TDS 97500/12 × 28/30 = 7583.33 → 7583",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 62500,
+    "HRA": 31250,
+    "SPECIAL_ALLOW": 31250
+   },
+   "days": {
+    "2026-06-02": "A",
+    "2026-06-03": "A"
+   },
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 28,
+    "gross": 116667,
+    "PF_EE": 7000,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 7583,
+    "net": 101884
+   }
+  },
+  {
+   "id": "W01",
+   "kind": "window",
+   "title": "Cycle switch 1 → 26 continues from the last lock",
+   "derivation": "May locked as calendar month (1 May–1 Jun); cycle now 26 → June window 1 Jun–26 Jun (no overlap)",
+   "settings": {
+    "att.cycle_start_day": 26
+   },
+   "previousLock": {
+    "month": "2026-05-01",
+    "from": "2026-05-01",
+    "until": "2026-06-01"
+   },
+   "month": "2026-06-01",
+   "expect": {
+    "from": "2026-06-01",
+    "until": "2026-06-26"
+   }
+  },
+  {
+   "id": "W02",
+   "kind": "window",
+   "title": "Cycle switch 26 → 1 continues from the last lock",
+   "derivation": "May locked 26 Apr–26 May; cycle now 1 → June window 26 May–1 Jul (no gap)",
+   "settings": {
+    "att.cycle_start_day": 1
+   },
+   "previousLock": {
+    "month": "2026-05-01",
+    "from": "2026-04-26",
+    "until": "2026-05-26"
+   },
+   "month": "2026-06-01",
+   "expect": {
+    "from": "2026-05-26",
+    "until": "2026-07-01"
+   }
+  },
+  {
+   "id": "W03",
+   "kind": "window",
+   "title": "26–25 cycle without a previous lock",
+   "derivation": "cycle 26, no May lock → nominal 26 May–26 Jun",
+   "settings": {
+    "att.cycle_start_day": 26
+   },
+   "month": "2026-06-01",
+   "expect": {
+    "from": "2026-05-26",
+    "until": "2026-06-26"
+   }
+  },
+  {
+   "id": "H01",
+   "kind": "holiday",
+   "title": "Holiday calendars: group, company, plant, location",
+   "derivation": "A row applies when every non-null scope column matches the employee",
+   "holidays": [
+    {
+     "date": "2026-08-15",
+     "scope": "group"
+    },
+    {
+     "date": "2026-10-20",
+     "scope": "company"
+    },
+    {
+     "date": "2026-11-08",
+     "scope": "plant"
+    },
+    {
+     "date": "2026-12-01",
+     "scope": "location"
+    }
+   ],
+   "expect": {
+    "inPlant": [
+     "2026-08-15",
+     "2026-10-20",
+     "2026-11-08",
+     "2026-12-01"
+    ],
+    "samCompanyOtherPlantOtherLocation": [
+     "2026-08-15",
+     "2026-10-20"
+    ],
+    "otherCompany": [
+     "2026-08-15"
+    ]
+   }
+  },
+  {
+   "id": "G01",
+   "kind": "gratuity",
+   "title": "Gratuity at exactly 5 years",
+   "derivation": "15 × 30000 × 5 / 26 = 86538.46 → 86538",
+   "basic": 30000,
+   "doj": "2021-06-01",
+   "lwd": "2026-05-31",
+   "expect": {
+    "eligible": true,
+    "years": 5,
+    "gratuity": 86538
+   }
+  },
+  {
+   "id": "G02",
+   "kind": "gratuity",
+   "title": "Gratuity below 4 years 240 days",
+   "derivation": "1 Dec 2021–31 May 2026 = 4y 5m (1643 days) < 4y 240d (1700 days) → nil",
+   "basic": 30000,
+   "doj": "2021-12-01",
+   "lwd": "2026-05-31",
+   "expect": {
+    "eligible": false,
+    "years": 4,
+    "gratuity": 0
+   }
+  },
+  {
+   "id": "G03",
+   "kind": "gratuity",
+   "title": "Gratuity 4y 9m rounds to 5 years",
+   "derivation": "1734 days ≥ 1700 eligible; 9 months ≥ 6 → 5 years → 86538",
+   "basic": 30000,
+   "doj": "2021-09-01",
+   "lwd": "2026-05-31",
+   "expect": {
+    "eligible": true,
+    "years": 5,
+    "gratuity": 86538
+   }
+  },
+  {
+   "id": "G04",
+   "kind": "gratuity",
+   "title": "Gratuity capped at ₹20 lakh",
+   "derivation": "15 × 500000 × 30 / 26 = 86,53,846 → cap 20,00,000",
+   "basic": 500000,
+   "doj": "1996-06-01",
+   "lwd": "2026-05-31",
+   "expect": {
+    "eligible": true,
+    "years": 30,
+    "gratuity": 2000000
+   }
+  },
+  {
+   "id": "F01",
+   "kind": "fnf",
+   "title": "F&F: salary, EL encashment, notice recovery, gratuity",
+   "derivation": "50000/30×20 = 33333.33; EL 30000/30×15 = 15000; notice 30000/30×10 = 10000; gratuity 6y11m → 7y: 15×30000×7/26 = 121153.85 → 121154; net 159487",
+   "params": {
+    "basic": 30000,
+    "gross": 50000,
+    "daysPayable": 20,
+    "elBalanceDays": 15,
+    "shortfallDays": 10,
+    "doj": "2019-07-01",
+    "lwd": "2026-06-20"
+   },
+   "expect": {
+    "gratuity": 121154,
+    "leaveEncashment": 15000,
+    "noticeRecovery": 10000,
+    "net": 159487
+   }
+  },
+  {
+   "id": "K01",
+   "kind": "kent",
+   "title": "Kent feed → muster → payroll: calendar month with absences, half day, dedupe and backfill",
+   "derivation": "June 2026 via the simulator: P on two doors 1 Jun; no punch 2 Jun (A); 09:00–14:00 3 Jun (240 min → HD); in-only 4 Jun (A); duplicate delivery 5 Jun (P, deduped); 09:00–12:30 6 Jun (150 min → A); no punches 8–13 Jun (6 A) → Sun 14 Jun forfeited; 16 Jun buffered, arrives in the 2nd sync (P). LOP = 9 A + 0.5 HD + 1 unpaid WO = 10.5 → 19.5/30; gross 19500; PT 130 (15k–25k)",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "shift": {
+    "start": "09:00",
+    "end": "18:00",
+    "break": 60,
+    "full": 8,
+    "half": 4
+   },
+   "window": {
+    "from": "2026-06-01",
+    "until": "2026-07-01"
+   },
+   "punches": [
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-01 08:55:00",
+     "direction": "in",
+     "receivedAt": "2026-06-01T08:56:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G2",
+     "punchTime": "2026-06-01 18:01:00",
+     "direction": "out",
+     "receivedAt": "2026-06-01T18:02:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-03 09:00:00",
+     "direction": "in",
+     "receivedAt": "2026-06-03T09:01:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-03 14:00:00",
+     "direction": "out",
+     "receivedAt": "2026-06-03T14:01:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-04 09:00:00",
+     "direction": "in",
+     "receivedAt": "2026-06-04T09:01:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-05 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-05T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-05 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-05T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-05 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-05T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-05 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-05T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-06 09:00:00",
+     "direction": "in",
+     "receivedAt": "2026-06-06T09:01:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-06 12:30:00",
+     "direction": "in",
+     "receivedAt": "2026-06-06T12:31:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-15 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-15T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-15 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-15T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-17 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-17T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-17 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-17T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-18 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-18T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-18 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-18T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-19 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-19T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-19 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-19T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-20 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-20T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-20 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-20T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-22 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-22T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-22 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-22T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-23 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-23T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-23 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-23T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-24 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-24T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-24 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-24T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-25 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-25T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-25 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-25T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-26 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-26T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-26 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-26T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-27 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-27T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-27 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-27T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-29 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-29T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-29 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-29T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-30 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-30T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-30 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-30T18:06:00+05:30"
+    }
+   ],
+   "backfill": [
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-16 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-01T10:00:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-16 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-01T10:00:00+05:30"
+    }
+   ],
+   "unmappedDevice": false,
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 19.5,
+    "gross": 19500,
+    "PF_EE": 1170,
+    "ESI_EE": 0,
+    "PT": 130,
+    "TDS": 0,
+    "net": 18200
+   },
+   "expectDays": {
+    "2026-06-01": "P",
+    "2026-06-02": "A",
+    "2026-06-03": "HD",
+    "2026-06-04": "A",
+    "2026-06-05": "P",
+    "2026-06-06": "A",
+    "2026-06-07": "WO",
+    "2026-06-08": "A",
+    "2026-06-09": "A",
+    "2026-06-10": "A",
+    "2026-06-11": "A",
+    "2026-06-12": "A",
+    "2026-06-13": "A",
+    "2026-06-14": "WO:unpaid",
+    "2026-06-15": "P",
+    "2026-06-16": "P",
+    "2026-06-17": "P",
+    "2026-06-18": "P",
+    "2026-06-19": "P",
+    "2026-06-20": "P",
+    "2026-06-21": "WO",
+    "2026-06-22": "P",
+    "2026-06-23": "P",
+    "2026-06-24": "P",
+    "2026-06-25": "P",
+    "2026-06-26": "P",
+    "2026-06-27": "P",
+    "2026-06-28": "WO",
+    "2026-06-29": "P",
+    "2026-06-30": "P"
+   },
+   "expectAfterCutoff": {},
+   "expectMuster": {
+    "present": 16,
+    "absent": 9,
+    "halfDays": 1,
+    "weekoffs": 4,
+    "weekoffsUnpaid": 1,
+    "lopDays": 10.5
+   },
+   "expectSync": {
+    "firstFetched": 37,
+    "firstInserted": 35,
+    "secondInserted": 4,
+    "thirdInserted": 0,
+    "unmatched": [
+     "KENTHB01"
+    ]
+   }
+  },
+  {
+   "id": "K02",
+   "kind": "kent",
+   "title": "Kent feed with a 26–25 cycle: only window punches reach payroll",
+   "derivation": "att.cycle_start_day=26, July payroll: window 26 Jun–25 Jul. A 29 Jun + A 14 Jul + HD 20 Jul (09:00–14:00) → LOP 2.5 → 28.5/31. Punches 26–31 Jul (incl. a missed 28 Jul) are after the cut-off: they stay unlocked and are counted in August",
+   "month": "2026-07-01",
+   "settings": {
+    "att.cycle_start_day": 26
+   },
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "shift": {
+    "start": "09:00",
+    "end": "18:00",
+    "break": 60,
+    "full": 8,
+    "half": 4
+   },
+   "window": {
+    "from": "2026-06-26",
+    "until": "2026-07-26"
+   },
+   "punches": [
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-26 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-26T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-26 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-26T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-27 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-27T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-27 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-27T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-30 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-30T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-30 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-30T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-01 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-01T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-01 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-01T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-02 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-02T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-02 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-02T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-03 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-03T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-03 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-03T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-04 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-04T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-04 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-04T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-06 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-06T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-06 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-06T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-07 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-07T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-07 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-07T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-08 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-08T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-08 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-08T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-09 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-09T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-09 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-09T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-10 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-10T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-10 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-10T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-11 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-11T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-11 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-11T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-13 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-13T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-13 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-13T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-15 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-15T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-15 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-15T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-16 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-16T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-16 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-16T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-17 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-17T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-17 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-17T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-18 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-18T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-18 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-18T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-20 09:00:00",
+     "direction": "in",
+     "receivedAt": "2026-07-20T09:01:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-20 14:00:00",
+     "direction": "out",
+     "receivedAt": "2026-07-20T14:01:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-21 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-21T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-21 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-21T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-22 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-22T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-22 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-22T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-23 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-23T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-23 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-23T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-24 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-24T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-24 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-24T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-25 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-25T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-25 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-25T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-27 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-27T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-27 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-27T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-29 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-29T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-29 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-29T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-30 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-30T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-30 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-30T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-31 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-07-31T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-07-31 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-07-31T18:06:00+05:30"
+    }
+   ],
+   "backfill": [],
+   "unmappedDevice": false,
+   "expect": {
+    "days_in_month": 31,
+    "payable_days": 28.5,
+    "gross": 27580,
+    "PF_EE": 1655,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 25775
+   },
+   "expectDays": {
+    "2026-06-26": "P",
+    "2026-06-27": "P",
+    "2026-06-28": "WO",
+    "2026-06-29": "A",
+    "2026-06-30": "P",
+    "2026-07-01": "P",
+    "2026-07-02": "P",
+    "2026-07-03": "P",
+    "2026-07-04": "P",
+    "2026-07-05": "WO",
+    "2026-07-06": "P",
+    "2026-07-07": "P",
+    "2026-07-08": "P",
+    "2026-07-09": "P",
+    "2026-07-10": "P",
+    "2026-07-11": "P",
+    "2026-07-12": "WO",
+    "2026-07-13": "P",
+    "2026-07-14": "A",
+    "2026-07-15": "P",
+    "2026-07-16": "P",
+    "2026-07-17": "P",
+    "2026-07-18": "P",
+    "2026-07-19": "WO",
+    "2026-07-20": "HD",
+    "2026-07-21": "P",
+    "2026-07-22": "P",
+    "2026-07-23": "P",
+    "2026-07-24": "P",
+    "2026-07-25": "P"
+   },
+   "expectAfterCutoff": {
+    "2026-07-26": "WO",
+    "2026-07-27": "P",
+    "2026-07-28": "A",
+    "2026-07-29": "P",
+    "2026-07-30": "P",
+    "2026-07-31": "P"
+   },
+   "expectMuster": {
+    "present": 23,
+    "absent": 2,
+    "halfDays": 1,
+    "weekoffs": 4,
+    "weekoffsUnpaid": 0,
+    "lopDays": 2.5
+   },
+   "expectSync": {
+    "firstFetched": 56,
+    "firstInserted": 56,
+    "secondInserted": 2,
+    "thirdInserted": 0,
+    "unmatched": [
+     "KENTHB01"
+    ]
+   }
+  },
+  {
+   "id": "K03",
+   "kind": "kent",
+   "title": "Kent door not mapped to a location: absences are held and the month cannot lock until HR maps it",
+   "derivation": "Door G1 has no location: the no-punch day 2 Jun stays held (no day record), the lock is refused (attendance_complete, recompute_drained, sync_watermark). After HR maps the door the day resolves to A, the month locks and pays 29/30",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {},
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "shift": {
+    "start": "09:00",
+    "end": "18:00",
+    "break": 60,
+    "full": 8,
+    "half": 4
+   },
+   "window": {
+    "from": "2026-06-01",
+    "until": "2026-07-01"
+   },
+   "punches": [
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-01 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-01T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-01 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-01T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-03 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-03T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-03 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-03T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-04 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-04T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-04 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-04T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-05 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-05T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-05 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-05T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-06 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-06T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-06 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-06T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-08 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-08T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-08 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-08T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-09 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-09T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-09 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-09T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-10 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-10T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-10 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-10T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-11 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-11T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-11 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-11T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-12 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-12T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-12 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-12T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-13 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-13T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-13 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-13T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-15 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-15T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-15 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-15T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-16 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-16T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-16 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-16T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-17 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-17T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-17 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-17T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-18 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-18T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-18 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-18T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-19 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-19T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-19 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-19T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-20 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-20T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-20 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-20T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-22 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-22T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-22 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-22T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-23 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-23T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-23 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-23T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-24 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-24T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-24 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-24T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-25 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-25T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-25 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-25T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-26 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-26T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-26 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-26T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-27 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-27T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-27 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-27T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-29 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-29T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-29 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-29T18:06:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-30 09:02:00",
+     "direction": "in",
+     "receivedAt": "2026-06-30T09:03:00+05:30"
+    },
+    {
+     "employeeNo": "SELF",
+     "deviceId": "G1",
+     "punchTime": "2026-06-30 18:05:00",
+     "direction": "out",
+     "receivedAt": "2026-06-30T18:06:00+05:30"
+    }
+   ],
+   "backfill": [],
+   "unmappedDevice": true,
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 29,
+    "gross": 29000,
+    "PF_EE": 1740,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 27110
+   },
+   "expectDays": {
+    "2026-06-01": "P",
+    "2026-06-02": "A",
+    "2026-06-03": "P",
+    "2026-06-04": "P",
+    "2026-06-05": "P",
+    "2026-06-06": "P",
+    "2026-06-07": "WO",
+    "2026-06-08": "P",
+    "2026-06-09": "P",
+    "2026-06-10": "P",
+    "2026-06-11": "P",
+    "2026-06-12": "P",
+    "2026-06-13": "P",
+    "2026-06-14": "WO",
+    "2026-06-15": "P",
+    "2026-06-16": "P",
+    "2026-06-17": "P",
+    "2026-06-18": "P",
+    "2026-06-19": "P",
+    "2026-06-20": "P",
+    "2026-06-21": "WO",
+    "2026-06-22": "P",
+    "2026-06-23": "P",
+    "2026-06-24": "P",
+    "2026-06-25": "P",
+    "2026-06-26": "P",
+    "2026-06-27": "P",
+    "2026-06-28": "WO",
+    "2026-06-29": "P",
+    "2026-06-30": "P"
+   },
+   "expectAfterCutoff": {},
+   "expectMuster": {
+    "present": 25,
+    "absent": 1,
+    "halfDays": 0,
+    "weekoffs": 4,
+    "weekoffsUnpaid": 0,
+    "lopDays": 1
+   },
+   "expectSync": {
+    "firstFetched": 50,
+    "firstInserted": 50,
+    "secondInserted": 2,
+    "thirdInserted": 0,
+    "unmatched": [
+     "KENTHB01"
+    ]
+   },
+   "expectBlocked": [
+    "attendance_complete",
+    "recompute_drained",
+    "sync_watermark"
+   ]
+  }
+ ]
+}

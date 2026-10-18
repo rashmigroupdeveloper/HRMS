@@ -26,6 +26,7 @@ import {
   TextField,
   ConfirmModal,
   toast,
+  StatGrid, StatTile,
 } from '../../ui';
 
 type Tab = 'my' | 'apply' | 'admin';
@@ -97,7 +98,7 @@ export function LoansPage() {
 
   // Application form state
   const [applyType, setApplyType] = useState('loan_diminishing');
-  const [applyPrincipal, setApplyPrincipal] = useState('50000');
+  const [applyPrincipal, setApplyPrincipal] = useState('');
   const [applyRate, setApplyRate] = useState('8.5');
   const [applyTenure, setApplyTenure] = useState('12');
   const [applyStartMonth, setApplyStartMonth] = useState('2026-07-01');
@@ -354,8 +355,8 @@ export function LoansPage() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Payroll & Benefits"
-        title="Staff Loans & Advances"
-        description="Transparent loan application, automated payroll EMI recovery, and immutable balance ledgers under Section 17(2)."
+        title="Loans & advances"
+        description="Apply for a loan or salary advance; EMIs are recovered through payroll and every balance change is recorded."
         actions={
           <div className="flex items-center gap-2">
             <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
@@ -396,40 +397,26 @@ export function LoansPage() {
       />
 
       {/* Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-ink-muted">Active Loans</p>
-          <p className="mt-2 text-2xl font-light text-ink">
-            {tab === 'admin' ? allLoans.filter((l) => l.status === 'active').length : myLoans.filter((l) => l.status === 'active').length}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-ink-muted">Total Outstanding</p>
-          <p className="mt-2 text-2xl font-light text-ink">
-            {formatINR(
-              (tab === 'admin' ? allLoans : myLoans).reduce(
-                (sum, l) => sum + (l.status === 'active' ? l.currentOutstandingRupees : 0),
-                0
-              )
-            )}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-ink-muted">Next Deduction Run</p>
-          <p className="mt-2 text-2xl font-light text-ink">
-            {formatINR(
-              (tab === 'admin' ? allLoans : myLoans).reduce(
-                (sum, l) => sum + (l.status === 'active' ? l.monthlyEmiRupees : 0),
-                0
-              )
-            )}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-ink-muted">Statutory Perquisite (SBI 8.5%)</p>
-          <p className="mt-2 text-2xl font-light text-ink">Section 17(2) Taxed</p>
-        </Card>
-      </div>
+      <StatGrid>
+        <StatTile
+          label="Active loans"
+          value={tab === 'admin' ? allLoans.filter((l) => l.status === 'active').length : myLoans.filter((l) => l.status === 'active').length}
+        />
+        <StatTile
+          tone="accent"
+          label="Total outstanding"
+          prefix="₹"
+          value={(tab === 'admin' ? allLoans : myLoans).reduce((sum, l) => sum + (l.status === 'active' ? l.currentOutstandingRupees : 0), 0)}
+        />
+        <StatTile
+          tone="hatched"
+          label="Next deduction run"
+          prefix="₹"
+          value={(tab === 'admin' ? allLoans : myLoans).reduce((sum, l) => sum + (l.status === 'active' ? l.monthlyEmiRupees : 0), 0)}
+          hint="EMIs recovered in the next payroll"
+        />
+        <StatTile label="Perquisite tax" value="Sec 17(2)" hint="Below SBI rate (8.5%) is taxed as a perquisite" />
+      </StatGrid>
 
       {/* Tab: My Loans / Company Loans */}
       {(tab === 'my' || tab === 'admin') && (
@@ -513,7 +500,7 @@ export function LoansPage() {
             {/* Eligibility Feedback */}
             {preview && (
               <Card className="p-5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                <p className="text-xs font-semibold text-ink-muted">
                   Policy Eligibility Status
                 </p>
                 {preview.eligible ? (
@@ -574,7 +561,7 @@ export function LoansPage() {
 
                   <div className="max-h-96 overflow-y-auto border border-line rounded-lg">
                     <table className="w-full text-left text-xs">
-                      <thead className="sticky top-0 bg-surface-2 text-ink-muted uppercase">
+                      <thead className="sticky top-0 bg-surface-2 text-ink-muted">
                         <tr>
                           <th className="p-2.5">#</th>
                           <th className="p-2.5">Principal</th>
@@ -640,7 +627,7 @@ export function LoansPage() {
               <h4 className="text-sm font-semibold text-ink mb-3">Recoveries posted by payroll</h4>
               <div className="overflow-x-auto border border-line rounded-lg">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-surface-2 text-ink-muted uppercase">
+                  <thead className="bg-surface-2 text-ink-muted">
                     <tr>
                       <th className="p-2">Installment</th>
                       <th className="p-2">Principal</th>

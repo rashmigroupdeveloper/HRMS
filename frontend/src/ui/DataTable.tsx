@@ -8,6 +8,7 @@ import {
   ChevronsUpDown,
   Columns3,
   Download,
+  Inbox,
   Search,
   Trash2,
   X,
@@ -515,7 +516,7 @@ export function DataTable<T>({
           <div
             role="row"
             aria-rowindex={1}
-            className="grid items-center gap-3 border-b border-line px-4 py-3 text-xs font-semibold uppercase tracking-wide text-ink-muted"
+            className="grid items-center gap-3 border-b border-line px-4 py-3 text-xs font-medium text-ink-muted"
             style={{ gridTemplateColumns: gridTemplate }}
           >
             {selectable && (
@@ -554,7 +555,7 @@ export function DataTable<T>({
                         );
                       }}
                       className={cn(
-                        'group -mx-1 inline-flex items-center gap-1 rounded-md px-1 uppercase tracking-wide hover:text-ink',
+                        'group -mx-1 inline-flex items-center gap-1 rounded-md px-1 hover:text-ink',
                         dir !== null && 'text-ink',
                       )}
                     >
@@ -681,7 +682,17 @@ export function DataTable<T>({
 }
 
 function DefaultEmpty() {
-  return <p className="py-6 text-center text-sm text-ink-muted">No records.</p>;
+  return (
+    <div className="u-fade flex flex-col items-center gap-3 py-8 text-center">
+      <span aria-hidden className="grid size-11 place-items-center rounded-full bg-accent-soft text-ink">
+        <Inbox className="size-5" />
+      </span>
+      <div>
+        <p className="text-sm font-semibold text-ink">No records yet</p>
+        <p className="mt-1 text-sm text-ink-muted">New entries will appear here as soon as they are added.</p>
+      </div>
+    </div>
+  );
 }
 
 function ToolButton({

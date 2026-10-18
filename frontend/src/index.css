@@ -73,6 +73,41 @@
   --font-serif: 'Fraunces', ui-serif, Georgia, Cambria, 'Times New Roman', serif;
 }
 
+/* Self-hosted (OFL) latin + latin-ext subsets — no third-party font request
+   on first paint; latin-ext carries ₹ (U+20B9). */
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 400;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 400;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/manrope-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/manrope-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* Metric-matched fallback so the swap from local Segoe UI/Arial to Manrope
    does not reflow the page (CLS < 0.1, docs/05 §7). */
 @font-face {
@@ -163,13 +198,14 @@ body {
  * ------------------------------------------------------------------------- */
 
 /* Soft, borderless card shadow — separation by shadow + surface, never a 1px line. */
-.u-shadow-card {
+/* @utility (not a plain class) so variants like `hover:u-shadow-float` work. */
+@utility u-shadow-card {
   box-shadow: var(--shadow-1);
 }
-.u-shadow-float {
+@utility u-shadow-float {
   box-shadow: var(--shadow-2);
 }
-.u-shadow-lift {
+@utility u-shadow-lift {
   box-shadow: var(--shadow-3);
 }
 
@@ -298,6 +334,73 @@ body {
   }
 }
 
+/* Strip segments / bars grow in from the left once on mount (transform only). */
+.u-grow-x {
+  transform-origin: left center;
+  animation: u-gold-sweep var(--motion-medium) var(--ease-out-strong) both;
+}
+/* Dot-grid cells fade+scale in, staggered by --i (capped by the caller). */
+.u-dot-in {
+  animation: u-pop var(--motion-short) var(--ease-out-strong) both;
+  animation-delay: calc(var(--i, 0) * 8ms);
+}
+
+/* Chart line draws in once (pathLength=1 on the path); the area wash follows. */
+.u-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: u-draw 700ms var(--ease-out-strong) 80ms forwards;
+}
+@keyframes u-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.u-fade-late {
+  animation: u-fade var(--motion-medium) var(--ease-std) 300ms both;
+}
+
+/* Success tick: the disc pops, then the check strokes in (toasts, done states). */
+.u-success-disc {
+  transform-origin: center;
+  animation: u-pop var(--motion-short) var(--ease-out-strong) both;
+}
+.u-success-tick {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: u-draw var(--motion-medium) var(--ease-out-strong) 120ms forwards;
+}
+
+/* Hover lift for pressable cards: rises 2px on real hover devices and its
+   float shadow fades in on a pseudo-element (opacity only — no box-shadow
+   transition), presses to 0.98 on :active. */
+.u-lift {
+  position: relative;
+  transition: transform var(--motion-short) var(--ease-out-strong);
+}
+.u-lift::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-short) var(--ease-out-strong);
+}
+@media (hover: hover) and (pointer: fine) {
+  .u-lift:hover {
+    transform: translateY(-2px);
+  }
+  .u-lift:hover::after {
+    opacity: 1;
+  }
+}
+.u-lift:active {
+  transform: scale(0.98);
+  transition-duration: var(--motion-press);
+}
+
 .u-pop-in {
   transform-origin: top center;
   animation: u-pop var(--motion-short) var(--ease-out-strong);
@@ -316,7 +419,9 @@ body {
   /* Reduced motion = gentler, not zero: kill positional/scale movement,
      keep color/opacity that aids comprehension (docs/05 §2.3). */
   .u-press,
-  .u-press:active {
+  .u-press:active,
+  .u-lift:hover,
+  .u-lift:active {
     transform: none;
   }
   .u-enter {
@@ -324,9 +429,20 @@ body {
     opacity: 1;
     transform: none;
   }
-  .u-gold-sweep {
+  .u-gold-sweep,
+  .u-grow-x {
     animation: none;
     transform: scaleX(1);
+  }
+  .u-dot-in,
+  .u-fade-late,
+  .u-success-disc {
+    animation: none;
+  }
+  .u-draw,
+  .u-success-tick {
+    animation: none;
+    stroke-dashoffset: 0;
   }
   *,
   *::before,
@@ -363,7 +479,7 @@ body {
 
 /* Route change — fade-through with a 6px rise (occasional → standard motion). */
 .u-route {
-  animation: u-route var(--motion-short) var(--ease-out-strong) both;
+  animation: u-route var(--motion-short) var(--ease-out-strong) backwards;
 }
 @keyframes u-route {
   from {
@@ -379,7 +495,9 @@ body {
 /* List / card stagger: children rise in 40ms apart, capped at 8 items
  * (≈ 300ms total, never blocking interaction — docs/05 §2.3). */
 .u-stagger > * {
-  animation: u-enter var(--motion-short) var(--ease-out-strong) both;
+  /* backwards, not both: once settled no transform lingers, so popovers and
+     sticky/fixed descendants keep their normal stacking and containing block. */
+  animation: u-enter var(--motion-short) var(--ease-out-strong) backwards;
 }
 .u-stagger > :nth-child(2) { animation-delay: calc(var(--motion-stagger) * 1); }
 .u-stagger > :nth-child(3) { animation-delay: calc(var(--motion-stagger) * 2); }

@@ -5,7 +5,8 @@
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
-import { istDateString } from '../../core/dates.js';
+import { addDaysIso, istDateString } from '../../core/dates.js';
+import { resolveAttendanceWindow } from '../../core/db/attendance-cycle.js';
 import { getTypedSetting } from '../settings/index.js';
 import { countPendingManagerApprovals } from './manager-approval.service.js';
 import type { EmployeeScope } from '../../core/rbac/employee-scope.js';
@@ -48,7 +49,10 @@ export async function getMonthLockChecklist(
   month: string,
 ): Promise<MonthLockChecklist> {
   const m = monthStart(month);
-  const mEnd = nextMonthStart(m);
+  // C-17: the lock is keyed by payroll month; the facts checked are its attendance window.
+  const window = await resolveAttendanceWindow(db, companyId, m);
+  const wFrom = window.from;
+  const mEnd = window.until;
   const managerApprovalRequired = await getTypedSetting(
     db,
     'att.manager_approval_required_for_lock',
@@ -58,7 +62,7 @@ export async function getMonthLockChecklist(
   const otMinMinutes = await getTypedSetting(db, 'att.ot_min_minutes', 'number', 30);
   if (!Number.isFinite(otMinMinutes) || otMinMinutes <= 0)
     throw new Error('Invalid overtime detection threshold');
-  const readiness = await readCloseReadiness(db, companyId, m, mEnd, otMinMinutes);
+  const readiness = await readCloseReadiness(db, companyId, wFrom, mEnd, otMinMinutes);
 
   const existing = await db
     .selectFrom('att.month_locks')
@@ -75,7 +79,7 @@ export async function getMonthLockChecklist(
     .where('e.company_id', '=', companyId)
     .where('r.status', 'in', ['pending', 'sent_back'])
     .where('reg.from_date', '<', sql<Date>`${mEnd}::date`)
-    .where('reg.to_date', '>=', sql<Date>`${m}::date`)
+    .where('reg.to_date', '>=', sql<Date>`${wFrom}::date`)
     .select(({ fn }) => fn.countAll<number>().as('n'))
     .executeTakeFirstOrThrow();
 
@@ -85,7 +89,7 @@ export async function getMonthLockChecklist(
     .innerJoin('core.employees as e', 'e.id', 'o.employee_id')
     .where('e.company_id', '=', companyId)
     .where('o.status', '=', 'pending')
-    .where('o.work_date', '>=', sql<Date>`${m}::date`)
+    .where('o.work_date', '>=', sql<Date>`${wFrom}::date`)
     .where('o.work_date', '<', sql<Date>`${mEnd}::date`)
     .select(({ fn }) => fn.countAll<number>().as('n'))
     .executeTakeFirstOrThrow();
@@ -94,7 +98,7 @@ export async function getMonthLockChecklist(
   const unmatched = await db
     .selectFrom('att.swipe_events')
     .where('employee_id', 'is', null)
-    .where('swipe_ts', '>=', sql<Date>`${m}::date::timestamp AT TIME ZONE 'Asia/Kolkata'`)
+    .where('swipe_ts', '>=', sql<Date>`${wFrom}::date::timestamp AT TIME ZONE 'Asia/Kolkata'`)
     .where('swipe_ts', '<', sql<Date>`${mEnd}::date::timestamp AT TIME ZONE 'Asia/Kolkata'`)
     .select(({ fn }) => fn.countAll<number>().as('n'))
     .executeTakeFirstOrThrow();
@@ -130,7 +134,7 @@ export async function getMonthLockChecklist(
         AND e.biometric_registered = true
         AND e.status IN ('active', 'on_notice', 'exited')
         AND (e.doj IS NULL OR e.doj < ${mEnd}::date)
-        AND (e.dol IS NULL OR e.dol >= ${m}::date)
+        AND (e.dol IS NULL OR e.dol >= ${wFrom}::date)
     ), required_locations AS (
       SELECT DISTINCT location_id
       FROM biometric_employees
@@ -170,7 +174,8 @@ export async function getMonthLockChecklist(
       label: 'Attendance period has ended',
       ok: mEnd <= istDateString(),
       detail:
-        mEnd <= istDateString() ? 'Period ended' : 'Current and future months cannot be closed',
+        `Attendance window ${wFrom} to ${addDaysIso(mEnd, -1)}: ` +
+        (mEnd <= istDateString() ? 'period ended' : 'current and future periods cannot be closed'),
     },
     {
       code: 'population_ready',
@@ -286,7 +291,7 @@ export async function lockMonth(
     }
 
     const m = checklist.month;
-    const mEnd = nextMonthStart(m);
+    const { from: wFrom, until: mEnd } = await resolveAttendanceWindow(trx, params.companyId, m);
     const lock = await trx
       .insertInto('att.month_locks')
       .values({
@@ -294,6 +299,8 @@ export async function lockMonth(
         month: sql<Date>`${m}::date`,
         locked_by: params.actorUserId,
         checklist: JSON.stringify(checklist.items),
+        period_from: sql<Date>`${wFrom}::date`,
+        period_until: sql<Date>`${mEnd}::date`,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
@@ -304,7 +311,7 @@ export async function lockMonth(
       FROM core.employees e
       WHERE d.employee_id = e.id
         AND e.company_id = ${params.companyId}
-        AND d.work_date >= ${m}::date
+        AND d.work_date >= ${wFrom}::date
         AND d.work_date < ${mEnd}::date
         AND d.is_locked = false
     `.execute(trx);

@@ -17,6 +17,8 @@ import { withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
+import { holidayAppliesSql, loadHolidaySubject, resolveHolidayScope, upsertScopedHoliday } from '../../core/db/holiday-calendar.js';
+import { assertCompanyInScope } from '../../core/rbac/company-scope.js';
 import { assertEmployeesInScope } from '../../core/rbac/employee-scope.js';
 import {
   closeWeek,
@@ -25,6 +27,7 @@ import {
   setManualStatus,
 } from './day-status.service.js';
 import { applyRosterEntries } from './roster.service.js';
+import { queueMissingDays } from './day-materialize.js';
 import { assignEmployeeScheme } from './scheme.service.js';
 import { AttendanceMutationError } from './attendance-mutation.js';
 import { readSessionStatuses, sessionStatusesSchema, validateSessionSummary } from './session-status.js';
@@ -160,48 +163,82 @@ const upsertShift = withPermission('admin.settings')
     return { ok: true as const };
   });
 
+const holidayRow = z.object({
+  date: z.string(),
+  name: z.string(),
+  companyId: z.number().nullable(),
+  plantId: z.number().nullable(),
+  locationId: z.number().nullable(),
+});
+
 const listHolidays = withPermission('attendance.own')
-  .route({ method: 'GET', path: '/attendance/config/holidays', summary: 'Holiday calendar (ESS-readable)' })
-  .input(z.object({ year: z.number().int() }).optional())
-  .output(z.array(z.object({ date: z.string(), name: z.string(), locationId: z.number().nullable() })))
+  .route({ method: 'GET', path: '/attendance/config/holidays', summary: 'Holiday calendar (ESS-readable; group, company, plant or location scope)' })
+  .input(z.object({
+    year: z.coerce.number().int().optional(),
+    companyId: z.coerce.number().int().positive().optional(),
+    /** Only the holidays that apply to the caller's own company / plant / location (ESS calendar). */
+    mine: booleanQuery().optional(),
+  }).optional())
+  .output(z.array(holidayRow))
   .handler(async ({ input, context }) => {
-    let q = context.db.selectFrom('att.holidays').selectAll().orderBy('holiday_date');
+    let q = context.db.selectFrom('att.holidays').selectAll().orderBy('holiday_date').orderBy('id');
     if (input?.year) {
       q = q
-        .where('holiday_date', '>=', sql<Date>`${`${input.year}-01-01`}::date`)
-        .where('holiday_date', '<=', sql<Date>`${`${input.year}-12-31`}::date`);
+        .where('holiday_date', '>=', sql<Date>`${`${String(input.year)}-01-01`}::date`)
+        .where('holiday_date', '<=', sql<Date>`${`${String(input.year)}-12-31`}::date`);
+    }
+    if (input?.companyId) {
+      const companyId = input.companyId;
+      q = q.where((eb) => eb.or([eb('company_id', 'is', null), eb('company_id', '=', companyId)]));
+    }
+    if (input?.mine) {
+      const employeeId = context.user.employee_id;
+      if (employeeId === null) return [];
+      q = q.where(holidayAppliesSql('att.holidays', await loadHolidaySubject(context.db, employeeId)));
     }
     const rows = await q.execute();
     return rows.map((r) => ({
       date: formatDbDate(r.holiday_date),
       name: r.name,
+      companyId: r.company_id,
+      plantId: r.plant_id,
       locationId: r.location_id,
     }));
   });
 
 const upsertHoliday = withPermission('admin.settings')
-  .route({ method: 'PUT', path: '/attendance/config/holidays', summary: 'Add/update a holiday (audited)' })
-  .input(z.object({ date: isoDate, name: z.string().min(1), locationId: z.number().int().nullish() }))
-  .output(z.object({ ok: z.literal(true) }))
+  .route({ method: 'PUT', path: '/attendance/config/holidays', summary: 'Add/update a holiday for the group, a company, a plant or a location (audited)' })
+  .input(z.object({
+    date: isoDate,
+    name: z.string().trim().min(1).max(120),
+    companyId: z.number().int().positive().nullish(),
+    plantId: z.number().int().positive().nullish(),
+    locationId: z.number().int().positive().nullish(),
+  }))
+  .output(z.object({ ok: z.literal(true), created: z.boolean() }))
   .handler(async ({ input, context }) => {
-    await context.db
-      .insertInto('att.holidays')
-      .values({
-        holiday_date: sql<Date>`${input.date}::date` as unknown as Date,
-        name: input.name,
-        location_id: input.locationId ?? null,
-      })
-      .onConflict((oc) => oc.columns(['location_id', 'holiday_date']).doUpdateSet({ name: input.name }))
-      .execute();
+    let scope;
+    try {
+      scope = await resolveHolidayScope(context.db, input);
+    } catch (error) {
+      throw new ORPCError('BAD_REQUEST', { message: error instanceof Error ? error.message : 'Invalid holiday scope' });
+    }
+    const access = { ...context.permissionAccess, actorEmployeeId: context.user.employee_id };
+    if (scope.company_id === null) {
+      if (!access.all) throw new ORPCError('FORBIDDEN', { message: 'Only a group-level admin can add a holiday for the whole group; choose a company' });
+    } else {
+      await assertCompanyInScope(context.db, access, scope.company_id);
+    }
+    const created = await upsertScopedHoliday(context.db, scope, input.date, input.name);
     await writeAudit(context.db, {
       actorUserId: context.user.id,
       action: 'update',
       entity: 'att.holidays',
       field: input.date,
-      newValue: input.name,
+      newValue: JSON.stringify({ name: input.name, ...scope }),
       ip: context.req.ip ?? null,
     });
-    return { ok: true as const };
+    return { ok: true as const, created };
   });
 
 const setScheme = withPermission('attendance.roster.write')
@@ -460,8 +497,12 @@ const overrideDay = withPermission('attendance.manual_override')
   });
 
 const recompute = withPermission('admin.integrations')
-  .route({ method: 'POST', path: '/attendance/recompute', summary: 'Recompute a day or drain the dirty queue' })
-  .input(z.object({ employeeId: z.number().int().positive(), date: isoDate }).optional())
+  .route({ method: 'POST', path: '/attendance/recompute', summary: 'Recompute a day, materialise a company period, or drain the dirty queue' })
+  .input(z.union([
+    z.object({ employeeId: z.number().int().positive(), date: isoDate }),
+    // Materialise: queue every employment day of [from, until) without a day record, then drain.
+    z.object({ companyId: z.number().int().positive(), from: isoDate, until: isoDate }),
+  ]).optional())
   .output(
     z.object({
       processed: z.number(),
@@ -469,9 +510,15 @@ const recompute = withPermission('admin.integrations')
     }),
   )
   .handler(async ({ input, context }) => {
-    if (input) {
+    if (input && 'employeeId' in input) {
       const outcome = await recomputeDay(context.db, input.employeeId, input.date);
       return { processed: 1, outcome };
+    }
+    if (input) {
+      const span = (Date.parse(input.until) - Date.parse(input.from)) / 86_400_000;
+      if (span <= 0 || span > 62) throw new ORPCError('BAD_REQUEST', { message: 'from must be before until, at most 62 days' });
+      await assertCompanyInScope(context.db, { ...context.permissionAccess, actorEmployeeId: context.user.employee_id }, input.companyId);
+      await queueMissingDays(context.db, { companyId: input.companyId, from: input.from, until: input.until });
     }
     return { processed: await drainRecomputeQueue(context.db), outcome: null };
   });

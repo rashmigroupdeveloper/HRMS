@@ -24,7 +24,7 @@ const DB_URL = process.env['DATABASE_URL'];
 const JWT_SECRET = process.env['JWT_SECRET'] ?? 'synthetic-jwt-test-secret-at-least-32-characters-long';
 
 interface TravelBody {
-  budgets:unknown[];trip:{id:number;status:string};trips:unknown[];
+  budgets:unknown[];trip:{id:number;status:string;approvedBudgetPaise?:number};trips:unknown[];
   itinerary:{estimatedCostPaise:number};itineraries:unknown[];
   advance:{id:number;status:string};advances:unknown[];claim:{id:number};claims:unknown[];
   item:{amountPaise:number};settlementId:number;advanceAdjustedPaise:number;netRecoverablePaise:number;
@@ -35,8 +35,8 @@ describe.skipIf(!DB_URL)('Travel & Expense Router Endpoints (TE-01..12, C-02, P-
   let db:Kysely<Database>;
   let transaction:ControlledTransaction<Database>|undefined;
   let app:ReturnType<typeof createApp>;
-  const ids = { employee: 0, employeeUser: 0, manager: 0, managerUser: 0, outsider: 0, payrollUser: 0 };
-  const tokens = { employee: '', manager: '', outsider: '', payroll: '' };
+  const ids = { employee: 0, employeeUser: 0, manager: 0, managerUser: 0, outsider: 0, payrollUser: 0, adminUser: 0 };
+  const tokens = { employee: '', manager: '', outsider: '', payroll: '', admin: '' };
   beforeAll(async()=>{
     db=createDatabase(DB_URL??'');
     transaction=await db.startTransaction().execute();

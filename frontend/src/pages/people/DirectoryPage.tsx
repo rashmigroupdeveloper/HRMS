@@ -6,6 +6,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, Users } from 'lucide-react';
 import { apiFetch, ApiError } from '../../lib/api';
+import type { SessionUser } from '../../lib/session';
+import { hasPermission } from '../../lib/session';
+import { EmployeeFormDrawer } from './EmployeeFormDrawer';
 import {
   Button,
   DataTable,
@@ -18,6 +21,7 @@ import {
   TextField,
   Tooltip,
   toast,
+  PersonCell,
 } from '../../ui';
 import type { Column, StatusTone } from '../../ui';
 import {
@@ -135,7 +139,7 @@ const COLUMNS: Column<DirectoryItem>[] = [
     locked: true,
     header: 'Name',
     width: 'minmax(0,1.4fr)',
-    render: (r) => <span className="font-medium text-ink">{r.name}</span>,
+    render: (r) => <PersonCell name={r.name} />,
   },
   {
     key: 'designation',
@@ -168,7 +172,9 @@ const COLUMNS: Column<DirectoryItem>[] = [
   },
 ];
 
-export function DirectoryPage() {
+export function DirectoryPage({ user }: { user?: SessionUser } = {}) {
+  const canWrite = user !== undefined && hasPermission(user, 'employee.write');
+  const [addOpen, setAddOpen] = useState(false);
   const navigate = useNavigate();
   const [stored] = useState(readStoredDirectoryFilters);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -255,6 +261,9 @@ export function DirectoryPage() {
         }
         actions={
           <div className="flex items-center gap-2">
+            {canWrite && (
+              <Button variant="primary" onClick={() => { setAddOpen(true); }}>Add employee</Button>
+            )}
             {appliedCount > 0 && (
               <Pill>
                 {appliedCount} filter{appliedCount === 1 ? '' : 's'} applied
@@ -393,6 +402,10 @@ export function DirectoryPage() {
           toast.info('Filters applied');
         }}
       />
+      {canWrite && (
+        <EmployeeFormDrawer open={addOpen} onClose={() => { setAddOpen(false); }}
+          onSaved={(code) => { void navigate(`/people/${encodeURIComponent(code)}`); }} />
+      )}
     </div>
   );
 }

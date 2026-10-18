@@ -5,7 +5,7 @@ import { dayPortionLabel } from '../attendance/attendance-portion';
 import { useState } from 'react';
 import { apiFetch } from '../../lib/api';
 import { Send } from 'lucide-react';
-import { Button, Drawer, formatDateIN, TextField, StatusBadge, toast, type Column } from '../../ui';
+import { Button, Drawer, PersonCell, formatDateIN, TextField, StatusBadge, toast, type Column } from '../../ui';
 import { SupportingReportPage } from './SupportingReportPage';
 import { qs } from './report-utils';
 
@@ -52,10 +52,7 @@ const r2Columns: Column<R2Row>[] = [
     header: 'Employee',
     width: 'minmax(160px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={r.ecode} />
     ),
   },
   { key: 'date', header: 'Date', width: '110px', render: (r) => formatDateIN(r.workDate) },
@@ -218,10 +215,7 @@ const r3Columns: Column<R3Row>[] = [
     header: 'Employee',
     width: 'minmax(150px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={r.ecode} />
     ),
   },
   { key: 'kind', header: 'Kind', width: '110px', render: (r) => r.kind },
@@ -334,10 +328,7 @@ const r4Columns: Column<R4Row>[] = [
     header: 'Employee',
     width: 'minmax(160px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={r.ecode} />
     ),
   },
   { key: 'date', header: 'Date', width: '110px', render: (r) => formatDateIN(r.workDate) },
@@ -419,10 +410,7 @@ const r5Columns: Column<R5Row>[] = [
     header: 'Employee',
     width: 'minmax(150px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={r.ecode} />
     ),
   },
   { key: 'date', header: 'Date', width: '110px', render: (r) => formatDateIN(r.workDate) },
@@ -546,10 +534,7 @@ const r6Columns: Column<R6Row>[] = [
     header: 'Employee',
     width: 'minmax(150px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={r.ecode} />
     ),
   },
   { key: 'start', header: 'Start', width: '110px', render: (r) => formatDateIN(r.startDate) },
@@ -598,7 +583,7 @@ export function R6AbsencePage() {
     <SupportingReportPage<R6Row>
       code="R6"
       title="Absence cases"
-      subtitle="Continuous-absence watch and show-cause queue (ATT-10)."
+      subtitle="Continuous-absence watch and show-cause queue."
       listPath="/api/reports/r6-absence"
       exportPath="/api/reports/r6-absence/export"
       columns={r6Columns}
@@ -695,7 +680,7 @@ export function R24BoardingPage() {
     <SupportingReportPage<BoardingRow>
       code="R24"
       title="Boarding & exits"
-      subtitle="Date-range joiners and exits; the daily slice drives the 07:00 plant email (LC-03)."
+      subtitle="Date-range joiners and exits; the daily slice drives the 07:00 plant email."
       listPath="/api/reports/r24-boarding"
       exportPath="/api/reports/r24-boarding/export"
       columns={r24Columns}
@@ -965,10 +950,7 @@ const r25Columns: Column<R25Row>[] = [
     header: 'Employee',
     width: 'minmax(160px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode} · {r.department ?? '—'}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={`${r.ecode} · ${r.department ?? '—'}`} />
     ),
   },
   { key: 'doj', header: 'DOJ', width: '100px', render: (r) => formatDateIN(r.doj) },
@@ -992,7 +974,7 @@ export function R25ProbationPage() {
   return (
     <SupportingReportPage<R25Row>
       code="R25"
-      title="Probation Reviews & Confirmations"
+      title="Probation reviews & confirmations"
       subtitle="Evaluation schedules, manager assessments, extension tracking and overdue reviews."
       listPath="/api/reports/r25-probation"
       exportPath="/api/reports/r25-probation/export"
@@ -1011,22 +993,22 @@ export function R25ProbationPage() {
 // ── R26 Attrition Analysis ──────────────────────────────────────────────────
 
 interface R26Row {
-  separationId: number;
+  id: number;
   employeeName: string;
   ecode: string;
+  company: string | null;
   department: string | null;
   location: string | null;
   category: string | null;
   doj: string;
-  tenureMonths: number;
+  dol: string | null;
   tenureBand: string;
   resignationDate: string;
-  lwd: string | null;
   reason: string | null;
   exitType: 'Voluntary' | 'Involuntary';
   noticePeriodDays: number | null;
   shortfallDays: number | null;
-  fnfStatus: string | null;
+  status: string | null;
 }
 
 const r26Columns: Column<R26Row>[] = [
@@ -1035,18 +1017,15 @@ const r26Columns: Column<R26Row>[] = [
     header: 'Employee',
     width: 'minmax(160px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode} · {r.department ?? '—'}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={`${r.ecode} · ${r.department ?? '—'}`} />
     ),
   },
   { key: 'exitType', header: 'Exit Type', width: '110px', render: (r) => <StatusBadge tone={r.exitType === 'Voluntary' ? 'neutral' : 'negative'}>{r.exitType}</StatusBadge> },
-  { key: 'tenure', header: 'Tenure', width: '110px', render: (r) => <span>{r.tenureBand} ({r.tenureMonths}m)</span> },
+  { key: 'tenure', header: 'Tenure', width: '110px', render: (r) => <span>{r.tenureBand}</span> },
   { key: 'dates', header: 'Resigned / LWD', width: '140px', render: (r) => (
     <div className="text-xs">
       <p className="text-ink">{formatDateIN(r.resignationDate)}</p>
-      <p className="text-ink-muted">{r.lwd ? `LWD: ${formatDateIN(r.lwd)}` : '—'}</p>
+      <p className="text-ink-muted">{r.dol ? `LWD: ${formatDateIN(r.dol)}` : '—'}</p>
     </div>
   )},
   { key: 'notice', header: 'Notice (Shortfall)', width: '120px', render: (r) => `${String(r.noticePeriodDays ?? 0)}d (${String(r.shortfallDays ?? 0)}d)` },
@@ -1062,7 +1041,7 @@ export function R26AttritionPage() {
       listPath="/api/reports/r26-attrition"
       exportPath="/api/reports/r26-attrition/export"
       columns={r26Columns}
-      rowKey={(r) => String(r.separationId)}
+      rowKey={(r) => String(r.id)}
       mode="companyOptional"
       requireCompany={false}
       buildQuery={(f) => ({
@@ -1149,11 +1128,11 @@ interface R29Row {
   category: string;
   totalTickets: number;
   resolvedTickets: number;
-  slaBreachedTickets: number;
-  slaHitPct: number;
+  resolutionRatePct: number;
+  breachedCount: number;
+  escalatedCount: number;
   avgFirstResponseHours: number | null;
   avgResolutionHours: number | null;
-  reopenedTickets: number;
 }
 
 const r29Columns: Column<R29Row>[] = [
@@ -1162,17 +1141,17 @@ const r29Columns: Column<R29Row>[] = [
   { key: 'total', header: 'Total Tickets', width: '100px', numeric: true, render: (r) => r.totalTickets },
   { key: 'resolved', header: 'Resolved', width: '90px', numeric: true, render: (r) => r.resolvedTickets },
   {
-    key: 'slaHit',
-    header: 'SLA Hit Rate',
+    key: 'resolution',
+    header: 'Resolution rate',
     width: '120px',
     numeric: true,
     render: (r) => (
-      <StatusBadge tone={r.slaHitPct >= 90 ? 'positive' : r.slaHitPct >= 75 ? 'warning' : 'negative'}>
-        {r.slaHitPct.toFixed(1)}%
+      <StatusBadge tone={r.resolutionRatePct >= 90 ? 'positive' : r.resolutionRatePct >= 75 ? 'warning' : 'negative'}>
+        {r.resolutionRatePct.toFixed(0)}%
       </StatusBadge>
     ),
   },
-  { key: 'breached', header: 'Breaches', width: '90px', numeric: true, render: (r) => r.slaBreachedTickets },
+  { key: 'breached', header: 'Breaches', width: '90px', numeric: true, render: (r) => r.breachedCount },
   { key: 'respTime', header: 'Avg Response', width: '110px', numeric: true, render: (r) => r.avgFirstResponseHours ? `${r.avgFirstResponseHours.toFixed(1)}h` : '—' },
   { key: 'resTime', header: 'Avg Resolution', width: '110px', numeric: true, render: (r) => r.avgResolutionHours ? `${r.avgResolutionHours.toFixed(1)}h` : '—' },
 ];
@@ -1282,10 +1261,7 @@ const r31Columns: Column<R31Row>[] = [
     header: 'Employee',
     width: 'minmax(160px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode} · {r.department ?? '—'}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={`${r.ecode} · ${r.department ?? '—'}`} />
     ),
   },
   { key: 'type', header: 'Expense Type', width: '130px', render: (r) => r.claimType },

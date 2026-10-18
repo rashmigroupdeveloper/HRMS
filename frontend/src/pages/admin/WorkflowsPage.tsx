@@ -213,7 +213,7 @@ export function WorkflowsPage({ user }: { user: SessionUser }) {
           <EmptyState
             icon={<Workflow />}
             title="No workflows defined"
-            description="Run npm run seed:workflows to load the docs/08 §4 catalog."
+            description="No approval chains are set up yet. Ask your system administrator to load the standard chains."
           />
         }
       />
@@ -399,7 +399,7 @@ function ChainEditor({
           )}
 
           <p className="text-xs leading-5 text-ink-muted">
-            Every step records a notification receipt when it opens (WF-04), so “the approver was
+            Every step records a notification receipt when it opens, so “the approver was
             never notified” stays provable rather than arguable.
           </p>
         </div>

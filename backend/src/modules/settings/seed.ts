@@ -44,6 +44,10 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
   { key: 'lifecycle.notice_days_default', value: 30, valueType: 'number', description: 'LC-07: notice period (days) for everyone else' },
   { key: 'pay.pf_wage_base', value: 'ACTUAL', valueType: 'string', description: 'P-01: default PF wage basis (ACTUAL or CEILING_15000); company and employee pf_wage_basis override it' },
   { key: 'pay.lwf_deduct_in_payroll', value: false, valueType: 'boolean', description: 'LWF deducted through monthly payroll (off: the client remits LWF outside the salary register)' },
+  { key: 'pay.lop_divisor', value: 'CALENDAR', valueType: 'string', description: 'C-16 / item 4: LOP divisor — CALENDAR (days in month), FIXED_30, FIXED_26 (working days, WO/H excluded) or WORKING_DAYS (working days of the month)' },
+  { key: 'att.cycle_start_day', value: 1, valueType: 'number', description: 'C-17 / item 4: attendance cycle start day (1 = calendar month; 26 = 26th to 25th, days after the cut-off paid as present and trued up next month). Change only between payroll months' },
+  { key: 'att.sandwich_rule', value: false, valueType: 'boolean', description: 'Item 4: week-offs/holidays between two full-day unpaid absences become LOP (calendar-type divisors only)' },
+  { key: 'att.materialize_lookback_days', value: 45, valueType: 'number', description: 'Owner bar #2: hourly sweep queues days with no swipe (absence/WO/holiday) for this many past days so a Kent-fed month can close' },
   { key: 'pay.negative_net_policy', value: 'carry_forward', valueType: 'string', description: 'P-14: carry_forward trims recoveries so net is never negative and recovers the rest next run; flag blocks finalize for review' },
   { key: 'loans.interest_rate_pct', value: 0, valueType: 'number', description: 'LN-02: policy annual interest % on interest-bearing staff loans (interest-free types always 0)' },
   { key: 'loans.max_emi_pct_of_gross', value: 30, valueType: 'number', description: 'LN-01: EMI cap as % of monthly gross for eligibility' },
@@ -223,6 +227,10 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
     valueType: 'number',
     description: 'LV-04: restricted holidays an employee may take per calendar year',
   },
+  { key: 'tax.declaration_open', value: '04-01', valueType: 'string', description: 'TDS: investment declaration / regime window opens (MM-DD within the FY)' },
+  { key: 'tax.declaration_close', value: '01-15', valueType: 'string', description: 'TDS: investment declaration / regime window closes (MM-DD within the FY)' },
+  { key: 'tax.proof_open', value: '01-01', valueType: 'string', description: 'TDS: investment proof submission window opens (MM-DD within the FY)' },
+  { key: 'tax.proof_close', value: '02-28', valueType: 'string', description: 'TDS: investment proof submission window closes (MM-DD within the FY)' },
 ];
 
 export async function seedPolicySettings(): Promise<{ total: number; inserted: number }> {

@@ -1,5 +1,6 @@
 /** ATT-03/04/12, CORE-10/11: scoped, audited scheme changes and derived-data invalidation. */
 import { sql, type Kysely } from 'kysely';
+import { loadCycleStartDay, periodMonthOf, periodMonthSql } from '../../core/db/attendance-cycle.js';
 import type { Database } from '../../core/db/types.js';
 import type { EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
@@ -24,13 +25,14 @@ export async function assignEmployeeScheme(db: Kysely<Database>, params: {
     const previous = await trx.selectFrom('att.employee_shifts').selectAll().where('employee_id', '=', employee.id).executeTakeFirst();
     if (previous?.weekday_shift_id === weekdayId && previous.saturday_shift_id === saturdayId) return;
 
+    const cycleStart = await loadCycleStartDay(trx);
     // Explicit rosters override a scheme. Closed facts must never be requeued.
     const affected = await trx.selectFrom('att.day_records as d').select('d.work_date')
       .where('d.employee_id', '=', employee.id).where('d.is_locked', '=', false)
       .where(sql<boolean>`NOT EXISTS (SELECT 1 FROM att.rosters r WHERE r.employee_id = d.employee_id AND r.work_date = d.work_date)`)
-      .where(sql<boolean>`NOT EXISTS (SELECT 1 FROM att.month_locks m WHERE m.company_id = ${employee.company_id} AND m.month = date_trunc('month', d.work_date)::date)`)
+      .where(sql<boolean>`NOT EXISTS (SELECT 1 FROM att.month_locks m WHERE m.company_id = ${employee.company_id} AND m.month = ${periodMonthSql(sql.ref('d.work_date'), cycleStart)})`)
       .orderBy('d.work_date').execute();
-    const months = [...new Set(affected.map(d => formatDbDate(d.work_date).slice(0, 7) + '-01'))];
+    const months = [...new Set(affected.map(d => periodMonthOf(formatDbDate(d.work_date), cycleStart)))];
     for (const month of months) await assertAttendanceMonthOpen(trx, employee.company_id, month);
     await trx.insertInto('att.employee_shifts').values({ employee_id: employee.id, weekday_shift_id: weekdayId,
       saturday_shift_id: saturdayId, updated_by: params.actorUserId })

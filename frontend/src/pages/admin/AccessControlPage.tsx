@@ -13,7 +13,8 @@
  * silently grants the wrong person a role, which is exactly the failure this
  * console exists to prevent.
  */
-import {ConnectedAccountsPanel} from './ConnectedAccountsPanel';
+import { ConnectedAccountsPanel } from './ConnectedAccountsPanel';
+import { SessionsPanel } from './SessionsPanel';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { KeyRound, Search, ShieldCheck, UserRoundCog } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
@@ -48,13 +49,16 @@ interface DirectoryUser {
 }
 
 /** `attendance.roster.write` → "attendance" — the module the permission guards. */
+/** Mirrors the API rule (E2E-010): these roles must name the entity they cover. */
+const ENTITY_SCOPED_ROLES = new Set(['hr_ops', 'payroll_admin', 'plant_head']);
+
 function domainOf(permission: string): string {
   const dot = permission.indexOf('.');
   return dot === -1 ? 'general' : permission.slice(0, dot);
 }
 
 export function AccessControlPage() {
-  const [tab, setTab] = useState<'permissions' | 'people' | 'connected'>('permissions');
+  const [tab, setTab] = useState<'permissions' | 'people' | 'sessions' | 'connected'>('permissions');
 
   return (
     <div className="space-y-6">
@@ -79,7 +83,15 @@ export function AccessControlPage() {
           >
             Permissions
           </Button>
-          <Button size="sm" variant={tab === 'connected' ? 'primary' : 'ghost'} onClick={() => {setTab('connected');}}>Connected accounts</Button>
+          <Button
+            size="sm"
+            variant={tab === 'connected' ? 'primary' : 'ghost'}
+            onClick={() => {
+              setTab('connected');
+            }}
+          >
+            Connected accounts
+          </Button>
           <Button
             size="sm"
             variant={tab === 'people' ? 'primary' : 'ghost'}
@@ -89,10 +101,27 @@ export function AccessControlPage() {
           >
             People
           </Button>
+          <Button
+            size="sm"
+            variant={tab === 'sessions' ? 'primary' : 'ghost'}
+            onClick={() => {
+              setTab('sessions');
+            }}
+          >
+            Sessions
+          </Button>
         </div>
       </header>
 
-      {tab === 'connected' ? <ConnectedAccountsPanel /> : tab === 'permissions' ? <PermissionGrid /> : <PeoplePanel />}
+      {tab === 'permissions' ? (
+        <PermissionGrid />
+      ) : tab === 'people' ? (
+        <PeoplePanel />
+      ) : tab === 'sessions' ? (
+        <SessionsPanel />
+      ) : (
+        <ConnectedAccountsPanel />
+      )}
     </div>
   );
 }
@@ -189,7 +218,7 @@ function PermissionGrid() {
             description="Pick another domain."
           />
         ) : (
-          <div className="overflow-auto">
+          <div className="relative overflow-auto">
             <div className="min-w-max">
               <div
                 className="sticky top-0 z-10 grid bg-surface-2 text-xs text-ink-muted"
@@ -280,12 +309,20 @@ function PeoplePanel() {
     description: r.code,
   }));
 
+  const [orgUnits, setOrgUnits] = useState<SelectOption[]>([]);
+  const [addScope, setAddScope] = useState<Record<number, string>>({});
+  useEffect(() => {
+    apiFetch<{ orgUnits: { id: number; name: string; companyCode: string }[] }>('/api/core/org-units')
+      .then((r) => { setOrgUnits(r.orgUnits.map((o) => ({ value: String(o.id), label: `${o.companyCode} · ${o.name}` }))); })
+      .catch(() => { setOrgUnits([]); });
+  }, []);
+
   const mutate = async (user: DirectoryUser, role: string, add: boolean) => {
     setBusy(user.userId);
     try {
       await apiFetch('/api/rbac/user-roles', {
         method: add ? 'POST' : 'DELETE',
-        body: JSON.stringify(add ? { userId: user.userId, role } : { userId: user.userId, role }),
+        body: JSON.stringify(add ? { userId: user.userId, role, ...(addScope[user.userId] ? { scopeOrgUnitId: Number(addScope[user.userId]) } : {}) } : { userId: user.userId, role }),
       });
       toast.success(add ? 'Role assigned' : 'Role removed', {
         description: `${user.name ?? user.email} · ${role}. Effective next request; audited.`,
@@ -349,11 +386,21 @@ function PeoplePanel() {
                         setAddRole((prev) => ({ ...prev, [user.userId]: value }));
                       }}
                     />
+                    {ENTITY_SCOPED_ROLES.has(addRole[user.userId] ?? '') && (
+                      <Select
+                        label="Entity (org unit)"
+                        required
+                        value={addScope[user.userId] ?? ''}
+                        placeholder="Choose…"
+                        options={orgUnits}
+                        onChange={(value) => { setAddScope((prev) => ({ ...prev, [user.userId]: value })); }}
+                      />
+                    )}
                     <Button
                       size="sm"
                       variant="primary"
                       loading={busy === user.userId}
-                      disabled={(addRole[user.userId] ?? '') === ''}
+                      disabled={(addRole[user.userId] ?? '') === '' || (ENTITY_SCOPED_ROLES.has(addRole[user.userId] ?? '') && !addScope[user.userId])}
                       onClick={() => {
                         void mutate(user, addRole[user.userId] ?? '', true);
                       }}

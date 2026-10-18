@@ -18,6 +18,21 @@ const valueSchemas = {
 
 export type SettingType = SettingsTable['value_type'];
 
+/** Enumerated / ranged policy values that the engines would otherwise reject at run time (item 4). */
+const POLICY_VALUES: Record<string, (value: unknown) => boolean> = {
+  'pay.lop_divisor': (v) => typeof v === 'string' && ['CALENDAR', 'FIXED_30', 'FIXED_26', 'WORKING_DAYS'].includes(v),
+  'att.cycle_start_day': (v) => typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 28,
+  'att.sandwich_rule': (v) => typeof v === 'boolean',
+  'att.materialize_lookback_days': (v) => typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 400,
+  'pay.pf_wage_base': (v) => typeof v === 'string' && ['ACTUAL', 'CEILING_15000'].includes(v),
+  'pay.negative_net_policy': (v) => typeof v === 'string' && ['carry_forward', 'flag'].includes(v),
+};
+
+function validatePolicyValue(key: string, value: unknown): void {
+  const check = POLICY_VALUES[key];
+  if (check && !check(value)) throw new Error(`Invalid value ${JSON.stringify(value)} for ${key}`);
+}
+
 /** Typed read; returns `fallback` when the key has never been set. */
 export async function getTypedSetting<T>(
   db: Kysely<Database> | Transaction<Database>,
@@ -46,6 +61,7 @@ export async function setSetting(
   },
 ): Promise<void> {
   valueSchemas[params.type].parse(params.value); // fail fast on type mismatch
+  validatePolicyValue(params.key, params.value);
 
   const previous = await getSetting(db, params.key);
   await upsertSetting(db, {

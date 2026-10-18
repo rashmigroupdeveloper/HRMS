@@ -63,12 +63,12 @@ export function AlumniPortalPage() {
       <div className="p-6 rounded-2xl bg-surface-2 border border-line">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-brand/10 text-brand flex items-center justify-center font-serif text-2xl font-bold">
+            <div className="h-16 w-16 rounded-full bg-accent-soft text-ink flex items-center justify-center text-2xl font-bold">
               {profile.name[0]}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-serif text-2xl font-bold text-ink">{profile.name}</h1>
+                <h1 className="text-2xl font-bold text-ink">{profile.name}</h1>
                 <StatusBadge tone="neutral">Alumni</StatusBadge>
               </div>
               <div className="text-sm text-ink-muted mt-0.5">
@@ -78,7 +78,7 @@ export function AlumniPortalPage() {
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-auto text-xs text-ink-muted bg-surface-1 px-3 py-2 rounded-lg border border-line">
-            <Shield className="h-4 w-4 text-accent-positive" />
+            <Shield className="h-4 w-4 text-positive-ink" />
             <span>Restricted Alumni Self-Service Access</span>
           </div>
         </div>
@@ -86,20 +86,20 @@ export function AlumniPortalPage() {
         {/* Tenure Summary Strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-line text-xs">
           <div>
-            <div className="text-ink-muted uppercase tracking-wide">Date of Joining</div>
+            <div className="text-ink-muted">Date of Joining</div>
             <div className="font-semibold text-ink mt-0.5">{profile.doj}</div>
           </div>
           <div>
-            <div className="text-ink-muted uppercase tracking-wide">Date of Leaving (DOL)</div>
+            <div className="text-ink-muted">Date of Leaving (DOL)</div>
             <div className="font-semibold text-ink mt-0.5">{profile.dol}</div>
           </div>
           <div>
-            <div className="text-ink-muted uppercase tracking-wide">Total Continuous Service</div>
-            <div className="font-semibold text-brand mt-0.5">{profile.tenureDisplay}</div>
+            <div className="text-ink-muted">Total Continuous Service</div>
+            <div className="font-semibold text-ink mt-0.5">{profile.tenureDisplay}</div>
           </div>
           <div>
-            <div className="text-ink-muted uppercase tracking-wide">Final Settlement Paid</div>
-            <div className="font-semibold text-accent-positive mt-0.5">{profile.settlementDate}</div>
+            <div className="text-ink-muted">Final Settlement Paid</div>
+            <div className="font-semibold text-positive-ink mt-0.5">{profile.settlementDate}</div>
           </div>
         </div>
       </div>
@@ -115,7 +115,7 @@ export function AlumniPortalPage() {
             <div className="p-4 rounded-xl bg-surface-2 border border-line space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FileCheck className="h-5 w-5 text-accent-positive" />
+                  <FileCheck className="h-5 w-5 text-positive-ink" />
                   <span className="font-medium text-sm text-ink">Relieving Letter (Ref: RML/REL/2024/091)</span>
                 </div>
                 <StatusBadge tone="positive">Issued</StatusBadge>
@@ -144,7 +144,7 @@ export function AlumniPortalPage() {
             <div className="p-4 rounded-xl bg-surface-2 border border-line space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-brand" />
+                  <Award className="h-5 w-5 text-ink" />
                   <span className="font-medium text-sm text-ink">Service Certificate (Ref: RML/SC/2024/091)</span>
                 </div>
                 <StatusBadge tone="positive">Issued</StatusBadge>
@@ -180,11 +180,11 @@ export function AlumniPortalPage() {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-ink-muted">Settled Net Payable:</span>
-                <span className="font-semibold text-brand">₹1,79,992.00</span>
+                <span className="font-semibold text-ink">₹1,79,992.00</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-ink-muted">Statutory Gratuity Included:</span>
-                <span className="font-semibold text-accent-positive">₹1,67,639.00 (Golden G8)</span>
+                <span className="font-semibold text-positive-ink">₹1,67,639.00 (Golden G8)</span>
               </div>
             </div>
             <Button

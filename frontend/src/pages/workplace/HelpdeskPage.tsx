@@ -161,7 +161,7 @@ export function HelpdeskPage({ user }: { user: SessionUser }) {
       />
 
       <DarkCard padded={false} className="hidden p-6 sm:block md:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+        <p className="text-sm font-medium text-hero-muted">
           Why this exists
         </p>
         <h2 className="mt-4 max-w-xl text-4xl font-light tracking-tight text-hero-ink">

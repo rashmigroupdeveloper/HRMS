@@ -15,6 +15,7 @@
  *    in one transaction, then the LC-07 exit-day cascade.
  */
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
+import { loadCycleStartDay, periodMonthOf } from '../../../core/db/attendance-cycle.js';
 import type { Database, SeparationsTable } from '../../../core/db/types.js';
 import { addDaysIso, formatDbDate, istDateString } from '../../../core/dates.js';
 import { writeAudit } from '../../../core/audit/audit.service.js';
@@ -86,6 +87,12 @@ async function noticeDaysFor(db: Db, category: string | null): Promise<number> {
     : getTypedSetting<number>(db, 'lifecycle.notice_days_default', 'number', 30);
 }
 
+/** E2E-002: the notice the signed-in employee owes, from policy settings and their category. */
+export async function myNoticePolicy(db: Db, employeeId: number): Promise<{ noticePeriodDays: number; category: string | null; ecode: string; name: string }> {
+  const e = await db.selectFrom('core.employees').select(['category', 'ecode', 'first_name', 'last_name']).where('id', '=', employeeId).executeTakeFirstOrThrow();
+  return { noticePeriodDays: await noticeDaysFor(db, e.category), category: e.category, ecode: e.ecode, name: `${e.first_name} ${e.last_name ?? ''}`.trim() };
+}
+
 async function assertNoOpenCase(db: Db, employeeId: number): Promise<void> {
   const open = await db
     .selectFrom('core.separations')
@@ -121,7 +128,9 @@ export async function applyResignationOnFinal(
     .set({ status: 'approved', approved_lwd: sql<Date>`${lwd}::date`, shortfall_days: shortfall.toFixed(1), updated_at: new Date() })
     .where('id', '=', sep.id)
     .execute();
-  await db.updateTable('core.employees').set({ status: 'on_notice' }).where('id', '=', sep.employee_id).where('status', '=', 'active').execute();
+  // The approved LWD becomes the date of leaving at once, so payroll, attendance close and
+  // the muster stop at it even before the F&F is settled (P-03 / attendance-payroll item 4).
+  await db.updateTable('core.employees').set({ status: 'on_notice', dol: sql<Date>`${lwd}::date` }).where('id', '=', sep.employee_id).where('status', '=', 'active').execute();
   await new ClearanceService(db).fanOutClearances(sep.id);
 }
 
@@ -210,7 +219,7 @@ export class SeparationService {
         .returning('id')
         .executeTakeFirstOrThrow();
       await new ClearanceService(trx).fanOutClearances(inserted.id);
-      await trx.updateTable('core.employees').set({ status: 'on_notice' }).where('id', '=', employee.id).execute();
+      await trx.updateTable('core.employees').set({ status: 'on_notice', dol: sql<Date>`${input.lastWorkingDay}::date` }).where('id', '=', employee.id).execute();
       await writeAudit(trx, {
         actorUserId: input.hrUserId, action: 'create', entity: 'core.separations', entityId: inserted.id,
         newValue: JSON.stringify({ initiatedBy: 'hr', lastWorkingDay: input.lastWorkingDay, absenceCaseId: input.absenceCaseId ?? null }),
@@ -275,7 +284,7 @@ export class SeparationService {
         .set({ status: 'withdrawn', reason: `${existing.reason} [Withdrawn: ${params.reason}]`, updated_at: new Date() })
         .where('id', '=', existing.id)
         .execute();
-      await trx.updateTable('core.employees').set({ status: 'active' }).where('id', '=', existing.employee_id).where('status', '=', 'on_notice').execute();
+      await trx.updateTable('core.employees').set({ status: 'active', dol: null }).where('id', '=', existing.employee_id).where('status', '=', 'on_notice').execute();
       await trx.deleteFrom('core.clearances').where('separation_id', '=', existing.id).where('status', '=', 'pending').execute();
       await writeAudit(trx, {
         actorUserId: params.actorUserId, action: 'withdraw', entity: 'core.separations', entityId: existing.id, newValue: params.reason,
@@ -385,11 +394,13 @@ export class SeparationService {
     } else if (params.daysPayable !== undefined) {
       daysPayable = params.daysPayable;
     } else {
+      // C-17: the lock covering the LWD is the payroll month of its attendance cycle.
+      const lockMonth = periodMonthOf(lwdStr, await loadCycleStartDay(this.db));
       const lock = await this.db
         .selectFrom('att.month_locks')
         .select('id')
         .where('company_id', '=', employee.company_id)
-        .where('month', '=', sql<Date>`${monthStart}::date`)
+        .where('month', '=', sql<Date>`${lockMonth}::date`)
         .executeTakeFirst();
       const from = formatDbDate(employee.doj) > monthStart ? formatDbDate(employee.doj) : monthStart;
       daysPayable = lock ? await readLockedPayableDays(this.db, employee.id, from, addDaysIso(lwdStr, 1)) : dayDiff(from, lwdStr) + 1;
@@ -596,7 +607,7 @@ export class SeparationService {
           await cancelRequest(trx, { requestId: existing.workflow_request_id, actorUserId: params.ceoUserId, reason: params.remarks ?? 'Rejected on CEO review' });
         }
         await trx.updateTable('core.separations').set({ status: 'rejected', updated_at: new Date() }).where('id', '=', existing.id).execute();
-        await trx.updateTable('core.employees').set({ status: 'active' }).where('id', '=', existing.employee_id).where('status', '=', 'on_notice').execute();
+        await trx.updateTable('core.employees').set({ status: 'active', dol: null }).where('id', '=', existing.employee_id).where('status', '=', 'on_notice').execute();
       } else if (params.decision === 'waiver_granted' && params.waivedRecoveryPaise) {
         const fnf = await trx.selectFrom('pay.fnf_settlements').selectAll().where('separation_id', '=', existing.id).executeTakeFirst();
         if (fnf && fnf.status !== 'paid') {

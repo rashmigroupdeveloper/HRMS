@@ -38,8 +38,34 @@ import {
   toast,
   type Column,
   type StatusTone,
+  StatGrid,
+  StatTile,
 } from '../../ui';
 import { apiFetch } from '../../lib/api';
+
+/**
+ * The list endpoint names people fields `employeeName` / `departmentName` /
+ * `designationName`; older payloads used `name` / `department` / `designation`.
+ * Accept both so the board never crashes on a missing name.
+ */
+type SeparationApiItem = Omit<SeparationItem, 'name' | 'department' | 'designation'> & {
+  name?: string;
+  employeeName?: string;
+  department?: string | null;
+  departmentName?: string | null;
+  designation?: string | null;
+  designationName?: string | null;
+};
+
+function fromApi(item: SeparationApiItem): SeparationItem {
+  const { employeeName, departmentName, designationName, ...rest } = item;
+  return {
+    ...rest,
+    name: item.name ?? employeeName ?? item.ecode,
+    department: item.department ?? departmentName ?? null,
+    designation: item.designation ?? designationName ?? null,
+  };
+}
 
 interface SeparationItem {
   id: number;
@@ -132,7 +158,7 @@ export function SeparationBoardPage() {
   const [showFnfDrawer, setShowFnfDrawer] = useState(false);
 
   // Apply Resignation Form State
-  const [applyEmployeeId, setApplyEmployeeId] = useState('301');
+  const [myNotice, setMyNotice] = useState<{ noticePeriodDays: number; ecode: string; name: string } | null>(null);
   const [applyReason, setApplyReason] = useState('');
   const [applyRequestedLwd, setApplyRequestedLwd] = useState(() => {
     const d = new Date();
@@ -144,7 +170,7 @@ export function SeparationBoardPage() {
   // HR Absconding Form State
   const [abscondingEmpId, setAbscondingEmpId] = useState('');
   const [abscondingLwd, setAbscondingLwd] = useState(new Date().toISOString().slice(0, 10));
-  const [abscondingReason, setAbscondingReason] = useState('Consecutive 8 days unapproved absence (ATT-10)');
+  const [abscondingReason, setAbscondingReason] = useState('');
 
   // Approve Form State
   const [approveLwd, setApproveLwd] = useState('');
@@ -180,15 +206,21 @@ export function SeparationBoardPage() {
     today.setHours(0, 0, 0, 0);
     const req = new Date(applyRequestedLwd);
     const days = Math.max(0, Math.ceil((req.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
-    const shortfall = Math.max(0, 90 - days); // 90 days policy
-    setEstimatedShortfall(shortfall);
-  }, [applyRequestedLwd]);
+    setEstimatedShortfall(Math.max(0, (myNotice?.noticePeriodDays ?? 0) - days));
+  }, [applyRequestedLwd, myNotice]);
+
+  useEffect(() => {
+    if (!showApplyDrawer || myNotice) return;
+    apiFetch<{ noticePeriodDays: number; ecode: string; name: string }>('/api/lifecycle/separations/my-notice')
+      .then(setMyNotice)
+      .catch((e: unknown) => { toast.error(e instanceof Error ? e.message : 'Could not load your notice policy.'); });
+  }, [showApplyDrawer, myNotice]);
 
   const loadSeparations = useCallback(async () => {
     try {
-      const res = await apiFetch<{ items: SeparationItem[] }>('/api/lifecycle/separations');
+      const res = await apiFetch<{ items?: SeparationApiItem[] }>('/api/lifecycle/separations');
       if (Array.isArray(res.items)) {
-        setSeparations(res.items);
+        setSeparations(res.items.map(fromApi));
       } else {
         setSeparations([]);
       }
@@ -227,7 +259,6 @@ export function SeparationBoardPage() {
       await apiFetch('/api/lifecycle/separations/apply', {
         method: 'POST',
         body: JSON.stringify({
-          employeeId: Number(applyEmployeeId),
           reason: applyReason,
           requestedLwd: applyRequestedLwd,
         }),
@@ -553,18 +584,18 @@ export function SeparationBoardPage() {
       {/* Top Header & Fast Metric Tiles */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <PageHeader
-          eyebrow="Lifecycle / Separation & Settlement"
-          title="Separation, Clearances & F&F Console"
-          description="Orchestrates ESS resignation approval, 4-tier departmental clearances (IT/Admin/Finance/HR), unreturned asset recovery, and 3-day statutory F&F settlement with Exit Day Cascade (LC-06, LC-07, PAY-15)."
+          eyebrow="Lifecycle"
+          title="Separation & settlement"
+          description="Resignations, departmental clearances, asset recovery and full & final settlement in one place."
         />
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="secondary"
             size="sm"
             onClick={() => { setShowAbscondingDrawer(true); }}
           >
             <UserX className="h-4 w-4 mr-1.5 text-warning-ink" />
-            HR Absconding (ATT-10)
+            HR Absconding
           </Button>
           <Button
             variant="primary"
@@ -577,37 +608,13 @@ export function SeparationBoardPage() {
         </div>
       </div>
 
-      {/* KPI Tiles */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4 border-l-4 border-l-accent">
-          <div className="text-xs uppercase tracking-wide text-ink-muted">Active Resignations</div>
-          <div className="mt-1 text-2xl font-serif font-bold text-ink">
-            {separations.filter((s) => s.status === 'pending').length}
-          </div>
-          <div className="text-xs text-ink-muted mt-1">Pending manager & HR review</div>
-        </Card>
-        <Card className="p-4 border-l-4 border-l-warning">
-          <div className="text-xs uppercase tracking-wide text-ink-muted">In Clearance Queue</div>
-          <div className="mt-1 text-2xl font-serif font-bold text-ink">
-            {separations.filter((s) => s.status === 'approved').length}
-          </div>
-          <div className="text-xs text-ink-muted mt-1">Serving notice & department sign-off</div>
-        </Card>
-        <Card className="p-4 border-l-4 border-l-negative">
-          <div className="text-xs uppercase tracking-wide text-ink-muted">Shortfall Recoveries</div>
-          <div className="mt-1 text-2xl font-serif font-bold text-ink">
-            {separations.filter((s) => s.shortfallDays > 0).length}
-          </div>
-          <div className="text-xs text-ink-muted mt-1">Shortfall days subjected to F&F deduction</div>
-        </Card>
-        <Card className="p-4 border-l-4 border-l-positive">
-          <div className="text-xs uppercase tracking-wide text-ink-muted">Completed & Exited</div>
-          <div className="mt-1 text-2xl font-serif font-bold text-ink">
-            {separations.filter((s) => s.status === 'completed').length}
-          </div>
-          <div className="text-xs text-ink-muted mt-1">Relieving letters & Form 16 issued</div>
-        </Card>
-      </div>
+      {/* KPI Tiles — one gold figure (pending), hatched = in progress. */}
+      <StatGrid>
+        <StatTile tone="accent" label="Active resignations" value={separations.filter((s) => s.status === 'pending').length} hint="Pending manager & HR review" />
+        <StatTile tone="hatched" label="In clearance" value={separations.filter((s) => s.status === 'approved').length} hint="Serving notice & department sign-off" />
+        <StatTile label="Shortfall recoveries" value={separations.filter((s) => s.shortfallDays > 0).length} hint="Shortfall days deducted in F&F" />
+        <StatTile label="Completed & exited" value={separations.filter((s) => s.status === 'completed').length} hint="Relieving letters & Form 16 issued" />
+      </StatGrid>
 
       {/* Internal Subtabs */}
       <div className="flex border-b border-line gap-2">
@@ -620,7 +627,7 @@ export function SeparationBoardPage() {
               : 'border-transparent text-ink-muted hover:text-ink'
           }`}
         >
-          Resignation Pipeline (LC-06)
+          Resignation Pipeline
         </button>
         <button
           type="button"
@@ -666,8 +673,8 @@ export function SeparationBoardPage() {
                   onChange={(e) => { setSearchQuery(e.target.value); }}
                   className="w-64"
                 />
-                <Button size="sm" variant="ghost" onClick={() => { void loadSeparations(); }}>
-                  <RefreshCw className="h-4 w-4" />
+                <Button size="sm" variant="ghost" aria-label="Refresh separations" onClick={() => { void loadSeparations(); }}>
+                  <RefreshCw className="h-4 w-4" aria-hidden />
                 </Button>
               </div>
             }
@@ -694,7 +701,7 @@ export function SeparationBoardPage() {
             <div className="space-y-4 mt-4">
               <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-lg bg-surface-2">
                 <div>
-                  <span className="text-xs uppercase text-ink-muted">Selected Employee: </span>
+                  <span className="text-xs font-medium text-ink-muted">Selected Employee: </span>
                   <span className="font-semibold text-ink">
                     {selectedSeparation ? `${selectedSeparation.name} (${selectedSeparation.ecode})` : 'None selected'}
                   </span>
@@ -833,7 +840,7 @@ export function SeparationBoardPage() {
             <div className="space-y-6 mt-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card className="p-4 bg-surface-2 border border-line">
-                  <div className="text-xs uppercase text-ink-muted">Gratuity rule</div>
+                  <div className="text-xs font-medium text-ink-muted">Gratuity rule</div>
                   <div className="mt-2 text-sm text-ink space-y-1">
                     <div>• Eligible after 5 years of continuous service</div>
                     <div>• Part year of 6 months or more rounds up</div>
@@ -843,9 +850,9 @@ export function SeparationBoardPage() {
                 </Card>
 
                 <Card className="p-4 bg-surface-2 border border-line">
-                  <div className="text-xs uppercase text-ink-muted">Notice Shortfall Recovery</div>
+                  <div className="text-xs font-medium text-ink-muted">Notice Shortfall Recovery</div>
                   <div className="mt-2 text-sm text-ink space-y-1">
-                    <div>• Required Notice: 90 days (white collar)</div>
+                    <div>• Required notice: per policy (white collar / default), set in Settings</div>
                     <div>• Shortfall days deducted at Basic/30 per day</div>
                     <div>• Automatically deducted from Gross F&F</div>
                     <div className="font-bold text-negative-ink mt-1">Recovery = (Basic / 30) × shortfall</div>
@@ -853,7 +860,7 @@ export function SeparationBoardPage() {
                 </Card>
 
                 <Card className="p-4 bg-surface-2 border border-line">
-                  <div className="text-xs uppercase text-ink-muted">Statutory 3-Working-Day TAT</div>
+                  <div className="text-xs font-medium text-ink-muted">Statutory 3-Working-Day TAT</div>
                   <div className="mt-2 text-sm text-ink space-y-1">
                     <div>• Mandated under Code on Wages §17(2)</div>
                     <div>• Excluding Sundays & gazetted holidays</div>
@@ -922,9 +929,9 @@ export function SeparationBoardPage() {
       >
         <div className="space-y-4">
           <TextField
-            label="Employee ID / Ecode"
-            value={applyEmployeeId}
-            onChange={(e) => { setApplyEmployeeId(e.target.value); }}
+            label="Employee"
+            value={myNotice ? `${myNotice.ecode} · ${myNotice.name}` : 'Loading…'}
+            readOnly
             disabled
           />
           <TextField
@@ -935,11 +942,11 @@ export function SeparationBoardPage() {
           />
           <div className="p-3 rounded-lg bg-surface-2 text-xs space-y-1 border border-line">
             <div className="font-medium text-ink">Notice Period Policy Check:</div>
-            <div>Standard Notice Period: 90 days</div>
+            <div>Your notice period: {myNotice ? `${String(myNotice.noticePeriodDays)} days` : '…'}</div>
             <div className={estimatedShortfall > 0 ? 'text-negative-ink font-bold' : 'text-positive-ink'}>
               {estimatedShortfall > 0
                 ? `Notice Shortfall: ${String(estimatedShortfall)} days (will be recovered in F&F at Basic/30 rate)`
-                : 'Full 90 days notice satisfied without shortfall recovery.'}
+                : 'Full notice served — no shortfall recovery.'}
             </div>
           </div>
           <TextField
@@ -959,7 +966,7 @@ export function SeparationBoardPage() {
       <Drawer
         open={showAbscondingDrawer}
         onClose={() => { setShowAbscondingDrawer(false); }}
-        title="Initiate Termination / Absconding (ATT-10)"
+        title="Initiate Termination / Absconding"
         subtitle="Direct HR termination for long unapproved absence. Waives notice and fans out clearances immediately."
       >
         <div className="space-y-4">
@@ -1050,7 +1057,7 @@ export function SeparationBoardPage() {
 
             {/* Earnings Breakdown */}
             <div className="space-y-2">
-              <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted border-b border-line pb-1">
+              <div className="text-xs font-semibold text-ink-muted border-b border-line pb-1">
                 A. Final Earnings (Gross Payable)
               </div>
               <div className="space-y-1.5 text-xs text-ink">
@@ -1078,7 +1085,7 @@ export function SeparationBoardPage() {
 
             {/* Deductions Breakdown */}
             <div className="space-y-2">
-              <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted border-b border-line pb-1">
+              <div className="text-xs font-semibold text-ink-muted border-b border-line pb-1">
                 B. Recoveries & Deductions
               </div>
               <div className="space-y-1.5 text-xs text-ink">
@@ -1102,10 +1109,10 @@ export function SeparationBoardPage() {
             {/* Net Payable Highlight Card */}
             <div className="p-4 rounded-xl bg-surface-2 border-2 border-accent/20 flex items-center justify-between">
               <div>
-                <div className="text-xs uppercase tracking-wide font-semibold text-ink-muted">Net Settlement Payable</div>
+                <div className="text-xs font-semibold text-ink-muted">Net Settlement Payable</div>
                 <div className="text-xs text-ink-muted">To be disbursed into registered salary bank account</div>
               </div>
-              <div className="text-2xl font-serif font-bold text-accent-ink">
+              <div className="text-2xl font-light tracking-tight text-accent-ink">
                 ₹{fnfBreakdown.netPayableRupees.toLocaleString('en-IN')}
               </div>
             </div>
@@ -1150,7 +1157,7 @@ export function SeparationBoardPage() {
                   onClick={() => { void handlePayAndExitCascade(); }}
                   disabled={isSettlingFnf || paymentRef.trim().length < 4}
                 >
-                  {isSettlingFnf ? 'Settling & Executing Cascade…' : 'Disburse F&F & Execute Exit Day Cascade (LC-07)'}
+                  {isSettlingFnf ? 'Settling & Executing Cascade…' : 'Disburse F&F & Execute Exit Day Cascade'}
                 </Button>
               </div>
             )}

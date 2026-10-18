@@ -17,6 +17,7 @@ import {
   StatusBadge,
   TextField,
   toast,
+  PersonCell,
 } from '../../ui';
 import type { Column } from '../../ui';
 import { currentMonthIST } from '../home/dashboard-format';
@@ -90,10 +91,7 @@ const columns: Column<MusterRow>[] = [
     header: 'Employee',
     width: 'minmax(180px,1.4fr)',
     render: (row) => (
-      <div>
-        <p className="font-semibold text-ink">{row.employeeName}</p>
-        <p className="text-xs text-ink-muted">{row.ecode}</p>
-      </div>
+      <PersonCell name={row.employeeName} sub={row.ecode} />
     ),
   },
   {
@@ -268,13 +266,13 @@ export function MusterPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="RPT-01 · snapshot-backed"
+        eyebrow="Reports"
         title="Muster summary"
         description="On-screen grid and Excel use the same filters (entity, plant, cost centre, department, RM subtree, category, status)."
       />
 
       <DarkCard>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+        <p className="text-sm font-medium text-hero-muted">
           {monthCaption(filters.month)}
         </p>
         {rows.length ? (

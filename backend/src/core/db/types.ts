@@ -722,6 +722,9 @@ export interface AttRostersTable {
 
 export interface AttHolidaysTable {
   id: Generated<number>;
+  /** C-35 scope: NULL company = whole group; plant/location narrow it further (all non-null columns must match). */
+  company_id: number | null;
+  plant_id: number | null;
   location_id: number | null;
   holiday_date: Timestamp;
   name: string;
@@ -809,6 +812,9 @@ export interface AttMonthLocksTable {
   locked_at: DefaultedTimestamp;
   checklist: unknown;
   created_at: DefaultedTimestamp;
+  /** C-17: attendance window [period_from, period_until) frozen by this lock (NULL on pre-cycle locks = calendar month). */
+  period_from: Timestamp | null;
+  period_until: Timestamp | null;
 }
 
 /** att.manager_month_approvals — ATT-12 manager attendance sign-off ledger. */

@@ -8,9 +8,10 @@ import {
   DotMatrix,
   EmptyState,
   formatDateIN,
-  KpiPillRow,
+  HeadlineStats,
+  StatusStrip,
+  CardLink,
   PageHeader,
-  Pill,
   StatusBadge,
   QuickLinks,
 } from '../../ui';
@@ -75,53 +76,47 @@ export function ManagerDashboard({
   const weekSunday = week[6];
 
   return (
-    <div className="space-y-6">
+    <div className="u-stagger space-y-6">
       <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
         <PageHeader
           eyebrow={todayLongIST()}
           title={title}
-          description="Direct-report attendance from the current processed month. Names open the person; the gold path opens the month you sign."
+          description="Direct-report attendance from the current processed month."
         />
 
-        <KpiPillRow
-          pills={[
-            {
-              label: 'Team members',
-              value: data.length,
-              state: 'filled',
-              icon: <Users />,
-              to: '/my/team',
-            },
-            {
-              label: 'Present today',
-              value: present,
-              state: 'outline',
-              icon: <CheckCircle2 />,
-              to: '/my/team',
-            },
+        <HeadlineStats
+          stats={[
+            { label: 'Team members', value: data.length, icon: <Users />, to: '/my/team' },
+            { label: 'Present today', value: present, icon: <CheckCircle2 />, to: '/my/team' },
             {
               label: 'Absent / UAB',
               value: absent,
-              state: absentIsTheJob ? 'accent' : 'outline',
+              emphasis: absentIsTheJob,
               icon: <AlertTriangle />,
               to: '/my/team',
             },
-            {
-              label: 'Awaiting record',
-              value: awaiting,
-              state: awaiting > 0 ? 'hatched' : 'outline',
-              icon: <Clock3 />,
-              to: '/my/team',
-            },
+            { label: 'Awaiting record', value: awaiting, icon: <Clock3 />, to: '/my/team' },
           ]}
         />
       </div>
+
+      {data.length > 0 ? (
+        <StatusStrip
+          label="Team attendance today"
+          segments={[
+            { label: 'Present', value: present, tone: 'dark' },
+            { label: 'Absent / UAB', value: absent, tone: absentIsTheJob ? 'gold' : 'outline' },
+            { label: 'On leave', value: onLeave, tone: 'outline' },
+            { label: 'Awaiting record', value: awaiting, tone: 'hatched' },
+          ]}
+        />
+      ) : null}
 
       {quickLinks && quickLinks.length > 0 ? <QuickLinks links={quickLinks} /> : null}
 
       <DarkCard className="grid gap-8 md:grid-cols-[1.25fr_1fr]">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+          <p className="text-sm font-medium text-hero-muted">
             Team attendance
           </p>
           <h2 className="mt-3 text-4xl font-light">
@@ -143,16 +138,7 @@ export function ManagerDashboard({
             </Link>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3 self-end">
-          <div className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)] p-4">
-            <p className="text-xs text-hero-muted">On leave</p>
-            <p className="mt-1 text-3xl font-semibold tabular-nums">{onLeave}</p>
-          </div>
-          <div className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_9%,transparent)] p-4">
-            <p className="text-xs text-hero-muted">Needs attention</p>
-            <p className="mt-1 text-3xl font-semibold tabular-nums">{absent + awaiting}</p>
-          </div>
-        </div>
+        <TeamDotReport members={data} today={today} onLeave={onLeave} attention={absent + awaiting} />
       </DarkCard>
 
       {data.length > 0 && weekMonday && weekSunday && (
@@ -190,7 +176,11 @@ export function ManagerDashboard({
       )}
 
       <Card>
-        <CardHeader title="Team pulse" subtitle="Today’s processed attendance by employee" />
+        <CardHeader
+          title="Team pulse"
+          subtitle="Today’s processed attendance by employee"
+          action={data.length > 0 ? <CardLink to="/my/team" label="Open team month grid" /> : undefined}
+        />
         {data.length === 0 ? (
           <EmptyState
             icon={<Users />}
@@ -203,7 +193,7 @@ export function ManagerDashboard({
               <Link
                 key={member.employeeId}
                 to={`/people/${member.ecode}`}
-                className="rounded-tile bg-surface-2 p-4 transition-colors hover:bg-accent-soft"
+                className="u-lift rounded-tile bg-surface-2 p-4 hover:bg-accent-soft"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -253,12 +243,81 @@ export function ManagerDashboard({
             ))}
           </div>
         )}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Pill>Present {present}</Pill>
-          <Pill>Leave {onLeave}</Pill>
-          <Pill>Absent / UAB {absent}</Pill>
-        </div>
       </Card>
+    </div>
+  );
+}
+
+/** Last `days` processed dates up to today, oldest first. */
+function recentDates(members: TeamMemberMonth[], today: string, days: number): string[] {
+  const all = new Set<string>();
+  for (const m of members) for (const iso of Object.keys(m.days)) if (iso <= today) all.add(iso);
+  const seen = [...all].sort().slice(-days);
+  if (seen.length > 0) return seen;
+  // Nothing processed yet this month: show the last `days` calendar days as
+  // empty cells so the report keeps its shape and reads "not processed".
+  const [y, mo, d] = today.split('-').map(Number);
+  if (y === undefined || mo === undefined || d === undefined) return [];
+  return Array.from({ length: days }, (_, k) => {
+    const dt = new Date(Date.UTC(y, mo - 1, d - (days - 1 - k)));
+    return dt.toISOString().slice(0, 10);
+  });
+}
+
+/**
+ * Crextio-style "attendance report" inside the charcoal hero: one row of
+ * dots per person (up to 8) across the last ten processed days.
+ */
+function TeamDotReport({
+  members,
+  today,
+  onLeave,
+  attention,
+}: {
+  members: TeamMemberMonth[];
+  today: string;
+  onLeave: number;
+  attention: number;
+}) {
+  const dates = recentDates(members, today, 10);
+  const rows = members.slice(0, 8);
+  return (
+    <div className="flex flex-col justify-end gap-4 self-end">
+      <div className="flex items-end gap-6">
+        <p className="flex items-baseline gap-2">
+          <span className="text-4xl font-light tabular-nums">{onLeave}</span>
+          <span className="text-xs text-hero-muted">on leave</span>
+        </p>
+        <p className="flex items-baseline gap-2">
+          <span className="text-4xl font-light tabular-nums">{attention}</span>
+          <span className="text-xs text-hero-muted">need attention</span>
+        </p>
+      </div>
+      {rows.length > 0 && dates.length > 0 ? (
+        <div className="rounded-tile bg-[color-mix(in_srgb,var(--surface)_6%,transparent)] p-4">
+          <DotMatrix
+            tone="dark"
+            animate
+            columns={dates.length}
+            label={`Last ${String(dates.length)} processed days for ${String(rows.length)} team members`}
+            dots={rows.flatMap((m) =>
+              dates.map((iso) => {
+                const status = m.days[iso]?.status;
+                return {
+                  key: `${String(m.employeeId)}-${iso}`,
+                  state: attendanceDot(status),
+                  title: `${m.name}, ${formatDateIN(iso)}: ${attendanceLabel(status)}`,
+                };
+              }),
+            )}
+          />
+          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-hero-muted">
+            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-accent" aria-hidden />Present</span>
+            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-[color-mix(in_srgb,var(--hero-ink)_70%,transparent)]" aria-hidden />Leave</span>
+            <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-[color-mix(in_srgb,var(--negative)_80%,var(--hero))]" aria-hidden />Absent</span>
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

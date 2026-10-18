@@ -70,6 +70,7 @@ export const WORKFLOW_DEFINITIONS: readonly DefinitionSeed[] = [
     name: 'Travel Advance (Domestic)',
     steps: [
       { step: 1, approver: 'reporting_manager', slaHours: 48, onBreach: 'escalate' },
+      // docs/01 TE-07: RM → HOD (C-02; was the functional-manager stand-in), then Travel/Org Admin.
       { step: 2, approver: 'department_head', slaHours: 48, onBreach: 'escalate' },
       { step: 3, approver: 'travel_admin', slaHours: 48, onBreach: 'escalate' },
     ],
@@ -98,6 +99,12 @@ export const WORKFLOW_DEFINITIONS: readonly DefinitionSeed[] = [
       { step: 1, approver: 'reporting_manager', slaHours: 72, onBreach: 'escalate' },
       { step: 2, approver: 'role:hr_ops', slaHours: 72, onBreach: 'escalate' },
     ],
+  },
+  {
+    // RQ-CORE-025: ESS family / nominee change → HR ops approves before the master changes.
+    code: 'family_update',
+    name: 'Family / Nominee Update',
+    steps: [{ step: 1, approver: 'role:hr_ops', slaHours: 72, onBreach: 'escalate' }],
   },
   {
     code: 'letter_signature',

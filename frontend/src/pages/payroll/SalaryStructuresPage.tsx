@@ -294,8 +294,8 @@ export function SalaryStructuresPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <PageHeader
-        title="Salary Structures & CTC Breakups"
-        description="Directed Acyclic Graph (DAG) formula evaluator, RML live component templates & probation scaling."
+        title="Salary structures"
+        description="Pay components, their formulas and how a CTC breaks down — including probation scaling."
         actions={
           <div className="flex gap-2">
             <Button
@@ -409,7 +409,7 @@ export function SalaryStructuresPage() {
         <Card>
           <CardHeader
             title="Salary Components Master"
-            subtitle="Seeded with live RML ground truth (09-RECON §2): Basic, HRA 50%, fixed Medical/Education, Special balancing."
+            subtitle="Basic, HRA at 50%, fixed Medical and Education, with Special as the balancing head."
           />
           <div className="p-4">
             <DataTable<SalaryComponent>
@@ -490,7 +490,7 @@ export function SalaryStructuresPage() {
               {/* Summary Tiles */}
               <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="p-4">
-                  <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
+                  <div className="text-xs text-ink-muted font-semibold">
                     Monthly Gross
                   </div>
                   <div className="text-2xl font-bold font-mono mt-1 text-ink">
@@ -502,7 +502,7 @@ export function SalaryStructuresPage() {
                 </Card>
 
                 <Card className="p-4">
-                  <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
+                  <div className="text-xs text-ink-muted font-semibold">
                     Monthly Deductions
                   </div>
                   <div className="text-2xl font-bold font-mono mt-1 text-warning-ink">
@@ -514,7 +514,7 @@ export function SalaryStructuresPage() {
                 </Card>
 
                 <Card className="p-4">
-                  <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
+                  <div className="text-xs text-ink-muted font-semibold">
                     Net Take-Home
                   </div>
                   <div className="text-2xl font-bold font-mono mt-1 text-positive-ink">
@@ -526,7 +526,7 @@ export function SalaryStructuresPage() {
                 </Card>
 
                 <Card className="p-4">
-                  <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
+                  <div className="text-xs text-ink-muted font-semibold">
                     Employer Costs
                   </div>
                   <div className="text-2xl font-bold font-mono mt-1 text-ink-muted">
@@ -629,7 +629,7 @@ export function SalaryStructuresPage() {
                           {code}
                         </span>
                         <ArrowRight className="size-3 ml-auto text-ink-subtle" />
-                        <span className="font-mono font-medium text-accent">
+                        <span className="font-mono font-medium text-ink">
                           ₹{(breakup.monthly[code] ?? 0).toLocaleString('en-IN')}
                         </span>
                       </div>

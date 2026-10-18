@@ -233,3 +233,6 @@ export { readLockedPayableDays } from './runs/attendance.repository.js';
 
 // Bulk import (CSV/Excel) building blocks — consumed by modules/bulk.
 export { addRunInputs, runInputProblems, enterableComponentCodes, addStatutoryRate, setPtSlabs, STATUTORY_PARAMS } from './config/config.service.js';
+
+// Muster LOP parity (owner bar #2): the muster counts LOP exactly as payroll deducts it.
+export { unpaidDayEquivalents, parseLopDivisor, type DayFact } from './runs/payable-days.js';

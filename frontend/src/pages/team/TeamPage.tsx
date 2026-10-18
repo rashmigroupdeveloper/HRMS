@@ -382,7 +382,7 @@ export function TeamPage({ user }: { user: SessionUser }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={tab === 'roster' ? 'Manager workspace · ATT-04' : 'Manager workspace · ATT-12'}
+        eyebrow="Manager workspace"
         title="My team"
         description={
           tab === 'roster'
@@ -443,7 +443,7 @@ export function TeamPage({ user }: { user: SessionUser }) {
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-hero-muted">
               Payroll month-lock waits on your sign-off. You are confirming every processed day
-              below — not editing statuses (ATT-17).
+              below — not editing statuses.
             </p>
           </DarkCard>
 
@@ -554,7 +554,7 @@ export function TeamPage({ user }: { user: SessionUser }) {
         <Card>
           <CardHeader
             title="Roster editor"
-            subtitle="Bulk-assign shifts and week-offs · writes recompute dirty days (ATT-04)"
+            subtitle="Bulk-assign shifts and week-offs · writes recompute dirty days"
             action={
               <Button
                 size="sm"

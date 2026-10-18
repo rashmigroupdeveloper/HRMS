@@ -136,13 +136,13 @@ export function ReportsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Self-service reporting · RPT-01"
+        eyebrow="Self-service reporting"
         title="Reports catalog"
-        description="Stage 1 attendance and workforce reports. Each row opens the live filter + Excel surface. Muster is this month until you change it."
+        description="Attendance and workforce reports. Each opens with filters and Excel export. Muster shows this month until you change it."
       />
 
       <DarkCard>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+        <p className="text-sm font-medium text-hero-muted">
           {featured.code} · daily loop
         </p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-6">

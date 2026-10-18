@@ -5,7 +5,8 @@ import {
   CardHeader,
   DarkCard,
   EmptyState,
-  KpiPillRow,
+  HeadlineStats,
+  StatusStrip,
   PageHeader,
   StatusBadge,
   QuickLinks,
@@ -29,38 +30,45 @@ export function DeviceHealthDashboard({
   const healthy = active.length - silent.length;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow={todayLongIST()}
-        title={title}
-        description="Kent doors, last contact and per-device ingestion watermarks. Month lock waits on every expected door."
-      />
+    <div className="u-stagger space-y-6">
+      <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+        <PageHeader
+          eyebrow={todayLongIST()}
+          title={title}
+          description="Kent doors, last contact and per-device ingestion watermarks. Month lock waits on every expected door."
+        />
+        <HeadlineStats
+          stats={[
+            { label: 'Active devices', value: active.length, icon: <RadioTower /> },
+            { label: 'Healthy', value: healthy, icon: <CheckCircle2 /> },
+            {
+              label: 'Silent',
+              value: silent.length,
+              emphasis: silent.length > 0,
+              icon: <AlertTriangle />,
+            },
+            { label: 'No watermark', value: missingWatermarks.length, icon: <DatabaseZap /> },
+          ]}
+        />
+      </div>
 
-      <KpiPillRow
-        pills={[
-          { label: 'Active devices', value: active.length, state: 'filled', icon: <RadioTower /> },
-          { label: 'Healthy', value: healthy, state: 'outline', icon: <CheckCircle2 /> },
-          {
-            label: 'Silent',
-            value: silent.length,
-            state: silent.length > 0 ? 'accent' : 'outline',
-            icon: <AlertTriangle />,
-          },
-          {
-            label: 'No watermark',
-            value: missingWatermarks.length,
-            state: 'hatched',
-            icon: <DatabaseZap />,
-          },
-        ]}
-      />
+      {active.length > 0 ? (
+        <StatusStrip
+          label="Active doors by state"
+          segments={[
+            { label: 'Reporting', value: healthy, tone: 'dark' },
+            { label: 'Silent', value: silent.length, tone: silent.length > 0 ? 'gold' : 'outline' },
+            { label: 'Inactive', value: data.length - active.length, tone: 'outline' },
+          ]}
+        />
+      ) : null}
 
       {quickLinks && quickLinks.length > 0 ? <QuickLinks links={quickLinks} /> : null}
 
       <DarkCard>
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+            <p className="text-sm font-medium text-hero-muted">
               Ingestion readiness
             </p>
             <h2 className="mt-3 text-4xl font-light">

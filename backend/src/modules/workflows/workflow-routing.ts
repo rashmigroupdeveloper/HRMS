@@ -12,14 +12,14 @@ type RequestRow = Selectable<WfRequestsTable>;
 
 async function isDesignatedTravelAdmin(db: Db, userId: number, employeeId: number): Promise<boolean> {
   const adminRef = await getTypedSetting<string | null>(db, 'te.admin_employee_id', 'string', null);
-  if (adminRef && adminRef.trim()) {
+  if (adminRef?.trim()) {
     const trimmed = adminRef.trim();
     const adminEmp = await db
       .selectFrom('core.employees')
       .select('id')
       .where((eb) => eb.or([eb('ecode', '=', trimmed), eb('id', '=', Number(trimmed) || 0)]))
       .executeTakeFirst();
-    if (adminEmp && adminEmp.id === employeeId) return true;
+    if (adminEmp?.id === employeeId) return true;
   }
   const adminRole = await db
     .selectFrom('core.user_roles as ur')

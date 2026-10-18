@@ -42,3 +42,12 @@ New directives queued (parent steering 23:21–23:27):
   Importers: payroll inputs/recoveries (+Report 4 layout), parallel-run register (Report 4), salary assignment/revision, employee master,
   punches (Kent EmployeeSwipeDetails layout), leave balance adjustments, loans, statutory rates/PT slabs, holidays, assets, F&F inputs (SOW-221).
 - DOCS_READ §D items 1–18.
+
+E2E (job/e2e, 01:40 IST 19-Oct): baseline on main c1cfe2c with the snapshot was 269 tests: 196 pass, 69 fail, 4 skip. Added scope and concurrency specs. Concurrency found E2E-022 (F&F double pay → 5 letters), E2E-023 (duplicate bank batches) and E2E-024 (overlapping punch uploads fail with 409). Production-readiness pass is next.
+## Update 19-Oct IST (job/payroll)
+- PG17 on the box (see /workspace/STATE/ENV.md). DBs: hrms_base (stage-1 template), hrms_snapshot (June-2026 runs 4/5 finalized, rebuilt by fix-verify/seed), hrms_recon/fix/ui/e2e, hrms_test_blank (pristine test template).
+- Recon: `fix-verify/recon/run-recon.sh` → RECON PASS: MATCH 44, RML033625 net 59124 (baseline c1cfe2c and after every payroll round).
+- Matrix: `attendance-payroll/scripts/run-matrix.sh` → MATRIX PASS 49/49.
+- Item 4 done (cycle, divisor, sandwich, half-day, holidays per company/plant + import). Old-regime surcharge fixed. See CHANGES.md "payroll & attendance" round and CD-P1..P7.
+- Kent → muster → payroll (owner bar #2): no-swipe days materialised (hourly job + recompute API range), fresh-install month-lock blocker fixed (migration 1752700000200), muster LOP = payroll LOP. Matrix K01–K03 drive the simulator through adapter → ingest → lock → muster → payroll: MATRIX PASS 52/52.
+- Requirements (reqs job, 19 Oct 02:55 IST): owner's joining form RML/HR/02/01 (3 packs) mapped field-by-field (requirements/JOINING_FORM_MAP.md: 170 fields, 36 exist / 28 partial / 27 wrong / 79 missing) and Enterprise Blueprint gap (requirements/BLUEPRINT_GAP.md: 87 reqs, 3 done / 62 partial / 22 missing); 55 rows RQ-JF-001..022 + RQ-BP-* added to REQUIREMENTS.md/.xlsx (total 313). Go-live gaps filed as REQ-001..017 in /workspace/STATE/BUGS.md. Docs only, no app code.

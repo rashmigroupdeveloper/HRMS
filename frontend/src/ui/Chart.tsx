@@ -207,8 +207,12 @@ export function TrendChart({
             />
           )}
           {/* Soft gold wash under the subject line — area, not a second hue. */}
-          {measured.length > 1 && <path d={areaFor()} fill={`url(#${id}-wash)`} stroke="none" />}
+          {measured.length > 1 && (
+            <path className="u-fade-late" d={areaFor()} fill={`url(#${id}-wash)`} stroke="none" />
+          )}
           <path
+            className="u-draw"
+            pathLength={1}
             d={pathFor('value')}
             fill="none"
             stroke="var(--accent)"
@@ -351,7 +355,7 @@ export function BarChart({
                 aria-label={`${p.label}: ${p.value === null ? 'not measured' : formatValue(p.value, unit, precision)}`}
               >
                 <span
-                  className="block h-full rounded-full bg-accent transition-[width] duration-[var(--motion-medium)] ease-[var(--ease-out-strong)]"
+                  className="u-grow-x block h-full rounded-full bg-accent transition-[width] duration-[var(--motion-medium)] ease-[var(--ease-out-strong)]"
                   style={{ width: `${String(Math.max(pct, p.value === null ? 0 : 2))}%` }}
                 />
               </span>

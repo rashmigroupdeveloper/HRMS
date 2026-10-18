@@ -87,7 +87,7 @@ export async function resolveApprover(
     .where('employee_id', '=', subjectEmployeeId)
     .where('is_active', '=', true)
     .executeTakeFirst();
-  if (applicantUser && applicantUser.id === userId) {
+  if (applicantUser?.id === userId) {
     return null;
   }
 
@@ -154,7 +154,7 @@ async function resolveDepartmentHead(db: Db, subjectEmployeeId: number): Promise
  */
 async function resolveTravelAdmin(db: Db, subjectEmployeeId: number): Promise<number | null> {
   const adminRef = await getTypedSetting<string | null>(db, 'te.admin_employee_id', 'string', null);
-  if (adminRef && adminRef.trim()) {
+  if (adminRef?.trim()) {
     const trimmed = adminRef.trim();
     const emp = await db
       .selectFrom('core.employees')
@@ -203,14 +203,15 @@ async function resolveTravelRegionalReviewer(
       .where('id', '=', requestId)
       .executeTakeFirst();
     const payload = (req?.payload ?? {}) as Record<string, unknown>;
-    const reg = String(payload.destinationRegion ?? payload.region ?? '').toLowerCase();
+    const rawRegion = payload['destinationRegion'] ?? payload['region'];
+    const reg = typeof rawRegion === 'string' ? rawRegion.toLowerCase() : '';
     inRegion = reg === targetRegion.toLowerCase();
   }
   if (!inRegion) return null;
 
   const settingKey = targetRegion === 'sea' ? 'te.sea_manager_employee_id' : 'te.africa_reviewer_employee_id';
   const reviewerRef = await getTypedSetting<string | null>(db, settingKey, 'string', null);
-  if (!reviewerRef || !reviewerRef.trim()) return null;
+  if (!reviewerRef?.trim()) return null;
 
   const trimmed = reviewerRef.trim();
   const emp = await db
@@ -234,7 +235,7 @@ async function resolveTravelRegionalReviewer(
  */
 async function resolveSettingEmployee(db: Db, settingKey: string, subjectEmployeeId: number): Promise<number | null> {
   const ref = await getTypedSetting<string | null>(db, settingKey, 'string', null);
-  if (!ref || !ref.trim()) return null;
+  if (!ref?.trim()) return null;
   const trimmed = ref.trim();
   const emp = await db
     .selectFrom('core.employees')
@@ -261,14 +262,14 @@ async function isTravelAdminActor(db: Db, actorUserId: number, subjectEmployeeId
   if (!user || user.employee_id === subjectEmployeeId) return false;
 
   const adminRef = await getTypedSetting<string | null>(db, 'te.admin_employee_id', 'string', null);
-  if (adminRef && adminRef.trim()) {
+  if (adminRef?.trim()) {
     const trimmed = adminRef.trim();
     const emp = await db
       .selectFrom('core.employees')
       .select('id')
       .where((eb) => eb.or([eb('ecode', '=', trimmed), eb('id', '=', Number(trimmed) || 0)]))
       .executeTakeFirst();
-    if (emp && emp.id === user.employee_id) return true;
+    if (emp?.id === user.employee_id) return true;
   }
   const hasRole = await db
     .selectFrom('core.user_roles as ur')

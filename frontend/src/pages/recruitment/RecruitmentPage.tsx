@@ -45,15 +45,15 @@ export function RecruitmentPage() {
       />
 
       <DarkCard padded={false} className="p-8 md:p-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+        <p className="text-sm font-medium text-hero-muted">
           What you will do here
         </p>
         <h2 className="mt-4 max-w-xl text-4xl font-light tracking-tight text-hero-ink">
-          Hiring already works. This page waits to bring it home.
+          Hiring is on its way to HRMS.
         </h2>
         <p className="mt-4 max-w-xl text-sm leading-7 text-hero-muted">
-          You will run requisitions, interviews and offers here once the ATS is absorbed. Until
-          that work is scheduled, we show nothing rather than an invented hiring board.
+          You will run requisitions, interviews and offers here once hiring moves into HRMS. Until
+          then, keep using the current hiring system.
         </p>
       </DarkCard>
 
@@ -71,7 +71,7 @@ export function RecruitmentPage() {
         <PendingModule
           phase="Phase 4"
           task="ATS absorption"
-          description="You will run hiring here. Absorption is scheduled after the core product — we show nothing rather than invented pipelines."
+          description="Requisitions, interviews and offers will appear here once hiring moves into HRMS."
         />
       ) : null}
     </div>

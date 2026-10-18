@@ -96,6 +96,10 @@ export const PERMISSIONS = [
   'admin.devices',
   'admin.integrations',
   'audit.read',
+  // Handover item 2: org masters CRUD (super_admin only; super_admin inherits every permission).
+  'org.masters.manage',
+  'lifecycle.probation.view',
+  'lifecycle.probation.decide',
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number];
@@ -130,6 +134,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
   manager: [
     { permission: 'employee.read', scope: 'subtree' },
     { permission: 'auth.sso', scope: 'all' },
+    { permission: 'lifecycle.probation.view', scope: 'subtree' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
     { permission: 'attendance.team.read', scope: 'subtree' },
@@ -144,6 +149,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
   senior_manager: [
     { permission: 'employee.read', scope: 'subtree' },
     { permission: 'auth.sso', scope: 'all' },
+    { permission: 'lifecycle.probation.view', scope: 'subtree' },
     { permission: 'attendance.own', scope: 'all' },
     { permission: 'leave.own', scope: 'all' },
     { permission: 'attendance.team.read', scope: 'subtree', note: 'entire subtree (KQ)' },
@@ -171,6 +177,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'lifecycle.onboard.convert', scope: 'org_unit' },
     { permission: 'lifecycle.separation.approve', scope: 'org_unit', note: 'admin closure step' },
     { permission: 'lifecycle.transfers.manage', scope: 'org_unit' },
+    { permission: 'lifecycle.probation.view', scope: 'org_unit', note: 'O17 runs the probation board' },
     { permission: 'letters.issue', scope: 'org_unit' },
     { permission: 'assets.manage', scope: 'org_unit' },
     { permission: 'helpdesk.agent', scope: 'all' },
@@ -178,6 +185,8 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'reports.hr', scope: 'org_unit' },
   ],
   hr_head: [
+    { permission: 'lifecycle.probation.view', scope: 'all' },
+    { permission: 'lifecycle.probation.decide', scope: 'all', note: 'confirmation / extension / separation decision' },
     { permission: 'employee.read', scope: 'all' },
     { permission: 'employee.write', scope: 'all' },
     { permission: 'employee.compensation.read', scope: 'all' },

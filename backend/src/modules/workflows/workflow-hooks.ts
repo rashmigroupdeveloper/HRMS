@@ -43,7 +43,7 @@ export const DOMAIN_RESERVED_DEFINITIONS = new Set([
   // Domain-owned chains: their requests are only created by the owning module,
   // so a final approval always has a real domain row behind it.
   'loan', 'resignation', 'confirmation', 'transfer', 'claim', 'travel_advance_domestic',
-  'travel_claim', 'letter_signature', 'offer_approval', 'requisition_approval',
+  'travel_claim', 'letter_signature', 'offer_approval', 'requisition_approval', 'family_update',
 ]);
 type ResubmitHook = (db: Db, request: RequestRow, payload: Record<string, unknown>) => Promise<Record<string, unknown>>;
 const resubmitHooks = new Map<string, ResubmitHook>();

@@ -5,8 +5,12 @@
  */
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, UserRound } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CalendarCheck, FileText, Inbox, Laptop, Palmtree, UserRound, Wallet } from 'lucide-react';
 import { apiFetch, ApiError } from '../../lib/api';
+import type { SessionUser } from '../../lib/session';
+import { hasPermission } from '../../lib/session';
+import { EmployeeFormDrawer } from './EmployeeFormDrawer';
+import { FamilyPanel } from './FamilyPanel';
 import {
   Button,
   Card,
@@ -65,6 +69,7 @@ interface EmployeeProfile {
 
 type TabId =
   | 'overview'
+  | 'family'
   | 'job'
   | 'compensation'
   | 'statutory'
@@ -85,7 +90,7 @@ function toneForStatus(label: string): StatusTone {
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-ink-subtle">{label}</dt>
+      <dt className="text-xs font-medium text-ink-subtle">{label}</dt>
       <dd className="mt-0.5 text-sm text-ink">{value && value !== '' ? value : '—'}</dd>
     </div>
   );
@@ -104,12 +109,15 @@ function MaskedNote({ masked }: { masked: boolean }) {
  * @param self When true, render the signed-in user's OWN profile via the
  *   self-service endpoint (/me route) — no e-code param, no directory back-link.
  */
-export function ProfilePage({ self = false }: { self?: boolean } = {}) {
+export function ProfilePage({ self = false, user }: { self?: boolean; user?: SessionUser } = {}) {
   const { ecode = '' } = useParams<{ ecode: string }>();
   const [profile, setProfile] = useState<EmployeeProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>('overview');
+  const [editOpen, setEditOpen] = useState(false);
+  const [version, setVersion] = useState(0);
+  const canWrite = user !== undefined && hasPermission(user, 'employee.write');
 
   useEffect(() => {
     let cancelled = false;
@@ -132,7 +140,7 @@ export function ProfilePage({ self = false }: { self?: boolean } = {}) {
     return () => {
       cancelled = true;
     };
-  }, [ecode, self]);
+  }, [ecode, self, version]);
 
   if (loading) {
     return (
@@ -151,10 +159,12 @@ export function ProfilePage({ self = false }: { self?: boolean } = {}) {
         title="Profile not found"
         description={error ?? (self ? 'We could not load your profile.' : `No employee with e-code ${ecode}.`)}
         action={
-          <Link to={self ? '/' : '/people'}>
-            <Button variant="secondary" leadingIcon={<ArrowLeft />}>
-              {self ? 'Back to home' : 'Back to directory'}
-            </Button>
+          <Link
+            to={self ? '/' : '/people'}
+            className="u-press inline-flex h-10 items-center gap-2 rounded-full bg-surface-2 px-5 text-sm font-medium text-ink"
+          >
+            <ArrowLeft className="size-4" aria-hidden />
+            {self ? 'Back to home' : 'Back to directory'}
           </Link>
         }
       />
@@ -168,6 +178,7 @@ export function ProfilePage({ self = false }: { self?: boolean } = {}) {
       ? [{ id: 'compensation' as const, label: 'Compensation' }]
       : []),
     { id: 'statutory', label: 'Statutory & Bank' },
+    { id: 'family', label: 'Family' },
     { id: 'documents', label: 'Documents & Letters' },
     { id: 'attendance', label: 'Attendance' },
     { id: 'leave', label: 'Leave' },
@@ -208,8 +219,16 @@ export function ProfilePage({ self = false }: { self?: boolean } = {}) {
               </StatusBadge>
             </div>
           </div>
+          {!self && canWrite && (
+            <Button variant="secondary" onClick={() => { setEditOpen(true); }}>Edit details</Button>
+          )}
         </div>
       </Card>
+      {!self && canWrite && (
+        <EmployeeFormDrawer open={editOpen} onClose={() => { setEditOpen(false); }} ecode={profile.ecode}
+          initial={{ firstName: profile.name.split(' ')[0] ?? '', gender: profile.gender ?? '', dob: profile.dob ?? '', doj: profile.doj ?? '', mobile: profile.mobile ?? '', workEmail: profile.workEmail ?? '' }}
+          onSaved={() => { setVersion((n) => n + 1); }} />
+      )}
 
       <div
         role="tablist"
@@ -285,10 +304,14 @@ export function ProfilePage({ self = false }: { self?: boolean } = {}) {
       )}
 
       {tab === 'compensation' && (
-        <EmptyState
-          title="Compensation"
-          description="Salary structure and revision history arrive with Phase 2 payroll."
-        />
+        <Card>
+          <EmptyState
+            icon={<Wallet />}
+            title="Compensation"
+            description={self ? 'Your payslips, salary breakup and tax view live on My Pay.' : 'Salary structure and revision history are kept in Payroll, visible to payroll roles only.'}
+            action={self ? <LinkButton to="/my/pay">Open My Pay</LinkButton> : undefined}
+          />
+        </Card>
       )}
 
       {tab === 'statutory' && (
@@ -309,36 +332,70 @@ export function ProfilePage({ self = false }: { self?: boolean } = {}) {
         </Card>
       )}
 
+      {tab === 'family' && <FamilyPanel self={self} ecode={profile.ecode} canEdit={canWrite} />}
+
       {tab === 'documents' && (
-        <EmptyState
-          title="Documents & Letters"
-          description="Letters engine and document archive ship in Stage 1.6 (CORE-09)."
-        />
+        <Card>
+          <EmptyState
+            icon={<FileText />}
+            title="Documents & letters"
+            description={self ? 'Appointment, confirmation and other letters issued to you are on My Letters.' : 'Letters issued to this employee are listed under Letters.'}
+            action={<LinkButton to={self ? '/my/letters' : '/letters'}>{self ? 'Open My Letters' : 'Open Letters'}</LinkButton>}
+          />
+        </Card>
       )}
       {tab === 'attendance' && (
-        <EmptyState
-          title="Attendance"
-          description="Mini-muster on the profile lands with Stage 1.7 My Attendance."
-        />
+        <Card>
+          <EmptyState
+            icon={<CalendarCheck />}
+            title="Attendance"
+            description={self ? 'Your month calendar, punches and regularisations are on My Attendance.' : 'Day-by-day attendance for this employee is in the team grid and muster.'}
+            action={<LinkButton to={self ? '/my/attendance' : '/attendance/muster'}>{self ? 'Open My Attendance' : 'Open muster'}</LinkButton>}
+          />
+        </Card>
       )}
       {tab === 'leave' && (
-        <EmptyState
-          title="Leave"
-          description="Balance tiles and ledger arrive with the leave module (Stage 1.5)."
-        />
+        <Card>
+          <EmptyState
+            icon={<Palmtree />}
+            title="Leave"
+            description={self ? 'Balances, applications and their status are on My Leave.' : 'Leave balances and the ledger are managed under Leave.'}
+            action={<LinkButton to={self ? '/my/leave' : '/leave'}>{self ? 'Open My Leave' : 'Open Leave'}</LinkButton>}
+          />
+        </Card>
       )}
       {tab === 'assets' && (
-        <EmptyState
-          title="Assets"
-          description="Asset registry allocation view ships in Phase 3."
-        />
+        <Card>
+          <EmptyState
+            icon={<Laptop />}
+            title="Assets"
+            description="Laptops, phones, SIMs and other company assets issued to this employee are tracked in the asset register."
+          />
+        </Card>
       )}
       {tab === 'requests' && (
-        <EmptyState
-          title="Requests"
-          description="Cross-type request history wires to the workflow inbox in Phase 1."
-        />
+        <Card>
+          <EmptyState
+            icon={<Inbox />}
+            title="Requests"
+            description={self ? 'Leave, regularisation and OD requests you raised — with who has them now — are listed on My Leave and My Attendance.' : 'Requests this employee raised appear in the approvals inbox of whoever holds them.'}
+            action={self ? <LinkButton to="/my/leave">See my requests</LinkButton> : undefined}
+          />
+        </Card>
       )}
     </div>
+  );
+}
+
+/** A link that looks like the secondary Button — never a <button> nested in an <a>. */
+function LinkButton({ to, children }: { to: string; children: string }) {
+  return (
+    <Link
+      to={to}
+      className="u-press inline-flex h-10 items-center gap-2 rounded-full bg-surface-2 px-5 text-sm font-medium text-ink transition-colors duration-(--motion-micro) hover:bg-[color-mix(in_srgb,var(--ink)_7%,var(--surface-2))]"
+    >
+      {children}
+      <ArrowRight className="size-4" aria-hidden />
+    </Link>
   );
 }

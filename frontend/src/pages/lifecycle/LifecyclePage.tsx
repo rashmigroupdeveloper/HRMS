@@ -10,6 +10,7 @@ import { Button, StatusBadge } from '../../ui';
 import { useModuleResource } from '../_shared/useModuleResource';
 import { OnboardingBoardPage } from './OnboardingBoardPage';
 import { ProbationBoardPage } from './ProbationBoardPage';
+import type { SessionUser } from '../../lib/session';
 import { SeparationBoardPage } from './SeparationBoardPage';
 import { TransfersPage } from './TransfersPage';
 
@@ -23,27 +24,27 @@ interface BoardingExit {
 const BOARDS: { code: Board; label: string; task: string }[] = [
   {
     code: 'onboarding',
-    label: 'Onboarding (LC-01/02)',
+    label: 'Onboarding',
     task: 'LC-01 / LC-02',
   },
   {
     code: 'probation',
-    label: 'Probation (LC-04)',
+    label: 'Probation',
     task: 'LC-04',
   },
   {
     code: 'transfers',
-    label: 'Transfers (LC-05)',
+    label: 'Transfers',
     task: 'LC-05 / Mobility',
   },
   {
     code: 'separation',
-    label: 'Separations (LC-06)',
+    label: 'Separations',
     task: 'LC-06 / PAY-15',
   },
 ];
 
-export function LifecyclePage() {
+export function LifecyclePage({ user }: { user?: SessionUser } = {}) {
   const location = useLocation();
   const initialBoard: Board = location.pathname.includes('/probation')
     ? 'probation'
@@ -100,7 +101,7 @@ export function LifecyclePage() {
       {/* Render active board */}
       {board === 'onboarding' && <OnboardingBoardPage />}
 
-      {board === 'probation' && <ProbationBoardPage />}
+      {board === 'probation' && <ProbationBoardPage user={user} />}
 
       {board === 'transfers' && <TransfersPage />}
 

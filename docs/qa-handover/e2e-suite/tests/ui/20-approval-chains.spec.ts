@@ -2,18 +2,20 @@
 import { test, expect, task } from '../../lib/fixtures';
 import { choose, decide, pickDate } from '../../lib/ui';
 import { cohort } from '../../lib/personas';
+import { futureWeekday } from '../../lib/dates';
 
 test.describe('approval chains', () => {
   test(task('manager', 'M1', 'leave reject requires a note; employee sees the rejection reason'), async ({ as, ux }) => {
     ux.start('Reject leave with note');
+    const r1 = futureWeekday(12);
     const e = await as('employee');
-    await e.step('employee applies SL for 29 Oct', async () => {
+    await e.step(`employee applies SL for ${r1.label}`, async () => {
       await e.nav('My Leave', '/my/leave');
-      await e.click(e.main().getByRole('button', { name: 'Apply for a day off' }));
+      await e.click(e.main().getByRole('button', { name: 'Apply for a day off' }).first());
       const dlg = e.page.getByRole('dialog', { name: /apply for a day off/i });
       await choose(e, dlg.getByRole('combobox', { name: 'Leave type' }), /Sick Leave/);
-      await pickDate(e, dlg.getByRole('button', { name: /^First day/ }), '29 Oct 2026');
-      await pickDate(e, dlg.getByRole('button', { name: /^Last day/ }), '29 Oct 2026');
+      await pickDate(e, dlg.getByRole('button', { name: /^First day/ }), r1.label);
+      await pickDate(e, dlg.getByRole('button', { name: /^Last day/ }), r1.label);
       await e.fill(dlg.getByRole('textbox', { name: /why are you taking/i }), 'E2E: fever');
       await e.click(dlg.getByRole('button', { name: 'Send to my manager' }));
       await e.expectToast(/sent|submitted|manager/i);
@@ -21,18 +23,18 @@ test.describe('approval chains', () => {
     const m = await as('manager');
     await m.step('Reject without a note is blocked', async () => {
       await m.nav('Approvals', '/approvals');
-      await m.click(m.main().getByRole('button', { name: /Debajit Roy.*Leave.*SL · 29 Oct 2026/s }).first());
+      await m.click(m.main().getByRole('button', { name: new RegExp(`Debajit Roy.*Leave.*SL · ${r1.label}`, 's') }).first());
       await m.click(m.main().getByRole('button', { name: /^Reject$/ }));
       await expect(m.main().getByText(/required|add a note|reason/i).first()).toBeVisible();
-      await expect(m.main().getByRole('button', { name: /Debajit Roy.*SL · 29 Oct 2026/s })).toBeVisible();
+      await expect(m.main().getByRole('button', { name: new RegExp(`Debajit Roy.*SL · ${r1.label}`, 's') })).toBeVisible();
     });
     await m.step('Reject with a note', async () => {
-      await decide(m, /Debajit Roy.*Leave.*SL · 29 Oct 2026/s, 'Reject', 'E2E: critical audit that day, please re-plan');
+      await decide(m, new RegExp(`Debajit Roy.*Leave.*SL · ${r1.label}`, 's'), 'Reject', 'E2E: critical audit that day, please re-plan');
       await m.expectToast(/reject|decision|recorded/i);
     });
     await e.step('employee sees "rejected" and the reason', async () => {
       await e.goto('/my/leave');
-      const row = e.main().getByRole('listitem').filter({ hasText: /SL · 29 Oct 2026/ });
+      const row = e.main().getByRole('listitem').filter({ hasText: new RegExp(`SL · ${r1.label}`) });
       await expect(row).toContainText(/rejected/i);
       await e.click(row.getByRole('link'));
       await expect(e.main()).toContainText(/critical audit/);

@@ -7,8 +7,11 @@ import { sql, type Insertable, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { formatDbDate } from '../../core/dates.js';
 import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
-import { attendanceGlyph, monthStart, nextMonthStart } from '../attendance/index.js';
+import { attendanceGlyph, monthStart } from '../attendance/index.js';
+import { resolveAttendanceWindow } from '../../core/db/attendance-cycle.js';
 import { inTransaction } from '../../core/db/database.js';
+import { getTypedSetting } from '../settings/index.js';
+import { parseLopDivisor, unpaidDayEquivalents, type DayFact } from '../payroll-core/index.js';
 
 function fullName(first: string, last: string | null): string {
   return last ? `${first} ${last}` : first;
@@ -70,7 +73,8 @@ export async function buildMusterMonth(
   month: string,
 ): Promise<number> {
   const m = monthStart(month);
-  const mEnd = nextMonthStart(m);
+  // C-17: a 26th–25th (or other) attendance cycle shows the payroll month's attendance window.
+  const { from: wFrom, until: mEnd } = await resolveAttendanceWindow(db, companyId, m);
 
   const employees = await db
     .selectFrom('core.employees as e')
@@ -86,7 +90,7 @@ export async function buildMusterMonth(
       eb.and([
         eb('e.status', 'in', ['active', 'on_notice', 'exited']),
         eb.or([eb('e.doj', 'is', null), eb('e.doj', '<', sql<Date>`${mEnd}::date`)]),
-        eb.or([eb('e.dol', 'is', null), eb('e.dol', '>=', sql<Date>`${m}::date`)]),
+        eb.or([eb('e.dol', 'is', null), eb('e.dol', '>=', sql<Date>`${wFrom}::date`)]),
       ]),
     )
     .select([
@@ -114,7 +118,10 @@ export async function buildMusterMonth(
     : await db
         .selectFrom('att.day_records as dr')
         .leftJoin('lv.leave_types as lt', 'lt.id', 'dr.leave_type_id')
+        .leftJoin('att.shifts as s', 's.id', 'dr.shift_id')
         .select([
+          'dr.worked_minutes',
+          's.min_half_day_hours',
           'dr.employee_id',
           'dr.work_date',
           'dr.status',
@@ -122,9 +129,10 @@ export async function buildMusterMonth(
           'dr.ot_minutes',
           'dr.weekoff_paid',
           'lt.code as leave_code',
+          'lt.is_paid as leave_paid',
         ])
         .where('dr.employee_id', 'in', employeeIds)
-        .where('dr.work_date', '>=', sql<Date>`${m}::date`)
+        .where('dr.work_date', '>=', sql<Date>`${wFrom}::date`)
         .where('dr.work_date', '<', sql<Date>`${mEnd}::date`)
         .execute();
 
@@ -135,6 +143,9 @@ export async function buildMusterMonth(
     daysByEmployee.set(day.employee_id, employeeDays);
   }
 
+  // LOP as payroll deducts it (divisor type + sandwich rule + half-day leave halves).
+  const divisor = parseLopDivisor(await getTypedSetting(db, 'pay.lop_divisor', 'string', 'CALENDAR'));
+  const sandwichRule = await getTypedSetting(db, 'att.sandwich_rule', 'boolean', false);
   const values: Insertable<Database['reporting.muster_month']>[] = [];
   for (const emp of employees) {
     const employeeDays = daysByEmployee.get(emp.id) ?? [];
@@ -147,14 +158,23 @@ export async function buildMusterMonth(
     let weekoffsUnpaid = 0;
     let holidays = 0;
     let leaveDays = 0;
-    let lwpDays = 0;
     let odDays = 0;
     let coDays = 0;
     let uabDays = 0;
     let otMinutes = 0;
+    const facts: DayFact[] = [];
 
     for (const d of employeeDays) {
-      const dd = formatDbDate(d.work_date).slice(8, 10);
+      const iso = formatDbDate(d.work_date);
+      const dd = iso.slice(8, 10);
+      const sessions = JSON.stringify(d.session_statuses ?? []);
+      facts.push({
+        // An open week (weekoff_paid not yet decided) shows the WO as paid until week close.
+        iso, status: d.status, leavePaid: d.leave_paid ?? null, weekoffPaid: d.weekoff_paid ?? true,
+        otherHalfWorked: d.status === 'HD' && d.leave_code !== null
+          && (sessions.includes('"status":"P"') || sessions.includes('"status":"OD"')
+            || (d.min_half_day_hours !== null && (d.worked_minutes ?? 0) > 0 && (d.worked_minutes ?? 0) >= Number(d.min_half_day_hours) * 60)),
+      });
       const st = d.status;
       dayStatuses[dd] = attendanceGlyph(st, d.session_statuses, d.leave_code);
       otMinutes += d.ot_minutes;
@@ -177,7 +197,6 @@ export async function buildMusterMonth(
           break;
         case 'L':
           leaveDays += 1;
-          if (d.leave_code === 'LWP') lwpDays += 1;
           break;
         case 'OD':
           odDays += 1;
@@ -193,7 +212,7 @@ export async function buildMusterMonth(
       }
     }
 
-    const lopDays = absent + uabDays + weekoffsUnpaid + lwpDays + halfDays * 0.5;
+    const lopDays = unpaidDayEquivalents(facts, divisor, sandwichRule);
 
     values.push({
         company_id: companyId,
