@@ -29,7 +29,7 @@ Then load employees through Admin → Data imports (employee master template), s
 Do **not** run anything under `docs/qa-handover/fix-verify/seed` in production — that is QA demo data.
 
 ## 4. Processes
-- API: `node dist/server.js` (systemd, restart=always). Worker: `node dist/jobs/worker.js` (one instance — runs kent-sync, recompute, accruals, reminders).
+- API: `node dist/index.js` (systemd, restart=always). Worker: `node dist/jobs/worker.js` (one instance — runs kent-sync, recompute, accruals, reminders).
 - Health: `GET /health` (liveness), `GET /health/ready` (DB reachable; use for the load balancer). Every response and error log carries a request id.
 - Logs: JSON (pino) on stdout → journald/your collector. No PII in logs (see PII_ENCRYPTION_PLAN.md).
 

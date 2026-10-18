@@ -27,7 +27,9 @@
     "test:coverage": "vitest run --coverage",
     "verify:migrations": "tsx scripts/verify-migrations.ts",
     "seed:masters": "tsx src/core/seed/masters.ts",
-    "kent:simulator": "tsx scripts/kent-simulator.ts"
+    "kent:simulator": "tsx scripts/kent-simulator.ts",
+    "start": "node dist/index.js",
+    "worker:prod": "node dist/jobs/worker.js"
   },
   "dependencies": {
     "@orpc/openapi": "^1.15.5",
