@@ -248,7 +248,7 @@ export function BusinessUnitDashboard({ quickLinks }: { quickLinks?: QuickLink[]
         <Card>
           <CardHeader
             title="Open absence cases"
-            subtitle="ATT-14 · watch and show-cause stages"
+            subtitle="Watch and show-cause stages"
             action={openCases > 0 ? <Pill>{openCases}</Pill> : undefined}
           />
           {data.openAbsenceCases.length === 0 ? (

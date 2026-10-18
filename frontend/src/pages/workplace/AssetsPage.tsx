@@ -569,7 +569,7 @@ function AllocationDrawer({
       open={asset !== null}
       onClose={onClose}
       title={`${assigned ? 'Return' : 'Allocate'} ${asset === null ? '' : asset.assetNo}`}
-      subtitle={assigned ? 'ast.assignments · audited' : 'AST-03 · employee or third party'}
+      subtitle={assigned ? 'Every change is audited' : 'An employee or a third party'}
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>
@@ -758,7 +758,7 @@ function OutstandingPanel({ companyId }: { companyId: string }) {
                 : `${String(rows.length)} asset${rows.length === 1 ? '' : 's'} still held by people who have left`}
             </p>
             <p className="mt-0.5 text-xs leading-5 text-ink-muted">
-              AST-05 · these keep the exit clearance open until they are returned or written off.
+              These keep the exit clearance open until they are returned or written off.
             </p>
           </div>
         </div>
