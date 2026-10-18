@@ -114,7 +114,7 @@ export function LettersPage() {
       <PageHeader
         eyebrow="CORE-09 · issuance = signature-chain approval"
         title="Letters"
-        description="Rendered from runtime-editable templates; a missing merge field is a hard error, never a blank letter."
+        description="Generate letters from editable templates. A letter with a missing field is never issued blank."
         actions={
           <Button variant="primary" leadingIcon={<FileSignature className="size-4" />} onClick={() => { setIssueOpen(true); }}>
             Issue letter

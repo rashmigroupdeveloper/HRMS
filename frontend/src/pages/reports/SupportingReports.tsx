@@ -974,7 +974,7 @@ export function R25ProbationPage() {
   return (
     <SupportingReportPage<R25Row>
       code="R25"
-      title="Probation Reviews & Confirmations"
+      title="Probation reviews & confirmations"
       subtitle="Evaluation schedules, manager assessments, extension tracking and overdue reviews."
       listPath="/api/reports/r25-probation"
       exportPath="/api/reports/r25-probation/export"

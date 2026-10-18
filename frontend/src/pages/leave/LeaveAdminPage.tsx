@@ -40,10 +40,10 @@ export function LeaveAdminPage() {
         <p className="text-sm font-medium text-hero-muted">
           Ledger discipline
         </p>
-        <h2 className="mt-3 text-3xl font-light">Balances are never edited counters</h2>
+        <h2 className="mt-3 text-3xl font-light">Every balance has a full history</h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-hero-muted">
-          Accruals, adjustments, leave debits and comp-off lapses remain immutable transactions
-          whose sum is the balance.
+          Accruals, adjustments, leave taken and comp-off lapses are recorded as entries that never
+          change. A balance is simply their total.
         </p>
       </DarkCard>
       <div className="grid gap-4 md:grid-cols-2">

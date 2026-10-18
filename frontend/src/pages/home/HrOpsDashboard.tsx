@@ -54,7 +54,7 @@ export function HrOpsDashboard({
   const goldOnCta = !absentIsTheJob && !approvalsAreTheJob;
 
   return (
-    <div className="space-y-6">
+    <div className="u-stagger space-y-6">
       <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
         <PageHeader
           eyebrow={todayLongIST()}

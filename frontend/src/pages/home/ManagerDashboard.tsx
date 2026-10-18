@@ -76,7 +76,7 @@ export function ManagerDashboard({
   const weekSunday = week[6];
 
   return (
-    <div className="space-y-6">
+    <div className="u-stagger space-y-6">
       <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
         <PageHeader
           eyebrow={todayLongIST()}
@@ -193,7 +193,7 @@ export function ManagerDashboard({
               <Link
                 key={member.employeeId}
                 to={`/people/${member.ecode}`}
-                className="rounded-tile bg-surface-2 p-4 transition-colors hover:bg-accent-soft"
+                className="u-lift rounded-tile bg-surface-2 p-4 hover:bg-accent-soft"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
