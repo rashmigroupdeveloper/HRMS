@@ -10,7 +10,7 @@ import { execSync } from 'node:child_process';
 import { hintFor } from '../lib/hints';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const OUT = process.env.E2E_OUT ?? '/workspace/hrms-test/e2e';
+const OUT = process.env.E2E_OUT ?? 'reports/results';
 const RES = path.join(ROOT, 'reports/results.json');
 const ART = path.join(OUT, 'artifacts');
 fs.mkdirSync(OUT, { recursive: true });
@@ -71,9 +71,9 @@ const area = (r: Row) => {
 };
 
 let fixHead = process.env.E2E_FIX_HEAD ?? '';
-try { fixHead ||= execSync('git -C /workspace/hrms-fix log -1 --format="%h %s (%ci)"').toString().trim(); } catch {}
+try { fixHead ||= execSync(`git -C ${process.env.APP_REPO ?? '../../..'} log -1 --format="%h %s (%ci)"`).toString().trim(); } catch {}
 let dirty = '';
-try { dirty = execSync('git -C /workspace/hrms-fix status --porcelain').toString().trim() ? ' + uncommitted working-tree changes' : ''; } catch {}
+try { dirty = execSync(`git -C ${process.env.APP_REPO ?? '../../..'} status --porcelain`).toString().trim() ? ' + uncommitted working-tree changes' : ''; } catch {}
 const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) + ' IST';
 const tot = { all: rows.length, pass: rows.filter((r) => r.status === 'pass').length, fail: rows.filter((r) => r.status === 'fail').length, skip: rows.filter((r) => r.status === 'skip').length };
 
@@ -90,9 +90,9 @@ fails.forEach((r, i) => {
 
 const L: string[] = [];
 L.push('# Rashmi HRMS — end-to-end UI results', '');
-L.push(`- **Run:** ${now}`, `- **Build under test:** /workspace/hrms-fix @ ${fixHead}${dirty}`, `- **App:** ${process.env.E2E_BASE_URL ?? 'http://localhost:5193'} (backend :5130, DB hrms_e2e restored from the tester snapshot + migrations + seeds)`);
+L.push(`- **Run:** ${now}`, `- **Build under test:** ${process.env.APP_REPO ?? 'app'} @ ${fixHead}${dirty}`, `- **App:** ${process.env.E2E_BASE_URL ?? 'http://localhost:5176'} (backend ${process.env.E2E_API_URL ?? ':5104'}, DB ${process.env.E2E_DB ?? 'hrms_e2e'} restored from the base snapshot + migrations + seeds)`);
 L.push(`- **Totals:** ${tot.all} tests — ✅ ${tot.pass} passed · ❌ ${tot.fail} failed · ⏭️ ${tot.skip} skipped`);
-L.push('- **HTML report:** /workspace/hrms-e2e/reports/html/index.html (`npm run show-report`) · **Fixer list:** FAILURES.md', '');
+L.push('- **HTML report:** docs/qa-handover/e2e-suite/reports/html/index.html (`npm run show-report`) · **Fixer list:** FAILURES.md', '');
 L.push('## Pass/fail per role', '', '| Role | Tests | ✅ Pass | ❌ Fail | ⏭️ Skip | Avg usability |', '|---|---:|---:|---:|---:|---:|');
 for (const role of roles) {
   const rr = rows.filter((r) => r.role === role);
@@ -148,7 +148,7 @@ L.push('');
 fs.writeFileSync(path.join(OUT, 'E2E_RESULTS.md'), L.join('\n'));
 
 // FAILURES.md — actionable, grouped by area
-const F: string[] = ['# FAILURES — actionable list for the fixer', '', `Run ${now} against /workspace/hrms-fix @ ${fixHead}${dirty}. ${tot.fail} failing of ${tot.all}. Regenerated on every run by \`npm run e2e\` in /workspace/hrms-e2e.`, '', 'Re-run one item: `cd /workspace/hrms-e2e && npx playwright test -g "<ID>"` (servers: `bash scripts/start-servers.sh`).', ''];
+const F: string[] = ['# FAILURES — actionable list for the fixer', '', `Run ${now} against ${process.env.APP_REPO ?? 'app'} @ ${fixHead}${dirty}. ${tot.fail} failing of ${tot.all}. Regenerated on every run by \`npm run e2e\` in docs/qa-handover/e2e-suite.`, '', 'Re-run one item: `cd docs/qa-handover/e2e-suite && npx playwright test -g "<ID>"` (servers: `bash scripts/start-servers.sh`).', ''];
 const groups = new Map<string, Row[]>();
 for (const r of fails) { const a = hintFor(r.full + '\n' + r.error)?.area ?? area(r); groups.set(a, [...(groups.get(a) ?? []), r]); }
 for (const [a, rr] of [...groups].sort((x, y) => y[1].length - x[1].length)) {

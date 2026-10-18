@@ -1,7 +1,7 @@
 // Dev helper: dump nav + ARIA snapshot per page per role (used to author the suite).
 import { chromium } from '@playwright/test';
 import fs from 'fs';
-const BASE = process.env.E2E_BASE_URL || 'http://localhost:5193';
+const BASE = process.env.E2E_BASE_URL || 'http://localhost:5176';
 const [email, ...paths] = process.argv.slice(2);
 const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome' });
 const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });

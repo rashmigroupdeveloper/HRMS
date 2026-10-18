@@ -17,7 +17,7 @@ export default defineConfig({
     ['json', { outputFile: 'reports/results.json' }],
   ],
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5193',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5176',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'off',
