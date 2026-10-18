@@ -950,10 +950,7 @@ const r25Columns: Column<R25Row>[] = [
     header: 'Employee',
     width: 'minmax(160px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode} · {r.department ?? '—'}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={`${r.ecode} · ${r.department ?? '—'}`} />
     ),
   },
   { key: 'doj', header: 'DOJ', width: '100px', render: (r) => formatDateIN(r.doj) },
@@ -996,22 +993,22 @@ export function R25ProbationPage() {
 // ── R26 Attrition Analysis ──────────────────────────────────────────────────
 
 interface R26Row {
-  separationId: number;
+  id: number;
   employeeName: string;
   ecode: string;
+  company: string | null;
   department: string | null;
   location: string | null;
   category: string | null;
   doj: string;
-  tenureMonths: number;
+  dol: string | null;
   tenureBand: string;
   resignationDate: string;
-  lwd: string | null;
   reason: string | null;
   exitType: 'Voluntary' | 'Involuntary';
   noticePeriodDays: number | null;
   shortfallDays: number | null;
-  fnfStatus: string | null;
+  status: string | null;
 }
 
 const r26Columns: Column<R26Row>[] = [
@@ -1020,18 +1017,15 @@ const r26Columns: Column<R26Row>[] = [
     header: 'Employee',
     width: 'minmax(160px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode} · {r.department ?? '—'}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={`${r.ecode} · ${r.department ?? '—'}`} />
     ),
   },
   { key: 'exitType', header: 'Exit Type', width: '110px', render: (r) => <StatusBadge tone={r.exitType === 'Voluntary' ? 'neutral' : 'negative'}>{r.exitType}</StatusBadge> },
-  { key: 'tenure', header: 'Tenure', width: '110px', render: (r) => <span>{r.tenureBand} ({r.tenureMonths}m)</span> },
+  { key: 'tenure', header: 'Tenure', width: '110px', render: (r) => <span>{r.tenureBand}</span> },
   { key: 'dates', header: 'Resigned / LWD', width: '140px', render: (r) => (
     <div className="text-xs">
       <p className="text-ink">{formatDateIN(r.resignationDate)}</p>
-      <p className="text-ink-muted">{r.lwd ? `LWD: ${formatDateIN(r.lwd)}` : '—'}</p>
+      <p className="text-ink-muted">{r.dol ? `LWD: ${formatDateIN(r.dol)}` : '—'}</p>
     </div>
   )},
   { key: 'notice', header: 'Notice (Shortfall)', width: '120px', render: (r) => `${String(r.noticePeriodDays ?? 0)}d (${String(r.shortfallDays ?? 0)}d)` },
@@ -1047,7 +1041,7 @@ export function R26AttritionPage() {
       listPath="/api/reports/r26-attrition"
       exportPath="/api/reports/r26-attrition/export"
       columns={r26Columns}
-      rowKey={(r) => String(r.separationId)}
+      rowKey={(r) => String(r.id)}
       mode="companyOptional"
       requireCompany={false}
       buildQuery={(f) => ({
@@ -1267,10 +1261,7 @@ const r31Columns: Column<R31Row>[] = [
     header: 'Employee',
     width: 'minmax(160px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode} · {r.department ?? '—'}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={`${r.ecode} · ${r.department ?? '—'}`} />
     ),
   },
   { key: 'type', header: 'Expense Type', width: '130px', render: (r) => r.claimType },

@@ -43,6 +43,30 @@ import {
 } from '../../ui';
 import { apiFetch } from '../../lib/api';
 
+/**
+ * The list endpoint names people fields `employeeName` / `departmentName` /
+ * `designationName`; older payloads used `name` / `department` / `designation`.
+ * Accept both so the board never crashes on a missing name.
+ */
+type SeparationApiItem = Omit<SeparationItem, 'name' | 'department' | 'designation'> & {
+  name?: string;
+  employeeName?: string;
+  department?: string | null;
+  departmentName?: string | null;
+  designation?: string | null;
+  designationName?: string | null;
+};
+
+function fromApi(item: SeparationApiItem): SeparationItem {
+  const { employeeName, departmentName, designationName, ...rest } = item;
+  return {
+    ...rest,
+    name: item.name ?? employeeName ?? item.ecode,
+    department: item.department ?? departmentName ?? null,
+    designation: item.designation ?? designationName ?? null,
+  };
+}
+
 interface SeparationItem {
   id: number;
   employeeId: number;
@@ -194,9 +218,9 @@ export function SeparationBoardPage() {
 
   const loadSeparations = useCallback(async () => {
     try {
-      const res = await apiFetch<{ items: SeparationItem[] }>('/api/lifecycle/separations');
+      const res = await apiFetch<{ items?: SeparationApiItem[] }>('/api/lifecycle/separations');
       if (Array.isArray(res.items)) {
-        setSeparations(res.items);
+        setSeparations(res.items.map(fromApi));
       } else {
         setSeparations([]);
       }
