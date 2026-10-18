@@ -48,7 +48,7 @@ export function CardHeader({
   title,
   subtitle,
   action,
-  headingLevel = 3,
+  headingLevel = 2,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;

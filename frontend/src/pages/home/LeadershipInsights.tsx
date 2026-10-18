@@ -26,7 +26,7 @@ import {
 import type { StripTone } from '../../ui';
 import { currentMonthIST } from './dashboard-format';
 
-export type InsightKey = 'movement' | 'companies' | 'attrition' | 'payroll' | 'desk';
+type InsightKey = 'movement' | 'companies' | 'attrition' | 'payroll' | 'desk';
 
 type Load<T> = { status: 'loading' } | { status: 'hidden' } | { status: 'error' } | { status: 'ready'; data: T };
 
