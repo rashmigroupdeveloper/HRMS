@@ -210,6 +210,65 @@ describe.skipIf(!url)('Payroll Run Maker-Checker and Co-Sign Authorization', () 
         expect(approvalAudit).toBeDefined();
         expect(approvalAudit?.actor_user_id).toBe(hrHeadUser.id);
 
+        // Scenario D: Checker is a super_admin -> must also succeed
+        const superAdminRole = await trx
+          .selectFrom('core.roles')
+          .select('id')
+          .where('code', '=', 'super_admin')
+          .executeTakeFirstOrThrow();
+
+        const superAdminUser = await trx
+          .insertInto('core.users')
+          .values({
+            email: `superadmin-${stamp}@example.com`,
+            password_hash: '!test!',
+            employee_id: hrHeadEmp.id,
+            is_active: true,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+
+        await trx.insertInto('core.user_roles').values({
+          user_id: superAdminUser.id,
+          role_id: superAdminRole.id,
+        }).execute();
+
+        const run2 = await trx
+          .insertInto('pay.payroll_runs')
+          .values({
+            company_id: company.id,
+            month: '2026-11-01' as unknown as Date,
+            run_type: 'regular',
+            status: 'under_review',
+            attendance_lock_id: lock.id,
+            notes: 'Super admin approval test run',
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+
+        await trx
+          .insertInto('core.audit_log')
+          .values({
+            actor_user_id: makerUser.id,
+            entity: 'pay.payroll_runs',
+            entity_id: run2.id,
+            action: 'payroll_run_computed',
+            prev_hash: '0000000000000000000000000000000000000000000000000000000000000000',
+            row_hash: '2222222222222222222222222222222222222222222222222222222222222222',
+          })
+          .execute();
+
+        await service.approveRun(run2.id, superAdminUser.id);
+
+        const updatedRun2 = await trx
+          .selectFrom('pay.payroll_runs')
+          .select(['status', 'approved_by'])
+          .where('id', '=', run2.id)
+          .executeTakeFirstOrThrow();
+
+        expect(updatedRun2.status).toBe('approved');
+        expect(updatedRun2.approved_by).toBe(superAdminUser.id);
+
         throw rollback;
       });
     } catch (err) {

@@ -12,7 +12,9 @@ import {
   formatEmailHtml,
   formatEmailSubject,
   formatEmailText,
+  processQueue,
   SmtpNotificationTransport,
+  type NotificationTransport,
 } from '../src/modules/notifications/notifications.service.js';
 
 describe('Notification formatting and SMTP delivery transport', () => {
@@ -195,5 +197,158 @@ describe('Notification formatting and SMTP delivery transport', () => {
       SMTP_PASS: 'secret',
     });
     expect(smtp).toBeInstanceOf(SmtpNotificationTransport);
+
+    const smtpSecure = createNotificationTransport({
+      SMTP_HOST: 'smtp.mail.com',
+      SMTP_PORT: 465,
+      SMTP_SECURE: true,
+      SMTP_USER: 'test',
+      SMTP_PASS: 'secret',
+    });
+    expect(smtpSecure).toBeInstanceOf(SmtpNotificationTransport);
+  });
+
+  it('covers devLogTransport logger branch for recipient_user_id and recipient_email', async () => {
+    await devLogTransport.send({
+      id: 1,
+      recipient_user_id: 10,
+      recipient_email: null,
+      channel: 'in_app',
+      template_code: 'test',
+      payload: '{}',
+      status: 'queued',
+      attempts: 0,
+      sent_at: null,
+      read_at: null,
+      last_error: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    await devLogTransport.send({
+      id: 2,
+      recipient_user_id: null,
+      recipient_email: 'test@example.com',
+      channel: 'email',
+      template_code: 'test',
+      payload: '{}',
+      status: 'queued',
+      attempts: 0,
+      sent_at: null,
+      read_at: null,
+      last_error: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+  });
+
+  it('covers service_certificate subject and empty payload html branch', () => {
+    expect(formatEmailSubject('service_certificate', {})).toBe('[Rashmi HRMS] Service Certificate Issued');
+    const emptyHtml = formatEmailHtml('service_certificate', {});
+    expect(emptyHtml).not.toContain('<table');
+  });
+
+  it('handles invalid JSON string payload by wrapping in message object', async () => {
+    const sendMail = vi.fn().mockResolvedValue({ messageId: 'msg-4' });
+    const transport = new SmtpNotificationTransport({
+      host: 'smtp.example.com',
+      port: 587,
+      transporter: { sendMail } as unknown as Transporter,
+    });
+    await transport.send({
+      id: 105,
+      recipient_user_id: null,
+      recipient_email: 'user@example.com',
+      channel: 'email',
+      template_code: 'service_certificate',
+      payload: 'plain text non-json string',
+      status: 'queued',
+      attempts: 0,
+      sent_at: null,
+      read_at: null,
+      last_error: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    const callArgs = sendMail.mock.calls[0]?.[0] as { text?: string } | undefined;
+    expect(callArgs?.text).toContain('Message: plain text non-json string');
+  });
+
+  it('processQueue drains batch, calls markSent on success and markFailed on transport error', async () => {
+    const fakeItems: NotificationRow[] = [
+      {
+        id: 201,
+        recipient_user_id: null,
+        recipient_email: 'ok@example.com',
+        channel: 'email',
+        template_code: 'test',
+        payload: '{}',
+        status: 'queued',
+        attempts: 0,
+        sent_at: null,
+        read_at: null,
+        last_error: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      {
+        id: 202,
+        recipient_user_id: null,
+        recipient_email: 'fail@example.com',
+        channel: 'email',
+        template_code: 'test',
+        payload: '{}',
+        status: 'queued',
+        attempts: 0,
+        sent_at: null,
+        read_at: null,
+        last_error: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+    ];
+
+    const mockTrx = {
+      selectFrom: vi.fn().mockReturnValue({
+        selectAll: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            orderBy: vi.fn().mockReturnValue({
+              limit: vi.fn().mockReturnValue({
+                forUpdate: vi.fn().mockReturnValue({
+                  skipLocked: vi.fn().mockReturnValue({
+                    execute: vi.fn().mockResolvedValue(fakeItems),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+      updateTable: vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            execute: vi.fn().mockResolvedValue({ numUpdatedRows: 1n }),
+          }),
+        }),
+      }),
+    };
+
+    const mockDb = {
+      transaction: vi.fn().mockReturnValue({
+        execute: vi.fn().mockImplementation((cb: (trx: unknown) => Promise<unknown>) => cb(mockTrx)),
+      }),
+    };
+
+    const mockTransport: NotificationTransport = {
+      send: vi.fn().mockImplementation((n: NotificationRow) => {
+        if (n.id === 202) {
+          return Promise.reject(new Error('Simulated SMTP connection error'));
+        }
+        return Promise.resolve();
+      }),
+    };
+
+    const res = await processQueue(mockDb as unknown as Kysely<Database>, mockTransport);
+    expect(res).toEqual({ sent: 1, failed: 1 });
   });
 });

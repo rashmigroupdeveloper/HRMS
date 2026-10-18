@@ -28,6 +28,7 @@ interface PolicySeed {
 }
 
 /** Keys + defaults mirrored from the `getTypedSetting` call sites (docs/04 §8). */
+export const POLICY_SETTINGS: readonly PolicySeed[] = [
   { key: 'lifecycle.prejoin_token_hours', value: 72, valueType: 'number', description: 'LC-01: prejoin link validity in hours; retains the previous implementation lifetime, subject to HR policy acceptance' },
   { key: 'probation.default_months', value: 6, valueType: 'number', description: 'LC-01: default probation period in months for newly onboarded employees' },
   { key: 'auth.failure_threshold', value: 5, valueType: 'number', description: 'NFR-03: consecutive failures before lockout' },
