@@ -544,6 +544,9 @@ export class SeparationService {
     const name = `${employee.first_name} ${employee.last_name ?? ''}`.trim();
 
     return inTransaction(this.db, async (trx) => {
+      // E2E-022: claim the settlement atomically; a concurrent payer blocks on the row lock, then sees 'paid'.
+      const claimed = await trx.selectFrom('pay.fnf_settlements').select('status').where('id', '=', fnf.id).forUpdate().executeTakeFirstOrThrow();
+      if (claimed.status === 'paid') throw new ConflictError('F&F settlement is already paid');
       const letter = (template: string, body: Record<string, unknown>) =>
         trx
           .insertInto('core.letters')
