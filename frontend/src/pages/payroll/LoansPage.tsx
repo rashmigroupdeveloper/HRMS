@@ -98,7 +98,7 @@ export function LoansPage() {
 
   // Application form state
   const [applyType, setApplyType] = useState('loan_diminishing');
-  const [applyPrincipal, setApplyPrincipal] = useState('50000');
+  const [applyPrincipal, setApplyPrincipal] = useState('');
   const [applyRate, setApplyRate] = useState('8.5');
   const [applyTenure, setApplyTenure] = useState('12');
   const [applyStartMonth, setApplyStartMonth] = useState('2026-07-01');

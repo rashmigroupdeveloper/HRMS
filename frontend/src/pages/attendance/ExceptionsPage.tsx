@@ -62,7 +62,7 @@ export function ExceptionsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Attendance operations · ATT-01"
+        eyebrow="Attendance operations"
         title="Swipe exceptions"
         description="Biometric events are retained even when an employee number cannot be mapped."
       />

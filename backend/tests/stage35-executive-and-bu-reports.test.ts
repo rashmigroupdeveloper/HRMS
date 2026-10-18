@@ -87,9 +87,9 @@ run('Stage 3.5 — Executive Analytics & BU Dashboards (live Postgres)', () => {
     const comp = await db
       .insertInto('core.companies')
       .values({
-        code: `RML-35-${String(stamp).slice(-4)}`,
+        code: `RML-35-${String(stamp).slice(-7)}`,
         name: `Rashmi Test Entity ${String(stamp)}`,
-        ecode_prefix: `R${String(stamp).slice(-3)}`,
+        ecode_prefix: `R${String(stamp).slice(-7)}`, // 3 digits collided with earlier committed runs
         is_india_payroll: true,
       })
       .returning('id')

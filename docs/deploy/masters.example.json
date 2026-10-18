@@ -1,0 +1,14 @@
+{
+  "companies": [
+    { "code": "RML", "name": "Rashmi Metaliks Limited", "ecodePrefix": "RML", "pan": "AAAAA0000A", "tan": "CALA00000A" }
+  ],
+  "orgUnits": [
+    { "company": "RML", "name": "RML Kharagpur Works" },
+    { "company": "RML", "name": "RML Production", "parent": "RML Kharagpur Works" }
+  ],
+  "locations": [ { "company": "RML", "name": "Kharagpur", "stateCode": "WB" } ],
+  "costCenters": [ { "company": "RML", "code": "CC-PRD", "name": "Production" } ],
+  "departments": ["Production", "Human Resources", "Finance"],
+  "designations": ["Engineer", "Manager"],
+  "grades": [ { "code": "M1", "name": "Manager 1", "rank": 10 } ]
+}
