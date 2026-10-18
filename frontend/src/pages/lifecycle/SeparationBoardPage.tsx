@@ -146,7 +146,7 @@ export function SeparationBoardPage() {
   // HR Absconding Form State
   const [abscondingEmpId, setAbscondingEmpId] = useState('');
   const [abscondingLwd, setAbscondingLwd] = useState(new Date().toISOString().slice(0, 10));
-  const [abscondingReason, setAbscondingReason] = useState('Consecutive 8 days unapproved absence (ATT-10)');
+  const [abscondingReason, setAbscondingReason] = useState('Consecutive 8 days unapproved absence');
 
   // Approve Form State
   const [approveLwd, setApproveLwd] = useState('');
@@ -560,11 +560,11 @@ export function SeparationBoardPage() {
       {/* Top Header & Fast Metric Tiles */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <PageHeader
-          eyebrow="Lifecycle / Separation & Settlement"
-          title="Separation, Clearances & F&F Console"
-          description="Orchestrates ESS resignation approval, 4-tier departmental clearances (IT/Admin/Finance/HR), unreturned asset recovery, and 3-day statutory F&F settlement with Exit Day Cascade (LC-06, LC-07, PAY-15)."
+          eyebrow="Lifecycle"
+          title="Separation & settlement"
+          description="Resignations, departmental clearances, asset recovery and full & final settlement in one place."
         />
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="secondary"
             size="sm"

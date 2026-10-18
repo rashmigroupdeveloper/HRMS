@@ -308,7 +308,7 @@ function RegisterPanel({ companyId }: { companyId: string }) {
       <Card>
         <CardHeader
           title={`${total.toLocaleString('en-IN')} assets`}
-          subtitle="Search covers asset number, serial and the current holder (AST-01)."
+          subtitle="Search covers asset number, serial and the current holder."
         />
       </Card>
 
@@ -470,7 +470,7 @@ function AssetEditor({
         <TextField
           label="Warranty till"
           type="date"
-          hint="Past dates are allowed — kit is often registered after it was issued (AST-02)."
+          hint="Past dates are allowed — kit is often registered after it was issued."
           value={warrantyTill}
           onChange={(e) => {
             setWarrantyTill(e.currentTarget.value);
@@ -608,7 +608,7 @@ function AllocationDrawer({
                   {
                     value: 'not_returned',
                     label: 'Not returned',
-                    description: 'Keeps the exit clearance open (AST-04)',
+                    description: 'Keeps the exit clearance open',
                   },
                 ]}
                 onChange={(value) => {

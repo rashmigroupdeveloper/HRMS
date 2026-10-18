@@ -1134,11 +1134,11 @@ interface R29Row {
   category: string;
   totalTickets: number;
   resolvedTickets: number;
-  slaBreachedTickets: number;
-  slaHitPct: number;
+  resolutionRatePct: number;
+  breachedCount: number;
+  escalatedCount: number;
   avgFirstResponseHours: number | null;
   avgResolutionHours: number | null;
-  reopenedTickets: number;
 }
 
 const r29Columns: Column<R29Row>[] = [
@@ -1147,17 +1147,17 @@ const r29Columns: Column<R29Row>[] = [
   { key: 'total', header: 'Total Tickets', width: '100px', numeric: true, render: (r) => r.totalTickets },
   { key: 'resolved', header: 'Resolved', width: '90px', numeric: true, render: (r) => r.resolvedTickets },
   {
-    key: 'slaHit',
-    header: 'SLA Hit Rate',
+    key: 'resolution',
+    header: 'Resolution rate',
     width: '120px',
     numeric: true,
     render: (r) => (
-      <StatusBadge tone={r.slaHitPct >= 90 ? 'positive' : r.slaHitPct >= 75 ? 'warning' : 'negative'}>
-        {r.slaHitPct.toFixed(1)}%
+      <StatusBadge tone={r.resolutionRatePct >= 90 ? 'positive' : r.resolutionRatePct >= 75 ? 'warning' : 'negative'}>
+        {r.resolutionRatePct.toFixed(0)}%
       </StatusBadge>
     ),
   },
-  { key: 'breached', header: 'Breaches', width: '90px', numeric: true, render: (r) => r.slaBreachedTickets },
+  { key: 'breached', header: 'Breaches', width: '90px', numeric: true, render: (r) => r.breachedCount },
   { key: 'respTime', header: 'Avg Response', width: '110px', numeric: true, render: (r) => r.avgFirstResponseHours ? `${r.avgFirstResponseHours.toFixed(1)}h` : '—' },
   { key: 'resTime', header: 'Avg Resolution', width: '110px', numeric: true, render: (r) => r.avgResolutionHours ? `${r.avgResolutionHours.toFixed(1)}h` : '—' },
 ];
