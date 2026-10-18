@@ -4,7 +4,7 @@ import type { Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { logger } from '../../core/logger.js';
 import { enqueue } from '../notifications/index.js';
-import { workflowAdministrationSql } from './workflow-access.js';
+import { workflowRoutingHoldSql } from './workflow-access.js';
 import { advance } from './workflow-routing.js';
 import { lockWorkflowRequest } from './workflow-locks.js';
 import { getSteps } from './workflow-definition.js';
@@ -24,7 +24,7 @@ export function routingHeldSql() {
 export async function listRoutingHolds(db: Kysely<Database>, actorUserId: number, limit: number, offset: number) {
   return db.selectFrom('wf.requests as r').select(['r.id', 'r.definition_code', 'r.subject_employee_id', 'r.created_at'])
     .where(routingHeldSql())
-    .where(workflowAdministrationSql(actorUserId, sql.ref<number>('r.subject_employee_id')))
+    .where(workflowRoutingHoldSql(actorUserId, sql.ref<number>('r.subject_employee_id')))
     .orderBy('r.created_at').orderBy('r.id').limit(limit).offset(offset).execute();
 }
 
@@ -68,7 +68,7 @@ export async function retryRouting(db: Kysely<Database>, requestId: number, acto
   return inTransaction(db, async trx => {
     const request = await lockWorkflowRequest(trx, requestId);
     const allowed = await trx.selectFrom('core.users').select('id').where('id', '=', actorUserId)
-      .where(workflowAdministrationSql(actorUserId, request.subject_employee_id)).executeTakeFirst();
+      .where(workflowRoutingHoldSql(actorUserId, request.subject_employee_id)).executeTakeFirst();
     if (!allowed) throw new Error('Routing administration is outside your permitted scope');
     const held = await trx.selectFrom('wf.requests as r').select('r.id').where('r.id', '=', requestId)
       .where(routingHeldSql()).executeTakeFirst();

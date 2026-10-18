@@ -241,13 +241,18 @@ export function navForUser(user: SessionUser): NavItem[] {
   }
 
   // Admin
-  if (hasPermission(user, 'admin.users') || hasPermission(user, 'admin.roles')) {
+  if (hasPermission(user, 'admin.users') || hasPermission(user, 'admin.roles') || hasPermission(user, 'admin.rbac.read')) {
     push(grouped('Admin', { label: 'Users & Roles', to: '/admin/users', icon: ShieldCheck }));
   }
   if (hasPermission(user, 'admin.settings')) {
     push(
       grouped('Admin', { label: 'Approval chains', to: '/admin/workflows', icon: GitBranch }),
     );
+  }
+  if (!hasPermission(user, 'admin.settings') && hasPermission(user, 'workflow.routing_holds')) {
+    push(grouped('Admin', { label: 'Routing holds', to: '/admin/workflows', icon: GitBranch }));
+  }
+  if (hasPermission(user, 'admin.settings') || hasPermission(user, 'attendance.holidays.manage')) {
     push(
       grouped('Admin', {
         label: 'Attendance masters',

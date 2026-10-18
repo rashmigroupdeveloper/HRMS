@@ -35,7 +35,7 @@ interface Masters {
   locations: { id: number; name: string; company_id: number }[];
   departments: { id: number; name: string }[];
   designations: { id: number; name: string }[];
-  grades: { id: number; name: string }[];
+  grades: { id: number; name: string; code: string }[];
 }
 
 async function loadMasters(db: Parameters<BulkImporter['validate']>[0]['db']): Promise<Masters> {
@@ -45,7 +45,7 @@ async function loadMasters(db: Parameters<BulkImporter['validate']>[0]['db']): P
     locations: await db.selectFrom('core.locations').select(['id', 'name', 'company_id']).execute(),
     departments: await db.selectFrom('core.departments').select(['id', 'name']).execute(),
     designations: await db.selectFrom('core.designations').select(['id', 'name']).execute(),
-    grades: await db.selectFrom('core.grades').select(['id', 'name']).execute(),
+    grades: await db.selectFrom('core.grades').select(['id', 'name', 'code']).execute(),
   };
 }
 
@@ -56,8 +56,10 @@ function fmt(x: unknown): string {
   return JSON.stringify(x);
 }
 
-function byName<T extends { name: string }>(list: readonly T[], name: string): T | undefined {
-  return list.find((x) => x.name.trim().toLowerCase() === name.trim().toLowerCase());
+/** Match by name, else by code where the master has one (E2E-034: grade "M1"). */
+function byName<T extends { name: string; code?: string }>(list: readonly T[], name: string): T | undefined {
+  const k = name.trim().toLowerCase();
+  return list.find((x) => x.name.trim().toLowerCase() === k) ?? list.find((x) => x.code?.trim().toLowerCase() === k);
 }
 
 export const employeesImporter: BulkImporter<NoCtx> = {
@@ -79,7 +81,7 @@ export const employeesImporter: BulkImporter<NoCtx> = {
     { key: 'location', header: 'Work location', aliases: ['location', 'worklocation'], type: 'string', help: 'Location name.' },
     { key: 'department', header: 'Department', type: 'string', help: 'Existing department name.' },
     { key: 'designation', header: 'Designation', type: 'string', help: 'Existing designation name.' },
-    { key: 'grade', header: 'Grade', type: 'string', help: 'Existing grade name.' },
+    { key: 'grade', header: 'Grade', type: 'string', help: 'Existing grade name or code.' },
     { key: 'category', header: 'Category', type: 'enum', options: CATEGORY, help: 'Employment category.' },
     { key: 'contract_type', header: 'Contract type', type: 'enum', options: CONTRACT, help: 'Default probationary for new employees.' },
     { key: 'manager_ecode', header: 'Reporting manager code', aliases: ['rm', 'manager', 'reporting manager'], type: 'string', help: 'E-code of the reporting manager.' },
@@ -142,7 +144,7 @@ export const employeesImporter: BulkImporter<NoCtx> = {
       for (const [key, label, list] of [['location', 'Work location', m.locations], ['department', 'Department', m.departments], ['designation', 'Designation', m.designations], ['grade', 'Grade', m.grades]] as const) {
         const name = opt(v[key]);
         if (name === null) continue;
-        const hit = byName<{ id: number; name: string; company_id?: number }>(list, name);
+        const hit = byName<{ id: number; name: string; code?: string; company_id?: number }>(list, name);
         if (!hit || (key === 'location' && hit.company_id !== company.id)) rowError(row, label, `Unknown ${label.toLowerCase()} "${name}"`);
         else v[`${key}_id`] = hit.id;
       }

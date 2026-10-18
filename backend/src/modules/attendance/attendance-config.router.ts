@@ -13,7 +13,7 @@
 import { ORPCError } from '@orpc/server';
 import { sql } from 'kysely';
 import { z } from 'zod';
-import { withPermission } from '../../api/orpc.js';
+import { withAnyPermission, withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
@@ -205,7 +205,7 @@ const listHolidays = withPermission('attendance.own')
     }));
   });
 
-const upsertHoliday = withPermission('admin.settings')
+const upsertHoliday = withAnyPermission('admin.settings', 'attendance.holidays.manage')
   .route({ method: 'PUT', path: '/attendance/config/holidays', summary: 'Add/update a holiday for the group, a company, a plant or a location (audited)' })
   .input(z.object({
     date: isoDate,
@@ -497,7 +497,8 @@ const overrideDay = withPermission('attendance.manual_override')
 
 const recompute = withPermission('admin.integrations')
   .route({ method: 'POST', path: '/attendance/recompute', summary: 'Recompute a day or drain the dirty queue' })
-  .input(z.object({ employeeId: z.number().int().positive(), date: isoDate }).optional())
+  // E2E-033: `{}` (or no body) means "drain the queue"; a partial body is still a 400.
+  .input(z.union([z.object({ employeeId: z.number().int().positive(), date: isoDate }), z.object({}).strict()]).optional())
   .output(
     z.object({
       processed: z.number(),
@@ -505,7 +506,7 @@ const recompute = withPermission('admin.integrations')
     }),
   )
   .handler(async ({ input, context }) => {
-    if (input) {
+    if (input && 'employeeId' in input) {
       const outcome = await recomputeDay(context.db, input.employeeId, input.date);
       return { processed: 1, outcome };
     }

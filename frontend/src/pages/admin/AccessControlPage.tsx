@@ -16,7 +16,9 @@
 import { SessionsPanel } from './SessionsPanel';
 import { LoginAccountsPanel } from './LoginAccountsPanel';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { KeyRound, Search, ShieldCheck, UserRoundCog } from 'lucide-react';
+import { Download, KeyRound, Search, ShieldCheck, UserRoundCog } from 'lucide-react';
+import { downloadBase64 } from '../../lib/files';
+import { hasPermission, type SessionUser } from '../../lib/session';
 import { apiFetch } from '../../lib/api';
 import {
   Button,
@@ -57,8 +59,22 @@ function domainOf(permission: string): string {
   return dot === -1 ? 'general' : permission.slice(0, dot);
 }
 
-export function AccessControlPage() {
-  const [tab, setTab] = useState<'permissions' | 'people' | 'accounts' | 'sessions'>('permissions');
+type Tab = 'permissions' | 'people' | 'accounts' | 'sessions';
+
+export function AccessControlPage({ user }: { user: SessionUser }) {
+  const canEditRoles = hasPermission(user, 'admin.roles');
+  const canUsers = hasPermission(user, 'admin.users');
+  const canMatrix = canEditRoles || hasPermission(user, 'admin.rbac.read');
+  // Only tabs this role can act on are shown (forbidden actions are hidden, not 403s).
+  const tabs: [Tab, string][] = ([
+    ['permissions', 'Permissions', canMatrix],
+    ['people', 'People', canEditRoles],
+    ['accounts', 'Login accounts', canUsers],
+    ['sessions', 'Sessions', canUsers],
+  ] as [Tab, string, boolean][]).filter((t) => t[2]).map(([k, l]) => [k, l]);
+  const [picked, setTab] = useState<Tab | null>(null);
+  // IT's daily job (unlock / reset / activate) opens first for account admins.
+  const tab: Tab = picked ?? (canUsers ? 'accounts' : tabs[0]?.[0] ?? 'permissions');
 
   return (
     <div className="space-y-6">
@@ -74,45 +90,20 @@ export function AccessControlPage() {
           </p>
         </div>
         <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
-          <Button
-            size="sm"
-            variant={tab === 'permissions' ? 'primary' : 'ghost'}
-            onClick={() => {
-              setTab('permissions');
-            }}
-          >
-            Permissions
-          </Button>
-          <Button
-            size="sm"
-            variant={tab === 'people' ? 'primary' : 'ghost'}
-            onClick={() => {
-              setTab('people');
-            }}
-          >
-            People
-          </Button>
-          <Button size="sm" variant={tab === 'accounts' ? 'primary' : 'ghost'} onClick={() => { setTab('accounts'); }}>
-            Login accounts
-          </Button>
-          <Button
-            size="sm"
-            variant={tab === 'sessions' ? 'primary' : 'ghost'}
-            onClick={() => {
-              setTab('sessions');
-            }}
-          >
-            Sessions
-          </Button>
+          {tabs.map(([key, label]) => (
+            <Button key={key} size="sm" variant={tab === key ? 'primary' : 'ghost'} onClick={() => { setTab(key); }}>
+              {label}
+            </Button>
+          ))}
         </div>
       </header>
 
-      {tab === 'permissions' ? <PermissionGrid /> : tab === 'people' ? <PeoplePanel /> : tab === 'accounts' ? <LoginAccountsPanel /> : <SessionsPanel />}
+      {tab === 'permissions' ? <PermissionGrid readOnly={!canEditRoles} /> : tab === 'people' ? <PeoplePanel /> : tab === 'accounts' ? <LoginAccountsPanel /> : <SessionsPanel />}
     </div>
   );
 }
 
-function PermissionGrid() {
+function PermissionGrid({ readOnly }: { readOnly: boolean }) {
   const matrix = useDashboardResource<AccessMatrix>('/api/rbac/matrix');
   const [pending, setPending] = useState<string | null>(null);
   const [domain, setDomain] = useState('all');
@@ -192,8 +183,17 @@ function PermissionGrid() {
         <p className="mt-3 flex items-center gap-2 text-xs text-ink-muted">
           <ShieldCheck className="size-4" />
           {permissions.length} permission(s) × {roles.length} roles. A ticked box means that role
-          holds that permission right now.
+          holds that permission right now.{readOnly ? ' Read-only review.' : ''}
         </p>
+        <div className="mt-3">
+          <Button size="sm" variant="ghost" leadingIcon={<Download />} onClick={() => {
+            apiFetch<{ filename: string; base64: string }>('/api/rbac/matrix/export')
+              .then((f) => { downloadBase64(f.filename, f.base64); })
+              .catch((e: unknown) => { toast.error('Export failed', { description: e instanceof Error ? e.message : 'Try again.' }); });
+          }}>
+            Export to Excel
+          </Button>
+        </div>
       </Card>
 
       <Card padded={false}>
@@ -237,7 +237,7 @@ function PermissionGrid() {
                           label=""
                           aria-label={`${on ? 'Revoke' : 'Grant'} ${permission} for ${r.code}`}
                           checked={on}
-                          disabled={pending === key}
+                          disabled={readOnly || pending === key}
                           onChange={(e) => {
                             void toggle(r.code, permission, e.currentTarget.checked);
                           }}

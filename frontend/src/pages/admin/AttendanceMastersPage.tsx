@@ -109,7 +109,7 @@ export function AttendanceMastersPage({ user }: { user: SessionUser }) {
         </div>
       </header>
 
-      {tab === 'shifts' ? <ShiftsPanel canEdit={canEdit} /> : <HolidaysPanel canEdit={canEdit} />}
+      {tab === 'shifts' ? <ShiftsPanel canEdit={canEdit} /> : <HolidaysPanel canEdit={canEdit || hasPermission(user, 'attendance.holidays.manage')} />}
     </div>
   );
 }

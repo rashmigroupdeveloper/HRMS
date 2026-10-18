@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { readDocument } from '../../core/storage/index.js';
+import { assertEmployeesInScope } from '../../core/rbac/employee-scope.js';
 import { issueLetter, listLetters, type LetterRow } from './letters.service.js';
 
 function asBadRequest(err: unknown): never {
@@ -92,6 +93,8 @@ const issue = withPermission('letters.issue')
   )
   .output(z.object({ letterId: z.number(), documentId: z.number(), workflowRequestId: z.number().nullable() }))
   .handler(async ({ input, context }) => {
+    // Cross-entity guard first, so an out-of-scope employee is a 403, never a merge-field hint.
+    await assertEmployeesInScope(context.db, { ...context.permissionAccess, actorEmployeeId: context.user.employee_id }, [input.employeeId]);
     try {
       return await issueLetter(context.db, {
         employeeId: input.employeeId,

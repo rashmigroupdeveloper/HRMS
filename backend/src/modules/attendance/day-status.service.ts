@@ -15,6 +15,7 @@
  * day. All window margins + the session-presence fraction are POLICY read from
  * core.settings (review F10), never hardcoded.
  */
+import { logger } from '../../core/logger.js';
 import { closeWeekOffs } from '../../core/db/attendance-period.js';
 import { findHoliday, loadHolidaySubject } from '../../core/db/holiday-calendar.js';
 import { loadCycleStartDay, periodMonthOf } from '../../core/db/attendance-cycle.js';
@@ -606,7 +607,8 @@ export async function drainRecomputeQueue(db: Kysely<Database>, batch = 500): Pr
     const isoDate = formatDbDate(item.work_date);
     try {
       await recomputeDay(db, item.employee_id, isoDate, policy);
-    } catch {
+    } catch (err) {
+      logger.error({ err, employeeId: item.employee_id, workDate: isoDate }, 'recomputeDay failed; re-queued'); // E2E-033
       // Re-enqueue so the dirty flag is never lost on a transient failure.
       await db
         .insertInto('att.recompute_queue')

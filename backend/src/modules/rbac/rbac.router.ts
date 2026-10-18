@@ -10,7 +10,8 @@
 import { assertDelegationCeiling, assertRoleDelegation } from './rbac.guard.js';
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { withPermission } from '../../api/orpc.js';
+import { withAnyPermission, withPermission } from '../../api/orpc.js';
+import { rowsToExcelBuffer } from '../../core/excel/workbook.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import {
   assignRoleToUser,
@@ -28,7 +29,10 @@ import { inTransaction } from '../../core/db/database.js';
 
 const guard = () => withPermission('admin.roles');
 
-const matrixProcedure = guard()
+/** E2E-005 (RQ-RBAC-008): hr_head reviews the matrix read-only (admin.rbac.read); editing stays admin.roles. */
+const readGuard = () => withAnyPermission('admin.roles', 'admin.rbac.read');
+
+const matrixProcedure = readGuard()
   .route({ method: 'GET', path: '/rbac/matrix', summary: 'The live role×permission access matrix' })
   .output(
     z.object({
@@ -55,6 +59,18 @@ const matrixProcedure = guard()
       permissions: permissions.map((p) => p.code),
       grants,
     };
+  });
+
+const matrixExport = readGuard()
+  .route({ method: 'GET', path: '/rbac/matrix/export', summary: 'Access matrix as an Excel workbook (one row per permission, one column per role)' })
+  .output(z.object({ filename: z.string(), base64: z.string() }))
+  .handler(async ({ context }) => {
+    const [roles, permissions, grants] = await Promise.all([listRoles(context.db), listPermissions(context.db), listGrants(context.db)]);
+    const cell = new Map(grants.map((g) => [`${g.role}|${g.permission}`, g.scope]));
+    const columns = [{ header: 'Permission', key: '__perm', width: 34 }, ...roles.map((r) => ({ header: r.name, key: r.code, width: 14 }))];
+    const rows = permissions.map((p) => Object.fromEntries([['__perm', p.code], ...roles.map((r) => [r.code, cell.get(`${r.code}|${p.code}`) ?? ''])]) as Record<string, string>);
+    const buf = await rowsToExcelBuffer('Access matrix', columns, rows);
+    return { filename: `access-matrix-${new Date().toISOString().slice(0, 10)}.xlsx`, base64: buf.toString('base64') };
   });
 
 const grantInput = z.object({
@@ -217,6 +233,7 @@ const usersProcedure = guard()
 
 export const rbacRouter = {
   matrix: matrixProcedure,
+  matrixExport,
   users: usersProcedure,
   grant: grantProcedure,
   revoke: revokeProcedure,

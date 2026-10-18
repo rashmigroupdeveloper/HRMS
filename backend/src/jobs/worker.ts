@@ -92,6 +92,8 @@ async function main(): Promise<void> {
     ABSENCE_SCAN_QUEUE,
     POLICY_NAG_QUEUE,
     NOTIFICATION_DRAIN_QUEUE,
+    KPI_SNAPSHOT_QUEUE, // E2E-027: schedule() needs the queue to exist on a fresh DB
+    HELPDESK_ESCALATION_QUEUE,
   ];
   for (const q of queues) {
     await boss.createQueue(q);

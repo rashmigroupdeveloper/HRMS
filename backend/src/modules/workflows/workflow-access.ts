@@ -68,6 +68,11 @@ export function workflowAdministrationSql(userId: Id, subjectId: Id) {
   return employeePermissionSql(userId, sql<string>`'admin.settings'`, subjectId);
 }
 
+/** E2E-004 (RQ-WF-009, O25): routing-hold repair needs admin.settings OR workflow.routing_holds, in scope. */
+export function workflowRoutingHoldSql(userId: Id, subjectId: Id) {
+  return sql<boolean>`(${workflowAdministrationSql(userId, subjectId)} OR ${employeePermissionSql(userId, sql<string>`'workflow.routing_holds'`, subjectId)})`;
+}
+
 export function workflowRoleSql(userId: Id, roleSpec: Text, definition: Text, subjectId: Id) {
   const permission = requiredPermission(definition);
   return sql<boolean>`EXISTS (
