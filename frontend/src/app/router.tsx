@@ -13,6 +13,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import type { SessionUser } from '../lib/session';
 import { hasRole } from '../lib/session';
 import { AppShell } from './AppShell';
+import { RouteGuard } from './RouteGuard';
 import { RoleHomePage } from '../pages/home/RoleHomePage';
 const DirectoryPage = lazy(() => import('../pages/people/DirectoryPage').then((m) => ({ default: m.DirectoryPage })));
 const ProfilePage = lazy(() => import('../pages/people/ProfilePage').then((m) => ({ default: m.ProfilePage })));
@@ -84,6 +85,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
   return (
     <Routes>
       <Route element={<AppShell user={user} onSignedOut={onSignedOut} />}>
+       <Route element={<RouteGuard user={user} />}>
         <Route index element={<RoleHomePage user={user} />} />
         <Route path="me" element={<ProfilePage self user={user} />} />
         <Route path="people" element={<DirectoryPage user={user} />} />
@@ -160,6 +162,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
           element={hasRole(user, 'super_admin') ? <GalleryPage /> : <Navigate to="/" replace />}
         />
 
+       </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
