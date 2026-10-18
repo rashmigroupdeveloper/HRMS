@@ -1,11 +1,11 @@
 import { Toaster as SonnerToaster } from 'sonner';
 import {
-  CheckCircle2,
   XCircle,
   Info,
   AlertTriangle,
   Loader2,
 } from 'lucide-react';
+import { SuccessCheck } from './SuccessCheck';
 
 /**
  * Toast — the one action-feedback vocabulary (docs/05 §5 "Toast (sonner)").
@@ -34,7 +34,7 @@ export function Toaster() {
       gap={10}
       visibleToasts={4}
       icons={{
-        success: <CheckCircle2 className="text-positive-ink" aria-hidden />,
+        success: <SuccessCheck />,
         error: <XCircle className="text-negative-ink" aria-hidden />,
         warning: <AlertTriangle className="text-warning-ink" aria-hidden />,
         info: <Info className="text-info-ink" aria-hidden />,

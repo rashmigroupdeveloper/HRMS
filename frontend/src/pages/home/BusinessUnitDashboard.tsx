@@ -106,7 +106,7 @@ export function BusinessUnitDashboard({ quickLinks }: { quickLinks?: QuickLink[]
   const openCases = data.openAbsenceCases.reduce((sum, c) => sum + c.count, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="u-stagger space-y-6">
       <PageHeader
         eyebrow={todayLongIST()}
         title="Business unit"

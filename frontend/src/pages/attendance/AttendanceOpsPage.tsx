@@ -10,6 +10,7 @@ import {
 import { Link } from 'react-router-dom';
 import type { SessionUser } from '../../lib/session';
 import { hasPermission } from '../../lib/session';
+import { canAccessRoute } from '../../app/route-guard';
 import { Card, DarkCard, EmptyState, KpiNumber, PageHeader, StatusBadge } from '../../ui';
 import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
 import { useDashboardResource } from '../home/useDashboardResource';
@@ -56,20 +57,22 @@ const surfaces = [
 
 export function AttendanceOpsPage({ user }: { user: SessionUser }) {
   const canViewExceptions = hasPermission(user, 'attendance.manual_override');
-  return canViewExceptions ? <AttendanceOpsWithQueue /> : <AttendanceOpsContent />;
+  return canViewExceptions ? <AttendanceOpsWithQueue user={user} /> : <AttendanceOpsContent user={user} />;
 }
 
-function AttendanceOpsWithQueue() {
+function AttendanceOpsWithQueue({ user }: { user: SessionUser }) {
   const unmatched = useDashboardResource<UnmatchedSwipe[]>(
     '/api/attendance/exceptions/unmatched?limit=20',
   );
   if (unmatched.loading) return <DashboardSkeleton />;
   if (unmatched.error)
     return <DashboardError message={unmatched.error} onRetry={unmatched.reload} />;
-  return <AttendanceOpsContent unmatchedRows={unmatched.data ?? []} />;
+  return <AttendanceOpsContent user={user} unmatchedRows={unmatched.data ?? []} />;
 }
 
-function AttendanceOpsContent({ unmatchedRows }: { unmatchedRows?: UnmatchedSwipe[] }) {
+function AttendanceOpsContent({ user, unmatchedRows }: { user: SessionUser; unmatchedRows?: UnmatchedSwipe[] }) {
+  // Only offer the surfaces this login can open (route guard, E2E-001).
+  const visibleSurfaces = surfaces.filter((s) => canAccessRoute(user, s.to));
   const gated = unmatchedRows === undefined;
   const queue = unmatchedRows ?? [];
   const mappingNeeded = !gated && queue.length > 0;
@@ -136,7 +139,7 @@ function AttendanceOpsContent({ unmatchedRows }: { unmatchedRows?: UnmatchedSwip
       </DarkCard>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {surfaces.map(({ to, title, body, icon: Icon }) => (
+        {visibleSurfaces.map(({ to, title, body, icon: Icon }) => (
           <Link key={to} to={to} className="group">
             <Card interactive className="h-full">
               <div className="grid size-11 place-items-center rounded-full bg-surface-2 text-ink">
