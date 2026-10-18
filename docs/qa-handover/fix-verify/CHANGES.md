@@ -23,6 +23,11 @@
 - Removed uppercase tracked "kicker" labels, raw palette colours, `transition-all`, requirement ids (LC-06 etc.) and build-phase copy from the UI; PendingModule says "Coming soon".
 - Data Imports and Department Heads restyled; ESS hero punch tiles no longer overflow; Profile tab empty states give a next step.
 - Fonts self-hosted (Manrope, Fraunces; latin + latin-ext for ₹) with preload — no Google Fonts request.
+- Leadership dashboards (hr_head, super_admin, ceo_cell, plant_head, payroll_admin) get a "last twelve months" band built only from live report APIs: joiners vs exits with a derived headcount line, headcount by company, annualised attrition, payroll cost trend and approvals by age plus probation reviews due. Widgets this login cannot read drop out quietly. Zero states are calm one-line reassurances rather than empty frames.
+- The CEO page with no nightly snapshot shows one calm hero ("Build it now") and the live band, instead of tables of dashes.
+- New primitives: `StatusStrip` (proportional segments; narrow segments drop the % label), `DotMatrix` dark/lg, `Sparkline`, `MiniBars`, `CalmEmpty`, `PersonCell`, `SuccessCheck` toast icon.
+- Motion (150–300 ms, transform/opacity only, full reduced-motion fallback): staggered card entrances, KPI count-ups, chart line draw-in, bar grow-in, hover lift on linked tiles, success tick on toasts.
+- a11y: card titles default to h2 and the empty-state title is no longer a heading (Lighthouse heading-order). Attendance ops only links to the screens the login can open.
 
 ## Round: payroll & attendance — recon rebuild + handover item 4 (job/payroll, 2026-10-19 IST)
 - Recon snapshot rebuilt from seed through the real APIs (`fix-verify/seed/build-snapshot.sh` + `10_finalize.py`; the tester's dump was never shipped). `recon/run-recon.sh` runs from any checkout against template DB `hrms_snapshot` (or `/workspace/STATE/hrms_snapshot.dump`). Baseline on main c1cfe2c: **MATCH 44, RML033625 net 59,124**.
