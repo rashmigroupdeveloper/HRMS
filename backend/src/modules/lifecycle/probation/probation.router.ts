@@ -13,7 +13,7 @@ import type { Kysely } from 'kysely';
 import { withPermission } from '../../../api/orpc.js';
 import type { Database } from '../../../core/db/types.js';
 import type { PermissionAccess } from '../../../core/rbac/permissions.service.js';
-import { assertEmployeesInScope, employeeScopeSql, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
+import { assertEmployeesInScope, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
 import { NotFoundError } from '../../../core/errors/index.js';
 import { ProbationService } from './probation.service.js';
 
