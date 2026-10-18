@@ -267,7 +267,7 @@ export function PayrollPage({ user }: { user: SessionUser }) {
             )}
 
             <Card>
-              <div role="tablist" aria-label="Run detail" className="mb-4 flex gap-2">
+              <div role="tablist" aria-label="Run detail" className="mb-4 flex flex-wrap gap-2">
                 {(['register', 'inputs', 'outputs'] as const).map((t) => (
                   <Button key={t} role="tab" aria-selected={tab === t} variant={tab === t ? 'primary' : 'ghost'} size="sm" onClick={() => { setTab(t); }}>
                     {t === 'register' ? `Register (${String(items.length)})` : t === 'inputs' ? `Variable inputs (${String(inputs.length)})` : 'Outputs'}
