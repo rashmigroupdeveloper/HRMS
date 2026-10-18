@@ -24,6 +24,13 @@
 - Data Imports and Department Heads restyled; ESS hero punch tiles no longer overflow; Profile tab empty states give a next step.
 - Fonts self-hosted (Manrope, Fraunces; latin + latin-ext for ₹) with preload — no Google Fonts request.
 
+## E2E suite (job/e2e, test code only)
+- Suite is portable: app = repo root, ports 5104/5176, DB hrms_e2e, base = hrms_snapshot template (or /workspace/STATE/hrms_snapshot.dump), then migrate + seeds + recon prep + e2e-prep.sql.
+- e2e-prep.sql adds personas: hod@ (dept 4 head), hrops.rgh@ (RGH-scoped hr_ops), payroll.rgh@ (RGH payroll_admin), payroll.group@ (unscoped payroll_admin for group-wide statutory config). payroll@ is RML-scoped.
+- New specs: tests/api/scope.spec.ts (entity, department and team isolation, cross-entity reads/writes, IDOR) and tests/api/concurrency.spec.ts (parallel leave submit/approve, approve-vs-reject, bulk commit, duplicate punches, payroll compute/approve/finalize/outputs/markPaid, clearance sign-off, F&F pay). Concurrency runs as its own project after `payroll`.
+- Date-stable helpers (lib/dates.ts), drawer-based regularisation (E5), KPI snapshot rebuilt in global setup.
+- Results and bugs go to /workspace/STATE/BUGS.md (E2E-0xx).
+
 ## Client decisions needed
 | # | Topic | Default chosen | Source | How to change |
 |---|---|---|---|---|

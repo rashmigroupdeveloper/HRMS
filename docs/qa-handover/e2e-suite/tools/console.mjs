@@ -1,0 +1,14 @@
+import { chromium } from '@playwright/test';
+const [email, path] = process.argv.slice(2);
+const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome' });
+const page = await (await b.newContext()).newPage();
+page.on('console', m => { if (m.type()==='error') console.log('CONSOLE', m.text().slice(0,600)); });
+page.on('pageerror', e => console.log('PAGEERR', String(e).slice(0,600)));
+page.on('response', r => { if (r.url().includes('/api/') && r.status()>=400) console.log('HTTP', r.status(), r.url()); });
+await page.goto('http://localhost:5176');
+await page.locator('input[name=employeeId]').fill(email);
+await page.locator('input[name=password]').fill('Rashmi#Test2026');
+await page.locator('input[name=password]').press('Enter');
+await page.locator('input[name=employeeId]').waitFor({ state: 'detached', timeout: 15000 });
+await page.goto('http://localhost:5176'+path); await page.waitForLoadState('networkidle'); await page.waitForTimeout(1000);
+await b.close();
