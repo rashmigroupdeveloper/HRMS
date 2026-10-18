@@ -79,8 +79,10 @@ describe.skipIf(!DB_URL)('tds compliance API', () => {
     return body === undefined ? r : r.send(body as object);
   };
   const setWindow = async (open: string, close: string) => {
-    await tx().insertInto('core.settings').values({ key: 'tax.declaration_window', value: JSON.stringify({ open, close }), value_type: 'json', description: 'test' })
-      .onConflict((oc) => oc.column('key').doUpdateSet({ value: JSON.stringify({ open, close }) })).execute();
+    for (const [key, value] of [['tax.declaration_open', open], ['tax.declaration_close', close]] as const) {
+      await tx().insertInto('core.settings').values({ key, value: JSON.stringify(value), value_type: 'string', description: 'test' })
+        .onConflict((oc) => oc.column('key').doUpdateSet({ value: JSON.stringify(value) })).execute();
+    }
   };
 
   it('employee declares within the window; verified rows lock; closed window refuses', async () => {

@@ -57,10 +57,10 @@ export function inWindow(today: string, fy: string, w: Window): boolean {
   return today >= open && today <= close;
 }
 
-export async function declarationWindows(db: Kysely<Database>): Promise<{ declaration: Window; proof: Window }> {
+async function declarationWindows(db: Kysely<Database>): Promise<{ declaration: Window; proof: Window }> {
   return {
-    declaration: await getTypedSetting<Window>(db, 'tax.declaration_window', 'json', { open: '04-01', close: '01-15' }),
-    proof: await getTypedSetting<Window>(db, 'tax.proof_window', 'json', { open: '01-01', close: '02-28' }),
+    declaration: { open: await getTypedSetting(db, 'tax.declaration_open', 'string', '04-01'), close: await getTypedSetting(db, 'tax.declaration_close', 'string', '01-15') },
+    proof: { open: await getTypedSetting(db, 'tax.proof_open', 'string', '01-01'), close: await getTypedSetting(db, 'tax.proof_close', 'string', '02-28') },
   };
 }
 
