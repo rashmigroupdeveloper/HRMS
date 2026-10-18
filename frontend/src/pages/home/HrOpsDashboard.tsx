@@ -1,4 +1,5 @@
 import { AlertTriangle, ArrowRight, CheckCircle2, UserMinus, Users } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { todayLongIST } from '../../lib/date';
 import {
@@ -41,8 +42,14 @@ export function HrOpsDashboard({
   data,
   quickLinks,
   scopeLabel,
+  title = 'HR operations',
+  insights,
 }: {
   data: HrDashboardData;
+  /** Group roles get a group-level title. */
+  title?: string;
+  /** Leadership band (trends that carry value on quiet days). */
+  insights?: ReactNode;
   quickLinks?: QuickLink[] | undefined;
   /** Company scope from the masthead switcher; undefined = HR ops' own scope. */
   scopeLabel?: string | undefined;
@@ -58,7 +65,7 @@ export function HrOpsDashboard({
       <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
         <PageHeader
           eyebrow={todayLongIST()}
-          title="HR operations"
+          title={title}
           description={`${scopeLabel ?? 'Your scope'} · signals as of ${formatDateIN(data.asOf)}.`}
         />
 
@@ -97,6 +104,8 @@ export function HrOpsDashboard({
 
       {quickLinks && quickLinks.length > 0 ? <QuickLinks links={quickLinks} /> : null}
 
+      {insights}
+
       <DarkCard className="grid gap-8 md:grid-cols-[1.4fr_1fr]">
         <div>
           <div className="flex flex-wrap items-center gap-3">
@@ -113,7 +122,9 @@ export function HrOpsDashboard({
             <KpiNumber value={data.absentToday} />
           </h2>
           <p className="mt-1 text-sm text-hero-muted">
-            marked absent or unauthorised absent, of {headcount.toLocaleString('en-IN')} people on rolls.
+            {data.absentToday === 0
+              ? `No one marked absent so far today — all ${headcount.toLocaleString('en-IN')} people on rolls accounted for.`
+              : `marked absent or unauthorised absent, of ${headcount.toLocaleString('en-IN')} people on rolls.`}
           </p>
           {data.silentDevices > 0 && (
             <p className="mt-3 max-w-xl text-sm leading-6 text-hero-muted">

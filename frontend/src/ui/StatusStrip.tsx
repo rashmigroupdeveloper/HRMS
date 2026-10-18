@@ -53,19 +53,22 @@ export function StatusStrip({
             return (
               <li
                 key={s.label}
-                className="flex min-w-[4.5rem] flex-col gap-1.5"
+                className="@container flex min-w-[4.5rem] flex-col gap-1.5"
+                title={`${s.label}: ${s.value.toLocaleString('en-IN')} · ${String(p)}%`}
                 style={{ flexGrow: Math.max(s.value, total * 0.06), flexBasis: 0 }}
               >
                 <span className="truncate text-xs text-ink-muted">{s.label}</span>
                 <span
                   className={cn(
-                    'u-grow-x flex h-9 items-center rounded-full px-3.5 text-xs font-semibold tabular-nums',
+                    'u-grow-x flex h-9 items-center overflow-hidden whitespace-nowrap rounded-full px-3.5 text-xs font-semibold tabular-nums',
                     TONE[s.tone],
                   )}
                 >
                   <span className="sr-only">{s.label}: </span>
                   {s.value.toLocaleString('en-IN')}
-                  <span className="ml-1 font-normal opacity-75">· {p}%</span>
+                  {/* Narrow segments keep just the value; the % returns once there is room. */}
+                  <span className="ml-1 hidden font-normal opacity-75 @[7.5rem]:inline">· {p}%</span>
+                  <span className="sr-only @[7.5rem]:hidden"> ({p}%)</span>
                 </span>
               </li>
             );

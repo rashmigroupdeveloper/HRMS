@@ -145,7 +145,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="reports/r29-helpdesk" element={<R29HelpdeskPage />} />
         <Route path="reports/r30-policies" element={<R30PoliciesPage />} />
         <Route path="reports/r31-claims" element={<R31ClaimsPage />} />
-        <Route path="executive" element={<ExecutivePage />} />
+        <Route path="executive" element={<ExecutivePage user={user} />} />
 
         <Route path="admin/users" element={<AccessControlPage />} />
         <Route path="admin/settings" element={<SettingsPage user={user} />} />
