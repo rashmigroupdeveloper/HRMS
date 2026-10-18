@@ -157,7 +157,7 @@ export function MyAttendancePage() {
   const today = todayISOIST();
   const holidayYear = Number(today.slice(0, 4));
   const holidays = useDashboardResource<HolidayRow[]>(
-    `/api/attendance/config/holidays?year=${String(holidayYear)}`,
+    `/api/attendance/config/holidays?year=${String(holidayYear)}&mine=true`,
   );
   const yesterday = addDaysIso(today, -1);
   const rows = attendance.data ?? [];

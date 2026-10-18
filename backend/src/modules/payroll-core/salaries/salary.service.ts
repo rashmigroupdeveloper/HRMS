@@ -86,10 +86,12 @@ export async function assignSalary(
     probationPercent: probationPercent ?? undefined,
   });
 
-  // Strict CTC verification
+  // Strict CTC verification. The annual CTC is the CONFIRMED package; a probation
+  // assignment stores the scaled amounts, so the check runs on the unscaled breakup (P-19).
   const check = validateCtcBreakup({
     annualCtcPaise,
-    monthlyComponents: evaluated.monthly,
+    monthlyComponents:
+      probationPercent === undefined ? evaluated.monthly : resolveSalaryStructure({ nodes, annualCtcPaise }).monthly,
     componentNodes: nodes,
   });
   if (!check.valid) {

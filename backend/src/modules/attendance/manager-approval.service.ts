@@ -4,6 +4,7 @@
  * Month-lock checklist consumes this ledger when the policy setting is on.
  */
 import { sql, type Kysely } from 'kysely';
+import { resolveAttendanceWindow } from '../../core/db/attendance-cycle.js';
 import type { Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import {
@@ -17,13 +18,6 @@ function monthStart(month: string): string {
   if (!/^\d{4}-(0[1-9]|1[0-2])(-01)?$/.test(month))
     throw new AttendanceMutationError('BAD_REQUEST', 'Month must be YYYY-MM or YYYY-MM-01');
   return month.length === 7 ? `${month}-01` : month;
-}
-
-function nextMonthStart(monthIso: string): string {
-  const [y = 0, m = 0] = monthStart(monthIso).split('-').map(Number);
-  const nm = m === 12 ? 1 : m + 1;
-  const ny = m === 12 ? y + 1 : y;
-  return `${ny}-${String(nm).padStart(2, '0')}-01`;
 }
 
 export interface ManagerApprovalRow {
@@ -47,8 +41,7 @@ export async function listManagersWithReports(
   companyId: number,
   month: string,
 ): Promise<{ managerEmployeeId: number; reportCount: number }[]> {
-  const m = monthStart(month);
-  const mEnd = nextMonthStart(m);
+  const { from: m, until: mEnd } = await resolveAttendanceWindow(db, companyId, monthStart(month));
   const rows = await db
     .selectFrom('core.employees as e')
     .select(['e.reporting_manager_id as manager_id'])
