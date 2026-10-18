@@ -98,6 +98,7 @@ export const PERSONAS: Record<string, Persona> = {
   },
 };
 
+export const EXTRA = { payroll_rgh: 'payroll.rgh@rashmi.test' };
 export const ROLE_ORDER = ['employee', 'manager', 'senior_manager', 'hod', 'hr_ops_rml', 'hr_ops_rgh', 'hr_head', 'payroll_admin', 'plant_head', 'ceo_cell', 'it_admin', 'super_admin'] as const;
 export const SAMPLE = { email: 'rml033625@qa-payroll.rashmi.test', ecode: 'RML033625', expectedNet: 59124 };
 export const AUTH_TEST_USERS = { lockout: 'lockout@rashmi.test', pwchange: 'pwchange@rashmi.test', pwreset: 'pwreset@rashmi.test' };

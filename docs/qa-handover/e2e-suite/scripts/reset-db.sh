@@ -1,18 +1,25 @@
 #!/usr/bin/env bash
 # Rebuild the e2e DB: base snapshot (QA users + June-2026 payroll cohort) + app migrations + seeds + recon prep + e2e personas.
-# Base: $E2E_SNAPSHOT (pg_dump -Fc) if present, else $E2E_TEMPLATE_DB (CREATE DATABASE … TEMPLATE) if set.
+# Base: first existing template DB in $E2E_TEMPLATE_DBS (CREATE DATABASE … TEMPLATE), else restore $E2E_SNAPSHOT.
 set -euo pipefail
 source "$(dirname "$0")/env.sh"
 PSQL="psql -h $E2E_PGHOST -p $E2E_PGPORT -U $E2E_PGUSER"
 $PSQL -d postgres -qc "DROP DATABASE IF EXISTS $E2E_DB WITH (FORCE)"
-if [ -f "$E2E_SNAPSHOT" ]; then
+BASE=""
+for t in $E2E_TEMPLATE_DBS; do
+  [ "$($PSQL -d postgres -Atc "SELECT 1 FROM pg_database WHERE datname='$t'")" = 1 ] && { BASE=$t; break; }
+done
+if [ -n "$BASE" ]; then
+  # CREATE … TEMPLATE needs no other sessions on the template.
+  $PSQL -d postgres -qc "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='$BASE' AND pid<>pg_backend_pid()" >/dev/null
+  $PSQL -d postgres -qc "CREATE DATABASE $E2E_DB TEMPLATE $BASE"
+  echo "base: template $BASE"
+elif [ -f "$E2E_SNAPSHOT" ]; then
   $PSQL -d postgres -qc "CREATE DATABASE $E2E_DB"
   pg_restore -h $E2E_PGHOST -p $E2E_PGPORT -U $E2E_PGUSER -d $E2E_DB --no-owner "$E2E_SNAPSHOT" 2>&1 | tail -3 || true
-elif [ -n "${E2E_TEMPLATE_DB:-}" ]; then
-  $PSQL -d postgres -qc "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='$E2E_TEMPLATE_DB' AND pid<>pg_backend_pid()" >/dev/null
-  $PSQL -d postgres -qc "CREATE DATABASE $E2E_DB TEMPLATE $E2E_TEMPLATE_DB"
+  echo "base: dump $E2E_SNAPSHOT"
 else
-  echo "no base: set E2E_SNAPSHOT (dump) or E2E_TEMPLATE_DB"; exit 2
+  echo "no base: none of [$E2E_TEMPLATE_DBS] exists and no $E2E_SNAPSHOT"; exit 2
 fi
 cd "$APP_REPO/backend"
 export DATABASE_URL=$E2E_DATABASE_URL

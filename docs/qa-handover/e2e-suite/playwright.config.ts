@@ -5,6 +5,7 @@ const desktop = { ...devices['Desktop Chrome'], viewport: { width: 1440, height:
 
 export default defineConfig({
   testDir: './tests',
+  globalSetup: './lib/global-setup.ts',
   outputDir: './reports/artifacts',
   timeout: 90_000,
   expect: { timeout: 8_000 },
@@ -27,7 +28,9 @@ export default defineConfig({
     timezoneId: 'Asia/Kolkata',
   },
   projects: [
-    { name: 'api', testMatch: /api\/.*\.spec\.ts/, use: { ...desktop } },
+    { name: 'api', testMatch: /api\/(?!concurrency).*\.spec\.ts/, use: { ...desktop } },
+    // Parallel-request races on payroll/F&F/imports: after the stateful payroll project.
+    { name: 'concurrency', testMatch: /api\/concurrency\.spec\.ts/, dependencies: ['payroll'], use: { ...desktop } },
     { name: 'auth', testMatch: /ui\/00-auth\.spec\.ts/, use: { ...desktop } },
     { name: 'roles', testMatch: /ui\/(?!00-auth|9\d-|40-payroll).*\.spec\.ts/, use: { ...desktop } },
     // Stateful June payroll run: one file, tests run in order in a single worker (in parallel with the read-only rest).

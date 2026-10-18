@@ -21,6 +21,28 @@ ON CONFLICT DO NOTHING;
 UPDATE core.employees SET functional_manager_id=(SELECT id FROM core.employees WHERE ecode='RML000090'),
        hod_employee_id=(SELECT id FROM core.employees WHERE ecode='RML000090')
  WHERE ecode IN ('RML000008','RML000009');
+-- HOD role is derived from the department_heads master (C-02): make hod@ a head of RML Production (dept 4)
+-- alongside the base seed's RML033904 (one department may have several HODs per policy).
+INSERT INTO core.department_heads (department_id, company_id, employee_id)
+SELECT 4, 1, e.id FROM core.employees e WHERE e.ecode='RML000090'
+ON CONFLICT ON CONSTRAINT department_heads_uq DO NOTHING;
+-- Owner rule: payroll_admin is company-scoped (only hr_head/super_admin are group). The base seed grants payroll@
+-- unscoped (= silently group-wide, BUGS E2E-010); scope it to RML (org unit 1) so the suite tests the owner's model.
+UPDATE core.user_roles SET scope_org_unit_id=1
+ WHERE user_id=(SELECT id FROM core.users WHERE email='payroll@rashmi.test')
+   AND role_id=(SELECT id FROM core.roles WHERE code='payroll_admin') AND scope_org_unit_id IS NULL;
+-- RGH-scoped payroll admin (maker for the RGH run in concurrency tests): payroll.rgh@rashmi.test
+INSERT INTO core.employees (ecode, company_id, first_name, last_name, gender, status, doj, org_unit_id, department_id, location_id, work_email)
+SELECT 'RGH000091', 2, 'Ritesh', 'RGH-Payroll', 'Male', 'active', DATE '2021-01-01', 2, 3, (SELECT location_id FROM core.employees WHERE id=11), 'payroll.rgh@rashmi.test'
+WHERE NOT EXISTS (SELECT 1 FROM core.employees WHERE ecode='RGH000091');
+INSERT INTO core.users (employee_id, email, password_hash)
+SELECT e.id, e.work_email, (SELECT password_hash FROM core.users WHERE email='employee@rashmi.test') FROM core.employees e WHERE e.ecode='RGH000091'
+ON CONFLICT (email) DO NOTHING;
+INSERT INTO core.user_roles (user_id, role_id, scope_org_unit_id)
+SELECT u.id, r.id, CASE WHEN r.code='payroll_admin' THEN 2 END FROM core.users u, core.roles r
+ WHERE u.email='payroll.rgh@rashmi.test' AND r.code IN ('employee','payroll_admin')
+   AND NOT EXISTS (SELECT 1 FROM core.user_roles x WHERE x.user_id=u.id AND x.role_id=r.id)
+ON CONFLICT DO NOTHING;
 -- Clear lockouts / forced changes left in the snapshot.
 UPDATE core.users SET failed_attempts=0, locked_until=NULL, must_change_password=false;
 COMMIT;

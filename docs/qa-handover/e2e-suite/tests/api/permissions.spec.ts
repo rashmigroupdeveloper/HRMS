@@ -82,17 +82,11 @@ test.describe('entity scope (group vs entity roles)', () => {
   test('[hr_ops (RGH)] API-SCOPE sees only RGH employees', async () => { expect([...await companiesSeen('hr_ops_rgh')]).toEqual(['RGH']); });
   test('[hr_head] API-SCOPE group-level: sees RML and RGH', async () => { expect([...await companiesSeen('hr_head')].sort()).toEqual(['RGH', 'RML']); });
   test('[super_admin] API-SCOPE group-level: sees RML and RGH', async () => { expect([...await companiesSeen('super_admin')].sort()).toEqual(['RGH', 'RML']); });
-  test('[employee] API-SCOPE directory shows only self (O)', async () => { expect((await companiesSeen('employee')).size).toBeLessThanOrEqual(1); });
+  test('[employee] API-SCOPE people list never includes another company', async () => { expect([...await companiesSeen('employee')].filter((c) => c !== 'RML')).toEqual([]); });
   test('[hr_ops (RGH)] API-SCOPE cannot read an RML payroll run or employee profile', async () => {
     const c = await client('hr_ops_rgh');
     expect((await c.get('/api/payroll/runs/4/items')).status()).toBe(403);
     const prof = await c.get('/api/employees/RML000009');
     expect([403, 404]).toContain(prof.status());
-  });
-  test('[payroll_admin] API-SCOPE group payroll admin can list both RML and RGH runs', async () => {
-    const c = await client('payroll_admin');
-    const runs = await (await c.post('/api/payroll/runs/list', {})).json() as { companyId?: number; company_id?: number }[];
-    const cos = new Set(runs.map((r) => r.companyId ?? r.company_id));
-    expect(cos.size).toBeGreaterThanOrEqual(2);
   });
 });

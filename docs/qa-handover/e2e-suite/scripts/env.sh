@@ -9,7 +9,9 @@ export E2E_FRONTEND_PORT=${E2E_FRONTEND_PORT:-5176}
 export E2E_PGHOST=${E2E_PGHOST:-localhost} E2E_PGPORT=${E2E_PGPORT:-5432} E2E_PGUSER=${E2E_PGUSER:-hrms}
 export E2E_DATABASE_URL=${E2E_DATABASE_URL:-postgres://$E2E_PGUSER:$PGPASSWORD@$E2E_PGHOST:$E2E_PGPORT/$E2E_DB}
 # Base DB dump (QA users + June-2026 payroll cohort). Not in git (size); the payroll job publishes it.
-export E2E_SNAPSHOT=${E2E_SNAPSHOT:-/workspace/STATE/hrms_base.dump}
+export E2E_SNAPSHOT=${E2E_SNAPSHOT:-/workspace/STATE/hrms_snapshot.dump}
+# Fallback template DBs, first that exists wins (stage-2 June snapshot, then stage-1 base users+cohort).
+export E2E_TEMPLATE_DBS=${E2E_TEMPLATE_DBS:-${E2E_TEMPLATE_DB:-hrms_snapshot hrms_base}}
 export E2E_RECON_PREP=${E2E_RECON_PREP:-$APP_REPO/docs/qa-handover/fix-verify/recon/prep.sql}
 export E2E_BASE_URL=${E2E_BASE_URL:-http://localhost:$E2E_FRONTEND_PORT}
 export E2E_API_URL=${E2E_API_URL:-http://localhost:$E2E_BACKEND_PORT}

@@ -10,15 +10,15 @@ import { test, expect, task } from '../../lib/fixtures';
 import { PERSONAS } from '../../lib/personas';
 type PersonaKey = keyof typeof PERSONAS;
 
-type T = { id: string; role: PersonaKey; title: string; nav: [string, string]; need: RegExp; control?: RegExp; tab?: RegExp; /** click this first; control is then looked up in the dialog */ open?: RegExp };
+type T = { id: string; role: PersonaKey; title: string; nav: [string, string]; need: RegExp; control?: RegExp; tab?: RegExp; /** click this first; control is then looked up in the dialog */ open?: RegExp; /** open this combobox (in the dialog) before looking for the control among its options */ expand?: RegExp };
 const DENIED = /missing permission|not allowed|access denied|don.t have|forbidden|not authori[sz]ed|no access/i;
 
 const TASKS: T[] = [
   // Employee
   { id: 'E3', role: 'employee', title: 'request a family/nominee change', nav: ['My Profile', '/me'], need: /nominee|family/i, control: /request (a )?change|edit (family|nominee)|add (family|nominee)/i },
   { id: 'E4', role: 'employee', title: 'own attendance calendar and day detail', nav: ['My Attendance', '/my/attendance'], need: /in|out|worked|present|absent/i },
-  { id: 'E6', role: 'employee', title: 'apply Permission (short duration)', nav: ['My Attendance', '/my/attendance'], need: /attendance/i, open: /request (a correction|regularisation)/i, control: /short permission/i },
-  { id: 'E7', role: 'employee', title: 'apply OD (incl. future date)', nav: ['My Attendance', '/my/attendance'], need: /attendance/i, open: /request (a correction|regularisation)/i, control: /official duty|on duty/i },
+  { id: 'E6', role: 'employee', title: 'apply Permission (short duration)', nav: ['My Attendance', '/my/attendance'], need: /attendance/i, open: /request (a correction|regularisation)/i, expand: /what do you need/i, control: /short permission/i },
+  { id: 'E7', role: 'employee', title: 'apply OD (incl. future date)', nav: ['My Attendance', '/my/attendance'], need: /attendance/i, open: /request (a correction|regularisation)/i, expand: /what do you need/i, control: /official duty|on duty/i },
   { id: 'E8', role: 'employee', title: 'claim comp-off', nav: ['My Leave', '/my/leave'], need: /comp.?off|compensatory/i },
   { id: 'E10', role: 'employee', title: 'cancel an approved leave', nav: ['My Leave', '/my/leave'], need: /cancel/i },
   { id: 'E11', role: 'employee', title: 'request leave encashment', nav: ['My Leave', '/my/leave'], need: /encash/i, control: /encash/i },
@@ -55,9 +55,9 @@ const TASKS: T[] = [
   { id: 'O6', role: 'hr_ops_rml', title: 'resolve unmatched swipes', nav: ['Exceptions', '/attendance/exceptions'], need: /unmatched|quarantin|swipe|exception/i },
   { id: 'O7', role: 'hr_ops_rml', title: 'manual attendance correction', nav: ['Attendance', '/attendance'], need: /attendance/i, control: /correct|edit|override/i },
   { id: 'O8', role: 'hr_ops_rml', title: 'recompute attendance for a range', nav: ['Attendance', '/attendance'], need: /attendance/i, control: /recompute/i },
-  { id: 'O9', role: 'hr_ops_rml', title: 'month-lock checklist and lock', nav: ['Month lock', '/attendance/month-lock'], need: /checklist|lock/i, control: /lock/i },
+  { id: 'O9', role: 'hr_ops_rml', title: 'month-lock checklist and lock', nav: ['Month lock', '/attendance/month-lock'], need: /checklist|lock/i, control: /lock|run checklist/i },
   { id: 'O10', role: 'hr_ops_rml', title: 'absence cases → show-cause', nav: ['Absence cases', '/attendance/absence-cases'], need: /absence|show.?cause/i },
-  { id: 'O11', role: 'hr_ops_rml', title: 'muster 26th–25th with Excel export', nav: ['Muster', '/attendance/muster'], need: /muster/i, control: /export|excel|download/i },
+  { id: 'O11', role: 'hr_ops_rml', title: 'muster 26th–25th with Excel export', nav: ['Muster', '/attendance/muster'], need: /muster/i, open: /^rebuild & view$/i, control: /export|excel|download/i },
   { id: 'O12', role: 'hr_ops_rml', title: 'leave types, accrual, adjustments', nav: ['Leave', '/leave'], need: /accrual|adjust|leave type/i, control: /adjust|accrual|run/i },
   { id: 'O14', role: 'hr_ops_rml', title: 'onboarding board and prejoin link', nav: ['Onboarding', '/lifecycle/onboarding'], need: /onboard|candidate/i },
   { id: 'O15', role: 'hr_ops_rml', title: 'onboarding task follow-up', nav: ['Onboarding', '/lifecycle/onboarding'], need: /task/i },
@@ -87,7 +87,7 @@ const TASKS: T[] = [
   { id: 'P6', role: 'payroll_admin', title: 'holds, LOP reversal', nav: ['Payroll', '/payroll'], need: /hold|LOP/i, open: /June 2026 RML/ },
   { id: 'P10', role: 'payroll_admin', title: 'Form 24Q / Form 16 / challans', nav: ['Payroll', '/payroll'], need: /24Q|Form 16|challan/i },
   { id: 'P11', role: 'payroll_admin', title: 'verify investment declarations', nav: ['Payroll', '/payroll'], need: /declaration|proof/i },
-  { id: 'P12', role: 'payroll_admin', title: 'loans, legacy import', nav: ['Loans', '/loans'], need: /loan/i, control: /import|upload/i },
+  { id: 'P12', role: 'payroll_admin', title: 'loans, legacy import', nav: ['Loans', '/loans'], need: /loan/i, tab: /company loans/i, control: /import|upload|legacy/i },
   { id: 'P13', role: 'payroll_admin', title: 'off-cycle run', nav: ['Payroll', '/payroll'], need: /new run/i, open: /^New run$/, control: /off.?cycle|run type|supplementary/i },
   { id: 'P14', role: 'payroll_admin', title: 'F&F compute', nav: ['Separation', '/lifecycle/separation'], need: /F&F|full (and|&) final|settlement/i },
   { id: 'P15', role: 'payroll_admin', title: 'bonus true-up / increment batch', nav: ['Payroll', '/payroll/revisions'], need: /increment|bonus|revision/i, control: /upload|import|batch/i },
@@ -111,7 +111,7 @@ const TASKS: T[] = [
   { id: 'I6', role: 'it_admin', title: 'settings and SMTP', nav: ['Settings', '/admin/settings'], need: /SMTP|mail|email/i },
   { id: 'I7', role: 'it_admin', title: 'backup/restore drill evidence', nav: ['Settings', '/admin/settings'], need: /backup|restore/i },
   // Super admin
-  { id: 'SA1', role: 'super_admin', title: 'roles/permissions grid, workflows, settings', nav: ['Users & Roles', '/admin/users'], need: /role/i, control: /add role|grant|assign/i },
+  { id: 'SA1', role: 'super_admin', title: 'roles/permissions grid, workflows, settings', nav: ['Users & Roles', '/admin/users'], need: /role/i, control: /add role|grant |assign/i },
   { id: 'SA3', role: 'super_admin', title: 'audit verification and export', nav: ['Audit log', '/admin/audit'], need: /audit/i, control: /verify|export|download/i },
 ];
 
@@ -123,8 +123,12 @@ for (const t of TASKS) {
     if (new URL(s.page.url()).pathname !== t.nav[1]) {
       // Landed on the section root: look for an in-page link to the sub-screen, else type the URL.
       const link = s.page.locator(`main a[href="${t.nav[1]}"]`).or(s.page.locator(`nav a[href="${t.nav[1]}"]`));
-      if (await link.first().isVisible().catch(() => false)) { await s.click(link.first()); ux.discover('in-page'); }
-      else { await s.goto(t.nav[1]); ux.discover('url'); }
+      let clicked = false;
+      if (await link.first().isVisible().catch(() => false)) {
+        clicked = await s.click(link.first(), { timeout: 4000 }).then(() => true, () => false);
+        if (clicked) ux.discover('in-page');
+      }
+      if (!clicked || new URL(s.page.url()).pathname !== t.nav[1]) { await s.goto(t.nav[1]); ux.discover('url'); }
     }
     await s.page.waitForLoadState('networkidle').catch(() => {});
     expect(new URL(s.page.url()).pathname, `${t.id}: ${t.nav[1]} must not redirect away`).toBe(t.nav[1]);
@@ -135,10 +139,12 @@ for (const t of TASKS) {
     if (t.open) await s.click(main.getByRole('button', { name: t.open }).first());
     if (t.control && t.open && await s.page.getByRole('dialog').last().isVisible().catch(() => false)) {
       const dlg = s.page.getByRole('dialog').last();
+      if (t.expand) await s.click(dlg.getByRole('combobox', { name: t.expand }));
       const c = dlg.getByRole('button', { name: t.control }).or(dlg.getByRole('radio', { name: t.control })).or(dlg.getByRole('option', { name: t.control })).or(dlg.getByText(t.control));
       await expect(c.first(), `${t.id}: the dialog must offer ${t.control}`).toBeVisible({ timeout: 3000 });
     } else if (t.control) {
-      const c = main.getByRole('button', { name: t.control }).or(main.getByRole('link', { name: t.control })).or(main.getByRole('tab', { name: t.control }));
+      if (t.open) await s.page.waitForLoadState('networkidle').catch(() => {});
+      const c = main.getByRole('button', { name: t.control }).or(main.getByRole('link', { name: t.control })).or(main.getByRole('tab', { name: t.control })).or(main.getByRole('checkbox', { name: t.control }));
       await expect(c.first(), `${t.id}: a control matching ${t.control} must be offered`).toBeVisible({ timeout: 3000 });
     }
     expect(diag.filter((d) => d.kind === 'http' && /\b5\d\d\b/.test(d.text)).map((d) => d.text), 'no 5xx while loading').toEqual([]);
