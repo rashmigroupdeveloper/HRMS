@@ -72,6 +72,26 @@
 | CD-3 | Report 4 columns GRATUITY, LEAVE ENCASHMENT, EX-GRATIA, HOLD SALARY, Performance-Linked, LOAN2 in the inputs import | Ignored with a warning (they come from F&F / loans modules) | sample register | importer mapping |
 | CD-4 | What HOD means (C-02) | Both: the per-employee hod_employee_id override, else the designated head of the department (per entity or group-wide) | user brief; EMS hod_id; docs/01 TE-07 | data in Admin → Heads of department |
 | CD-5 | Which chains include an HOD step | Only domestic travel advance (RM → HOD). Claims, long leave, OT pre-approval, requisition and offer can add a "Head of department" step in Approval chains | docs/01 TE-07 | Admin → Approval chains |
+| CD-6 | PF wage base (C-13) | ACTUAL basic (matches the client register; RML033625 nets 59,124) | sample register, greytHR | setting `pay.pf_wage_base` (ACTUAL / CEILING_15000) |
+| CD-7 | Gratuity eligibility (C-14) | As in the statutory params table (effective-dated) | docs/10 | Payroll settings → Statutory rates (scheme GRATUITY) |
+| CD-8 | OT rate base (C-15) | Factories Act base, (Basic+DA+allowances)/208 × 2 | docs/10, OT payslip template | Payroll settings → Statutory rates (scheme OT) |
+| CD-9 | LOP divisor / proration (C-16) | Calendar days of the month (register parity) | sample register | setting `pay.lop_divisor` (see CD-P1); worked LOP example still needed from RML |
+| CD-10 | Attendance cycle 26→25 (C-17) | Calendar month (default) | docs + code | Engine done (job/payroll item 4): setting `att.cycle_start_day`, see CD-P2; RML to confirm 26 |
+| CD-11 | ESIC on OT (C-18), LWF frequency (C-19) | OT excluded from ESIC wages; WB LWF half-yearly | docs/10 | Statutory rates; `pay.lwf_deduct_in_payroll` |
+| CD-12 | TDS scope (C-20) | All employees with taxable income | PRD | **Open — no white-collar-only switch yet** |
+| CD-13 | Investment declaration / proof windows (new, item 3) | Declarations 1 Apr–15 Jan, proofs 1 Jan–28 Feb of the FY | common practice | settings `tax.declaration_open/close`, `tax.proof_open/close` |
+| CD-14 | F&F turnaround (C-22) | Not tracked (one F&F run key per month) | D11 | **Open — item 5 F&F cycle/TAT** |
+| CD-15 | Register parity vs statutory law (C-23) | Parity with the client register; deviations listed for sign-off | user brief | signed exception list from RML |
+| CD-16 | Probation salary % (C-25) | 70/80/90 allowed, single source `pay.employee_salaries.probation_percent` | LOI | **Open — item 6 consolidation** |
+| CD-17 | Who may override attendance (C-27) | hr_ops with mandatory reason + audit; managers blocked | docs/08 | permission `attendance.manual_override` in Users & Roles |
+| CD-18 | Week-off eligibility (C-28) | Must work ≥ 1 day in the week | Reports-Templates email | setting `att.weekoff_min_worked_days` |
+| CD-19 | Absentee threshold (C-29) | Watch at `att.absence_watch_days`, show-cause at `att.absence_show_cause_days` | docs/01 ATT-10 | those settings |
+| CD-20 | Two-session rules (C-30) | Present fraction `att.session_present_fraction` | assumption | setting; RML to confirm hours/grace |
+| CD-21 | OT approval model (C-31) | Post-detection manager approval within `att.ot_decision_hours` | PRD | **Open — pre-approval is item 5** |
+| CD-22 | Leave approval chain (C-33) | RM only | docs/08 §4 seed | Admin → Approval chains |
+| CD-23 | Notice period (E2E-002) | 90 days white collar, 30 days otherwise | docs | settings `lifecycle.notice_days_white_collar/default` |
+| CD-24 | Probation decision rights (E2E-008) | hr_ops/managers view; managers evaluate own reports; only hr_head decides | docs/08, O17 | permissions `lifecycle.probation.view/decide` |
+| CD-25 | Entity-scoped role grants (E2E-010) | hr_ops / payroll_admin / plant_head must be granted with an org unit | owner rule | API refuses unscoped grants; existing unscoped grants (base seed payroll@) need review |
 | CD-P1 | LOP divisor (C-16) | CALENDAR (days in month). FIXED_30 deducts non-employment days day-for-day (Feb joiner on 27th → 3/30 incl. 1 LOP); FIXED_26/WORKING_DAYS exclude WO/H | docs/10 §10.4 "confirm with payroll" | setting pay.lop_divisor |
 | CD-P2 | Attendance cycle (C-17) | Calendar month (1). 26 = 26th–25th; days after the cut-off are paid as present and trued up next month. Change only between payroll months | client practice (26–25 muster) | setting att.cycle_start_day |
 | CD-P3 | Sandwich rule for absences (C-28) | Off. Leave-type sandwich (lv.leave_types.sandwich_rule) still governs leave spans | docs/04 | setting att.sandwich_rule |

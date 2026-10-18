@@ -83,7 +83,7 @@ function AttendanceOpsContent({ unmatchedRows }: { unmatchedRows?: UnmatchedSwip
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="HR operations · ATT-02 / ATT-15"
+        eyebrow="HR operations"
         title="Attendance operations"
         description="From biometric completeness to the frozen monthly muster."
       />

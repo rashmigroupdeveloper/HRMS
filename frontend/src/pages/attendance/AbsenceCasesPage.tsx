@@ -241,7 +241,7 @@ export function AbsenceCasesPage({ user }: { user: SessionUser }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Attendance ops · ATT-10 / PP-7"
+        eyebrow="Attendance ops"
         title="Absence cases"
         description="Opened automatically by the daily scan; letters and escalations stay human decisions."
         actions={

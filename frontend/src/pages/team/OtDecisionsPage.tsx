@@ -162,7 +162,7 @@ export function OtDecisionsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Manager workspace · ATT-08"
+        eyebrow="Manager workspace"
         title="Overtime decisions"
         description={
           nearestLapse

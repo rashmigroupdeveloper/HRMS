@@ -62,6 +62,7 @@ const SalaryRevisionsPage = lazy(() => import('../pages/payroll/SalaryRevisionsP
 const ParallelRunPage = lazy(() => import('../pages/payroll/ParallelRunPage').then((m) => ({ default: m.ParallelRunPage })));
 const TaxDeclarationPage = lazy(() => import('../pages/tax/TaxDeclarationPage').then((m) => ({ default: m.TaxDeclarationPage })));
 const TdsCompliancePage = lazy(() => import('../pages/tax/TdsCompliancePage').then((m) => ({ default: m.TdsCompliancePage })));
+const PayrollSettingsPage = lazy(() => import('../pages/payroll/PayrollSettingsPage').then((m) => ({ default: m.PayrollSettingsPage })));
 const MyPayPage = lazy(() => import('../pages/payroll/MyPayPage').then((m) => ({ default: m.MyPayPage })));
 const ClaimsPage = lazy(() => import('../pages/payroll/ClaimsPage').then((m) => ({ default: m.ClaimsPage })));
 const LoansPage = lazy(() => import('../pages/payroll/LoansPage').then((m) => ({ default: m.LoansPage })));
@@ -114,6 +115,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
 
         <Route path="leave" element={<LeaveAdminPage />} />
         <Route path="payroll" element={<PayrollPage user={user} />} />
+        <Route path="payroll/settings" element={<PayrollSettingsPage user={user} />} />
         <Route path="payroll/tds" element={<TdsCompliancePage />} />
         <Route path="payroll/structures" element={<SalaryStructuresPage />} />
         <Route path="payroll/revisions" element={<SalaryRevisionsPage />} />

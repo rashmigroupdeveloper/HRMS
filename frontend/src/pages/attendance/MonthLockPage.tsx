@@ -116,7 +116,7 @@ export function MonthLockPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="ATT-15 · irreversible control"
+        eyebrow="Attendance"
         title="Month lock"
         description="Verify every attendance dependency before freezing the month. Closed records cannot be edited."
       />
@@ -233,8 +233,8 @@ export function MonthLockPage() {
             title="Manager approval ledger"
             subtitle={
               pendingManagers
-                ? `ATT-12 · ${String(pendingManagers)} of ${String(ledger.length)} managers still outstanding`
-                : `ATT-12 · all ${String(ledger.length)} managers approved`
+                ? `${String(pendingManagers)} of ${String(ledger.length)} managers still outstanding`
+                : `All ${String(ledger.length)} managers approved`
             }
           />
           <DataTable

@@ -308,7 +308,7 @@ function RegisterPanel({ companyId }: { companyId: string }) {
       <Card>
         <CardHeader
           title={`${total.toLocaleString('en-IN')} assets`}
-          subtitle="Search covers asset number, serial and the current holder (AST-01)."
+          subtitle="Search covers asset number, serial and the current holder."
         />
       </Card>
 
@@ -470,7 +470,7 @@ function AssetEditor({
         <TextField
           label="Warranty till"
           type="date"
-          hint="Past dates are allowed — kit is often registered after it was issued (AST-02)."
+          hint="Past dates are allowed — kit is often registered after it was issued."
           value={warrantyTill}
           onChange={(e) => {
             setWarrantyTill(e.currentTarget.value);
@@ -569,7 +569,7 @@ function AllocationDrawer({
       open={asset !== null}
       onClose={onClose}
       title={`${assigned ? 'Return' : 'Allocate'} ${asset === null ? '' : asset.assetNo}`}
-      subtitle={assigned ? 'ast.assignments · audited' : 'AST-03 · employee or third party'}
+      subtitle={assigned ? 'Every change is audited' : 'An employee or a third party'}
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>
@@ -608,7 +608,7 @@ function AllocationDrawer({
                   {
                     value: 'not_returned',
                     label: 'Not returned',
-                    description: 'Keeps the exit clearance open (AST-04)',
+                    description: 'Keeps the exit clearance open',
                   },
                 ]}
                 onChange={(value) => {
@@ -758,7 +758,7 @@ function OutstandingPanel({ companyId }: { companyId: string }) {
                 : `${String(rows.length)} asset${rows.length === 1 ? '' : 's'} still held by people who have left`}
             </p>
             <p className="mt-0.5 text-xs leading-5 text-ink-muted">
-              AST-05 · these keep the exit clearance open until they are returned or written off.
+              These keep the exit clearance open until they are returned or written off.
             </p>
           </div>
         </div>
