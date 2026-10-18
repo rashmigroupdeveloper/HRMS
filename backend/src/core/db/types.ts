@@ -41,6 +41,23 @@ import type {
   IrdWhistleblowerReportsTable,
 } from './types.ird.js';
 import type { DocTypesTable } from './types.doc.js';
+import type {
+  CandidateJoiningColumns,
+  DocumentsJoiningColumns,
+  EmployeeAddressesTable,
+  EmployeeCertificationsTable,
+  EmployeeEducationTable,
+  EmployeeExperienceTable,
+  EmployeeNominationsTable,
+  EmployeesJoiningColumns,
+  EmployeeStatutoryProfileTable,
+  FamilyJoiningColumns,
+  MedAccessLogTable,
+  MedQuestionnairesTable,
+  NominationDeclarationsTable,
+  PrvDeclarationsTable,
+  PrvDeclarationTextsTable,
+} from './types.joining.js';
 
 type Timestamp = ColumnType<Date, Date | string, Date | string>;
 type NullableTimestamp = ColumnType<Date | null, Date | string | null, Date | string | null>;
@@ -308,7 +325,7 @@ export type ContractType = 'permanent' | 'temporary' | 'probationary' | 'consult
 export type PfWageBasisColumn = 'ACTUAL' | 'CEILING_15000';
 
 /** core.employees — THE master record (docs/03 §3). */
-export interface EmployeesTable {
+export interface EmployeesTable extends EmployeesJoiningColumns {
   id: Generated<number>;
   ecode: string;
   company_id: number;
@@ -429,7 +446,7 @@ export interface TransfersTable {
   updated_at: DefaultedTimestamp;
 }
 
-export interface EmployeeFamilyTable {
+export interface EmployeeFamilyTable extends FamilyJoiningColumns {
   id: Generated<number>;
   employee_id: number;
   name: string;
@@ -443,7 +460,7 @@ export interface EmployeeFamilyTable {
   updated_at: DefaultedTimestamp;
 }
 
-export interface DocumentsTable {
+export interface DocumentsTable extends DocumentsJoiningColumns {
   id: Generated<number>;
   owner_employee_id: number | null;
   kind: string;
@@ -491,7 +508,7 @@ export interface LettersTable {
 }
 
 /** core.onboarding_candidates — LC-01 candidate intake bridge. */
-export interface OnboardingCandidatesTable {
+export interface OnboardingCandidatesTable extends CandidateJoiningColumns {
   id: Generated<number>;
   ats_candidate_id: number | null;
   loi_reference: string | null;
@@ -1218,6 +1235,17 @@ export interface Database {
   'core.reporting_tree': ReportingTreeTable;
   'core.employee_history': EmployeeHistoryTable;
   'core.employee_family': EmployeeFamilyTable;
+  'core.employee_addresses': EmployeeAddressesTable;
+  'core.employee_education': EmployeeEducationTable;
+  'core.employee_certifications': EmployeeCertificationsTable;
+  'core.employee_experience': EmployeeExperienceTable;
+  'core.employee_statutory_profile': EmployeeStatutoryProfileTable;
+  'core.employee_nominations': EmployeeNominationsTable;
+  'core.nomination_declarations': NominationDeclarationsTable;
+  'prv.declaration_texts': PrvDeclarationTextsTable;
+  'prv.declarations': PrvDeclarationsTable;
+  'med.questionnaires': MedQuestionnairesTable;
+  'med.access_log': MedAccessLogTable;
   'core.documents': DocumentsTable;
   'core.onboarding_candidates': OnboardingCandidatesTable;
   'core.onboarding_tasks': OnboardingTasksTable;
