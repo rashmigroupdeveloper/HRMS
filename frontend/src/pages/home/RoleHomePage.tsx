@@ -37,6 +37,7 @@ import { DashboardError, DashboardSkeleton } from './DashboardFeedback';
 import { DeviceHealthDashboard } from './DeviceHealthDashboard';
 import { EssDashboard } from './EssDashboard';
 import { HrOpsDashboard } from './HrOpsDashboard';
+import { LeadershipInsights } from './LeadershipInsights';
 import { ManagerDashboard } from './ManagerDashboard';
 import { PayrollDashboard } from './PayrollDashboard';
 import type {
@@ -141,7 +142,7 @@ function EssHome({ links }: { links: QuickLink[] }) {
   return resource.data ? <EssDashboard data={resource.data} quickLinks={links} /> : null;
 }
 
-function HrHome({ links, scoped }: { links: QuickLink[]; scoped: boolean }) {
+function HrHome({ user, links, scoped }: { user: SessionUser; links: QuickLink[]; scoped: boolean }) {
   const scope = useCompanyScope();
   const companyId = scoped ? scope : null;
   const path =
@@ -164,7 +165,21 @@ function HrHome({ links, scoped }: { links: QuickLink[]; scoped: boolean }) {
       : (companies.data?.companies.find((company) => company.id === companyId)?.name ??
         'Selected company');
   return resource.data ? (
-    <HrOpsDashboard data={resource.data} quickLinks={links} scopeLabel={scopeLabel} />
+    <HrOpsDashboard
+      data={resource.data}
+      quickLinks={links}
+      scopeLabel={scopeLabel}
+      title={scoped ? (companyId === null ? 'Group people overview' : 'Company people overview') : 'HR operations'}
+      insights={
+        scoped ? (
+          <LeadershipInsights
+            user={user}
+            companyId={companyId}
+            title={companyId === null ? 'Across the group' : 'Across this company'}
+          />
+        ) : undefined
+      }
+    />
   ) : null;
 }
 
@@ -286,13 +301,28 @@ export function RoleHomePage({ user }: RoleHomePageProps) {
   }
   if (isHr && hasPermission(user, 'reports.hr')) {
     return (
-      <HrHome links={links.hr} scoped={hasRole(user, 'hr_head') || hasRole(user, 'super_admin')} />
+      <HrHome user={user} links={links.hr} scoped={hasRole(user, 'hr_head') || hasRole(user, 'super_admin')} />
     );
   }
   if (hasRole(user, 'payroll_admin') && hasPermission(user, 'payroll.run.view'))
-    return <PayrollDashboard />;
+    return (
+      <div className="space-y-8">
+        <PayrollDashboard />
+        <LeadershipInsights
+          user={user}
+          only={['payroll', 'desk']}
+          title="Pay over the year"
+          subtitle="Gross cost of computed runs and what is waiting on you."
+        />
+      </div>
+    );
   if (hasRole(user, 'plant_head') && hasPermission(user, 'reports.bu')) {
-    return <BusinessUnitDashboard quickLinks={links.bu} />;
+    return (
+      <div className="space-y-8">
+        <BusinessUnitDashboard quickLinks={links.bu} />
+        <LeadershipInsights user={user} title="Across your plant" />
+      </div>
+    );
   }
   if (hasPermission(user, 'admin.devices')) return <DeviceHome links={links.it} />;
   if (hasPermission(user, 'attendance.team.read')) {

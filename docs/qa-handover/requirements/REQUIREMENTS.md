@@ -1,6 +1,6 @@
 # Rashmi HRMS: requirements baseline
 
-Prepared Sun 18 Oct 2026 (IST) from every document under `docs/`, `docs/recon/`, `plans/`, `Documention_ProtiVity/` and the QA reports in `/workspace/hrms-test/`. Status was set by reading code in `/workspace/hrms-fix` at HEAD `ba6e81d` (23:16 IST) plus the fix worker's uncommitted changes. Treat it as a code-presence verdict, not UAT.
+Prepared Sun 18 Oct 2026 (IST); JF and BP rows added Mon 19 Oct 2026 02:50 IST from the owner's joining forms and Enterprise Blueprint (statuses for those rows read at main a67c6b3) from every document under `docs/`, `docs/recon/`, `plans/`, `Documention_ProtiVity/` and the QA reports in `/workspace/hrms-test/`. Status was set by reading code in `/workspace/hrms-fix` at HEAD `ba6e81d` (23:16 IST) plus the fix worker's uncommitted changes. Treat it as a code-presence verdict, not UAT.
 
 **Status meanings.**
 - **Done:** implemented end to end (API and UI where a UI is required), with no known open defect.
@@ -41,7 +41,9 @@ The same rows are in `REQUIREMENTS.xlsx`, which adds filters and a summary sheet
 | TE Travel & expense | 0 | 9 | 2 | 0 | 11 |
 | ATS Recruitment, offer & LOI | 0 | 0 | 8 | 0 | 8 |
 | SVC Vendor service duties (non-software) | 0 | 0 | 0 | 4 | 4 |
-| **TOTAL** | **43** | **171** | **40** | **4** | **258** |
+| JF Joining form RML/HR/02/01 | 0 | 10 | 12 | 0 | 22 |
+| BP Enterprise blueprint additions | 0 | 15 | 18 | 0 | 33 |
+| **TOTAL** | **43** | **196** | **70** | **4** | **313** |
 
 ## CORE Employee master & org
 
@@ -3533,3 +3535,778 @@ The same rows are in `REQUIREMENTS.xlsx`, which adds filters and a summary sheet
 - **Acceptance (UI):**
   1. Process owner keeps an evidence register (period, file checksum, acknowledgment/challan ref) per obligation
   2. Software provides the source file/report for each
+
+## JF Joining form RML/HR/02/01 (added 19 Oct 2026)
+
+Added from the owner's three joining-form PDFs (same form; base, +medical, +Form F/ESIC-1/EPF-11 packs). Field-level map: /workspace/STATE/JOINING_FORM_MAP.md (copied to docs/qa-handover/requirements/JOINING_FORM_MAP.md).
+
+### RQ-JF-001: Pre-join → employee conversion applies the same validation as HR create/import: PAN AAAAA9999A, Aadhaar 12 digits + Verhoeff, UAN 12 digits, IFSC AAAA0XXXXXX, account 9–18 digits, 18+ on DOJ, duplicate PAN/Aadhaar/UAN/ESIC/bank account across employees.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** hr_ops, candidate
+- **Priority:** P0
+- **Status:** **Partial**
+- **Evidence:** lifecycle/onboarding/prejoin-schema.ts checks lengths only; onboarding.service.ts convert inserts core.employees directly; duplicate check = email/mobile/PAN only. Importer rules in bulk/importers/employees.ts.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Create a candidate and open the pre-join link
+  2. Submit Aadhaar 234567890123 (bad checksum), IFSC ABCD1234567, account 1234567A
+  3. Expect field errors on the portal
+  4. Force-submit via API and try Convert as hr_ops
+  5. Expect 400 with the same messages POST /employees gives; no employee created
+
+### RQ-JF-002: Personal extension captured on joining and editable by HR: father's name, spouse name, marriage date, nationality, country of origin, religion, caste (optional, restricted), height, weight, physically disabled (Y/N + %), identification mark, passport no. + validity, driving licence no., name as per Aadhaar.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr_ops, employee (view own)
+- **Priority:** P1
+- **Status:** **Missing**
+- **Evidence:** No columns on core.employees (JOINING_FORM_MAP rows 13–31).
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Pre-join portal shows every field in §2 of the form
+  2. HR People > Edit shows and saves them
+  3. Profile > Personal shows them; caste/religion visible only to HR roles
+
+### RQ-JF-003: Gender options Male / Female / Transgender, collected on the pre-join portal and copied on conversion.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr_ops
+- **Priority:** P0
+- **Status:** **Partial**
+- **Evidence:** employee-master.router.ts enum Male/Female/Other; prejoin has no gender; convert leaves gender NULL.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Submit pre-join with gender Transgender
+  2. Convert
+  3. Profile shows Transgender; ESIC/PF exports carry it
+
+### RQ-JF-004: Marital status options Single / Married / Widow / Widower / Divorcee (EPF Form 11), captured on pre-join and HR create/edit.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr_ops
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** core.employees.marital_status exists (display only); not in POST/PATCH /employees or prejoin.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. HR edit employee > marital status Widow > Save
+  2. Profile shows Widow; audit row written
+
+### RQ-JF-005: HR create/edit (POST/PATCH /employees, importer columns, EmployeeFormDrawer) covers every master field: personal e-mail, marital status, blood group, both addresses, emergency contact, plant, cost centre, functional manager.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** hr_ops, hr_head
+- **Priority:** P0
+- **Status:** **Partial**
+- **Evidence:** employee-master.router.ts fields omit personal_email, marital_status, blood_group, addresses, emergency, plant, cost centre.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. HR keys a paper joining form for a walk-in joiner via People > New
+  2. All §1–§5 and §9 fields save
+  3. Download importer template: same columns present
+
+### RQ-JF-006: Structured present and permanent address: house/flat, locality, city/village, post office, police station/thana, district, state (code), country, PIN (6 digits); "same as present" option; state drives PT/LWF.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr_ops
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** present_address/permanent_address are single text columns (prejoin min 5 chars).
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Enter PIN 7000 → error "PIN must be 6 digits"
+  2. Tick same as present → permanent copies
+  3. Profile shows formatted address; PT state = address/work-location rule per policy
+
+### RQ-JF-007: Emergency contact: name, relationship (persisted), mobile (10 digits), alternate number, address; at least one required.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, employee, hr_ops
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** emergencyContactRelation is collected by the prejoin portal and dropped on conversion (no column); no alternate/address.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Submit pre-join with relationship "Brother"
+  2. Convert
+  3. Profile shows relationship Brother
+
+### RQ-JF-008: Bank details: bank, branch, account holder name, account no., IFSC, account type (savings/current); warn when holder name differs from employee name.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr_ops, payroll_admin
+- **Priority:** P1
+- **Status:** **Missing**
+- **Evidence:** No branch/holder/type columns; prejoin label hard-codes "Savings".
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Enter holder name differing from employee name
+  2. Expect amber warning, HR must confirm
+  3. Bank file uses holder name
+
+### RQ-JF-009: Education grid (qualification, institute/university, year of passing, specialization, % / CGPA), multiple rows, on pre-join, HR edit and profile.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr_ops, employee
+- **Priority:** P1
+- **Status:** **Missing**
+- **Evidence:** No table/API/UI.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Add 2 rows on pre-join
+  2. After conversion, Profile > Education shows both
+  3. HR can edit; audit written
+
+### RQ-JF-010: Certification grid (name, issuing organisation, date, specialization, grade/score, expiry date) with expiry alerts.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr_ops
+- **Priority:** P2
+- **Status:** **Missing**
+- **Evidence:** No table.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Add a certificate expiring in 20 days
+  2. Expect it in HR expiry alerts
+
+### RQ-JF-011: Previous employment grid (employer, designation, from, to, reason for leaving; optional last CTC, previous PF/UAN).
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr_ops
+- **Priority:** P1
+- **Status:** **Missing**
+- **Evidence:** Only onboarding_candidates.previous_company (single, not copied). See RQ-CORE-024.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Add 2 employers on pre-join
+  2. Profile > Experience lists them; total experience computed
+
+### RQ-JF-012: Family grid captured on pre-join: name, relation, gender, DOB/age, Aadhaar, pre-existing disease (restricted), residing with employee (Y/N, else town/state), ESIC dependent flag.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, employee, hr_ops
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** core.employee_family has name/relation/dob/aadhaar/esic/nominee; no gender, disease, residing; not in prejoin.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Add spouse and child on pre-join
+  2. After conversion Family tab lists both
+  3. Disease visible to HR-medical only
+
+### RQ-JF-013: Scheme-wise nominations: PF (Form 2), EPS, gratuity (Form F), ESIC (s.71), group insurance. Each holds nominee, relationship, address, age, share % (100 per scheme), minor guardian, and Form F witnesses + employer certification; a new nomination supersedes the previous one.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** employee, hr_ops
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** Single is_nominee + nominee_share_pct on employee_family for all schemes (family.service.ts).
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Employee nominates spouse 100% for gratuity and mother 100% for PF
+  2. Both saved separately; shares checked per scheme
+  3. Form F PDF lists spouse only
+
+### RQ-JF-014: EPF Form 11 history captured: earlier EPF member, earlier EPS member, member before 01-Sep-2014, previous UAN/PF no., exit date, scheme certificate, PPO, EPF/EPS withdrawn, international worker + country + passport; PF engine uses it for EPS eligibility (no EPS for post-Sep-2014 new members with PF wages > ₹15,000; international workers uncapped).
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr_ops, payroll_admin
+- **Priority:** P0
+- **Status:** **Missing**
+- **Evidence:** No fields; statutory/pf.ts cannot decide EPS eligibility per member.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Joiner: first-time member, basic ₹25,000
+  2. Run payroll: employer 12% goes fully to EPF, EPS 0
+  3. Joiner with pre-2014 membership: EPS 8.33% of ₹15,000
+
+### RQ-JF-015: ESIC Form-1 data: dispensary, branch office, previous insurance no., previous employer code, family residing details; export for IP registration.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** hr_ops
+- **Priority:** P1
+- **Status:** **Missing**
+- **Evidence:** None; ESIC registration is a portal task (RQ-SVC-002) but HRMS must hold the data.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. ESIC-eligible joiner: HR completes ESIC block
+  2. Export "ESIC new IP" sheet with all Form-1 fields
+
+### RQ-JF-016: Declaration and consent are recorded: §10 joining declaration, EPF undertaking (Aadhaar eKYC + fund transfer), ESIC declaration, DPDP consent for health data. Each record keeps the text version, timestamp, IP and an e-signature or uploaded signature.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr_ops
+- **Priority:** P1
+- **Status:** **Missing**
+- **Evidence:** Prejoin submit has no declaration/consent; prv.consents not wired.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Pre-join submit is disabled until the declaration is ticked and signed
+  2. HR sees "Declared 19-Oct-2026 10:02 IST from IP …"
+
+### RQ-JF-017: Document checklist with upload and verification: photo, PAN, Aadhaar, bank proof, education, experience/relieving, last payslips, passport/DL, medical fitness, disability certificate. Mandatory items per category; HR verifies or rejects each with a reason; files go to the employee repository.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr_ops, employee
+- **Priority:** P0
+- **Status:** **Missing**
+- **Evidence:** core.documents + doc.types (pan, aadhaar, appointment, medical_fitness) but no upload/verify API or UI; photo_path never set.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Pre-join: upload PAN, Aadhaar, cheque, photo
+  2. HR review shows each with Verify/Reject
+  3. Convert blocked while a mandatory doc is missing or rejected
+  4. Profile > Documents lists them
+
+### RQ-JF-018: Medical questionnaire (self and family history, medications, limitations, surgeries, allergies, height/weight/BMI, lifestyle, emergency medical needs, sports) is stored in a restricted store with DPDP consent and its own permission; managers never see it.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr (medical)
+- **Priority:** P2
+- **Status:** **Missing**
+- **Evidence:** None (variants B and C pages 5–6 / 9–10).
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Candidate completes medical section
+  2. Manager opening Profile sees no medical tab
+  3. HR-medical role sees it; access is audited
+
+### RQ-JF-019: HR office-use checklist on the joining record: joining formalities complete, master created, payroll set up (salary assigned), ID card/access, BGV initiated (Y/N/NA), induction scheduled (date), HR representative sign-off with date.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** hr_ops
+- **Priority:** P2
+- **Status:** **Partial**
+- **Evidence:** Tasks it_email/it_laptop/it_biometric/admin_id_card/hr_induction only (task-fanout.service.ts); no BGV/payroll task or sign-off.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Convert a joiner
+  2. Checklist shows 7 items; payroll item done only when a salary is assigned
+  3. HR signs off; timestamp shown
+
+### RQ-JF-020: Pre-filled PDF output from the master: Employee Joining Form RML/HR/02/01, Form F, ESIC Form-1 data, EPF Form 11, ready for e-sign or wet signature and stored in documents.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** hr_ops
+- **Priority:** P2
+- **Status:** **Missing**
+- **Evidence:** Letters engine has no such templates.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Profile > Documents > Generate joining pack
+  2. PDF matches the RML layout with data filled
+
+### RQ-JF-021: Employment type maps the form's Permanent / Contract / Trainee / Consultant (+ Apprentice, Intern, Fixed-term) onto one documented field; conversion does not hard-code probationary.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** hr_ops
+- **Priority:** P2
+- **Status:** **Partial**
+- **Evidence:** category + contract_type enums overlap; convert sets contract_type=probationary.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Convert a consultant
+  2. Employee shows type Consultant, not probationary
+
+### RQ-JF-022: Multi-step joining form UI (pre-join portal and HR "New joiner") in the RML/HR/02/01 section order with repeating-row editors, save draft, progress, review page, mobile one-hand layout (360–430px), WCAG AA.
+
+- **Source:** owner-docs RML/HR/02/01 Employee Joining Form (3 variants, 04 Sep 2026); /workspace/STATE/JOINING_FORM_MAP.md
+- **PRD:** CORE-01 / LC-01
+- **Roles:** candidate, hr_ops
+- **Priority:** P1
+- **Status:** **Missing**
+- **Evidence:** PrejoinPortalPage.tsx is a single page with 12 fields.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. On a 390px phone complete all steps
+  2. Draft survives reload
+  3. axe reports 0 serious issues
+
+
+## BP Enterprise blueprint additions (added 19 Oct 2026)
+
+Rows from the owner's Enterprise HRMS Blueprint that no existing row covers, plus core items where the blueprint widens an existing row. Full Done/Partial/Missing map of all 87 blueprint requirements: /workspace/STATE/BLUEPRINT_GAP.md (copied to docs/qa-handover/requirements/BLUEPRINT_GAP.md).
+
+### RQ-BP-002: Position kept separate from designation; each position holds sanctioned HC, occupied HC, vacancy
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §1/§6
+- **PRD:** Blueprint §1/§6
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** No position table or API.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Position kept separate from designation; each position holds sanctioned HC, occupied HC, vacancy
+  3. Expect the behaviour in blueprint §1/§6; go-live: Later
+
+### RQ-BP-020: All major HR transactions effective-dated, preserving old values (transfer, promotion, revision, designation/grade, dept/location, RM, employment-type change)
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §4; widens RQ-LC-011
+- **PRD:** Blueprint §4
+- **Roles:** per blueprint
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** Transfers + salary revisions effective-dated; designation/grade/RM/type edits via PATCH are immediate (no effective date, no history row).
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: All major HR transactions effective-dated, preserving old values (transfer, promotion, revision, designation/grade, dept
+  3. Expect the behaviour in blueprint §4; go-live: Core
+
+### RQ-BP-040: Position master (position ID/name, entity, division, location, establishment, dept, section, designation, grade, job family, job level, cost centre, budgeted/sanctioned/occupied HC, vacancy, reporting position)
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §6
+- **PRD:** Blueprint §6
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Position master (position ID/name, entity, division, location, establishment, dept, section, designation, grade, job fam
+  3. Expect the behaviour in blueprint §6; go-live: Later
+
+### RQ-BP-080: OT types: normal, holiday, weekly-off, night OT, shift allowance, comp-off
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §11; widens RQ-ATT-019, RQ-PAY-022
+- **PRD:** Blueprint §11
+- **Roles:** per blueprint
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** att.overtime_entries has one type; comp-off credit for WO; no per-type OT rates.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: OT types: normal, holiday, weekly-off, night OT, shift allowance, comp-off
+  3. Expect the behaviour in blueprint §11; go-live: Core
+
+### RQ-BP-110: Pre-payroll validation: missing bank/PAN/UAN/ESIC, abnormal salary change, negative salary, excess OT, duplicate employees, bank changes, major variances
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §14; widens RQ-PAY-008
+- **PRD:** Blueprint §14
+- **Roles:** per blueprint
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** variance.service.ts (negative net, variance anomalies); bank-file refuses missing bank/IFSC at output time only; no pre-run missing-PAN/UAN/ESIC, excess-OT or bank-change alert.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Pre-payroll validation: missing bank/PAN/UAN/ESIC, abnormal salary change, negative salary, excess OT, duplicate employe
+  3. Expect the behaviour in blueprint §14; go-live: Core
+
+### RQ-BP-111: Excel import engine: template → upload → validate → error report → preview → maker → checker → approve → import → transaction ID → audit
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §14; widens RQ-CORE-021
+- **PRD:** Blueprint §14
+- **Roles:** per blueprint
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** core/bulk/engine.ts + /bulk/{importer}/template|preview|jobs/{id}/report|commit; the uploader commits their own job (no checker step).
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Excel import engine: template → upload → validate → error report → preview → maker → checker → approve → import → transa
+  3. Expect the behaviour in blueprint §14; go-live: Core
+
+### RQ-BP-112: Every import has an Import Batch ID and supports rollback/reversal of the complete batch (mandatory for salary, employee, attendance)
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §14; widens RQ-CORE-021
+- **PRD:** Blueprint §14
+- **Roles:** per blueprint
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** core.bulk_jobs.id is the batch ID; savepoint rollback only on commit failure; no post-commit reversal.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Every import has an Import Batch ID and supports rollback/reversal of the complete batch (mandatory for salary, employee
+  3. Expect the behaviour in blueprint §14; go-live: Core
+
+### RQ-BP-120: Exit workflow: resignation → manager → Business Head → HR → notice → clearance → attendance freeze → leave encashment → salary/LOP → bonus/gratuity → recovery → asset clearance → F&F → finance approval → payment → relieving/experience letter → exit
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §15; widens RQ-SEP-002, RQ-SEP-005
+- **PRD:** Blueprint §15
+- **Roles:** per blueprint
+- **Priority:** P0
+- **Status:** **Partial**
+- **Evidence:** lifecycle/separation (chain, ceo-review), clearances, compute-fnf, pay (row lock, E2E-022), letters; no Business Head or Finance approval step in the seeded chain.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Exit workflow: resignation → manager → Business Head → HR → notice → clearance → attendance freeze → leave encashment → 
+  3. Expect the behaviour in blueprint §15; go-live: Core
+
+### RQ-BP-121: Separation types: resignation, termination, retirement, absconding, death, contract expiry, misconduct, restructuring, mutual separation
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §15; widens RQ-SEP-003
+- **PRD:** Blueprint §15
+- **Roles:** per blueprint
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** core.separations initiated_by employee|hr, absconding path; no separation-type enum (death/retirement change gratuity eligibility and F&F payee).
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Separation types: resignation, termination, retirement, absconding, death, contract expiry, misconduct, restructuring, m
+  3. Expect the behaviour in blueprint §15; go-live: Core
+
+### RQ-BP-140: Performance: goals/KRA/KPI, weightage, mid-year, continuous feedback, self/manager appraisal, calibration, rating, increment/promotion linkage, 360, PIP
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §17
+- **PRD:** Blueprint §17
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** Only the probation review form.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Performance: goals/KRA/KPI, weightage, mid-year, continuous feedback, self/manager appraisal, calibration, rating, incre
+  3. Expect the behaviour in blueprint §17; go-live: Later
+
+### RQ-BP-141: OKR hierarchy Company → Business → Department → Individual objective
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §17
+- **PRD:** Blueprint §17
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: OKR hierarchy Company → Business → Department → Individual objective
+  3. Expect the behaviour in blueprint §17; go-live: Later
+
+### RQ-BP-150: Training lifecycle TNA → annual plan → nomination → training → attendance → assessment → feedback → effectiveness → record
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §18
+- **PRD:** Blueprint §18
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Training lifecycle TNA → annual plan → nomination → training → attendance → assessment → feedback → effectiveness → reco
+  3. Expect the behaviour in blueprint §18; go-live: Later
+
+### RQ-BP-151: Programme types: induction, technical, behavioural, compliance, safety, ISO, POSH, fire, LOTO, HIRA, SOP, leadership
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §18
+- **PRD:** Blueprint §18
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None (hr_induction is a single onboarding task).
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Programme types: induction, technical, behavioural, compliance, safety, ISO, POSH, fire, LOTO, HIRA, SOP, leadership
+  3. Expect the behaviour in blueprint §18; go-live: Later
+
+### RQ-BP-152: Skill matrix employee → process → skill → required/current level → gap → training, rating 0–5
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §18/§31
+- **PRD:** Blueprint §18/§31
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Skill matrix employee → process → skill → required/current level → gap → training, rating 0–5
+  3. Expect the behaviour in blueprint §18/§31; go-live: Later
+
+### RQ-BP-160: Critical-position identification, successor mapping, readiness, potential, risk, development plan
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §19
+- **PRD:** Blueprint §19
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Critical-position identification, successor mapping, readiness, potential, risk, development plan
+  3. Expect the behaviour in blueprint §19; go-live: Later
+
+### RQ-BP-161: 9-box performance/potential framework and talent review
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §19
+- **PRD:** Blueprint §19
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: 9-box performance/potential framework and talent review
+  3. Expect the behaviour in blueprint §19; go-live: Later
+
+### RQ-BP-181: Confidential grievance and POSH case management with restricted access, evidence, investigation, IC actions, closure
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §22
+- **PRD:** Blueprint §22
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** Schema only (ird.posh_cases, ird.grievances, ird.ic_members, posh_case_access_log); no API or UI.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Confidential grievance and POSH case management with restricted access, evidence, investigation, IC actions, closure
+  3. Expect the behaviour in blueprint §22; go-live: Later
+
+### RQ-BP-192: Rewards: Star of Month/Quarter, Employee of Year, Safety, Innovation, Long Service, Spot awards with nomination/approval
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §23
+- **PRD:** Blueprint §23
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Rewards: Star of Month/Quarter, Employee of Year, Safety, Innovation, Long Service, Spot awards with nomination/approval
+  3. Expect the behaviour in blueprint §23; go-live: Later
+
+### RQ-BP-201: Document version control, expiry/renewal alerts, verification, e-sign, access control, download restrictions, audit
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §24
+- **PRD:** Blueprint §24
+- **Roles:** per blueprint
+- **Priority:** P2
+- **Status:** **Partial**
+- **Evidence:** core.documents.expires_on/status columns; cmp.registrations expiry for licences; no versioning, verify flow or e-sign.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Document version control, expiry/renewal alerts, verification, e-sign, access control, download restrictions, audit
+  3. Expect the behaviour in blueprint §24; go-live: Core
+
+### RQ-BP-213: Training analytics: plan vs actual, hours, cost, effectiveness, skill gaps
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §25
+- **PRD:** Blueprint §25
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Training analytics: plan vs actual, hours, cost, effectiveness, skill gaps
+  3. Expect the behaviour in blueprint §25; go-live: Later
+
+### RQ-BP-220: Internal AI assistant (HR queries, policy search, requests, reports, exception analysis)
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §26
+- **PRD:** Blueprint §26
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Internal AI assistant (HR queries, policy search, requests, reports, exception analysis)
+  3. Expect the behaviour in blueprint §26; go-live: Later
+
+### RQ-BP-221: AI recruitment (resume parsing, JD match, ranking, duplicates, interview questions, rediscovery)
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §26
+- **PRD:** Blueprint §26
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: AI recruitment (resume parsing, JD match, ranking, duplicates, interview questions, rediscovery)
+  3. Expect the behaviour in blueprint §26; go-live: Later
+
+### RQ-BP-222: Predictive analytics (attrition risk, absenteeism, retirement, skill gaps, hiring, critical-position risk), advisory only
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §26
+- **PRD:** Blueprint §26
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** Burnout index KPI only (RQ-RPT-116).
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Predictive analytics (attrition risk, absenteeism, retirement, skill gaps, hiring, critical-position risk), advisory onl
+  3. Expect the behaviour in blueprint §26; go-live: Later
+
+### RQ-BP-230: Approvals: sequential, parallel, conditional, amount-, grade-, plant- and department-based
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §27; widens RQ-WF-001, RQ-WF-011
+- **PRD:** Blueprint §27
+- **Roles:** per blueprint
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** workflow-definition.ts: sequential steps; approver = RM / FM / department_head / role / user; no parallel, condition or amount routing; plant-head step missing (RQ-WF-011).
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Approvals: sequential, parallel, conditional, amount-, grade-, plant- and department-based
+  3. Expect the behaviour in blueprint §27; go-live: Core
+
+### RQ-BP-240: RBAC: Super Admin, Group HR, Legal Entity HR, Plant HR, Department HR, Manager, Employee, Payroll, Finance, Auditor
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §28; widens RQ-RBAC-001, RQ-RBAC-008
+- **PRD:** Blueprint §28
+- **Roles:** per blueprint
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** Roles: employee, manager, hod, hr_ops, hr_head, payroll_admin, plant_head, ceo_cell, it_admin, super_admin; entity/plant HR via hr_ops scope; no Finance or read-only Auditor role.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: RBAC: Super Admin, Group HR, Legal Entity HR, Plant HR, Department HR, Manager, Employee, Payroll, Finance, Auditor
+  3. Expect the behaviour in blueprint §28; go-live: Core
+
+### RQ-BP-241: Security: encryption, MFA, SSO, audit logs, session control, password policy, IP/device controls, backups, DR, data masking
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §28; widens RQ-NFR-004, RQ-NFR-009
+- **PRD:** Blueprint §28
+- **Roles:** per blueprint
+- **Priority:** P1
+- **Status:** **Partial**
+- **Evidence:** Audit hash chain, sessions page, password history, backup/restore scripts, masking; sec.mfa_enrolments table but no MFA API/UI; no SSO, no IP allow-list (except Kent webhook); PII encryption is a plan (PII_ENCRYPTION_PLAN.md).
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Security: encryption, MFA, SSO, audit logs, session control, password policy, IP/device controls, backups, DR, data mask
+  3. Expect the behaviour in blueprint §28; go-live: Core
+
+### RQ-BP-251: REST APIs, webhooks, SFTP, JSON/XML, OAuth 2.0
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §29
+- **PRD:** Blueprint §29
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Partial**
+- **Evidence:** REST/OpenAPI (oRPC); inbound Kent webhook + CSV drop; no outbound webhooks or OAuth2 client credentials.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: REST APIs, webhooks, SFTP, JSON/XML, OAuth 2.0
+  3. Expect the behaviour in blueprint §29; go-live: Later
+
+### RQ-BP-260: Recommended stack: React/Next + TS, Flutter mobile, Java/Spring or .NET backend, PostgreSQL, Redis, OpenSearch, AWS/Azure, object storage, Power BI
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §30
+- **PRD:** Blueprint §30
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Partial**
+- **Evidence:** React + TS, PostgreSQL 17 as recommended; backend is Node/TypeScript (not Java/.NET); local-disk storage; no Redis/OpenSearch; mobile plan is PWA + Capacitor (MOBILE_RECOMMENDATION.md), not Flutter. Deviation needs an owner decision, not a rewrite.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Recommended stack: React/Next + TS, Flutter mobile, Java/Spring or .NET backend, PostgreSQL, Redis, OpenSearch, AWS/Azur
+  3. Expect the behaviour in blueprint §30; go-live: Later
+
+### RQ-BP-271: Contractor manpower and labour compliance (CLRA: agency, licence, wage register, compliance)
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §31
+- **PRD:** Blueprint §31
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** Only category=contract; no contractor/agency master or contract-labour registers.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Contractor manpower and labour compliance (CLRA: agency, licence, wage register, compliance)
+  3. Expect the behaviour in blueprint §31; go-live: Later
+
+### RQ-BP-273: Medical fitness, PPE, safety training, certification expiry
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §31
+- **PRD:** Blueprint §31
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Partial**
+- **Evidence:** doc.types medical_fitness (blue_collar) without upload; PPE only as an asset category; no safety-training or certificate-expiry records.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Medical fitness, PPE, safety training, certification expiry
+  3. Expect the behaviour in blueprint §31; go-live: Later
+
+### RQ-BP-281: Weekly vacancy, HR-pending and contractor-compliance reports
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §32
+- **PRD:** Blueprint §32
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None scheduled.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Weekly vacancy, HR-pending and contractor-compliance reports
+  3. Expect the behaviour in blueprint §32; go-live: Later
+
+### RQ-BP-291: No-code form builder and report builder
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §33
+- **PRD:** Blueprint §33
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Missing**
+- **Evidence:** None.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: No-code form builder and report builder
+  3. Expect the behaviour in blueprint §33; go-live: Later
+
+### RQ-BP-300: Core entity set (legal_entity … import_batch, API log)
+
+- **Source:** owner-docs "Rashmi Group HRMS Enterprise HRMS Requirements & Feature Blueprint" (docx); /workspace/STATE/BLUEPRINT_GAP.md §34
+- **PRD:** Blueprint §34
+- **Roles:** per blueprint
+- **Priority:** P3
+- **Status:** **Partial**
+- **Evidence:** Present: companies, locations, plants, departments, designations, grades, cost_centers, employees, employee_family, documents, employee_history, transfers, employee_salaries, salary_components, attendance (att.*), shifts, rosters, leave (lv.*), overtime, payroll runs/items/lines, arrears, fnf, onboarding, candidates, claims, travel, assets, compliance (cmp.*), grievance (schema), helpdesk, surveys, workflow, notifications, audit_log, bulk_jobs. Missing: division, section, job_family, job_level, position, profit centre, employee_address, employee_nominee (scheme-wise), employee_bank, employee_statutory, employee_education/experience, requisition, interview, offer, training, skill, competency, performance, goal, OKR, contractor, disciplinary_case, reward, api_log.
+- **SOW rows:** —
+- **Acceptance (UI):**
+  1. Log in as hr_head (or the owning role)
+  2. Exercise: Core entity set (legal_entity … import_batch, API log)
+  3. Expect the behaviour in blueprint §34; go-live: Later
