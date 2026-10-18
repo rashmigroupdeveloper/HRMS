@@ -9,7 +9,7 @@ import { EXTRA } from '../../lib/personas';
 import { q } from '../../lib/db';
 import { futureWeekday, recentWeekday } from '../../lib/dates';
 
-test.describe.configure({ mode: 'serial' });
+// Not serial: one race failing must not hide the others (each test sets up its own state).
 const N = 5;
 const ok = (r: APIResponse) => r.status() >= 200 && r.status() < 300;
 const wins = (rs: APIResponse[]) => rs.filter(ok).length;
@@ -126,7 +126,8 @@ test.describe('payroll RGH June run under concurrency', () => {
 
   test('[payroll_admin] CONC-PAY-01 parallel compute leaves one item per employee', async () => {
     test.skip(!runId, 'no RGH June run');
-    if (['finalized', 'approved', 'paid'].includes(await statusOf())) { const sa = await login('admin@rashmi.test'); const r = await call(sa, 'reopen', { reason: 'E2E concurrency re-run' }); expect(r.status(), `reopen: ${await r.text()}`).toBe(200); }
+    test.skip((await statusOf()) === 'paid', 'RGH run already paid by an earlier pass: reset the DB to re-run the payroll races');
+    if (['finalized', 'approved'].includes(await statusOf())) { const sa = await login('admin@rashmi.test'); const r = await call(sa, 'reopen', { reason: 'E2E concurrency re-run' }); expect(r.status(), `reopen: ${await r.text()}`).toBe(200); }
     const st = await statusOf();
     if (!['draft', 'reopened', 'inputs_locked'].includes(st)) { const r = await call(maker, 'returnToDraft', { reason: 'E2E concurrency: recompute RGH June' }); expect(r.status(), await r.text()).toBe(200); }
     if (st !== 'inputs_locked') { const r = await call(maker, 'lockInputs'); expect(r.status(), `lockInputs from ${st}: ${await r.text()}`).toBe(200); }
@@ -140,6 +141,7 @@ test.describe('payroll RGH June run under concurrency', () => {
 
   test('[hr_head] CONC-PAY-02 double approve / double finalize / double mark-paid each succeed once', async () => {
     test.skip(!runId, 'no RGH June run');
+    test.skip((await statusOf()) === 'paid', 'RGH run already paid by an earlier pass: reset the DB to re-run the payroll races');
     expect((await call(maker, 'review')).status()).toBe(200);
     const ap = await Promise.all(Array.from({ length: N }, () => call(checker, 'approve')));
     expect(wins(ap), `approve ×${N}: ${codes(ap)}`).toBe(1);
