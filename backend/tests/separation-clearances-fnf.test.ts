@@ -392,6 +392,7 @@ describe('Phase 3, Stage 3.2 — Separation, Clearances & F&F Engine', () => {
           selectAll: () => b,
           select: () => b,
           leftJoin: () => b,
+          innerJoin: () => b,
           where: (col: string, op: string, val: unknown) => {
             b._where.push({ col, op, val });
             return b;
@@ -635,6 +636,245 @@ describe('Phase 3, Stage 3.2 — Separation, Clearances & F&F Engine', () => {
       // 3. User role switched to alumni
       const assignedRole = requireFixture(userRolesStore.find((ur) => ur['user_id'] === 1001));
       expect(assignedRole['role_id']).toBe(9); // alumni role id
+    });
+
+    it('executes CEO review with shortfall recovery waiver adjustment', async () => {
+      const separationService = new SeparationService(mockDb);
+      const separation = requireFixture(separationsStore[0]);
+
+      // CEO review granting waiver on notice shortfall recovery
+      const reviewed = await separationService.ceoReview({
+        separationId: separation.id,
+        decision: 'waiver_granted',
+        ceoUserId: 1,
+        remarks: 'Waiver granted for exceptional handover service',
+        waivedRecoveryPaise: 6457200, // ₹64,572 full waiver
+      });
+
+      expect(reviewed.status).toBe('approved');
+      const fnf = requireFixture(fnfStore[0]);
+      expect(Number(fnf['notice_recovery_amount'])).toBe(0);
+    });
+
+    it('enforces separation validation guards and query filters', async () => {
+      const separationService = new SeparationService(mockDb);
+
+      // 1. applyResignation: non-existent employee
+      await expect(
+        separationService.applyResignation({
+          employeeId: 99999,
+          reason: 'Test',
+          requestedLwd: '2026-12-31',
+          userId: 1,
+        }),
+      ).rejects.toThrow(/not found/);
+
+      // 2. applyResignation: already exited employee (301 was exited in previous test)
+      await expect(
+        separationService.applyResignation({
+          employeeId: 301,
+          reason: 'Test',
+          requestedLwd: '2026-12-31',
+          userId: 1,
+        }),
+      ).rejects.toThrow(/already exited/);
+
+      // 2b. applyResignation: past requested lwd for active employee
+      employeesStore.push({
+        id: 302,
+        ecode: 'DEV302',
+        first_name: 'Active',
+        status: 'active',
+        category: 'white_collar',
+      });
+      await expect(
+        separationService.applyResignation({
+          employeeId: 302,
+          reason: 'Test',
+          requestedLwd: '2020-01-01',
+          userId: 1,
+        }),
+      ).rejects.toThrow(/past/);
+
+      // 3. initiateAbscondingTermination: non-existent employee
+      await expect(
+        separationService.initiateAbscondingTermination({
+          employeeId: 99999,
+          reason: 'Absconded',
+          lastWorkingDay: '2026-06-01',
+          hrUserId: 1,
+        }),
+      ).rejects.toThrow(/not found/);
+
+      // 4. approveResignation: non-existent separation
+      await expect(
+        separationService.approveResignation({
+          separationId: 99999,
+          approvedLwd: '2026-07-01',
+          approverUserId: 1,
+        }),
+      ).rejects.toThrow(/not found/);
+
+      // 4b. withdrawResignation: non-existent separation
+      await expect(
+        separationService.withdrawResignation(99999, 'Changed mind'),
+      ).rejects.toThrow(/not found/);
+
+      // 5. getSeparationById: non-existent separation
+      await expect(
+        separationService.getSeparationById(99999),
+      ).rejects.toThrow(/not found/);
+
+      // 6. ceoReview: non-existent separation
+      await expect(
+        separationService.ceoReview({
+          separationId: 99999,
+          decision: 'approved',
+          ceoUserId: 1,
+        }),
+      ).rejects.toThrow(/not found/);
+
+      // 7. finalizeAndPayFnf: non-existent fnf
+      await expect(
+        separationService.finalizeAndPayFnf({
+          fnfId: 99999,
+          paidByUserId: 1,
+        }),
+      ).rejects.toThrow(/not found/);
+
+      // 8. getSeparations with filters
+      const list = await separationService.getSeparations({ status: 'pending' });
+      expect(Array.isArray(list)).toBe(true);
+
+      const listEmp = await separationService.getSeparations({ employeeId: 301 });
+      expect(Array.isArray(listEmp)).toBe(true);
+
+      // 9. ceoReview with rejection: status becomes 'rejected', employee becomes 'active'
+      separationsStore.push({
+        id: 7001,
+        employee_id: 302,
+        status: 'pending',
+        reason: 'Voluntary resignation',
+        resignation_date: new Date(),
+        notice_period_days: 30,
+        requested_lwd: new Date(),
+        shortfall_days: '0.0',
+      });
+      const rejectReview = await separationService.ceoReview({
+        separationId: 7001,
+        decision: 'rejected',
+        ceoUserId: 1,
+        remarks: 'Retained with counter-offer',
+      });
+      expect(rejectReview.status).toBe('rejected');
+      const emp302 = requireFixture(employeesStore.find((e) => e.id === 302));
+      expect(emp302['status']).toBe('active');
+
+      // 10. ceoReview with 'approved' without waiver
+      separationsStore.push({
+        id: 7002,
+        employee_id: 302,
+        status: 'pending',
+        reason: 'Relocation',
+        resignation_date: new Date(),
+        notice_period_days: 30,
+        requested_lwd: new Date(),
+        shortfall_days: '0.0',
+      });
+      const approveReview = await separationService.ceoReview({
+        separationId: 7002,
+        decision: 'approved',
+        ceoUserId: 1,
+      });
+      expect(approveReview.status).toBe('approved');
+
+      // 11. withdrawResignation error when already completed
+      separationsStore.push({
+        id: 7003,
+        employee_id: 302,
+        status: 'completed',
+        reason: 'Settled',
+        resignation_date: new Date(),
+        notice_period_days: 30,
+        requested_lwd: new Date(),
+        shortfall_days: '0.0',
+      });
+      await expect(
+        separationService.withdrawResignation(7003, 'Too late')
+      ).rejects.toThrow(/Cannot withdraw completed/);
+
+      // 12. computeFnf error when separation is not approved
+      await expect(
+        separationService.computeFnf({
+          separationId: 7001, // status is 'rejected'
+        })
+      ).rejects.toThrow(/must be 'approved'/);
+
+      // 13. applyResignation validation guards
+      await expect(
+        separationService.applyResignation({
+          employeeId: 999999,
+          reason: 'Non-existent employee',
+          userId: 1,
+          requestedLwd: '2026-12-31',
+        })
+      ).rejects.toThrow(/not found/);
+
+      employeesStore.push({
+        id: 305,
+        ecode: 'RML035999',
+        first_name: 'Already',
+        last_name: 'Exited',
+        status: 'exited',
+        category: 'white_collar',
+      });
+      await expect(
+        separationService.applyResignation({
+          employeeId: 305,
+          reason: 'Already exited resignation',
+          userId: 1,
+          requestedLwd: '2026-12-31',
+        })
+      ).rejects.toThrow(/already exited/);
+
+      await expect(
+        separationService.applyResignation({
+          employeeId: 302,
+          reason: 'Past LWD resignation',
+          userId: 1,
+          requestedLwd: '2020-01-01',
+        })
+      ).rejects.toThrow(/cannot be in the past/);
+
+      // 14. initiateAbscondingTermination non-existent employee
+      await expect(
+        separationService.initiateAbscondingTermination({
+          employeeId: 999999,
+          reason: 'Non-existent absconding',
+          hrUserId: 1,
+          lastWorkingDay: '2026-06-01',
+        })
+      ).rejects.toThrow(/not found/);
+
+      // 15. approveResignation non-existent separation
+      await expect(
+        separationService.approveResignation({
+          separationId: 999999,
+          approverUserId: 1,
+        })
+      ).rejects.toThrow(/not found/);
+
+      // 16. withdrawResignation non-existent separation
+      await expect(
+        separationService.withdrawResignation(999999, 'Non-existent')
+      ).rejects.toThrow(/not found/);
+
+      // 17. getSeparations with filter options
+      const filteredPending = await separationService.getSeparations({ status: 'pending', employeeId: 302 });
+      expect(Array.isArray(filteredPending)).toBe(true);
+
+      const filteredAll = await separationService.getSeparations({ status: 'all' });
+      expect(Array.isArray(filteredAll)).toBe(true);
     });
   });
 });

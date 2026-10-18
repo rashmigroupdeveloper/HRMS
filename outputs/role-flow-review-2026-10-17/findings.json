@@ -1,0 +1,520 @@
+{
+  "prepared": "2026-10-17",
+  "review_type": "Separate role/scenario review; no application repair",
+  "findings": [
+    {
+      "id": "F01",
+      "title": "Scheduled attendance ingestion still uses a mock Kent connector",
+      "priority": "P1",
+      "requirements": [
+        "ATT-01",
+        "ATT-02",
+        "ATT-03"
+      ],
+      "owning_stage": "Phase 0 Stage 0.6 / Phase 1 Stage 1.1",
+      "status": "Open",
+      "evidence": "Source-confirmed; real Kent was not contacted.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/attendance/kent-sync.job.ts",
+          "line": 19,
+          "symbol_or_text": "async function connectorFor"
+        }
+      ],
+      "acceptance_required": "Obtain authorized Kent protocol, select a real adapter with explicit environment configuration, preserve raw identity/provenance and watermark/gap handling; prove recorded and real delayed/reconnect cases. Synthetic swipes cannot be presented as actual employee punches.",
+      "prior_links": []
+    },
+    {
+      "id": "F02",
+      "title": "Scoped HR can override and read another unit employee attendance",
+      "priority": "P1",
+      "requirements": [
+        "CORE-10",
+        "ATT-17"
+      ],
+      "owning_stage": "Phase 1 Stage 1.2",
+      "status": "Open",
+      "evidence": "RF01=200 writes outside scope; RF07=200 reads the foreign synthetic day.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/attendance/attendance-config.router.ts",
+          "line": 433,
+          "symbol_or_text": "const overrideDay"
+        },
+        {
+          "file": "backend/src/modules/attendance/attendance-config.router.ts",
+          "line": 389,
+          "symbol_or_text": "const dayRecords"
+        }
+      ],
+      "acceptance_required": "Apply central employee scope to read and write; same-unit works, foreign employee is denied, cross-entity reporting-tree permissions still work when legitimately granted.",
+      "prior_links": [
+        "H01",
+        "R15"
+      ]
+    },
+    {
+      "id": "F03",
+      "title": "Locked correction reports success and a whitespace reason is accepted",
+      "priority": "P1",
+      "requirements": [
+        "ATT-15",
+        "ATT-17",
+        "CORE-11"
+      ],
+      "owning_stage": "Phase 1 Stage 1.2",
+      "status": "Open",
+      "evidence": "RF04=200 with five spaces; RF05=200 but locked status remains P. Source writes success audit regardless of affected rows.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 626,
+          "symbol_or_text": "export async function setManualStatus"
+        },
+        {
+          "file": "backend/src/modules/attendance/attendance-config.router.ts",
+          "line": 441,
+          "symbol_or_text": "reason: z.string().min(5"
+        }
+      ],
+      "acceptance_required": "Trim and validate reason, employee/day/month lock in stable order, require actual affected row, atomically commit correct before/after audit. Locked correction must return a domain error and no success audit.",
+      "prior_links": [
+        "H03",
+        "H04"
+      ]
+    },
+    {
+      "id": "F04",
+      "title": "Marking Absent retains old overtime and penalty facts",
+      "priority": "P1",
+      "requirements": [
+        "ATT-03",
+        "ATT-05",
+        "ATT-08",
+        "ATT-17"
+      ],
+      "owning_stage": "Phase 1 Stage 1.2",
+      "status": "Open",
+      "evidence": "RF06: status A retains 120 OT minutes and penalty_flag=true.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 626,
+          "symbol_or_text": "export async function setManualStatus"
+        }
+      ],
+      "acceptance_required": "Define/reconcile derived facts and approved obligations; never blindly erase immutable swipes/OT approval. Make day, muster, exception display and payroll eligibility agree; audit each correction.",
+      "prior_links": [
+        "H05"
+      ]
+    },
+    {
+      "id": "F05",
+      "title": "Shift-scheme mutation has no employee population check",
+      "priority": "P1",
+      "requirements": [
+        "ATT-04",
+        "CORE-10"
+      ],
+      "owning_stage": "Phase 1 Stage 1.2",
+      "status": "Open",
+      "evidence": "RF08 scoped HR successfully updates the foreign synthetic employee scheme.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/attendance/attendance-config.router.ts",
+          "line": 200,
+          "symbol_or_text": "const setScheme"
+        }
+      ],
+      "acceptance_required": "Apply existing employee-scope check, active shift validation, audited atomic change and recomputation scheduling; block unsafe changes to closed facts. Prove a manager cannot change an unrelated employee.",
+      "prior_links": []
+    },
+    {
+      "id": "F06",
+      "title": "Month checklist can show future/incomplete manual attendance as ready",
+      "priority": "P1",
+      "requirements": [
+        "ATT-12",
+        "ATT-15"
+      ],
+      "owning_stage": "Phase 1 Stage 1.7",
+      "status": "Open",
+      "evidence": "RF16 future January 2027 checklist canLock=true for synthetic manual employee population with no January day rows; manager-approval policy is disabled. No lock was executed.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/attendance/month-lock.service.ts",
+          "line": 39,
+          "symbol_or_text": "export async function getMonthLockChecklist"
+        }
+      ],
+      "acceptance_required": "Validate closed time window, complete expected employee/date population, unresolved recomputations/leave/request facts and attestation revision. Payroll already rejects missing day rows later; catch the gap before irreversible attendance lock. Establish signed manager-precondition policy.",
+      "prior_links": [
+        "R03"
+      ]
+    },
+    {
+      "id": "F07",
+      "title": "Payroll console simulates computation, approval, finalization and export",
+      "priority": "P1",
+      "requirements": [
+        "PAY-03",
+        "PAY-05",
+        "PAY-06",
+        "PAY-18"
+      ],
+      "owning_stage": "Phase 2 Stage 2.4",
+      "status": "Open",
+      "evidence": "Source-confirmed: INITIAL_REVIEW_ITEMS, fixed June 2026 and local setCurrentRunStatus handlers; no backend action in those handlers.",
+      "source_anchors": [
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 82,
+          "symbol_or_text": "const INITIAL_REVIEW_ITEMS"
+        },
+        {
+          "file": "frontend/src/pages/payroll/PayrollPage.tsx",
+          "line": 306,
+          "symbol_or_text": "const handleFinalizeConfirm"
+        }
+      ],
+      "acceptance_required": "Replace sample records and local success with selected real company/month/run API; actual register/reconciliation, server transitions, capability-gated actions and real downloadable artifacts. Empty/error cannot become invented payroll.",
+      "prior_links": [
+        "R13",
+        "G09"
+      ]
+    },
+    {
+      "id": "F08",
+      "title": "Two different payroll users satisfy approval without mandatory HR Head sign-off",
+      "priority": "P1",
+      "requirements": [
+        "PAY-03",
+        "PAY-18",
+        "CORE-10"
+      ],
+      "owning_stage": "Phase 2 Stage 2.2",
+      "status": "Open",
+      "evidence": "RF14 self-approval is refused (generic HTTP500); RF15 a different payroll-only user approves HTTP200. No HR Head participated. Synthetic under_review fixture included a valid attendance-lock FK and explicit maker audit; this checks authorization, not a full computed run.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/payroll-core/runs/run.router.ts",
+          "line": 122,
+          "symbol_or_text": "approve: withPermission('payroll.run.finalize')"
+        },
+        {
+          "file": "backend/src/modules/payroll-core/runs/run.service.ts",
+          "line": 158,
+          "symbol_or_text": "async approveRun"
+        }
+      ],
+      "acceptance_required": "Represent distinct maker/checker duties through centrally configured capabilities and recorded evidence; no handler role-name hardcoding. Require independent authorized HR co-sign and payroll action against unchanged result revision; return useful safe domain errors. Existing maker-identity checks must remain.",
+      "prior_links": [
+        "R11"
+      ]
+    },
+    {
+      "id": "F09",
+      "title": "Payroll orchestration still lacks complete statutory/OT/debt/arrears source consumption",
+      "priority": "P1",
+      "requirements": [
+        "PAY-03",
+        "PAY-07",
+        "PAY-08",
+        "PAY-09",
+        "PAY-10",
+        "PAY-11",
+        "PAY-12",
+        "PAY-13",
+        "PAY-16",
+        "LN-03"
+      ],
+      "owning_stage": "Phase 2 Stages 2.1\u20132.6, one at a time",
+      "status": "Open",
+      "evidence": "Source reconfirmed: computeLockedRun supplies salary, attendance, variable inputs, arrears and hold; it does not wire full statutory/previous-employer/YTD/debt facts; approved OT deliberately blocks instead of being paid with a guessed rate.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/payroll-core/runs/run-compute.service.ts",
+          "line": 190,
+          "symbol_or_text": "const computed = computeEmployeePayroll"
+        },
+        {
+          "file": "backend/src/modules/payroll-core/runs/run-compute.service.ts",
+          "line": 107,
+          "symbol_or_text": "const arrearsRows"
+        }
+      ],
+      "acceptance_required": "Use signed effective policy facts and immutable source/consumption authority, lawful entity eligibility, complete salary segments, verified YTD and obligations. Prove repeated recompute/next run cannot double-pay or double-deduct; preserve fail-closed OT until correct integration. Money edits require full docs04/10, golden/property cases and human review.",
+      "prior_links": [
+        "R05",
+        "R07",
+        "R08",
+        "G08"
+      ]
+    },
+    {
+      "id": "F10",
+      "title": "Candidate conversion is not one transaction and can create unusable employee identity/pay",
+      "priority": "P1",
+      "requirements": [
+        "LC-01",
+        "LC-02",
+        "PAY-02",
+        "PAY-07",
+        "CORE-02",
+        "CORE-06",
+        "CORE-10"
+      ],
+      "owning_stage": "Phase 3 Stage 3.1",
+      "status": "Open",
+      "evidence": "Source reconfirmed; earlier H14 native autocommit orphan evidence remains applicable. Conversion uses plain db calls, placeholder password hash, optional salary and empty component snapshot; no readiness/source-target scope/DOJ gate beyond converted status.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+          "line": 216,
+          "symbol_or_text": "async convertCandidate"
+        },
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+          "line": 309,
+          "symbol_or_text": "password_hash: 'PENDING_INITIAL_LOGIN'"
+        }
+      ],
+      "acceptance_required": "Atomic candidate lock/conversion, accepted version evidence, approved DOJ readiness, source/target masters/scope, allocator, real identity invitation/employee grant, valid salary snapshot, tasks, probation, audit/outbox. Failure/concurrent retry creates no orphan or duplicate. Do not invent missing CTC, DOB, manager or bank.",
+      "prior_links": [
+        "H08",
+        "H09",
+        "H14",
+        "R18"
+      ]
+    },
+    {
+      "id": "F11",
+      "title": "Onboarding stakeholders lack task access and biometric verification lacks provider proof",
+      "priority": "P1",
+      "requirements": [
+        "LC-02",
+        "CORE-10",
+        "ATT-01"
+      ],
+      "owning_stage": "Phase 3 Stage 3.1",
+      "status": "Open",
+      "evidence": "RF17 IT task-list HTTP403; task routes require lifecycle.onboard.convert. Existing verify service stamps completion without Kent adapter evidence; prior H10 native proof retained.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+          "line": 238,
+          "symbol_or_text": "listTasks:"
+        },
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/task-fanout.service.ts",
+          "line": 171,
+          "symbol_or_text": "async verifyBiometricRegistration"
+        }
+      ],
+      "acceptance_required": "Scoped stakeholder tasks without HR conversion authority; only permitted owner can complete. Biometric registration needs actual authorized provider result + matching employee, not a success stamp. Configure task SLA/owner data and prove notifications/escalation execution.",
+      "prior_links": [
+        "H10",
+        "H11",
+        "R36"
+      ]
+    },
+    {
+      "id": "F12",
+      "title": "Lifecycle decisions are not fully connected to required approval/payment history",
+      "priority": "P1",
+      "requirements": [
+        "LC-04",
+        "LC-05",
+        "LC-06",
+        "LC-07",
+        "PAY-02",
+        "PAY-15",
+        "WF-04",
+        "CORE-09"
+      ],
+      "owning_stage": "Phase 3 Stages 3.1\u20133.3, one at a time",
+      "status": "Open",
+      "evidence": "Source reconfirmed: probation emits issued letter with null workflow/document, transfers stamp notified_at directly, separation/F&F directly mutate state. Prior financial fixture/payment and salary-boundary findings remain open.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/lifecycle/probation/probation.service.ts",
+          "line": 143,
+          "symbol_or_text": "async decideReview"
+        },
+        {
+          "file": "backend/src/modules/lifecycle/transfers/transfer.service.ts",
+          "line": 429,
+          "symbol_or_text": "notified_at: sql`now()`"
+        },
+        {
+          "file": "backend/src/modules/lifecycle/separation/separation.service.ts",
+          "line": 517,
+          "symbol_or_text": "async finalizeAndPayFnf"
+        }
+      ],
+      "acceptance_required": "Versioned domain\u2194workflow link; every actual required approver and delivery receipt; no future-effective early mutation; confirmation salary interval/breakup; clearances, settlement approval and acknowledged payment before paid/letters/alumni cascade. Native end-to-end HR Head/Finance journeys required.",
+      "prior_links": [
+        "R16",
+        "R17",
+        "R19",
+        "R20",
+        "R22"
+      ]
+    },
+    {
+      "id": "F13",
+      "title": "LOI approval/acceptance integration is incomplete and reporting infers incorrect offer outcomes",
+      "priority": "P1",
+      "requirements": [
+        "LC-01",
+        "PAY-02",
+        "PAY-07",
+        "WF-01",
+        "RPT-02"
+      ],
+      "owning_stage": "Phase 3 Stage 3.1 bridge; Phase 4 ATS absorption",
+      "status": "Open",
+      "evidence": "RF18 no_show maps to Rejected LOI without rejection fact. RF19 no offer/loi/offer_loi catalog rows. Source: no ATS intake worker registration; recruitment UI claims nightly feed/report integration.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/reports/reports.service.ts",
+          "line": 961,
+          "symbol_or_text": "else if (r.status === 'no_show')"
+        },
+        {
+          "file": "frontend/src/pages/recruitment/RecruitmentPage.tsx",
+          "line": 21,
+          "symbol_or_text": "Offers already become joiners"
+        },
+        {
+          "file": "backend/src/jobs/worker.ts",
+          "line": 85,
+          "symbol_or_text": "await boss.schedule"
+        }
+      ],
+      "acceptance_required": "Capture authorized ATS source contract. Separately model draft/approval/issued/accepted/rejected/joined/no-show events using approved source fields; preserve offer version and CTC/probation approval. Do not treat no-show as rejection. Prove Initiator\u2192Plant Head/GM\u2192HR Head\u2192CEO\u2192issue, acceptance, idempotent handoff and R21 from actual events. Phase4 work is scheduled scope, not a newly introduced regression.",
+      "prior_links": []
+    },
+    {
+      "id": "F14",
+      "title": "HR export, absence and dashboard scope gaps remain",
+      "priority": "P1",
+      "requirements": [
+        "CORE-10",
+        "ATT-10",
+        "ATT-11",
+        "RPT-02",
+        "RPT-03",
+        "RPT-06",
+        "AST-06"
+      ],
+      "owning_stage": "Phase 1 Stages 1.6/1.7 and owning report stages",
+      "status": "Open",
+      "evidence": "Source reconfirmation of prior H07/H12/H13; R21 accepts scope but does not apply it. No new cross-company export was executed in this increment.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/reports/reports.service.ts",
+          "line": 917,
+          "symbol_or_text": "export async function reportR21Offers"
+        },
+        {
+          "file": "backend/src/modules/attendance/absence.router.ts",
+          "line": 20,
+          "symbol_or_text": "const cases"
+        }
+      ],
+      "acceptance_required": "Same authorized population in list, count, tile and Excel; explicit candidate/company scope before employee conversion; preserve column masks, filter parity and audited exports. Repeat prior native cross-company probes as repair regressions.",
+      "prior_links": [
+        "H07",
+        "H12",
+        "H13"
+      ]
+    },
+    {
+      "id": "F15",
+      "title": "HR routing repair exists as API but has no dedicated recovery screen",
+      "priority": "P2",
+      "requirements": [
+        "WF-01",
+        "WF-02",
+        "WF-04"
+      ],
+      "owning_stage": "Phase 1 Stage 1.3",
+      "status": "Open",
+      "evidence": "Source: hold-list/retry backend routes exist; no routing-holds/retry-routing caller in frontend. Prior native vacancy hold/retry evidence remains positive.",
+      "source_anchors": [
+        {
+          "file": "backend/src/modules/workflows/workflow-holds.router.ts",
+          "line": 8,
+          "symbol_or_text": "path: '/workflows/routing-holds'"
+        }
+      ],
+      "acceptance_required": "Show scoped waiting-for-HR queue, cause, hierarchy/chain repair and audited reasoned retry. Retry must never itself approve. Prove actual email delivery separately from queue insertion.",
+      "prior_links": [
+        "G03"
+      ]
+    },
+    {
+      "id": "F16",
+      "title": "Lifecycle HTTP/UI contract failures are masked by sample fallback data",
+      "priority": "P1",
+      "requirements": [
+        "LC-01",
+        "LC-04",
+        "LC-05",
+        "LC-06",
+        "CORE-14"
+      ],
+      "owning_stage": "Phase 3 owning stages",
+      "status": "Open",
+      "evidence": "Source: onboarding catches list failure and fills sample candidates; separation does the same for empty/error data. Several caller paths do not match registered nested procedures. Payroll POST list works; equivalent GET gives404 (RF10/11), which is not itself a defect when POST is the declared contract.",
+      "source_anchors": [
+        {
+          "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+          "line": 161,
+          "symbol_or_text": "const cRes = await apiFetch"
+        },
+        {
+          "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+          "line": 182,
+          "symbol_or_text": "Fallback sample data"
+        }
+      ],
+      "acceptance_required": "Generated actual HTTP contract, typed DTO/date output and runtime permissions, real lookup IDs; no sample business records on errors. Exercise each role screen\u2192API\u2192DB\u2192reload and exports.",
+      "prior_links": [
+        "R12",
+        "R14",
+        "G05"
+      ]
+    },
+    {
+      "id": "F17",
+      "title": "Release acceptance and other SOW families remain open",
+      "priority": "P1",
+      "requirements": [
+        "CORE-14",
+        "RPT-03",
+        "AST-01",
+        "HD-01",
+        "EN-01"
+      ],
+      "owning_stage": "Respective owning stages / release gates",
+      "status": "Open",
+      "evidence": "Existing workplace, assets, KPI, deployment, SMTP/storage, real master, Kent/UAT and coverage findings are retained. They are not independently exhaustively rerun by the19 diagnostic observations.",
+      "source_anchors": [
+        {
+          "file": "plans/sow-completion/22-OTHER-MODULE-BUG-AUDIT.md",
+          "line": 3,
+          "symbol_or_text": "Audit completed"
+        },
+        {
+          "file": "plans/sow-completion/19-BACKEND-REPAIR-SCOPE-AND-PROGRESS.md",
+          "line": 1,
+          "symbol_or_text": "#"
+        }
+      ],
+      "acceptance_required": "Close existing audience/survey/policy/helpdesk/custody issues, signed decisions, real source reconciliation, role training, restore/scale evidence and full gates; claims/budgets remain sponsor-deferred. Do not relabel carried findings as newly tested or repaired.",
+      "prior_links": []
+    }
+  ]
+}

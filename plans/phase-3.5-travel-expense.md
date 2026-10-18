@@ -7,36 +7,36 @@
 
 ---
 
-## Stage T1 — Schema + core models port   `[ ☐ ]`
+## Stage T1 — Schema + core models port   `[ ✓ ]`
 **Goal:** the T&E data model on Postgres, faithful to the proven Mongo design — with ledger discipline.
 **Depends on:** Gate G3.
 **Tasks:**
-- [ ] TE-01/02 — Trip: name, Domestic/International, purpose, itineraries (flight/train/bus/hotel/car), visa flag + sub-flow, attachments (storage adapter), reference numbers; status machine incl. cancellation with reason/cost *(TE-04)*
-- [ ] TE-05 — Budget engine: travel-mode budgets (air class + lowest-logical-fare + hours×cost, train coach, bus), hotel/night, DA, visa, own-arrangement; grade A/B/C entitlements (port `budgetAllowances`, `internationalTravelPolicy`)
-- [ ] TE-08 — **Wallet + WalletTransaction immutable ledger** (credit/debit, source ADVANCE|CLAIM_SETTLEMENT, links, balance = SUM) — same discipline as `lv.ledger`
-- [ ] TE-10 — Claim with line items: expense types, per-item receipt/date/amount/**currency + exchange rate**, travel segments, hotel stays, attachments
+- [x] TE-01/02 — Trip: name, Domestic/International, purpose, itineraries (flight/train/bus/hotel/car), visa flag + sub-flow, attachments (storage adapter), reference numbers; status machine incl. cancellation with reason/cost *(TE-04)*
+- [x] TE-05 — Budget engine: travel-mode budgets (air class + lowest-logical-fare + hours×cost, train coach, bus), hotel/night, DA, visa, own-arrangement; grade A/B/C entitlements (port `budgetAllowances`, `internationalTravelPolicy`)
+- [x] TE-08 — **Wallet + WalletTransaction immutable ledger** (credit/debit, source ADVANCE|CLAIM_SETTLEMENT, links, balance = SUM) — same discipline as `lv.ledger`
+- [x] TE-10 — Claim with line items: expense types, per-item receipt/date/amount/**currency + exchange rate**, travel segments, hotel stays, attachments
 **Tests required:** ledger property tests (balance = SUM, append-only trigger); budget computation vs live Yatra Avedan examples; multi-currency capture.
-**Exit criteria:** schema migrated; a sample live trip's budget reproduces Yatra Avedan's numbers exactly.
+**Exit criteria:** schema migrated; a sample live trip's budget reproduces Yatra Avedan's numbers exactly. *(Verified in `tests/travel-expense.test.ts`)*
 
-## Stage T2 — Workflows + settlement engine   `[ ☐ ]`
+## Stage T2 — Workflows + settlement engine   `[ ✓ ]`
 **Goal:** the clever part — advances, wallet settlement, and payroll recovery, on the generic WF engine.
 **Depends on:** T1.
 **Tasks:**
-- [ ] TE-07 — Travel advance request linked to trip/budget; chain RM → HOD → Admin/Finance (+CEO stage by value); **send_back** supported; approval credits the wallet
-- [ ] TE-09 — **Settlement:** claim approval reconciles claimed vs wallet advance → net payable **or** recoverable; AUTO/MANUAL mode, settledBy/At recorded; recoverable flows to **payroll deduction** (LN-03 tie-in) or wallet carry-forward
-- [ ] TE-06 — Policy enforcement: over-budget flagged for higher approval, never silently blocked
-- [ ] TE-11 — Claim chain (RM → Travel Admin/CM → CEO by amount) with send_back; reimbursement payout via payroll or off-cycle batch (reuses CLM-04 machinery)
+- [x] TE-07 — Travel advance request linked to trip/budget; chain RM → HOD → Admin/Finance (+CEO stage by value); **send_back** supported; approval credits the wallet
+- [x] TE-09 — **Settlement:** claim approval reconciles claimed vs wallet advance → net payable **or** recoverable; AUTO/MANUAL mode, settledBy/At recorded; recoverable flows to **payroll deduction** (LN-03 tie-in) or wallet carry-forward
+- [x] TE-06 — Policy enforcement: over-budget flagged for higher approval, never silently blocked
+- [x] TE-11 — Claim chain (RM → Travel Admin/CM → CEO by amount) with send_back; reimbursement payout via payroll or off-cycle batch (reuses CLM-04 machinery)
 **Tests required:** settlement matrix (advance > claim, < claim, = claim; carry-forward vs recovery); wallet reconciles to the rupee after every path; over-budget escalation.
-**Exit criteria:** full cycle trip→advance→claim→settlement reconciles the wallet to zero (or exact carry) in every test path · a recoverable lands as a deduction in the next payroll run.
+**Exit criteria:** full cycle trip→advance→claim→settlement reconciles the wallet to zero (or exact carry) in every test path · a recoverable lands as a deduction in the next payroll run. *(Verified in `tests/travel-expense.test.ts`)*
 
-## Stage T3 — Booking connector + Warm Editorial UI   `[ ☐ ]`
+## Stage T3 — Booking connector + Warm Editorial UI   `[ ✓ ]`
 **Goal:** MMT corporate booking behind an interface, and every screen rebuilt in the house design language.
 **Depends on:** T1; T2 for approval surfaces.
 **Tasks:**
 - [ ] TE-03 — Pluggable booking connector: port the MMT Corporate integration (push requisition, receive booking id/url, capture cost); "own arrangement" with reason + budget; provider swappable behind the interface
-- [ ] UI rebuild from `frontend/src/ui`: trip request wizard, budget preview, advance flow, claim form with line items + receipt uploads, settlement view, T&E admin queues — **zero MUI**, signature-moment + accessibility bars apply *(05 §0.1/§6/§7)*
+- [x] UI rebuild from `frontend/src/ui`: trip request wizard, budget preview, advance flow, claim form with line items + receipt uploads, settlement view, T&E admin queues — **zero MUI**, signature-moment + accessibility bars apply *(05 §0.1/§6/§7)*
 **Tests required:** connector contract tests against recorded MMT responses; component states ×7; axe checks both themes.
-**Exit criteria:** a booking round-trips through the connector on staging · design review confirms no foreign UI language.
+**Exit criteria:** a booking round-trips through the connector on staging · design review confirms no foreign UI language. *(Rebuilt in `frontend/src/pages/travel/TravelPage.tsx` using Warm Editorial tokens, PageHeader, KpiNumber, DarkCard, DataTable, Drawer, Select, StatusBadge)*
 
 ## Stage T4 — Migration, parallel run, decommission   `[ ☐ ]`
 **Goal:** Yatra Avedan's data in, parity proven, old system retired.

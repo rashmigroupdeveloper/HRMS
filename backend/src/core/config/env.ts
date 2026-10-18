@@ -10,6 +10,12 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(5100),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_SECURE: z.coerce.boolean().default(false),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().default('Rashmi HRMS <noreply@rashmigroup.com>'),
 });
 
 export type Env = z.infer<typeof envSchema>;

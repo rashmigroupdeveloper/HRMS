@@ -1,0 +1,10 @@
+{
+  "finding_groups": 12,
+  "native_observations": 20,
+  "positive_controls_passed": 4,
+  "original_sow_rows_unchanged": 176,
+  "source_files_still_unchanged": 505,
+  "changed_application_files": [],
+  "link_or_reference_errors": [],
+  "full_verify_not_rerun_for_artifact_only_audit": true
+}

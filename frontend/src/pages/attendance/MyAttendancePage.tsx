@@ -1,3 +1,5 @@
+import { AttendanceHalfDetails } from './AttendanceHalfDetails';
+import { dayPortionLabel } from './attendance-portion';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarClock, ChevronLeft, ChevronRight, Clock3, FilePlus2 } from 'lucide-react';
@@ -35,6 +37,14 @@ const KIND_LABEL: Record<string, string> = {
   OD: 'Official duty',
   PERMISSION: 'Short permission',
 };
+
+function detailedDayLabel(row: AttendanceMonthRow): string {
+  if (row.status === 'HD') {
+    if (row.leaveTypeName) return `Half day · ${row.leaveTypeName}`;
+    if (row.sessionStatuses?.some(half => half.status === 'P' || half.status === 'OD')) return 'Half-day present';
+  }
+  return row.leaveTypeName ?? attendanceLabel(row.status);
+}
 
 function kindLabel(kind: string): string {
   return KIND_LABEL[kind] ?? kind;
@@ -175,6 +185,7 @@ export function MyAttendancePage() {
     return <DashboardError message={attendance.error} onRetry={attendance.reload} />;
 
   const present = rows.filter((row) => row.status === 'P' || row.status === 'OD').length;
+  const halfDays = rows.filter(row => row.status === 'HD').length;
   const exceptions = rows.filter(needsLook).length;
   const processed = rows.length;
   const yesterdayRow = rows.find((row) => row.date === yesterday);
@@ -191,7 +202,7 @@ export function MyAttendancePage() {
         title="My attendance"
         description={
           processed > 0
-            ? `${String(present)} of ${String(processed)} processed days this month are present or on official duty.`
+            ? `${String(present)} full days present or on duty; ${String(halfDays)} half-day${halfDays === 1 ? '' : 's'} recorded across ${String(processed)} processed date${processed === 1 ? '' : 's'}.`
             : 'Processed Kent swipes land here as the month unfolds — nothing is waiting until a day is posted.'
         }
         actions={
@@ -211,7 +222,8 @@ export function MyAttendancePage() {
 
       <KpiPillRow
         pills={[
-          { label: 'Present or on duty', value: present, state: 'outline' },
+          { label: 'Full days present / OD', value: present, state: 'outline' },
+          { label: 'Half-days', value: halfDays, state: 'outline' },
           { label: 'Need a look', value: exceptions, state: 'hatched' },
           { label: 'Requests sent', value: requests.data?.length ?? 0, state: 'outline' },
           { label: 'Overtime rows', value: overtime.data?.length ?? 0, state: 'outline' },
@@ -230,7 +242,7 @@ export function MyAttendancePage() {
             subtitle={
               exceptions > 0
                 ? `${String(exceptions)} day${exceptions === 1 ? '' : 's'} still need a swipe or regularisation`
-                : `${String(present)} present of ${String(processed)} processed`
+                : `${String(present)} full days · ${String(halfDays)} half-days · ${String(processed)} processed`
             }
             action={
               <div className="flex gap-1">
@@ -256,7 +268,7 @@ export function MyAttendancePage() {
           <MonthCalendar year={year} month={monthNo} days={days} onSelectDay={setSelectedDate} />
           <p className="mt-4 text-xs leading-5 text-ink-muted">
             P present · A absent · HD half day · OD official duty · WO week off · H holiday.
-            Leave uses its type code, such as SL for sick leave. A:P shows Session 1 absent and Session 2 present.
+            Leave uses its type code, such as SL for sick leave. A:P shows first half absent and second half present; P:A shows the reverse.
             A blank day has no posted attendance; it is not an absence decision.
           </p>
         </Card>
@@ -266,23 +278,14 @@ export function MyAttendancePage() {
           {selected ? (
             <div className="mt-4">
               <StatusBadge tone={statusTone(selected.status)}>
-                {selected.status === 'HD' && selected.leaveTypeName ? `Half day · ${selected.leaveTypeName}` : selected.leaveTypeName ?? attendanceLabel(selected.status)}
+                {detailedDayLabel(selected)}
               </StatusBadge>
               {selected.source && <p className="mt-3 text-xs text-hero-muted">
                 {selected.source === 'regularized' ? 'From an approved request' : selected.source === 'manual' ? 'HR correction' : 'Processed attendance'}
                 {selected.isLocked ? ' · Locked for payroll' : ''}
                 {selected.leaveIsPaid === false ? ' · Unpaid leave' : ''}
               </p>}
-              {selected.sessionStatuses && (
-                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm" aria-label="Attendance sessions">
-                  {selected.sessionStatuses.map((session) => (
-                    <div key={session.session}>
-                      <dt className="text-hero-muted">Session {session.session}</dt>
-                      <dd className="mt-1">{session.status === 'O' ? 'Off' : attendanceLabel(session.status)}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
+              <AttendanceHalfDetails date={selected.date} row={selected} />
               <p className="mt-4 text-3xl font-light">{formatDateIN(selected.date)}</p>
               <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -347,7 +350,7 @@ export function MyAttendancePage() {
                 >
                   <div>
                     <p className="text-sm font-semibold text-ink">
-                      {kindLabel(request.kind)} · {formatDateIN(request.fromDate)}
+                      {kindLabel(request.kind)} · {formatDateIN(request.fromDate)} · {dayPortionLabel(request.dayPortion)}
                     </p>
                     <p className="mt-0.5 text-xs text-ink-muted">{request.reason}</p>
                     <Link className="mt-1 inline-block rounded-control text-xs font-semibold underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-accent"

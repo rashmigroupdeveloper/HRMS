@@ -14,7 +14,7 @@ import {
   getManagerApprovalLedger,
   getMonthLockChecklist,
 } from '../src/modules/attendance/index.js';
-import { setSetting } from '../src/modules/settings/index.js';
+import { getTypedSetting, setSetting } from '../src/modules/settings/index.js';
 import { istDateString } from '../src/core/dates.js';
 
 const DB_URL = process.env['DATABASE_URL'];
@@ -31,6 +31,7 @@ run('Stage 1.7 — manager approval ledger + month-lock gate', () => {
   let managerUserId: number;
   let hrUserId: number;
   let shiftId: number;
+  let previousPolicy = true;
 
   beforeAll(async () => {
     db = createDatabase(DB_URL ?? '');
@@ -128,6 +129,7 @@ run('Stage 1.7 — manager approval ledger + month-lock gate', () => {
         .executeTakeFirstOrThrow()
     ).id;
 
+    previousPolicy = await getTypedSetting(db, 'att.manager_approval_required_for_lock', 'boolean', true);
     // Ensure policy starts enabled for this suite
     await setSetting(db, {
       key: 'att.manager_approval_required_for_lock',
@@ -141,10 +143,10 @@ run('Stage 1.7 — manager approval ledger + month-lock gate', () => {
   });
 
   afterAll(async () => {
-    // Restore default so other suites aren't forced into approval mode
+    // Restore the actual policy, not a weaker assumed default.
     await setSetting(db, {
       key: 'att.manager_approval_required_for_lock',
-      value: false,
+      value: previousPolicy,
       type: 'boolean',
       description: 'ATT-12: managers must approve team attendance before month lock',
       actorUserId: hrUserId,

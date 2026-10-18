@@ -6,9 +6,16 @@
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
+import {
+  attendanceTransaction,
+  assertAttendanceMonthOpen,
+  AttendanceMutationError,
+} from './attendance-mutation.js';
 
 /** Local helpers — avoid circular import with month-lock.service. */
 function monthStart(month: string): string {
+  if (!/^\d{4}-(0[1-9]|1[0-2])(-01)?$/.test(month))
+    throw new AttendanceMutationError('BAD_REQUEST', 'Month must be YYYY-MM or YYYY-MM-01');
   return month.length === 7 ? `${month}-01` : month;
 }
 
@@ -49,12 +56,8 @@ export async function listManagersWithReports(
     .where('e.company_id', '=', companyId)
     .where('e.reporting_manager_id', 'is not', null)
     .where('e.status', 'in', ['active', 'on_notice', 'exited'])
-    .where((eb) =>
-      eb.or([eb('e.doj', 'is', null), eb('e.doj', '<', sql<Date>`${mEnd}::date`)]),
-    )
-    .where((eb) =>
-      eb.or([eb('e.dol', 'is', null), eb('e.dol', '>=', sql<Date>`${m}::date`)]),
-    )
+    .where((eb) => eb.or([eb('e.doj', 'is', null), eb('e.doj', '<', sql<Date>`${mEnd}::date`)]))
+    .where((eb) => eb.or([eb('e.dol', 'is', null), eb('e.dol', '>=', sql<Date>`${m}::date`)]))
     .groupBy('e.reporting_manager_id')
     .execute();
 
@@ -111,9 +114,8 @@ export async function getManagerApprovalLedger(
         managerName: person ? fullName(person.first_name, person.last_name) : 'Unknown',
         reportCount: mgr.reportCount,
         approved: approval?.event_type === 'approve',
-        approvedAt: approval?.event_type === 'approve'
-          ? new Date(approval.approved_at).toISOString()
-          : null,
+        approvedAt:
+          approval?.event_type === 'approve' ? new Date(approval.approved_at).toISOString() : null,
         approvedByUserId:
           approval?.event_type === 'approve' ? (approval.approved_by_user_id ?? null) : null,
         note: approval?.note ?? null,
@@ -142,39 +144,49 @@ export async function approveManagerMonth(
     note?: string | undefined;
   },
 ): Promise<{ ok: true }> {
-  const m = monthStart(params.month);
-  const managers = await listManagersWithReports(db, params.companyId, m);
-  if (!managers.some((manager) => manager.managerEmployeeId === params.managerEmployeeId)) {
-    throw new Error('Manager has no in-scope reports for this company and month');
-  }
-  const locked = await db
-    .selectFrom('att.month_locks')
-    .select('id')
-    .where('company_id', '=', params.companyId)
-    .where('month', '=', sql<Date>`${m}::date`)
-    .executeTakeFirst();
-  if (locked) throw new Error('Attendance month is already locked');
+  return attendanceTransaction(db, async (db) => {
+    const m = monthStart(params.month);
+    await db
+      .selectFrom('core.employees')
+      .select('id')
+      .where('company_id', '=', params.companyId)
+      .orderBy('id')
+      .forUpdate()
+      .execute();
+    await assertAttendanceMonthOpen(db, params.companyId, m);
+    const managers = await listManagersWithReports(db, params.companyId, m);
+    if (!managers.some((manager) => manager.managerEmployeeId === params.managerEmployeeId)) {
+      throw new Error('Manager has no in-scope reports for this company and month');
+    }
+    const locked = await db
+      .selectFrom('att.month_locks')
+      .select('id')
+      .where('company_id', '=', params.companyId)
+      .where('month', '=', sql<Date>`${m}::date`)
+      .executeTakeFirst();
+    if (locked) throw new Error('Attendance month is already locked');
 
-  await db
-    .insertInto('att.manager_month_approvals')
-    .values({
-      company_id: params.companyId,
-      month: sql<Date>`${m}::date` as unknown as Date,
-      manager_employee_id: params.managerEmployeeId,
-      approved_by_user_id: params.actorUserId,
-      event_type: 'approve',
-      note: params.note ?? null,
-    })
-    .execute();
+    await db
+      .insertInto('att.manager_month_approvals')
+      .values({
+        company_id: params.companyId,
+        month: sql<Date>`${m}::date` as unknown as Date,
+        manager_employee_id: params.managerEmployeeId,
+        approved_by_user_id: params.actorUserId,
+        event_type: 'approve',
+        note: params.note ?? null,
+      })
+      .execute();
 
-  await writeAudit(db, {
-    actorUserId: params.actorUserId,
-    action: 'approve',
-    entity: 'att.manager_month_approvals',
-    subjectEmployeeId: params.managerEmployeeId,
-    field: `company ${String(params.companyId)} month ${m} manager ${String(params.managerEmployeeId)}`,
-    newValue: params.note ?? 'approved',
+    await writeAudit(db, {
+      actorUserId: params.actorUserId,
+      action: 'approve',
+      entity: 'att.manager_month_approvals',
+      subjectEmployeeId: params.managerEmployeeId,
+      field: `company ${String(params.companyId)} month ${m} manager ${String(params.managerEmployeeId)}`,
+      newValue: params.note ?? 'approved',
+    });
+
+    return { ok: true as const };
   });
-
-  return { ok: true as const };
 }

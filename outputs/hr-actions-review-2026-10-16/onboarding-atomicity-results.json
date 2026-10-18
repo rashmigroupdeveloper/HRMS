@@ -1,0 +1,20 @@
+{
+  "preparedAt": "2026-10-16T04:50:22.201Z",
+  "database": "loopback/hrms test only",
+  "mode": "Real autocommit service failure; independent connection checks durable partial data before cleanup. No payroll salary structure supplied.",
+  "applicationSourceChanged": false,
+  "observation": {
+    "conversionRejected": true,
+    "errorCode": "23505",
+    "committedOrphanEmployees": 1,
+    "createdEmployeeLogins": 0,
+    "candidateStatus": "link_sent",
+    "candidateLinkedEmployee": false
+  },
+  "cleanup": {
+    "employees": 0,
+    "candidates": 0,
+    "companies": 0,
+    "retainedDisabledDetachedUsers": 1
+  }
+}

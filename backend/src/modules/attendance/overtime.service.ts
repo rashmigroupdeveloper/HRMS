@@ -20,6 +20,7 @@ import { logger } from '../../core/logger.js';
 import { enqueue } from '../notifications/index.js';
 import { act, createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
 import { compOffDaysForMinutes, creditCompOffForOvertime } from '../leave/index.js';
+import { attendanceTransaction, lockAttendanceEmployee } from './attendance-mutation.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 type OvertimeEntry = Selectable<AttOvertimeEntriesTable>;
@@ -28,6 +29,13 @@ type OvertimeEntry = Selectable<AttOvertimeEntriesTable>;
  *  race to create the same employee-day OT entry (UNIQUE employee_id,work_date). */
 function isUniqueViolation(err: unknown): boolean {
   return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: unknown }).code === '23505';
+}
+
+class StaleOvertimeDetection extends Error {}
+async function currentDerivedOvertime(db: Kysely<Database>, employeeId: number, date: string, minutes: number) {
+  const day = await db.selectFrom('att.day_records').select(['source', 'ot_minutes', 'is_locked'])
+    .where('employee_id', '=', employeeId).where('work_date', '=', sql<Date>`${date}::date`).executeTakeFirst();
+  return day !== undefined && !day.is_locked && day.source !== 'manual' && day.ot_minutes === minutes;
 }
 
 /** The slice of AttendancePolicy this module needs (kept structural so there is
@@ -49,7 +57,9 @@ export async function recordDetectedOvertime(
   isoDate: string,
   detectedMinutes: number,
   policy: OvertimePolicy,
+  requireCurrentDay = false,
 ): Promise<void> {
+  if (requireCurrentDay && !await currentDerivedOvertime(db, employeeId, isoDate, detectedMinutes)) return;
   const existing = await db
     .selectFrom('att.overtime_entries')
     .select(['id', 'status'])
@@ -105,6 +115,9 @@ export async function recordDetectedOvertime(
           payload: { workDate: isoDate, detectedMinutes },
         },
         async (trx, requestId) => {
+          // createRequest already holds the employee lock. A correction that
+          // won after computation must not acquire a stale OT obligation.
+          if (requireCurrentDay && !await currentDerivedOvertime(trx, employeeId, isoDate, detectedMinutes)) throw new StaleOvertimeDetection();
           // Throwing here rolls the whole request back — a concurrent detector
           // that already inserted the entry wins, and no orphan request leaks.
           await trx
@@ -124,7 +137,7 @@ export async function recordDetectedOvertime(
       // detector already carries the request. ANY other failure (e.g. the
       // 'overtime' chain missing/inactive) must be LOUD: OT is money, it can't
       // vanish silently. Log it but don't abort the whole recompute cycle.
-      if (!isUniqueViolation(err)) {
+      if (!(err instanceof StaleOvertimeDetection) && !isUniqueViolation(err)) {
         logger.error({ err, employeeId, workDate: isoDate, detectedMinutes }, 'overtime detection failed to record');
       }
       return;
@@ -135,27 +148,31 @@ export async function recordDetectedOvertime(
   // No user account (e.g. worker without ESS): record + notify the manager's
   // user directly; the hourly lapse sweep enforces the deadline instead of the
   // workflow engine.
-  await db
-    .insertInto('att.overtime_entries')
-    .values(entryValues)
-    .onConflict((oc) => oc.columns(['employee_id', 'work_date']).doNothing())
-    .execute();
-  if (employee.reporting_manager_id !== null) {
-    const managerUser = await db
-      .selectFrom('core.users')
-      .select('id')
-      .where('employee_id', '=', employee.reporting_manager_id)
-      .where('is_active', '=', true)
-      .executeTakeFirst();
-    if (managerUser) {
-      await enqueue(db, {
-        recipientUserId: managerUser.id,
-        channel: 'in_app',
-        templateCode: 'ot_pending_decision',
-        payload: { employeeId, workDate: isoDate, detectedMinutes, deadline: deadline.toISOString() },
-      });
+  await attendanceTransaction(db, async trx => {
+    await lockAttendanceEmployee(trx, employeeId);
+    if (requireCurrentDay && !await currentDerivedOvertime(trx, employeeId, isoDate, detectedMinutes)) return;
+    await trx
+      .insertInto('att.overtime_entries')
+      .values(entryValues)
+      .onConflict((oc) => oc.columns(['employee_id', 'work_date']).doNothing())
+      .execute();
+    if (employee.reporting_manager_id !== null) {
+      const managerUser = await trx
+        .selectFrom('core.users')
+        .select('id')
+        .where('employee_id', '=', employee.reporting_manager_id)
+        .where('is_active', '=', true)
+        .executeTakeFirst();
+      if (managerUser) {
+        await enqueue(trx, {
+          recipientUserId: managerUser.id,
+          channel: 'in_app',
+          templateCode: 'ot_pending_decision',
+          payload: { employeeId, workDate: isoDate, detectedMinutes, deadline: deadline.toISOString() },
+        });
+      }
     }
-  }
+  });
 }
 
 /** Completion hook ('overtime' chain): mirror the workflow's final state onto

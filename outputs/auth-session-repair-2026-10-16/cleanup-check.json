@@ -1,0 +1,6 @@
+{
+  "activeAuthFixtureUsers": 0,
+  "unrevokedAuthFixtureSessions": 0,
+  "authorityFixtureUsers": 0,
+  "retained": "Inactive audited auth fixture accounts and revoked sessions are retained by repository convention; authority fixtures rolled back."
+}

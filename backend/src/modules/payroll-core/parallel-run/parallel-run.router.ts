@@ -96,7 +96,7 @@ export const parallelRunRouter = {
   /**
    * Run full automated component-by-component dual-run variance analysis (R20).
    */
-  compareRun: withPermission('payroll.run.view')
+  compareRun: withPermission('payroll.run.view', 'read')
     .input(
       z.object({
         runId: z.number(),

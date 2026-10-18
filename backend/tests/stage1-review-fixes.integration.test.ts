@@ -36,9 +36,10 @@ run('Phase-1 review fixes (live Postgres)', () => {
 
   async function mkEmployee(suffix: string): Promise<number> {
     const rml = await db.selectFrom('core.companies').select('id').where('code', '=', 'RML').executeTakeFirstOrThrow();
+    const rand = Math.floor(Math.random() * 900000 + 100000);
     const r = await db
       .insertInto('core.employees')
-      .values({ ecode: `RML7${String(stamp).slice(-5)}${suffix}`, company_id: rml.id, first_name: `Fix ${suffix}` })
+      .values({ ecode: `RML${rand}${suffix}`.slice(0, 16), company_id: rml.id, first_name: `Fix ${suffix}` })
       .returning('id')
       .executeTakeFirstOrThrow();
     return r.id;
@@ -126,21 +127,28 @@ run('Phase-1 review fixes (live Postgres)', () => {
       .values({ email: `fix-hr-${stamp}@hrms.test`, password_hash: await hashPassword(password), employee_id: empId })
       .returning('id')
       .executeTakeFirstOrThrow();
+    const employee = await db.selectFrom('core.employees').select('company_id').where('id', '=', empId).executeTakeFirstOrThrow();
+    const unit = await db.insertInto('core.org_units').values({ company_id: employee.company_id, name: `Fix F6 scope ${stamp}` }).returning('id').executeTakeFirstOrThrow();
+    await db.updateTable('core.employees').set({ org_unit_id: unit.id }).where('id', '=', empId).execute();
     const role = await db.selectFrom('core.roles').select('id').where('code', '=', 'hr_ops').executeTakeFirstOrThrow();
-    await db.insertInto('core.user_roles').values({ user_id: hr.id, role_id: role.id, scope_org_unit_id: null }).execute();
+    await db.insertInto('core.user_roles').values({ user_id: hr.id, role_id: role.id, scope_org_unit_id: unit.id }).execute();
 
-    const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: `fix-hr-${stamp}@hrms.test`, password });
-    const token = (login.body as { accessToken: string }).accessToken;
+    try {
+      const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: `fix-hr-${stamp}@hrms.test`, password });
+      const token = (login.body as { accessToken: string }).accessToken;
 
-    const res = await (await httpRequest(app))
-      .get('/api/attendance/days?employeeId=' + String(empId) + '&from=2031-06-04&to=2031-06-04')
-      .set('Authorization', `Bearer ${token}`);
-    expect(res.status).toBe(200);
-    const rows = res.body as { date: string }[];
-    expect(rows[0]?.date).toBe('2031-06-04'); // the exact day, not 06-03
+      const res = await (await httpRequest(app))
+        .get('/api/attendance/days?employeeId=' + String(empId) + '&from=2031-06-04&to=2031-06-04')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      const rows = res.body as { date: string }[];
+      expect(rows[0]?.date).toBe('2031-06-04'); // the exact day, not 06-03
 
-    await db.deleteFrom('core.user_roles').where('user_id', '=', hr.id).execute();
-    await db.updateTable('core.users').set({ is_active: false, employee_id: null }).where('id', '=', hr.id).execute();
+    } finally {
+      await db.updateTable('sec.sessions').set({ revoked_at: new Date(), revoke_reason: 'date fixture cleanup' }).where('user_id', '=', hr.id).where('revoked_at', 'is', null).execute();
+      await db.deleteFrom('core.user_roles').where('user_id', '=', hr.id).execute();
+      await db.updateTable('core.users').set({ is_active: false, employee_id: null }).where('id', '=', hr.id).execute();
+    }
   });
 
   it('F7: quarantined swipes are re-ingested into attendance after review', async () => {

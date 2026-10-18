@@ -1,0 +1,65 @@
+{
+  "prepared": "2026-10-17",
+  "stage": "Phase 1 Stage 1.8 role-flow/SOW review only",
+  "case_count": 49,
+  "finding_groups": 17,
+  "native_observations": 19,
+  "native_diagnostic_exit": 0,
+  "native_limit": "Diagnostics reproduce successes and defects, not 19 passing business acceptance tests. All writes rolled back. Initial probe harness errors were corrected before the final recorded run.",
+  "backend": {
+    "tests": 529,
+    "files": 68,
+    "skips": 0,
+    "verify_exit": 1,
+    "typecheck": "passed",
+    "lint": "passed",
+    "knip": "passed",
+    "dependency_boundaries": "passed",
+    "coverage": {
+      "lines": 76.85,
+      "statements": 76.85,
+      "branches": 72.48,
+      "functions": 81.54,
+      "required_each": 80
+    },
+    "separate_build_exit": 0
+  },
+  "frontend": {
+    "tests": 262,
+    "files": 28,
+    "verify_exit": 0,
+    "build": "passed",
+    "bundle_warning": "925.04KB main JS bundle"
+  },
+  "source_parity": {
+    "files_checked": 499,
+    "changed_during_review": [],
+    "application_or_migration_changes_made": false
+  },
+  "schema": {
+    "relations": 132,
+    "columns": 1381,
+    "changes_this_review": 0,
+    "baseline14Oct_added_columns": [
+      "att.regularizations.day_portion",
+      "sec.sessions.refresh_token_hash"
+    ],
+    "postgres_version": "14.24 (Homebrew)",
+    "limit": "No fresh certification of every column purpose/constraint/trigger; preserve earlier schema-purpose findings."
+  },
+  "sow": {
+    "original_texts_rechecked": 176,
+    "wording_differences": 0,
+    "completed_rows_promoted": 0,
+    "historical_statuses": "Preserved separately from current product acceptance",
+    "claims_budgets": "Deferred as requested"
+  },
+  "cleanup": {
+    "fixtureUsersRemaining": 0,
+    "allFixtureWritesRolledBack": true,
+    "realEmployeesChanged": false
+  },
+  "browser_rerun": false,
+  "real_external_integrations_contacted": false,
+  "gates_advanced": false
+}

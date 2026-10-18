@@ -1,5 +1,6 @@
+import { scheduleFixture } from '../../test/attendance-schedule';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { apiFetch, ApiError } from '../../lib/api';
 import { toast } from '../../ui';
@@ -32,9 +33,19 @@ beforeEach(() => {
     return Promise.resolve({ outcome: 'advanced' });
   });
 });
-afterEach(() => { vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 describe('WF-04 approval identity and decision state', () => {
+  it('explains an all-vacant routing hold without offering approval or resubmission', async () => {
+    vi.mocked(apiFetch).mockImplementation(path => Promise.resolve(path === '/api/workflows/inbox' ? [] : {
+      status: 'pending', routingState: 'held_for_hr', type: 'od', payload: request.payload, canResubmit: false, steps: [],
+    }));
+    open('/approvals/999');
+    await screen.findByText('Waiting for HR');
+    expect(screen.getByText('Waiting for HR to restore approval routing. Your request is not approved.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Approve$/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Resubmit for approval' })).not.toBeInTheDocument();
+  });
   it('never substitutes another actionable request for an old notification link', async () => {
     open('/approvals/999');
     await screen.findByText('Request 999');
@@ -76,6 +87,7 @@ describe('WF-04 approval identity and decision state', () => {
 
   it('lets the requester correct a sent-back OD and resubmit the same request', async () => {
     vi.mocked(apiFetch).mockImplementation(path => {
+      if (path.startsWith('/api/attendance/requests/schedule')) return Promise.resolve(scheduleFixture('2026-10-14'));
       if (path === '/api/workflows/inbox') return Promise.resolve([request]);
       if (path.endsWith('/resubmit')) return Promise.resolve({ ok: true });
       return Promise.resolve({ status: 'sent_back', type: 'od', payload: { kind: 'OD', ...request.payload }, canResubmit: true,
@@ -84,10 +96,11 @@ describe('WF-04 approval identity and decision state', () => {
     open('/approvals/999');
     await screen.findByText('Please confirm the visit');
     fireEvent.change(screen.getByLabelText(/Revised reason/), { target: { value: 'Confirmed revised client visit' } });
+    await waitFor(() => { expect(screen.getByRole('button', { name: 'Resubmit for approval' })).not.toBeDisabled(); });
     fireEvent.click(screen.getByRole('button', { name: 'Resubmit for approval' }));
     await waitFor(() => { expect(apiFetch).toHaveBeenCalledWith('/api/workflows/requests/999/resubmit', {
       method: 'POST', body: JSON.stringify({ payload: { kind: 'OD', ...request.payload,
-        reason: 'Confirmed revised client visit', fromTime: null, toTime: null } }),
+        reason: 'Confirmed revised client visit', fromTime: null, toTime: null, dayPortion: 'full_day' } }),
     }); });
     await waitFor(() => { expect(screen.getByRole('button', { name: 'Resubmit for approval' })).not.toBeDisabled(); });
   });

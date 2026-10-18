@@ -124,7 +124,8 @@ Phasing (detail in 07-ROADMAP): Phase 1 = M1+M2+M3+M6+M7(core reports); Phase 2 
 
 ## 7. M5 Lifecycle — requirements
 
-- **LC-01** Onboarding from ATS: LOI-accepted candidate record (all fields per LOI doc §1–4) converts to a pre-boarding employee; personal-email link for candidate to complete data + upload documents (greytHR's broken pre-joining-link flow, done right — with link-delivery tracking). *(SOW-3.2a; ATS-SOW XIV)*
+- **LC-01** Onboarding from ATS: LOI-accepted candidate record (all fields per LOI doc §1–4) stays in a separate pre-boarding candidate population; personal-email link for candidate to complete data + upload documents (greytHR's broken pre-joining-link flow, done right — with link-delivery tracking). *(SOW-3.2a; ATS-SOW XIV)*
+  **Sponsor amendment17 Oct2026:** LOI acceptance → waiting/prejoin → completed application → HR acceptance → HR confirmation of actual joining. Only that final confirmation creates the employee and allocates the configured legal-entity e-code. Approval before planned DOJ does not allocate a permanent ID. Candidates do not enter employee MIS/headcount/attendance/payroll. Entity prefixes (e.g.RML,KOIL) and the number of companies remain master data; no fixed entity count or person-name-derived prefix.
 - **LC-02** Onboarding task checklist auto-assigned to stakeholders on DOJ: IT (e-code activation, biometric registration, email), Admin (assets), HR (induction) — with due dates, reminders, and escalation; no manual follow-up emails. *(Agreement 3.2 remark; Latest-Update "Onboarding alerts to stakeholders")*
 - **LC-03** Daily boarding & exit report: every day at a configured time, email to Plant Head + HR + Business Head + CEO Cell listing joins and exits of the previous day, per plant. Runs without exception. *(PP-6; PP-26)*
 - **LC-04** Probation: end-date tracking, auto-reminders to manager ahead of due date, review form, multi-level confirmation workflow, confirmation letter + salary switch (PAY-02). *(SOW-3.3; PI-ESS-8/10)*
@@ -136,6 +137,7 @@ Phasing (detail in 07-ROADMAP): Phase 1 = M1+M2+M3+M6+M7(core reports); Phase 2 
 
 **M6 Workflows & Notifications**
 - **WF-01** Generic approval engine: named chains (sequence of role/person steps) attachable to any request type; per-step SLA; escalation on breach; delegation for absence. Actions per step: **approve / reject / send_back** (return-for-edit, from the live Yatra Avedan model — richer than a binary approve/reject). Covers: leave, leave-cancel, leave-encashment, AR/permission, OD, OT, comp-off, restricted-holiday, resignation, confirmation, transfer, loan, claim, travel/advance, letter-signature, offer/LOI. *(multiple sources; LOI flowchart + live greytHR Review + Yatra Avedan approvals[] are the references)*
+  Sponsor amendment (16 Oct 2026): all-vacant new/resubmitted rounds hold pending for HR routing repair, with configured notifications and an audited scoped routing retry; no automatic consent. Preserve explicit lapse deadlines. See docs04 §5.
 - **WF-02** Notification service: in-app + email (SMTP), templated, queued with retry; per-event recipient matrix configurable (e.g., onboarding/exit → HR + Business Head + CEO Cell). *(PP-26)*
 - **WF-03** Escalation matrix with time-based auto-escalation (helpdesk + approvals). *(SOW-9.2)*
 - **WF-04** Every workflow state change timestamped and visible as a timeline on the request (the ATS already does this for offers — same pattern).

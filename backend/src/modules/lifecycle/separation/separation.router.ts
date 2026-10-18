@@ -6,6 +6,7 @@
  * - applyResignation, initiateAbscondingTermination, approveResignation, withdrawResignation
  * - getClearances, updateClearance (with C18 unreturned asset recovery rules)
  * - computeFnf, finalizeAndPayFnf (with Golden G8 gratuity, 3-day TAT countdown, and Exit Day Cascade)
+ * - ceoReview: Executive review for high-value separations, shortfall waivers, or dispute settlements (LC-06, SOW-221)
  */
 
 import { z } from 'zod';
@@ -57,16 +58,18 @@ const clearanceItemSchema = z.object({
 });
 
 export const separationRouter = {
-  list: withPermission('lifecycle.separation.approve')
+  list: withPermission('lifecycle.separation.approve', 'read')
+    .route({ method: 'GET', path: '/lifecycle/separations', summary: 'List separations' })
     .input(z.object({ status: z.string().optional(), employeeId: z.number().optional() }))
-    .output(z.object({ separations: z.array(separationItemSchema) }))
+    .output(z.object({ separations: z.array(separationItemSchema), items: z.array(separationItemSchema) }))
     .handler(async ({ input, context }) => {
       const service = new SeparationService(context.db);
       const separations = await service.getSeparations(input);
-      return { separations };
+      return { separations, items: separations };
     }),
 
-  getById: withPermission('lifecycle.separation.approve')
+  getById: withPermission('lifecycle.separation.approve', 'read')
+    .route({ method: 'GET', path: '/lifecycle/separations/{id}', summary: 'Get separation by ID' })
     .input(z.object({ id: z.number() }))
     .output(
       z.object({
@@ -81,6 +84,7 @@ export const separationRouter = {
     }),
 
   apply: authed
+    .route({ method: 'POST', path: '/lifecycle/separations/apply', summary: 'Submit resignation application' })
     .input(
       z.object({
         employeeId: z.number(),
@@ -101,6 +105,7 @@ export const separationRouter = {
     }),
 
   initiateAbsconding: withPermission('lifecycle.separation.approve')
+    .route({ method: 'POST', path: '/lifecycle/separations/absconding', summary: 'Initiate HR absconding termination' })
     .input(
       z.object({
         employeeId: z.number(),
@@ -123,6 +128,7 @@ export const separationRouter = {
     }),
 
   approve: withPermission('lifecycle.separation.approve')
+    .route({ method: 'POST', path: '/lifecycle/separations/{separationId}/approve', summary: 'Approve resignation and trigger clearance fanout' })
     .input(
       z.object({
         separationId: z.number(),
@@ -141,6 +147,7 @@ export const separationRouter = {
     }),
 
   withdraw: withPermission('lifecycle.separation.approve')
+    .route({ method: 'POST', path: '/lifecycle/separations/{separationId}/withdraw', summary: 'Withdraw resignation application' })
     .input(
       z.object({
         separationId: z.number(),
@@ -154,16 +161,18 @@ export const separationRouter = {
       return { separation };
     }),
 
-  getClearances: withPermission('lifecycle.separation.approve')
+  getClearances: withPermission('lifecycle.separation.approve', 'read')
+    .route({ method: 'GET', path: '/lifecycle/clearances', summary: 'Get clearances by separation ID' })
     .input(z.object({ separationId: z.number() }))
-    .output(z.object({ clearances: z.array(clearanceItemSchema) }))
+    .output(z.object({ clearances: z.array(clearanceItemSchema), items: z.array(clearanceItemSchema) }))
     .handler(async ({ input, context }) => {
       const service = new ClearanceService(context.db);
       const clearances = await service.getClearancesBySeparation(input.separationId);
-      return { clearances };
+      return { clearances, items: clearances };
     }),
 
   updateClearance: withPermission('lifecycle.separation.approve')
+    .route({ method: 'POST', path: '/lifecycle/clearances/update', summary: 'Update departmental clearance with C18 check' })
     .input(
       z.object({
         separationId: z.number(),
@@ -194,6 +203,7 @@ export const separationRouter = {
     }),
 
   computeFnf: withPermission('payroll.run.manage')
+    .route({ method: 'POST', path: '/lifecycle/separations/{separationId}/compute-fnf', summary: 'Compute F&F breakdown with Golden G8 gratuity' })
     .input(
       z.object({
         separationId: z.number(),
@@ -210,7 +220,14 @@ export const separationRouter = {
     }),
 
   finalizeAndPayFnf: withPermission('payroll.run.manage')
-    .input(z.object({ fnfId: z.number() }))
+    .route({ method: 'POST', path: '/lifecycle/separations/{separationId}/pay', summary: 'Finalize and pay F&F settlement and execute Exit Day Cascade' })
+    .input(
+      z.object({
+        separationId: z.number(),
+        fnfId: z.number().optional(),
+        paymentReference: z.string().optional(),
+      })
+    )
     .output(
       z.object({
         settlementId: z.number(),
@@ -225,7 +242,32 @@ export const separationRouter = {
       const service = new SeparationService(context.db);
       return await service.finalizeAndPayFnf({
         fnfId: input.fnfId,
+        separationId: input.separationId,
+        paymentReference: input.paymentReference,
         paidByUserId: context.user.id,
       });
+    }),
+
+  ceoReview: withPermission('reports.ceo')
+    .route({ method: 'POST', path: '/lifecycle/separations/{separationId}/ceo-review', summary: 'CEO Executive Review of exit settlement' })
+    .input(
+      z.object({
+        separationId: z.number(),
+        decision: z.enum(['approved', 'rejected', 'waiver_granted']),
+        remarks: z.string().optional(),
+        waivedRecoveryPaise: z.number().optional(),
+      })
+    )
+    .output(z.object({ separation: separationItemSchema }))
+    .handler(async ({ input, context }) => {
+      const service = new SeparationService(context.db);
+      const separation = await service.ceoReview({
+        separationId: input.separationId,
+        decision: input.decision,
+        remarks: input.remarks,
+        waivedRecoveryPaise: input.waivedRecoveryPaise,
+        ceoUserId: context.user.id,
+      });
+      return { separation };
     }),
 };

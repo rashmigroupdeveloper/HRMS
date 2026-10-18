@@ -1,0 +1,89 @@
+{
+  "prepared": "2026-10-17",
+  "stage": "Phase1 Stage1.2 HR attendance safety repair increment",
+  "requirements": [
+    "CORE-10",
+    "CORE-11",
+    "ATT-03",
+    "ATT-04",
+    "ATT-05",
+    "ATT-08",
+    "ATT-12",
+    "ATT-15",
+    "ATT-17"
+  ],
+  "repaired_findings": [
+    "F02",
+    "F03",
+    "F04",
+    "F05"
+  ],
+  "backend": {
+    "tests_passed": 546,
+    "test_files": 69,
+    "new_native_cases": 17,
+    "targeted_cases": 22,
+    "typecheck": "passed",
+    "lint": "passed",
+    "knip": "passed",
+    "dependency_boundaries": "passed",
+    "build_exit": 0,
+    "verify_exit": 1,
+    "coverage": {
+      "statements": 77.08,
+      "branches": 72.85,
+      "functions": 81.83,
+      "lines": 77.08,
+      "required_each": 80
+    }
+  },
+  "frontend": "Unchanged; no new browser acceptance claimed",
+  "schema": {
+    "parent_relations": 132,
+    "columns": 1381,
+    "new_columns_this_increment": 0,
+    "new_tables_this_increment": 0,
+    "new_migrations_this_increment": 0,
+    "baseline14Oct_added": [
+      "att.regularizations.day_portion",
+      "sec.sessions.refresh_token_hash"
+    ],
+    "removed": [],
+    "changed_definitions": []
+  },
+  "cleanup": {
+    "activeFixtureUsers": 0,
+    "nonExitedCommittedFixtureEmployees": 0,
+    "unrevokedFixtureSessions": 0,
+    "remainingFixtureWorkflows": 0,
+    "failedDateFixtureAccountsCleaned": 1,
+    "retained": "Immutable audits and disabled/detached user parents retained; committed synthetic employees exited in isolated fixture companies. Ordinary scope fixtures rolled back."
+  },
+  "scope_limit": "Backend defects F02\u2013F05 repaired; direct correction UI, other stages, real integrations and acceptance remain open. No full SOW row/gate promoted.",
+  "remaining": [
+    "F01",
+    "F06",
+    "F07",
+    "F08",
+    "F09",
+    "F10",
+    "F11",
+    "F12",
+    "F13",
+    "F14",
+    "F15",
+    "F16",
+    "F17"
+  ],
+  "claims_budget": "Still deferred",
+  "local_preview": {
+    "owned_api_restarted": true,
+    "bind": "127.0.0.1:5100",
+    "liveness_path": "/api/system/health",
+    "health": {
+      "status": "ok",
+      "service": "hrms-api",
+      "ts": "2026-10-17T13:33:42.270Z"
+    }
+  }
+}

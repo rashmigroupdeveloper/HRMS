@@ -2,7 +2,7 @@
 import { z } from 'zod';
 import type { DayStatus } from '../../core/db/types.js';
 
-const sessionCode = z.enum(['P', 'A', 'O']);
+const sessionCode = z.enum(['P', 'A', 'O', 'OD']);
 export const sessionStatusesSchema = z.tuple([
   z.object({ session: z.literal(1), status: sessionCode }),
   z.object({ session: z.literal(2), status: sessionCode }),
@@ -18,8 +18,8 @@ export function readSessionStatuses(raw: unknown): SessionStatuses | null {
  * summary under the assigned policy, rather than inventing a payable fraction. */
 export function validateSessionSummary(status: DayStatus, sessions: SessionStatuses | null): void {
   if (!sessions || sessions.some((s) => s.status === 'O')) return;
-  const present = sessions.filter((s) => s.status === 'P').length;
-  const expected = present === 2 ? 'P' : present === 1 ? 'HD' : 'A';
+  const present = sessions.filter((s) => s.status === 'P' || s.status === 'OD').length;
+  const expected = present === 2 ? (sessions.every(s => s.status === 'OD') ? 'OD' : 'P') : present === 1 ? 'HD' : 'A';
   if (status !== expected && !(expected === 'A' && status === 'UAB')) {
     throw new Error(`Session results require daily status ${expected}`);
   }

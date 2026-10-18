@@ -45,7 +45,7 @@ export const loansRouter = {
   myLoans: authed
     .route({
       method: 'GET',
-      path: '/api/loans/my',
+      path: '/loans/my',
       summary: 'Get current user loans and advances',
     })
     .input(z.object({}))
@@ -62,7 +62,7 @@ export const loansRouter = {
   previewSchedule: authed
     .route({
       method: 'POST',
-      path: '/api/loans/preview',
+      path: '/loans/preview',
       summary: 'Calculate loan schedule and check eligibility',
     })
     .input(
@@ -132,7 +132,7 @@ export const loansRouter = {
   apply: authed
     .route({
       method: 'POST',
-      path: '/api/loans/apply',
+      path: '/loans/apply',
       summary: 'Apply for a loan or salary advance',
     })
     .input(
@@ -176,7 +176,7 @@ export const loansRouter = {
   getLedger: authed
     .route({
       method: 'GET',
-      path: '/api/loans/:id/ledger',
+      path: '/loans/{loanId}/ledger',
       summary: 'Get loan ledger with immutable recovery postings',
     })
     .input(z.object({ loanId: z.number() }))
@@ -212,7 +212,7 @@ export const loansRouter = {
   listAll: withPermission('payroll.run.manage')
     .route({
       method: 'GET',
-      path: '/api/loans/all',
+      path: '/loans/all',
       summary: 'List company loans and advances',
     })
     .input(
@@ -240,7 +240,7 @@ export const loansRouter = {
   importLegacy: withPermission('payroll.run.manage')
     .route({
       method: 'POST',
-      path: '/api/loans/legacy-import',
+      path: '/loans/legacy-import',
       summary: 'Import legacy loan balance from SAP/greytHR',
     })
     .input(

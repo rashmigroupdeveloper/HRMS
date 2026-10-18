@@ -1,0 +1,82 @@
+{
+  "prepared": "2026-10-16",
+  "stage": "Phase 1 Stage 1.3 repairs plus read-only cross-stage SOW regression review",
+  "backend": {
+    "verify_exit": 1,
+    "typecheck": "pass",
+    "lint": "pass",
+    "knip": "pass",
+    "dependency_check": "pass",
+    "tests_passed": 498,
+    "test_files": 65,
+    "tests_failed": 0,
+    "tests_skipped": 0,
+    "coverage": {
+      "statements": 76.56,
+      "lines": 76.56,
+      "branches": 71.84,
+      "functions": 80.83,
+      "global_floor": 80,
+      "floor_changed": false
+    },
+    "separate_build_exit": 0
+  },
+  "frontend": {
+    "verify_exit": 0,
+    "tests_passed": 246,
+    "test_files": 27,
+    "typecheck": "pass",
+    "lint": "pass",
+    "knip": "pass",
+    "build": "pass",
+    "large_chunk_advisory_kb": 919.53
+  },
+  "runtime": "Node24 / native local PostgreSQL14.24; target PostgreSQL16 migration rehearsal is historical, not rerun because migration source is unchanged",
+  "schema": {
+    "business_relations": 132,
+    "columns": 1379,
+    "added": 0,
+    "removed": 0,
+    "changed_definitions": 0,
+    "applied_local_migrations": 48,
+    "purpose_integrity_findings": "retained; not zero slop certification"
+  },
+  "contract_audit": {
+    "contractPaths": 250,
+    "operations": 268,
+    "calls": 165,
+    "noMatchingContract": 30,
+    "unresolvedDynamic": 9,
+    "falsePositivesExcluded": 6,
+    "remainingUnmatchedCandidates": 24
+  },
+  "native_http_probes": 10,
+  "native_deadlock_regression": {
+    "before": "PostgreSQL deadlock reproduced",
+    "after": "passes with coordinated pg_locks barrier",
+    "test_timeouts_or_retries_added_to_hide_failures": false
+  },
+  "ui_test_hygiene": "Mounted test components are explicitly cleaned up before spies are restored, removing the reproduced teardown/mock race; assertions retained.",
+  "react_doctor": {
+    "target": "ApprovalRequestStatus.tsx",
+    "findings": 0,
+    "limit": "Scoped scan only; prior broader warnings remain recorded in pack20"
+  },
+  "impeccable": {
+    "target": "ApprovalRequestStatus.tsx",
+    "deterministic_findings": 0,
+    "limit": "Copy/status-only change; no browser walkthrough or new screenshots in this increment"
+  },
+  "workflow_seed": {
+    "existing_chains_overwritten": 0,
+    "new_event": "workflow.routing_held",
+    "configured_recipient_kind": "role",
+    "configured_recipient_ref": "hr_head",
+    "runtime_edits_preserved": true
+  },
+  "claims_budgets": "functional work deferred; two invalid legacy specs recorded, not overwritten",
+  "new_tables_columns_migrations": 0,
+  "gates_advanced": [],
+  "worker_isolation": "A native before/after regression proves malformed legacy definition remains pending and logs a redacted failure while unrelated valid overdue OT lapses.",
+  "fixture_cleanup": "Retained S14 synthetic employees now leave active/payroll populations; mutable fixtures cleaned, immutable identities/swipes/audit retained. No claim that all older test data is clean."
+}

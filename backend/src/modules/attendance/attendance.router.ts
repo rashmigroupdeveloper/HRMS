@@ -5,10 +5,11 @@
  * Permissions per docs/08 §2: devices/integrations = it_admin domain;
  * the unmatched queue = HR ops (attendance.manual_override holders fix mappings).
  */
+import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { getTypedSetting } from '../settings/index.js';
-import { runKentSync } from './kent-sync.job.js';
+import { runKentSync, KentIntegrationUnavailable } from './kent-sync.job.js';
 import { reingestQuarantined } from './ingest.service.js';
 import { listFinalizationHolds } from './day-status.service.js';
 
@@ -172,7 +173,12 @@ const syncNowProcedure = withPermission('admin.integrations')
     }),
   )
   .handler(async ({ context }) => {
-    const result = await runKentSync(context.db);
+    let result;
+    try { result = await runKentSync(context.db); }
+    catch (error) {
+      if (error instanceof KentIntegrationUnavailable) throw new ORPCError('SERVICE_UNAVAILABLE', { message: error.message });
+      throw error;
+    }
     return {
       fetched: result.fetched,
       inserted: result.inserted,

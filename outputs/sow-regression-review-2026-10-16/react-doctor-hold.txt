@@ -1,0 +1,16 @@
+✔ Scanned 1 file in 1.3s
+
+React Doctor — hrms-frontend
+Score disabled by --no-score. Want something custom to your company? Contact us at https://react.doctor/enterprise.
+
+✔ No issues found!
+
+  ────────────────────────────────────────────────────────────
+
+  Docs: https://react.doctor/docs
+  Learn more about fixing issues, setting up CI/CD, and
+  configuring rules with a config file
+
+  GitHub: https://github.com/millionco/react-doctor
+  Report issues and star the repository!
+

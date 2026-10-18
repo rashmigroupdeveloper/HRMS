@@ -20,7 +20,7 @@ export const statutoryRouter = {
   /**
    * Compute real-time statutory deductions estimate for an employee gross wage.
    */
-    estimate: withPermission('payroll.run.view')
+    estimate: withPermission('payroll.run.view', 'read')
       .input(
         z.object({
           basicPaise: z.number().int().nonnegative(),
@@ -102,7 +102,7 @@ export const statutoryRouter = {
     /**
      * Generate EPFO Unified Portal ECR file text.
      */
-    generateEcr: withPermission('payroll.reports')
+    generateEcr: withPermission('payroll.reports', 'read')
       .input(
         z.object({
           records: z.array(
@@ -150,7 +150,7 @@ export const statutoryRouter = {
     /**
      * Generate ESIC Monthly Return CSV.
      */
-    generateEsicReturn: withPermission('payroll.reports')
+    generateEsicReturn: withPermission('payroll.reports', 'read')
       .input(
         z.object({
           records: z.array(
@@ -187,7 +187,7 @@ export const statutoryRouter = {
     /**
      * Generate West Bengal Professional Tax Return Register (PTRC).
      */
-    generatePtrc: withPermission('payroll.reports')
+    generatePtrc: withPermission('payroll.reports', 'read')
       .input(
         z.object({
           stateCode: z.string().default('WB'),
@@ -228,7 +228,7 @@ export const statutoryRouter = {
     /**
      * Generate Labour Welfare Fund Form D statement.
      */
-    generateFormD: withPermission('payroll.reports')
+    generateFormD: withPermission('payroll.reports', 'read')
       .input(
         z.object({
           stateCode: z.string().default('WB'),
@@ -276,7 +276,7 @@ export const statutoryRouter = {
     /**
      * Compute full Income Tax statement lines A through R for ESS/Admin.
      */
-    projectTds: withPermission('payroll.run.view')
+    projectTds: withPermission('payroll.run.view', 'read')
       .input(
         z.object({
           grossSalaryPaise: z.number().int(),
@@ -314,7 +314,7 @@ export const statutoryRouter = {
     /**
      * List employee Chapter VI-A investment declarations for a FY.
      */
-    listDeclarations: withPermission('payroll.run.view')
+    listDeclarations: withPermission('payroll.run.view', 'read')
       .input(
         z.object({
           employeeId: z.number().int(),

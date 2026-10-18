@@ -28,6 +28,7 @@ import {
   getBalance,
   getLeaveType,
   registerLeaveWorkflowHooks,
+  requestCancellation,
   requestEncashment,
   runCompOffExpiry,
   runMonthlyAccrual,
@@ -487,5 +488,129 @@ run('Stage 1.5 — leave module (live Postgres)', () => {
     expect(application).toEqual({ status: 'pending', ledger_txn_id: null });
     const workflow = await db.selectFrom('wf.requests').select('status').where('id', '=', request.workflowRequestId).executeTakeFirstOrThrow();
     expect(workflow.status).toBe('pending');
+  });
+
+  it('covers leave encashment, cancellation, and restricted holiday validation branches', async () => {
+    const owner = await db.selectFrom('core.users').select('id').where('employee_id', '=', empId).executeTakeFirstOrThrow();
+
+    // 1. requestEncashment non-positive days throws
+    await expect(
+      requestEncashment(db, {
+        employeeId: empId,
+        requestedByUserId: owner.id,
+        leaveTypeCode: 'EL',
+        days: 0,
+      }),
+    ).rejects.toThrow(/days must be positive/);
+
+    // 2. requestEncashment non-encashable type throws (e.g. SL or CL)
+    await expect(
+      requestEncashment(db, {
+        employeeId: empId,
+        requestedByUserId: owner.id,
+        leaveTypeCode: 'CL',
+        days: 1,
+      }),
+    ).rejects.toThrow(/is not encashable/);
+
+    // 3. requestEncashment insufficient balance throws
+    await expect(
+      requestEncashment(db, {
+        employeeId: empId,
+        requestedByUserId: owner.id,
+        leaveTypeCode: 'EL',
+        days: 99999,
+      }),
+    ).rejects.toThrow(/Insufficient EL balance/);
+
+    // 4. requestCancellation for non-existent application throws
+    await expect(
+      requestCancellation(db, {
+        applicationId: 999999,
+        employeeId: empId,
+        requestedByUserId: owner.id,
+      }),
+    ).rejects.toThrow();
+
+    // 5. Apply for leave, attempt to cancel while still pending -> throws
+    const pendingApp = await applyForLeave(db, {
+      employeeId: empId,
+      requestedByUserId: owner.id,
+      leaveTypeCode: 'CL',
+      fromDate: '2032-06-01',
+      toDate: '2032-06-01',
+      reason: 'Pending cancel test',
+    });
+
+    await expect(
+      requestCancellation(db, {
+        applicationId: pendingApp.id,
+        employeeId: empId,
+        requestedByUserId: owner.id,
+      }),
+    ).rejects.toThrow(/Only approved leave can be cancelled/);
+
+    // Cancellation with wrong employee id throws
+    await expect(
+      requestCancellation(db, {
+        applicationId: pendingApp.id,
+        employeeId: 999999,
+        requestedByUserId: owner.id,
+      }),
+    ).rejects.toThrow(/Not your application/);
+
+    // 6. selectRestrictedHoliday in the past throws
+    const pastRh = await db
+      .insertInto('lv.restricted_holidays')
+      .values({
+        holiday_date: sql<Date>`'2020-01-01'::date`,
+        name: `Past Test Holiday ${stamp}`,
+        location_id: null,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+
+    await expect(
+      selectRestrictedHoliday(db, {
+        employeeId: empId,
+        requestedByUserId: owner.id,
+        restrictedHolidayId: pastRh.id,
+      }),
+    ).rejects.toThrow(/in the past/);
+
+    // 7. selectRestrictedHoliday location mismatch throws
+    const empRec = await db
+      .selectFrom('core.employees')
+      .select(['company_id', 'location_id'])
+      .where('id', '=', empId)
+      .executeTakeFirstOrThrow();
+
+    const otherLoc = await db
+      .insertInto('core.locations')
+      .values({
+        name: `Other Loc ${stamp}`,
+        company_id: empRec.company_id,
+        state_code: 'WB',
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+
+    const futureRhMismatch = await db
+      .insertInto('lv.restricted_holidays')
+      .values({
+        holiday_date: sql<Date>`'2035-10-10'::date`,
+        name: `Future Test Holiday ${stamp}`,
+        location_id: otherLoc.id,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+
+    await expect(
+      selectRestrictedHoliday(db, {
+        employeeId: empId,
+        requestedByUserId: owner.id,
+        restrictedHolidayId: futureRhMismatch.id,
+      }),
+    ).rejects.toThrow(/not published for your location/);
   });
 });

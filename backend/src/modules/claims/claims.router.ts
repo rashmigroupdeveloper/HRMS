@@ -51,7 +51,7 @@ export const claimsRouter = {
   myEntitlements: authed
     .route({
       method: 'GET',
-      path: '/api/claims/my-entitlements',
+      path: '/claims/my-entitlements',
       summary: 'Get employee live reimbursement entitlements and available balances',
     })
     .input(z.object({}))
@@ -83,7 +83,7 @@ export const claimsRouter = {
   myClaims: authed
     .route({
       method: 'GET',
-      path: '/api/claims/my',
+      path: '/claims/my',
       summary: 'Get employee claim history with attached bills',
     })
     .input(z.object({}))
@@ -104,7 +104,7 @@ export const claimsRouter = {
   submit: authed
     .route({
       method: 'POST',
-      path: '/api/claims/submit',
+      path: '/claims/submit',
       summary: 'Submit a new reimbursement claim with bills',
     })
     .input(
@@ -160,7 +160,7 @@ export const claimsRouter = {
   pendingVerification: withPermission('claims.approve')
     .route({
       method: 'GET',
-      path: '/api/claims/pending',
+      path: '/claims/pending',
       summary: 'List claims in verification queue',
     })
     .input(
@@ -184,7 +184,7 @@ export const claimsRouter = {
   decide: withPermission('claims.approve')
     .route({
       method: 'POST',
-      path: '/api/claims/decide',
+      path: '/claims/decide',
       summary: 'Approve, reject, or partially approve a claim',
     })
     .input(
@@ -234,7 +234,7 @@ export const claimsRouter = {
   routePayout: withPermission('payroll.run.manage')
     .route({
       method: 'POST',
-      path: '/api/claims/route-payout',
+      path: '/claims/route-payout',
       summary: 'Route claim payout to regular payroll run or off-cycle bank batch',
     })
     .input(
@@ -277,7 +277,7 @@ export const claimsRouter = {
   yearEndRecovery: withPermission('payroll.run.manage')
     .route({
       method: 'GET',
-      path: '/api/claims/year-end-recovery',
+      path: '/claims/year-end-recovery',
       summary: 'Calculate year-end unsubstantiated proof tax recovery',
     })
     .input(

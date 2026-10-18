@@ -1,0 +1,59 @@
+{
+  "prepared": "2026-10-16",
+  "readOnly": true,
+  "noDatabaseConnected": true,
+  "noAuthenticationTokens": true,
+  "results": [
+    {
+      "method": "GET",
+      "path": "/api/loans/my",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/api/loans/my",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/loans/apply",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/api/loans/apply",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/lifecycle/separations",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/lifecycle/separations/list",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/lifecycle/separations/123/approve",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/lifecycle/separations/approve",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/core/companies",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/workflows/routing-holds",
+      "status": 401
+    }
+  ],
+  "meaning": "404 proves the requested screen URL does not route. 401 on the actual path proves routing reaches authentication, not that the business handler succeeds."
+}

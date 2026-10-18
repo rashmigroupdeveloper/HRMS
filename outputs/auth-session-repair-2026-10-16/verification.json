@@ -1,0 +1,70 @@
+{
+  "prepared": "2026-10-16",
+  "stage": "Phase0 Stage0.4",
+  "requirements": [
+    "NFR-03",
+    "CORE-10",
+    "P0-T20"
+  ],
+  "sponsor_session_decision": "Single-use refresh; logout immediately revokes current session; preserve other logins",
+  "before_native": {
+    "failed": 5,
+    "passed_existing_control": 1
+  },
+  "backend": {
+    "tests_passed": 519,
+    "files_passed": 67,
+    "skipped": 0,
+    "verify_exit": 1,
+    "static_checks": "typecheck/lint/knip/dependency boundaries passed",
+    "coverage": {
+      "lines": 76.73,
+      "statements": 76.73,
+      "branches": 72.09,
+      "functions": 81.42,
+      "required_each": 80
+    },
+    "build_exit": 0
+  },
+  "frontend": {
+    "tests_passed": 249,
+    "files_passed": 27,
+    "verify_exit": 0,
+    "build": "passed",
+    "advisory": "Existing ~920KB bundle chunk warning"
+  },
+  "new_regression_cases": {
+    "native": 9,
+    "browser": 3
+  },
+  "catalog": {
+    "relations": 132,
+    "columns": 1380,
+    "added_columns": [
+      "sec.sessions.refresh_token_hash"
+    ],
+    "removed_columns": [],
+    "changed_existing_column_definitions": []
+  },
+  "migration": {
+    "new": "1752290000000_auth-refresh-credential",
+    "recheck": "No migrations to run; exit0",
+    "preexisting_reconciliation_also_recorded": "1752280000000_pay-budget-claim-contract; no additional catalog column delta"
+  },
+  "cleanup": {
+    "activeAuthFixtureUsers": 0,
+    "unrevokedAuthFixtureSessions": 0,
+    "authorityFixtureUsers": 0,
+    "retained": "Inactive audited auth fixture accounts and revoked sessions are retained by repository convention; authority fixtures rolled back."
+  },
+  "sow_rows_retained_unchanged": 176,
+  "remaining_acceptance": [
+    "Global backend coverage floor",
+    "ATS SSO/staging integration",
+    "Prior payroll-core router human review",
+    "Remaining HR and other-module repairs in their owning stages",
+    "Production integrations and signed acceptance"
+  ],
+  "claims_budget": "Still deferred",
+  "rollout": "Existing sid-less tokens require re-login; not deployed"
+}

@@ -33,8 +33,7 @@ function permittedGrant() {
   )`;
 }
 
-export function workflowPermissionSql(userId: Id, definition: Text, subjectId: Id) {
-  const permission = requiredPermission(definition);
+function employeePermissionSql(userId: Id, permission: RawBuilder<string | null>, subjectId: Id) {
   return sql<boolean>`EXISTS (
     SELECT 1 FROM core.users actor
      WHERE actor.id = ${userId} AND actor.is_active
@@ -46,6 +45,15 @@ export function workflowPermissionSql(userId: Id, definition: Text, subjectId: I
           WHERE permission.code = ${permission} AND ${permittedGrant()}
        ))
   )`;
+}
+
+export function workflowPermissionSql(userId: Id, definition: Text, subjectId: Id) {
+  return employeePermissionSql(userId, requiredPermission(definition), subjectId);
+}
+
+/** Routing administration cannot grant consent, and readonly grants cannot repair it. */
+export function workflowAdministrationSql(userId: Id, subjectId: Id) {
+  return employeePermissionSql(userId, sql<string>`'admin.settings'`, subjectId);
 }
 
 export function workflowRoleSql(userId: Id, roleSpec: Text, definition: Text, subjectId: Id) {

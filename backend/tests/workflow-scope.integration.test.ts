@@ -19,6 +19,7 @@ describe.skipIf(!url)('WF-01 scoped approvers against native PostgreSQL', () => 
   let app: Express;
   const stamp = Date.now();
   const roleCode = `wfscope_${stamp}`;
+  const heldDefinition = `wfscope_hold_${stamp}`;
   const password = 'Workflow-scope-fixture-1!';
   const users: number[] = [];
   const employees: number[] = [];
@@ -89,6 +90,11 @@ describe.skipIf(!url)('WF-01 scoped approvers against native PostgreSQL', () => 
     roleId = (await db.insertInto('core.roles').values({ code: roleCode, name: 'Scoped approval fixture' }).returning('id').executeTakeFirstOrThrow()).id;
     const permission = await db.selectFrom('core.permissions').select('id').where('code', '=', 'od.approve').executeTakeFirstOrThrow();
     await db.insertInto('core.role_permissions').values({ role_id: roleId, permission_id: permission.id, scope: 'org_unit' }).execute();
+    const routingPermission = await db.selectFrom('core.permissions').select('id').where('code', '=', 'admin.settings').executeTakeFirstOrThrow();
+    await db.insertInto('core.role_permissions').values({ role_id: roleId, permission_id: routingPermission.id, scope: 'org_unit' }).execute();
+    await db.insertInto('wf.definitions').values({ code: heldDefinition, name: 'Scoped hold fixture',
+      steps: JSON.stringify([{ step: 1, approver: 'functional_manager', slaHours: 48, onBreach: 'auto_approve' }]),
+    }).execute();
     managerId = (await db.insertInto('core.employees').values({ company_id: companyId, org_unit_id: unitA,
       ecode: `WF${stamp}M`, first_name: 'Workflow manager', status: 'active' }).returning('id').executeTakeFirstOrThrow()).id;
     employees.push(managerId);
@@ -122,6 +128,7 @@ describe.skipIf(!url)('WF-01 scoped approvers against native PostgreSQL', () => 
       if (employees.length) await db.deleteFrom('core.employees').where('id', 'in', employees).execute();
       await db.deleteFrom('core.role_permissions').where('role_id', '=', roleId).execute();
       await db.deleteFrom('core.roles').where('id', '=', roleId).execute();
+      await db.deleteFrom('wf.definitions').where('code', '=', heldDefinition).execute();
       // Audited company/org-unit identities remain; no active users/employees or open requests remain.
     } finally { await db.destroy(); }
   });
@@ -184,5 +191,56 @@ describe.skipIf(!url)('WF-01 scoped approvers against native PostgreSQL', () => 
     expect(await db.selectFrom('att.day_records').select('id').where('employee_id', '=', subjectId)
       .where('work_date', '=', sql<Date>`${request.date}::date`).executeTakeFirst()).toBeUndefined();
     // Retain the immutable lock and its inactive audited user; never disable triggers.
+  });
+
+  it('holds for HR and permits only scoped routing repair, not implicit approval', async () => {
+    const created = await (await httpRequest(app)).post('/api/workflows/requests')
+      .auth(ownerToken, { type: 'bearer' }).send({ definitionCode: heldDefinition, payload: { reason: 'Hold regression' } });
+    expectHttpStatus(created, 200);
+    const { requestId } = created.body as { requestId: number };
+    const detail = await (await httpRequest(app)).get(`/api/workflows/requests/${requestId}`).auth(ownerToken, { type: 'bearer' });
+    expectHttpStatus(detail, 200);
+    expect(detail.body as { status: string; routingState: string; steps: unknown[] }).toMatchObject({
+      status: 'pending', routingState: 'held_for_hr', steps: [],
+    });
+    const holds = await (await httpRequest(app)).get('/api/workflows/routing-holds?limit=100').auth(insideToken, { type: 'bearer' });
+    expectHttpStatus(holds, 200);
+    expect((holds.body as { requestId: number }[]).some(r => r.requestId === requestId)).toBe(true);
+    const outside = await (await httpRequest(app)).get('/api/workflows/routing-holds?limit=100').auth(outsideToken, { type: 'bearer' });
+    expectHttpStatus(outside, 200);
+    expect((outside.body as { requestId: number }[]).some(r => r.requestId === requestId)).toBe(false);
+    const retryUrl = `/api/workflows/requests/${requestId}/retry-routing`;
+    for (const deniedToken of [outsideToken, ownerToken]) {
+      const denied = await (await httpRequest(app)).post(retryUrl).auth(deniedToken, { type: 'bearer' }).send({ reason: 'Attempt outside authority' });
+      expectHttpStatus(denied, 403);
+    }
+    const routingPermission = await db.selectFrom('core.permissions').select('id').where('code', '=', 'admin.settings').executeTakeFirstOrThrow();
+    await db.updateTable('core.role_permissions').set({ scope: 'readonly' }).where('role_id', '=', roleId)
+      .where('permission_id', '=', routingPermission.id).execute();
+    try {
+      const readonly = await (await httpRequest(app)).post(retryUrl).auth(insideToken, { type: 'bearer' })
+        .send({ reason: 'A readonly grant cannot repair routing' });
+      expectHttpStatus(readonly, 403);
+    } finally {
+      await db.updateTable('core.role_permissions').set({ scope: 'org_unit' }).where('role_id', '=', roleId)
+        .where('permission_id', '=', routingPermission.id).execute();
+    }
+    // A repeated retry without a repaired hierarchy still holds.
+    const stillHeld = await (await httpRequest(app)).post(retryUrl).auth(insideToken, { type: 'bearer' }).send({ reason: 'Check unresolved hierarchy' });
+    expectHttpStatus(stillHeld, 200);
+    expect(stillHeld.body as { routingState: string }).toEqual({ routingState: 'held_for_hr' });
+    await db.updateTable('core.employees').set({ functional_manager_id: managerId }).where('id', '=', subjectId).execute();
+    const repairs = await Promise.all([1, 2].map(async () => (await httpRequest(app)).post(retryUrl)
+      .auth(insideToken, { type: 'bearer' }).send({ reason: 'Functional manager restored' })));
+    expect(repairs.map(r => r.status).sort()).toEqual([200, 400]);
+    const open = await db.selectFrom('wf.request_steps').select('approver_user_id').where('request_id', '=', requestId)
+      .where('action', 'is', null).execute();
+    const managerUser = await db.selectFrom('core.users').select('id').where('employee_id', '=', managerId).executeTakeFirstOrThrow();
+    expect(open).toEqual([{ approver_user_id: managerUser.id }]);
+    expect((await db.selectFrom('wf.requests').select('status').where('id', '=', requestId).executeTakeFirstOrThrow()).status).toBe('pending');
+    const notes = await db.selectFrom('wf.notifications').select('template_code').where('recipient_user_id', '=', ownerUser)
+      .where(sql<boolean>`payload->>'requestId' = ${String(requestId)}`).execute();
+    expect(notes.some(n => n.template_code === 'request_routing_held')).toBe(true);
+    expect(notes.some(n => n.template_code === 'request_approved')).toBe(false);
   });
 });

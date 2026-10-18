@@ -26,7 +26,11 @@ import { registerLeaveWorkflowHooks, runCompOffExpiry, runMonthlyAccrual } from 
 import { registerLettersWorkflowHooks } from '../modules/letters/index.js';
 import { runPolicyAckNag } from '../modules/policies/index.js';
 import { sendBoardingExitEmail } from '../modules/lifecycle/index.js';
-import { enqueueEvent } from '../modules/notifications/index.js';
+import {
+  createNotificationTransport,
+  enqueueEvent,
+  processQueue,
+} from '../modules/notifications/index.js';
 import { runEscalations } from '../modules/workflows/index.js';
 import { buildKpiSnapshot } from '../modules/reports/index.js';
 import { escalateBreachedTickets } from '../modules/helpdesk/index.js';
@@ -45,6 +49,7 @@ const ABSENCE_SCAN_QUEUE = 'absence-scan';
 const POLICY_NAG_QUEUE = 'policy-ack-nag';
 const KPI_SNAPSHOT_QUEUE = 'kpi-daily-snapshot';
 const HELPDESK_ESCALATION_QUEUE = 'helpdesk-escalation';
+const NOTIFICATION_DRAIN_QUEUE = 'notification-drain';
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -75,6 +80,7 @@ async function main(): Promise<void> {
     BOARDING_EXIT_QUEUE,
     ABSENCE_SCAN_QUEUE,
     POLICY_NAG_QUEUE,
+    NOTIFICATION_DRAIN_QUEUE,
   ];
   for (const q of queues) {
     await boss.createQueue(q);
@@ -169,6 +175,16 @@ async function main(): Promise<void> {
     await enqueueEvent(db, 'attendance.roster_deadline', 'roster_deadline', {
       month: new Date().toISOString().slice(0, 7),
     });
+  });
+
+  // WF-02 / C16: notification queue drain — runs every minute to dispatch pending emails/in-app notifications
+  await boss.schedule(NOTIFICATION_DRAIN_QUEUE, '* * * * *');
+  const notificationTransport = createNotificationTransport(env, db);
+  await boss.work(NOTIFICATION_DRAIN_QUEUE, async () => {
+    const { sent, failed } = await processQueue(db, notificationTransport);
+    if (sent > 0 || failed > 0) {
+      logger.info({ sent, failed }, 'notifications drained');
+    }
   });
 
   // One immediate cycle on boot so a fresh environment has data instantly.

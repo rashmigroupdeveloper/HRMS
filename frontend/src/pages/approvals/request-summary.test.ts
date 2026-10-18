@@ -74,3 +74,10 @@ describe('payloadAsJson', () => {
     expect(payloadAsJson({ days: 1 })).toBe('{\n  "days": 1\n}');
   });
 });
+
+
+it('shows the selected attendance half and limits the approval consequence to it', () => {
+  const summary = summarizeRequest('od', { kind: 'OD', dayPortion: 'second_half', fromDate: '2026-10-16', toDate: '2026-10-16' });
+  expect(summary.rows).toContainEqual({ label: 'Attendance half', value: 'Second half' });
+  expect(summary.consequence).toContain('second half only; other half unchanged');
+});

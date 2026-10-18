@@ -11,18 +11,18 @@ import {
   getUserPermissions,
   getUserRoleCodes,
 } from '../../core/rbac/permissions.service.js';
+import { revokeSession } from './auth.sessions.js';
 import { login, refresh } from './auth.service.js';
 
 const REFRESH_COOKIE = 'hrms_refresh';
-const REFRESH_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-function setRefreshCookie(res: Response, token: string, secure: boolean): void {
+function setRefreshCookie(res: Response, token: string, secure: boolean, expiresAt: Date): void {
   res.cookie(REFRESH_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
     secure,
     path: '/api/auth',
-    maxAge: REFRESH_MAX_AGE_MS,
+    expires: expiresAt,
   });
 }
 
@@ -51,16 +51,11 @@ const loginProcedure = base
     const result = await login(context.db, context.jwtSecret, input.identifier, input.password, context.req.ip ?? null);
 
     if (!result.ok) {
-      if (result.reason === 'locked') {
-        throw new ORPCError('UNAUTHORIZED', {
-          message: `Account temporarily locked. Try again after ${result.lockedUntil?.toISOString() ?? 'a while'}.`,
-        });
-      }
       // invalid_credentials and inactive answer identically — no account oracle.
       throw new ORPCError('UNAUTHORIZED', { message: 'Invalid email or password' });
     }
 
-    setRefreshCookie(context.res, result.refreshToken, context.secureCookies);
+    setRefreshCookie(context.res, result.refreshToken, context.secureCookies, result.refreshExpiresAt);
     return {
       accessToken: result.accessToken,
       user: { id: result.user.id, email: result.user.email },
@@ -76,17 +71,24 @@ const refreshProcedure = base
     const token = readRefreshCookie(context.req.cookies);
     if (token === undefined) throw new ORPCError('UNAUTHORIZED', { message: 'No refresh token' });
 
-    const result = await refresh(context.db, context.jwtSecret, token);
+    const result = await refresh(context.db, context.jwtSecret, token, context.req.ip ?? null);
     if (!result.ok) throw new ORPCError('UNAUTHORIZED', { message: 'Invalid or expired refresh token' });
 
-    setRefreshCookie(context.res, result.refreshToken, context.secureCookies);
+    setRefreshCookie(context.res, result.refreshToken, context.secureCookies, result.refreshExpiresAt);
     return { accessToken: result.accessToken };
   });
 
 const logoutProcedure = base
-  .route({ method: 'POST', path: '/auth/logout', summary: 'Clear the refresh cookie' })
+  .route({ method: 'POST', path: '/auth/logout', summary: 'Revoke this session and clear its refresh cookie' })
   .output(z.object({ ok: z.literal(true) }))
-  .handler(({ context }) => {
+  .handler(async ({ context }) => {
+    if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
+    const header = context.req.headers.authorization;
+    const cookie = readRefreshCookie(context.req.cookies);
+    const bearer = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
+    for (const token of new Set([cookie, bearer])) {
+      if (token) await revokeSession(context.db, context.jwtSecret, token, context.req.ip ?? null);
+    }
     context.res.clearCookie(REFRESH_COOKIE, { path: '/api/auth' });
     return { ok: true as const };
   });

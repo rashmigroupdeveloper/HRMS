@@ -8,7 +8,13 @@
  */
 
 import { sql, type Kysely } from 'kysely';
+import { writeAudit } from '../../../core/audit/audit.service.js';
+import { assertEmployeesInScope, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
 import type { Database } from '../../../core/db/types.js';
+
+export class KentEnrollmentUnavailable extends Error {
+  constructor() {super('Kent enrollment verification is unavailable until the authorized enrollment integration is connected');this.name='KentEnrollmentUnavailable';}
+}
 
 export interface StandardTaskDefinition {
   taskCode: string;
@@ -94,43 +100,21 @@ export const TaskFanoutService = {
    * Completes a stakeholder task.
    */
   async completeTask(
-    db: Kysely<Database>,
-    taskId: number,
-    userId: number,
-    notes?: string | null
+    db: Kysely<Database>, taskId: number, userId: number, notes?: string | null, scope?: EmployeeScope,
   ): Promise<void> {
-    const now = new Date();
-
-    const task = await db
-      .selectFrom('core.onboarding_tasks')
-      .selectAll()
-      .where('id', '=', taskId)
-      .executeTakeFirst();
-
-    if (!task) {
-      throw new Error(`Task ${taskId} not found.`);
-    }
-
-    await db
-      .updateTable('core.onboarding_tasks')
-      .set({
-        status: 'completed',
-        done_by: userId,
-        done_at: now,
-        notes: notes ?? null,
-        updated_at: now,
-      })
-      .where('id', '=', taskId)
-      .execute();
-
-    // If biometric enrollment task completed, update employee flag
-    if (task.task_code === 'it_biometric') {
-      await db
-        .updateTable('core.employees')
-        .set({ biometric_registered: true })
-        .where('id', '=', task.employee_id)
-        .execute();
-    }
+    const complete=async(db:Kysely<Database>)=>{
+      const target=await db.selectFrom('core.onboarding_tasks').select('employee_id').where('id','=',taskId).executeTakeFirst();
+      if(!target) throw new Error('Onboarding task not found');
+      if(scope) await assertEmployeesInScope(db,scope,[target.employee_id]);
+      await db.selectFrom('core.employees').select('id').where('id','=',target.employee_id).forUpdate().executeTakeFirstOrThrow();
+      const task=await db.selectFrom('core.onboarding_tasks').selectAll().where('id','=',taskId).forUpdate().executeTakeFirstOrThrow();
+      if(task.task_code==='it_biometric') throw new KentEnrollmentUnavailable();
+      if(task.status==='completed') return;
+      const now=new Date();
+      await db.updateTable('core.onboarding_tasks').set({status:'completed',done_by:userId,done_at:now,notes:notes??null,updated_at:now}).where('id','=',taskId).execute();
+      await writeAudit(db,{actorUserId:userId,subjectEmployeeId:target.employee_id,action:'update',entity:'core.onboarding_tasks',entityId:taskId,field:'status',oldValue:task.status,newValue:'completed'});
+    };
+    return db.isTransaction?complete(db):db.transaction().execute(complete);
   },
 
   /**
@@ -168,32 +152,12 @@ export const TaskFanoutService = {
   /**
    * Explicitly verifies Kent biometric registration for an employee.
    */
-  async verifyBiometricRegistration(
-    db: Kysely<Database>,
-    employeeId: number,
-    verifiedByUserId: number
+  verifyBiometricRegistration(
+    _db: Kysely<Database>, _employeeId: number, _verifiedByUserId: number,
   ): Promise<void> {
-    const now = new Date();
-
-    await db
-      .updateTable('core.employees')
-      .set({ biometric_registered: true })
-      .where('id', '=', employeeId)
-      .execute();
-
-    // Mark biometric task as completed if open
-    await db
-      .updateTable('core.onboarding_tasks')
-      .set({
-        status: 'completed',
-        done_by: verifiedByUserId,
-        done_at: now,
-        notes: 'Verified against Kent biometric system feed.',
-        updated_at: now,
-      })
-      .where('employee_id', '=', employeeId)
-      .where('task_code', '=', 'it_biometric')
-      .where('status', '!=', 'completed')
-      .execute();
+    void _db; void _employeeId; void _verifiedByUserId;
+    // A local button press or an old swipe is not proof of enrollment.
+    // No enrollment adapter/contract is configured in the application yet.
+    return Promise.reject(new KentEnrollmentUnavailable());
   },
 };

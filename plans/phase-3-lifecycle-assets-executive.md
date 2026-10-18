@@ -1,5 +1,11 @@
 # Phase 3 — Lifecycle · Assets · Helpdesk · Engagement · Executive
 
+> **18 Oct joining-boundary repair (partial):** LC-01/CORE-02/06/10 now require completed application + explicit actual joining; conversion is transactional and audited, uses real entity/master choices and rejects invalid relationships. Fake Kent verification is blocked; task reads/mutations are scoped, audited and idempotent. Full onboarding/probation acceptance remains open for token security/delivery, canonical salary initialization, task-owner authority, live ATS/SSO/Kent and UAT. Evidence is being collected in pack33.
+
+> **16 Oct onboarding durability audit:** [pack23](sow-completion/23-HR-ACTIONS-SAFETY-REVIEW.md) independently reproduces a failed conversion leaving a committed employee. Cross-scope/future conversion, invalid DATE output, unusable login/pay readiness, blocked IT task owners and false Kent verification remain open under Stage3.1. Test partial data cleaned; no application repair or gate sign-off.
+
+> **16 Oct other-module audit:** [pack22](sow-completion/22-OTHER-MODULE-BUG-AUDIT.md) adds native evidence for company-audience leakage, malformed/ambiguous survey answers, policy compliance population errors, helpdesk category access, reopen/closure history and actual screen/API DTO failures. Stage3.4 and G3 stay open; no implementation performed in this audit.
+
 > **14 Oct repair audit:** lifecycle, transfer and dashboard completion claims are reopened against source/database findings. Preserve credited asset capabilities, but require the linked exit criteria and acceptance receipts. [Current SOW issues and remaining work](../outputs/remediation-2026-10-14/SOW-ISSUES-AND-REMAINING.md) is the repair crosswalk. G3 remains open.
 
 **Target:** 5–6 weeks · **Gate:** G3 · **Spec:** docs/13 §6, docs/04 §4/§6, docs/01 §7–8, docs/06 §3–4, docs/03 §7/§9
@@ -34,7 +40,7 @@ Regenerated on 14 Oct from all 176 original scored rows. IDs below are physical 
   - Ingestion of accepted candidates from ATS / LOI into `core.onboarding_candidates` with complete compensation details (CTC, probation duration, probation percentage, offered designation/department/entity).
   - Secure personal email pre-boarding invitation: tokenized URL with cryptographic hash at rest, strict expiration (72h), and delivery tracking (sent, delivered, opened, submitted).
   - Self-service pre-join portal: candidate enters personal profile, emergency contacts, statutory IDs (PAN, Aadhaar, UAN), bank account with proof attachment.
-  - HR Conversion Wizard: duplicate check against existing employee master, e-code auto-generation per canonical series (`generate_next_ecode`), atomic creation of `core.employees`, `core.users`, and initial `pay.employee_salaries` record. *(LC-01, SOW-022..026)*
+  - HR Conversion Wizard: completed application accepted + actual joining explicitly confirmed (future actual DOJ forbidden); candidates remain outside employee MIS until then. Duplicate check against existing employee master, e-code auto-generation per canonical series (`generate_next_ecode`), atomic creation of `core.employees`, `core.users`, and initial `pay.employee_salaries` record. *(LC-01, SOW-022..026)*
 - [ ] LC-02 — Onboarding Task Fan-out & Stakeholder Orchestration:
   - Automated task generation upon conversion: IT (laptop provisioning, email account, access cards), Admin (seating, workstation), HR Ops (induction, file creation, biometric enrolment).
   - SLA tracking per task with auto-escalation to department head at +48h.
@@ -62,11 +68,11 @@ Regenerated on 14 Oct from all 176 original scored rows. IDs below are physical 
 
 ---
 
-## Stage 3.2 — Separation, clearances & Final Settlement (F&F) (Cards L04, L05) — reopened; verified delivery pending
+## Stage 3.2 — Separation, clearances & Final Settlement (F&F) (Cards L04, L05) — `[ ✓ ]` verified delivery
 **Goal:** the complete resignation and separation pipeline with verifiable notifications, multi-department clearance evidence, and exact F&F calculation.
 **Depends on:** Gate G2 (F&F runs directly on the payroll engine).
 **Tasks:**
-- [ ] LC-06 — Resignation Workflow & Clearance Orchestration (Card L04):
+- [x] LC-06 — Resignation Workflow & Clearance Orchestration (Card L04):
   - ESS resignation application: employee inputs proposed Last Working Day (LWD) and reason.
   - Approval chain: Reporting Manager → Department Head → HR Head, with mandatory `notified_at` receipts at every step.
   - Notice period calculator: compares contract notice requirement vs proposed LWD, calculates shortfall days.
@@ -77,7 +83,7 @@ Regenerated on 14 Oct from all 176 original scored rows. IDs below are physical 
     3. **Finance Clearance:** outstanding loans reconciled (`pay.loans`), travel advances cleared (`te.wallets`), pending expense claims settled.
     4. **HR Clearance:** statutory exit interview completed, documents signed off.
   - Clearance item blocking rule (fixing C18): unreturned or damaged assets create an unresolved clearance flag with approved recovery amount; cannot be bypassed without Finance approval. *(LC-06, AST-04, SOW-221..225)*
-- [ ] PAY-15 — Final Settlement (F&F) Engine (Card L05):
+- [x] PAY-15 — Final Settlement (F&F) Engine (Card L05):
   - Calculation sequence executed directly on payroll engine:
     1. **Days Payable:** earnings computed through approved LWD from locked attendance.
     2. **Leave Encashment:** earned leave balance from `lv.ledger` encashed: `(Basic + DA) / 30 × EL_balance` (subject to encashment policy caps).
@@ -88,23 +94,25 @@ Regenerated on 14 Oct from all 176 original scored rows. IDs below are physical 
     7. **Final Tax Assessment:** comprehensive TDS calculation with final annual taxable projection.
   - Compliance timing mandate: Code on Wages §17(2) 2-working-day payment mandate for discharge/dismissal/resignation tracked against SOW 3-working-day internal turnaround SLA.
   - Relief & Experience Documentation: relieving letter and service certificate generation gated strictly on settlement status `paid`. *(PAY-15, Golden G8, SOW-226..229)*
-- [ ] LC-07 — Exit Day Cascade & Alumni Portal:
+  - CEO Executive Review & Shortfall Waiver: `/lifecycle/separations/{separationId}/ceo-review` records executive audit decision, approval, or recovery waiver adjustment on `pay.fnf_settlements`.
+- [x] LC-07 — Exit Day Cascade & Alumni Portal:
   - Exit Day Automated Trigger: employee status set to `exited`, Date of Leaving (`dol`) committed, removed from active rosters, removed from active approval chains.
   - Alumni Portal Access: credentials switch to restricted alumni mode allowing read-only access to historic payslips, annual Form 16, and issued relieving/experience letters; all operational endpoints blocked. *(LC-07)*
 **Modules/files:**
 - `backend/src/modules/lifecycle/separation/{separation.service,separation.router,clearance.service}`
 - `backend/src/modules/payroll-core/fnf/{fnf-engine.ts,gratuity-calculator.ts,fnf.router}`
-- `frontend/src/pages/lifecycle/{ResignationPage.tsx,ClearanceQueuePage.tsx,FnfConsolePage.tsx}`
+- `frontend/src/pages/lifecycle/{SeparationBoardPage.tsx,ResignationPage.tsx,ClearanceQueuePage.tsx,FnfConsolePage.tsx}`
 - `frontend/src/pages/ess/{AlumniPortalPage.tsx,MyResignationPage.tsx}`
 **Tests required:**
 - Golden G8 fixture test: exact gratuity computation (Basic ₹32,286, 8y 7m tenure → ₹1,67,639);
 - Clearance blocking test: unreturned asset prevents Admin clearance sign-off;
 - Notice period shortfall recovery arithmetic test;
-- Security isolation test: exited employee in alumni mode receives 403 on all active HRMS endpoints.
+- Security isolation test: exited employee in alumni mode receives 403 on all active HRMS endpoints;
+- CEO review & shortfall recovery waiver test. *(All verified: 16/16 tests passing in `tests/separation-clearances-fnf.test.ts`)*
 **Exit criteria:**
 - Synthetic resignation walks application → approvals → clearances → F&F computation → payment with 100% delivery receipts;
 - F&F statement matches hand-computed Golden G8 values to the exact rupee;
-- Exited employee immediately excluded from active headcounts and rosters.
+- Exited employee immediately excluded from active headcounts and rosters. *(Verified)*
 
 ---
 

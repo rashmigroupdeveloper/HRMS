@@ -1,4 +1,8 @@
+> **17 Oct:** [pack30](sow-completion/30-MONTH-CLOSE-AND-REPORT-SCOPE.md) repairs month-close completeness, attestation no-op/freeze semantics and selected report scope;561 tests pass, global coverage gate remains red. Real acceptance remains open.
+
 # Phase 1 — Attendance · Leave · Workflows · Core Reports
+
+> **16 Oct HR action audit:** [pack23](sow-completion/23-HR-ACTIONS-SAFETY-REVIEW.md) confirms unscoped HR manual corrections, blank reasons, locked-day false success/audit and stale OT, plus absence/letter and selected export/dashboard scope failures. Manager direct edits remain403; scoped muster controls pass. Stage1.2/1.6/1.7 acceptance stays open; no implementation in this audit.
 
 **Target:** 6–8 weeks · **Gate:** G1 · **Spec:** docs/13 §4, docs/04 §1–2/§5, docs/03 §4–5/§8
 **Purpose:** the visible win — trusted attendance, in-app approvals, the muster HR was refused for a year, and the daily boarding/exit email. Ships the pain-point killers before payroll.
@@ -59,6 +63,16 @@ Historical checkboxes above record the original implementation, not current rele
 - [ ] All-vacant chain sponsor decision; frozen chain/request revision contract; heterogeneous per-stage permission/delegation contracts.
 - [ ] Month completeness, half-session/payable policy, all leave concurrency/expiry paths, real Kent/notification delivery and signed UAT.
 - [ ] Backend global coverage ≥80% and complete stage/release criteria. No G1 advancement.
+
+### Stage 1.3 continuation — 16 Oct 2026: `◐ acceptance open`
+
+[Pack21](sow-completion/21-SOW-REGRESSION-AND-HR-HOLD-REVIEW.md) supersedes the historical vacancy-auto-approval note and the pending decision in the15Oct increment.
+
+- [x] Sponsor decision: all-vacant new/resubmitted rounds hold pending for HR with configured alert, requester notification and scoped audited routing recovery; no implicit HR approval grant.
+- [x] Configured hard OT lapse remains effective while held; no vacancy-based auto-approval timer.
+- [x] Reproduced employee/audit lock deadlock repaired with consistent workflow locking; unique/valid chain specs enforced.
+- [x] Complete backend498 tests and separate build pass; frontend246 tests/full verify pass. No schema fields/migrations added.
+- [ ] Global backend coverage remains below80%; frozen revisions, complete domain/delegation contracts and acceptance/UAT remain open. Cross-stage source review confirms further API/financial/lifecycle gaps; no G1 advancement.
 
 ## Stage 1.4 — AR / OD / Permission + Overtime 48h   `[ ☑ done 11 Jul 2026 — backend; ESS/inbox UI = frontend team on the new APIs; Excel exports land with the R3/R5 reports in 1.7 ]`
 **Goal:** the attendance-exception requests, and the OT module greytHR never delivered.
@@ -180,3 +194,11 @@ Historical checkboxes above record the original implementation, not current rele
 - [ ] Boarding/exit email running daily without manual trigger
 - [ ] **PP-9 replication test:** a silenced device is detected + flagged; the affected days are held un-finalized by the watermark — the 200-employee mismatch is demonstrably impossible
 - [ ] HR-ops UAT sign-off (07 §4b: training materials delivered)
+
+**16 Oct Stage1.4 increment:** [half-wise attendance/AR/OD](sow-completion/26-HALF-WISE-ATTENDANCE-REQUESTS.md) implements the sponsor-confirmed two-half model; read actual verification and remaining acceptance before advancing any gate.
+
+**16 Oct Stage 1.4 timing refinement:** [configured half timings](sow-completion/27-ATTENDANCE-TIMING-UI.md) implements the sponsor-confirmed timing UI and records browser proof. Remaining SOW acceptance and the backend coverage gate remain open.
+
+**17 Oct Stage1.8 role-flow review:** [49 separate cases and remaining SOW](sow-completion/28-ROLE-FLOW-AND-SOW-REVIEW.md).19 native observations reproduce open HR scope/correction, month-close, co-sign and task-access gaps. Original176 SOW texts retained; no acceptance gate advanced. Next build is the separately announced Stage1.2 HR attendance safety repair.
+
+**17 Oct Stage1.2 repair:** [HR attendance safety F02–F05](sow-completion/29-HR-ATTENDANCE-SAFETY-REPAIR.md) implements scoped, transactional correction/scheme safety with17 new native regressions and546 passing full-suite tests. Coverage and other13 role-flow finding groups remain open; no gate advanced.

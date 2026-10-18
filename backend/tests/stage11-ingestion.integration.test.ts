@@ -53,7 +53,7 @@ run('Stage 1.1 — productionized ingestion (live Postgres)', () => {
   afterAll(async () => {
     await db.deleteFrom('att.quarantined_swipes').where('source', '=', SOURCE).execute();
     await db.deleteFrom('att.devices').where('door_code', '=', door).execute();
-    await db.deleteFrom('att.ingest_watermarks').where('source', '=', SOURCE).execute();
+    await db.deleteFrom('att.ingest_watermarks').where('source', 'in', [SOURCE, SOURCE + '-job']).execute();
     await db.deleteFrom('wf.notifications').where('template_code', '=', 'device_silent').execute();
     await db.deleteFrom('core.user_roles').where('user_id', '=', opsId).execute();
     await db.updateTable('core.users').set({ is_active: false }).where('id', '=', opsId).execute();
@@ -135,11 +135,14 @@ run('Stage 1.1 — productionized ingestion (live Postgres)', () => {
 
   it('ops APIs obey the central permission gates (401 → 403 → 200 with the right roles)', async () => {
     expect((await (await httpRequest(app)).get('/api/attendance/exceptions/unmatched')).status).toBe(401);
+    expect((await (await httpRequest(app)).post('/api/attendance/sync')).status).toBe(401);
 
     const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: opsEmail, password });
     const token = (login.body as { accessToken: string }).accessToken;
     expect((await (await httpRequest(app)).get('/api/attendance/exceptions/unmatched').set('Authorization', `Bearer ${token}`)).status).toBe(403);
     expect((await (await httpRequest(app)).get('/api/attendance/devices').set('Authorization', `Bearer ${token}`)).status).toBe(403);
+
+    expect((await (await httpRequest(app)).post('/api/attendance/sync').set('Authorization', `Bearer ${token}`)).status).toBe(403);
 
     // hr_ops → attendance.manual_override (unmatched queue); it_admin → devices/integrations.
     for (const role of ['hr_ops', 'it_admin']) {
@@ -163,6 +166,18 @@ run('Stage 1.1 — productionized ingestion (live Postgres)', () => {
     const board = devices.body as { doorCode: string; silent: boolean }[];
     expect(board.some((d) => d.doorCode === door)).toBe(true);
 
+    // An authorized operator gets an explicit integration failure, with no
+    // raw swipe/watermark/recompute mutation or fabricated successful cycle.
+    const counts = async () => ({
+      swipes: (await db.selectFrom('att.swipe_events').select(({fn})=>fn.countAll().as('n')).executeTakeFirstOrThrow()).n,
+      watermark: await db.selectFrom('att.ingest_watermarks').selectAll().where('source','=','kent').execute(),
+      queued: await db.selectFrom('att.recompute_queue').selectAll().orderBy('employee_id').orderBy('work_date').execute(),
+    });
+    const before = await counts();
+    const sync = await (await httpRequest(app)).post('/api/attendance/sync').set('Authorization', `Bearer ${token}`);
+    expect(sync.status).toBe(503); expect((sync.body as {message:string}).message).toMatch(/not configured/i);
+    expect(await counts()).toEqual(before);
+
     const quarantined = await (await httpRequest(app))
       .get('/api/attendance/exceptions/quarantined')
       .set('Authorization', `Bearer ${token}`);
@@ -170,11 +185,13 @@ run('Stage 1.1 — productionized ingestion (live Postgres)', () => {
     expect((quarantined.body as unknown[]).length).toBeGreaterThanOrEqual(2);
   });
 
-  it('the scheduled job body ingests today for real employees and is same-day idempotent (P1-T01)', async () => {
-    const first = await runKentSync(db);
-    const second = await runKentSync(db);
+  it('an explicitly injected fixture feed is idempotent through the scheduled body (P1-T01)', async () => {
+    const received = new Date();
+    const feed = fixedConnector([{ employeeNo: `S11JOB${stamp}`, swipeTs: received, receivedAt: received, doorCode: door }]);
+    const first = await runKentSync(db, feed, SOURCE + '-job');
+    const second = await runKentSync(db, feed, SOURCE + '-job');
     expect(second.inserted).toBe(0); // same day, same seed → pure dedupe
     expect(second.fetched).toBeGreaterThanOrEqual(0);
-    expect(first.quarantined).toBe(0); // mock generates plausible timestamps
+    expect(first.quarantined).toBe(0); // fixture timestamps are plausible
   });
 });

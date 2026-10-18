@@ -1,0 +1,9 @@
+# Kent sync safety —17 Oct2026
+
+ATT-01/02/03, NFR-03, P0-T01/T40. Pack28 F01 was reproducible in source: normal worker/manual sync constructed MockKentConnector from up to10k active/onboarding employee codes and wrote generated punches as source=kent. This could manufacture live attendance and completeness evidence.
+
+Removed that normal-path constructor entirely. `runKentSync` requires a supplied adapter and throws KentIntegrationUnavailable before any data operation when none exists. Normal API/worker currently have no verified real adapter, so they fail; manual sync maps the typed failure to503. MockKentConnector remains an explicit fixture tool; the native job test injects a tagged fixture feed instead of manufacturing punches for all active employees.
+
+Native HTTP proof: anonymous401, missing permission403, authorized operator503 with explanatory message; raw swipe count, Kent watermark and ordered recompute queue remain identical across the failed call. Explicit fixture ingestion remains idempotent. Full561-test suite passes, typecheck/lint/knip/dependency checks pass, separate build passes. Fullverifyexit1 solely because global coverage77.58% statements/lines and73.54% branches remains below80 (functions82.12%). Thresholds unchanged. No new tables/columns/migrations/settings.
+
+This prevents a false integration success; it does not implement the real Kent feed or satisfy G0. Required next contract: authorized Kent DB view/API/CSV method, receipt-based incremental cursor, device completeness watermark contract, delayed/reconnect/gap examples, secure config and one real day reconciliation. Inject the real adapter at both worker/API composition roots after this evidence exists; never restore automatic mocks. Existing synthetic raw records are immutable and retained in the test DB; production must use a separately provisioned and reconciled database.

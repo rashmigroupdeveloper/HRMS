@@ -17,6 +17,39 @@ export interface SessionUser {
 }
 
 const TOKEN_KEY = 'hrms.accessToken';
+let refreshInFlight: Promise<string | null> | null = null;
+let generation = 0;
+let loggingOut = false;
+
+/** Serialize cookies shared by tabs; one in-flight promise also covers browsers without Web Locks. */
+async function withAuthLock<T>(work: () => Promise<T>): Promise<T> {
+  const locks = (navigator as Partial<Navigator>).locks;
+  return locks ? locks.request('hrms.auth-cookie', work) : work();
+}
+
+function refreshWasCancelled(started: number): boolean {
+  return started !== generation || loggingOut;
+}
+
+export function refreshAccessToken(failedToken?: string | null): Promise<string | null> {
+  if (loggingOut) return Promise.resolve(null);
+  const current = getAccessToken();
+  if (failedToken && current && current !== failedToken) return Promise.resolve(current);
+  if (refreshInFlight) return refreshInFlight;
+  const started = generation;
+  refreshInFlight = withAuthLock(async () => {
+    if (refreshWasCancelled(started)) return null;
+    try {
+      const response = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
+      if (!response.ok || refreshWasCancelled(started)) return null;
+      const body = (await response.json()) as { accessToken: string };
+      if (refreshWasCancelled(started)) return null;
+      setAccessToken(body.accessToken);
+      return body.accessToken;
+    } catch { return null; }
+  }).finally(() => { refreshInFlight = null; });
+  return refreshInFlight;
+}
 
 export function getAccessToken(): string | null {
   return sessionStorage.getItem(TOKEN_KEY);
@@ -27,6 +60,7 @@ export function setAccessToken(token: string): void {
 }
 
 export function clearAccessToken(): void {
+  generation += 1;
   sessionStorage.removeItem(TOKEN_KEY);
 }
 
@@ -46,16 +80,11 @@ async function fetchMe(accessToken: string): Promise<SessionUser> {
  */
 export async function restoreSession(): Promise<SessionUser | null> {
   try {
-    const refreshed = await fetch('/api/auth/refresh', {
-      method: 'POST',
-      credentials: 'include',
-    });
-    if (!refreshed.ok) {
+    const accessToken = await refreshAccessToken();
+    if (!accessToken) {
       clearAccessToken();
       return null;
     }
-    const { accessToken } = (await refreshed.json()) as { accessToken: string };
-    setAccessToken(accessToken);
     return await fetchMe(accessToken);
   } catch {
     clearAccessToken();
@@ -65,18 +94,28 @@ export async function restoreSession(): Promise<SessionUser | null> {
 
 /** After password login — load roles/permissions via /auth/me. */
 export async function loadSession(accessToken: string): Promise<SessionUser> {
+  clearAccessToken();
   setAccessToken(accessToken);
   return fetchMe(accessToken);
 }
 
 /** Clears the refresh cookie server-side and the local access token. */
 export async function logout(): Promise<void> {
-  try {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-  } catch {
-    // Best effort — local state clears regardless.
-  }
+  const token = getAccessToken();
+  loggingOut = true;
   clearAccessToken();
+  try {
+    await refreshInFlight;
+    await withAuthLock(() => fetch('/api/auth/logout', {
+      method: 'POST', credentials: 'include',
+      ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+    }));
+  } catch {
+    // Offline sign-out clears this tab; server revocation needs a reachable API.
+  } finally {
+    clearAccessToken();
+    loggingOut = false;
+  }
 }
 
 export function hasPermission(user: SessionUser, code: string): boolean {

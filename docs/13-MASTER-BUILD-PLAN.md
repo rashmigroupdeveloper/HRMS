@@ -149,7 +149,7 @@ Sequencing: stand up ingestion first so it accumulates data while the rest is bu
 - `P1-T07` Month-lock checklist + `att.month_locks` + freeze trigger; managers' attendance approval is an explicit, visible precondition (ATT-12/15). **Frappe-pattern safety watermark (doc 14 §8): never finalize a day — especially never mark Absent — until the device-sync watermark has passed that shift's end.** *(04 §1.6)*
 
 ### 4.2 Workflow engine + requests
-- `P1-T10` Generic approval engine: `wf.definitions/requests/request_steps/delegations`; steps resolve to RM/functional-mgr/role/user; **approve / reject / send_back** (adopt from Yatra Avedan); per-step SLA; vacant-approver auto-skip; every step writes `notified_at`. *(WF-01..04)*
+- `P1-T10` Generic approval engine: `wf.definitions/requests/request_steps/delegations`; steps resolve to RM/functional-mgr/role/user; **approve / reject / send_back** (adopt from Yatra Avedan); per-step SLA; vacant-step skip to a later available approver; an all-vacant new/resubmitted round holds for HR (sponsor, 16 Oct 2026; docs04 §5); every real approval step writes `notified_at`. *(WF-01..04)*
 - `P1-T11` Seed the **authoritative workflow catalog from 08 §4 / 09 §10.2** (Leave, Leave Cancel, Leave Encashment, Comp Off, Restricted Holiday, Regularization & Permission, OD, Overtime, Claim, Loan, Confirmation, Resignation, Transfer, Letter Signature; Offer/LOI reserved for Phase 4).
 - `P1-T12` Approvals inbox (05 §3): one cross-type queue, ≤2-click decisions, SLA countdown pills, keyboard `a`/`r`, batch approve, "all caught up" state.
 - `P1-T13` SLA escalation job (hourly): breach → escalate/auto-reject/lapse per definition. *(WF-03)*

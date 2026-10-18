@@ -1,0 +1,9 @@
+{
+  "finding_groups": 14,
+  "native_observations": 21,
+  "autocommit_durability_proof": true,
+  "positive_controls_passed": 10,
+  "prior_sow_rows_preserved": 176,
+  "unchanged_application_files": 505,
+  "link_line_or_row_errors": []
+}

@@ -1,0 +1,10 @@
+{
+  "requestStatus": "pending",
+  "currentStep": 1,
+  "openSteps": 1,
+  "notifiedAtPresent": true,
+  "queuedApproverNotifications": 1,
+  "actualApproval": false,
+  "proof": "Browser retry while missing stayed held; restore manager then retry created a notified open step, not an approval.",
+  "cleanup": "Synthetic request/definition/notifications removed; users disabled/detached and sessions revoked; employee/audit parents retained, employees exited. No real request changed."
+}

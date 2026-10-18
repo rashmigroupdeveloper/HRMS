@@ -1,0 +1,55 @@
+{
+  "prepared": "2026-10-16",
+  "stage": "Phase 1 Stage 1.4",
+  "requirements": [
+    "ATT-04",
+    "ATT-05",
+    "ATT-06",
+    "ATT-07"
+  ],
+  "decision": "Use configured half timings automatically",
+  "backend": {
+    "passed": 529,
+    "files": 68,
+    "skipped": 0,
+    "static_checks": "passed",
+    "build_exit": 0,
+    "verify_exit": 1,
+    "coverage": {
+      "lines": 76.85,
+      "statements": 76.85,
+      "branches": 72.45,
+      "functions": 81.54,
+      "required_each": 80
+    }
+  },
+  "frontend": {
+    "passed": 262,
+    "files": 28,
+    "verify_exit": 0,
+    "build": "passed",
+    "advisory": "Existing large bundle warning (~925KB)"
+  },
+  "react_doctor": {
+    "exit": 0,
+    "score": 74,
+    "warnings": 2,
+    "finding": "Maintainability/control-flow complexity in request and resubmission forms"
+  },
+  "schema": {
+    "migrations_added_this_increment": 0,
+    "columns_added_this_increment": 0,
+    "tables_added_this_increment": 0,
+    "previous_pack26_catalog_reference": "../half-attendance-2026-10-16/schema-check.json",
+    "note": "Timing windows derive from existing shift fields; previous catalog is a reference, not a fresh database scan."
+  },
+  "browser": "Synthetic local employee walkthrough passed; no attendance request submitted",
+  "cleanup": {
+    "activeFixtureUsers": 0,
+    "unrevokedFixtureSessions": 0,
+    "fixtureWorkflowRequests": 0,
+    "retained": "Disabled detached user, exited employee, isolated synthetic roster/day and immutable audit history retained; no real employee was changed."
+  },
+  "sow_rows_preserved": 176,
+  "gate_advanced": false
+}

@@ -4,5 +4,11 @@ export {
   enqueueEvent,
   processQueue,
   devLogTransport,
+  SmtpNotificationTransport,
+  createNotificationTransport,
+  formatEmailSubject,
+  formatEmailText,
+  formatEmailHtml,
   type NotificationTransport,
+  type SmtpTransportOptions,
 } from './notifications.service.js';

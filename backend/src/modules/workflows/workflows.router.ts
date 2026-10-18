@@ -11,6 +11,8 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { employeeScopeSql } from '../../core/rbac/employee-scope.js';
 import { getUserPermissionAccess } from '../../core/rbac/permissions.service.js';
 import { canActOnStep } from './workflow-approvers.js';
+import { routingHolds, retryHeldRouting } from './workflow-holds.router.js';
+import { routingHeldSql } from './workflow-holds.service.js';
 import {
   act,
   createRequest,
@@ -46,7 +48,7 @@ const createProcedure = authed
 
     if (subjectEmployeeId !== context.user.employee_id) {
       const { getUserPermissions } = await import('../../core/rbac/permissions.service.js');
-      const perms = await getUserPermissions(db, context.user.id);
+      const perms = await getUserPermissions(db, context.user.id, 'write');
       if (!perms.has('admin.workflows') && !perms.has('admin.settings')) {
         throw new ORPCError('FORBIDDEN', {
           message: 'You can only raise workflow requests for yourself unless you hold workflow administration permissions',
@@ -149,6 +151,7 @@ const timelineProcedure = authed
       status: z.string(),
       type: z.string(),
       canResubmit: z.boolean(),
+      routingState: z.enum(['held_for_hr', 'awaiting_approver']).nullable(),
       payload: z.unknown(),
       steps: z.array(
         z.object({
@@ -192,6 +195,10 @@ const timelineProcedure = authed
       status: request.status,
       type: request.definition_code,
       canResubmit: request.status === 'sent_back' && request.requested_by === context.user.id,
+      routingState: request.status === 'pending'
+        ? (await db.selectFrom('wf.requests as r').select('r.id').where('r.id', '=', request.id)
+          .where(routingHeldSql()).executeTakeFirst() ? 'held_for_hr' as const : 'awaiting_approver' as const)
+        : null,
       payload: request.payload,
       steps: steps.map((s) => ({
         stepNo: s.step_no,
@@ -298,4 +305,6 @@ export const workflowsRouter = {
   listDefinitions,
   upsertDefinition,
   escalateNow,
+  routingHolds,
+  retryHeldRouting,
 };

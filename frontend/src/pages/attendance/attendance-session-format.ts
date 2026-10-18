@@ -7,7 +7,7 @@ export function attendanceSessionGlyph(status: string, sessions?: readonly Atten
   return first.status === second.status ? first.status : `${first.status}:${second.status}`;
 }
 
-const SESSION_LABEL = { P: 'Present', A: 'Absent', O: 'Off' } as const;
+const SESSION_LABEL = { P: 'Present', A: 'Absent', O: 'Off', OD: 'Official duty' } as const;
 export function attendanceSessionDescription(sessions?: readonly AttendanceSession[] | null): string {
-  return sessions?.map((s) => `Session ${String(s.session)}: ${SESSION_LABEL[s.status]}`).join('; ') ?? '';
+  return sessions?.map((s) => `${s.session === 1 ? 'First half' : 'Second half'}: ${SESSION_LABEL[s.status]}`).join('; ') ?? '';
 }

@@ -19,15 +19,19 @@ export interface PermissionAccess {
   orgUnitIds: readonly number[];
 }
 
+export type PermissionAction = 'read' | 'write';
+
 /** Every permission the user currently holds, via their roles. */
 export async function getUserPermissions(
   db: Kysely<Database>,
   userId: number,
+  action: PermissionAction = 'read',
 ): Promise<ReadonlySet<string>> {
   const rows = await db
     .selectFrom(effectiveRoleGrants(userId).as('ur'))
     .innerJoin('core.role_permissions as rp', 'rp.role_id', 'ur.role_id')
     .innerJoin('core.permissions as p', 'p.id', 'rp.permission_id')
+    .$if(action === 'write', query => query.where('rp.scope', '!=', 'readonly'))
     .select('p.code')
     .distinct()
     .execute();
@@ -39,12 +43,14 @@ export async function getUserPermissionAccess(
   db: Kysely<Database>,
   userId: number,
   permission: PermissionCode,
+  action: PermissionAction = 'read',
 ): Promise<PermissionAccess | null> {
   const rows = await db
     .selectFrom(effectiveRoleGrants(userId).as('ur'))
     .innerJoin('core.role_permissions as rp', 'rp.role_id', 'ur.role_id')
     .innerJoin('core.permissions as p', 'p.id', 'rp.permission_id')
     .where('p.code', '=', permission)
+    .$if(action === 'write', query => query.where('rp.scope', '!=', 'readonly'))
     .select(['rp.scope', 'ur.scope_org_unit_id'])
     .execute();
   if (rows.length === 0) return null;
@@ -53,13 +59,15 @@ export async function getUserPermissionAccess(
   const orgUnitIds = [
     ...new Set(
       rows
-        .filter((row) => row.scope === 'org_unit')
+        .filter((row) => row.scope === 'org_unit' || row.scope === 'readonly')
         .map((row) => row.scope_org_unit_id)
         .filter((id): id is number => id !== null),
     ),
   ];
   return {
-    all: scopes.has('all') || scopes.has('readonly'),
+    // A readonly grant contributes only to reads, and its assigned unit still
+    // bounds those reads. It must never widen an additive scoped write grant.
+    all: scopes.has('all') || rows.some(row => row.scope === 'readonly' && row.scope_org_unit_id === null),
     own: scopes.has('own'),
     subtree: scopes.has('subtree'),
     orgUnitIds,

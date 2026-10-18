@@ -671,7 +671,10 @@ CREATE TABLE core.onboarding_candidates ( -- LC-01 bridge from ATS 'Joined List'
   category core.employment_category NOT NULL, replacement_of_ecode TEXT, -- LOI §2 (replacement tracks previous ecode+salary)
   offered_ctc NUMERIC(14,2) NOT NULL, probation_months SMALLINT, probation_salary_pct SMALLINT, -- LOI §3 → PAY-02/07
   proposed_doj DATE NOT NULL, offer_date DATE NOT NULL, work_location TEXT,
-  prejoin_link_token TEXT UNIQUE,   -- personal-email data-collection link (SOW-3.2a)
+  prejoin_link_token TEXT UNIQUE CHECK (prejoin_link_token IS NULL), -- legacy compatibility only; raw credentials forbidden (LC-01/NFR-03)
+  prejoin_token_hash TEXT UNIQUE, -- SHA-256 of the one-time personal-email link; never return in HR lists
+  prejoin_token_expires_at TIMESTAMPTZ, -- finite expiry from lifecycle.prejoin_token_hours
+  prejoin_submitted_data JSONB, -- candidate application; scoped HR profile view withholds statutory/bank values
   prejoin_link_sent_at TIMESTAMPTZ, prejoin_completed_at TIMESTAMPTZ, -- delivery tracking (greytHR failure: links not received)
   status TEXT NOT NULL DEFAULT 'awaiting_prejoin', -- →'prejoin_done'→'converted'→ (or 'no_show')
   employee_id BIGINT REFERENCES core.employees      -- set on conversion (DOJ)
@@ -848,6 +851,14 @@ CREATE TABLE eng.survey_responses (
 2. `core.audit_log`, `att.swipe_events`, `lv.ledger`: INSERT-only (revoke UPDATE/DELETE from app role).
 3. `core.employees.dol` NOT NULL when `status='exited'` (CHECK) — PP-17 can't recur.
 4. `pay.payroll_runs.attendance_lock_id` NOT NULL when status ≥ 'computed' (CHECK) — payroll can never run on unlocked attendance.
-5. E-code generation is a DB function taking `company_id`, using `SELECT … FOR UPDATE` on `companies.ecode_next_seq` — concurrent onboarding cannot duplicate codes (CORE-02).
+5. E-code generation is a DB function taking `company_id`, using `SELECT … FOR UPDATE` on `companies.ecode_next_seq` — concurrent onboarding cannot duplicate codes (CORE-02). Six digits is a minimum width; never truncate a longer sequence. Migration1752330000000 preserves all digits, rejects invalid sequence configuration and adds no fields.
 6. `att.overtime_entries`: CHECK that at most one of (`comp_off_credit_id`, `payroll_item_id`) is set — OT is paid once, as money or comp-off, never both.
 7. App connects via role `hrms_app` with table-level grants; `hrms_ro` (read-only) used by report exports and the ATS integration.
+
+## NFR-03 session credential extension — 16 Oct 2026
+
+Reuse the existing `sec.sessions` table (migration1752060000000): `sid` identifies one login; `user_id` owns it; `expires_at` is the absolute lifetime; existing revocation fields end it immediately. Add only `refresh_token_hash TEXT NULL CHECK (refresh_token_hash ~ '^[0-9a-f]{64}$')`: SHA-256 of the currently usable refresh token, required for new authenticated sessions, replaced atomically on redemption. NULL preserves older/session-administration rows, which cannot refresh. No session family, token plaintext or spare counter fields. Existing user `failed_attempts`, `locked_until`, `last_login_at` remain authoritative for serialized login outcomes.
+
+## ATT-06/07 half-wise request coverage —16 Oct2026
+
+Add `att.regularizations.day_portion TEXT NOT NULL DEFAULT 'full_day' CHECK (day_portion IN ('full_day','first_half','second_half'))`. This owns the requested coverage beside its dates/kind; workflow payload and HTTP DTO expose the same value. Legacy rows default whole-day. No second request table or attendance counters. Extend the existing day_records session JSON CHECK to accept OD alongside P/A/O, preserving ordered session1/session2. Add an employee/date index for applied partial coverage used by recomputation.

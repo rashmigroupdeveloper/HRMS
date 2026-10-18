@@ -1,0 +1,8 @@
+{
+  "activeFixtureUsers": 0,
+  "nonExitedFixtureEmployees": 0,
+  "unrevokedFixtureSessions": 0,
+  "remainingFixtureWorkflows": 0,
+  "retainedImmutableMonthHeaders": 4,
+  "retained": "Audits/swipes and append-only month headers retained; users disabled/detached, sessions revoked, employees exited in isolated fixture companies."
+}

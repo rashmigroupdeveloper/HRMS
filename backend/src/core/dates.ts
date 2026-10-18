@@ -49,3 +49,17 @@ export function previousWeekStartIso(now: Date = new Date()): string {
   ist.setUTCDate(ist.getUTCDate() - mondayIndex - 7);
   return ist.toISOString().slice(0, 10);
 }
+
+/** Add whole months to a 'YYYY-MM-DD' string with month-end clamping. */
+export function addMonthsIso(isoDate: string, months: number): string {
+  const [yStr, mStr, dStr] = isoDate.split('-');
+  const y = Number(yStr);
+  const m = Number(mStr);
+  const d = Number(dStr);
+  const targetMonthIndex = (m - 1) + months;
+  const targetYear = y + Math.floor(targetMonthIndex / 12);
+  const targetMonth = ((targetMonthIndex % 12) + 12) % 12 + 1;
+  const daysInTargetMonth = new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate();
+  const targetDay = Math.min(d, daysInTargetMonth);
+  return `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
+}

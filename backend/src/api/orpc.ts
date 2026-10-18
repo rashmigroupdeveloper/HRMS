@@ -12,7 +12,7 @@ import type { Request, Response } from 'express';
 import type { Kysely, Selectable } from 'kysely';
 import type { Database, UsersTable } from '../core/db/types.js';
 import { verifyToken } from '../core/auth/jwt.js';
-import { getUserPermissionAccess, getUserPermissions } from '../core/rbac/permissions.service.js';
+import { getUserPermissionAccess, getUserPermissions, type PermissionAction } from '../core/rbac/permissions.service.js';
 import type { PermissionCode } from '../core/rbac/seed-data.js';
 
 /** Per-request context assembled by the Express middleware (handler.ts). */
@@ -60,6 +60,11 @@ export const authed = base.use(async ({ context, next }) => {
     throw new ORPCError('UNAUTHORIZED', { message: 'Account not found or deactivated' });
   }
 
+  const session = claims.sid ? await context.db.selectFrom('sec.sessions').select('id')
+    .where('sid', '=', claims.sid).where('user_id', '=', user.id)
+    .where('revoked_at', 'is', null).where('expires_at', '>', new Date()).executeTakeFirst() : undefined;
+  if (!session) throw new ORPCError('UNAUTHORIZED', { message: 'Session expired or revoked' });
+
   // Inject the now-verified user AND a NON-NULL db, so downstream handlers use
   // context.db directly without re-checking (kills the ~27 duplicated guards).
   return next({ context: { user, db: context.db } });
@@ -91,8 +96,9 @@ export const authed = base.use(async ({ context, next }) => {
  * This widens WHO may ask, never WHAT they get back.
  */
 export function withAnyPermission(...permissions: PermissionCode[]) {
-  return authed.use(async ({ context, next }) => {
-    const held = await getUserPermissions(context.db, context.user.id);
+  return authed.use(async ({ context, next, procedure }) => {
+    const action = procedure['~orpc'].route.method === 'GET' ? 'read' : 'write';
+    const held = await getUserPermissions(context.db, context.user.id, action);
     const matched = permissions.find((code) => held.has(code));
     if (matched === undefined) {
       throw new ORPCError('FORBIDDEN', {
@@ -100,7 +106,7 @@ export function withAnyPermission(...permissions: PermissionCode[]) {
       });
     }
     // Scope comes from the permission the caller actually holds.
-    const permissionAccess = await getUserPermissionAccess(context.db, context.user.id, matched);
+    const permissionAccess = await getUserPermissionAccess(context.db, context.user.id, matched, action);
     if (permissionAccess === null) {
       throw new ORPCError('FORBIDDEN', { message: `Missing permission: ${matched}` });
     }
@@ -108,10 +114,14 @@ export function withAnyPermission(...permissions: PermissionCode[]) {
   });
 }
 
-export function withPermission(permission: PermissionCode) {
-  return authed.use(async ({ context, next }) => {
+export function withPermission(permission: PermissionCode, declaredAction?: PermissionAction) {
+  return authed.use(async ({ context, next, procedure }) => {
+    // Use the server's procedure contract, never the incoming request verb.
+    // Unspecified methods default to POST in oRPC and require write authority.
+    // A POST query must explicitly declare 'read' after its handler is audited.
+    const action = declaredAction ?? (procedure['~orpc'].route.method === 'GET' ? 'read' : 'write');
     // context.db is already the non-null instance injected by `authed`.
-    const permissions = await getUserPermissions(context.db, context.user.id);
+    const permissions = await getUserPermissions(context.db, context.user.id, action);
     if (!permissions.has(permission)) {
       throw new ORPCError('FORBIDDEN', { message: `Missing permission: ${permission}` });
     }
@@ -119,6 +129,7 @@ export function withPermission(permission: PermissionCode) {
       context.db,
       context.user.id,
       permission,
+      action,
     );
     if (permissionAccess === null) {
       throw new ORPCError('FORBIDDEN', { message: `Missing permission: ${permission}` });

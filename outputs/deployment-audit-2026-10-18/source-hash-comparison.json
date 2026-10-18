@@ -1,0 +1,29 @@
+{
+  "note": "Includes this agent and concurrent editor; attribution is not possible. Stable final checkout is not certified.",
+  "count": 23,
+  "changedFiles": [
+    "backend/tests/separation-clearances-fnf.test.ts",
+    "backend/tests/stage13-workflows.integration.test.ts",
+    "backend/tests/onboarding-joining-boundary.integration.test.ts",
+    "backend/tests/prejoin-token-safety.integration.test.ts",
+    "backend/tests/loans-and-claims-services.test.ts",
+    "backend/tests/payslip-outputs.test.ts",
+    "backend/tests/onboarding-and-probation.test.ts",
+    "backend/tests/transfers-and-assets.test.ts",
+    "backend/src/modules/lifecycle/onboarding/onboarding-reference.ts",
+    "backend/src/modules/lifecycle/onboarding/joining-validation.ts",
+    "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+    "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+    "backend/src/modules/lifecycle/onboarding/onboarding-locks.ts",
+    "frontend/src/pages/lifecycle/useOnboardingReferences.test.ts",
+    "frontend/src/pages/lifecycle/OnboardingBoardViews.tsx",
+    "frontend/src/pages/lifecycle/OnboardingDrawers.tsx",
+    "frontend/src/pages/lifecycle/OnboardingBoardPage.test.tsx",
+    "frontend/src/pages/lifecycle/PrejoinPortalPage.test.tsx",
+    "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+    "frontend/src/pages/lifecycle/onboarding-types.ts",
+    "frontend/src/pages/lifecycle/onboarding-columns.tsx",
+    "frontend/src/lib/date.test.ts",
+    "frontend/src/lib/date.ts"
+  ]
+}

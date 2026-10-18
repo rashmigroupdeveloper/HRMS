@@ -734,7 +734,7 @@ export interface AttDayRecordsTable {
   early_exit_minutes: Generated<number>;
   ot_minutes: Generated<number>;
   weekoff_paid: boolean | null;
-  session_statuses: unknown; // JSONB: ordered sessions 1/2 with P, A or O; boundary-validated (ATT-05).
+  session_statuses: unknown; // JSONB: ordered sessions 1/2 with P, A, O or OD; boundary-validated (ATT-05).
   scheme_code: string | null;
   penalty_flag: Generated<boolean>;
   source: Generated<'auto' | 'regularized' | 'manual'>;
@@ -756,6 +756,7 @@ export interface AttRegularizationsTable {
   id: Generated<number>;
   employee_id: number;
   kind: 'AR' | 'OD' | 'PERMISSION';
+  day_portion: Generated<'full_day' | 'first_half' | 'second_half'>;
   from_date: Timestamp;
   to_date: Timestamp;
   from_time: string | null;
@@ -1340,6 +1341,16 @@ export interface Database {
   'core.password_reset_tokens': CorePasswordResetTokensTable;
 
   'core.profile_change_requests': CoreProfileChangeRequestsTable;
+
+  'te.trips': TeTripsTable;
+  'te.trip_itineraries': TeTripItinerariesTable;
+  'te.budgets': TeBudgetsTable;
+  'te.advances': TeAdvancesTable;
+  'te.wallets': TeWalletsTable;
+  'te.wallet_transactions': TeWalletTransactionsTable;
+  'te.claims': TeClaimsTable;
+  'te.claim_items': TeClaimItemsTable;
+  'te.settlements': TeSettlementsTable;
 }
 
 /* ── M6 Payroll & Statutory (pay) — PAY-01..18, docs/03 §6 ────────────────── */
@@ -1763,6 +1774,7 @@ export interface SecMfaEnrolmentsTable {
 
 /** sec.sessions — a session is a ROW, so revoke takes effect next request. */
 export interface SecSessionsTable {
+  refresh_token_hash: string | null;
   id: Generated<number>;
   sid: Generated<string>;
   user_id: number;
@@ -1868,3 +1880,137 @@ export type DocumentVaultStatus = 'active' | 'superseded' | 'withdrawn';
 
 /** DB-defaulted timestamp: select Date; optional insert; no nested ColumnType. */
 type DefaultedTimestamp = ColumnType<Date, Date | string | undefined, Date | string>;
+
+/* ── M13 Travel & Expense (te) — TE-01..12, docs/11 ───────────────────────── */
+
+export interface TeTripsTable {
+  id: Generated<number>;
+  reference_no: string;
+  employee_id: number;
+  company_id: number;
+  trip_name: string;
+  travel_type: 'domestic' | 'international';
+  purpose: string;
+  destination_country: ColumnType<string, string | undefined, string>;
+  destination_city: string;
+  start_date: ColumnType<Date, Date | string, Date | string>;
+  end_date: ColumnType<Date, Date | string, Date | string>;
+  visa_required: ColumnType<boolean, boolean | undefined, boolean>;
+  visa_status: ColumnType<'not_applicable' | 'applied' | 'approved' | 'rejected', string | undefined, string>;
+  status: ColumnType<'draft' | 'submitted' | 'approved' | 'rejected' | 'in_progress' | 'completed' | 'cancelled', string | undefined, string>;
+  estimated_budget_paise: ColumnType<number, number | undefined, number>;
+  approved_budget_paise: ColumnType<number, number | undefined, number>;
+  cancellation_reason: string | null;
+  cancellation_cost_paise: ColumnType<number, number | undefined, number>;
+  workflow_request_id: number | null;
+  created_at: DefaultedTimestamp;
+  updated_at: DefaultedTimestamp;
+}
+
+export interface TeTripItinerariesTable {
+  id: Generated<number>;
+  trip_id: number;
+  segment_type: 'flight' | 'train' | 'bus' | 'hotel' | 'car' | 'other';
+  origin: string;
+  destination: string;
+  departure_date: ColumnType<Date, Date | string, Date | string>;
+  arrival_date: ColumnType<Date, Date | string | null | undefined, Date | string | null>;
+  provider: string | null;
+  booking_reference: string | null;
+  estimated_cost_paise: ColumnType<number, number | undefined, number>;
+  actual_cost_paise: ColumnType<number, number | undefined, number>;
+  created_at: DefaultedTimestamp;
+}
+
+export interface TeBudgetsTable {
+  id: Generated<number>;
+  grade_level: string;
+  travel_type: 'domestic' | 'international';
+  flight_class: ColumnType<string, string | undefined, string>;
+  hotel_per_night_paise: ColumnType<number, number | undefined, number>;
+  daily_allowance_paise: ColumnType<number, number | undefined, number>;
+  local_conveyance_paise: ColumnType<number, number | undefined, number>;
+  is_active: ColumnType<boolean, boolean | undefined, boolean>;
+}
+
+export interface TeAdvancesTable {
+  id: Generated<number>;
+  trip_id: number;
+  employee_id: number;
+  amount_paise: number;
+  purpose: string;
+  status: ColumnType<'requested' | 'approved' | 'rejected' | 'sent_back' | 'disbursed' | 'cancelled', string | undefined, string>;
+  workflow_request_id: number | null;
+  disbursed_at: Timestamp | null;
+  created_at: DefaultedTimestamp;
+  updated_at: DefaultedTimestamp;
+}
+
+export interface TeWalletsTable {
+  id: Generated<number>;
+  employee_id: number;
+  balance_paise: ColumnType<number, number | undefined, number>;
+  updated_at: DefaultedTimestamp;
+}
+
+export interface TeWalletTransactionsTable {
+  id: Generated<number>;
+  wallet_id: number;
+  employee_id: number;
+  trip_id: number | null;
+  source: 'ADVANCE' | 'CLAIM_SETTLEMENT' | 'RECOVERY' | 'ADJUSTMENT';
+  type: 'credit' | 'debit';
+  amount_paise: number;
+  balance_after_paise: number;
+  transaction_reference: string;
+  notes: string | null;
+  created_at: DefaultedTimestamp;
+}
+
+export interface TeClaimsTable {
+  id: Generated<number>;
+  reference_no: string;
+  trip_id: number;
+  employee_id: number;
+  total_claimed_paise: ColumnType<number, number | undefined, number>;
+  approved_amount_paise: ColumnType<number, number | undefined, number>;
+  advance_adjusted_paise: ColumnType<number, number | undefined, number>;
+  net_payable_paise: ColumnType<number, number | undefined, number>;
+  net_recoverable_paise: ColumnType<number, number | undefined, number>;
+  status: ColumnType<'draft' | 'submitted' | 'approved' | 'rejected' | 'sent_back' | 'settled', string | undefined, string>;
+  settlement_status: ColumnType<'unsettled' | 'settled', string | undefined, string>;
+  workflow_request_id: number | null;
+  created_at: DefaultedTimestamp;
+  updated_at: DefaultedTimestamp;
+}
+
+export interface TeClaimItemsTable {
+  id: Generated<number>;
+  claim_id: number;
+  category: 'flight' | 'train' | 'bus' | 'hotel' | 'daily_allowance' | 'local_travel' | 'visa' | 'food' | 'misc';
+  item_date: ColumnType<Date, Date | string, Date | string>;
+  amount_paise: number;
+  currency: ColumnType<string, string | undefined, string>;
+  fx_rate_to_inr: ColumnType<string | number, string | number | undefined, string | number>;
+  inr_amount_paise: number;
+  receipt_document_id: number | null;
+  receipt_url: string | null;
+  description: string | null;
+  created_at: DefaultedTimestamp;
+}
+
+export interface TeSettlementsTable {
+  id: Generated<number>;
+  claim_id: number;
+  trip_id: number;
+  employee_id: number;
+  settlement_mode: ColumnType<'AUTO' | 'MANUAL', string | undefined, string>;
+  claimed_amount_paise: number;
+  advance_amount_paise: number;
+  net_payable_paise: ColumnType<number, number | undefined, number>;
+  net_recoverable_paise: ColumnType<number, number | undefined, number>;
+  recovery_channel: ColumnType<'payroll_deduction' | 'wallet_carry_forward' | 'direct_refund', string | undefined, string>;
+  settled_by: number | null;
+  settled_at: DefaultedTimestamp;
+  status: ColumnType<'pending' | 'settled' | 'payroll_posted', string | undefined, string>;
+}

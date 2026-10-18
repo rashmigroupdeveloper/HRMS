@@ -12,25 +12,28 @@ import { z } from 'zod';
 import { ORPCError } from '@orpc/server';
 import { base, withPermission } from '../../../api/orpc.js';
 import { OnboardingService } from './onboarding.service.js';
-import { PrejoinService } from './prejoin.service.js';
-import { TaskFanoutService } from './task-fanout.service.js';
+import { PrejoinService, PrejoinInputError, PrejoinConfigurationError } from './prejoin.service.js';
+import { PrejoinSubmissionSchema } from './prejoin-schema.js';
+import { onboardingApplicationRouter } from './onboarding-application.router.js';
+import { onboardingReferenceData } from './onboarding-reference.js';
+import { companyScopeSql, assertCompanyInScope } from '../../../core/rbac/company-scope.js';
+import { formatDbDate } from '../../../core/dates.js';
+import { employeeScopeSql, assertEmployeesInScope } from '../../../core/rbac/employee-scope.js';
+import { TaskFanoutService, KentEnrollmentUnavailable } from './task-fanout.service.js';
 
-const PrejoinSubmissionSchema = z.object({
-  presentAddress: z.string().min(5),
-  permanentAddress: z.string().min(5),
-  emergencyContactName: z.string().min(2),
-  emergencyContactPhone: z.string().min(10),
-  emergencyContactRelation: z.string().min(2),
-  pan: z.string().length(10),
-  aadhaar: z.string().length(12),
-  uan: z.string().optional(),
-  bankName: z.string().min(2),
-  bankAccount: z.string().min(8),
-  bankIfsc: z.string().length(11),
-  bloodGroup: z.string().optional(),
-});
 
+
+const referenceOption = z.object({id:z.number(),name:z.string()});
 export const onboardingRouter = {
+  ...onboardingApplicationRouter,
+  referenceData: withPermission('lifecycle.onboard.convert')
+    .route({method:'GET',path:'/lifecycle/onboarding-reference-data',summary:'Scoped legal-entity prefixes and real onboarding master choices'})
+    .input(z.object({companyId:z.number().int().positive().optional()}).optional())
+    .output(z.object({companies:z.array(referenceOption.extend({ecodePrefix:z.string()})),departments:z.array(referenceOption),designations:z.array(referenceOption),orgUnits:z.array(referenceOption),locations:z.array(referenceOption),salaryStructures:z.array(referenceOption)}))
+    .handler(async ({context,input}) => {
+      try { return await onboardingReferenceData(context.db,{...context.permissionAccess,actorEmployeeId:context.user.employee_id},input?.companyId); }
+      catch(cause) { if(cause instanceof Error && cause.message.includes('permitted data scope')) throw new ORPCError('FORBIDDEN',{message:cause.message}); throw cause; }
+    }),
   // Public Pre-join Portal: Validate Token
   validatePrejoinToken: base
     .route({ method: 'GET', path: '/lifecycle/prejoin/validate', summary: 'Validate candidate pre-join link token' })
@@ -85,7 +88,8 @@ export const onboardingRouter = {
     )
     .handler(async ({ context, input }) => {
       if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
-      return PrejoinService.submitPrejoinData(context.db, input.token, input.data);
+      try {return await PrejoinService.submitPrejoinData(context.db,input.token,input.data);}
+      catch(cause){if(cause instanceof PrejoinInputError) throw new ORPCError('BAD_REQUEST',{message:cause.message});throw cause;}
     }),
 
   // Admin / Recruiter: Ingest ATS candidate
@@ -95,26 +99,26 @@ export const onboardingRouter = {
       z.object({
         atsCandidateId: z.number().optional(),
         loiReference: z.string().optional(),
-        fullName: z.string(),
+        fullName: z.string().trim().min(1),
         personalEmail: z.string().email(),
-        mobile: z.string(),
-        dob: z.string().optional(),
+        mobile: z.string().trim().min(10),
+        dob: z.string().date().optional(),
         address: z.string().optional(),
         totalExperienceYears: z.number().optional(),
         previousCompany: z.string().optional(),
         currentSalary: z.number().optional(),
         expectedSalary: z.number().optional(),
-        positionTitle: z.string(),
+        positionTitle: z.string().trim().min(1),
         department: z.string().optional(),
         orgUnit: z.string().optional(),
         designation: z.string().optional(),
-        companyId: z.number().optional(),
+        companyId: z.number().int().positive(),
         category: z.enum(['white_collar', 'blue_collar', 'trainee', 'consultant', 'contract']).optional(),
-        offeredCtc: z.number(),
-        probationMonths: z.number().optional(),
-        probationSalaryPct: z.number().optional(),
-        proposedDoj: z.string(),
-        offerDate: z.string(),
+        offeredCtc: z.number().finite().nonnegative(),
+        probationMonths: z.number().int().positive().optional(),
+        probationSalaryPct: z.number().int().positive().max(100).optional(),
+        proposedDoj: z.string().date(),
+        offerDate: z.string().date(),
         workLocation: z.string().optional(),
       })
     )
@@ -126,7 +130,11 @@ export const onboardingRouter = {
       })
     )
     .handler(async ({ context, input }) => {
-      return OnboardingService.ingestCandidate(context.db, input);
+      if (!input.companyId) throw new ORPCError('BAD_REQUEST',{message:'Select the accepted employing company'});
+      try { await assertCompanyInScope(context.db,{...context.permissionAccess,actorEmployeeId:context.user.employee_id},input.companyId); }
+      catch { throw new ORPCError('FORBIDDEN',{message:'Company outside your permitted data scope'}); }
+      try {return await OnboardingService.ingestCandidate(context.db,input);}
+      catch(cause){if(cause instanceof PrejoinConfigurationError) throw new ORPCError('SERVICE_UNAVAILABLE',{message:cause.message});throw cause;}
     }),
 
   // Admin / HR: List onboarding candidates
@@ -159,9 +167,10 @@ export const onboardingRouter = {
       })
     )
     .handler(async ({ context, input }) => {
-      let query = context.db.selectFrom('core.onboarding_candidates').selectAll();
+      let query = context.db.selectFrom('core.onboarding_candidates as candidate').selectAll('candidate')
+        .where(companyScopeSql({...context.permissionAccess,actorEmployeeId:context.user.employee_id},'candidate.company_id'));
       if (input?.status) {
-        query = query.where('status', '=', input.status);
+        query = query.where('candidate.status', '=', input.status);
       }
       const rows = await query.orderBy('created_at', 'desc').execute();
 
@@ -175,7 +184,7 @@ export const onboardingRouter = {
           department: r.department,
           companyId: r.company_id,
           offeredCtc: r.offered_ctc,
-          proposedDoj: String(r.proposed_doj).slice(0, 10),
+          proposedDoj: formatDbDate(r.proposed_doj),
           status: r.status,
           prejoinCompletedAt: r.prejoin_completed_at ? String(r.prejoin_completed_at) : null,
           employeeId: r.employee_id,
@@ -203,7 +212,7 @@ export const onboardingRouter = {
       })
     )
     .handler(async ({ context, input }) => {
-      return OnboardingService.checkDuplicate(context.db, input.email, input.mobile, input.pan);
+      return OnboardingService.checkDuplicate(context.db, input.email, input.mobile, input.pan, {...context.permissionAccess,actorEmployeeId:context.user.employee_id});
     }),
 
   // HR Conversion Wizard: Convert candidate to employee
@@ -211,17 +220,18 @@ export const onboardingRouter = {
     .route({ method: 'POST', path: '/lifecycle/candidates/convert', summary: 'Convert candidate to employee' })
     .input(
       z.object({
-        candidateId: z.number(),
-        companyId: z.number(),
-        designationId: z.number(),
-        departmentId: z.number(),
-        locationId: z.number(),
-        orgUnitId: z.number().optional(),
-        gradeId: z.number().optional(),
-        reportingManagerId: z.number().optional(),
-        workEmail: z.string().optional(),
-        doj: z.string(),
-        salaryStructureId: z.number().optional(),
+        candidateId: z.number().int().positive(),
+        joiningConfirmed: z.literal(true),
+        companyId: z.number().int().positive(),
+        designationId: z.number().int().positive(),
+        departmentId: z.number().int().positive(),
+        locationId: z.number().int().positive(),
+        orgUnitId: z.number().int().positive(),
+        gradeId: z.number().int().positive().optional(),
+        reportingManagerId: z.number().int().positive().optional(),
+        workEmail: z.string().trim().email().optional(),
+        doj: z.string().date(),
+        salaryStructureId: z.number().int().positive().optional(),
       })
     )
     .output(
@@ -231,7 +241,13 @@ export const onboardingRouter = {
       })
     )
     .handler(async ({ context, input }) => {
-      return OnboardingService.convertCandidate(context.db, input);
+      try {
+        return await OnboardingService.convertCandidate(context.db, input, { userId: context.user.id,
+          scope: { ...context.permissionAccess, actorEmployeeId: context.user.employee_id } });
+      } catch (cause) {
+        const message = cause instanceof Error ? cause.message : 'Conversion could not be completed';
+        throw new ORPCError(message.includes('permitted data scope') ? 'FORBIDDEN' : 'BAD_REQUEST', { message });
+      }
     }),
 
   // Stakeholder Onboarding Tasks: List tasks
@@ -268,6 +284,7 @@ export const onboardingRouter = {
       let query = context.db
         .selectFrom('core.onboarding_tasks as t')
         .innerJoin('core.employees as e', 'e.id', 't.employee_id')
+        .where(employeeScopeSql({...context.permissionAccess,actorEmployeeId:context.user.employee_id},'e'))
         .select([
           't.id',
           't.employee_id as employeeId',
@@ -306,7 +323,7 @@ export const onboardingRouter = {
           taskName: r.taskName,
           department: r.department,
           ownerRole: r.ownerRole,
-          dueDate: String(r.dueDate).slice(0, 10),
+          dueDate: formatDbDate(r.dueDate),
           slaHours: r.slaHours,
           status: r.status,
           notes: r.notes,
@@ -326,7 +343,12 @@ export const onboardingRouter = {
     .output(z.object({ success: z.boolean() }))
     .handler(async ({ context, input }) => {
       const userId = context.user.id;
-      await TaskFanoutService.completeTask(context.db, input.taskId, userId, input.notes);
+      try { await TaskFanoutService.completeTask(context.db, input.taskId, userId, input.notes, {...context.permissionAccess,actorEmployeeId:context.user.employee_id}); }
+      catch(cause) {
+        if(cause instanceof KentEnrollmentUnavailable) throw new ORPCError('SERVICE_UNAVAILABLE',{message:cause.message});
+        if(cause instanceof Error && cause.message.includes('permitted data scope')) throw new ORPCError('FORBIDDEN',{message:cause.message});
+        throw cause;
+      }
       return { success: true };
     }),
 
@@ -337,7 +359,14 @@ export const onboardingRouter = {
     .output(z.object({ success: z.boolean() }))
     .handler(async ({ context, input }) => {
       const userId = context.user.id;
-      await TaskFanoutService.verifyBiometricRegistration(context.db, input.employeeId, userId);
+      try {
+        await assertEmployeesInScope(context.db,{...context.permissionAccess,actorEmployeeId:context.user.employee_id},[input.employeeId]);
+        await TaskFanoutService.verifyBiometricRegistration(context.db, input.employeeId, userId);
+      } catch(cause) {
+        if(cause instanceof KentEnrollmentUnavailable) throw new ORPCError('SERVICE_UNAVAILABLE',{message:cause.message});
+        if(cause instanceof Error && cause.message.includes('permitted data scope')) throw new ORPCError('FORBIDDEN',{message:cause.message});
+        throw cause;
+      }
       return { success: true };
     }),
 };

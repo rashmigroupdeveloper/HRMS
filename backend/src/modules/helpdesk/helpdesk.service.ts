@@ -310,8 +310,7 @@ export async function replyToTicket(
 
   const isAuthorized =
     params.isAgent === true ||
-    params.authorUserId === ticket.raised_by ||
-    params.authorUserId === ticket.assignee_user_id;
+    params.authorUserId === ticket.raised_by;
   if (!isAuthorized) {
     throw new Error('Not authorized to access or reply to this ticket');
   }

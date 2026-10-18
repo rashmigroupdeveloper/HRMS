@@ -22,6 +22,10 @@ async function main(): Promise<void> {
         .executeTakeFirst();
       inserted += Number(result.numInsertedOrUpdatedRows ?? 0n);
     }
+    // Sponsor vacancy decision: HR repairs routing, with recipients remaining runtime DATA.
+    await db.insertInto('wf.event_subscriptions').values({ event_code: 'workflow.routing_held',
+      recipient_kind: 'role', recipient_ref: 'hr_head' })
+      .onConflict(oc => oc.columns(['event_code', 'recipient_kind', 'recipient_ref']).doNothing()).execute();
     logger.info({ total: WORKFLOW_DEFINITIONS.length, inserted }, 'workflow catalog seeded');
   } finally {
     await db.destroy();

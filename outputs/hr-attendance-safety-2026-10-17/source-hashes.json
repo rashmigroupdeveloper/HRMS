@@ -1,0 +1,10 @@
+{
+  "backend/src/modules/attendance/attendance-config.router.ts": "d77418f656149e8b2f7cd84c4586dbdacdd85603e100099624953d00ea10c631",
+  "backend/src/modules/attendance/attendance-mutation.ts": "9b354667004c1e65a8aeb3ceddd876681d08882e2d60e89130b2afce0e502ba7",
+  "backend/src/modules/attendance/manual-status.service.ts": "3f214d4763c89e86e1ac31e7f8873cb350a3e767f439b56c44fd545cc9e85911",
+  "backend/src/modules/attendance/scheme.service.ts": "312325662902c0d52240cd267360dd462b017d44c33444418b1ab0a099f7833a",
+  "backend/src/modules/attendance/day-status.service.ts": "c997c6ab8c70f2186e251c962ae1a37dca1a07c88da5c1d7f08990dfc3f7df5d",
+  "backend/src/modules/attendance/overtime.service.ts": "0bc05314353abc4e88c52668d3a3823982148f91c00decefad1bc166a9e13386",
+  "backend/tests/hr-attendance-safety.integration.test.ts": "ca97b5e7baf169c36ea657f173d9e4b0e7d137f3ea00fcfb57f45ec4af4675a9",
+  "backend/tests/stage1-review-fixes.integration.test.ts": "5dba8c451f8a39ab79ed4cdb31cb7607cb61f14335fe1de34182001ce020a41e"
+}

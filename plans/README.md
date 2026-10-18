@@ -1,5 +1,11 @@
 # HRMS Execution Plans
 
+**Latest HR action audit, 16 Oct 2026:** [pack23](sow-completion/23-HR-ACTIONS-SAFETY-REVIEW.md) verifies attendance overrides, actual Excel exports, onboarding durability, IT tasks, absence/letters and HR dashboard access.21 native observations,10 controls and a separate committed-orphan reproduction show critical gaps remain. No application/schema changes or gate advancement.
+
+**Latest other-module audit, 16 Oct 2026:** [pack22](sow-completion/22-OTHER-MODULE-BUG-AUDIT.md) confirms seven additional specific bug groups and three residual security/integrity issues, with20 native observations and four passing controls. Survey/helpdesk screen contracts, company audience, answer validation and ticket history remain open. No application/schema changes or gate advancement.
+
+**Latest SOW regression review, 16 Oct 2026:** [pack21](sow-completion/21-SOW-REGRESSION-AND-HR-HOLD-REVIEW.md) implements the sponsor's HR hold decision, fixes a reproduced approval deadlock and invalid-chain bypass risk, and rechecks schema, actual API contracts and all176 SOW scope rows. Backend498 tests/build pass but coverage remains red; frontend246 tests/full verify pass. Significant cross-domain issues remain; no gate advances.
+
 **Latest approval/attendance repair, 15 Oct 2026:** [pack20 — manager flow, database connections and remaining work](sow-completion/20-MANAGER-APPROVAL-AND-ATTENDANCE-REVIEW.md) records exact request links, scoped authority, validated resubmission, protected final effects and attendance/leave presentation. Local browser and native database evidence are linked. No new database fields or release gate; global backend coverage and the listed policy/integration work remain open.
 
 This folder is the **live execution tracker** for the Rashmi HRMS build. The specs live in `docs/` (what to build and why); these files track **in what order and what's done**.
@@ -99,3 +105,15 @@ Product routes live in `frontend/src/app/router.tsx`. **Every route now resolves
 | `/dev/gallery` | live (super_admin) | 0 |
 
 **Next UI stage:** Phase 2 payroll console (P2-T08) — **blocked** until the 9 statutory policy decisions (P0-T06) are signed; no money code starts before that.
+
+**16 Oct repair increment:** [pack24 — Stage0.4 readonly authority](sow-completion/24-READONLY-AUTHORITY-REPAIR.md). H02 repair is separate from remaining HR action and SOW acceptance; see evidence for verification limits.
+
+**Latest16 Oct:** [pack25 — authentication repairs](sow-completion/25-AUTH-SESSION-AND-LOGIN-REPAIR.md) implements the approved session decision and concurrent login safety. Read its actual verify result; remaining SOW rows are not declared complete.
+
+**16 Oct Stage1.4 increment:** [half-wise attendance/AR/OD](sow-completion/26-HALF-WISE-ATTENDANCE-REQUESTS.md) implements the sponsor-confirmed two-half model; read actual verification and remaining acceptance before advancing any gate.
+
+**16 Oct Stage 1.4 timing refinement:** [configured half timings](sow-completion/27-ATTENDANCE-TIMING-UI.md) implements the sponsor-confirmed timing UI and records browser proof. Remaining SOW acceptance and the backend coverage gate remain open.
+
+**17 Oct Stage1.8 role-flow review:** [49 separate cases and remaining SOW](sow-completion/28-ROLE-FLOW-AND-SOW-REVIEW.md).19 native observations reproduce open HR scope/correction, month-close, co-sign and task-access gaps. Original176 SOW texts retained; no acceptance gate advanced. Next build is the separately announced Stage1.2 HR attendance safety repair.
+
+**17 Oct Stage1.2 repair:** [HR attendance safety F02–F05](sow-completion/29-HR-ATTENDANCE-SAFETY-REPAIR.md) implements scoped, transactional correction/scheme safety with17 new native regressions and546 passing full-suite tests. Coverage and other13 role-flow finding groups remain open; no gate advanced.

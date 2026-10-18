@@ -1,0 +1,478 @@
+{
+  "prepared": "2026-10-16",
+  "scope": "HR operational action audit, no application repairs",
+  "findings": [
+    {
+      "id": "H01",
+      "title": "Scoped HR can mark attendance in another entity",
+      "priority": "P1",
+      "status": "Open",
+      "requirements": [
+        "ATT-17",
+        "CORE-10"
+      ],
+      "owning_stage": "Phase 1 Stage 1.2",
+      "evidence": [
+        {
+          "file": "backend/src/modules/attendance/attendance-config.router.ts",
+          "line": 433
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 586
+        }
+      ],
+      "observed": "An hr_ops fixture had all=false and exactly one permitted org unit. PUT /attendance/days/override changed a target in the other test entity and returned200. The route checks the permission but never intersects the target with permissionAccess. Valid same-unit HR writes also succeed and audit correctly.",
+      "repair": "Enforce live subject scope before mutation, preserve the manager prohibition, and recheck authority with the authoritative subject placement at the write boundary. Require an existing employee and an allowed correction period. Use existing employee/company/org relationships; no spare columns.",
+      "acceptance": "Same-unit HR succeeds; other unit/entity is403 with zero day/audit writes. Revocation and moved subjects take effect next request. Employee and manager-only roles remain403.",
+      "supporting_sow_ids": [
+        "SOW-009",
+        "SOW-067",
+        "SOW-068"
+      ],
+      "prior_context": "Specific native confirmation of broader C01"
+    },
+    {
+      "id": "H02",
+      "title": "A readonly permission grant still authorizes attendance writes",
+      "priority": "P1",
+      "status": "Open",
+      "requirements": [
+        "CORE-10",
+        "ATT-17"
+      ],
+      "owning_stage": "Phase 0 Stage 0.4",
+      "evidence": [
+        {
+          "file": "backend/src/core/rbac/permissions.service.ts",
+          "line": 62
+        },
+        {
+          "file": "backend/src/api/orpc.ts",
+          "line": 123
+        }
+      ],
+      "observed": "A fixture custom role held only attendance.manual_override with scope=readonly; the write returned200. The central resolver maps readonly to all and the permission gate does not distinguish reading from mutation. This is a configured-readonly-grant failure, not a claim that every default read-only persona already holds this code.",
+      "repair": "Repair central action authority without widening row scope or removing legitimate read access. Business mutations must require write authority, and scope must retain its independent organization/own/subtree meaning. Reconcile the existing permission model and seed/runtime grant API together.",
+      "acceptance": "Readonly grants cannot mutate any protected business resource; full/scoped write grants still work. Test mixed additive roles, runtime revoke and real default role matrix across attendance, leave and onboarding.",
+      "supporting_sow_ids": [
+        "SOW-009"
+      ],
+      "prior_context": "G04/R15, existing foundation finding"
+    },
+    {
+      "id": "H03",
+      "title": "Whitespace satisfies the mandatory HR override reason",
+      "priority": "P2",
+      "status": "Open",
+      "requirements": [
+        "ATT-17",
+        "CORE-11"
+      ],
+      "owning_stage": "Phase 1 Stage 1.2",
+      "evidence": [
+        {
+          "file": "backend/src/modules/attendance/attendance-config.router.ts",
+          "line": 442
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 602
+        }
+      ],
+      "observed": "A reason containing five spaces returned200 and persisted a manual correction. The API min(5) runs without trimming. A non-null DB reason is not evidence of a meaningful explanation.",
+      "repair": "Trim and validate the reason at both the public boundary and shared mutation boundary. Keep the existing meaningful-length requirement and store the normalized reason; reject before writes.",
+      "acceptance": "Empty, whitespace-only and too-short normalized reasons fail with a recoverable4xx and no mutation/audit; a meaningful reason is stored with actor/date/old/new evidence.",
+      "supporting_sow_ids": [
+        "SOW-009",
+        "SOW-067"
+      ],
+      "prior_context": null
+    },
+    {
+      "id": "H04",
+      "title": "A locked day reports successful correction and writes a misleading audit",
+      "priority": "P1",
+      "status": "Open",
+      "requirements": [
+        "ATT-15",
+        "ATT-17",
+        "CORE-11"
+      ],
+      "owning_stage": "Phase 1 Stage 1.2",
+      "evidence": [
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 612
+        },
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 620
+        }
+      ],
+      "observed": "For an individually locked day without a month header, the upsert affects zero rows because its conflict WHERE rejects the update. The service ignores the affected result, returns200 and inserts a manual_override audit claiming the requested status; the day remainedP. Separately, a month-header lock correctly blocked a new row in PostgreSQL, but the API surfaced500 rather than a domain4xx. A locked month was not changed.",
+      "repair": "Check affected/returned rows and fail closed for protected rows. Check the company-month boundary using the same synchronization discipline as other attendance writes. Commit the actual mutation and truthful audit in one transaction; record the real day-record ID rather than employee ID as entity_id while retaining subject scope. Map locked/scope/input failures to accurate domain errors.",
+      "acceptance": "Existing locked row and header-only locked month both refuse changes with no success audit. Normal correction writes one audit with the actual affected row and old/new values. Concurrent month lock cannot admit a late unprotected write.",
+      "supporting_sow_ids": [
+        "SOW-009",
+        "SOW-067",
+        "SOW-069"
+      ],
+      "prior_context": "Related to older protected-write/atomicity findings; exact silent-success case reproduced here"
+    },
+    {
+      "id": "H05",
+      "title": "Marking Absent leaves old overtime in the row and muster",
+      "priority": "P1",
+      "status": "Open",
+      "requirements": [
+        "ATT-05",
+        "ATT-17",
+        "RPT-01"
+      ],
+      "owning_stage": "Phase 1 Stage 1.2",
+      "evidence": [
+        {
+          "file": "backend/src/modules/attendance/day-status.service.ts",
+          "line": 599
+        },
+        {
+          "file": "backend/src/modules/reports/muster.service.ts",
+          "line": 155
+        }
+      ],
+      "observed": "A valid P row with120 detected OT minutes was changed toA. ot_minutes stayed120, and a fresh muster build still reported2 OT hours. A separate L\u2192P correction kept leave_type_id. penalty_flag also survives while swipe/late/early fields are cleared. These are stale derived facts; this audit does not claim they actually produced an OT payment.",
+      "repair": "Define/reset or recompute each derived attendance fact under the documented manual-precedence policy, using immutable swipe and approved request sources. Do not silently cancel a leave ledger posting or approved OT entitlement just by clearing a day field. Preserve the required cancellation/recovery workflow and make detected-vs-approved OT explicit. Ensure muster/report facts reflect the corrected day.",
+      "acceptance": "P with detected OT\u2192A does not publish stale detection as current OT; L\u2192P has consistent day classification, with explicit handling of existing approved leave. Sessions, penalty and WO eligibility remain internally consistent. Test a rebuild and the exact exported workbook, not only the status column.",
+      "supporting_sow_ids": [
+        "SOW-003",
+        "SOW-053",
+        "SOW-067",
+        "SOW-068",
+        "SOW-069"
+      ],
+      "prior_context": null
+    },
+    {
+      "id": "H06",
+      "title": "Onboarding dates and task dates are serialized incorrectly",
+      "priority": "P2",
+      "status": "Open",
+      "requirements": [
+        "LC-01",
+        "LC-02",
+        "NFR-09"
+      ],
+      "owning_stage": "Phase 3 Stage 3.1",
+      "evidence": [
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+          "line": 178
+        },
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+          "line": 307
+        }
+      ],
+      "observed": "A stored DOJ2026-11-01 was returned as \"Sun Nov 01\". A stakeholder dueDate similarly came back as \"Sat Oct 17\". String(Date).slice(0,10) keeps the weekday/month text and loses the year; z.string output validation accepts it. The candidate list also exposed the other-entity candidate to scoped HR.",
+      "repair": "Use the existing calendar-safe date formatter for DATE and ISO serialization for timestamps. Apply the candidate/task scope model rather than returning all records. Validate semantic date contracts at the HTTP boundary.",
+      "acceptance": "Date input2026-11-01 round-trips as2026-11-01 in IST and UTC; leap/year boundaries remain correct. Actual API-shaped candidate/task data renders in forms without fallback/sample substitution.",
+      "supporting_sow_ids": [
+        "SOW-025",
+        "SOW-127",
+        "SOW-132"
+      ],
+      "prior_context": null
+    },
+    {
+      "id": "H07",
+      "title": "Offer and asset exports disclose data outside HR scope",
+      "priority": "P1",
+      "status": "Open",
+      "requirements": [
+        "CORE-10",
+        "RPT-02",
+        "RPT-06",
+        "AST-01"
+      ],
+      "owning_stage": "Phase 1 Stage 1.7",
+      "evidence": [
+        {
+          "file": "backend/src/modules/reports/reports.router.ts",
+          "line": 882
+        },
+        {
+          "file": "backend/src/modules/reports/reports.service.ts",
+          "line": 914
+        },
+        {
+          "file": "backend/src/modules/reports/reports.service.ts",
+          "line": 1248
+        }
+      ],
+      "observed": "Scoped HR requested the other test entity via companyId. Both R21 offers and R28 assets returned the foreign fixture row and generated a real XLSX containing it (200). These services accept scope but do not apply it. In the same test, R1 muster list/export correctly excluded the other entity and matched the allowed ecode filter.",
+      "repair": "Intersect caller grants with report population before list/export. Model pre-employee candidates and unassigned/third-party assets using their authoritative company/placement, rather than assuming every record has an employee join. Do not treat a client company filter as authorization or fix only the workbook. Preserve the functioning shared-filter muster path.",
+      "acceptance": "R21/R28 list and real XLSX contain only authorized records with and without companyId; empty grant scope fails closed. Verify candidate placement changes, unassigned assets, allowed filters, column parity and export audit. Extend the same review to remaining catalog routes; these two probes do not certify all exports.",
+      "supporting_sow_ids": [
+        "SOW-009",
+        "SOW-022",
+        "SOW-069",
+        "SOW-182",
+        "SOW-197",
+        "SOW-198"
+      ],
+      "prior_context": "Specific native confirmation of broader scope/output findings"
+    },
+    {
+      "id": "H08",
+      "title": "Scoped HR can convert another entity candidate and activate a future joiner",
+      "priority": "P1",
+      "status": "Open",
+      "requirements": [
+        "CORE-06",
+        "CORE-10",
+        "LC-01",
+        "LC-02"
+      ],
+      "owning_stage": "Phase 3 Stage 3.1",
+      "evidence": [
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+          "line": 210
+        },
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+          "line": 227
+        },
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+          "line": 282
+        }
+      ],
+      "observed": "The scoped HR actor converted an other-entity link_sent candidate with no completed prejoin intake. DOJ was1 Nov2026, yet the employee immediately became active on16 Oct and all five task due dates preceded DOJ. Employee.probation_due_date remained null even though a separate probation review was created. This proves missing scope/readiness/effective-date gates; any deliberate early HR override needs an explicit documented path.",
+      "repair": "Authorize both candidate source and target entity/unit; validate all master relationships and readiness. Retain preboarding/onboarding state until the configured DOJ transition and schedule stakeholder duties relative to the documented join lifecycle. Synchronize authoritative probation context. Do not invent an acceptance or no-show override without the governing decision.",
+      "acceptance": "Other-scope conversion rejected before allocation/write. Future joiners are excluded from active operational populations until due. Completed intake/approved overrides, DOJ activation, task due dates and probation views reconcile from one authoritative state.",
+      "supporting_sow_ids": [
+        "SOW-009",
+        "SOW-025",
+        "SOW-031",
+        "SOW-127",
+        "SOW-129",
+        "SOW-132"
+      ],
+      "prior_context": "R18/R19 lifecycle context"
+    },
+    {
+      "id": "H09",
+      "title": "Conversion success does not guarantee a usable login, salary or task delivery",
+      "priority": "P1",
+      "status": "Open",
+      "requirements": [
+        "CORE-11",
+        "LC-01",
+        "LC-02",
+        "PAY-07"
+      ],
+      "owning_stage": "Phase 3 Stage 3.1",
+      "evidence": [
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+          "line": 304
+        },
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+          "line": 315
+        },
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/task-fanout.service.ts",
+          "line": 43
+        }
+      ],
+      "observed": "Successful native conversion created an active login with PENDING_INITIAL_LOGIN, zero salary assignments when the optional structure was omitted, five tasks and no employee-creation audit row. The hardcoded admin_id_card task uses owner_role=admin, which has no matching role in the current catalog. Source has no task recipient/outbox fan-out; real delivery is not proven. Supplying a salary structure also writes empty component_amounts in source, retained as the earlier unresolved money finding rather than recalculated here.",
+      "repair": "Make conversion completion evidence explicit: secure login activation, valid effective salary assignment through the canonical money path, audit, sanctioned task owner/recipient and transactional notification enqueue. Use runtime definitions/settings for owners and SLA, not new hardcoded role names or guessed component values. Any money repair requires full docs04/10 and human review.",
+      "acceptance": "No complete/active success state with unusable identity/pay setup. Actual supported initial login path works; task owners exist and receive receipts; retry is idempotent. Independent salary goldens and component conservation precede money changes.",
+      "supporting_sow_ids": [
+        "SOW-025",
+        "SOW-127",
+        "SOW-130",
+        "SOW-132",
+        "SOW-133",
+        "SOW-134"
+      ],
+      "prior_context": "R18/R19/R20, previously tracked readiness gaps"
+    },
+    {
+      "id": "H10",
+      "title": "Biometric completion can assert verification without Kent or an employee",
+      "priority": "P1",
+      "status": "Open",
+      "requirements": [
+        "LC-02",
+        "CORE-11"
+      ],
+      "owning_stage": "Phase 3 Stage 3.1",
+      "evidence": [
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/task-fanout.service.ts",
+          "line": 126
+        },
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/task-fanout.service.ts",
+          "line": 179
+        },
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+          "line": 334
+        }
+      ],
+      "observed": "Completing it_biometric set biometric_registered=true without any Kent connector call. POST /lifecycle/biometric/verify with a nonexistent employee also returned success200. The explicit verifier writes a note claiming Kent-feed verification while performing only DB updates. This rechecks R36 and adds the zero-row success case.",
+      "repair": "Separate task completion from independently verified enrollment evidence. Use the sanctioned KentConnector and fail closed when verification is unavailable; require existing in-scope employee, affected rows, actor and actual receipt. A local test/manual confirmation must be named and audited as such rather than claiming a real feed check.",
+      "acceptance": "Missing/out-of-scope employee refused; unavailable Kent cannot produce verified status. Only a matching real/mocked interface response under its explicit environment sets the evidence. Retry preserves first valid proof and does not forge a receipt.",
+      "supporting_sow_ids": [
+        "SOW-010",
+        "SOW-127",
+        "SOW-132"
+      ],
+      "prior_context": "R36; new nonexistent-target success reproduction"
+    },
+    {
+      "id": "H11",
+      "title": "IT task owners cannot access or complete their onboarding tasks",
+      "priority": "P1",
+      "status": "Open",
+      "requirements": [
+        "LC-02",
+        "CORE-10"
+      ],
+      "owning_stage": "Phase 3 Stage 3.1",
+      "evidence": [
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+          "line": 239
+        },
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+          "line": 317
+        },
+        {
+          "file": "backend/src/core/rbac/seed-data.ts",
+          "line": 236
+        }
+      ],
+      "observed": "An it_admin fixture, the declared owner_role for the generated IT tasks, received403 on both its IT task list and completion endpoint. Those endpoints require lifecycle.onboard.convert, a full HR conversion authority absent from IT. docs08 explicitly gives IT an onboarding IT-task queue while withholding general HR authority.",
+      "repair": "Define task-only access from the already documented IT/Admin/HR personas and enforce assignment/category plus organization scope. Keep one central permission per procedure. Do not grant IT all candidate/compensation/conversion access merely to unblock its checklist.",
+      "acceptance": "An IT owner can see/complete only permitted IT tasks and cannot read candidate compensation, convert employees, complete other department tasks or act outside assigned scope. HR supervision follows its approved authority and audit.",
+      "supporting_sow_ids": [
+        "SOW-009",
+        "SOW-127",
+        "SOW-132"
+      ],
+      "prior_context": "Existing stakeholder orchestration acceptance remains open"
+    },
+    {
+      "id": "H12",
+      "title": "HR absence cases and letter reads ignore organization boundaries",
+      "priority": "P1",
+      "status": "Open",
+      "requirements": [
+        "CORE-09",
+        "CORE-10",
+        "ATT-10",
+        "ATT-11"
+      ],
+      "owning_stage": "Phase 1 Stage 1.6",
+      "evidence": [
+        {
+          "file": "backend/src/modules/attendance/absence.router.ts",
+          "line": 40
+        },
+        {
+          "file": "backend/src/modules/attendance/absence.router.ts",
+          "line": 62
+        },
+        {
+          "file": "backend/src/modules/letters/letters.router.ts",
+          "line": 115
+        },
+        {
+          "file": "backend/src/modules/letters/letters.router.ts",
+          "line": 134
+        }
+      ],
+      "observed": "Scoped HR saw the other-entity absence case and advanced it to warning (200), listed another entity employee\u2019s letters and read the issued letter body (200). A normal employee was correctly denied that letter. The HR permission-membership path bypasses the scope that the same employee\u2019s leave-balance route enforces.",
+      "repair": "Apply current employee subject scope consistently to queue, stage escalation, letter list, draft/content access, issue and export. Preserve owner-only issued-letter access and mandatory signature/workflow rules. Reject outside scope before storage reads or writes, and scope list/count together.",
+      "acceptance": "Other-unit/entity HR cannot inspect, escalate or issue against the subject; valid owner/HR still can. Drafts stay private, generic letter merge fields cannot spoof authoritative employee facts, and scoped leave/data refusal produces403 rather than a generic500.",
+      "supporting_sow_ids": [
+        "SOW-009",
+        "SOW-023",
+        "SOW-044",
+        "SOW-182",
+        "SOW-218"
+      ],
+      "prior_context": "C01/C20 and existing letter/absence review context"
+    },
+    {
+      "id": "H13",
+      "title": "HR dashboard accepts an arbitrary other-entity filter",
+      "priority": "P1",
+      "status": "Open",
+      "requirements": [
+        "CORE-10",
+        "RPT-04"
+      ],
+      "owning_stage": "Phase 1 Stage 1.7",
+      "evidence": [
+        {
+          "file": "backend/src/modules/reports/reports.router.ts",
+          "line": 654
+        },
+        {
+          "file": "backend/src/modules/reports/dashboard.service.ts",
+          "line": 13
+        }
+      ],
+      "observed": "Scoped HR selected the other temporary companyId and received200 with that entity\u2019s headcount, including the newly converted future employee. The handler passes only companyId, not the resolved permission scope, to the dashboard service.",
+      "repair": "Compute each card from the authorized population intersected with optional filters; carry subject/company/unit scope through all queries and drill-downs. Keep operational and executive authorities distinct, and exclude future/inactive employees according to lifecycle rules.",
+      "acceptance": "Other entity or OU filters cannot broaden any card; counts/drill-downs agree. Same company with two permitted units is tested as well as separate entities. Empty authority is refused or an explicitly empty authorized result.",
+      "supporting_sow_ids": [
+        "SOW-009",
+        "SOW-019",
+        "SOW-069"
+      ],
+      "prior_context": "Broader C01/RPT scope context"
+    },
+    {
+      "id": "H14",
+      "title": "Failed onboarding leaves a committed orphan employee",
+      "priority": "P1",
+      "status": "Open",
+      "requirements": [
+        "LC-01",
+        "CORE-11",
+        "NFR-04"
+      ],
+      "owning_stage": "Phase 3 Stage 3.1",
+      "evidence": [
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+          "line": 269
+        },
+        {
+          "file": "backend/src/modules/lifecycle/onboarding/onboarding.service.ts",
+          "line": 304
+        }
+      ],
+      "observed": "A separate real-autocommit probe ingested a candidate and attempted conversion with an already-used work email. The users insert failed with PostgreSQL23505. An independent pool still saw one committed employee, no new employee login, and the candidate remained link_sent with no employee link. The partial row was then removed from this test DB. A retry would hit the duplicate employee details created by the failed attempt.",
+      "repair": "Use one transaction for eligibility/duplicate recheck, locked candidate transition, shared ecode allocation, employee/login/salary/tasks/probation, audit and outbox. Preserve exactly-once links and uniqueness. Preflight validation helps error clarity but does not replace the transaction. External delivery follows the committed outbox.",
+      "acceptance": "Inject failure after each boundary and prove zero partial state from another connection. Retry succeeds once; simultaneous conversions of one candidate create one employee. Invalid/colliding user email leaves candidate, employee, salary and task state unchanged.",
+      "supporting_sow_ids": [
+        "SOW-025",
+        "SOW-031",
+        "SOW-127",
+        "SOW-129",
+        "SOW-132"
+      ],
+      "prior_context": "Native durability confirmation of R18, not a new discovery"
+    }
+  ]
+}

@@ -95,3 +95,5 @@ Generated PF/ESIC/PT/LWF/TDS files and bank batches remain pending until validat
 ## What the next AI must report at the end of a stage
 
 Report exact SOW/requirement IDs and existing stage; changed source/schema/types/API/UI paths; old→new observed behavior; test and `npm run verify` output with limits; manual/UAT evidence still missing; unresolved decision IDs; conservative checklist/gate edits. An implemented capability may be “code complete, pending real UAT”; an unchecked plan item may already have code. Both facts must remain visible. Stop after the current stage; don't quietly start the next or turn this pack's proposed task into a passed gate.
+
+**16 Oct NFR-03 session decision — sponsor:** single-use refresh, immediate current-session logout; preserve other logins. [Pack25](25-AUTH-SESSION-AND-LOGIN-REPAIR.md) implements the approved policy with the existing `sec.sessions` identity plus one current-refresh hash. This closes the session-policy question cited by C22/O10; it does not resolve all broader D03 permission/invitation/alumni choices.

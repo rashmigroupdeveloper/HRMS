@@ -5,9 +5,13 @@
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
-import { addDaysIso, istDateString } from '../../core/dates.js';
+import { istDateString } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
 import { countPendingManagerApprovals } from './manager-approval.service.js';
+import type { EmployeeScope } from '../../core/rbac/employee-scope.js';
+import { assertCompanyInScope } from '../../core/rbac/company-scope.js';
+import { readCloseReadiness } from './close-readiness.js';
+import { AttendanceMutationError, attendanceTransaction } from './attendance-mutation.js';
 
 export interface ChecklistItem {
   code: string;
@@ -26,6 +30,8 @@ export interface MonthLockChecklist {
 
 function monthStart(month: string): string {
   // accept YYYY-MM or YYYY-MM-01
+  if (!/^\d{4}-(0[1-9]|1[0-2])(-01)?$/.test(month))
+    throw new AttendanceMutationError('BAD_REQUEST', 'Month must be YYYY-MM or YYYY-MM-01');
   return month.length === 7 ? `${month}-01` : month;
 }
 
@@ -43,14 +49,16 @@ export async function getMonthLockChecklist(
 ): Promise<MonthLockChecklist> {
   const m = monthStart(month);
   const mEnd = nextMonthStart(m);
-  const maxAge = await getTypedSetting(db, 'att.month_lock_pending_max_age_days', 'number', 7);
   const managerApprovalRequired = await getTypedSetting(
     db,
     'att.manager_approval_required_for_lock',
     'boolean',
-    false,
+    true,
   );
-  const cutoff = addDaysIso(istDateString(), -maxAge);
+  const otMinMinutes = await getTypedSetting(db, 'att.ot_min_minutes', 'number', 30);
+  if (!Number.isFinite(otMinMinutes) || otMinMinutes <= 0)
+    throw new Error('Invalid overtime detection threshold');
+  const readiness = await readCloseReadiness(db, companyId, m, mEnd, otMinMinutes);
 
   const existing = await db
     .selectFrom('att.month_locks')
@@ -59,24 +67,26 @@ export async function getMonthLockChecklist(
     .where('month', '=', sql<Date>`${m}::date`)
     .executeTakeFirst();
 
-  // Pending regularizations older than maxAge
+  // Every unresolved request affecting the period blocks until explicitly resolved.
   const pendingReg = await db
     .selectFrom('att.regularizations as reg')
     .innerJoin('wf.requests as r', 'r.id', 'reg.workflow_request_id')
     .innerJoin('core.employees as e', 'e.id', 'reg.employee_id')
     .where('e.company_id', '=', companyId)
     .where('r.status', 'in', ['pending', 'sent_back'])
-    .where('reg.from_date', '<', sql<Date>`${cutoff}::date`)
+    .where('reg.from_date', '<', sql<Date>`${mEnd}::date`)
+    .where('reg.to_date', '>=', sql<Date>`${m}::date`)
     .select(({ fn }) => fn.countAll<number>().as('n'))
     .executeTakeFirstOrThrow();
 
-  // Pending OT past deadline or older than maxAge
+  // Every unresolved overtime decision affecting the period.
   const pendingOt = await db
     .selectFrom('att.overtime_entries as o')
     .innerJoin('core.employees as e', 'e.id', 'o.employee_id')
     .where('e.company_id', '=', companyId)
     .where('o.status', '=', 'pending')
-    .where('o.work_date', '<', sql<Date>`${cutoff}::date`)
+    .where('o.work_date', '>=', sql<Date>`${m}::date`)
+    .where('o.work_date', '<', sql<Date>`${mEnd}::date`)
     .select(({ fn }) => fn.countAll<number>().as('n'))
     .executeTakeFirstOrThrow();
 
@@ -84,8 +94,8 @@ export async function getMonthLockChecklist(
   const unmatched = await db
     .selectFrom('att.swipe_events')
     .where('employee_id', 'is', null)
-    .where('swipe_ts', '>=', sql<Date>`${m}::timestamptz`)
-    .where('swipe_ts', '<', sql<Date>`${mEnd}::timestamptz`)
+    .where('swipe_ts', '>=', sql<Date>`${m}::date::timestamp AT TIME ZONE 'Asia/Kolkata'`)
+    .where('swipe_ts', '<', sql<Date>`${mEnd}::date::timestamp AT TIME ZONE 'Asia/Kolkata'`)
     .select(({ fn }) => fn.countAll<number>().as('n'))
     .executeTakeFirstOrThrow();
 
@@ -97,16 +107,10 @@ export async function getMonthLockChecklist(
     .leftJoin('core.locations as location', 'location.id', 'device.location_id')
     .where('device.is_active', '=', true)
     .where((eb) =>
-      eb.or([
-        eb('location.company_id', '=', companyId),
-        eb('device.location_id', 'is', null),
-      ]),
+      eb.or([eb('location.company_id', '=', companyId), eb('device.location_id', 'is', null)]),
     )
     .where((eb) =>
-      eb.or([
-        eb('device.last_seen_at', 'is', null),
-        eb('device.last_seen_at', '<', silentCutoff),
-      ]),
+      eb.or([eb('device.last_seen_at', 'is', null), eb('device.last_seen_at', '<', silentCutoff)]),
     )
     .select(({ fn }) => fn.countAll<number>().as('n'))
     .executeTakeFirstOrThrow();
@@ -143,7 +147,7 @@ export async function getMonthLockChecklist(
       HAVING COUNT(device.id) = 0
          OR COUNT(*) FILTER (
               WHERE watermark.watermark_ts IS NULL
-                 OR watermark.watermark_ts < ${mEnd}::date + interval '1 day'
+                 OR watermark.watermark_ts < ((${mEnd}::date + interval '1 day') AT TIME ZONE 'Asia/Kolkata')
             ) > 0
     )
     SELECT
@@ -162,14 +166,52 @@ export async function getMonthLockChecklist(
 
   const items: ChecklistItem[] = [
     {
+      code: 'period_closed',
+      label: 'Attendance period has ended',
+      ok: mEnd <= istDateString(),
+      detail:
+        mEnd <= istDateString() ? 'Period ended' : 'Current and future months cannot be closed',
+    },
+    {
+      code: 'population_ready',
+      label: 'Employee population and joining dates verified',
+      ok:
+        readiness.employees > 0 && readiness.missing_doj === 0 && readiness.missing_biometric === 0,
+      detail: `${readiness.employees} employee(s); ${readiness.missing_doj} missing DOJ; ${readiness.missing_biometric} missing biometric registration`,
+    },
+    {
+      code: 'attendance_complete',
+      label: 'Every employment date has a resolved attendance result',
+      ok: readiness.missing_days === 0 && readiness.unresolved_days === 0,
+      detail: `${readiness.missing_days} missing day(s); ${readiness.unresolved_days} unresolved leave/week-off day(s)`,
+    },
+    {
+      code: 'recompute_drained',
+      label: 'Period recomputation and approved requests applied',
+      ok: readiness.queued === 0 && readiness.unapplied === 0,
+      detail: `${readiness.queued} queued day(s); ${readiness.unapplied} approved request(s) not applied`,
+    },
+    {
+      code: 'leave_resolved',
+      label: 'No pending leave affecting this month',
+      ok: readiness.pending_leave === 0,
+      detail: `${readiness.pending_leave} pending leave application(s)`,
+    },
+    {
+      code: 'ot_detected',
+      label: 'All detected overtime has a decision record',
+      ok: readiness.undetected_ot === 0,
+      detail: `${readiness.undetected_ot} detected OT day(s) without an entry`,
+    },
+    {
       code: 'pending_requests',
-      label: `No pending AR/OD older than ${String(maxAge)} days`,
+      label: 'No open AR/OD affecting this month',
       ok: pendingReg.n === 0,
       detail: pendingReg.n === 0 ? 'Clear' : `${String(pendingReg.n)} open request(s)`,
     },
     {
       code: 'pending_ot',
-      label: `No pending OT older than ${String(maxAge)} days`,
+      label: 'No pending OT affecting this month',
       ok: pendingOt.n === 0,
       detail: pendingOt.n === 0 ? 'Clear' : `${String(pendingOt.n)} pending OT`,
     },
@@ -188,9 +230,9 @@ export async function getMonthLockChecklist(
     {
       code: 'manager_approvals',
       label: 'Managers have approved team attendance',
-      ok: !managerApprovalRequired || managerApprovals.pending === 0,
+      ok: managerApprovalRequired && managerApprovals.pending === 0,
       detail: !managerApprovalRequired
-        ? 'Approval precondition disabled by policy'
+        ? 'Mandatory manager approval is disabled; repair the policy configuration'
         : managerApprovals.pending === 0
           ? managerApprovals.total === 0
             ? 'No managers with reports in scope'
@@ -201,9 +243,10 @@ export async function getMonthLockChecklist(
       code: 'sync_watermark',
       label: 'Every relevant device watermark covers the full month',
       ok: watermarkIssues === 0,
-      detail: watermarkIssues === 0
-        ? 'All biometric locations synchronized'
-        : `${String(coverage.pending_locations)} location(s) incomplete; ${String(coverage.unmapped_employees)} employee(s) lack location mapping`,
+      detail:
+        watermarkIssues === 0
+          ? 'All biometric locations synchronized'
+          : `${String(coverage.pending_locations)} location(s) incomplete; ${String(coverage.unmapped_employees)} employee(s) lack location mapping`,
     },
   ];
 
@@ -218,11 +261,22 @@ export async function getMonthLockChecklist(
 
 export async function lockMonth(
   db: Kysely<Database>,
-  params: { companyId: number; month: string; actorUserId: number },
+  params: { companyId: number; month: string; actorUserId: number; scope?: EmployeeScope },
 ): Promise<{ id: number }> {
-  return db.transaction().execute(async (trx) => {
+  return attendanceTransaction(db, async (trx) => {
+    // Subject-first, in stable order, matches correction/request/roster writes.
+    await trx
+      .selectFrom('core.employees')
+      .select('id')
+      .where('company_id', '=', params.companyId)
+      .orderBy('id')
+      .forUpdate()
+      .execute();
+    if (params.scope) await assertCompanyInScope(trx, params.scope, params.companyId);
     const requestedMonth = monthStart(params.month);
-    await sql`SELECT pg_advisory_xact_lock(${params.companyId}, hashtext(${requestedMonth}))`.execute(trx);
+    await sql`SELECT pg_advisory_xact_lock(${params.companyId}, hashtext(${requestedMonth}))`.execute(
+      trx,
+    );
 
     const checklist = await getMonthLockChecklist(trx, params.companyId, requestedMonth);
     if (checklist.alreadyLocked) throw new Error('Month is already locked');

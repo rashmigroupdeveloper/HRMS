@@ -3,35 +3,23 @@
  * alert sweep. Runs every 5 minutes under pg-boss (src/jobs/worker.ts) and on
  * demand via the syncNow procedure.
  *
- * Until IT confirms the real access method (P0-T01), the connector is the
- * deterministic MOCK simulating today's swipes for every active employee —
- * the swap to KentDbView/KentRestApi/KentCsvDrop touches ONLY connectorFor().
+ * A verified adapter must be supplied by the composition root. P0-T01 has not
+ * settled the real protocol, so normal execution fails explicitly. Mock feeds
+ * are test-only inputs and never selected from employee-master data.
  */
 import type { Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { logger } from '../../core/logger.js';
-import { MockKentConnector, type KentConnector } from './kent-connector.js';
+import { type KentConnector } from './kent-connector.js';
 import { alertSilentDevices, ingestOnce, type IngestSummary } from './ingest.service.js';
 import { drainRecomputeQueue } from './day-status.service.js';
 
 export const KENT_SOURCE = 'kent';
 
-async function connectorFor(db: Kysely<Database>): Promise<KentConnector> {
-  // Mock feed: today's simulated punches for every active employee, seeded by
-  // the date so repeated cycles within a day are consistent (and idempotent).
-  const employees = await db
-    .selectFrom('core.employees')
-    .select('ecode')
-    .where('status', 'in', ['onboarding', 'active'])
-    .limit(10_000)
-    .execute();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return new MockKentConnector({
-    employeeNos: employees.map((e) => e.ecode),
-    day: today,
-    seed: Math.floor(today.getTime() / 86_400_000),
-  });
+export class KentIntegrationUnavailable extends Error {
+  constructor() {
+    super('Kent integration is not configured. No swipes were generated or ingested.');
+  }
 }
 
 export interface KentSyncResult extends IngestSummary {
@@ -39,9 +27,15 @@ export interface KentSyncResult extends IngestSummary {
   daysRecomputed: number;
 }
 
-export async function runKentSync(db: Kysely<Database>): Promise<KentSyncResult> {
-  const connector = await connectorFor(db);
-  const summary = await ingestOnce(db, connector, KENT_SOURCE);
+export async function runKentSync(
+  db: Kysely<Database>,
+  connector?: KentConnector,
+  source = KENT_SOURCE,
+): Promise<KentSyncResult> {
+  // Until a verified real adapter is wired at the composition root, normal
+  // API/worker calls fail before touching data. Tests inject their own feed.
+  if (!connector) throw new KentIntegrationUnavailable();
+  const summary = await ingestOnce(db, connector, source);
   const silentDoorsAlerted = await alertSilentDevices(db);
   // Fresh swipes dirty their days (DB trigger); recompute right away so
   // processed attendance stays ≤5 min behind raw truth (ATT-03).

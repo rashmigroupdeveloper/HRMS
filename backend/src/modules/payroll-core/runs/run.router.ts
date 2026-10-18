@@ -42,7 +42,7 @@ const ReconciliationReportSchema = z.object({
 });
 
 export const payrollRunsRouter = {
-  list: withPermission('payroll.run.view')
+  list: withPermission('payroll.run.view', 'read')
     .input(
       z.object({
         company_id: z.number().optional(),
@@ -54,7 +54,7 @@ export const payrollRunsRouter = {
       return await service.listRuns(input.company_id);
     }),
 
-  get: withPermission('payroll.run.view')
+  get: withPermission('payroll.run.view', 'read')
     .input(z.object({ id: z.number() }))
     .output(RunSummarySchema.nullable())
     .handler(async ({ context, input }) => {
@@ -151,7 +151,7 @@ export const payrollRunsRouter = {
       return { success: true };
     }),
 
-  reconcile: withPermission('payroll.run.view')
+  reconcile: withPermission('payroll.run.view', 'read')
     .input(z.object({ id: z.number() }))
     .output(ReconciliationReportSchema)
     .handler(async ({ context, input }) => {

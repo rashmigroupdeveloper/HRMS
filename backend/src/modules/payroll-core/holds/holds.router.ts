@@ -18,7 +18,7 @@ const SalaryHoldItemSchema = z.object({
 });
 
 export const salaryHoldsRouter = {
-  list: withPermission('payroll.run.view')
+  list: withPermission('payroll.run.view', 'read')
     .input(
       z.object({
         employee_id: z.number().optional(),

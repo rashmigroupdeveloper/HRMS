@@ -4,6 +4,7 @@
  * can verify without module cross-imports.
  */
 import { SignJWT, jwtVerify } from 'jose';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 
 const ACCESS_TTL = '15m';
@@ -14,12 +15,14 @@ const claimsSchema = z.object({
   sub: z.string(),
   email: z.string(),
   typ: z.enum(['access', 'refresh']),
+  sid: z.string().uuid().optional(),
 });
 
 export interface TokenClaims {
   userId: number;
   email: string;
   typ: 'access' | 'refresh';
+  sid?: string;
 }
 
 function key(secret: string): Uint8Array {
@@ -30,10 +33,12 @@ async function sign(
   userId: number,
   email: string,
   typ: 'access' | 'refresh',
-  ttl: string,
+  ttl: string | number,
   secret: string,
+  sid?: string,
 ): Promise<string> {
-  return new SignJWT({ email, typ })
+  return new SignJWT({ email, typ, ...(sid ? { sid } : {}) })
+    .setJti(randomUUID())
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(String(userId))
     .setIssuer(ISSUER)
@@ -42,12 +47,12 @@ async function sign(
     .sign(key(secret));
 }
 
-export function signAccessToken(userId: number, email: string, secret: string): Promise<string> {
-  return sign(userId, email, 'access', ACCESS_TTL, secret);
+export function signAccessToken(userId: number, email: string, secret: string, sid?: string, expiresAt?: number): Promise<string> {
+  return sign(userId, email, 'access', expiresAt ?? ACCESS_TTL, secret, sid);
 }
 
-export function signRefreshToken(userId: number, email: string, secret: string): Promise<string> {
-  return sign(userId, email, 'refresh', REFRESH_TTL, secret);
+export function signRefreshToken(userId: number, email: string, secret: string, sid?: string, expiresAt?: number): Promise<string> {
+  return sign(userId, email, 'refresh', expiresAt ?? REFRESH_TTL, secret, sid);
 }
 
 /** Verifies signature + expiry + issuer; returns null on ANY failure (never throws). */
@@ -57,8 +62,8 @@ export async function verifyToken(token: string, secret: string): Promise<TokenC
     const parsed = claimsSchema.safeParse(payload);
     if (!parsed.success) return null;
     const userId = Number(parsed.data.sub);
-    if (!Number.isInteger(userId)) return null;
-    return { userId, email: parsed.data.email, typ: parsed.data.typ };
+    if (!Number.isSafeInteger(userId) || userId <= 0) return null;
+    return { userId, email: parsed.data.email, typ: parsed.data.typ, ...(parsed.data.sid ? { sid: parsed.data.sid } : {}) };
   } catch {
     return null;
   }

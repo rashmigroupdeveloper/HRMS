@@ -1,0 +1,66 @@
+{
+  "releaseVerdict": "NO_GO",
+  "concurrentEditorActive": true,
+  "nativeDatabase": "authorized local hrms TEST only",
+  "databaseVersion": "14.24 (target 16 not verified)",
+  "onboardingFocused": {
+    "passed": 42,
+    "files": 4,
+    "log": "../onboarding-joining-safety-2026-10-18/focused-tests.log",
+    "independentPoolSubmission": "one committed application, one status audit; replay refused; synthetic candidate removed, immutable audit retained"
+  },
+  "frontendVerify": {
+    "passed": true,
+    "tests": 298,
+    "files": 32,
+    "typecheck": true,
+    "lint": true,
+    "knip": true,
+    "build": true
+  },
+  "backendFullVerify": {
+    "passed": false,
+    "stoppedAt": "typecheck",
+    "log": "/private/tmp/hrms-deployment-backend-verify-final-20261018.log"
+  },
+  "backendRuntimeCoverageRun": {
+    "passed": false,
+    "testsPassed": 640,
+    "testsFailed": 5,
+    "filesPassed": 73,
+    "filesFailed": 5,
+    "statements": 82.46,
+    "lines": 82.46,
+    "branches": 76.88,
+    "functions": 86.49,
+    "requiredGlobalThreshold": 80,
+    "log": "/private/tmp/hrms-deployment-backend-coverage-20261018.log",
+    "note": "Before the final work-email guard; focused suites rerun afterward. Other editor changed tests while verifying."
+  },
+  "backendProductionBuild": {
+    "passed": true,
+    "log": "/private/tmp/hrms-deployment-backend-build-20261018.log",
+    "note": "Build excludes tests. Not a substitute for full verify."
+  },
+  "ownedOnboardingLint": {
+    "passed": true
+  },
+  "reactDoctor": {
+    "score": 74,
+    "warnings": 6,
+    "note": "Changed-files scan covers shared edits. Portal loading warning points inside a finally block; inspected false positive, no suppression added. Other warnings remain recorded."
+  },
+  "externalAcceptance": {
+    "kent": "pending sponsor data",
+    "atsAcceptanceAndSso": "not implemented",
+    "smtpDelivery": "not verified; runtime wiring incomplete",
+    "seaweedFs": "adapter incomplete",
+    "production": "locations/configuration pending sponsor",
+    "payrollHumanReviewAndUat": "pending"
+  },
+  "limitations": [
+    "Test counts do not establish full SOW completion.",
+    "All 1486 live columns have definition pointers; purpose/necessity and correct business behavior are not certified.",
+    "No release, payout or production change performed."
+  ]
+}

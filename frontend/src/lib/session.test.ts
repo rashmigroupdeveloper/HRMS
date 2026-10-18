@@ -17,6 +17,7 @@ import {
   loadSession,
   logout,
   restoreSession,
+  refreshAccessToken,
   setAccessToken,
   type SessionUser,
 } from './session';
@@ -124,5 +125,38 @@ describe('permission helpers', () => {
   it('hasRole matches exactly', () => {
     expect(hasRole(USER, 'hr_ops')).toBe(true);
     expect(hasRole(USER, 'hr_head')).toBe(false);
+  });
+});
+
+
+describe('single-use refresh coordination', () => {
+  afterEach(() => { clearAccessToken(); vi.unstubAllGlobals(); });
+  it('shares one redemption across simultaneous callers', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ accessToken: 'coordinated' }));
+    vi.stubGlobal('fetch', fetchMock);
+    expect(await Promise.all([refreshAccessToken(), refreshAccessToken(), refreshAccessToken()]))
+      .toEqual(['coordinated', 'coordinated', 'coordinated']);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it('reuses a token already replaced by another request instead of redeeming again', async () => {
+    setAccessToken('newer');
+    const fetchMock = vi.fn(); vi.stubGlobal('fetch', fetchMock);
+    expect(await refreshAccessToken('older')).toBe('newer');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it('waits for a pending refresh before logout and never restores its late result', async () => {
+    let finish: (response: Response) => void = () => { throw new Error('Missing refresh request'); };
+    const pending = new Promise<Response>(resolve => { finish = resolve; });
+    const fetchMock = vi.fn().mockReturnValueOnce(pending).mockResolvedValueOnce(jsonResponse({ ok: true }));
+    vi.stubGlobal('fetch', fetchMock);
+    setAccessToken('old-access');
+    const refreshing = refreshAccessToken();
+    const signingOut = logout();
+    expect(getAccessToken()).toBeNull();
+    finish(jsonResponse({ accessToken: 'late-access' }));
+    expect(await refreshing).toBeNull();
+    await signingOut;
+    expect(getAccessToken()).toBeNull();
+    expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/auth/logout');
   });
 });

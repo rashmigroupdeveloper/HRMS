@@ -1,5 +1,7 @@
 # Manager approvals and attendance — repair increment, 15 Oct 2026
 
+**Superseded vacancy decision, 16 Oct 2026:** sponsor selected Hold for HR; implementation, recovery, concurrency and new verification are in [pack21](21-SOW-REGRESSION-AND-HR-HOLD-REVIEW.md). Pending-decision statements and counts below are historical15Oct evidence.
+
 **Phase 1, Stage 1.3 — workflow engine and approvals inbox: repair increment complete; stage acceptance remains open.** This is the latest code-backed increment. It supersedes older behavior claims for the paths listed here, not the complete specifications or their remaining work. Claims and budgets remain deferred by the sponsor. All 176 original SOW rows remain in [the full scope register](../../outputs/backend-repairs-2026-10-14/backend-sow-scope.json); no full SOW row is promoted to accepted solely by this repair.
 
 Read [the verification report](../../outputs/manager-approval-review-2026-10-15/REVIEW.md), its machine-readable verification/findings and the previous [pack19 remaining domain plan](19-BACKEND-REPAIR-SCOPE-AND-PROGRESS.md). Pack02 supplies the full attendance/leave specification, pack12 the transaction map, pack18 the field-purpose audit. These changes add **no table, column or migration**. Existing untracked migrations/payroll code in the checkout predate this increment; their presence is not evidence that this increment implemented or reviewed them all.

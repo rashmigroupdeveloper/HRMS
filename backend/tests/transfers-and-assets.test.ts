@@ -22,6 +22,9 @@ import {
   logMaintenance,
   upsertAsset,
   assetsHeldByEmployee,
+  listAssets,
+  nonReturnedByLeavers,
+  assetMaintenance,
 } from '../src/modules/assets/assets.service.js';
 import { requireFixture } from './lifecycle-fixtures.js';
 import { hashPassword } from '../src/modules/auth/index.js';
@@ -616,5 +619,257 @@ run('Phase 3, Stage 3.3 — Transfers, Promotions & Assets (Live Postgres)', () 
       expect(found).toBeDefined();
       expect(found?.category).toBe('phone');
     });
+
+    it('enforces transfer validation guards and rejection rules', async () => {
+      // 1. Non-existent employee
+      await expect(
+        createTransferRequest(db, {
+          employeeId: 999999,
+          transferType: 'department',
+          effectiveDate: '2026-07-01',
+          targetDepartmentId: dept2Id,
+          reason: 'Testing non-existent employee',
+        }, testUser.id),
+      ).rejects.toThrow(/not found/);
+
+      // 2. Inter-entity missing target company
+      await expect(
+        createTransferRequest(db, {
+          employeeId: testEmpId,
+          transferType: 'inter_entity',
+          effectiveDate: '2026-07-01',
+          reason: 'Missing target company',
+        }, testUser.id),
+      ).rejects.toThrow(/Target company is required/);
+
+      // 3. Inter-entity same company (testEmp is now in company2Id)
+      await expect(
+        createTransferRequest(db, {
+          employeeId: testEmpId,
+          transferType: 'inter_entity',
+          effectiveDate: '2026-07-01',
+          targetCompanyId: company2Id,
+          reason: 'Same company transfer',
+        }, testUser.id),
+      ).rejects.toThrow(/must be different/);
+
+      // 4. Non-existent transfer approve/reject
+      await expect(
+        approveTransferRequest(db, 999999, testUser.id),
+      ).rejects.toThrow(/not found/);
+
+      await expect(
+        rejectTransferRequest(db, 999999, 'Invalid', testUser.id),
+      ).rejects.toThrow(/not found/);
+
+      // 5. getEmployeeAsOfDate non-existent employee
+      await expect(
+        getEmployeeAsOfDate(db, 999999, '2026-01-01'),
+      ).rejects.toThrow(/not found/);
+
+      // 6. listTransfers with filters
+      const byEmp = await listTransfers(db, { employeeId: testEmpId });
+      expect(Array.isArray(byEmp.rows)).toBe(true);
+      expect(byEmp.total).toBeGreaterThanOrEqual(1);
+
+      const byType = await listTransfers(db, { transferType: 'department' });
+      expect(Array.isArray(byType.rows)).toBe(true);
+
+      const byStatus = await listTransfers(db, { status: 'approved' });
+      expect(Array.isArray(byStatus.rows)).toBe(true);
+    });
+
+    it('covers listAssets, third-party assignment, damaged return, and maintenance history', async () => {
+      // 1. listAssets with various query combinations
+      const allAssets = await listAssets(db, {
+        companyId: company1Id,
+        status: 'in_stock',
+        category: 'phone',
+        outstandingOnly: false,
+        q: 'phone',
+        limit: 10,
+        offset: 0,
+      });
+      expect(Array.isArray(allAssets.rows)).toBe(true);
+
+      const searchSerial = await listAssets(db, {
+        q: 'SN-',
+        limit: 5,
+        offset: 0,
+      });
+      expect(Array.isArray(searchSerial.rows)).toBe(true);
+
+      // 2. assignAsset third-party holder with org
+      const tpAsset = await upsertAsset(db, {
+        assetNo: `${assetTag}-TP`,
+        category: 'projector',
+        companyId: company1Id,
+        actorUserId: testUser.id,
+        ip: null,
+      });
+      const tpAssign = await assignAsset(db, {
+        assetId: tpAsset.id,
+        holderKind: 'third_party',
+        thirdPartyName: 'Acme Event Services',
+        thirdPartyOrg: 'Acme Corp',
+        notes: 'Annual General Meeting setup',
+        actorUserId: testUser.id,
+        ip: null,
+      });
+      expect(tpAssign.assignmentId).toBeGreaterThan(0);
+
+      // 3. assignAsset validation guards
+      await expect(
+        assignAsset(db, {
+          assetId: tpAsset.id,
+          holderKind: 'third_party',
+          thirdPartyName: '',
+          actorUserId: testUser.id,
+          ip: null,
+        }),
+      ).rejects.toThrow(/already allocated/);
+
+      await expect(
+        assignAsset(db, {
+          assetId: 999999,
+          holderKind: 'third_party',
+          thirdPartyName: 'Test',
+          actorUserId: testUser.id,
+          ip: null,
+        }),
+      ).rejects.toThrow(/Asset not found/);
+
+      // 4. returnAsset damaged condition -> transitions to maintenance
+      const retDamaged = await returnAsset(db, {
+        assignmentId: tpAssign.assignmentId,
+        condition: 'damaged',
+        notes: 'Lens scratched during return transit',
+        actorUserId: testUser.id,
+        ip: null,
+      });
+      expect(retDamaged.ok).toBe(true);
+
+      const damagedAsset = await db
+        .selectFrom('ast.assets')
+        .select('status')
+        .where('id', '=', tpAsset.id)
+        .executeTakeFirstOrThrow();
+      expect(damagedAsset.status).toBe('maintenance');
+
+      // 5. returnAsset validation guards
+      await expect(
+        returnAsset(db, {
+          assignmentId: 999999,
+          condition: 'ok',
+          actorUserId: testUser.id,
+          ip: null,
+        }),
+      ).rejects.toThrow(/Assignment not found/);
+
+      await expect(
+        returnAsset(db, {
+          assignmentId: tpAssign.assignmentId,
+          condition: 'ok',
+          actorUserId: testUser.id,
+          ip: null,
+        }),
+      ).rejects.toThrow(/already closed/);
+
+      // 6. logMaintenance and assetMaintenance history
+      const maint = await logMaintenance(db, {
+        assetId: tpAsset.id,
+        kind: 'scheduled',
+        description: 'Scheduled optical repair',
+        scheduledFor: '2026-09-01',
+        cost: 4500,
+        actorUserId: testUser.id,
+        ip: null,
+      });
+      expect(maint.id).toBeGreaterThan(0);
+
+      const history = await assetMaintenance(db, tpAsset.id);
+      expect(history.length).toBeGreaterThanOrEqual(1);
+      expect(history[0]?.kind).toBe('scheduled');
+
+      // 7. nonReturnedByLeavers with and without companyId
+      const leaversAll = await nonReturnedByLeavers(db);
+      expect(Array.isArray(leaversAll)).toBe(true);
+
+      const leaversCompany = await nonReturnedByLeavers(db, company1Id);
+      expect(Array.isArray(leaversCompany)).toBe(true);
+    });
+
+    it('covers transfer service validation guards and list filters', async () => {
+      // 1. createTransferRequest non-existent employee throws
+      await expect(
+        createTransferRequest(
+          db,
+          {
+            employeeId: 999999,
+            transferType: 'department',
+            effectiveDate: '2026-07-01',
+            reason: 'Test non-existent',
+          },
+          testUser.id,
+        ),
+      ).rejects.toThrow(/not found/);
+
+      // 2. Inter-entity transfer missing targetCompanyId throws
+      await expect(
+        createTransferRequest(
+          db,
+          {
+            employeeId: testEmpId,
+            transferType: 'inter_entity',
+            effectiveDate: '2026-07-01',
+            reason: 'Inter-entity test missing target',
+          },
+          testUser.id,
+        ),
+      ).rejects.toThrow(/Target company is required/);
+
+      // 3. Inter-entity transfer same company throws
+      const curEmp = await db
+        .selectFrom('core.employees')
+        .select('company_id')
+        .where('id', '=', testEmpId)
+        .executeTakeFirstOrThrow();
+
+      await expect(
+        createTransferRequest(
+          db,
+          {
+            employeeId: testEmpId,
+            transferType: 'inter_entity',
+            effectiveDate: '2026-07-01',
+            targetCompanyId: curEmp.company_id,
+            reason: 'Inter-entity test same company',
+          },
+          testUser.id,
+        ),
+      ).rejects.toThrow(/Target company must be different/);
+
+      // 4. approveTransferRequest non-existent transfer throws
+      await expect(approveTransferRequest(db, 999999, testUser.id)).rejects.toThrow(/not found/);
+
+      // 5. rejectTransferRequest non-existent transfer throws
+      await expect(rejectTransferRequest(db, 999999, 'Rejection reason', testUser.id)).rejects.toThrow(/not found/);
+
+      // 6. listTransfers with filters
+      const pendingTransfers = await listTransfers(db, {
+        status: 'pending',
+        companyId: company1Id,
+        limit: 5,
+        offset: 0,
+      });
+      expect(Array.isArray(pendingTransfers.rows)).toBe(true);
+
+      const completedTransfers = await listTransfers(db, {
+        status: 'completed',
+        limit: 5,
+      });
+      expect(Array.isArray(completedTransfers.rows)).toBe(true);
+    });
   });
 });
+

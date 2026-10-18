@@ -167,4 +167,11 @@ describe('M12 Claims & Entitlements Engine (CLM-01..07)', () => {
     expect(bounds.from.toISOString().slice(0, 10)).toBe('2026-06-01');
     expect(bounds.to.toISOString().slice(0, 10)).toBe('2026-06-30');
   });
+
+  it('correctly calculates per_event period bounds as calendar year bounds', () => {
+    const service = new EntitlementService({} as unknown as Kysely<Database>);
+    const bounds = service.getPeriodBounds('per_event', new Date('2026-07-20'));
+    expect(bounds.from.toISOString().slice(0, 10)).toBe('2026-01-01');
+    expect(bounds.to.toISOString().slice(0, 10)).toBe('2026-12-31');
+  });
 });

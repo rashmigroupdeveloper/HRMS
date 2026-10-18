@@ -1,5 +1,11 @@
 # Phase 0 — Foundations & De-risking
 
+> **Latest, 16 Oct:** [pack25](sow-completion/25-AUTH-SESSION-AND-LOGIN-REPAIR.md) implements login concurrency/backoff and sponsor-approved single-use refresh/current-session logout. Earlier notes marking these defects open are historical. Coverage, ATS integration and remaining scope acceptance are still open.
+
+> **16 Oct Stage0.4 repair increment:** CORE-10 H02 readonly/write separation implemented; see [pack24](sow-completion/24-READONLY-AUTHORITY-REPAIR.md). This does not close handler population leaks, login-counter concurrency, refresh policy or G0.
+
+> **16 Oct auth recheck:** [pack22](sow-completion/22-OTHER-MODULE-BUG-AUDIT.md) reconfirms the stale-read failed-login counter and stateless refresh replay behavior. Stage0.4 still needs atomic counter/backoff/reset and the signed session/logout policy. Earlier sequential lockout/login tests do not prove concurrency or consumed-token invalidation. No authentication code changed here.
+
 **Target:** 3 weeks · **Gate:** G0 · **Spec:** docs/13 §3, docs/14
 **Purpose:** repo, pipeline, auth/RBAC, employee master, and the two highest-risk spikes (Kent + scale) proven — before any feature build.
 
@@ -70,7 +76,7 @@
 **Tests required:** Testing Library component tests (all 7 interactive states per component — 05 §7b); axe accessibility checks in both themes.
 **Exit criteria:** Storybook-style demo page renders every component in light+dark ✅ (gallery, live toggle) · contrast checks pass 4.5:1 ⏳ (needs axe run) · zero hardcoded hexes ✅ (lint-clean, tokens only) · component tests ⏳.
 
-## Stage 0.4 — Auth, RBAC, audit, settings, notifications   `[ ☑ done 7 Jul 2026 ]`
+## Stage 0.4 — Auth, RBAC, audit, settings, notifications   `[ ◐ repairs implemented; validation/integration acceptance open ]`
 **Goal:** the security + configuration spine every module hangs on.
 **Depends on:** 0.2. ~~Local blocker~~ **resolved 7 Jul 2026: DATABASE_URL provided; migration 0001 applied to the live Postgres.**
 **Tasks:**

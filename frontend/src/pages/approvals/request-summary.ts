@@ -1,3 +1,4 @@
+import { dayPortionLabel } from '../attendance/attendance-portion';
 /**
  * Turn a workflow payload (leave, AR/OD, OT, letters, …) into rows a manager
  * can decide from. The inbox used to pretty-print JSON — recognition failure
@@ -33,6 +34,7 @@ const LABEL: Record<string, string> = {
   leaveType: 'Leave type',
   type: 'Type',
   kind: 'Kind',
+  dayPortion: 'Attendance half',
   fromDate: 'From',
   from: 'From',
   toDate: 'To',
@@ -61,6 +63,7 @@ const KEY_ORDER = [
   'leaveType',
   'type',
   'kind',
+  'dayPortion',
   'fromDate',
   'from',
   'toDate',
@@ -125,6 +128,7 @@ function formatScalar(key: string, value: unknown): string | null {
     return value.toLocaleString('en-IN');
   }
   if (typeof value !== 'string') return null;
+  if (key === 'dayPortion') return dayPortionLabel(value);
   if (KIND_LABEL[value] !== undefined) return KIND_LABEL[value];
   if (ISO_DATE.test(value)) return formatDateIN(value);
   if (ISO_INSTANT.test(value)) return formatInstant(value);
@@ -177,6 +181,8 @@ function consequence(type: string, payload: unknown): string {
     payload['detectedMinutes'] ?? payload['minutes'],
   );
   const kind = formatScalar('kind', payload['kind']);
+  const half = payload['dayPortion'] === 'first_half' || payload['dayPortion'] === 'second_half'
+    ? ` (${dayPortionLabel(payload['dayPortion']).toLowerCase()} only; other half unchanged)` : '';
 
   if (type === 'overtime' || detected !== null) {
     return span === null
@@ -186,12 +192,12 @@ function consequence(type: string, payload: unknown): string {
   if (type === 'od' || kind === KIND_LABEL['OD']) {
     return span === null
       ? 'Final approval marks the requested days as on duty.'
-      : `Final approval marks ${span} as on duty.`;
+      : `Final approval marks ${span} as on duty${half}.`;
   }
   if (type === 'regularization' || kind === KIND_LABEL['AR']) {
     return span === null
       ? 'Final approval marks the requested days as present.'
-      : `Final approval marks ${span} as present.`;
+      : `Final approval marks ${span} as present${half}.`;
   }
   if (type === 'leave' || type === 'comp_off' || leave !== null) {
     const daysBit = days === null ? 'leave' : `${days} day${days === '1' ? '' : 's'}`;

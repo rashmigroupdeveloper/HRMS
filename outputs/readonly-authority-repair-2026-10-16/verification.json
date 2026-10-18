@@ -1,0 +1,60 @@
+{
+  "prepared": "2026-10-16",
+  "stage": "Phase0 Stage0.4",
+  "requirement": "CORE-10",
+  "finding": "H02",
+  "before": {
+    "tests": 10,
+    "failed": 10
+  },
+  "after": {
+    "files": 66,
+    "passed": 510,
+    "failed": 0,
+    "skipped": 0,
+    "new_regressions": 12
+  },
+  "backend_verify": {
+    "exit_code": 1,
+    "typecheck": "passed",
+    "lint": "passed",
+    "knip": "passed with advisory configuration hints",
+    "dependency_cruiser": "passed",
+    "tests": "passed",
+    "coverage": {
+      "lines": 76.64,
+      "statements": 76.64,
+      "branches": 72.06,
+      "functions": 81.15,
+      "required_each": 80
+    },
+    "failure": "Existing global coverage floor remains unmet; thresholds unchanged"
+  },
+  "separate_build": {
+    "exit_code": 0
+  },
+  "schema": {
+    "relations": 132,
+    "columns": 1379,
+    "added": [],
+    "removed": [],
+    "changed": [],
+    "migrations_added": 0
+  },
+  "new_suite_cleanup": "Each native fixture rolls back its transaction; no fixture rows committed",
+  "sow_rows_retained": 176,
+  "frontend": "Untouched by this increment; not rerun",
+  "human_review": "Pending: payroll-core router authorization annotations only; no calculation changes",
+  "not_complete": [
+    "Stage0.4 login counter concurrency and session policy",
+    "H01/H03-H14",
+    "Other module O findings",
+    "Existing payroll/lifecycle gaps",
+    "Global coverage",
+    "Real integrations and signed acceptance"
+  ],
+  "deferred": [
+    "Claims",
+    "Budgets"
+  ]
+}

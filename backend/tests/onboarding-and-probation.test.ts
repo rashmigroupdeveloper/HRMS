@@ -25,13 +25,24 @@ import {
   OnboardingService,
   type IngestCandidateInput,
   type ConvertCandidateInput,
+  type ConversionActor,
 } from '../src/modules/lifecycle/onboarding/onboarding.service.js';
 import { TaskFanoutService } from '../src/modules/lifecycle/onboarding/task-fanout.service.js';
 import { ProbationService } from '../src/modules/lifecycle/probation/probation.service.js';
 
+// Native boundary suite proves cross-transaction identity locking; this is composition only.
+vi.mock('../src/modules/settings/index.js',()=>({getTypedSetting:vi.fn().mockResolvedValue(72)}));
+vi.mock('../src/modules/lifecycle/onboarding/joining-validation.js', async importOriginal => {
+  const original = await importOriginal<typeof import('../src/modules/lifecycle/onboarding/joining-validation.js')>();
+  return { ...original, validateJoiningAssignments: vi.fn().mockResolvedValue(undefined) };
+});
+vi.mock('../src/modules/lifecycle/onboarding/onboarding-locks.js', () => ({ lockOnboardingIdentities: vi.fn().mockResolvedValue(undefined) }));
+
+interface ReturningFixtureUpdate extends FixtureUpdate {returning():ReturningFixtureUpdate;executeTakeFirst():Promise<{id:number}>}
 describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () => {
   // In-memory state mock for isolated unit testing
   const candidatesStore: FixtureRow[] = [];
+  let candidateRawToken = '';
   const employeesStore: FixtureRow[] = [];
   const usersStore: FixtureRow[] = [];
   const salariesStore: FixtureRow[] = [];
@@ -41,8 +52,10 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
   const companiesStore = [{ id: 1, ecode_prefix: 'RML', ecode_next_seq: 35390 }];
 
   const mockDb = {
+    isTransaction: true, // Composition fixture; native suite proves transaction effects.
     selectFrom: (table: string) => {
-      const b: FixtureSelect = {
+      const b: FixtureSelect & { forUpdate: () => FixtureSelect } = {
+        forUpdate: () => b,
         _where: [] as FixtureWhere[],
         _joins: [] as unknown[],
         selectAll: () => b,
@@ -53,6 +66,7 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
         where: (colOrFn: string | ((eb: FixtureExpressionBuilder) => unknown), op?: string, val?: unknown) => {
           if (typeof colOrFn === 'function') {
             const mockEb = (col: string, op1: string, val1: unknown) => ({ col, op: op1, val: val1 });
+            mockEb.fn = (_name: string, columns: string[]) => columns[0] ?? '';
             mockEb.or = (arr: FixtureWhere[]) => {
               for (const item of arr) {
                 if (item.col) b._where.push(item);
@@ -108,9 +122,75 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
             const r = reviewsStore.find((x) => x.id === idWhere?.val);
             return Promise.resolve(r ?? null);
           }
+          if (table === 'pay.salary_structures') {
+            return Promise.resolve({
+              id: 100,
+              name: 'Standard Staff Structure',
+              company_id: 1,
+              description: 'Standard staff salary structure',
+              components: [
+                { component_code: 'BASIC' },
+                { component_code: 'HRA' },
+                { component_code: 'SPECIAL_ALLOW' },
+              ],
+              is_active: true,
+              created_at: new Date(),
+              updated_at: new Date(),
+            });
+          }
           return Promise.resolve(null);
         },
         execute: () => {
+          if (table === 'pay.salary_components') {
+            return Promise.resolve([
+              {
+                id: 1,
+                code: 'BASIC',
+                name: 'Basic Pay',
+                kind: 'earning',
+                formula: 'round(GROSS * 0.50)',
+                rounding: 'round',
+                taxable: true,
+                part_of_gross: true,
+                part_of_pf_wages: true,
+                prorate_on_lop: true,
+                display_order: 1,
+                is_active: true,
+                created_at: new Date(),
+              },
+              {
+                id: 2,
+                code: 'HRA',
+                name: 'House Rent Allowance',
+                kind: 'earning',
+                formula: 'round(BASIC * 0.50)',
+                rounding: 'round',
+                taxable: true,
+                part_of_gross: true,
+                part_of_pf_wages: false,
+                prorate_on_lop: true,
+                display_order: 2,
+                is_active: true,
+                created_at: new Date(),
+              },
+              {
+                id: 3,
+                code: 'SPECIAL_ALLOW',
+                name: 'Special Allowance',
+                kind: 'earning',
+                formula: null,
+                amount: 0,
+                rounding: 'round',
+                taxable: true,
+                part_of_gross: true,
+                part_of_pf_wages: false,
+                prorate_on_lop: true,
+                display_order: 3,
+                is_active: true,
+                created_at: new Date(),
+              },
+            ]);
+          }
           if (table === 'core.onboarding_tasks') {
             const statusWhere = b._where.find((w: FixtureWhere) => w.col === 'status');
             const dueWhere = b._where.find((w: FixtureWhere) => w.col === 'due_date');
@@ -206,7 +286,9 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
       return b;
     },
     updateTable: (table: string) => {
-      const b: FixtureUpdate = {
+      const b: ReturningFixtureUpdate = {
+        returning:()=>b,
+        executeTakeFirst:async()=>{await b.execute();const id=b._where.find(w=>w.col==='id')?.val;if(typeof id!=='number')throw new Error('Missing fixture candidate ID');return {id};},
         _set: {},
         _where: [] as FixtureWhere[],
         set: (patch: Partial<FixtureRow>) => {
@@ -260,7 +342,7 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
 
   describe('LC-01 — Pre-join Tokens & Candidate Intake', () => {
     it('generates a 72-hour secure token with SHA-256 hash', () => {
-      const token = PrejoinService.generateToken();
+      const token = PrejoinService.generateToken(72);
 
       expect(token.rawToken.length).toBe(64); // 32 bytes hex
       expect(token.tokenHash.length).toBe(64); // SHA-256 hex
@@ -284,13 +366,15 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
 
       const res = await OnboardingService.ingestCandidate(mockDb, input);
 
+      candidateRawToken=res.rawToken;
       expect(res.candidateId).toBeDefined();
       expect(res.rawToken).toBeDefined();
 
       const saved = requireFixture(candidatesStore.find((c) => c.id === res.candidateId));
       expect(saved).toBeDefined();
       expect(saved['full_name']).toBe('Rahul Sen');
-      expect(saved['status']).toBe('link_sent');
+      expect(saved['status']).toBe('awaiting_prejoin');
+      expect(saved.prejoin_link_token).toBeNull();
     });
 
     it('submits pre-join profile and statutory information', async () => {
@@ -313,7 +397,7 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
 
       const result = await PrejoinService.submitPrejoinData(
         mockDb,
-        requireFixture(candidate.prejoin_link_token),
+        candidateRawToken,
         submission
       );
 
@@ -325,7 +409,7 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
     it('rejects expired pre-join tokens', async () => {
       // Create candidate with expired token
       const expiredCandidateId = 9999;
-      const token = PrejoinService.generateToken();
+      const token = PrejoinService.generateToken(72);
       candidatesStore.push({
         id: expiredCandidateId,
         prejoin_token_hash: token.tokenHash,
@@ -376,6 +460,15 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
         '9111111111'
       );
       expect(noDup.hasDuplicate).toBe(false);
+
+      const panDup = await OnboardingService.checkDuplicate(
+        mockDb,
+        'unique2@example.com',
+        '9111111112',
+        'EXTPAN1234'
+      );
+      expect(panDup.hasDuplicate).toBe(true);
+      expect(panDup.duplicateField).toBe('pan');
     });
   });
 
@@ -386,10 +479,13 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
 
       const convertInput: ConvertCandidateInput = {
         candidateId: candidate.id,
+        joiningConfirmed: true,
+        workEmail: 'synthetic-joining@hrms.invalid',
         companyId: 1,
         designationId: 10,
         departmentId: 5,
         locationId: 2,
+        orgUnitId: 3,
         doj: '2026-08-01',
         salaryStructureId: 100,
       };
@@ -397,7 +493,7 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
       // SQL allocation has a separate real-PostgreSQL concurrency suite. This
       // fixture covers composition only, never database atomicity/constraints.
       const allocation = vi.spyOn(OnboardingService, 'generateEcode').mockResolvedValueOnce('RML035390');
-      const result = await OnboardingService.convertCandidate(mockDb, convertInput).finally(() => {
+      const result = await OnboardingService.convertCandidate(mockDb, convertInput, { userId: 1, scope: { all: true, own: false, subtree: false, orgUnitIds: [], actorEmployeeId: null } }).finally(() => {
         allocation.mockRestore();
       });
 
@@ -415,6 +511,7 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
       // Verify user login created
       const user = requireFixture(usersStore.find((u) => u.employee_id === result.employeeId));
       expect(user).toBeDefined();
+      expect(user['is_active']).toBe(false);
 
       // Verify probation salary assignment (90% of ₹4,50,000 = ₹4,05,000)
       const salary = requireFixture(salariesStore.find((s) => s.employee_id === result.employeeId));
@@ -437,17 +534,58 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
       expect(new Date(fixtureDate(review.due_date)).toISOString().slice(0, 10)).toBe('2027-02-01');
     });
 
-    it('handles Kent biometric verification and completes biometric task', async () => {
+    it('enforces conversion wizard validation guards and candidate status checks', async () => {
+      const actor: ConversionActor = { userId: 1, scope: { all: true, own: false, subtree: false, orgUnitIds: [], actorEmployeeId: null } };
+      const candidate = requireFixture(candidatesStore[0]);
+      const baseInput: ConvertCandidateInput = {
+        joiningConfirmed: true,
+        candidateId: candidate.id,
+        companyId: 1,
+        designationId: 1,
+        departmentId: 1,
+        locationId: 2,
+        orgUnitId: 3,
+        doj: '2026-08-01',
+        salaryStructureId: 100,
+      };
+
+      // 1. Missing or invalid actor
+      await expect(
+        OnboardingService.convertCandidate(mockDb, baseInput, undefined as unknown as ConversionActor),
+      ).rejects.toThrow('An authenticated HR actor is required');
+
+      // 2. Joining not confirmed
+      await expect(
+        OnboardingService.convertCandidate(mockDb, { ...baseInput, joiningConfirmed: false }, actor),
+      ).rejects.toThrow('HR must explicitly confirm actual joining');
+
+      // 3. Invalid DOJ format
+      await expect(
+        OnboardingService.convertCandidate(mockDb, { ...baseInput, doj: 'not-a-date' }, actor),
+      ).rejects.toThrow('Actual joining date must be a valid calendar date');
+
+      // 4. Future DOJ
+      await expect(
+        OnboardingService.convertCandidate(mockDb, { ...baseInput, doj: '2099-12-31' }, actor),
+      ).rejects.toThrow('Actual joining date cannot be in the future');
+
+      // 5. Candidate not found
+      await expect(
+        OnboardingService.convertCandidate(mockDb, { ...baseInput, candidateId: 99999 }, actor),
+      ).rejects.toThrow('not found');
+
+      // 6. Candidate already converted (candidate.id was converted in previous test)
+      await expect(
+        OnboardingService.convertCandidate(mockDb, baseInput, actor),
+      ).rejects.toThrow('already converted');
+    });
+
+    it('does not fabricate Kent verification when the enrollment integration is unavailable', async () => {
       const emp = requireFixture(employeesStore[employeesStore.length - 1]);
-      expect(emp).toBeDefined();
-
-      await TaskFanoutService.verifyBiometricRegistration(mockDb, emp.id, 1);
-
-      expect(emp['biometric_registered']).toBe(true);
-      const bioTask = requireFixture(tasksStore.find(
-        (t) => t.employee_id === emp.id && t['task_code'] === 'it_biometric'
-      ));
-      expect(bioTask['status']).toBe('completed');
+      await expect(TaskFanoutService.verifyBiometricRegistration(mockDb,emp.id,1)).rejects.toThrow(/unavailable/i);
+      expect(emp['biometric_registered']).toBe(false);
+      const task = requireFixture(tasksStore.find(t=>t.employee_id===emp.id && t['task_code']==='it_biometric'));
+      expect(task['status']).toBe('open');
     });
 
     it('escalates overdue stakeholder tasks past SLA due date', async () => {
@@ -571,6 +709,12 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
         due_date: '2026-08-15', // exactly 14 days from 2026-08-01
         status: 'pending',
       });
+      reviewsStore.push({
+        id: 5003,
+        employee_id: 12,
+        due_date: '2026-08-08', // exactly 7 days from 2026-08-01
+        status: 'pending',
+      });
 
       const alerts = await ProbationService.getUpcomingProbationAlerts(
         mockDb,
@@ -579,6 +723,132 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
 
       expect(alerts.d30).toContain(5001);
       expect(alerts.d14).toContain(5002);
+      expect(alerts.d7).toContain(5003);
+    });
+
+    it('covers ProbationService listReviews, separation decision, and input validations', async () => {
+      // 1. listReviews without filter and with filter
+      const allReviews = await ProbationService.listReviews(mockDb);
+      expect(allReviews.length).toBeGreaterThanOrEqual(1);
+
+      const pendingReviews = await ProbationService.listReviews(mockDb, { status: 'pending' });
+      expect(Array.isArray(pendingReviews)).toBe(true);
+
+      // 2. submitEvaluation non-existent review
+      await expect(
+        ProbationService.submitEvaluation(mockDb, {
+          reviewId: 999999,
+          managerRecommendation: 'confirm',
+          reviewNotes: 'None',
+        })
+      ).rejects.toThrow(/not found/);
+
+      // 3. submitEvaluation extension without valid months
+      await expect(
+        ProbationService.submitEvaluation(mockDb, {
+          reviewId: 5001,
+          managerRecommendation: 'extend',
+          extensionMonths: 0,
+          reviewNotes: 'Invalid extension',
+        })
+      ).rejects.toThrow(/valid duration/);
+
+      // 4. decideReview non-existent review
+      await expect(
+        ProbationService.decideReview(mockDb, {
+          reviewId: 999999,
+          outcome: 'separated',
+          decidedByUserId: 1,
+        })
+      ).rejects.toThrow(/not found/);
+
+      // 5. decideReview outcome: separated
+      reviewsStore.push({
+        id: 6001,
+        employee_id: 15,
+        due_date: '2026-09-01',
+        status: 'under_review',
+      });
+      const sepDecision = await ProbationService.decideReview(mockDb, {
+        reviewId: 6001,
+        outcome: 'separated',
+        decidedByUserId: 1,
+      });
+      expect(sepDecision.outcome).toBe('separated');
+
+      // 6. decideReview outcome: confirmed without salary adjustment
+      reviewsStore.push({
+        id: 6002,
+        employee_id: 16,
+        due_date: '2026-09-01',
+        status: 'under_review',
+      });
+      employeesStore.push({
+        id: 16,
+        ecode: 'RML016',
+        first_name: 'Confirm',
+        last_name: 'Test',
+      });
+      const confDecision = await ProbationService.decideReview(mockDb, {
+        reviewId: 6002,
+        outcome: 'confirmed',
+        decidedByUserId: 1,
+      });
+      expect(confDecision.outcome).toBe('confirmed');
+    });
+
+    it('validates OnboardingService.convertCandidate validation guards', async () => {
+      const validCandidateInput: ConvertCandidateInput = {
+        joiningConfirmed: true,
+        candidateId: 1,
+        companyId: 1,
+        designationId: 1,
+        departmentId: 1,
+        locationId: 1,
+        orgUnitId: 1,
+        doj: '2026-06-01',
+      };
+
+      // 1. Missing actor
+      await expect(
+        OnboardingService.convertCandidate(mockDb, validCandidateInput, undefined)
+      ).rejects.toThrow(/authenticated HR actor/);
+
+      // 2. Joining unconfirmed
+      await expect(
+        OnboardingService.convertCandidate(
+          mockDb,
+          { ...validCandidateInput, joiningConfirmed: false },
+          { userId: 1, scope: { all: true, own: false, subtree: false, actorEmployeeId: null, orgUnitIds: [] } }
+        )
+      ).rejects.toThrow(/explicitly confirm actual joining/);
+
+      // 3. Invalid DOJ format
+      await expect(
+        OnboardingService.convertCandidate(
+          mockDb,
+          { ...validCandidateInput, doj: 'not-a-date' },
+          { userId: 1, scope: { all: true, own: false, subtree: false, actorEmployeeId: null, orgUnitIds: [] } }
+        )
+      ).rejects.toThrow(/valid calendar date/);
+
+      // 4. Future DOJ
+      await expect(
+        OnboardingService.convertCandidate(
+          mockDb,
+          { ...validCandidateInput, doj: '2099-01-01' },
+          { userId: 1, scope: { all: true, own: false, subtree: false, actorEmployeeId: null, orgUnitIds: [] } }
+        )
+      ).rejects.toThrow(/cannot be in the future/);
+
+      // 5. Candidate not found
+      await expect(
+        OnboardingService.convertCandidate(
+          mockDb,
+          { ...validCandidateInput, candidateId: 999999 },
+          { userId: 1, scope: { all: true, own: false, subtree: false, actorEmployeeId: null, orgUnitIds: [] } }
+        )
+      ).rejects.toThrow(/not found/);
     });
   });
 });

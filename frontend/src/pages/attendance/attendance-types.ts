@@ -1,6 +1,6 @@
 export interface AttendanceSession {
   session: number;
-  status: 'P' | 'A' | 'O';
+  status: 'P' | 'A' | 'O' | 'OD';
 }
 
 export interface AttendanceMonthRow {
@@ -21,6 +21,7 @@ export interface AttendanceMonthRow {
 export interface AttendanceRequest {
   id: number;
   kind: 'AR' | 'OD' | 'PERMISSION';
+  dayPortion?: 'full_day' | 'first_half' | 'second_half';
   fromDate: string;
   toDate: string;
   fromTime: string | null;

@@ -8,6 +8,8 @@ import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { formatDbDate } from '../../core/dates.js';
+import { attendanceRequestSchedule } from './request-schedule.js';
+import { dayPortionSchema } from './half-requests.js';
 import { createRegularization, listRegularizations } from './regularization.service.js';
 import { decideOvertime, lapseExpiredOvertime, listMyOvertime, listPendingOvertime } from './overtime.service.js';
 
@@ -32,6 +34,7 @@ function requireEmployeeId(user: { employee_id: number | null }): number {
 const regularizationShape = z.object({
   id: z.number(),
   kind: z.enum(['AR', 'OD', 'PERMISSION']),
+  dayPortion: dayPortionSchema,
   fromDate: z.string(),
   toDate: z.string(),
   fromTime: z.string().nullable(),
@@ -43,11 +46,21 @@ const regularizationShape = z.object({
   applied: z.boolean(),
 });
 
+const requestSchedule = withPermission('attendance.own')
+  .route({ method: 'GET', path: '/attendance/requests/schedule', summary: 'My resolved shift and attendance-half times (IST)' })
+  .input(z.object({ date: z.string().date() }))
+  .output(z.object({ date: z.string().date(), dayKind: z.enum(['working', 'week_off', 'holiday', 'unconfigured']),
+    shiftCode: z.string().nullable(), shiftName: z.string().nullable(),
+    windows: z.array(z.object({ dayPortion: dayPortionSchema, startsAt: z.string().datetime(), endsAt: z.string().datetime() })),
+  }))
+  .handler(async ({ input, context }) => attendanceRequestSchedule(context.db, requireEmployeeId(context.user), input.date));
+
 const submitRequest = withPermission('attendance.own')
   .route({ method: 'POST', path: '/attendance/requests', summary: 'Submit AR / OD / Permission for yourself (ATT-06/07)' })
   .input(
     z.object({
       kind: z.enum(['AR', 'OD', 'PERMISSION']),
+      dayPortion: dayPortionSchema.default('full_day'),
       fromDate: isoDate,
       toDate: isoDate,
       fromTime: hhmm.optional(),
@@ -63,6 +76,7 @@ const submitRequest = withPermission('attendance.own')
         employeeId,
         requestedByUserId: context.user.id,
         kind: input.kind,
+        dayPortion: input.dayPortion,
         fromDate: input.fromDate,
         toDate: input.toDate,
         fromTime: input.fromTime,
@@ -83,6 +97,7 @@ const myRequests = withPermission('attendance.own')
     return rows.map((r) => ({
       id: r.id,
       kind: r.kind,
+      dayPortion: r.day_portion,
       fromDate: formatDbDate(r.from_date),
       toDate: formatDbDate(r.to_date),
       fromTime: r.from_time?.slice(0, 5) ?? null,
@@ -186,6 +201,7 @@ const lapseSweep = withPermission('admin.integrations')
   });
 
 export const attendanceRequestsRouter = {
+  requestSchedule,
   submitRequest,
   myRequests,
   myOvertime,

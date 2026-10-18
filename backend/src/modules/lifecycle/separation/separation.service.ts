@@ -515,8 +515,10 @@ export class SeparationService {
    * 4. Updates core.employees: status = 'exited', dol = approved_lwd.
    */
   async finalizeAndPayFnf(params: {
-    fnfId: number;
+    fnfId?: number | undefined;
+    separationId?: number | undefined;
     paidByUserId: number;
+    paymentReference?: string | undefined;
   }): Promise<{
     settlementId: number;
     employeeId: number;
@@ -525,14 +527,37 @@ export class SeparationService {
     serviceCertificateId: number;
     exitDayCommitted: boolean;
   }> {
+    let fnfId = params.fnfId;
+    if (!fnfId && params.separationId) {
+      const sep = await this.db
+        .selectFrom('core.separations')
+        .select(['fnf_id'])
+        .where('id', '=', params.separationId)
+        .executeTakeFirst();
+      if (sep?.fnf_id) {
+        fnfId = sep.fnf_id;
+      } else {
+        const fnfRow = await this.db
+          .selectFrom('pay.fnf_settlements')
+          .select(['id'])
+          .where('separation_id', '=', params.separationId)
+          .executeTakeFirst();
+        if (fnfRow) fnfId = fnfRow.id;
+      }
+    }
+
+    if (!fnfId) {
+      throw new Error(`F&F settlement not found`);
+    }
+
     const fnf = await this.db
       .selectFrom('pay.fnf_settlements')
       .selectAll()
-      .where('id', '=', params.fnfId)
+      .where('id', '=', fnfId)
       .executeTakeFirst();
 
     if (!fnf) {
-      throw new Error(`F&F settlement #${params.fnfId} not found`);
+      throw new Error(`F&F settlement #${fnfId} not found`);
     }
 
     const separation = await this.db
@@ -598,7 +623,7 @@ export class SeparationService {
         relieving_letter_id: relievingLetter.id,
         service_certificate_id: serviceCertificate.id,
       })
-      .where('id', '=', params.fnfId)
+      .where('id', '=', fnfId)
       .execute();
 
     // 3. Mark core.separations completed
@@ -651,13 +676,94 @@ export class SeparationService {
     }
 
     return {
-      settlementId: params.fnfId,
+      settlementId: fnfId,
       employeeId: fnf.employee_id,
       status: 'paid',
       relievingLetterId: relievingLetter.id,
       serviceCertificateId: serviceCertificate.id,
       exitDayCommitted: true,
     };
+  }
+
+  /**
+   * CEO Executive Review (LC-06, SOW-221, G3 Exit gate):
+   * Executive review for high-value separations, shortfall waivers, or dispute settlements.
+   */
+  async ceoReview(params: {
+    separationId: number;
+    decision: 'approved' | 'rejected' | 'waiver_granted';
+    ceoUserId: number;
+    remarks?: string | undefined;
+    waivedRecoveryPaise?: number | undefined;
+  }): Promise<SeparationItem> {
+    const existing = await this.db
+      .selectFrom('core.separations')
+      .selectAll()
+      .where('id', '=', params.separationId)
+      .executeTakeFirst();
+
+    if (!existing) {
+      throw new Error(`Separation #${params.separationId} not found`);
+    }
+
+    if (params.decision === 'rejected') {
+      const updated = await this.db
+        .updateTable('core.separations')
+        .set({
+          status: 'rejected',
+          updated_at: new Date(),
+        })
+        .where('id', '=', params.separationId)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      await this.db
+        .updateTable('core.employees')
+        .set({ status: 'active' })
+        .where('id', '=', existing.employee_id)
+        .execute();
+
+      return this.mapSeparationRow(updated);
+    }
+
+    if (params.decision === 'waiver_granted' && params.waivedRecoveryPaise) {
+      const fnf = await this.db
+        .selectFrom('pay.fnf_settlements')
+        .selectAll()
+        .where('separation_id', '=', params.separationId)
+        .executeTakeFirst();
+
+      if (fnf) {
+        const waivedRupees = (params.waivedRecoveryPaise / 100).toFixed(2);
+        const currentShortfall = Number(fnf.notice_recovery_amount);
+        const newShortfall = Math.max(0, currentShortfall - Number(waivedRupees));
+        const diff = currentShortfall - newShortfall;
+        const newDeductions = Math.max(0, Number(fnf.total_deductions) - diff);
+        const newNet = Number(fnf.gross_payable) - newDeductions;
+
+        await this.db
+          .updateTable('pay.fnf_settlements')
+          .set({
+            notice_recovery_amount: newShortfall.toFixed(2),
+            total_deductions: newDeductions.toFixed(2),
+            net_payable: newNet.toFixed(2),
+          })
+          .where('id', '=', fnf.id)
+          .execute();
+      }
+    }
+
+    const updated = await this.db
+      .updateTable('core.separations')
+      .set({
+        status: 'approved',
+        updated_at: new Date(),
+      })
+      .where('id', '=', params.separationId)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    return this.mapSeparationRow(updated);
   }
 
   private mapSeparationRow(row: Selectable<SeparationsTable>): SeparationItem {

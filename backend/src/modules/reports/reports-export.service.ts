@@ -49,6 +49,7 @@ const R3_COLS: ExcelColumn[] = [
   { header: 'Emp ID', key: 'ecode', width: 12 },
   { header: 'Employee Name', key: 'employeeName', width: 22 },
   { header: 'Kind', key: 'kind', width: 12 },
+  { header: 'Attendance half', key: 'dayPortion', width: 16 },
   { header: 'From', key: 'fromDate', width: 12 },
   { header: 'To', key: 'toDate', width: 12 },
   { header: 'From time', key: 'fromTime', width: 10 },

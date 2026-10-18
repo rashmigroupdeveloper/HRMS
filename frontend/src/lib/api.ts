@@ -2,7 +2,7 @@
  * Thin authenticated fetch helper — Bearer access token + credentials for the
  * refresh cookie. OpenAPI-generated client replaces this in a later stage.
  */
-import { getAccessToken, setAccessToken, clearAccessToken } from './session';
+import { getAccessToken, refreshAccessToken, clearAccessToken } from './session';
 
 export class ApiError extends Error {
   constructor(
@@ -11,21 +11,6 @@ export class ApiError extends Error {
   ) {
     super(message);
     this.name = 'ApiError';
-  }
-}
-
-async function tryRefresh(): Promise<string | null> {
-  try {
-    const res = await fetch('/api/auth/refresh', {
-      method: 'POST',
-      credentials: 'include',
-    });
-    if (!res.ok) return null;
-    const body = (await res.json()) as { accessToken: string };
-    setAccessToken(body.accessToken);
-    return body.accessToken;
-  } catch {
-    return null;
   }
 }
 
@@ -44,7 +29,7 @@ export async function apiFetch<T>(
   let res = await fetch(path, { ...init, headers, credentials: 'include' });
 
   if (res.status === 401 && !path.startsWith('/api/auth/')) {
-    token = await tryRefresh();
+    token = await refreshAccessToken(token);
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
       res = await fetch(path, { ...init, headers, credentials: 'include' });

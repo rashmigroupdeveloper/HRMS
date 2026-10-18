@@ -60,4 +60,14 @@ describe.skipIf(!url)('CORE-02 shared employee code allocation (real PostgreSQL)
       .where('id', '=', companyId).executeTakeFirstOrThrow();
     expect(original.ecode_next_seq).toBe(63);
   });
+  it('keeps every sequence digit beyond the six-digit minimum width',async()=>{
+    const rollback=new Error('Intentional employee series boundary rollback');
+    try{await db.transaction().execute(async tx=>{
+      await tx.updateTable('core.companies').set({ecode_next_seq:999999}).where('id','=',companyId).execute();
+      expect(await OnboardingService.generateEcode(tx,companyId)).toBe(`${prefix}999999`);
+      expect(await generateTargetEcode(tx,companyId)).toBe(`${prefix}1000000`);
+      throw rollback;
+    });}catch(error){if(error!==rollback)throw error;}
+  });
+
 });

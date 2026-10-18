@@ -3,17 +3,17 @@
  * docs/04 §1.3, the KQ future-dated-OD ask.
  *
  *   AR         — "I was here but the punch is missing": PAST days only, capped
- *                by `att.ar_max_past_days`; approval marks the day P.
+ *                by `att.ar_max_past_days`; approval marks the selected day/half P.
  *   OD         — official duty away from a reader: FUTURE dates allowed (KQ);
- *                approval marks the day OD.
+ *                approval marks the selected day/half OD.
  *   PERMISSION — a time-bounded slice of ONE day (≤ `att.permission_max_hours`);
  *                approval protects the day as P.
  *
  * The request itself is a normal workflow instance ('regularization' / 'od'
  * chains — runtime-editable). The write-back into att.day_records happens in
  * the workflow COMPLETION HOOK, inside the same transaction that approves the
- * request, and those rows get source='regularized' so recomputeDay never
- * silently reverts an approved decision.
+ * request. Whole-day rows stay protected; approved half coverage is reapplied
+ * during swipe recomputation so the other half can still become present.
  */
 import { z } from 'zod';
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
@@ -22,7 +22,8 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { addDaysIso, formatDbDate, istDateString } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
 import { createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
-import { resolveDay } from './day-status.service.js';
+import { dayPortionSchema, type DayPortion } from './half-requests.js';
+import { recomputeDay, resolveDay } from './day-status.service.js';
 import { assertApprovalSpanWritable } from '../../core/db/attendance-period.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
@@ -52,6 +53,7 @@ export interface CreateRegularizationParams {
   fromTime?: string | undefined;
   toTime?: string | undefined;
   reason: string;
+  dayPortion?: DayPortion | undefined;
 }
 
 async function validateRegularization(db: Db, params: CreateRegularizationParams, excludeRequestId?: number): Promise<void> {
@@ -89,17 +91,40 @@ async function validateRegularization(db: Db, params: CreateRegularizationParams
     .executeTakeFirst();
   if (locked) throw new Error('The period is locked for payroll — contact HR');
 
+  const portion = dayPortionSchema.parse(params.dayPortion ?? 'full_day');
+  if (params.kind === 'PERMISSION' && portion !== 'full_day') throw new Error('Short permission uses times rather than attendance halves');
+  if (portion !== 'full_day') {
+    if (params.fromTime || params.toTime) throw new Error('Select the shift half without custom times');
+    const leave = await db.selectFrom('lv.applications').select('id').where('employee_id', '=', params.employeeId)
+      .where('status', '=', 'approved').where('from_date', '<=', sql<Date>`${params.toDate}::date`)
+      .where('to_date', '>=', sql<Date>`${params.fromDate}::date`).executeTakeFirst();
+    if (leave) throw new Error('Approved leave covers this date; contact HR to reconcile attendance halves');
+    for (let iso = params.fromDate; iso <= params.toDate; iso = addDaysIso(iso, 1)) {
+      const resolved = await resolveDay(db, params.employeeId, iso);
+      if (!resolved.isHoliday && !resolved.isWeekOff && !resolved.shift?.session_split) {
+        throw new Error('Configure first/second-half shift boundaries before requesting a half day');
+      }
+    }
+  }
+
   const duplicate = await db
     .selectFrom('att.regularizations as reg')
     .innerJoin('wf.requests as r', 'r.id', 'reg.workflow_request_id')
     .where('reg.employee_id', '=', params.employeeId)
     .where('r.id', '!=', excludeRequestId ?? -1)
-    .where('r.status', 'in', ['pending', 'sent_back'])
+    .where(eb => eb.or([
+      eb('r.status', 'in', ['pending', 'sent_back']),
+      eb.and([eb('r.status', '=', 'approved'), portion !== 'full_day'
+        ? eb.val(true) : eb('reg.day_portion', '!=', 'full_day')]),
+    ]))
+    .$if(portion !== 'full_day', q => q.where(eb => eb.or([
+      eb('reg.day_portion', '=', 'full_day'), eb('reg.day_portion', '=', portion),
+    ])))
     .where('reg.from_date', '<=', sql<Date>`${params.toDate}::date`)
     .where('reg.to_date', '>=', sql<Date>`${params.fromDate}::date`)
     .select('reg.id')
     .executeTakeFirst();
-  if (duplicate) throw new Error('An open request already covers these dates');
+  if (duplicate) throw new Error('An open or approved request already covers the selected attendance half');
 
 }
 
@@ -120,6 +145,7 @@ export async function createRegularization(
       requestedByUserId: params.requestedByUserId,
       payload: {
         kind: params.kind,
+        dayPortion: params.dayPortion ?? 'full_day',
         fromDate: params.fromDate,
         toDate: params.toDate,
         fromTime: params.fromTime ?? null,
@@ -128,11 +154,13 @@ export async function createRegularization(
       },
     },
     async (trx, requestId) => {
+      await validateRegularization(trx, params, requestId);
       const inserted = await trx
         .insertInto('att.regularizations')
         .values({
           employee_id: params.employeeId,
           kind: params.kind,
+          day_portion: params.dayPortion ?? 'full_day',
           from_date: sql<Date>`${params.fromDate}::date` as unknown as Date,
           to_date: sql<Date>`${params.toDate}::date` as unknown as Date,
           from_time: params.fromTime ?? null,
@@ -173,6 +201,20 @@ export async function applyRegularizationOnFinal(db: Db, request: RequestRow, st
 
   const toIso = formatDbDate(reg.to_date);
   await assertApprovalSpanWritable(db, reg.employee_id, formatDbDate(reg.from_date), toIso);
+  if (reg.day_portion !== 'full_day') {
+    await validateRegularization(db, { employeeId: reg.employee_id, requestedByUserId: request.requested_by,
+      kind: reg.kind, fromDate: formatDbDate(reg.from_date), toDate: toIso, reason: reg.reason, dayPortion: reg.day_portion }, request.id);
+    await db.updateTable('att.regularizations').set({ applied: true }).where('id', '=', reg.id).execute();
+    for (let iso = formatDbDate(reg.from_date); iso <= toIso; iso = addDaysIso(iso, 1)) {
+      const resolved = await resolveDay(db, reg.employee_id, iso);
+      if (resolved.isHoliday || resolved.isWeekOff) continue;
+      const result = await recomputeDay(db, reg.employee_id, iso);
+      if (result === 'skipped') throw new Error('Protected attendance or leave needs HR reconciliation before half-day approval');
+    }
+    await writeAudit(db, { action: 'update', entity: 'att.regularizations', entityId: reg.id,
+      field: 'applied', newValue: `${reg.kind} ${reg.day_portion} ${formatDbDate(reg.from_date)}..${toIso}` });
+    return;
+  }
   const row = {
     status: reg.requested_status,
     leave_type_id: null,
@@ -227,6 +269,7 @@ const correctionSchema = z.object({
   fromTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).nullish(),
   toTime: z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).nullish(),
   reason: z.string().trim().min(5),
+  dayPortion: dayPortionSchema.default('full_day'),
 });
 
 /** WF-01 / ATT-06/07: manager-visible revision and applied dates are one fact. */
@@ -242,7 +285,7 @@ export async function resubmitRegularization(db: Db, request: RequestRow, raw: R
   await assertApprovalSpanWritable(db, reg.employee_id, payload.fromDate, payload.toDate);
   await db.updateTable('att.regularizations').set({
     from_date: sql<Date>`${payload.fromDate}::date`, to_date: sql<Date>`${payload.toDate}::date`,
-    from_time: payload.fromTime ?? null, to_time: payload.toTime ?? null, reason: payload.reason,
+    from_time: payload.fromTime ?? null, to_time: payload.toTime ?? null, reason: payload.reason, day_portion: payload.dayPortion,
   }).where('id', '=', reg.id).execute();
   return { ...payload, fromTime: payload.fromTime ?? null, toTime: payload.toTime ?? null };
 }

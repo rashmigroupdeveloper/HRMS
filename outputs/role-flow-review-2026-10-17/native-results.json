@@ -1,0 +1,229 @@
+{
+  "date": "2026-10-17",
+  "diagnosticOnly": true,
+  "observations": [
+    {
+      "id": "RF01-scoped-HR-foreign-override",
+      "observed": {
+        "status": 200,
+        "body": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "RF02-authorized-HR-own-override",
+      "observed": {
+        "status": 200,
+        "body": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "RF03-ordinary-employee-override-denied",
+      "observed": {
+        "status": 403,
+        "body": {
+          "defined": false,
+          "code": "FORBIDDEN",
+          "status": 403,
+          "message": "Missing permission: attendance.manual_override"
+        }
+      }
+    },
+    {
+      "id": "RF04-whitespace-reason",
+      "observed": {
+        "status": 200,
+        "body": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "RF05-locked-override-truth",
+      "observed": {
+        "http": 200,
+        "actualStatus": "P"
+      }
+    },
+    {
+      "id": "RF06-absent-derived-facts",
+      "observed": {
+        "status": "A",
+        "ot_minutes": 120,
+        "penalty_flag": true
+      }
+    },
+    {
+      "id": "RF07-scoped-HR-foreign-days",
+      "observed": {
+        "status": 200,
+        "body": [
+          {
+            "date": "2026-10-01",
+            "status": "A",
+            "scheme": null,
+            "firstIn": null,
+            "lastOut": null,
+            "workedMinutes": null,
+            "lateMinutes": 0,
+            "earlyExitMinutes": 0,
+            "sessionStatuses": null,
+            "weekoffPaid": null,
+            "source": "manual"
+          }
+        ]
+      }
+    },
+    {
+      "id": "RF08-scoped-HR-foreign-scheme",
+      "observed": {
+        "status": 200,
+        "body": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "id": "RF09-own-timing-contract",
+      "observed": {
+        "status": 200,
+        "body": {
+          "date": "2026-10-15",
+          "dayKind": "working",
+          "shiftCode": "GEN",
+          "shiftName": "General 09:00–18:00",
+          "windows": [
+            {
+              "dayPortion": "full_day",
+              "startsAt": "2026-10-15T03:30:00.000Z",
+              "endsAt": "2026-10-15T12:30:00.000Z"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "RF10-payroll-list-GET-contract",
+      "observed": {
+        "status": 404,
+        "body": {
+          "nonJson": true,
+          "contentType": "text/html; charset=utf-8"
+        }
+      }
+    },
+    {
+      "id": "RF11-payroll-list-POST-contract",
+      "observed": {
+        "status": 200,
+        "isArray": true
+      }
+    },
+    {
+      "id": "RF12-HR-head-readonly-review",
+      "observed": {
+        "status": 200,
+        "isArray": true
+      }
+    },
+    {
+      "id": "RF13-HR-head-compute-denied",
+      "observed": {
+        "status": 403,
+        "body": {
+          "defined": false,
+          "code": "FORBIDDEN",
+          "status": 403,
+          "message": "Missing permission: payroll.run.manage"
+        }
+      }
+    },
+    {
+      "id": "RF14-maker-self-approve-denied",
+      "observed": {
+        "status": 500,
+        "body": {
+          "defined": false,
+          "code": "INTERNAL_SERVER_ERROR",
+          "status": 500,
+          "message": "Internal server error"
+        }
+      }
+    },
+    {
+      "id": "RF15-second-payroll-approve-without-HR-head",
+      "observed": {
+        "status": 200,
+        "body": {
+          "success": true
+        }
+      }
+    },
+    {
+      "id": "RF16-future-empty-month-checklist",
+      "observed": {
+        "canLock": true,
+        "items": [
+          {
+            "code": "pending_requests",
+            "ok": true,
+            "detail": "Clear"
+          },
+          {
+            "code": "pending_ot",
+            "ok": true,
+            "detail": "Clear"
+          },
+          {
+            "code": "unmatched_swipes",
+            "ok": true,
+            "detail": "Clear"
+          },
+          {
+            "code": "device_health",
+            "ok": true,
+            "detail": "All devices healthy"
+          },
+          {
+            "code": "manager_approvals",
+            "ok": true,
+            "detail": "Approval precondition disabled by policy"
+          },
+          {
+            "code": "sync_watermark",
+            "ok": true,
+            "detail": "All biometric locations synchronized"
+          }
+        ]
+      }
+    },
+    {
+      "id": "RF17-IT-onboarding-task-access",
+      "observed": {
+        "status": 403,
+        "body": {
+          "defined": false,
+          "code": "FORBIDDEN",
+          "status": 403,
+          "message": "Missing permission: lifecycle.onboard.convert"
+        }
+      }
+    },
+    {
+      "id": "RF18-no-show-inferred-rejected-LOI",
+      "observed": "Rejected"
+    },
+    {
+      "id": "RF19-LOI-workflow-catalog",
+      "observed": []
+    }
+  ],
+  "cleanup": {
+    "fixtureUsersRemaining": 0,
+    "allFixtureWritesRolledBack": true,
+    "realEmployeesChanged": false
+  }
+}

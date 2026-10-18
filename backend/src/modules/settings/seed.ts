@@ -28,7 +28,13 @@ interface PolicySeed {
 }
 
 /** Keys + defaults mirrored from the `getTypedSetting` call sites (docs/04 §8). */
-export const POLICY_SETTINGS: readonly PolicySeed[] = [
+  { key: 'lifecycle.prejoin_token_hours', value: 72, valueType: 'number', description: 'LC-01: prejoin link validity in hours; retains the previous implementation lifetime, subject to HR policy acceptance' },
+  { key: 'probation.default_months', value: 6, valueType: 'number', description: 'LC-01: default probation period in months for newly onboarded employees' },
+  { key: 'auth.failure_threshold', value: 5, valueType: 'number', description: 'NFR-03: consecutive failures before lockout' },
+  { key: 'auth.lock_base_minutes', value: 15, valueType: 'number', description: 'NFR-03: initial lockout duration' },
+  { key: 'auth.lock_max_minutes', value: 120, valueType: 'number', description: 'NFR-03: maximum lockout duration' },
+  { key: 'auth.access_ttl_seconds', value: 900, valueType: 'number', description: 'NFR-03: access token lifetime, bounded by session expiry' },
+  { key: 'auth.refresh_ttl_seconds', value: 604800, valueType: 'number', description: 'NFR-03: absolute session lifetime from login' },
   // ── Attendance: swipe ingestion + quarantine (ATT-01/02) ──────────────────
   {
     key: 'att.swipe_window_early_hours',
@@ -136,7 +142,7 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
   },
   {
     key: 'att.manager_approval_required_for_lock',
-    value: false,
+    value: true,
     valueType: 'boolean',
     description: 'ATT-12: managers must approve team attendance before month lock',
   },

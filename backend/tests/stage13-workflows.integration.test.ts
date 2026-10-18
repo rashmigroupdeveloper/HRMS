@@ -4,7 +4,7 @@
  *  - full chain walk: RM approve → HR step → approved
  *  - send_back → resubmit restarts the chain
  *  - non-approvers are refused; delegation reroutes with a trail
- *  - vacant approvers auto-skip with audit
+ *  - all-vacant approval chains remain pending for HR with audit
  *  - SLA breaches: escalate / lapse (OT) / auto-approve (RH)
  */
 import 'dotenv/config';
@@ -17,7 +17,7 @@ import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { hashPassword } from '../src/modules/auth/index.js';
-import { createRequest, runEscalations } from '../src/modules/workflows/index.js';
+import { act, createRequest, resubmit, runEscalations } from '../src/modules/workflows/index.js';
 import { getUserPermissions, getUserRoleCodes } from '../src/core/rbac/permissions.service.js';
 
 const DB_URL = process.env['DATABASE_URL'];
@@ -114,6 +114,8 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
       await db.deleteFrom('wf.requests').where('id', '=', id).execute();
     }
     await db.deleteFrom('wf.delegations').where('from_user_id', '=', managerUser).execute();
+    await db.deleteFrom('wf.event_subscriptions').where('event_code', '=', 'workflow.routing_held')
+      .where('recipient_kind', '=', 'user').where('recipient_ref', '=', String(hrUser)).execute();
     await db.deleteFrom('wf.definitions')
       .where('code', 'in', [genericDefinitionCode, editableDefinitionCode]).execute();
     await db.deleteFrom('core.user_roles').where('user_id', 'in', [workerUser, managerUser, hrUser, delegateUser]).execute();
@@ -274,11 +276,13 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     await db.deleteFrom('wf.delegations').where('from_user_id', '=', managerUser).execute();
   });
 
-  it('vacant approver auto-skips with an audit trail; empty chain → auto-approved (WF-01)', async () => {
+  it('holds an all-vacant chain for HR instead of approving it (WF-01 sponsor decision 16 Oct)', async () => {
+    await db.insertInto('wf.event_subscriptions').values({ event_code: 'workflow.routing_held',
+      recipient_kind: 'user', recipient_ref: String(hrUser) }).execute();
     // The manager employee has NO reporting manager → leave for the MANAGER
-    // has a vacant step 1 → skip → nothing left → approved.
+    // has a vacant step 1 → hold for routing repair, without domain effects.
     const requestId = await createRequest(db, {
-      definitionCode: 'leave',
+      definitionCode: genericDefinitionCode,
       subjectEmployeeId: managerEmpId,
       requestedByUserId: managerUser,
       payload: { from: '2026-08-12', to: '2026-08-12', type: 'CL' },
@@ -286,7 +290,12 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     createdRequests.push(requestId);
 
     const req = await db.selectFrom('wf.requests').select('status').where('id', '=', requestId).executeTakeFirstOrThrow();
-    expect(req.status).toBe('approved');
+    expect(req.status).toBe('pending');
+    expect(await db.selectFrom('wf.request_steps').select('id').where('request_id', '=', requestId)
+      .where('action', 'is', null).execute()).toHaveLength(0);
+    const alerts = await db.selectFrom('wf.notifications').select('id').where('recipient_user_id', '=', hrUser)
+      .where('template_code', '=', 'workflow_routing_held').execute();
+    expect(alerts.length).toBeGreaterThan(0);
 
     const audit = await db
       .selectFrom('core.audit_log')
@@ -295,6 +304,28 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
       .where('entity_id', '=', requestId)
       .execute();
     expect(audit.some((a) => a.new_value?.includes('vacant'))).toBe(true);
+  });
+
+  it.each(['creation', 'resubmission'] as const)('holds %s when its configured manager account is inactive', async mode => {
+    let requestId = 0;
+    if (mode === 'resubmission') {
+      requestId = await createRequest(db, { definitionCode: genericDefinitionCode, subjectEmployeeId: workerEmpId,
+        requestedByUserId: workerUser, payload: { reason: 'Before send back' } });
+      createdRequests.push(requestId);
+      await act(db, { requestId, actorUserId: managerUser, action: 'send_back', comment: 'Please correct the request' });
+    }
+    await db.updateTable('core.users').set({ is_active: false }).where('id', '=', managerUser).execute();
+    try {
+      if (mode === 'creation') {
+        requestId = await createRequest(db, { definitionCode: genericDefinitionCode, subjectEmployeeId: workerEmpId,
+          requestedByUserId: workerUser, payload: { reason: 'Inactive approver' } });
+        createdRequests.push(requestId);
+      } else await resubmit(db, { requestId, requesterUserId: workerUser, payload: { reason: 'Corrected request' } });
+      const held = await db.selectFrom('wf.requests').select(['status', 'decided_at']).where('id', '=', requestId).executeTakeFirstOrThrow();
+      expect(held).toEqual({ status: 'pending', decided_at: null });
+      const steps = await db.selectFrom('wf.request_steps').select('action').where('request_id', '=', requestId).execute();
+      expect(steps.some(step => step.action === null || step.action === 'approved')).toBe(false);
+    } finally { await db.updateTable('core.users').set({ is_active: true }).where('id', '=', managerUser).execute(); }
   });
 
   it('SLA breach behaviors: OT lapses hard; Restricted Holiday auto-approves; leave escalates (WF-03)', async () => {
@@ -379,5 +410,152 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     expect(step.approver_user_id).toBe(hrUser); // the edited chain took effect at once
 
     // The edited definition is fixture-owned and removed by afterAll.
+  });
+
+  it.each([
+    { label: 'duplicate step numbers', steps: [{ step: 1, approver: 'reporting_manager' }, { step: 1, approver: 'functional_manager' }] },
+    { label: 'an unknown approver', steps: [{ step: 1, approver: 'reporting_manger' }] },
+    { label: 'an invalid escalation target', steps: [{ step: 1, approver: 'reporting_manager', escalateTo: 'user:0' }] },
+  ])('refuses $label instead of silently skipping required authority', async ({ steps }) => {
+    const t = await token(`s13-hr-${stamp}@hrms.test`);
+    const previous = await db.selectFrom('wf.definitions').select('steps').where('code', '=', editableDefinitionCode).executeTakeFirstOrThrow();
+    const response = await (await httpRequest(app)).put(`/api/workflows/definitions/${editableDefinitionCode}`)
+      .auth(t, { type: 'bearer' }).send({ name: 'Invalid chain regression', steps });
+    expectHttpStatus(response, 400);
+    expect((await db.selectFrom('wf.definitions').select('steps').where('code', '=', editableDefinitionCode).executeTakeFirstOrThrow()).steps)
+      .toEqual(previous.steps);
+  });
+
+  it('still skips one vacant step when a later configured approver is available', async () => {
+    await db.updateTable('wf.definitions').set({ steps: JSON.stringify([
+      { step: 1, approver: 'functional_manager', slaHours: 48, onBreach: 'escalate' },
+      { step: 2, approver: 'reporting_manager', slaHours: 48, onBreach: 'escalate' },
+    ]) }).where('code', '=', editableDefinitionCode).execute();
+    const requestId = await createRequest(db, { definitionCode: editableDefinitionCode, subjectEmployeeId: workerEmpId,
+      requestedByUserId: workerUser, payload: { reason: 'Partially vacant chain' } });
+    createdRequests.push(requestId);
+    const step = await db.selectFrom('wf.request_steps').select(['step_no', 'approver_user_id'])
+      .where('request_id', '=', requestId).where('action', 'is', null).executeTakeFirstOrThrow();
+    expect(step).toEqual({ step_no: 2, approver_user_id: managerUser });
+    expect(await act(db, { requestId, actorUserId: managerUser, action: 'approve' })).toBe('approved');
+  });
+
+  it('isolates an invalid legacy chain so valid overdue OT still lapses', async () => {
+    const invalidId = await createRequest(db, { definitionCode: editableDefinitionCode, subjectEmployeeId: workerEmpId,
+      requestedByUserId: workerUser, payload: { reason: 'Legacy configuration isolation' } });
+    const validId = await createRequest(db, { definitionCode: 'overtime', subjectEmployeeId: workerEmpId,
+      requestedByUserId: workerUser, payload: { workDate: '2026-08-01', detectedMinutes: 90 } });
+    createdRequests.push(invalidId, validId);
+    // Simulate malformed pre-existing data, not an edit accepted by the validated API.
+    await db.updateTable('wf.definitions').set({ steps: JSON.stringify([
+      { step: 2, approver: 'reporting_manger', slaHours: 48, onBreach: 'escalate' },
+    ]) }).where('code', '=', editableDefinitionCode).execute();
+    await db.updateTable('wf.request_steps').set({ sla_due_at: new Date(Date.now() - 3600_000) })
+      .where('request_id', 'in', [invalidId, validId]).where('action', 'is', null).execute();
+    await expect(runEscalations(db)).resolves.toBeGreaterThanOrEqual(1);
+    expect((await db.selectFrom('wf.requests').select('status').where('id', '=', invalidId).executeTakeFirstOrThrow()).status).toBe('pending');
+    expect((await db.selectFrom('wf.requests').select('status').where('id', '=', validId).executeTakeFirstOrThrow()).status).toBe('lapsed');
+  });
+
+  it('enforces act and resubmit domain guards and validation errors', async () => {
+    const testReqId = await createRequest(db, {
+      definitionCode: genericDefinitionCode,
+      subjectEmployeeId: workerEmpId,
+      requestedByUserId: workerUser,
+      payload: { reason: 'Workflow domain guards test' },
+    });
+    createdRequests.push(testReqId);
+
+    // 1. act without comment on reject or send_back throws
+    await expect(
+      act(db, {
+        requestId: testReqId,
+        actorUserId: managerUser,
+        action: 'reject',
+        comment: '',
+      })
+    ).rejects.toThrow(/decision reason is required/);
+
+    await expect(
+      act(db, {
+        requestId: testReqId,
+        actorUserId: managerUser,
+        action: 'send_back',
+        comment: '   ',
+      })
+    ).rejects.toThrow(/decision reason is required/);
+
+    // 2. act by unauthorized user throws Not the current approver
+    await expect(
+      act(db, {
+        requestId: testReqId,
+        actorUserId: workerUser,
+        action: 'approve',
+      })
+    ).rejects.toThrow(/Not the current approver/);
+
+    // 3. resubmit when status is pending (not sent_back) throws
+    await expect(
+      resubmit(db, {
+        requestId: testReqId,
+        requesterUserId: workerUser,
+        payload: { workDate: '2026-08-05', detectedMinutes: 120 },
+      })
+    ).rejects.toThrow(/Only sent-back requests can be resubmitted/);
+
+    // 4. Send back request properly
+    const sentBack = await act(db, {
+      requestId: testReqId,
+      actorUserId: managerUser,
+      action: 'send_back',
+      comment: 'Please correct OT hours detected',
+    });
+    expect(sentBack).toBe('sent_back');
+
+    // 5. resubmit by non-requester throws
+    await expect(
+      resubmit(db, {
+        requestId: testReqId,
+        requesterUserId: managerUser,
+        payload: { workDate: '2026-08-05', detectedMinutes: 120 },
+      })
+    ).rejects.toThrow(/Only the requester can resubmit/);
+
+    // Domain facts cannot be rewritten through generic resubmission when domain-reserved.
+    await db.updateTable('wf.requests').set({ definition_code: 'overtime' }).where('id', '=', testReqId).execute();
+    await expect(resubmit(db, {
+      requestId: testReqId,
+      requesterUserId: workerUser,
+      payload: { workDate: '2026-08-06', detectedMinutes: 999 },
+    })).rejects.toThrow(/validated domain correction/);
+    await db.updateTable('wf.requests').set({ definition_code: `s13_chain_${stamp}` }).where('id', '=', testReqId).execute();
+    expect((await db.selectFrom('wf.requests').select('status').where('id', '=', testReqId).executeTakeFirstOrThrow()).status).toBe('sent_back');
+
+    // Unchanged domain facts may restart the approval chain.
+    await resubmit(db, {
+      requestId: testReqId,
+      requesterUserId: workerUser,
+      payload: { reason: 'Workflow domain guards test' },
+    });
+    const restarted = await db.selectFrom('wf.requests').select('status').where('id', '=', testReqId).executeTakeFirstOrThrow();
+    expect(restarted.status).toBe('pending');
+
+    // 7. Reject request properly
+    const rejected = await act(db, {
+      requestId: testReqId,
+      actorUserId: managerUser,
+      action: 'reject',
+      comment: 'Rejected permanently',
+    });
+    expect(rejected).toBe('rejected');
+
+    // 8. act on already rejected request throws
+    await expect(
+      act(db, {
+        requestId: testReqId,
+        actorUserId: managerUser,
+        action: 'approve',
+      })
+    ).rejects.toThrow(/not actionable/);
   });
 });

@@ -27,9 +27,12 @@ import { payrollCoreRouter } from '../modules/payroll-core/index.js';
 import { payrollOutputsRouter } from '../modules/payroll-outputs/index.js';
 import { loansRouter } from '../modules/loans/index.js';
 import { claimsRouter } from '../modules/claims/index.js';
+import { travelRouter } from '../modules/travel/index.js';
+import { coreRouter } from '../modules/core/index.js';
 
 export const appRouter = {
   system: systemRouter,
+  core: coreRouter,
   auth: authRouter,
   settings: settingsRouter,
   rbac: rbacRouter,
@@ -56,6 +59,7 @@ export const appRouter = {
   },
   loans: loansRouter,
   claims: claimsRouter,
+  travel: travelRouter,
 };
 
 export type AppRouter = typeof appRouter;

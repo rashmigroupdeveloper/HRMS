@@ -1,0 +1,1838 @@
+{
+  "prepared": "2026-10-16",
+  "source": "Runtime OpenAPI generation from current appRouter; static frontend AST scan. No DB or network requests.",
+  "limits": [
+    "Path/method matching is not payload/output compatibility or ownership proof",
+    "Dynamic URL expressions need manual caller tracing; candidates are not all confirmed defects"
+  ],
+  "summary": {
+    "contractPaths": 250,
+    "operations": 268,
+    "calls": 165,
+    "noMatchingContract": 30,
+    "unresolvedDynamic": 9,
+    "falsePositivesExcluded": 6,
+    "remainingUnmatchedCandidates": 24
+  },
+  "calls": [
+    {
+      "file": "frontend/src/app/CommandPalette.tsx",
+      "line": 106,
+      "url": "/api/employees?q=PARAM&pageSize=PARAM&activeOnly=true",
+      "method": "GET",
+      "contractPaths": [
+        "/employees"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/app/useInboxCount.ts",
+      "line": 19,
+      "url": "/api/workflows/inbox",
+      "method": "GET",
+      "contractPaths": [
+        "/workflows/inbox"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/lib/api.ts",
+      "line": 19,
+      "url": "/api/auth/refresh",
+      "method": "POST",
+      "contractPaths": [
+        "/auth/refresh"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/lib/session.ts",
+      "line": 34,
+      "url": "/api/auth/me",
+      "method": "GET",
+      "contractPaths": [
+        "/auth/me"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/lib/session.ts",
+      "line": 49,
+      "url": "/api/auth/refresh",
+      "method": "POST",
+      "contractPaths": [
+        "/auth/refresh"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/lib/session.ts",
+      "line": 75,
+      "url": "/api/auth/logout",
+      "method": "POST",
+      "contractPaths": [
+        "/auth/logout"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+      "line": 99,
+      "url": "/api/rbac/matrix",
+      "method": "GET",
+      "contractPaths": [
+        "/rbac/matrix"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+      "line": 135,
+      "url": "/api/rbac/grants",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract",
+      "manualReview": "Excluded: conditional HTTP method or interpolated query suffix; candidate scanner cannot resolve this expression."
+    },
+    {
+      "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+      "line": 248,
+      "url": "/api/rbac/matrix",
+      "method": "GET",
+      "contractPaths": [
+        "/rbac/matrix"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+      "line": 256,
+      "url": "/api/rbac/users?PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/rbac/users"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+      "line": 284,
+      "url": "/api/rbac/user-roles",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract",
+      "manualReview": "Excluded: conditional HTTP method or interpolated query suffix; candidate scanner cannot resolve this expression."
+    },
+    {
+      "file": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+      "line": 118,
+      "url": "/api/attendance/config/shifts",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/config/shifts"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+      "line": 287,
+      "url": "/api/attendance/config/shifts/PARAM",
+      "method": "PUT",
+      "contractPaths": [
+        "/attendance/config/shifts/{code}"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+      "line": 452,
+      "url": "/api/attendance/config/holidays?year=PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/config/holidays"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+      "line": 469,
+      "url": "/api/attendance/config/holidays",
+      "method": "PUT",
+      "contractPaths": [
+        "/attendance/config/holidays"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/AuditLogPage.tsx",
+      "line": 113,
+      "url": "/api/audit?PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/audit"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/AuditLogPage.tsx",
+      "line": 132,
+      "url": "/api/audit/facets",
+      "method": "GET",
+      "contractPaths": [
+        "/audit/facets"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/AuditLogPage.tsx",
+      "line": 142,
+      "url": "/api/audit/verify",
+      "method": "GET",
+      "contractPaths": [
+        "/audit/verify"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/SettingsPage.tsx",
+      "line": 78,
+      "url": "/api/settings",
+      "method": "GET",
+      "contractPaths": [
+        "/settings"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/SettingsPage.tsx",
+      "line": 261,
+      "url": "/api/settings/PARAM",
+      "method": "PUT",
+      "contractPaths": [
+        "/settings/{key}"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/WorkflowsPage.tsx",
+      "line": 98,
+      "url": "/api/workflows/definitions",
+      "method": "GET",
+      "contractPaths": [
+        "/workflows/definitions"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/admin/WorkflowsPage.tsx",
+      "line": 282,
+      "url": "/api/workflows/definitions/PARAM",
+      "method": "PUT",
+      "contractPaths": [
+        "/workflows/definitions/{code}"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/approvals/ApprovalRequestStatus.tsx",
+      "line": 28,
+      "url": "/api/workflows/requests/PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/workflows/requests/{requestId}"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+      "line": 50,
+      "url": "/api/workflows/inbox",
+      "method": "GET",
+      "contractPaths": [
+        "/workflows/inbox"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+      "line": 76,
+      "url": "/api/workflows/requests/PARAM/act",
+      "method": "POST",
+      "contractPaths": [
+        "/workflows/requests/{requestId}/act"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+      "line": 114,
+      "url": "/api/workflows/requests/PARAM/act",
+      "method": "POST",
+      "contractPaths": [
+        "/workflows/requests/{requestId}/act"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/approvals/ResubmitRequestForm.tsx",
+      "line": 28,
+      "url": "/api/workflows/requests/PARAM/resubmit",
+      "method": "POST",
+      "contractPaths": [
+        "/workflows/requests/{requestId}/resubmit"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AbsenceCasesPage.tsx",
+      "line": 132,
+      "url": "/api/attendance/absence-cases?open=PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/absence-cases"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AbsenceCasesPage.tsx",
+      "line": 148,
+      "url": "/api/attendance/absence-cases/PARAM/stage",
+      "method": "POST",
+      "contractPaths": [
+        "/attendance/absence-cases/{id}/stage"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AbsenceCasesPage.tsx",
+      "line": 167,
+      "url": "/api/attendance/absence-cases/PARAM/letter",
+      "method": "POST",
+      "contractPaths": [
+        "/attendance/absence-cases/{id}/letter"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AttendanceOpsPage.tsx",
+      "line": 63,
+      "url": "/api/attendance/exceptions/unmatched?limit=20",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/exceptions/unmatched"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AttendanceRequestDrawer.tsx",
+      "line": 172,
+      "url": "/api/attendance/requests",
+      "method": "POST",
+      "contractPaths": [
+        "/attendance/requests"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/DeviceHealthPage.tsx",
+      "line": 7,
+      "url": "/api/attendance/devices",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/devices"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/ExceptionsPage.tsx",
+      "line": 26,
+      "url": "/api/attendance/exceptions/unmatched?limit=200",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/exceptions/unmatched"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MonthLockPage.tsx",
+      "line": 70,
+      "url": "/api/attendance/month-lock/checklist?companyId=PARAM&month=PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/month-lock/checklist"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MonthLockPage.tsx",
+      "line": 73,
+      "url": "/api/attendance/manager-approvals?companyId=PARAM&month=PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/manager-approvals"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MonthLockPage.tsx",
+      "line": 94,
+      "url": "/api/attendance/month-lock",
+      "method": "POST",
+      "contractPaths": [
+        "/attendance/month-lock"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+      "line": 141,
+      "url": "/api/my/attendance?month=PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/my/attendance"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+      "line": 144,
+      "url": "/api/attendance/requests/mine",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/requests/mine"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+      "line": 145,
+      "url": "/api/attendance/ot/mine",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/ot/mine"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+      "line": 148,
+      "url": "/api/attendance/config/holidays?year=PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/config/holidays"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/auth/LoginPage.tsx",
+      "line": 125,
+      "url": "/api/auth/login",
+      "method": "POST",
+      "contractPaths": [
+        "/auth/login"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/executive/ExecutivePage.tsx",
+      "line": 272,
+      "url": "/api/reports/executive/leavers",
+      "method": "GET",
+      "contractPaths": [
+        "/reports/executive/leavers"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/executive/ExecutivePage.tsx",
+      "line": 292,
+      "url": "/api/reports/executive/rebuild",
+      "method": "POST",
+      "contractPaths": [
+        "/reports/executive/rebuild"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/home/BusinessUnitDashboard.tsx",
+      "line": 89,
+      "url": "/api/dashboards/business-unit",
+      "method": "GET",
+      "contractPaths": [
+        "/dashboards/business-unit"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/home/BusinessUnitDashboard.tsx",
+      "line": 90,
+      "url": "/api/reports/executive/trend?metric=absenteeism_pct&months=6",
+      "method": "GET",
+      "contractPaths": [
+        "/reports/executive/trend"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/home/BusinessUnitDashboard.tsx",
+      "line": 93,
+      "url": "/api/reports/executive/trend?metric=overtime_hours&months=6",
+      "method": "GET",
+      "contractPaths": [
+        "/reports/executive/trend"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/home/EssDashboard.tsx",
+      "line": 208,
+      "url": "/api/policies/pending",
+      "method": "GET",
+      "contractPaths": [
+        "/policies/pending"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/home/EssDashboard.tsx",
+      "line": 209,
+      "url": "/api/policies",
+      "method": "GET",
+      "contractPaths": [
+        "/policies"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/home/EssDashboard.tsx",
+      "line": 210,
+      "url": "/api/leave/applications/mine",
+      "method": "GET",
+      "contractPaths": [
+        "/leave/applications/mine"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/home/EssDashboard.tsx",
+      "line": 211,
+      "url": "/api/attendance/requests/mine",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/requests/mine"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/home/RoleHomePage.tsx",
+      "line": 110,
+      "url": "/api/dashboards/ess",
+      "method": "GET",
+      "contractPaths": [
+        "/dashboards/ess"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/home/RoleHomePage.tsx",
+      "line": 117,
+      "url": "/api/dashboards/hr-ops",
+      "method": "GET",
+      "contractPaths": [
+        "/dashboards/hr-ops"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/home/RoleHomePage.tsx",
+      "line": 126,
+      "url": "/api/my/team/grid?PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/my/team/grid"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/home/RoleHomePage.tsx",
+      "line": 134,
+      "url": "/api/attendance/devices",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/devices"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/leave/LeaveApplyDrawer.tsx",
+      "line": 170,
+      "url": "/api/leave/applications",
+      "method": "POST",
+      "contractPaths": [
+        "/leave/applications"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+      "line": 101,
+      "url": "/api/leave/balances",
+      "method": "GET",
+      "contractPaths": [
+        "/leave/balances"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+      "line": 102,
+      "url": "/api/leave/types",
+      "method": "GET",
+      "contractPaths": [
+        "/leave/types"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+      "line": 103,
+      "url": "/api/leave/applications/mine",
+      "method": "GET",
+      "contractPaths": [
+        "/leave/applications/mine"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+      "line": 104,
+      "url": "/api/leave/ledger",
+      "method": "GET",
+      "contractPaths": [
+        "/leave/ledger"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+      "line": 105,
+      "url": "/api/leave/restricted-holidays",
+      "method": "GET",
+      "contractPaths": [
+        "/leave/restricted-holidays"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+      "line": 144,
+      "url": "/api/leave/restricted-holidays/PARAM/select",
+      "method": "POST",
+      "contractPaths": [
+        "/leave/restricted-holidays/{id}/select"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/letters/LettersPage.tsx",
+      "line": 44,
+      "url": "/api/letters/templates",
+      "method": "GET",
+      "contractPaths": [
+        "/letters/templates"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/letters/LettersPage.tsx",
+      "line": 54,
+      "url": "/api/letters/employee/PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/letters/employee/{employeeId}"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/letters/LettersPage.tsx",
+      "line": 68,
+      "url": "/api/letters/issue",
+      "method": "POST",
+      "contractPaths": [
+        "/letters/issue"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/letters/LettersPage.tsx",
+      "line": 87,
+      "url": "/api/letters/PARAM/content",
+      "method": "GET",
+      "contractPaths": [
+        "/letters/{id}/content"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/letters/MyLettersPage.tsx",
+      "line": 50,
+      "url": "/api/letters/mine",
+      "method": "GET",
+      "contractPaths": [
+        "/letters/mine"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/letters/MyLettersPage.tsx",
+      "line": 65,
+      "url": "/api/letters/PARAM/content",
+      "method": "GET",
+      "contractPaths": [
+        "/letters/{id}/content"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 161,
+      "url": "/api/lifecycle/candidates",
+      "method": "GET",
+      "contractPaths": [
+        "/lifecycle/candidates"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 211,
+      "url": "/api/lifecycle/tasks",
+      "method": "GET",
+      "contractPaths": [
+        "/lifecycle/tasks"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 277,
+      "url": "/api/lifecycle/candidates/ingest",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/candidates/ingest"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 305,
+      "url": "/api/lifecycle/candidates/check-duplicate",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/candidates/check-duplicate"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 355,
+      "url": "/api/lifecycle/candidates/convert",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/candidates/convert"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 379,
+      "url": "/api/lifecycle/biometric/verify",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/biometric/verify"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 392,
+      "url": "/api/lifecycle/tasks/complete",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/tasks/complete"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/PrejoinPortalPage.tsx",
+      "line": 82,
+      "url": "/api/lifecycle/prejoin/validate?token=PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/lifecycle/prejoin/validate"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/PrejoinPortalPage.tsx",
+      "line": 133,
+      "url": "/api/lifecycle/prejoin/submit",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/prejoin/submit"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/ProbationBoardPage.tsx",
+      "line": 123,
+      "url": "/api/lifecycle/probation/reviews",
+      "method": "GET",
+      "contractPaths": [
+        "/lifecycle/probation/reviews"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/ProbationBoardPage.tsx",
+      "line": 180,
+      "url": "/api/lifecycle/probation/alerts",
+      "method": "GET",
+      "contractPaths": [
+        "/lifecycle/probation/alerts"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/ProbationBoardPage.tsx",
+      "line": 214,
+      "url": "/api/lifecycle/probation/evaluate",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/probation/evaluate"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/ProbationBoardPage.tsx",
+      "line": 261,
+      "url": "/api/lifecycle/probation/decide",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/probation/decide"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 178,
+      "url": "/api/lifecycle/separations",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 267,
+      "url": "/api/lifecycle/clearances?separationId=PARAM",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 337,
+      "url": "/api/lifecycle/separations/apply",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/separations/apply"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 364,
+      "url": "/api/lifecycle/separations/absconding",
+      "method": "POST",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 387,
+      "url": "/api/lifecycle/separations/PARAM/approve",
+      "method": "POST",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 432,
+      "url": "/api/lifecycle/clearances/update",
+      "method": "POST",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 460,
+      "url": "/api/lifecycle/separations/PARAM/compute-fnf",
+      "method": "POST",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 517,
+      "url": "/api/lifecycle/separations/PARAM/pay",
+      "method": "POST",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 164,
+      "url": "/api/lifecycle/transfersPARAM",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract",
+      "manualReview": "Excluded: conditional HTTP method or interpolated query suffix; candidate scanner cannot resolve this expression."
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 178,
+      "url": "/api/core/companies",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 182,
+      "url": "/api/core/departments",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 186,
+      "url": "/api/core/locations",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 190,
+      "url": "/api/core/designations",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 194,
+      "url": "/api/core/grades",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 213,
+      "url": "/api/lifecycle/transfers/PARAM/approve",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/transfers/{id}/approve"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 237,
+      "url": "/api/lifecycle/transfers/PARAM/reject",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/transfers/{id}/reject"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 274,
+      "url": "/api/lifecycle/transfers",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/transfers"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 305,
+      "url": "/api/lifecycle/transfers/history/PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/lifecycle/transfers/history/{employeeId}"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 321,
+      "url": "/api/lifecycle/transfers/as-of?employeeId=PARAM&asOfDate=PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/lifecycle/transfers/as-of"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 120,
+      "url": "/api/claims/my-entitlements",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 125,
+      "url": "/api/claims/my",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 131,
+      "url": "/api/claims/pending",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 137,
+      "url": "/api/claims/pending?status=approved",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 271,
+      "url": "/api/claims/submit",
+      "method": "POST",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 326,
+      "url": "/api/claims/decide",
+      "method": "POST",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 363,
+      "url": "/api/claims/route-payout",
+      "method": "POST",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 125,
+      "url": "/api/loans/my",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 131,
+      "url": "/api/loans/all",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 184,
+      "url": "/api/loans/preview",
+      "method": "POST",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 256,
+      "url": "/api/loans/apply",
+      "method": "POST",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 283,
+      "url": "/api/loans/legacy-import",
+      "method": "POST",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryRevisionsPage.tsx",
+      "line": 101,
+      "url": "/api/payroll/structures",
+      "method": "GET",
+      "contractPaths": [
+        "/payroll/structures"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryRevisionsPage.tsx",
+      "line": 115,
+      "url": "/api/payroll/salaries/effective/PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/payroll/salaries/effective/{employee_id}"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryRevisionsPage.tsx",
+      "line": 116,
+      "url": "/api/payroll/salaries/history/PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/payroll/salaries/history/{employee_id}"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryRevisionsPage.tsx",
+      "line": 137,
+      "url": "/api/payroll/salaries/assign",
+      "method": "POST",
+      "contractPaths": [
+        "/payroll/salaries/assign"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryRevisionsPage.tsx",
+      "line": 165,
+      "url": "/api/payroll/salaries/auto-switch-confirmation",
+      "method": "POST",
+      "contractPaths": [
+        "/payroll/salaries/auto-switch-confirmation"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryStructuresPage.tsx",
+      "line": 119,
+      "url": "/api/payroll/structures",
+      "method": "GET",
+      "contractPaths": [
+        "/payroll/structures"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryStructuresPage.tsx",
+      "line": 120,
+      "url": "/api/payroll/components",
+      "method": "GET",
+      "contractPaths": [
+        "/payroll/components"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryStructuresPage.tsx",
+      "line": 144,
+      "url": "/api/payroll/structures/preview",
+      "method": "POST",
+      "contractPaths": [
+        "/payroll/structures/preview"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryStructuresPage.tsx",
+      "line": 178,
+      "url": "/api/payroll/structures",
+      "method": "POST",
+      "contractPaths": [
+        "/payroll/structures"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/people/DirectoryPage.tsx",
+      "line": 203,
+      "url": "/api/employees?PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/employees"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/people/PeopleFilterDrawer.tsx",
+      "line": 101,
+      "url": "/api/employees/facets?activeOnly=PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/employees/facets",
+        "/employees/{ecode}"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+      "line": 66,
+      "url": "/api/policies",
+      "method": "GET",
+      "contractPaths": [
+        "/policies"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+      "line": 67,
+      "url": "/api/policies/ack-status",
+      "method": "GET",
+      "contractPaths": [
+        "/policies/ack-status"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+      "line": 81,
+      "url": "/api/policies/PARAM/content",
+      "method": "GET",
+      "contractPaths": [
+        "/policies/{id}/content"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+      "line": 95,
+      "url": "/api/policies/PARAM/ack",
+      "method": "POST",
+      "contractPaths": [
+        "/policies/{id}/ack"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+      "line": 118,
+      "url": "/api/policies",
+      "method": "POST",
+      "contractPaths": [
+        "/policies"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/reports/MusterPage.tsx",
+      "line": 211,
+      "url": "/api/reports/muster/build",
+      "method": "POST",
+      "contractPaths": [
+        "/reports/muster/build"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/reports/MusterPage.tsx",
+      "line": 219,
+      "url": "/api/reports/musterPARAM",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract",
+      "manualReview": "Excluded: conditional HTTP method or interpolated query suffix; candidate scanner cannot resolve this expression."
+    },
+    {
+      "file": "frontend/src/pages/reports/MusterPage.tsx",
+      "line": 242,
+      "url": "/api/reports/muster/exportPARAM",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract",
+      "manualReview": "Excluded: conditional HTTP method or interpolated query suffix; candidate scanner cannot resolve this expression."
+    },
+    {
+      "file": "frontend/src/pages/reports/SupportingReports.tsx",
+      "line": 143,
+      "url": "/api/reports/r2-swipes/rawPARAM",
+      "method": "GET",
+      "contractPaths": [],
+      "contractMatch": false,
+      "classification": "needs review: no matching generated HTTP contract",
+      "manualReview": "Excluded: conditional HTTP method or interpolated query suffix; candidate scanner cannot resolve this expression."
+    },
+    {
+      "file": "frontend/src/pages/reports/SupportingReports.tsx",
+      "line": 677,
+      "url": "/api/lifecycle/boarding-exit/send",
+      "method": "POST",
+      "contractPaths": [
+        "/lifecycle/boarding-exit/send"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/team/OtDecisionsPage.tsx",
+      "line": 100,
+      "url": "/api/attendance/ot/pending",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/ot/pending"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/team/OtDecisionsPage.tsx",
+      "line": 131,
+      "url": "/api/attendance/ot/decide",
+      "method": "POST",
+      "contractPaths": [
+        "/attendance/ot/decide"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/team/OtDecisionsPage.tsx",
+      "line": 149,
+      "url": "/api/attendance/ot/pending",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/ot/pending"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/team/TeamPage.tsx",
+      "line": 206,
+      "url": "/api/my/team/grid?PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/my/team/grid"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/team/TeamPage.tsx",
+      "line": 224,
+      "url": "/api/attendance/config/shifts/active",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/config/shifts/active"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/team/TeamPage.tsx",
+      "line": 225,
+      "url": "/api/attendance/roster?month=PARAM&subtree=PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/attendance/roster"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/team/TeamPage.tsx",
+      "line": 329,
+      "url": "/api/attendance/roster",
+      "method": "PUT",
+      "contractPaths": [
+        "/attendance/roster"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/team/TeamPage.tsx",
+      "line": 358,
+      "url": "/api/attendance/manager-approvals",
+      "method": "POST",
+      "contractPaths": [
+        "/attendance/manager-approvals"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+      "line": 170,
+      "url": "/api/assets?PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/assets"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+      "line": 371,
+      "url": "/api/assets/PARAM",
+      "method": "PUT",
+      "contractPaths": [
+        "/assets/{assetNo}"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+      "line": 491,
+      "url": "/api/assets/PARAM/assign",
+      "method": "POST",
+      "contractPaths": [
+        "/assets/{assetId}/assign"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+      "line": 519,
+      "url": "/api/assets/assignments/PARAM/return",
+      "method": "POST",
+      "contractPaths": [
+        "/assets/assignments/{assignmentId}/return"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+      "line": 663,
+      "url": "/api/assets/non-returned?PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/assets/non-returned"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 261,
+      "url": "/api/engagement/announcements/PARAM/withdraw",
+      "method": "POST",
+      "contractPaths": [
+        "/engagement/announcements/{id}/withdraw"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 400,
+      "url": "/api/engagement/announcements",
+      "method": "POST",
+      "contractPaths": [
+        "/engagement/announcements"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 514,
+      "url": "/api/engagement/polls",
+      "method": "GET",
+      "contractPaths": [
+        "/engagement/polls"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 537,
+      "url": "/api/engagement/polls/PARAM/respond",
+      "method": "POST",
+      "contractPaths": [
+        "/engagement/polls/{id}/respond"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 559,
+      "url": "/api/engagement/polls/PARAM/results",
+      "method": "GET",
+      "contractPaths": [
+        "/engagement/polls/{id}/results"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 570,
+      "url": "/api/engagement/polls/PARAM/close",
+      "method": "POST",
+      "contractPaths": [
+        "/engagement/polls/{id}/close"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 826,
+      "url": "/api/engagement/polls",
+      "method": "POST",
+      "contractPaths": [
+        "/engagement/polls"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 953,
+      "url": "/api/engagement/surveys",
+      "method": "GET",
+      "contractPaths": [
+        "/engagement/surveys"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 971,
+      "url": "/api/engagement/surveys/PARAM/respond",
+      "method": "POST",
+      "contractPaths": [
+        "/engagement/surveys/{id}/respond"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 992,
+      "url": "/api/engagement/surveys/PARAM/results",
+      "method": "GET",
+      "contractPaths": [
+        "/engagement/surveys/{id}/results"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 1005,
+      "url": "/api/engagement/surveys/PARAM/close",
+      "method": "POST",
+      "contractPaths": [
+        "/engagement/surveys/{id}/close"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 1361,
+      "url": "/api/engagement/surveys",
+      "method": "POST",
+      "contractPaths": [
+        "/engagement/surveys"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 419,
+      "url": "/api/helpdesk/categories",
+      "method": "GET",
+      "contractPaths": [
+        "/helpdesk/categories"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 439,
+      "url": "/api/helpdesk/tickets",
+      "method": "POST",
+      "contractPaths": [
+        "/helpdesk/tickets"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 559,
+      "url": "/api/helpdesk/tickets/PARAM/thread",
+      "method": "GET",
+      "contractPaths": [
+        "/helpdesk/tickets/{ticketId}/thread"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 574,
+      "url": "/api/helpdesk/tickets/PARAM/reply",
+      "method": "POST",
+      "contractPaths": [
+        "/helpdesk/tickets/{ticketId}/reply"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 596,
+      "url": "/api/helpdesk/tickets/PARAM/status",
+      "method": "POST",
+      "contractPaths": [
+        "/helpdesk/tickets/{ticketId}/status"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 622,
+      "url": "/api/helpdesk/tickets/PARAM/status",
+      "method": "POST",
+      "contractPaths": [
+        "/helpdesk/tickets/{ticketId}/status"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 790,
+      "url": "/api/helpdesk/performance?month=PARAM",
+      "method": "GET",
+      "contractPaths": [
+        "/helpdesk/performance"
+      ],
+      "contractMatch": true,
+      "classification": "path/method candidate; shape/auth/data not verified"
+    }
+  ],
+  "unresolved": [
+    {
+      "file": "frontend/src/lib/api.ts",
+      "line": 44,
+      "expression": "path",
+      "classification": "dynamic URL needs caller tracing"
+    },
+    {
+      "file": "frontend/src/lib/api.ts",
+      "line": 50,
+      "expression": "path",
+      "classification": "dynamic URL needs caller tracing"
+    },
+    {
+      "file": "frontend/src/pages/_shared/useModuleResource.ts",
+      "line": 43,
+      "expression": "path",
+      "classification": "dynamic URL needs caller tracing"
+    },
+    {
+      "file": "frontend/src/pages/home/useDashboardResource.ts",
+      "line": 26,
+      "expression": "path",
+      "classification": "dynamic URL needs caller tracing"
+    },
+    {
+      "file": "frontend/src/pages/leave/LeaveAdminPage.tsx",
+      "line": 11,
+      "expression": "kind === 'accrual' ? '/api/leave/accrual/run' : '/api/leave/comp-off/expire'",
+      "classification": "dynamic URL needs caller tracing"
+    },
+    {
+      "file": "frontend/src/pages/people/ProfilePage.tsx",
+      "line": 119,
+      "expression": "path",
+      "classification": "dynamic URL needs caller tracing"
+    },
+    {
+      "file": "frontend/src/pages/reports/report-utils.ts",
+      "line": 39,
+      "expression": "path",
+      "classification": "dynamic URL needs caller tracing"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 245,
+      "expression": "endpoint",
+      "classification": "dynamic URL needs caller tracing"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 243,
+      "expression": "path",
+      "classification": "dynamic URL needs caller tracing"
+    }
+  ],
+  "confirmedRoutingEvidence": "http-contract-proof.json"
+}

@@ -1,0 +1,29 @@
+{
+  "syntheticOnly": true,
+  "user": {
+    "is_active": true,
+    "failed_attempts": 0,
+    "locked_until": null
+  },
+  "sessions": [
+    {
+      "expires_at": "2026-10-25T13:54:37.424Z",
+      "revoked_at": null
+    }
+  ],
+  "candidate": {
+    "status": "prejoin_done",
+    "employeeId": null,
+    "rawTokenAbsent": true,
+    "submitted": true
+  },
+  "employeeCount": 0,
+  "submissionAuditCount": 1,
+  "cleanup": {
+    "syntheticCandidateRowsRemaining": 0,
+    "syntheticUserActive": false,
+    "activeSyntheticSessions": 0,
+    "auditParentUserRetained": true,
+    "realEmployeesChanged": false
+  }
+}

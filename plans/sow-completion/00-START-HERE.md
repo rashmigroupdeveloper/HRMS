@@ -1,5 +1,13 @@
 # SOW completion plan — AI handoff
 
+**Latest18 Oct2026:** start with [pack33](33-ACTUAL-JOINING-AND-DEPLOYMENT-AUDIT.md), then the linked deployment audit and `plans/launch-readiness/HANDOFF.md`. Actual joining/token/UI repairs are verified locally; salary, integrations, global verification and other SOW obligations remain open. Historical totals below are retained as historical evidence.
+
+**Latest HR operational audit, 16 Oct 2026:** start with [pack23](23-HR-ACTIONS-SAFETY-REVIEW.md) for exact HR Present/Absent, export, onboarding and related action verdicts; then pack22/21 for the retained other-module and implemented workflow context.14 issue groups remain open; successful diagnostic probes are not a safe-flow certificate.
+
+**Latest other-module evidence, 16 Oct 2026:** read [pack22](22-OTHER-MODULE-BUG-AUDIT.md) for seven new specific survey/helpdesk/engagement bug groups and native confirmation of three older issues, then pack21 for implemented HR hold/workflow repairs and all earlier obligations. Pack22 is an audit, not a repair or completion certificate.
+
+**Latest review, 16 Oct 2026:** start with [pack21](21-SOW-REGRESSION-AND-HR-HOLD-REVIEW.md), then pack20/19. Sponsor selected Hold for HR; it is implemented with audited scoped recovery and preserved OT lapse. Two additional workflow regressions are repaired. Schema has no new fields; API/lifecycle/payroll and global coverage gaps remain explicitly open.
+
 **Latest approval/attendance repair, 15 Oct 2026:** start with [pack20](20-MANAGER-APPROVAL-AND-ATTENDANCE-REVIEW.md), then pack19 for all remaining HR domains. This increment repairs scoped manager flows, domain resubmission and employee attendance/history. It preserves all 176 SOW rows and the unresolved decisions; no release gate or zero-slop certificate is asserted.
 
 **Latest backend scope and fixes, 14 Oct 2026:** start with [pack19](19-BACKEND-REPAIR-SCOPE-AND-PROGRESS.md). It records the current verified repair increment, current test limitations and the remaining HR work with claims/budgets deferred. All 176 original SOW rows remain in its linked machine-readable scope. It supersedes earlier lint/test counts, not the specs or unresolved acceptance obligations.
@@ -140,3 +148,15 @@ If the AI only receives the share bundle, it has planning context and fingerprin
 | M01 / D01–D12 | Operations/decision work | Named human owner and recorded evidence/sign-off |
 
 No application code, migrations, business records or statutory rates were changed to prepare this plan.
+
+**16 Oct repair increment:** [pack24 — Stage0.4 readonly authority](24-READONLY-AUTHORITY-REPAIR.md). Remaining HR/SOW acceptance stays open.
+
+**Latest16 Oct:** [pack25 — authentication repairs](25-AUTH-SESSION-AND-LOGIN-REPAIR.md) implements the approved session decision and concurrent login safety. Read its actual verify result; remaining SOW rows are not declared complete.
+
+**16 Oct Stage1.4 increment:** [half-wise attendance/AR/OD](26-HALF-WISE-ATTENDANCE-REQUESTS.md) implements the sponsor-confirmed two-half model; read actual verification and remaining acceptance before advancing any gate.
+
+**16 Oct Stage 1.4 timing refinement:** [configured half timings](27-ATTENDANCE-TIMING-UI.md) implements the sponsor-confirmed timing UI and records browser proof. Remaining SOW acceptance and the backend coverage gate remain open.
+
+**17 Oct Stage1.8 role-flow review:** [49 separate cases and remaining SOW](28-ROLE-FLOW-AND-SOW-REVIEW.md).19 native observations reproduce open HR scope/correction, month-close, co-sign and task-access gaps. Original176 SOW texts retained; no acceptance gate advanced. Next build is the separately announced Stage1.2 HR attendance safety repair.
+
+**17 Oct Stage1.2 repair:** [HR attendance safety F02–F05](29-HR-ATTENDANCE-SAFETY-REPAIR.md) implements scoped, transactional correction/scheme safety with17 new native regressions and546 passing full-suite tests. Coverage and other13 role-flow finding groups remain open; no gate advanced.

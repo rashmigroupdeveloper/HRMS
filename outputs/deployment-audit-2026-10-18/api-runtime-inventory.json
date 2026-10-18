@@ -1,0 +1,2641 @@
+{
+  "capturedAt": "2026-10-18T14:08:00.463Z",
+  "procedures": 286,
+  "missingInput": [
+    {
+      "procedure": "system.health",
+      "method": "GET",
+      "path": "/system/health",
+      "input": false,
+      "output": true,
+      "middlewares": 0
+    },
+    {
+      "procedure": "auth.refresh",
+      "method": "POST",
+      "path": "/auth/refresh",
+      "input": false,
+      "output": true,
+      "middlewares": 0
+    },
+    {
+      "procedure": "auth.logout",
+      "method": "POST",
+      "path": "/auth/logout",
+      "input": false,
+      "output": true,
+      "middlewares": 0
+    },
+    {
+      "procedure": "auth.me",
+      "method": "GET",
+      "path": "/auth/me",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "settings.list",
+      "method": "GET",
+      "path": "/settings",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "rbac.matrix",
+      "method": "GET",
+      "path": "/rbac/matrix",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.devices",
+      "method": "GET",
+      "path": "/attendance/devices",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.syncNow",
+      "method": "POST",
+      "path": "/attendance/sync",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.listShifts",
+      "method": "GET",
+      "path": "/attendance/config/shifts",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.listShiftsForRoster",
+      "method": "GET",
+      "path": "/attendance/config/shifts/active",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.myRequests",
+      "method": "GET",
+      "path": "/attendance/requests/mine",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.myOvertime",
+      "method": "GET",
+      "path": "/attendance/ot/mine",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.pendingOvertime",
+      "method": "GET",
+      "path": "/attendance/ot/pending",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.lapseSweep",
+      "method": "POST",
+      "path": "/attendance/ot/lapse-sweep",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "workflows.inbox",
+      "method": "GET",
+      "path": "/workflows/inbox",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "workflows.listDefinitions",
+      "method": "GET",
+      "path": "/workflows/definitions",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "workflows.escalateNow",
+      "method": "POST",
+      "path": "/workflows/escalate",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "employees.getOwn",
+      "method": "GET",
+      "path": "/employees/me",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.listTypes",
+      "method": "GET",
+      "path": "/leave/types",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.myBalances",
+      "method": "GET",
+      "path": "/leave/balances",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.myApplications",
+      "method": "GET",
+      "path": "/leave/applications/mine",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.myLedger",
+      "method": "GET",
+      "path": "/leave/ledger",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.listRestrictedHolidays",
+      "method": "GET",
+      "path": "/leave/restricted-holidays",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.compOffExpiryRun",
+      "method": "POST",
+      "path": "/leave/comp-off/expire",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "letters.listTemplates",
+      "method": "GET",
+      "path": "/letters/templates",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "letters.myLetters",
+      "method": "GET",
+      "path": "/letters/mine",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.myPolicies",
+      "method": "GET",
+      "path": "/policies",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.pendingPolicies",
+      "method": "GET",
+      "path": "/policies/pending",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.policyCatalog",
+      "method": "GET",
+      "path": "/policies/catalog",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.ackStatus",
+      "method": "GET",
+      "path": "/policies/ack-status",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.nag",
+      "method": "POST",
+      "path": "/policies/nag",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r30",
+      "method": "GET",
+      "path": "/reports/r30-policies",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r30Export",
+      "method": "GET",
+      "path": "/reports/r30-policies/export",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.ess",
+      "method": "GET",
+      "path": "/dashboards/ess",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "audit.facets",
+      "method": "GET",
+      "path": "/audit/facets",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "audit.verify",
+      "method": "GET",
+      "path": "/audit/verify",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "helpdesk.categories",
+      "method": "GET",
+      "path": "/helpdesk/categories",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "helpdesk.escalate",
+      "method": "POST",
+      "path": "/helpdesk/escalate",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "engagement.myAnnouncements",
+      "method": "GET",
+      "path": "/engagement/announcements",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "engagement.allAnnouncements",
+      "method": "GET",
+      "path": "/engagement/announcements/all",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "engagement.myPolls",
+      "method": "GET",
+      "path": "/engagement/polls",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "engagement.mySurveys",
+      "method": "GET",
+      "path": "/engagement/surveys",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "engagement.allSurveys",
+      "method": "GET",
+      "path": "/engagement/surveys/all",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    }
+  ],
+  "missingOutput": [],
+  "inventory": [
+    {
+      "procedure": "system.health",
+      "method": "GET",
+      "path": "/system/health",
+      "input": false,
+      "output": true,
+      "middlewares": 0
+    },
+    {
+      "procedure": "auth.login",
+      "method": "POST",
+      "path": "/auth/login",
+      "input": true,
+      "output": true,
+      "middlewares": 0
+    },
+    {
+      "procedure": "auth.refresh",
+      "method": "POST",
+      "path": "/auth/refresh",
+      "input": false,
+      "output": true,
+      "middlewares": 0
+    },
+    {
+      "procedure": "auth.logout",
+      "method": "POST",
+      "path": "/auth/logout",
+      "input": false,
+      "output": true,
+      "middlewares": 0
+    },
+    {
+      "procedure": "auth.me",
+      "method": "GET",
+      "path": "/auth/me",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "settings.get",
+      "method": "GET",
+      "path": "/settings/{key}",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "settings.list",
+      "method": "GET",
+      "path": "/settings",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "settings.set",
+      "method": "PUT",
+      "path": "/settings/{key}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "rbac.matrix",
+      "method": "GET",
+      "path": "/rbac/matrix",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "rbac.users",
+      "method": "GET",
+      "path": "/rbac/users",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "rbac.grant",
+      "method": "POST",
+      "path": "/rbac/grants",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "rbac.revoke",
+      "method": "DELETE",
+      "path": "/rbac/grants",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "rbac.assignRole",
+      "method": "POST",
+      "path": "/rbac/user-roles",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "rbac.removeRole",
+      "method": "DELETE",
+      "path": "/rbac/user-roles",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.devices",
+      "method": "GET",
+      "path": "/attendance/devices",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.finalizationHolds",
+      "method": "GET",
+      "path": "/attendance/finalization-holds",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.unmatched",
+      "method": "GET",
+      "path": "/attendance/exceptions/unmatched",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.quarantined",
+      "method": "GET",
+      "path": "/attendance/exceptions/quarantined",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.syncNow",
+      "method": "POST",
+      "path": "/attendance/sync",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.reingest",
+      "method": "POST",
+      "path": "/attendance/exceptions/quarantined/reingest",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.listShifts",
+      "method": "GET",
+      "path": "/attendance/config/shifts",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.listShiftsForRoster",
+      "method": "GET",
+      "path": "/attendance/config/shifts/active",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.upsertShift",
+      "method": "PUT",
+      "path": "/attendance/config/shifts/{code}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.listHolidays",
+      "method": "GET",
+      "path": "/attendance/config/holidays",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.upsertHoliday",
+      "method": "PUT",
+      "path": "/attendance/config/holidays",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.setScheme",
+      "method": "PUT",
+      "path": "/attendance/config/schemes/{employeeId}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.getTeamRoster",
+      "method": "GET",
+      "path": "/attendance/roster",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.setRoster",
+      "method": "PUT",
+      "path": "/attendance/roster",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.dayRecords",
+      "method": "GET",
+      "path": "/attendance/days",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.overrideDay",
+      "method": "PUT",
+      "path": "/attendance/days/override",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.recompute",
+      "method": "POST",
+      "path": "/attendance/recompute",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.weekClose",
+      "method": "POST",
+      "path": "/attendance/week-close",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.requestSchedule",
+      "method": "GET",
+      "path": "/attendance/requests/schedule",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.submitRequest",
+      "method": "POST",
+      "path": "/attendance/requests",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.myRequests",
+      "method": "GET",
+      "path": "/attendance/requests/mine",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.myOvertime",
+      "method": "GET",
+      "path": "/attendance/ot/mine",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.pendingOvertime",
+      "method": "GET",
+      "path": "/attendance/ot/pending",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.decideOt",
+      "method": "POST",
+      "path": "/attendance/ot/decide",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.lapseSweep",
+      "method": "POST",
+      "path": "/attendance/ot/lapse-sweep",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.cases",
+      "method": "GET",
+      "path": "/attendance/absence-cases",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.escalate",
+      "method": "POST",
+      "path": "/attendance/absence-cases/{id}/stage",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.issueCaseLetter",
+      "method": "POST",
+      "path": "/attendance/absence-cases/{id}/letter",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "attendance.scan",
+      "method": "POST",
+      "path": "/attendance/absence-cases/scan",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "workflows.create",
+      "method": "POST",
+      "path": "/workflows/requests",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "workflows.inbox",
+      "method": "GET",
+      "path": "/workflows/inbox",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "workflows.act",
+      "method": "POST",
+      "path": "/workflows/requests/{requestId}/act",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "workflows.resubmit",
+      "method": "POST",
+      "path": "/workflows/requests/{requestId}/resubmit",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "workflows.timeline",
+      "method": "GET",
+      "path": "/workflows/requests/{requestId}",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "workflows.setDelegation",
+      "method": "PUT",
+      "path": "/workflows/delegations",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "workflows.listDefinitions",
+      "method": "GET",
+      "path": "/workflows/definitions",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "workflows.upsertDefinition",
+      "method": "PUT",
+      "path": "/workflows/definitions/{code}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "workflows.escalateNow",
+      "method": "POST",
+      "path": "/workflows/escalate",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "workflows.routingHolds",
+      "method": "GET",
+      "path": "/workflows/routing-holds",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "workflows.retryHeldRouting",
+      "method": "POST",
+      "path": "/workflows/requests/{requestId}/retry-routing",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "employees.list",
+      "method": "GET",
+      "path": "/employees",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "employees.facets",
+      "method": "GET",
+      "path": "/employees/facets",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "employees.getOwn",
+      "method": "GET",
+      "path": "/employees/me",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "employees.getByEcode",
+      "method": "GET",
+      "path": "/employees/{ecode}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.listTypes",
+      "method": "GET",
+      "path": "/leave/types",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.upsertType",
+      "method": "PUT",
+      "path": "/leave/types/{code}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.myBalances",
+      "method": "GET",
+      "path": "/leave/balances",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.employeeBalances",
+      "method": "GET",
+      "path": "/leave/balances/{employeeId}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.apply",
+      "method": "POST",
+      "path": "/leave/applications",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.myApplications",
+      "method": "GET",
+      "path": "/leave/applications/mine",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.myLedger",
+      "method": "GET",
+      "path": "/leave/ledger",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.cancel",
+      "method": "POST",
+      "path": "/leave/applications/{id}/cancel",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.encash",
+      "method": "POST",
+      "path": "/leave/encashments",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.listRestrictedHolidays",
+      "method": "GET",
+      "path": "/leave/restricted-holidays",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.publishRestrictedHoliday",
+      "method": "PUT",
+      "path": "/leave/restricted-holidays",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.selectRh",
+      "method": "POST",
+      "path": "/leave/restricted-holidays/{id}/select",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.adjust",
+      "method": "POST",
+      "path": "/leave/adjustments",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.accrualRun",
+      "method": "POST",
+      "path": "/leave/accrual/run",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.compOffExpiryRun",
+      "method": "POST",
+      "path": "/leave/comp-off/expire",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "leave.yearEndRun",
+      "method": "POST",
+      "path": "/leave/year-end/run",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "letters.listTemplates",
+      "method": "GET",
+      "path": "/letters/templates",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "letters.upsertTemplate",
+      "method": "PUT",
+      "path": "/letters/templates/{code}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "letters.issue",
+      "method": "POST",
+      "path": "/letters/issue",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "letters.myLetters",
+      "method": "GET",
+      "path": "/letters/mine",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "letters.employeeLetters",
+      "method": "GET",
+      "path": "/letters/employee/{employeeId}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "letters.letterContent",
+      "method": "GET",
+      "path": "/letters/{id}/content",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.publish",
+      "method": "POST",
+      "path": "/policies",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.myPolicies",
+      "method": "GET",
+      "path": "/policies",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.pendingPolicies",
+      "method": "GET",
+      "path": "/policies/pending",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.policyCatalog",
+      "method": "GET",
+      "path": "/policies/catalog",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.policyContent",
+      "method": "GET",
+      "path": "/policies/{id}/content",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.ack",
+      "method": "POST",
+      "path": "/policies/{id}/ack",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.ackStatus",
+      "method": "GET",
+      "path": "/policies/ack-status",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.nag",
+      "method": "POST",
+      "path": "/policies/nag",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.ackReport",
+      "method": "GET",
+      "path": "/policies/ack-report",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "policies.ackReportExcel",
+      "method": "GET",
+      "path": "/policies/ack-report/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.executiveKpis",
+      "method": "GET",
+      "path": "/reports/executive",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.executiveTrend",
+      "method": "GET",
+      "path": "/reports/executive/trend",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.executiveLeavers",
+      "method": "GET",
+      "path": "/reports/executive/leavers",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.businessUnit",
+      "method": "GET",
+      "path": "/dashboards/business-unit",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.rebuildExecutiveKpis",
+      "method": "POST",
+      "path": "/reports/executive/rebuild",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.monthLockChecklist",
+      "method": "GET",
+      "path": "/attendance/month-lock/checklist",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.monthLock",
+      "method": "POST",
+      "path": "/attendance/month-lock",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.managerApprovalLedger",
+      "method": "GET",
+      "path": "/attendance/manager-approvals",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.approveManagerAttendance",
+      "method": "POST",
+      "path": "/attendance/manager-approvals",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.musterBuild",
+      "method": "POST",
+      "path": "/reports/muster/build",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.musterList",
+      "method": "GET",
+      "path": "/reports/muster",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.musterExport",
+      "method": "GET",
+      "path": "/reports/muster/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r2",
+      "method": "GET",
+      "path": "/reports/r2-swipes",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r2Raw",
+      "method": "GET",
+      "path": "/reports/r2-swipes/raw",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r2Export",
+      "method": "GET",
+      "path": "/reports/r2-swipes/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r3",
+      "method": "GET",
+      "path": "/reports/r3-regularizations",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r3Export",
+      "method": "GET",
+      "path": "/reports/r3-regularizations/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r4",
+      "method": "GET",
+      "path": "/reports/r4-exceptions",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r4Export",
+      "method": "GET",
+      "path": "/reports/r4-exceptions/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r5",
+      "method": "GET",
+      "path": "/reports/r5-ot",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r5Export",
+      "method": "GET",
+      "path": "/reports/r5-ot/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r6",
+      "method": "GET",
+      "path": "/reports/r6-absence",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r6Export",
+      "method": "GET",
+      "path": "/reports/r6-absence/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r21",
+      "method": "GET",
+      "path": "/reports/r21-offers",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r21Export",
+      "method": "GET",
+      "path": "/reports/r21-offers/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r23",
+      "method": "GET",
+      "path": "/reports/r23-transfers",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r23Export",
+      "method": "GET",
+      "path": "/reports/r23-transfers/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r24",
+      "method": "GET",
+      "path": "/reports/r24-boarding",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r24Export",
+      "method": "GET",
+      "path": "/reports/r24-boarding/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r25",
+      "method": "GET",
+      "path": "/reports/r25-probation",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r25Export",
+      "method": "GET",
+      "path": "/reports/r25-probation/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r26",
+      "method": "GET",
+      "path": "/reports/r26-attrition",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r26Export",
+      "method": "GET",
+      "path": "/reports/r26-attrition/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r27",
+      "method": "GET",
+      "path": "/reports/r27-headcount",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r27Export",
+      "method": "GET",
+      "path": "/reports/r27-headcount/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r28",
+      "method": "GET",
+      "path": "/reports/r28-assets",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r28Export",
+      "method": "GET",
+      "path": "/reports/r28-assets/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r29",
+      "method": "GET",
+      "path": "/reports/r29-helpdesk",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r29Export",
+      "method": "GET",
+      "path": "/reports/r29-helpdesk/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r30",
+      "method": "GET",
+      "path": "/reports/r30-policies",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r30Export",
+      "method": "GET",
+      "path": "/reports/r30-policies/export",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r31",
+      "method": "GET",
+      "path": "/reports/r31-claims",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.r31Export",
+      "method": "GET",
+      "path": "/reports/r31-claims/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.hrDashboard",
+      "method": "GET",
+      "path": "/dashboards/hr-ops",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.ess",
+      "method": "GET",
+      "path": "/dashboards/ess",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.myAttendance",
+      "method": "GET",
+      "path": "/my/attendance",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "reports.teamGrid",
+      "method": "GET",
+      "path": "/my/team/grid",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.report",
+      "method": "GET",
+      "path": "/lifecycle/boarding-exit",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.send",
+      "method": "POST",
+      "path": "/lifecycle/boarding-exit/send",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.excel",
+      "method": "GET",
+      "path": "/lifecycle/boarding-exit/excel",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.reviewApplication",
+      "method": "GET",
+      "path": "/lifecycle/candidates/{candidateId}/application",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.referenceData",
+      "method": "GET",
+      "path": "/lifecycle/onboarding-reference-data",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.validatePrejoinToken",
+      "method": "GET",
+      "path": "/lifecycle/prejoin/validate",
+      "input": true,
+      "output": true,
+      "middlewares": 0
+    },
+    {
+      "procedure": "lifecycle.submitPrejoin",
+      "method": "POST",
+      "path": "/lifecycle/prejoin/submit",
+      "input": true,
+      "output": true,
+      "middlewares": 0
+    },
+    {
+      "procedure": "lifecycle.ingestCandidate",
+      "method": "POST",
+      "path": "/lifecycle/candidates/ingest",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.listCandidates",
+      "method": "GET",
+      "path": "/lifecycle/candidates",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.checkDuplicate",
+      "method": "POST",
+      "path": "/lifecycle/candidates/check-duplicate",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.convertCandidate",
+      "method": "POST",
+      "path": "/lifecycle/candidates/convert",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.listTasks",
+      "method": "GET",
+      "path": "/lifecycle/tasks",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.completeTask",
+      "method": "POST",
+      "path": "/lifecycle/tasks/complete",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.verifyBiometric",
+      "method": "POST",
+      "path": "/lifecycle/biometric/verify",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.listReviews",
+      "method": "GET",
+      "path": "/lifecycle/probation/reviews",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.submitEvaluation",
+      "method": "POST",
+      "path": "/lifecycle/probation/evaluate",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.decideReview",
+      "method": "POST",
+      "path": "/lifecycle/probation/decide",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.getUpcomingAlerts",
+      "method": "GET",
+      "path": "/lifecycle/probation/alerts",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.separations.list",
+      "method": "GET",
+      "path": "/lifecycle/separations",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.separations.getById",
+      "method": "GET",
+      "path": "/lifecycle/separations/{id}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.separations.apply",
+      "method": "POST",
+      "path": "/lifecycle/separations/apply",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "lifecycle.separations.initiateAbsconding",
+      "method": "POST",
+      "path": "/lifecycle/separations/absconding",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.separations.approve",
+      "method": "POST",
+      "path": "/lifecycle/separations/{separationId}/approve",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.separations.withdraw",
+      "method": "POST",
+      "path": "/lifecycle/separations/{separationId}/withdraw",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.separations.getClearances",
+      "method": "GET",
+      "path": "/lifecycle/clearances",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.separations.updateClearance",
+      "method": "POST",
+      "path": "/lifecycle/clearances/update",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.separations.computeFnf",
+      "method": "POST",
+      "path": "/lifecycle/separations/{separationId}/compute-fnf",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.separations.finalizeAndPayFnf",
+      "method": "POST",
+      "path": "/lifecycle/separations/{separationId}/pay",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.separations.ceoReview",
+      "method": "POST",
+      "path": "/lifecycle/separations/{separationId}/ceo-review",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.transfers.list",
+      "method": "GET",
+      "path": "/lifecycle/transfers",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.transfers.create",
+      "method": "POST",
+      "path": "/lifecycle/transfers",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.transfers.approve",
+      "method": "POST",
+      "path": "/lifecycle/transfers/{id}/approve",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.transfers.reject",
+      "method": "POST",
+      "path": "/lifecycle/transfers/{id}/reject",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.transfers.history",
+      "method": "GET",
+      "path": "/lifecycle/transfers/history/{employeeId}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "lifecycle.transfers.asOf",
+      "method": "GET",
+      "path": "/lifecycle/transfers/as-of",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "audit.export",
+      "method": "GET",
+      "path": "/audit/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "audit.list",
+      "method": "GET",
+      "path": "/audit",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "audit.facets",
+      "method": "GET",
+      "path": "/audit/facets",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "audit.verify",
+      "method": "GET",
+      "path": "/audit/verify",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "assets.exportRegister",
+      "method": "GET",
+      "path": "/assets/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "assets.exportOutstanding",
+      "method": "GET",
+      "path": "/assets/non-returned/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "assets.list",
+      "method": "GET",
+      "path": "/assets",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "assets.upsert",
+      "method": "PUT",
+      "path": "/assets/{assetNo}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "assets.assign",
+      "method": "POST",
+      "path": "/assets/{assetId}/assign",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "assets.recordReturn",
+      "method": "POST",
+      "path": "/assets/assignments/{assignmentId}/return",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "assets.heldByEmployee",
+      "method": "GET",
+      "path": "/assets/held-by/{employeeId}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "assets.outstanding",
+      "method": "GET",
+      "path": "/assets/non-returned",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "assets.maintenanceLog",
+      "method": "GET",
+      "path": "/assets/{assetId}/maintenance",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "assets.addMaintenance",
+      "method": "POST",
+      "path": "/assets/{assetId}/maintenance",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "helpdesk.categories",
+      "method": "GET",
+      "path": "/helpdesk/categories",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "helpdesk.raise",
+      "method": "POST",
+      "path": "/helpdesk/tickets",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "helpdesk.myTickets",
+      "method": "GET",
+      "path": "/helpdesk/tickets/mine",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "helpdesk.queue",
+      "method": "GET",
+      "path": "/helpdesk/tickets",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "helpdesk.thread",
+      "method": "GET",
+      "path": "/helpdesk/tickets/{ticketId}/thread",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "helpdesk.reply",
+      "method": "POST",
+      "path": "/helpdesk/tickets/{ticketId}/reply",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "helpdesk.setStatus",
+      "method": "POST",
+      "path": "/helpdesk/tickets/{ticketId}/status",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "helpdesk.escalate",
+      "method": "POST",
+      "path": "/helpdesk/escalate",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "helpdesk.performance",
+      "method": "GET",
+      "path": "/helpdesk/performance",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "helpdesk.performanceExcel",
+      "method": "GET",
+      "path": "/helpdesk/performance/export",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "engagement.myAnnouncements",
+      "method": "GET",
+      "path": "/engagement/announcements",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "engagement.allAnnouncements",
+      "method": "GET",
+      "path": "/engagement/announcements/all",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "engagement.publish",
+      "method": "POST",
+      "path": "/engagement/announcements",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "engagement.withdraw",
+      "method": "POST",
+      "path": "/engagement/announcements/{id}/withdraw",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "engagement.myPolls",
+      "method": "GET",
+      "path": "/engagement/polls",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "engagement.create",
+      "method": "POST",
+      "path": "/engagement/polls",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "engagement.respond",
+      "method": "POST",
+      "path": "/engagement/polls/{id}/respond",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "engagement.results",
+      "method": "GET",
+      "path": "/engagement/polls/{id}/results",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "engagement.close",
+      "method": "POST",
+      "path": "/engagement/polls/{id}/close",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "engagement.mySurveys",
+      "method": "GET",
+      "path": "/engagement/surveys",
+      "input": false,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "engagement.allSurveys",
+      "method": "GET",
+      "path": "/engagement/surveys/all",
+      "input": false,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "engagement.createSurvey",
+      "method": "POST",
+      "path": "/engagement/surveys",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "engagement.respondSurvey",
+      "method": "POST",
+      "path": "/engagement/surveys/{id}/respond",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "engagement.surveyResults",
+      "method": "GET",
+      "path": "/engagement/surveys/{id}/results",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "engagement.closeSurvey",
+      "method": "POST",
+      "path": "/engagement/surveys/{id}/close",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.components.list",
+      "method": "GET",
+      "path": "/payroll/components",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "payroll.components.get",
+      "method": "GET",
+      "path": "/payroll/components/{code}",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "payroll.components.create",
+      "method": "POST",
+      "path": "/payroll/components",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.components.update",
+      "method": "PUT",
+      "path": "/payroll/components/{code}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.structures.list",
+      "method": "GET",
+      "path": "/payroll/structures",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "payroll.structures.get",
+      "method": "GET",
+      "path": "/payroll/structures/{id}",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "payroll.structures.create",
+      "method": "POST",
+      "path": "/payroll/structures",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.structures.update",
+      "method": "PUT",
+      "path": "/payroll/structures/{id}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.structures.previewBreakup",
+      "method": "POST",
+      "path": "/payroll/structures/preview",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "payroll.salaries.getEffective",
+      "method": "GET",
+      "path": "/payroll/salaries/effective/{employee_id}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.salaries.getHistory",
+      "method": "GET",
+      "path": "/payroll/salaries/history/{employee_id}",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.salaries.assign",
+      "method": "POST",
+      "path": "/payroll/salaries/assign",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.salaries.autoSwitchConfirmation",
+      "method": "POST",
+      "path": "/payroll/salaries/auto-switch-confirmation",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.runs.list",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.runs.get",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.runs.create",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.runs.lockInputs",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.runs.compute",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.runs.review",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.runs.approve",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.runs.finalize",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.runs.reopen",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.runs.reconcile",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.holds.list",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.holds.place",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.holds.release",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.statutory.estimate",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.statutory.generateEcr",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.statutory.generateEsicReturn",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.statutory.generatePtrc",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.statutory.generateFormD",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.statutory.projectTds",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.statutory.listDeclarations",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.statutory.declareInvestment",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.statutory.verifyDeclaration",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.parallelRun.importRegister",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.parallelRun.compareRun",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.parallelRun.loadYtd",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.annual.calculateBonusTrueup",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.annual.simulateIncrement",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.annual.applyIncrementBatch",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.outputs.getPayslip",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.outputs.getMyPayslip",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.outputs.generateRunPayslips",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.outputs.generateBankFile",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.outputs.generateSapJv",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.outputs.getVarianceReport",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "payroll.outputs.getRunOutputs",
+      "method": "POST",
+      "path": null,
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "loans.myLoans",
+      "method": "GET",
+      "path": "/api/loans/my",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "loans.previewSchedule",
+      "method": "POST",
+      "path": "/api/loans/preview",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "loans.apply",
+      "method": "POST",
+      "path": "/api/loans/apply",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "loans.getLedger",
+      "method": "GET",
+      "path": "/api/loans/:id/ledger",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "loans.listAll",
+      "method": "GET",
+      "path": "/api/loans/all",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "loans.importLegacy",
+      "method": "POST",
+      "path": "/api/loans/legacy-import",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "claims.myEntitlements",
+      "method": "GET",
+      "path": "/api/claims/my-entitlements",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "claims.myClaims",
+      "method": "GET",
+      "path": "/api/claims/my",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "claims.submit",
+      "method": "POST",
+      "path": "/api/claims/submit",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "claims.pendingVerification",
+      "method": "GET",
+      "path": "/api/claims/pending",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "claims.decide",
+      "method": "POST",
+      "path": "/api/claims/decide",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "claims.routePayout",
+      "method": "POST",
+      "path": "/api/claims/route-payout",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "claims.yearEndRecovery",
+      "method": "GET",
+      "path": "/api/claims/year-end-recovery",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "travel.listTrips",
+      "method": "GET",
+      "path": "/travel/trips",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "travel.getTripById",
+      "method": "GET",
+      "path": "/travel/trips/{id}",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "travel.createTrip",
+      "method": "POST",
+      "path": "/travel/trips",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "travel.addItinerary",
+      "method": "POST",
+      "path": "/travel/trips/{tripId}/itineraries",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "travel.listBudgets",
+      "method": "GET",
+      "path": "/travel/budgets",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "travel.listAdvances",
+      "method": "GET",
+      "path": "/travel/advances",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "travel.requestAdvance",
+      "method": "POST",
+      "path": "/travel/advances",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "travel.approveAdvance",
+      "method": "POST",
+      "path": "/travel/advances/{advanceId}/approve",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "travel.listClaims",
+      "method": "GET",
+      "path": "/travel/claims",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "travel.createClaim",
+      "method": "POST",
+      "path": "/travel/claims",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "travel.addClaimItem",
+      "method": "POST",
+      "path": "/travel/claims/{claimId}/items",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "travel.settleClaim",
+      "method": "POST",
+      "path": "/travel/claims/{claimId}/settle",
+      "input": true,
+      "output": true,
+      "middlewares": 2
+    },
+    {
+      "procedure": "travel.getWallet",
+      "method": "GET",
+      "path": "/travel/wallet",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    },
+    {
+      "procedure": "travel.getWalletLedger",
+      "method": "GET",
+      "path": "/travel/wallet/ledger",
+      "input": true,
+      "output": true,
+      "middlewares": 1
+    }
+  ]
+}

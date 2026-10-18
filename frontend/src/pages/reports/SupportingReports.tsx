@@ -1,3 +1,4 @@
+import { dayPortionLabel } from '../attendance/attendance-portion';
 /**
  * Concrete Stage 1.7 supporting reports — R2–R6, R24, R27 (docs/06).
  */
@@ -197,6 +198,7 @@ interface R3Row {
   ecode: string;
   employeeName: string;
   kind: string;
+  dayPortion: string;
   fromDate: string;
   toDate: string;
   reason: string;
@@ -223,6 +225,7 @@ const r3Columns: Column<R3Row>[] = [
     ),
   },
   { key: 'kind', header: 'Kind', width: '110px', render: (r) => r.kind },
+  { key: 'dayPortion', header: 'Attendance half', width: '130px', render: r => dayPortionLabel(r.dayPortion) },
   {
     key: 'period',
     header: 'Period',

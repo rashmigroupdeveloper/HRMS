@@ -8,6 +8,8 @@ import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import type { Database } from '../../core/db/types.js';
 import type { EmployeeScope } from '../../core/rbac/employee-scope.js';
+import { assertCompanyInScope } from '../../core/rbac/company-scope.js';
+import { getUserPermissionAccess } from '../../core/rbac/permissions.service.js';
 import type { PermissionAccess } from '../../core/rbac/permissions.service.js';
 import type { Kysely } from 'kysely';
 import {
@@ -69,6 +71,7 @@ import {
 const reportGuard = () => withAnyPermission('reports.hr', 'reports.bu', 'reports.ceo');
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const closingMonth = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])(-01)?$/);
 const monthStr = z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/);
 const fileOut = z.object({ filename: z.string(), base64: z.string() });
 
@@ -92,6 +95,11 @@ function employeeScope(context: {
   user: { employee_id: number | null };
 }): EmployeeScope {
   return { ...context.permissionAccess, actorEmployeeId: context.user.employee_id };
+}
+
+async function requireCompanyScope(db: Kysely<Database>, scope: EmployeeScope, companyId: number) {
+  try { await assertCompanyInScope(db, scope, companyId); }
+  catch { throw new ORPCError('FORBIDDEN', { message: 'Company outside your permitted data scope' }); }
 }
 
 async function auditedFilePayload(
@@ -118,7 +126,7 @@ async function auditedFilePayload(
 
 const monthLockChecklist = withPermission('attendance.month_lock')
   .route({ method: 'GET', path: '/attendance/month-lock/checklist', summary: 'ATT-15 pre-lock checklist' })
-  .input(z.object({ companyId: z.number().int().positive(), month: monthStr }))
+  .input(z.object({ companyId: z.number().int().positive(), month: closingMonth }))
   .output(
     z.object({
       companyId: z.number(),
@@ -135,18 +143,23 @@ const monthLockChecklist = withPermission('attendance.month_lock')
       ),
     }),
   )
-  .handler(async ({ input, context }) => getMonthLockChecklist(context.db, input.companyId, input.month));
+  .handler(async ({ input, context }) => {
+    await requireCompanyScope(context.db, employeeScope(context), input.companyId);
+    return getMonthLockChecklist(context.db, input.companyId, input.month);
+  });
 
 const monthLock = withPermission('attendance.month_lock')
   .route({ method: 'POST', path: '/attendance/month-lock', summary: 'Lock attendance month (typed confirm on UI)' })
-  .input(z.object({ companyId: z.number().int().positive(), month: monthStr }))
+  .input(z.object({ companyId: z.number().int().positive(), month: closingMonth }))
   .output(z.object({ id: z.number() }))
   .handler(async ({ input, context }) => {
+    await requireCompanyScope(context.db, employeeScope(context), input.companyId);
     try {
       return await lockMonth(context.db, {
         companyId: input.companyId,
         month: input.month,
         actorUserId: context.user.id,
+        scope: employeeScope(context),
       });
     } catch (err) {
       asBadRequest(err);
@@ -171,11 +184,12 @@ const managerApprovalLedger = withPermission('attendance.month_lock')
     path: '/attendance/manager-approvals',
     summary: 'Manager attendance-approval ledger for a company×month (ATT-12)',
   })
-  .input(z.object({ companyId: z.number().int().positive(), month: monthStr }))
+  .input(z.object({ companyId: z.number().int().positive(), month: closingMonth }))
   .output(z.array(managerApprovalRow))
-  .handler(async ({ input, context }) =>
-    getManagerApprovalLedger(context.db, input.companyId, input.month),
-  );
+  .handler(async ({ input, context }) => {
+    await requireCompanyScope(context.db, employeeScope(context), input.companyId);
+    return getManagerApprovalLedger(context.db, input.companyId, input.month);
+  });
 
 /**
  * Manager self-approval for own team (or HR co-sign via month_lock holders).
@@ -191,7 +205,7 @@ const approveManagerAttendance = withPermission('attendance.team.read')
   .input(
     z.object({
       companyId: z.number().int().positive(),
-      month: monthStr,
+      month: closingMonth,
       /** Defaults to the caller's employee_id when omitted. */
       managerEmployeeId: z.number().int().positive().optional(),
       note: z.string().max(500).optional(),
@@ -210,6 +224,11 @@ const approveManagerAttendance = withPermission('attendance.team.read')
       throw new ORPCError('FORBIDDEN', {
         message: 'You may only approve your own team attendance',
       });
+    }
+    if (!isSelf) {
+      const access = await getUserPermissionAccess(context.db, context.user.id, 'attendance.month_lock', 'write');
+      if (!access) throw new ORPCError('FORBIDDEN');
+      await requireCompanyScope(context.db, { ...access, actorEmployeeId: selfId }, input.companyId);
     }
     try {
       return await approveManagerMonth(context.db, {
@@ -387,6 +406,7 @@ const r3Row = z.object({
   ecode: z.string(),
   employeeName: z.string(),
   kind: z.string(),
+  dayPortion: z.string(),
   fromDate: z.string(),
   toDate: z.string(),
   fromTime: z.string().nullable(),
@@ -651,7 +671,7 @@ const hrDashboard = withPermission('reports.hr')
     silentDevices: z.number(),
     policyAckPercent: z.number(),
   }))
-  .handler(async ({ input, context }) => hrOpsDashboard(context.db, input?.companyId));
+  .handler(async ({ input, context }) => hrOpsDashboard(context.db, input?.companyId, employeeScope(context)));
 
 const ess = withPermission('attendance.own')
   .route({ method: 'GET', path: '/dashboards/ess', summary: 'ESS home (05 §4.9)' })

@@ -1,0 +1,320 @@
+{
+  "cleanup": {
+    "users": 0,
+    "employees": 0,
+    "departments": 0,
+    "tickets": 0,
+    "auditRows": 0
+  },
+  "observedAt": "2026-10-16T04:38:57.169Z",
+  "database": "loopback/hrms (test only)",
+  "fixtureMode": "one native PostgreSQL transaction, intentionally rolled back; sequence allocation may advance",
+  "applicationCodeModified": false,
+  "probes": [
+    {
+      "id": "O01-announcement-company-audience",
+      "expected": "Other-company employee cannot see entity-targeted announcement",
+      "observed": {
+        "httpStatus": 200,
+        "outsideSaw": true
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O01-poll-company-audience",
+      "expected": "Other-company employee cannot cast a ballot",
+      "observed": {
+        "httpStatus": 200
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O01-survey-company-audience",
+      "expected": "Other-company employee cannot answer targeted survey",
+      "observed": {
+        "httpStatus": 200
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O02-survey-duplicate-questions",
+      "expected": "Reject ambiguous duplicate question IDs before storing survey",
+      "observed": {
+        "httpStatus": 200
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O03-survey-invalid-choice",
+      "expected": "Reject choice absent from the published options; do not add a phantom result option",
+      "observed": {
+        "responseStatus": 200,
+        "results": {
+          "surveyId": 57,
+          "title": "Invalid choice fixture",
+          "description": null,
+          "isAnonymous": true,
+          "totalResponses": 1,
+          "questions": [
+            {
+              "questionId": "q",
+              "prompt": "Choice",
+              "type": "choice",
+              "totalAnswers": 1,
+              "choiceDistribution": {
+                "A": 0,
+                "B": 0,
+                "NOT_A_PUBLISHED_OPTION": 1
+              }
+            }
+          ]
+        }
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O03-survey-duplicate-answers",
+      "expected": "Reject two answers to the same single-valued question",
+      "observed": {
+        "responseStatus": 200,
+        "results": {
+          "surveyId": 58,
+          "title": "Duplicate answers fixture",
+          "description": null,
+          "isAnonymous": true,
+          "totalResponses": 1,
+          "questions": [
+            {
+              "questionId": "q",
+              "prompt": "Choice",
+              "type": "choice",
+              "totalAnswers": 1,
+              "choiceDistribution": {
+                "A": 1,
+                "B": 0
+              }
+            }
+          ]
+        }
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O03-survey-answer-type",
+      "expected": "Reject nonnumeric response to rating question before it is counted",
+      "observed": {
+        "responseStatus": 200,
+        "results": {
+          "surveyId": 59,
+          "title": "Wrong rating type fixture",
+          "description": null,
+          "isAnonymous": true,
+          "totalResponses": 1,
+          "questions": [
+            {
+              "questionId": "q",
+              "prompt": "Rating",
+              "type": "rating",
+              "totalAnswers": 1,
+              "avgRating": null,
+              "ratingDistribution": {
+                "1": 0,
+                "2": 0,
+                "3": 0,
+                "4": 0,
+                "5": 0
+              }
+            }
+          ]
+        }
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O03-survey-unknown-question",
+      "expected": "Reject unknown question IDs; no fake participation record",
+      "observed": {
+        "responseStatus": 200,
+        "results": {
+          "surveyId": 60,
+          "title": "Unknown question fixture",
+          "description": null,
+          "isAnonymous": true,
+          "totalResponses": 1,
+          "questions": [
+            {
+              "questionId": "q",
+              "prompt": "Optional feedback",
+              "type": "text",
+              "totalAnswers": 0,
+              "textAnswers": []
+            }
+          ]
+        }
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O11-survey-screen-create-contract",
+      "expected": "Frontend choice-survey payload must match the backend options contract",
+      "observed": {
+        "httpStatus": 400,
+        "error": {
+          "defined": false,
+          "code": "BAD_REQUEST",
+          "status": 400,
+          "message": "Choice question \"Choice\" must have at least 2 options"
+        }
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O11-survey-screen-submit-contract",
+      "expected": "Frontend answer object must match backend array of questionId/answer records",
+      "observed": {
+        "httpStatus": 400
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O11-survey-screen-result-contract",
+      "expected": "Survey result screen requires fields returned by the actual API",
+      "observed": {
+        "hasQuestions": true,
+        "hasQuestionResults": false,
+        "renderingMapWouldThrow": true
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O04-policy-audience-content",
+      "expected": "Outside-target employee cannot read restricted policy by guessing ID",
+      "observed": {
+        "httpStatus": 200
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O04-policy-audience-ack-tile",
+      "expected": "Only eligible audience can acknowledge; tile and detail population agree",
+      "observed": {
+        "outsideAckStatus": 200,
+        "tile": {
+          "id": 122,
+          "title": "Audit restricted policy 1792125536828",
+          "effectiveDate": "2026-10-01",
+          "targeted": 1,
+          "acknowledged": 2,
+          "pct": 200
+        },
+        "reportRows": 1
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O05-helpdesk-category-scope",
+      "expected": "IT category agent cannot read payroll internal notes, reply, or resolve payroll tickets",
+      "observed": {
+        "categoryRole": "payroll_admin",
+        "threadStatus": 200,
+        "leakedInternal": true,
+        "replyStatus": 200,
+        "statusMutation": 200
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O06-helpdesk-reopen-bypass",
+      "expected": "A resolved-to-active transition requires a reason and records a reopening",
+      "observed": {
+        "httpStatus": 200,
+        "row": {
+          "status": "pending",
+          "reopen_count": 0,
+          "resolution": null,
+          "resolved_at": null
+        }
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O07-helpdesk-resolution-time-rewrite",
+      "expected": "Closing an already resolved ticket preserves its original resolution time and SLA outcome",
+      "observed": {
+        "httpStatus": 200,
+        "changedTimelyToLate": true
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O08-helpdesk-private-note-first-response",
+      "expected": "Customer first response metrics should not claim a reply that the customer cannot see",
+      "observed": {
+        "firstResponseStamped": true,
+        "ownerVisibleMessages": 0
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O12-helpdesk-screen-performance-contract",
+      "expected": "Performance screen must use the API resolutionRatePct property",
+      "observed": {
+        "httpStatus": 200,
+        "apiField": 50,
+        "hasFrontendExpectedField": false,
+        "toFixedWouldThrow": true
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O09-auth-lost-failure-increment",
+      "expected": "Two failure writes based on the same initial state must count two failed attempts",
+      "observed": {
+        "failuresWritten": 2,
+        "stored": 1
+      },
+      "reproduced": true
+    },
+    {
+      "id": "O10-auth-refresh-replay",
+      "expected": "Tracked follow-up: stated rotation has no consumed-token invalidation; signed revocation policy is still required",
+      "observed": {
+        "firstAccepted": true,
+        "reusedOriginalAccepted": true
+      },
+      "reproduced": true
+    }
+  ],
+  "controls": [
+    {
+      "id": "unrelated-ordinary-employee-refused",
+      "passed": true,
+      "observed": {
+        "httpStatus": 403
+      }
+    },
+    {
+      "id": "owner-cannot-read-internal-notes",
+      "passed": true,
+      "observed": {
+        "httpStatus": 200,
+        "seesInternal": false
+      }
+    },
+    {
+      "id": "anonymous-poll-deduplication-retained",
+      "passed": true,
+      "observed": {
+        "httpStatus": 400
+      }
+    },
+    {
+      "id": "anonymous-survey-has-no-user-id",
+      "passed": true,
+      "observed": {
+        "hasUserId": false,
+        "hasHash": true
+      }
+    }
+  ]
+}

@@ -149,7 +149,7 @@ export const payrollOutputsRouter = {
   /**
    * Get formatted payslip for an employee in a run (HR/Admin view).
    */
-  getPayslip: withPermission('payroll.run.view')
+  getPayslip: withPermission('payroll.run.view', 'read')
     .input(
       z.object({
         runId: z.number(),
@@ -178,7 +178,7 @@ export const payrollOutputsRouter = {
   /**
    * Get employee's own payslip for ESS surface (/my/pay).
    */
-  getMyPayslip: withPermission('employee.compensation.read')
+  getMyPayslip: withPermission('employee.compensation.read', 'read')
     .input(
       z.object({
         month: z.string().optional(), // YYYY-MM
@@ -322,7 +322,7 @@ export const payrollOutputsRouter = {
   /**
    * Get R10 Variance Report comparing current run against previous run.
    */
-  getVarianceReport: withPermission('payroll.run.view')
+  getVarianceReport: withPermission('payroll.run.view', 'read')
     .input(
       z.object({
         runId: z.number(),
@@ -343,7 +343,7 @@ export const payrollOutputsRouter = {
   /**
    * Get status bundle of all outputs for a run.
    */
-  getRunOutputs: withPermission('payroll.run.view')
+  getRunOutputs: withPermission('payroll.run.view', 'read')
     .input(z.object({ runId: z.number() }))
     .output(RunOutputsStatusSchema)
     .handler(async ({ context, input }) => {

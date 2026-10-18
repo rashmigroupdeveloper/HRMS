@@ -135,15 +135,101 @@ describe('Payroll DAG Evaluator', () => {
     expect(validCheck.valid).toBe(true);
     expect(validCheck.diffPaise).toBe(0);
 
-    // Inconsistent annual CTC (e.g. ₹9,05,000 instead of ₹9,00,000)
-    const invalidCheck = validateCtcBreakup({
+    // Inconsistent annual CTC (higher)
+    const invalidCheckHigher = validateCtcBreakup({
       annualCtcPaise: fromRupees(905000),
       monthlyComponents,
       componentNodes: nodes,
     });
-    expect(invalidCheck.valid).toBe(false);
-    expect(invalidCheck.diffPaise).toBe(500000); // 5,000 rupees = 500,000 paise
-    expect(invalidCheck.message).toContain('Annual CTC');
-    expect(invalidCheck.message).toContain('500000 paise');
+    expect(invalidCheckHigher.valid).toBe(false);
+    expect(invalidCheckHigher.diffPaise).toBe(500000); // 5,000 rupees = 500,000 paise
+    expect(invalidCheckHigher.message).toContain('Annual CTC');
+    expect(invalidCheckHigher.message).toContain('higher');
+    expect(invalidCheckHigher.message).toContain('500000 paise');
+
+    // Inconsistent annual CTC (lower)
+    const invalidCheckLower = validateCtcBreakup({
+      annualCtcPaise: fromRupees(895000),
+      monthlyComponents,
+      componentNodes: nodes,
+    });
+    expect(invalidCheckLower.valid).toBe(false);
+    expect(invalidCheckLower.diffPaise).toBe(-500000);
+    expect(invalidCheckLower.message).toContain('lower');
+  });
+
+  it('handles duplicate codes and external formula identifiers gracefully', () => {
+    const dupNodes: ComponentFormulaNode[] = [
+      { code: 'BASIC', kind: 'earning', amount: 1000 },
+      { code: 'BASIC', kind: 'earning', amount: 2000 },
+    ];
+    expect(() => buildAndValidateDag(dupNodes)).toThrow(/Duplicate component code/);
+
+    // Dependency not in nodeMap (external variable, e.g. PF_WAGES)
+    const extNodes: ComponentFormulaNode[] = [
+      { code: 'PF_EE', kind: 'deduction', formula: 'PF_WAGES * 0.12' },
+    ];
+    const { order, dependencies } = buildAndValidateDag(extNodes);
+    expect(order).toEqual(['PF_EE']);
+    expect(dependencies['PF_EE']).toEqual(['PF_WAGES']);
+  });
+
+  it('evaluates all supported math functions, rounding modes, and handles balancing components', () => {
+    const nodes: ComponentFormulaNode[] = [
+      { code: 'BASIC', kind: 'earning', amount: 3000000, rounding: 'floor' },
+      { code: 'HRA', kind: 'earning', formula: 'round(BASIC * 0.455)', rounding: 'ceil' },
+      { code: 'BONUS', kind: 'earning', formula: 'min(floor(BASIC * 0.1), 2500)', rounding: 'nearest_10' },
+      { code: 'INCENTIVE', kind: 'earning', formula: 'max(ceil(BASIC * 0.05), 1000)', rounding: 'round' },
+      { code: 'SPECIAL_ALLOW', kind: 'earning', amount: 0 },
+      { code: 'PF_ER', kind: 'employer_contribution', formula: 'min(PF_WAGES_CAPPED * 0.12, 1800)' },
+      { code: 'PF_EE', kind: 'deduction', formula: 'min(PF_WAGES_CAPPED * 0.12, 1800)' },
+    ];
+
+    // Target monthly CTC of 60,000 rupees (6,000,000 paise)
+    const res = resolveSalaryStructure({
+      nodes,
+      monthlyCtcPaise: fromRupees(60000),
+      fixedOverrides: { BONUS: fromRupees(2000) },
+    });
+
+    expect(res.monthly['BONUS']).toBe(fromRupees(2000));
+    expect(res.monthlyGross).toBeGreaterThan(0);
+    expect(res.monthlyEmployerCost).toBeGreaterThan(0);
+    expect(res.monthlyDeductions).toBeGreaterThan(0);
+    expect(res.monthlyNet).toBe(res.monthlyGross - res.monthlyDeductions);
+    expect(res.monthlyCtc).toBe(fromRupees(60000));
+
+    // When target CTC is smaller than other components, SPECIAL_ALLOW becomes 0
+    const resSmall = resolveSalaryStructure({
+      nodes,
+      annualCtcPaise: fromRupees(120000), // 10,000 per month, lower than BASIC 30,000
+    });
+    expect(resSmall.monthly['SPECIAL_ALLOW']).toBe(0);
+  });
+
+  it('handles formula validation errors: unknown variable, invalid characters, non-finite, and syntax error', () => {
+    // 1. Unknown variable
+    const nodeUnknown: ComponentFormulaNode[] = [
+      { code: 'TEST', kind: 'earning', formula: 'NONEXISTENT_VAR * 2' },
+    ];
+    expect(() => resolveSalaryStructure({ nodes: nodeUnknown })).toThrow(/Unknown variable/);
+
+    // 2. Invalid characters
+    const nodeBadChar: ComponentFormulaNode[] = [
+      { code: 'TEST', kind: 'earning', formula: '100 + 50 @#$' },
+    ];
+    expect(() => resolveSalaryStructure({ nodes: nodeBadChar })).toThrow(/Invalid characters/);
+
+    // 3. Division by zero returning infinity
+    const nodeInf: ComponentFormulaNode[] = [
+      { code: 'TEST', kind: 'earning', formula: '100 / 0' },
+    ];
+    expect(() => resolveSalaryStructure({ nodes: nodeInf })).toThrow(/did not return a finite number/);
+
+    // 4. Malformed syntax
+    const nodeSyntax: ComponentFormulaNode[] = [
+      { code: 'TEST', kind: 'earning', formula: '(100 +' },
+    ];
+    expect(() => resolveSalaryStructure({ nodes: nodeSyntax })).toThrow(/Error evaluating formula/);
   });
 });

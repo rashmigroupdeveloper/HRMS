@@ -1,4 +1,6 @@
+import { useAttendanceSchedule, windowTiming, schedulePortionOptions } from './attendance-schedule';
 import { useEffect, useRef, useState } from 'react';
+import { readDayPortion, dayPortionLabel, type DayPortion } from './attendance-portion';
 import { apiFetch } from '../../lib/api';
 import { Button, DatePicker, Drawer, Select, Textarea, TextField, formatDateIN, toast, todayISOIST } from '../../ui';
 
@@ -8,6 +10,7 @@ const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 interface AttendanceRequestDraft {
   savedAt: number;
   kind: string;
+  dayPortion?: DayPortion;
   fromDate: string | null;
   toDate: string | null;
   reason: string;
@@ -40,7 +43,7 @@ function readArDraft(): AttendanceRequestDraft | null {
     const fromDate = fromRaw === null ? null : isIsoDate(fromRaw) ? fromRaw : undefined;
     const toDate = toRaw === null ? null : isIsoDate(toRaw) ? toRaw : undefined;
     if (fromDate === undefined || toDate === undefined) return null;
-    return { savedAt, kind, fromDate, toDate, reason,
+    return { savedAt, kind, dayPortion: readDayPortion(record['dayPortion']), fromDate, toDate, reason,
       fromTime: typeof record['fromTime'] === 'string' ? record['fromTime'] : '',
       toTime: typeof record['toTime'] === 'string' ? record['toTime'] : '' };
   } catch {
@@ -112,6 +115,7 @@ export function AttendanceRequestDrawer({
   onSubmitted: () => void;
 }) {
   const [kind, setKind] = useState('AR');
+  const [dayPortion, setDayPortion] = useState<DayPortion>('full_day');
   const [fromDate, setFromDate] = useState<string | null>(null);
   const [toDate, setToDate] = useState<string | null>(null);
   const [reason, setReason] = useState('');
@@ -121,6 +125,9 @@ export function AttendanceRequestDrawer({
   const [error, setError] = useState<string | null>(null);
   const skipPersistRef = useRef(true);
   const copy = kindCopy(kind);
+  const schedule = useAttendanceSchedule(fromDate, open && kind !== 'PERMISSION', toDate);
+  const selectedWindow = schedule.data?.windows.find(window => window.dayPortion === dayPortion);
+  const portionOptions = schedulePortionOptions(schedule.data);
   const days = fromDate && toDate ? inclusiveDays(fromDate, toDate) : 0;
 
   useEffect(() => {
@@ -132,6 +139,7 @@ export function AttendanceRequestDrawer({
     const draft = readArDraft();
     if (draft !== null) {
       setKind(draft.kind);
+      setDayPortion(draft.dayPortion ?? 'full_day');
       setFromDate(draft.fromDate);
       setToDate(draft.toDate);
       setReason(draft.reason);
@@ -155,13 +163,16 @@ export function AttendanceRequestDrawer({
       skipPersistRef.current = false;
       return;
     }
-    writeArDraft({ kind, fromDate, toDate, reason, fromTime, toTime });
-  }, [open, kind, fromDate, toDate, reason, fromTime, toTime]);
+    writeArDraft({ kind, dayPortion, fromDate, toDate, reason, fromTime, toTime });
+  }, [open, kind, dayPortion, fromDate, toDate, reason, fromTime, toTime]);
 
   const submit = async () => {
-    if (!fromDate || !toDate || reason.trim().length < 5) {
+    if (!fromDate || !toDate || fromDate > toDate || reason.trim().length < 5) {
       setError('Choose the dates and add a short reason your manager can act on.');
       return;
+    }
+    if (kind !== 'PERMISSION' && (schedule.loading || schedule.error || !selectedWindow)) {
+      setError(schedule.error ?? 'Choose an available shift period after its timings have loaded.'); return;
     }
     if (kind === 'PERMISSION' && (fromDate !== toDate || !fromTime || !toTime || toTime <= fromTime)) {
       setError('Short permission needs one date and an end time after the start time.'); return;
@@ -172,7 +183,7 @@ export function AttendanceRequestDrawer({
       await apiFetch('/api/attendance/requests', {
         method: 'POST',
         body: JSON.stringify({ kind, fromDate, toDate, reason: reason.trim(),
-          ...(kind === 'PERMISSION' ? { fromTime, toTime } : {}),
+          ...(kind === 'PERMISSION' ? { fromTime, toTime } : { dayPortion }),
         }),
       });
       toast.success(`${copy.title} sent`, {
@@ -181,6 +192,7 @@ export function AttendanceRequestDrawer({
       skipPersistRef.current = true;
       clearArDraft();
       setReason('');
+      setDayPortion('full_day');
       setFromTime(''); setToTime('');
       onSubmitted();
       onClose();
@@ -202,7 +214,7 @@ export function AttendanceRequestDrawer({
           <Button variant="ghost" onClick={onClose}>
             Keep draft
           </Button>
-          <Button variant="primary" loading={loading} onClick={() => void submit()}>
+          <Button variant="primary" loading={loading} disabled={kind !== 'PERMISSION' && (schedule.loading || !selectedWindow || schedule.error !== null)} onClick={() => void submit()}>
             Send to my manager
           </Button>
         </div>
@@ -232,15 +244,30 @@ export function AttendanceRequestDrawer({
           ]}
         />
         <div className="grid grid-cols-2 gap-3">
-          <DatePicker label="From" required value={fromDate} onChange={value => { setFromDate(value); if (kind === 'PERMISSION') setToDate(value); }} />
+          <DatePicker label="From date" required value={fromDate} onChange={value => { setFromDate(value); if (kind === 'PERMISSION') setToDate(value); }} />
           <DatePicker
-            label="To"
+            label="To date"
             required
             value={toDate}
             min={fromDate ?? undefined}
             onChange={setToDate}
           />
         </div>
+        {kind !== 'PERMISSION' && <Select label="Which part of each day?" value={dayPortion}
+          onChange={value => { setDayPortion(readDayPortion(value)); }} options={portionOptions}
+          disabled={schedule.loading || portionOptions.length === 0} hint={schedule.loading ? 'Loading your assigned shift…' : schedule.data?.shiftName ?? undefined} />}
+        {kind !== 'PERMISSION' && <div className="rounded-row bg-surface-2 px-4 py-3 text-sm" aria-live="polite">
+          {schedule.error ? <p role="alert" className="text-negative">{schedule.error}</p> : schedule.loading
+            ? <p className="text-ink-muted">Loading shift timings…</p>
+            : selectedWindow ? <>
+              <p className="font-semibold text-ink">{dayPortionLabel(dayPortion)} · {windowTiming(selectedWindow)}</p>
+              <p className="mt-1 text-ink-muted">Assigned shift timings for {schedule.data ? formatDateIN(schedule.data.date) : 'the selected date'}.
+                {fromDate !== toDate ? ' Other dates use their own assigned shift timings.' : ''}
+                {dayPortion !== 'full_day' ? ' The other half stays unchanged.' : ''}</p>
+            </> : <p className="text-ink-muted">{schedule.data?.dayKind === 'holiday' || schedule.data?.dayKind === 'week_off'
+              ? 'This is an off day. Choose a working date for regularisation or official duty.'
+              : 'The selected half has no configured timings. Choose an available period or contact HR.'}</p>}
+        </div>}
         {kind === 'PERMISSION' && <div className="grid grid-cols-2 gap-3">
           <TextField label="Permission from" type="time" required value={fromTime} onChange={event => { setFromTime(event.currentTarget.value); }} />
           <TextField label="Permission to" type="time" required value={toTime} onChange={event => { setToTime(event.currentTarget.value); }} />
@@ -248,7 +275,9 @@ export function AttendanceRequestDrawer({
         {days > 0 && fromDate && toDate && (
           <div className="rounded-row bg-surface-2 px-4 py-3">
             <p className="text-sm font-semibold text-ink">
-              You are requesting {String(days)} day{days === 1 ? '' : 's'}
+              {kind !== 'PERMISSION' && dayPortion !== 'full_day'
+                ? `${dayPortionLabel(dayPortion)} on ${String(days)} day${days === 1 ? '' : 's'} — the other half is unchanged`
+                : `You are requesting ${String(days)} day${days === 1 ? '' : 's'}`}
             </p>
             <p className="mt-1 text-sm text-ink-muted">
               {formatDateIN(fromDate)}

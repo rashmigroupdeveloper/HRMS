@@ -6,11 +6,12 @@
  * `wf.definitions`, editable here and effective on the very next request. The
  * seeded catalog is only a set of defaults.
  *
- * Editing a chain is audited old→new. Chains already in flight keep the steps
- * they started with — this changes what NEW requests will follow.
+ * Editing a chain is audited old→new. Routing retries and future advancement
+ * resolve the current configured definition; review pending work when editing.
  */
 import { useMemo, useState } from 'react';
 import { GitBranch, Plus, Trash2, Workflow } from 'lucide-react';
+import { RoutingHoldsPanel } from './RoutingHoldsPanel';
 import { apiFetch } from '../../lib/api';
 import type { SessionUser } from '../../lib/session';
 import { hasPermission } from '../../lib/session';
@@ -122,7 +123,7 @@ export function WorkflowsPage({ user }: { user: SessionUser }) {
       width: 'minmax(280px,2fr)',
       render: (row) => {
         const steps = parseSteps(row.steps);
-        if (steps.length === 0) return <span className="text-ink-faint">Auto-approved (no steps)</span>;
+        if (steps.length === 0) return <span className="text-ink-faint">Routing requires HR review</span>;
         return (
           <div className="flex flex-wrap items-center gap-1.5">
             {steps.map((s, i) => (
@@ -189,10 +190,11 @@ export function WorkflowsPage({ user }: { user: SessionUser }) {
         <h1 className="mt-1 text-4xl font-light tracking-tight text-ink">Approval chains</h1>
         <p className="mt-1 text-sm text-ink-muted">
           Who approves what, how long they have, and what happens when they don’t. Editing a chain
-          takes effect on the next request raised — requests already in flight keep their original
-          steps.
+          is audited. Review pending requests before changing routing or escalation rules.
         </p>
       </header>
+
+      {canEdit && <RoutingHoldsPanel userId={user.id} />}
 
       <Card>
         <CardHeader

@@ -1,0 +1,432 @@
+{
+  "prepared": "2026-10-16",
+  "scope": "Other-module audit; no application implementation increment",
+  "counts": {
+    "new_specific_bug_groups": 7,
+    "reconfirmed_bug_groups": 3,
+    "policy_or_metric_questions": 2,
+    "native_observations": 20,
+    "positive_controls": 4
+  },
+  "findings": [
+    {
+      "id": "O01",
+      "title": "Company audience filtering is accepted but ignored",
+      "priority": "P1",
+      "classification": "New specific defect",
+      "status": "Open",
+      "requirements": [
+        "EN-01",
+        "EN-02",
+        "EN-03"
+      ],
+      "owning_stage": "Phase 3 Stage 3.4",
+      "evidence": [
+        {
+          "file": "backend/src/modules/engagement/engagement.router.ts",
+          "line": 46
+        },
+        {
+          "file": "backend/src/modules/engagement/audience.ts",
+          "line": 21
+        }
+      ],
+      "observed": "POST accepts and stores audience.companyIds, but the shared employee selector only tests category, department and location. An employee in another seeded entity received the announcement and successfully answered the restricted poll and survey (all HTTP200).",
+      "required_repair": "Use the existing employees.company_id relationship in the shared audience predicate. Enforce the same eligibility for feed and response writes. Validate recognized audience keys; do not silently broaden unsupported targeting. Apply the publisher\u2019s existing authorized organization scope separately from the selected audience.",
+      "acceptance_tests": "Two entities with otherwise identical employees: only the addressed entity sees/answers all three surfaces. Combined company/department/location filters intersect. Empty/invalid audience and exited/unlinked accounts follow explicitly documented rules.",
+      "probe_ids": [
+        "O01-announcement-company-audience",
+        "O01-poll-company-audience",
+        "O01-survey-company-audience"
+      ],
+      "supporting_sow_ids": [
+        "SOW-190",
+        "SOW-191",
+        "SOW-193"
+      ],
+      "prior_finding": null
+    },
+    {
+      "id": "O02",
+      "title": "Duplicate survey question IDs make different questions share one answer",
+      "priority": "P2",
+      "classification": "New specific defect",
+      "status": "Open",
+      "requirements": [
+        "EN-03"
+      ],
+      "owning_stage": "Phase 3 Stage 3.4",
+      "evidence": [
+        {
+          "file": "backend/src/modules/engagement/surveys.service.ts",
+          "line": 108
+        },
+        {
+          "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+          "line": 1327
+        }
+      ],
+      "observed": "Create accepts two questions with id=q (HTTP200). Required checks and analytics use find(questionId), so a single answer can satisfy and be displayed for multiple questions. The screen derives IDs from questions.length+1; removing a middle question then adding another can also reuse an existing ID.",
+      "required_repair": "Validate unique immutable question IDs before persistence and on authoritative definition reads. Allocate a unique screen ID independent of array length. Reject ambiguous legacy definitions explicitly; do not invent a mapping for already recorded answers.",
+      "acceptance_tests": "Duplicate IDs rejected before insert; q1,q2,q3 \u2192 remove q2 \u2192 add preserves unique IDs. Multiple valid questions map to separate required checks and result rows.",
+      "probe_ids": [
+        "O02-survey-duplicate-questions"
+      ],
+      "supporting_sow_ids": [
+        "SOW-193",
+        "SOW-194"
+      ],
+      "prior_finding": null
+    },
+    {
+      "id": "O03",
+      "title": "Survey answers are not validated against published questions",
+      "priority": "P1",
+      "classification": "New specific defect",
+      "status": "Open",
+      "requirements": [
+        "EN-03"
+      ],
+      "owning_stage": "Phase 3 Stage 3.4",
+      "evidence": [
+        {
+          "file": "backend/src/modules/engagement/surveys.service.ts",
+          "line": 245
+        },
+        {
+          "file": "backend/src/modules/engagement/surveys.service.ts",
+          "line": 298
+        }
+      ],
+      "observed": "API accepts a choice not in options and adds it to the distribution; accepts two answers for one question and silently counts the first; accepts rating=\"banana\" as a required answer with totalAnswers=1 but avgRating=null; accepts an unknown question on an optional survey and counts a participant with no real answers. Each write returned HTTP200.",
+      "required_repair": "Validate the whole response against the stored question definition: known IDs, at most one answer per question, required answers, exact choice membership and correct type. Use the agreed rating scale and limits; do not add a new hardcoded policy. Reuse validation for analytics and handle invalid historical rows explicitly without silently correcting them. Preserve HMAC dedupe and no-actor audit for anonymous responses.",
+      "acceptance_tests": "Each malformed case rejected without response insertion or hasResponded becoming true. Correct boundary/optional answers tally exactly; named and anonymous duplicate submissions remain refused.",
+      "probe_ids": [
+        "O03-survey-invalid-choice",
+        "O03-survey-duplicate-answers",
+        "O03-survey-answer-type",
+        "O03-survey-unknown-question"
+      ],
+      "supporting_sow_ids": [
+        "SOW-193",
+        "SOW-194"
+      ],
+      "prior_finding": null
+    },
+    {
+      "id": "O04",
+      "title": "Restricted policies can be read and acknowledged outside their audience",
+      "priority": "P1",
+      "classification": "Reconfirmed existing issue",
+      "status": "Open",
+      "requirements": [
+        "CORE-13",
+        "EN-04"
+      ],
+      "owning_stage": "Phase 3 Stage 3.4",
+      "evidence": [
+        {
+          "file": "backend/src/modules/policies/policies.router.ts",
+          "line": 113
+        },
+        {
+          "file": "backend/src/modules/policies/policies.service.ts",
+          "line": 146
+        },
+        {
+          "file": "backend/src/modules/policies/policies.service.ts",
+          "line": 174
+        }
+      ],
+      "observed": "Outside-department employee received policy content and recorded acknowledgment (HTTP200). With one target and two acknowledgers the tile reported200%, while the detail report correctly contained one row. This is native confirmation of C19, not a newly discovered issue.",
+      "required_repair": "Reuse authoritative policy eligibility for content, acknowledgment, pending list, reminders, tile and detail/export. Count acknowledgments within the exact eligible population. Preserve historical acknowledgments and resolve version/audience-change semantics under existing D11 before changing schema.",
+      "acceptance_tests": "Outside audience cannot read/ack guessed policy IDs. Tile/detail/reminders reconcile after valid acknowledgment and employee moves. Repeated valid acknowledgment keeps first timestamp.",
+      "probe_ids": [
+        "O04-policy-audience-content",
+        "O04-policy-audience-ack-tile"
+      ],
+      "supporting_sow_ids": [
+        "SOW-003",
+        "SOW-016",
+        "SOW-017",
+        "SOW-018",
+        "SOW-019"
+      ],
+      "prior_finding": "C19"
+    },
+    {
+      "id": "O05",
+      "title": "Helpdesk agent permission bypasses category boundaries",
+      "priority": "P1",
+      "classification": "Reconfirmed residual issue",
+      "status": "Open",
+      "requirements": [
+        "HD-01",
+        "NFR-03"
+      ],
+      "owning_stage": "Phase 3 Stage 3.4",
+      "evidence": [
+        {
+          "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+          "line": 119
+        },
+        {
+          "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+          "line": 153
+        },
+        {
+          "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+          "line": 201
+        }
+      ],
+      "observed": "An it_admin fixture held helpdesk.agent but no payroll role or ticket assignment. It read a payroll-category internal note, posted a reply and resolved that ticket (HTTP200). Ordinary unrelated employee access is correctly refused403; the remaining gap is the overly broad agent path. This narrows older C26 to the actual residual defect.",
+      "required_repair": "Resolve category-assignee/escalation roles from runtime category and role-grant data, intersect with authorized subject organization, and enforce before queue, thread, reply, state mutation and export. Preserve legitimate raiser access independently of internal-note visibility. Do not hardcode roles in handlers or treat arbitrary client category filters as authorization.",
+      "acceptance_tests": "IT-only agent cannot inspect/modify payroll or other-OU tickets; eligible assigned/category agent can. Runtime grant revocation applies on next request. Owner sees only public messages. Escalated recipient access follows the approved category rules.",
+      "probe_ids": [
+        "O05-helpdesk-category-scope"
+      ],
+      "supporting_sow_ids": [
+        "SOW-009",
+        "SOW-078",
+        "SOW-181",
+        "SOW-182",
+        "SOW-208",
+        "SOW-213",
+        "SOW-216",
+        "SOW-217"
+      ],
+      "prior_finding": "C26"
+    },
+    {
+      "id": "O06",
+      "title": "Resolved tickets can be reopened through pending without a reason or counter",
+      "priority": "P2",
+      "classification": "New specific defect",
+      "status": "Open",
+      "requirements": [
+        "HD-01"
+      ],
+      "owning_stage": "Phase 3 Stage 3.4",
+      "evidence": [
+        {
+          "file": "backend/src/modules/helpdesk/helpdesk.service.ts",
+          "line": 382
+        }
+      ],
+      "observed": "Reopening validation only recognizes target status=open. Sending resolved\u2192pending without a reason succeeds200, clears resolution/resolved_at, and leaves reopen_count=0. The alternative active state bypasses the explicit reopen rule.",
+      "required_repair": "Define allowed transitions once and apply the reopening rule to every closed/resolved\u2192active transition. Require/preserve a reason and increment once under a row lock or conditional transition. Commit state, audit and outbox together. Preserve prior cycle evidence under the approved history design.",
+      "acceptance_tests": "Both open and pending targets from resolved/closed require a reason and record exactly one reopening. Concurrent/repeated requests cannot double increment or overwrite another state.",
+      "probe_ids": [
+        "O06-helpdesk-reopen-bypass"
+      ],
+      "supporting_sow_ids": [
+        "SOW-213",
+        "SOW-214",
+        "SOW-216"
+      ],
+      "prior_finding": "C27 (new bypass case)"
+    },
+    {
+      "id": "O07",
+      "title": "Administrative closure rewrites resolution time and changes historical SLA results",
+      "priority": "P2",
+      "classification": "New specific defect",
+      "status": "Open",
+      "requirements": [
+        "HD-01",
+        "RPT-06"
+      ],
+      "owning_stage": "Phase 3 Stage 3.4",
+      "evidence": [
+        {
+          "file": "backend/src/modules/helpdesk/helpdesk.service.ts",
+          "line": 394
+        }
+      ],
+      "observed": "A ticket resolved before its SLA deadline became late when later moved resolved\u2192closed. Every target resolved/closed sets resolved_at=now(), so even a repeated resolve or administrative closure rewrites the original first-resolution fact.",
+      "required_repair": "Preserve the recorded resolution instant when closing an already resolved cycle; distinguish closure from resolution using the approved model. Make repeated same-state requests idempotent and preserve reopen-cycle history. Keep reporting and exports based on the same authoritative timeline.",
+      "acceptance_tests": "On-time resolve\u2192later close stays an on-time resolution; actual late resolution remains late. Repeated resolve/close cannot change resolution duration or duplicate notifications. Reopen/resolution cycles remain explainable.",
+      "probe_ids": [
+        "O07-helpdesk-resolution-time-rewrite"
+      ],
+      "supporting_sow_ids": [
+        "SOW-213",
+        "SOW-214",
+        "SOW-216"
+      ],
+      "prior_finding": "C27 (new timestamp rewrite case)"
+    },
+    {
+      "id": "O08",
+      "title": "Internal notes currently count as the first response",
+      "priority": "P2",
+      "classification": "Observed behavior requiring metric definition",
+      "status": "Open",
+      "requirements": [
+        "HD-01"
+      ],
+      "owning_stage": "Phase 3 Stage 3.4",
+      "evidence": [
+        {
+          "file": "backend/src/modules/helpdesk/helpdesk.service.ts",
+          "line": 330
+        }
+      ],
+      "observed": "An internal-only note stamped first_response_at and changed status to pending while the owner\u2019s thread had zero visible messages. The behavior is proven; whether R29 means first internal handling or first customer-visible response must be defined explicitly.",
+      "required_repair": "Document the R29 metric meaning before changing it. If it means customer first response, stamp only a qualifying public agent reply and retain internal handling as a separate fact only if an approved model requires it. Do not silently rename the metric or add speculative fields.",
+      "acceptance_tests": "Internal/public first actions reconcile to the signed metric definition; simultaneous replies cannot move the first timestamp later.",
+      "probe_ids": [
+        "O08-helpdesk-private-note-first-response"
+      ],
+      "supporting_sow_ids": [
+        "SOW-214"
+      ],
+      "prior_finding": "C27 context"
+    },
+    {
+      "id": "O09",
+      "title": "Login failure increments can be lost on stale reads",
+      "priority": "P1",
+      "classification": "Reconfirmed existing issue",
+      "status": "Open",
+      "requirements": [
+        "NFR-03"
+      ],
+      "owning_stage": "Phase 0 Stage 0.4",
+      "evidence": [
+        {
+          "file": "backend/src/modules/auth/auth.repository.ts",
+          "line": 46
+        },
+        {
+          "file": "backend/src/modules/auth/auth.service.ts",
+          "line": 58
+        }
+      ],
+      "observed": "Two repository calls given the same initial failure count0 leave failed_attempts=1. This deterministic stale-read interleaving reproduces lost counting, not an end-to-end concurrent HTTP load test. Authentication reads the old counter before password comparison and passes it to this setter.",
+      "required_repair": "Make increment and lockout/backoff computation atomic in the database and driven by approved settings. Coordinate successful-login reset with failed attempts. Audit the actual committed outcome and keep uniform public failure responses.",
+      "acceptance_tests": "Simultaneous failed requests produce the exact count and lock at the configured threshold. Success/reset and failure races follow an explicit rule; correct password stays refused during a live lock.",
+      "probe_ids": [
+        "O09-auth-lost-failure-increment"
+      ],
+      "supporting_sow_ids": [
+        "SOW-009"
+      ],
+      "prior_finding": "C22"
+    },
+    {
+      "id": "O10",
+      "title": "The original refresh token remains valid after refresh",
+      "priority": "P2",
+      "classification": "Observed behavior requiring session policy",
+      "status": "Open",
+      "requirements": [
+        "NFR-03"
+      ],
+      "owning_stage": "Phase 0 Stage 0.4",
+      "evidence": [
+        {
+          "file": "backend/src/modules/auth/auth.service.ts",
+          "line": 96
+        },
+        {
+          "file": "backend/src/core/auth/jwt.ts",
+          "line": 44
+        }
+      ],
+      "observed": "The same original refresh token was accepted twice. Code signs a fresh token but has no used-token/session-family invalidation. This is known stateless behavior, not a newly proven violation of a signed logout/replay policy.",
+      "required_repair": "Resolve D03 session rotation, logout and replay guarantees with the existing security contract before designing persistence. Do not invent a session table or claim token-family protection already exists. Preserve deactivated-user rejection and short-lived access-token checks.",
+      "acceptance_tests": "After policy is locked, replay/logout/concurrent refresh/deactivation follow that policy and the browser coordinates refreshes without dropping a valid session.",
+      "probe_ids": [
+        "O10-auth-refresh-replay"
+      ],
+      "supporting_sow_ids": [
+        "SOW-009"
+      ],
+      "prior_finding": "C22"
+    },
+    {
+      "id": "O11",
+      "title": "Survey screens disagree with create, response and result contracts",
+      "priority": "P1",
+      "classification": "New concrete contract failures",
+      "status": "Open",
+      "requirements": [
+        "EN-03",
+        "CORE-10"
+      ],
+      "owning_stage": "Phase 3 Stage 3.4",
+      "evidence": [
+        {
+          "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+          "line": 80
+        },
+        {
+          "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+          "line": 973
+        },
+        {
+          "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+          "line": 1165
+        },
+        {
+          "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+          "line": 1225
+        },
+        {
+          "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+          "line": 1333
+        },
+        {
+          "file": "backend/src/modules/engagement/engagement.router.ts",
+          "line": 314
+        }
+      ],
+      "observed": "The screen creates choice questions with choices, but backend expects options (native matching payload400); sends answers as an object, but backend expects an array (400); reads q.choices from definitions carrying options, so choices disappear; maps result.questionResults while backend returns questions, causing an undefined.map path. Nested result and date names also differ: averageRating/distribution/textSamples and opensAt/closesAt vs avgRating/ratingDistribution/textAnswers and openFrom/openTill. Native HTTP and source expressions confirm contract defects; this pass did not perform a browser walkthrough.",
+      "required_repair": "Align the frontend with the emitted OpenAPI schema through the approved generated client. Reconcile create/read/respond/results together, preserve empty/error/closed/anonymous states, and avoid backend-source imports or fake response adapters. Ensure optional questions stay optional and question IDs remain stable.",
+      "acceptance_tests": "Real backend DTO component/browser tests: create all question types, display choices, submit, dedupe, open analytics with named/anonymous and empty results. Include remove/add question sequence and authorization of result controls.",
+      "probe_ids": [
+        "O11-survey-screen-create-contract",
+        "O11-survey-screen-submit-contract",
+        "O11-survey-screen-result-contract"
+      ],
+      "supporting_sow_ids": [
+        "SOW-193",
+        "SOW-194"
+      ],
+      "prior_finding": "Extends existing screen/API drift G05/R12"
+    },
+    {
+      "id": "O12",
+      "title": "Helpdesk performance screen formats a nonexistent API field",
+      "priority": "P1",
+      "classification": "New concrete contract failure",
+      "status": "Open",
+      "requirements": [
+        "HD-01",
+        "RPT-06"
+      ],
+      "owning_stage": "Phase 3 Stage 3.4",
+      "evidence": [
+        {
+          "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+          "line": 814
+        },
+        {
+          "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+          "line": 233
+        }
+      ],
+      "observed": "Backend returns numeric resolutionRatePct; screen declares resolutionRatePercent and calls toFixed(1) on it. The native response lacks that field, making the cell render expression throw for a nonempty result. Generic apiFetch<Performance[]> is a TypeScript assertion, not runtime validation. No browser walkthrough was performed in this pass.",
+      "required_repair": "Consume the real typed HTTP response field and protect genuine unavailable values according to the contract. Add a component test with an actual API-shaped row, not a fixture duplicating the incorrect frontend interface. Keep report/export filters and numbers identical.",
+      "acceptance_tests": "Nonempty native-shaped R29 response renders without errors and matches export; empty/error states work. Late-resolved rows are not labeled SLA met simply because resolved_at is non-null (additional source concern at HelpdeskPage105/293).",
+      "probe_ids": [
+        "O12-helpdesk-screen-performance-contract"
+      ],
+      "supporting_sow_ids": [
+        "SOW-214"
+      ],
+      "prior_finding": "Extends existing screen/API drift G05/R12"
+    }
+  ]
+}

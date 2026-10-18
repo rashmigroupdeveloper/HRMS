@@ -25,9 +25,16 @@ import {
   setManualStatus,
 } from './day-status.service.js';
 import { applyRosterEntries } from './roster.service.js';
+import { assignEmployeeScheme } from './scheme.service.js';
+import { AttendanceMutationError } from './attendance-mutation.js';
 import { readSessionStatuses, sessionStatusesSchema, validateSessionSummary } from './session-status.js';
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
+const isoDate = z.string().date('YYYY-MM-DD');
+
+function attendanceError(error: unknown): never {
+  if (error instanceof AttendanceMutationError) throw new ORPCError(error.code, { message: error.message });
+  throw error;
+}
 
 const shiftShape = z.object({
   code: z.string().min(1),
@@ -208,21 +215,10 @@ const setScheme = withPermission('attendance.roster.write')
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    const weekday = await context.db.selectFrom('att.shifts').select('id').where('code', '=', input.weekdayShiftCode).executeTakeFirst();
-    if (!weekday) throw new ORPCError('NOT_FOUND', { message: `Unknown shift: ${input.weekdayShiftCode}` });
-    let saturdayId: number | null = null;
-    if (input.saturdayShiftCode) {
-      const sat = await context.db.selectFrom('att.shifts').select('id').where('code', '=', input.saturdayShiftCode).executeTakeFirst();
-      if (!sat) throw new ORPCError('NOT_FOUND', { message: `Unknown shift: ${input.saturdayShiftCode}` });
-      saturdayId = sat.id;
-    }
-    await context.db
-      .insertInto('att.employee_shifts')
-      .values({ employee_id: input.employeeId, weekday_shift_id: weekday.id, saturday_shift_id: saturdayId, updated_by: context.user.id })
-      .onConflict((oc) =>
-        oc.column('employee_id').doUpdateSet({ weekday_shift_id: weekday.id, saturday_shift_id: saturdayId, updated_by: context.user.id }),
-      )
-      .execute();
+    try {
+      await assignEmployeeScheme(context.db, { ...input, actorUserId: context.user.id,
+        scope: { ...context.permissionAccess, actorEmployeeId: context.user.employee_id } });
+    } catch (error) { attendanceError(error); }
     return { ok: true as const };
   });
 
@@ -381,6 +377,7 @@ const setRoster = withPermission('attendance.roster.write')
     const upserted = await applyRosterEntries(db, {
       actorUserId: context.user.id,
       entries,
+      scope: { ...context.permissionAccess, actorEmployeeId: context.user.employee_id },
       ip: context.req.ip ?? null,
     });
     return { upserted };
@@ -407,6 +404,10 @@ const dayRecords = withPermission('attendance.team.read')
     ),
   )
   .handler(async ({ input, context }) => {
+    try { await assertEmployeesInScope(context.db,
+      { ...context.permissionAccess, actorEmployeeId: context.user.employee_id }, [input.employeeId]); }
+    catch { throw new ORPCError('FORBIDDEN', { message: 'Employee outside your permitted data scope' }); }
+
     const rows = await context.db
       .selectFrom('att.day_records')
       .selectAll()
@@ -438,7 +439,7 @@ const overrideDay = withPermission('attendance.manual_override')
       date: isoDate,
       status: z.enum(['P', 'A', 'HD', 'WO', 'H', 'UAB']),
       sessionStatuses: sessionStatusesSchema.nullish(),
-      reason: z.string().min(5, 'A meaningful reason is mandatory'),
+      reason: z.string().trim().min(5, 'A meaningful reason is mandatory'),
     }),
   )
   .output(z.object({ ok: z.literal(true) }))
@@ -448,14 +449,13 @@ const overrideDay = withPermission('attendance.manual_override')
     } catch (error) {
       throw new ORPCError('BAD_REQUEST', { message: error instanceof Error ? error.message : 'Invalid session results' });
     }
-    await setManualStatus(context.db, {
-      employeeId: input.employeeId,
-      isoDate: input.date,
-      status: input.status,
-      sessionStatuses: input.sessionStatuses ?? null,
-      reason: input.reason,
-      actorUserId: context.user.id,
-    });
+    try {
+      await setManualStatus(context.db, {
+        employeeId: input.employeeId, isoDate: input.date, status: input.status,
+        sessionStatuses: input.sessionStatuses ?? null, reason: input.reason, actorUserId: context.user.id,
+        scope: { ...context.permissionAccess, actorEmployeeId: context.user.employee_id },
+      });
+    } catch (error) { attendanceError(error); }
     return { ok: true as const };
   });
 

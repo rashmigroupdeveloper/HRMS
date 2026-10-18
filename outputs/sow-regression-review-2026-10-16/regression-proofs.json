@@ -1,0 +1,13 @@
+{
+  "prepared": "2026-10-16",
+  "hold_before": "Native regression expected pending but received approved",
+  "deadlock_before": {
+    "postgres_deadlock_reproduced": true,
+    "native_database": true
+  },
+  "deadlock_after": "Coordinated pg_locks regression passes in complete suite",
+  "sweep_before": "Invalid configuration raised ZodError and aborted valid OT processing",
+  "sweep_after": "Complete suite proves invalid request remains pending, valid OT lapses",
+  "frontend_mock_teardown": "Before: undefined.then from restored mock during mounted resource effect. After: explicit cleanup before restore, full246 pass.",
+  "thresholds_lowered": false
+}

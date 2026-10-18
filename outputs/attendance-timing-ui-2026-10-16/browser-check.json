@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-16",
+  "environment": "Loopback local hrms test DB; synthetic employee only",
+  "day": "2026-10-15",
+  "observed": [
+    "P:A renders Half-day present with separate Present/Absent halves",
+    "First half shows 09:00\u201313:30 IST; second half shows 13:30\u201318:00 IST from configured G5 shift",
+    "Period selector shows whole-day and both half windows",
+    "Regularisation first-half selection previews 09:00\u201313:30 IST",
+    "OD second-half selection previews 13:30\u201318:00 IST and says the other half stays unchanged",
+    "Summary separates full present days and half days"
+  ],
+  "attendance_request_submitted": false,
+  "screenshots": "Displayed in browser tool output; no persisted image artifact",
+  "cleanup": "Owned temporary browser tab closed; synthetic account disabled/detached and session revoked"
+}

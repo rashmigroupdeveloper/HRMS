@@ -75,3 +75,7 @@ Phase 2/3 completion labels and unsupported acceptance checkboxes are reopened. 
 ## Approval/attendance continuation — 15 Oct 2026
 
 [Pack20](sow-completion/20-MANAGER-APPROVAL-AND-ATTENDANCE-REVIEW.md) and its verification evidence supersede prior counts for the current checkout. C03/C04/C08 have bounded repairs with their remaining contracts retained; C24's exact-request substitution defect is repaired. Added SLA missing-target, permission-form, leave-history and badge regressions. No new fields/migrations, payroll/statutory edits or release gates in this increment. R46 transport repair and R21 allocation evidence remain; global coverage and full remaining SOW work remain open.
+
+## SOW regression continuation — 16 Oct 2026
+
+[Pack21](sow-completion/21-SOW-REGRESSION-AND-HR-HOLD-REVIEW.md) is the latest review. Hold-for-HR policy and recovery, a native-reproduced audit/employee deadlock and chain-validation bypass are repaired. All176 original SOW rows and46 code/nine schema observations remain in the linked evidence, with R21/R46 repair statuses reconciled. Native catalog:132 business relations/1,379 unchanged columns. Backend498 tests/build pass but80% coverage gate fails; frontend246 tests/full verify passes. No production, money/statutory or schema changes; full cross-domain acceptance remains open.

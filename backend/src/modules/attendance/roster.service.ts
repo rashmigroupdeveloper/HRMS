@@ -8,6 +8,12 @@
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
+import type { EmployeeScope } from '../../core/rbac/employee-scope.js';
+import {
+  attendanceTransaction,
+  lockAttendanceEmployee,
+  assertAttendanceMonthOpen,
+} from './attendance-mutation.js';
 
 export interface RosterPersistenceEntry {
   employeeId: number;
@@ -20,16 +26,35 @@ interface ApplyRosterEntriesOptions {
   actorUserId: number;
   entries: RosterPersistenceEntry[];
   ip: string | null;
+  scope?: EmployeeScope;
 }
 
 export async function applyRosterEntries(
   db: Kysely<Database>,
   options: ApplyRosterEntriesOptions,
 ): Promise<number> {
-  return db.transaction().execute(async (trx) => {
+  return attendanceTransaction(db, async (trx) => {
+    const people = new Map<number, number>();
+    for (const id of [...new Set(options.entries.map((e) => e.employeeId))].sort((a, b) => a - b)) {
+      const employee = await lockAttendanceEmployee(trx, id, options.scope);
+      people.set(id, employee.company_id);
+    }
     let changed = 0;
 
-    for (const entry of options.entries) {
+    for (const entry of [...options.entries].sort(
+      (a, b) => a.employeeId - b.employeeId || a.date.localeCompare(b.date),
+    )) {
+      const previous = await trx
+        .selectFrom('att.rosters')
+        .select(['shift_id', 'is_week_off'])
+        .where('employee_id', '=', entry.employeeId)
+        .where('work_date', '=', sql<Date>`${entry.date}::date`)
+        .executeTakeFirst();
+      if (previous?.shift_id === entry.shiftId && previous.is_week_off === entry.weekOff)
+        continue;
+      const companyId = people.get(entry.employeeId);
+      if (!companyId) throw new Error('Missing roster employee');
+      await assertAttendanceMonthOpen(trx, companyId, entry.date);
       const persisted = await trx
         .insertInto('att.rosters')
         .values({

@@ -14,6 +14,7 @@ import { readRunSummary, readRunSummaries, type RunSummary } from './run.reposit
 export type { RunSummary } from './run.repository.js';
 import { ReconciliationService } from '../reconciliation/reconciliation.service.js';
 import type { PayrollRunType, PayrollRunsTable } from '../../../core/db/types.js';
+import { getUserRoleCodes } from '../../../core/rbac/permissions.service.js';
 
 export interface CreateRunInput {
   companyId: number;
@@ -178,6 +179,16 @@ export class PayrollRunService {
 
       if (!validation.valid) {
         throw new Error(validation.error);
+      }
+
+      // Verify that the actor holds an authorized approval role (hr_head, super_admin, or ceo_cell)
+      // (docs/14 §3: "payroll_admin computes, hr_head co-signs finalize")
+      const roles = await getUserRoleCodes(trx, actorUserId);
+      const isAuthorizedApprover = roles.has('hr_head') || roles.has('super_admin') || roles.has('ceo_cell');
+      if (!isAuthorizedApprover) {
+        throw new Error(
+          `Unauthorized: User #${actorUserId} lacks the required role (hr_head, super_admin, or ceo_cell) to approve and co-sign this payroll run.`,
+        );
       }
 
       await trx

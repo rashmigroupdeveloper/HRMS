@@ -13,6 +13,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   test: {
+    // Bound jsdom/axe workers: unconstrained CPU-count concurrency exhausted
+    // memory and caused unrelated 5s timeouts on the shared development host.
+    // Keep the assertion deadlines and all tests intact.
+    maxWorkers: 2,
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],

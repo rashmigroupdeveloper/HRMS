@@ -1,0 +1,3640 @@
+{
+  "capturedAt": "2026-10-18T14:08:00.913Z",
+  "routeDeclarations": 251,
+  "frontendLiteralOrTemplateCalls": 143,
+  "permissionDeclarations": 135,
+  "businessAuthedOnly": [
+    {
+      "file": "backend/src/modules/claims/claims.router.ts",
+      "line": 51,
+      "path": "/api/claims/my-entitlements",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/claims/claims.router.ts",
+      "line": 83,
+      "path": "/api/claims/my",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/claims/claims.router.ts",
+      "line": 104,
+      "path": "/api/claims/submit",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 125,
+      "path": "/travel/trips",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 158,
+      "path": "/travel/trips/{id}",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 222,
+      "path": "/travel/trips",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 280,
+      "path": "/travel/trips/{tripId}/itineraries",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 318,
+      "path": "/travel/budgets",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 340,
+      "path": "/travel/advances",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 362,
+      "path": "/travel/advances",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 420,
+      "path": "/travel/claims",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 446,
+      "path": "/travel/claims",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 477,
+      "path": "/travel/claims/{claimId}/items",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 550,
+      "path": "/travel/wallet",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 573,
+      "path": "/travel/wallet/ledger",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 57,
+      "path": "/helpdesk/categories",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 74,
+      "path": "/helpdesk/tickets",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 97,
+      "path": "/helpdesk/tickets/mine",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 129,
+      "path": "/helpdesk/tickets/{ticketId}/thread",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 165,
+      "path": "/helpdesk/tickets/{ticketId}/reply",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 88,
+      "path": "/engagement/announcements",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 153,
+      "path": "/engagement/polls",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 182,
+      "path": "/engagement/polls/{id}/respond",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 287,
+      "path": "/engagement/surveys",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 327,
+      "path": "/engagement/surveys/{id}/respond",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 26,
+      "path": "/workflows/requests",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 72,
+      "path": "/workflows/inbox",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 105,
+      "path": "/workflows/requests/{requestId}/act",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 132,
+      "path": "/workflows/requests/{requestId}/resubmit",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 146,
+      "path": "/workflows/requests/{requestId}",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 216,
+      "path": "/workflows/delegations",
+      "method": "PUT",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 86,
+      "path": "/lifecycle/separations/apply",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/settings/settings.router.ts",
+      "line": 19,
+      "path": "/settings/{key}",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/settings/settings.router.ts",
+      "line": 29,
+      "path": "/settings",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/loans/loans.router.ts",
+      "line": 45,
+      "path": "/api/loans/my",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/loans/loans.router.ts",
+      "line": 62,
+      "path": "/api/loans/preview",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/loans/loans.router.ts",
+      "line": 132,
+      "path": "/api/loans/apply",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/loans/loans.router.ts",
+      "line": 176,
+      "path": "/api/loans/:id/ledger",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/structure.router.ts",
+      "line": 75,
+      "path": "/payroll/structures",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/structure.router.ts",
+      "line": 93,
+      "path": "/payroll/structures/{id}",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/structure.router.ts",
+      "line": 121,
+      "path": "/payroll/structures/preview",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/payroll-core/components/component.router.ts",
+      "line": 18,
+      "path": "/payroll/components",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/payroll-core/components/component.router.ts",
+      "line": 28,
+      "path": "/payroll/components/{code}",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    }
+  ],
+  "unexpectedPublicBusiness": [],
+  "frontendCallsWithoutMatchingOperation": [
+    {
+      "file": "frontend/src/pages/reports/MusterPage.tsx",
+      "line": 219,
+      "path": "/api/reports/muster{*}",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/reports/MusterPage.tsx",
+      "line": 242,
+      "path": "/api/reports/muster/export{*}",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/reports/SupportingReports.tsx",
+      "line": 144,
+      "path": "/api/reports/r2-swipes/raw{*}",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 120,
+      "path": "/api/claims/my-entitlements",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 125,
+      "path": "/api/claims/my",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 131,
+      "path": "/api/claims/pending",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 137,
+      "path": "/api/claims/pending",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 271,
+      "path": "/api/claims/submit",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 326,
+      "path": "/api/claims/decide",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 363,
+      "path": "/api/claims/route-payout",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 125,
+      "path": "/api/loans/my",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 131,
+      "path": "/api/loans/all",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 184,
+      "path": "/api/loans/preview",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 256,
+      "path": "/api/loans/apply",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 283,
+      "path": "/api/loans/legacy-import",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 164,
+      "path": "/api/lifecycle/transfers{*}",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 178,
+      "path": "/api/core/companies",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 182,
+      "path": "/api/core/departments",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 186,
+      "path": "/api/core/locations",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 190,
+      "path": "/api/core/designations",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 194,
+      "path": "/api/core/grades",
+      "method": "GET"
+    }
+  ],
+  "limitations": [
+    "Static references can belong to unmounted code or use dynamic options; a mismatch is a review candidate, not an automatically proven runtime failure.",
+    "The source tree is concurrently edited.",
+    "Matching method/path is not evidence of correct permissions, transactions or DTO values."
+  ],
+  "routes": [
+    {
+      "file": "backend/src/modules/employees/employees.router.ts",
+      "line": 29,
+      "path": "/employees",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/employees/employees.router.ts",
+      "line": 119,
+      "path": "/employees/me",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/employees/employees.router.ts",
+      "line": 136,
+      "path": "/employees/{ecode}",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/employees/employees.router.ts",
+      "line": 169,
+      "path": "/employees/facets",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/claims/claims.router.ts",
+      "line": 51,
+      "path": "/api/claims/my-entitlements",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/claims/claims.router.ts",
+      "line": 83,
+      "path": "/api/claims/my",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/claims/claims.router.ts",
+      "line": 104,
+      "path": "/api/claims/submit",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/claims/claims.router.ts",
+      "line": 160,
+      "path": "/api/claims/pending",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "claims.approve"
+      ]
+    },
+    {
+      "file": "backend/src/modules/claims/claims.router.ts",
+      "line": 184,
+      "path": "/api/claims/decide",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "claims.approve"
+      ]
+    },
+    {
+      "file": "backend/src/modules/claims/claims.router.ts",
+      "line": 234,
+      "path": "/api/claims/route-payout",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "payroll.run.manage"
+      ]
+    },
+    {
+      "file": "backend/src/modules/claims/claims.router.ts",
+      "line": 277,
+      "path": "/api/claims/year-end-recovery",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "payroll.run.manage"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 127,
+      "path": "/attendance/month-lock/checklist",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.month_lock"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 151,
+      "path": "/attendance/month-lock",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.month_lock"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 181,
+      "path": "/attendance/manager-approvals",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.month_lock"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 199,
+      "path": "/attendance/manager-approvals",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.team.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 248,
+      "path": "/reports/muster/build",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.muster.export"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 300,
+      "path": "/reports/muster",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.muster.export"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 308,
+      "path": "/reports/muster/export",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.muster.export"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 359,
+      "path": "/reports/r2-swipes",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.muster.export"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 367,
+      "path": "/reports/r2-swipes/export",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.muster.export"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 396,
+      "path": "/reports/r2-swipes/raw",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.muster.export"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 438,
+      "path": "/reports/r3-regularizations",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.muster.export"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 446,
+      "path": "/reports/r3-regularizations/export",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.muster.export"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 470,
+      "path": "/reports/r4-exceptions",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.muster.export"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 478,
+      "path": "/reports/r4-exceptions/export",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.muster.export"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 511,
+      "path": "/reports/r5-ot",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 519,
+      "path": "/reports/r5-ot/export",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 549,
+      "path": "/reports/r6-absence",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 557,
+      "path": "/reports/r6-absence/export",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 589,
+      "path": "/reports/r24-boarding",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 597,
+      "path": "/reports/r24-boarding/export",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 638,
+      "path": "/reports/r27-headcount",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 646,
+      "path": "/reports/r27-headcount/export",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 659,
+      "path": "/dashboards/hr-ops",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "reports.hr"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 676,
+      "path": "/dashboards/ess",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 705,
+      "path": "/my/attendance",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 726,
+      "path": "/my/team/grid",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.team.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 750,
+      "path": "/reports/executive",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "reports.ceo"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 783,
+      "path": "/dashboards/business-unit",
+      "method": "GET",
+      "tier": "withAnyPermission",
+      "permissions": [
+        "reports.bu",
+        "reports.hr"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 820,
+      "path": "/reports/executive/trend",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 832,
+      "path": "/reports/executive/rebuild",
+      "method": "POST",
+      "tier": "withAnyPermission",
+      "permissions": [
+        "reports.ceo",
+        "reports.hr",
+        "admin.integrations",
+        "admin.settings"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 840,
+      "path": "/reports/executive/leavers",
+      "method": "GET",
+      "tier": "withAnyPermission",
+      "permissions": [
+        "reports.ceo",
+        "reports.hr"
+      ]
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 897,
+      "path": "/reports/r21-offers",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 905,
+      "path": "/reports/r21-offers/export",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 937,
+      "path": "/reports/r23-transfers",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 945,
+      "path": "/reports/r23-transfers/export",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 975,
+      "path": "/reports/r25-probation",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 983,
+      "path": "/reports/r25-probation/export",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 1018,
+      "path": "/reports/r26-attrition",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 1026,
+      "path": "/reports/r26-attrition/export",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 1058,
+      "path": "/reports/r28-assets",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 1066,
+      "path": "/reports/r28-assets/export",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 1092,
+      "path": "/reports/r29-helpdesk",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 1100,
+      "path": "/reports/r29-helpdesk/export",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 1121,
+      "path": "/reports/r30-policies",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 1126,
+      "path": "/reports/r30-policies/export",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 1159,
+      "path": "/reports/r31-claims",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/reports/reports.router.ts",
+      "line": 1167,
+      "path": "/reports/r31-claims/export",
+      "method": "GET",
+      "tier": "reportGuard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 44,
+      "path": "/leave/types",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 64,
+      "path": "/leave/types/{code}",
+      "method": "PUT",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.admin"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 117,
+      "path": "/leave/balances",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 122,
+      "path": "/leave/balances/{employeeId}",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.admin"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 136,
+      "path": "/leave/applications",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 166,
+      "path": "/leave/applications/mine",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 204,
+      "path": "/leave/ledger",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 248,
+      "path": "/leave/applications/{id}/cancel",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 265,
+      "path": "/leave/encashments",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 283,
+      "path": "/leave/restricted-holidays",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 298,
+      "path": "/leave/restricted-holidays",
+      "method": "PUT",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.admin"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 319,
+      "path": "/leave/restricted-holidays/{id}/select",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 336,
+      "path": "/leave/adjustments",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "leave.admin"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 361,
+      "path": "/leave/accrual/run",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 367,
+      "path": "/leave/comp-off/expire",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/leave/leave.router.ts",
+      "line": 372,
+      "path": "/leave/year-end/run",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 125,
+      "path": "/travel/trips",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 158,
+      "path": "/travel/trips/{id}",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 222,
+      "path": "/travel/trips",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 280,
+      "path": "/travel/trips/{tripId}/itineraries",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 318,
+      "path": "/travel/budgets",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 340,
+      "path": "/travel/advances",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 362,
+      "path": "/travel/advances",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 397,
+      "path": "/travel/advances/{advanceId}/approve",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "payroll.run.manage"
+      ]
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 420,
+      "path": "/travel/claims",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 446,
+      "path": "/travel/claims",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 477,
+      "path": "/travel/claims/{claimId}/items",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 512,
+      "path": "/travel/claims/{claimId}/settle",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "payroll.run.manage"
+      ]
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 550,
+      "path": "/travel/wallet",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/travel/travel.router.ts",
+      "line": 573,
+      "path": "/travel/wallet/ledger",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 57,
+      "path": "/helpdesk/categories",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 74,
+      "path": "/helpdesk/tickets",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 97,
+      "path": "/helpdesk/tickets/mine",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 105,
+      "path": "/helpdesk/tickets",
+      "method": "GET",
+      "tier": "agent",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 129,
+      "path": "/helpdesk/tickets/{ticketId}/thread",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 165,
+      "path": "/helpdesk/tickets/{ticketId}/reply",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 198,
+      "path": "/helpdesk/tickets/{ticketId}/status",
+      "method": "POST",
+      "tier": "agent",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 220,
+      "path": "/helpdesk/escalate",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 240,
+      "path": "/helpdesk/performance",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "reports.hr"
+      ]
+    },
+    {
+      "file": "backend/src/modules/helpdesk/helpdesk.router.ts",
+      "line": 246,
+      "path": "/helpdesk/performance/export",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "reports.hr"
+      ]
+    },
+    {
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 55,
+      "path": "/assets",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 74,
+      "path": "/assets/{assetNo}",
+      "method": "PUT",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 103,
+      "path": "/assets/{assetId}/assign",
+      "method": "POST",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 137,
+      "path": "/assets/assignments/{assignmentId}/return",
+      "method": "POST",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 160,
+      "path": "/assets/held-by/{employeeId}",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 184,
+      "path": "/assets/non-returned",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 203,
+      "path": "/assets/{assetId}/maintenance",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 222,
+      "path": "/assets/{assetId}/maintenance",
+      "method": "POST",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 254,
+      "path": "/assets/export",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/assets/assets.router.ts",
+      "line": 298,
+      "path": "/assets/non-returned/export",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/audit/audit.router.ts",
+      "line": 44,
+      "path": "/audit",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "audit.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/audit/audit.router.ts",
+      "line": 65,
+      "path": "/audit/facets",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "audit.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/audit/audit.router.ts",
+      "line": 78,
+      "path": "/audit/verify",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "audit.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/audit/audit.router.ts",
+      "line": 97,
+      "path": "/audit/export",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "audit.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/system/system.router.ts",
+      "line": 14,
+      "path": "/system/health",
+      "method": "GET",
+      "tier": "base",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 88,
+      "path": "/engagement/announcements",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 97,
+      "path": "/engagement/announcements/all",
+      "method": "GET",
+      "tier": "publisher",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 106,
+      "path": "/engagement/announcements",
+      "method": "POST",
+      "tier": "publisher",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 134,
+      "path": "/engagement/announcements/{id}/withdraw",
+      "method": "POST",
+      "tier": "publisher",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 153,
+      "path": "/engagement/polls",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 158,
+      "path": "/engagement/polls",
+      "method": "POST",
+      "tier": "publisher",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 182,
+      "path": "/engagement/polls/{id}/respond",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 207,
+      "path": "/engagement/polls/{id}/results",
+      "method": "GET",
+      "tier": "publisher",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 219,
+      "path": "/engagement/polls/{id}/close",
+      "method": "POST",
+      "tier": "publisher",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 287,
+      "path": "/engagement/surveys",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 292,
+      "path": "/engagement/surveys/all",
+      "method": "GET",
+      "tier": "publisher",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 297,
+      "path": "/engagement/surveys",
+      "method": "POST",
+      "tier": "publisher",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 327,
+      "path": "/engagement/surveys/{id}/respond",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 350,
+      "path": "/engagement/surveys/{id}/results",
+      "method": "GET",
+      "tier": "publisher",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/engagement/engagement.router.ts",
+      "line": 362,
+      "path": "/engagement/surveys/{id}/close",
+      "method": "POST",
+      "tier": "publisher",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 46,
+      "path": "/policies",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "engagement.publish"
+      ]
+    },
+    {
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 88,
+      "path": "/policies",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "employee.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 93,
+      "path": "/policies/pending",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "employee.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 98,
+      "path": "/policies/catalog",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "reports.hr"
+      ]
+    },
+    {
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 114,
+      "path": "/policies/{id}/content",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "employee.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 133,
+      "path": "/policies/{id}/ack",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "employee.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 142,
+      "path": "/policies/ack-status",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "reports.hr"
+      ]
+    },
+    {
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 158,
+      "path": "/policies/nag",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 185,
+      "path": "/policies/ack-report",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "reports.hr"
+      ]
+    },
+    {
+      "file": "backend/src/modules/policies/policies.router.ts",
+      "line": 191,
+      "path": "/policies/ack-report/export",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "reports.hr"
+      ]
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 26,
+      "path": "/workflows/requests",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 72,
+      "path": "/workflows/inbox",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 105,
+      "path": "/workflows/requests/{requestId}/act",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 132,
+      "path": "/workflows/requests/{requestId}/resubmit",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 146,
+      "path": "/workflows/requests/{requestId}",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 216,
+      "path": "/workflows/delegations",
+      "method": "PUT",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 248,
+      "path": "/workflows/definitions",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.settings"
+      ]
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 257,
+      "path": "/workflows/definitions/{code}",
+      "method": "PUT",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.settings"
+      ]
+    },
+    {
+      "file": "backend/src/modules/workflows/workflows.router.ts",
+      "line": 290,
+      "path": "/workflows/escalate",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/workflows/workflow-holds.router.ts",
+      "line": 7,
+      "path": "/workflows/routing-holds",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.settings"
+      ]
+    },
+    {
+      "file": "backend/src/modules/workflows/workflow-holds.router.ts",
+      "line": 15,
+      "path": "/workflows/requests/{requestId}/retry-routing",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.settings"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding-application.router.ts",
+      "line": 8,
+      "path": "/lifecycle/candidates/{candidateId}/application",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.onboard.convert"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+      "line": 29,
+      "path": "/lifecycle/onboarding-reference-data",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.onboard.convert"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+      "line": 38,
+      "path": "/lifecycle/prejoin/validate",
+      "method": "GET",
+      "tier": "base",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+      "line": 75,
+      "path": "/lifecycle/prejoin/submit",
+      "method": "POST",
+      "tier": "base",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+      "line": 96,
+      "path": "/lifecycle/candidates/ingest",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.onboard.convert"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+      "line": 141,
+      "path": "/lifecycle/candidates",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.onboard.convert"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+      "line": 197,
+      "path": "/lifecycle/candidates/check-duplicate",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.onboard.convert"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+      "line": 219,
+      "path": "/lifecycle/candidates/convert",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.onboard.convert"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+      "line": 254,
+      "path": "/lifecycle/tasks",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.onboard.convert"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+      "line": 335,
+      "path": "/lifecycle/tasks/complete",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.onboard.convert"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/onboarding/onboarding.router.ts",
+      "line": 356,
+      "path": "/lifecycle/biometric/verify",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.onboard.convert"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+      "line": 28,
+      "path": "/lifecycle/boarding-exit",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "reports.hr"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+      "line": 41,
+      "path": "/lifecycle/boarding-exit/send",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/lifecycle.router.ts",
+      "line": 47,
+      "path": "/lifecycle/boarding-exit/excel",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "reports.hr"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 61,
+      "path": "/lifecycle/separations",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.separation.approve",
+        "read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 71,
+      "path": "/lifecycle/separations/{id}",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.separation.approve",
+        "read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 86,
+      "path": "/lifecycle/separations/apply",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 107,
+      "path": "/lifecycle/separations/absconding",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.separation.approve"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 130,
+      "path": "/lifecycle/separations/{separationId}/approve",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.separation.approve"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 149,
+      "path": "/lifecycle/separations/{separationId}/withdraw",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.separation.approve"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 164,
+      "path": "/lifecycle/clearances",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.separation.approve",
+        "read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 174,
+      "path": "/lifecycle/clearances/update",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.separation.approve"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 205,
+      "path": "/lifecycle/separations/{separationId}/compute-fnf",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "payroll.run.manage"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 222,
+      "path": "/lifecycle/separations/{separationId}/pay",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "payroll.run.manage"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/separation/separation.router.ts",
+      "line": 251,
+      "path": "/lifecycle/separations/{separationId}/ceo-review",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "reports.ceo"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.router.ts",
+      "line": 73,
+      "path": "/lifecycle/transfers",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.router.ts",
+      "line": 98,
+      "path": "/lifecycle/transfers",
+      "method": "POST",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.router.ts",
+      "line": 133,
+      "path": "/lifecycle/transfers/{id}/approve",
+      "method": "POST",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.router.ts",
+      "line": 156,
+      "path": "/lifecycle/transfers/{id}/reject",
+      "method": "POST",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.router.ts",
+      "line": 180,
+      "path": "/lifecycle/transfers/history/{employeeId}",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/lifecycle/transfers/transfer.router.ts",
+      "line": 214,
+      "path": "/lifecycle/transfers/as-of",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/settings/settings.router.ts",
+      "line": 19,
+      "path": "/settings/{key}",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/settings/settings.router.ts",
+      "line": 29,
+      "path": "/settings",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/settings/settings.router.ts",
+      "line": 42,
+      "path": "/settings/{key}",
+      "method": "PUT",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.settings"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/probation/probation.router.ts",
+      "line": 17,
+      "path": "/lifecycle/probation/reviews",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.confirmation.approve"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/probation/probation.router.ts",
+      "line": 52,
+      "path": "/lifecycle/probation/evaluate",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.confirmation.approve"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/probation/probation.router.ts",
+      "line": 70,
+      "path": "/lifecycle/probation/decide",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.confirmation.approve"
+      ]
+    },
+    {
+      "file": "backend/src/modules/lifecycle/probation/probation.router.ts",
+      "line": 98,
+      "path": "/lifecycle/probation/alerts",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "lifecycle.confirmation.approve"
+      ]
+    },
+    {
+      "file": "backend/src/modules/loans/loans.router.ts",
+      "line": 45,
+      "path": "/api/loans/my",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/loans/loans.router.ts",
+      "line": 62,
+      "path": "/api/loans/preview",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/loans/loans.router.ts",
+      "line": 132,
+      "path": "/api/loans/apply",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/loans/loans.router.ts",
+      "line": 176,
+      "path": "/api/loans/:id/ledger",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/loans/loans.router.ts",
+      "line": 212,
+      "path": "/api/loans/all",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "payroll.run.manage"
+      ]
+    },
+    {
+      "file": "backend/src/modules/loans/loans.router.ts",
+      "line": 240,
+      "path": "/api/loans/legacy-import",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "payroll.run.manage"
+      ]
+    },
+    {
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 40,
+      "path": "/auth/login",
+      "method": "POST",
+      "tier": "base",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 65,
+      "path": "/auth/refresh",
+      "method": "POST",
+      "tier": "base",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 81,
+      "path": "/auth/logout",
+      "method": "POST",
+      "tier": "base",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/auth/auth.router.ts",
+      "line": 104,
+      "path": "/auth/me",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 49,
+      "path": "/attendance/requests/schedule",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 58,
+      "path": "/attendance/requests",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 91,
+      "path": "/attendance/requests/mine",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 154,
+      "path": "/attendance/ot/mine",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 162,
+      "path": "/attendance/ot/pending",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "ot.approve"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 170,
+      "path": "/attendance/ot/decide",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "ot.approve"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-requests.router.ts",
+      "line": 196,
+      "path": "/attendance/ot/lapse-sweep",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 86,
+      "path": "/attendance/config/shifts",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.settings"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 95,
+      "path": "/attendance/config/shifts/active",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.roster.write"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 128,
+      "path": "/attendance/config/shifts/{code}",
+      "method": "PUT",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.settings"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 163,
+      "path": "/attendance/config/holidays",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.own"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 182,
+      "path": "/attendance/config/holidays",
+      "method": "PUT",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.settings"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 207,
+      "path": "/attendance/config/schemes/{employeeId}",
+      "method": "PUT",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.roster.write"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 228,
+      "path": "/attendance/roster",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.roster.write"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 312,
+      "path": "/attendance/roster",
+      "method": "PUT",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.roster.write"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 386,
+      "path": "/attendance/days",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.team.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 434,
+      "path": "/attendance/days/override",
+      "method": "PUT",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.manual_override"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 462,
+      "path": "/attendance/recompute",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance-config.router.ts",
+      "line": 479,
+      "path": "/attendance/week-close",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 18,
+      "path": "/attendance/devices",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.devices"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 58,
+      "path": "/attendance/finalization-holds",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "reports.hr"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 86,
+      "path": "/attendance/exceptions/unmatched",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.manual_override"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 125,
+      "path": "/attendance/exceptions/quarantined",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 164,
+      "path": "/attendance/sync",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/attendance.router.ts",
+      "line": 191,
+      "path": "/attendance/exceptions/quarantined/reingest",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/absence.router.ts",
+      "line": 20,
+      "path": "/attendance/absence-cases",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "attendance.team.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/absence.router.ts",
+      "line": 55,
+      "path": "/attendance/absence-cases/{id}/stage",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "letters.issue"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/absence.router.ts",
+      "line": 68,
+      "path": "/attendance/absence-cases/{id}/letter",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "letters.issue"
+      ]
+    },
+    {
+      "file": "backend/src/modules/attendance/absence.router.ts",
+      "line": 91,
+      "path": "/attendance/absence-cases/scan",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "admin.integrations"
+      ]
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/structure.router.ts",
+      "line": 75,
+      "path": "/payroll/structures",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/structure.router.ts",
+      "line": 93,
+      "path": "/payroll/structures/{id}",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/structure.router.ts",
+      "line": 105,
+      "path": "/payroll/structures",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "salary.write"
+      ]
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/structure.router.ts",
+      "line": 113,
+      "path": "/payroll/structures/{id}",
+      "method": "PUT",
+      "tier": "withPermission",
+      "permissions": [
+        "salary.write"
+      ]
+    },
+    {
+      "file": "backend/src/modules/payroll-core/structures/structure.router.ts",
+      "line": 121,
+      "path": "/payroll/structures/preview",
+      "method": "POST",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 35,
+      "path": "/letters/templates",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "letters.issue"
+      ]
+    },
+    {
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 48,
+      "path": "/letters/templates/{code}",
+      "method": "PUT",
+      "tier": "withPermission",
+      "permissions": [
+        "letters.issue"
+      ]
+    },
+    {
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 84,
+      "path": "/letters/issue",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "letters.issue"
+      ]
+    },
+    {
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 107,
+      "path": "/letters/mine",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "employee.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 115,
+      "path": "/letters/employee/{employeeId}",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "letters.issue"
+      ]
+    },
+    {
+      "file": "backend/src/modules/letters/letters.router.ts",
+      "line": 121,
+      "path": "/letters/{id}/content",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "employee.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 30,
+      "path": "/rbac/matrix",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 65,
+      "path": "/rbac/grants",
+      "method": "POST",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 93,
+      "path": "/rbac/grants",
+      "method": "DELETE",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 122,
+      "path": "/rbac/user-roles",
+      "method": "POST",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 153,
+      "path": "/rbac/user-roles",
+      "method": "DELETE",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/rbac/rbac.router.ts",
+      "line": 182,
+      "path": "/rbac/users",
+      "method": "GET",
+      "tier": "guard",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/payroll-core/components/component.router.ts",
+      "line": 18,
+      "path": "/payroll/components",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/payroll-core/components/component.router.ts",
+      "line": 28,
+      "path": "/payroll/components/{code}",
+      "method": "GET",
+      "tier": "authed",
+      "permissions": []
+    },
+    {
+      "file": "backend/src/modules/payroll-core/components/component.router.ts",
+      "line": 40,
+      "path": "/payroll/components",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "salary.write"
+      ]
+    },
+    {
+      "file": "backend/src/modules/payroll-core/components/component.router.ts",
+      "line": 48,
+      "path": "/payroll/components/{code}",
+      "method": "PUT",
+      "tier": "withPermission",
+      "permissions": [
+        "salary.write"
+      ]
+    },
+    {
+      "file": "backend/src/modules/payroll-core/salaries/salary.router.ts",
+      "line": 81,
+      "path": "/payroll/salaries/effective/{employee_id}",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "employee.compensation.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/payroll-core/salaries/salary.router.ts",
+      "line": 110,
+      "path": "/payroll/salaries/history/{employee_id}",
+      "method": "GET",
+      "tier": "withPermission",
+      "permissions": [
+        "employee.compensation.read"
+      ]
+    },
+    {
+      "file": "backend/src/modules/payroll-core/salaries/salary.router.ts",
+      "line": 121,
+      "path": "/payroll/salaries/assign",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "salary.write"
+      ]
+    },
+    {
+      "file": "backend/src/modules/payroll-core/salaries/salary.router.ts",
+      "line": 158,
+      "path": "/payroll/salaries/auto-switch-confirmation",
+      "method": "POST",
+      "tier": "withPermission",
+      "permissions": [
+        "salary.write"
+      ]
+    }
+  ],
+  "calls": [
+    {
+      "file": "frontend/src/pages/executive/ExecutivePage.tsx",
+      "line": 272,
+      "path": "/api/reports/executive/leavers",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/executive/ExecutivePage.tsx",
+      "line": 292,
+      "path": "/api/reports/executive/rebuild",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/reports/MusterPage.tsx",
+      "line": 211,
+      "path": "/api/reports/muster/build",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/reports/MusterPage.tsx",
+      "line": 219,
+      "path": "/api/reports/muster{*}",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/reports/MusterPage.tsx",
+      "line": 242,
+      "path": "/api/reports/muster/export{*}",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/reports/SupportingReports.tsx",
+      "line": 144,
+      "path": "/api/reports/r2-swipes/raw{*}",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/reports/SupportingReports.tsx",
+      "line": 680,
+      "path": "/api/lifecycle/boarding-exit/send",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/leave/LeaveApplyDrawer.tsx",
+      "line": 170,
+      "path": "/api/leave/applications",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/leave/MyLeavePage.tsx",
+      "line": 144,
+      "path": "/api/leave/restricted-holidays/{*}/select",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/travel/TravelPage.tsx",
+      "line": 142,
+      "path": "/api/travel/trips",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/travel/TravelPage.tsx",
+      "line": 148,
+      "path": "/api/travel/advances",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/travel/TravelPage.tsx",
+      "line": 154,
+      "path": "/api/travel/claims",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/travel/TravelPage.tsx",
+      "line": 160,
+      "path": "/api/travel/wallet",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/travel/TravelPage.tsx",
+      "line": 165,
+      "path": "/api/travel/wallet/ledger",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/travel/TravelPage.tsx",
+      "line": 218,
+      "path": "/api/travel/trips",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/travel/TravelPage.tsx",
+      "line": 249,
+      "path": "/api/travel/advances",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/travel/TravelPage.tsx",
+      "line": 275,
+      "path": "/api/travel/claims",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/travel/TravelPage.tsx",
+      "line": 282,
+      "path": "/api/travel/claims/{*}/items",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+      "line": 76,
+      "path": "/api/workflows/requests/{*}/act",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+      "line": 114,
+      "path": "/api/workflows/requests/{*}/act",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/approvals/ResubmitRequestForm.tsx",
+      "line": 34,
+      "path": "/api/workflows/requests/{*}/resubmit",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryStructuresPage.tsx",
+      "line": 119,
+      "path": "/api/payroll/structures",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryStructuresPage.tsx",
+      "line": 120,
+      "path": "/api/payroll/components",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryStructuresPage.tsx",
+      "line": 144,
+      "path": "/api/payroll/structures/preview",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryStructuresPage.tsx",
+      "line": 178,
+      "path": "/api/payroll/structures",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 120,
+      "path": "/api/claims/my-entitlements",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 125,
+      "path": "/api/claims/my",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 131,
+      "path": "/api/claims/pending",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 137,
+      "path": "/api/claims/pending",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 271,
+      "path": "/api/claims/submit",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 326,
+      "path": "/api/claims/decide",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/ClaimsPage.tsx",
+      "line": 363,
+      "path": "/api/claims/route-payout",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 125,
+      "path": "/api/loans/my",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 131,
+      "path": "/api/loans/all",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 184,
+      "path": "/api/loans/preview",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 256,
+      "path": "/api/loans/apply",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/LoansPage.tsx",
+      "line": 283,
+      "path": "/api/loans/legacy-import",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryRevisionsPage.tsx",
+      "line": 101,
+      "path": "/api/payroll/structures",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryRevisionsPage.tsx",
+      "line": 115,
+      "path": "/api/payroll/salaries/effective/{*}",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryRevisionsPage.tsx",
+      "line": 116,
+      "path": "/api/payroll/salaries/history/{*}",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryRevisionsPage.tsx",
+      "line": 137,
+      "path": "/api/payroll/salaries/assign",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/payroll/SalaryRevisionsPage.tsx",
+      "line": 165,
+      "path": "/api/payroll/salaries/auto-switch-confirmation",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/people/PeopleFilterDrawer.tsx",
+      "line": 101,
+      "path": "/api/employees/facets",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/people/DirectoryPage.tsx",
+      "line": 203,
+      "path": "/api/employees",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/team/OtDecisionsPage.tsx",
+      "line": 100,
+      "path": "/api/attendance/ot/pending",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/team/OtDecisionsPage.tsx",
+      "line": 131,
+      "path": "/api/attendance/ot/decide",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/team/OtDecisionsPage.tsx",
+      "line": 149,
+      "path": "/api/attendance/ot/pending",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/team/TeamPage.tsx",
+      "line": 224,
+      "path": "/api/attendance/config/shifts/active",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/team/TeamPage.tsx",
+      "line": 225,
+      "path": "/api/attendance/roster",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/team/TeamPage.tsx",
+      "line": 329,
+      "path": "/api/attendance/roster",
+      "method": "PUT"
+    },
+    {
+      "file": "frontend/src/pages/team/TeamPage.tsx",
+      "line": 358,
+      "path": "/api/attendance/manager-approvals",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+      "line": 66,
+      "path": "/api/policies",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+      "line": 67,
+      "path": "/api/policies/ack-status",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+      "line": 81,
+      "path": "/api/policies/{*}/content",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+      "line": 95,
+      "path": "/api/policies/{*}/ack",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/policies/PoliciesPage.tsx",
+      "line": 118,
+      "path": "/api/policies",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/ProbationBoardPage.tsx",
+      "line": 123,
+      "path": "/api/lifecycle/probation/reviews",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/ProbationBoardPage.tsx",
+      "line": 180,
+      "path": "/api/lifecycle/probation/alerts",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/ProbationBoardPage.tsx",
+      "line": 214,
+      "path": "/api/lifecycle/probation/evaluate",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/ProbationBoardPage.tsx",
+      "line": 261,
+      "path": "/api/lifecycle/probation/decide",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/PrejoinPortalPage.tsx",
+      "line": 68,
+      "path": "/api/lifecycle/prejoin/validate",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/PrejoinPortalPage.tsx",
+      "line": 119,
+      "path": "/api/lifecycle/prejoin/submit",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 178,
+      "path": "/api/lifecycle/separations",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 267,
+      "path": "/api/lifecycle/clearances",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 337,
+      "path": "/api/lifecycle/separations/apply",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 364,
+      "path": "/api/lifecycle/separations/absconding",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 387,
+      "path": "/api/lifecycle/separations/{*}/approve",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 432,
+      "path": "/api/lifecycle/clearances/update",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 460,
+      "path": "/api/lifecycle/separations/{*}/compute-fnf",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/SeparationBoardPage.tsx",
+      "line": 517,
+      "path": "/api/lifecycle/separations/{*}/pay",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 164,
+      "path": "/api/lifecycle/transfers{*}",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 178,
+      "path": "/api/core/companies",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 182,
+      "path": "/api/core/departments",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 186,
+      "path": "/api/core/locations",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 190,
+      "path": "/api/core/designations",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 194,
+      "path": "/api/core/grades",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 213,
+      "path": "/api/lifecycle/transfers/{*}/approve",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 237,
+      "path": "/api/lifecycle/transfers/{*}/reject",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 274,
+      "path": "/api/lifecycle/transfers",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 305,
+      "path": "/api/lifecycle/transfers/history/{*}",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/TransfersPage.tsx",
+      "line": 321,
+      "path": "/api/lifecycle/transfers/as-of",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 104,
+      "path": "/api/lifecycle/candidates",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 105,
+      "path": "/api/lifecycle/tasks",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 129,
+      "path": "/api/lifecycle/candidates/ingest",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 157,
+      "path": "/api/lifecycle/candidates/check-duplicate",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 215,
+      "path": "/api/lifecycle/candidates/convert",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 241,
+      "path": "/api/lifecycle/biometric/verify",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/lifecycle/OnboardingBoardPage.tsx",
+      "line": 254,
+      "path": "/api/lifecycle/tasks/complete",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+      "line": 135,
+      "path": "/api/rbac/grants",
+      "method": "UNKNOWN"
+    },
+    {
+      "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+      "line": 256,
+      "path": "/api/rbac/users",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/admin/AccessControlPage.tsx",
+      "line": 284,
+      "path": "/api/rbac/user-roles",
+      "method": "UNKNOWN"
+    },
+    {
+      "file": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+      "line": 287,
+      "path": "/api/attendance/config/shifts/{*}",
+      "method": "PUT"
+    },
+    {
+      "file": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+      "line": 469,
+      "path": "/api/attendance/config/holidays",
+      "method": "PUT"
+    },
+    {
+      "file": "frontend/src/pages/admin/WorkflowsPage.tsx",
+      "line": 284,
+      "path": "/api/workflows/definitions/{*}",
+      "method": "PUT"
+    },
+    {
+      "file": "frontend/src/pages/admin/AuditLogPage.tsx",
+      "line": 113,
+      "path": "/api/audit",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/admin/AuditLogPage.tsx",
+      "line": 132,
+      "path": "/api/audit/facets",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/admin/AuditLogPage.tsx",
+      "line": 142,
+      "path": "/api/audit/verify",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/admin/SettingsPage.tsx",
+      "line": 261,
+      "path": "/api/settings/{*}",
+      "method": "PUT"
+    },
+    {
+      "file": "frontend/src/pages/admin/RoutingHoldsPanel.tsx",
+      "line": 79,
+      "path": "/api/workflows/requests/{*}/retry-routing",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+      "line": 170,
+      "path": "/api/assets",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+      "line": 371,
+      "path": "/api/assets/{*}",
+      "method": "PUT"
+    },
+    {
+      "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+      "line": 491,
+      "path": "/api/assets/{*}/assign",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+      "line": 519,
+      "path": "/api/assets/assignments/{*}/return",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/AssetsPage.tsx",
+      "line": 663,
+      "path": "/api/assets/non-returned",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 419,
+      "path": "/api/helpdesk/categories",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 439,
+      "path": "/api/helpdesk/tickets",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 559,
+      "path": "/api/helpdesk/tickets/{*}/thread",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 574,
+      "path": "/api/helpdesk/tickets/{*}/reply",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 596,
+      "path": "/api/helpdesk/tickets/{*}/status",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 622,
+      "path": "/api/helpdesk/tickets/{*}/status",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/HelpdeskPage.tsx",
+      "line": 790,
+      "path": "/api/helpdesk/performance",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 261,
+      "path": "/api/engagement/announcements/{*}/withdraw",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 400,
+      "path": "/api/engagement/announcements",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 514,
+      "path": "/api/engagement/polls",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 537,
+      "path": "/api/engagement/polls/{*}/respond",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 559,
+      "path": "/api/engagement/polls/{*}/results",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 570,
+      "path": "/api/engagement/polls/{*}/close",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 826,
+      "path": "/api/engagement/polls",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 953,
+      "path": "/api/engagement/surveys",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 971,
+      "path": "/api/engagement/surveys/{*}/respond",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 992,
+      "path": "/api/engagement/surveys/{*}/results",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 1005,
+      "path": "/api/engagement/surveys/{*}/close",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/workplace/EngagementPage.tsx",
+      "line": 1361,
+      "path": "/api/engagement/surveys",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/auth/LoginPage.tsx",
+      "line": 125,
+      "path": "/api/auth/login",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/letters/MyLettersPage.tsx",
+      "line": 50,
+      "path": "/api/letters/mine",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/letters/MyLettersPage.tsx",
+      "line": 65,
+      "path": "/api/letters/{*}/content",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/letters/LettersPage.tsx",
+      "line": 44,
+      "path": "/api/letters/templates",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/letters/LettersPage.tsx",
+      "line": 54,
+      "path": "/api/letters/employee/{*}",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/letters/LettersPage.tsx",
+      "line": 68,
+      "path": "/api/letters/issue",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/letters/LettersPage.tsx",
+      "line": 87,
+      "path": "/api/letters/{*}/content",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/attendance/attendance-schedule.ts",
+      "line": 35,
+      "path": "/api/attendance/requests/schedule",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MonthLockPage.tsx",
+      "line": 70,
+      "path": "/api/attendance/month-lock/checklist",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MonthLockPage.tsx",
+      "line": 73,
+      "path": "/api/attendance/manager-approvals",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/attendance/MonthLockPage.tsx",
+      "line": 94,
+      "path": "/api/attendance/month-lock",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AttendanceRequestDrawer.tsx",
+      "line": 183,
+      "path": "/api/attendance/requests",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AbsenceCasesPage.tsx",
+      "line": 132,
+      "path": "/api/attendance/absence-cases",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AbsenceCasesPage.tsx",
+      "line": 148,
+      "path": "/api/attendance/absence-cases/{*}/stage",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/pages/attendance/AbsenceCasesPage.tsx",
+      "line": 167,
+      "path": "/api/attendance/absence-cases/{*}/letter",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/lib/session.ts",
+      "line": 43,
+      "path": "/api/auth/refresh",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/lib/session.ts",
+      "line": 68,
+      "path": "/api/auth/me",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/lib/session.ts",
+      "line": 109,
+      "path": "/api/auth/logout",
+      "method": "POST"
+    },
+    {
+      "file": "frontend/src/app/useInboxCount.ts",
+      "line": 19,
+      "path": "/api/workflows/inbox",
+      "method": "GET"
+    },
+    {
+      "file": "frontend/src/app/CommandPalette.tsx",
+      "line": 106,
+      "path": "/api/employees",
+      "method": "GET"
+    }
+  ]
+}

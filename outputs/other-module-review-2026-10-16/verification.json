@@ -1,0 +1,140 @@
+{
+  "prepared": "2026-10-16",
+  "purpose": "Diagnostic reproduction, not application acceptance",
+  "native_probe_exit_code": 0,
+  "native_observations": 20,
+  "positive_controls_passed": 4,
+  "cleanup": {
+    "users": 0,
+    "employees": 0,
+    "departments": 0,
+    "tickets": 0,
+    "auditRows": 0
+  },
+  "schema": {
+    "prepared": "2026-10-16",
+    "readOnly": true,
+    "postgresVersion": "14.24 (Homebrew)",
+    "parentRelations": 132,
+    "columns": 1379,
+    "baselineDate": "2026-10-14",
+    "addedColumns": [],
+    "removedColumns": [],
+    "changedColumnDefinitions": [],
+    "migrations": [
+      "1751790000000_core-auth-rbac-audit-settings",
+      "1751800000000_wf-notifications",
+      "1751810000000_org-employees",
+      "1751820000000_attendance-ingestion",
+      "1751830000000_attendance-quarantine",
+      "1751840000000_attendance-processing",
+      "1751850000000_workflow-engine",
+      "1751860000000_phase1-review-fixes",
+      "1751870000000_attendance-requests",
+      "1751880000000_leave",
+      "1751890000000_absence-letters-policies",
+      "1751900000000_stage17-month-lock-muster",
+      "1751910000000_stage17-lock-hardening",
+      "1751920000000_per-device-watermarks",
+      "1751930000000_device-watermark-monotonic",
+      "1751940000000_policy-body-summary",
+      "1751950000000_stage17-schema-drift-fix",
+      "1751960000000_manager-month-approvals",
+      "1751970000000_stage17-review-hardening",
+      "1751980000000_assets-module",
+      "1751990000000_helpdesk-engagement",
+      "1752000000000_kpi-daily-snapshot",
+      "1752010000000_asset-search-trigram",
+      "1752020000000_helpdesk-ticket-sequence",
+      "1752030000000_roster-noop-approval-guard",
+      "1752040000000_engagement-anonymous-dedupe",
+      "1752050000000_audit-org-unit-scope",
+      "1752060000000_sec-identity-hardening",
+      "1752070000000_cmp-licences-calendar",
+      "1752080000000_shift-micro-scheduling",
+      "1752090000000_org-mis-spine",
+      "1752100000000_prv-dpdp",
+      "1752110000000_ess-identity-daily",
+      "1752120000000_doc-vault",
+      "1752140000000_ird-posh-grievance",
+      "1752150000000_pay-budgets-claims",
+      "1752160000000_employee-hod",
+      "1752170000000_audit-chain-seq",
+      "1752180000000_org-spine-integrity",
+      "1752190000000_attendance-day-integrity",
+      "1752200000000_rbac-last-admin-guard",
+      "1752210000000_attendance-session-off",
+      "1752220000000_pay-schema-init",
+      "1752230000000_lifecycle-onboarding-probation",
+      "1752240000000_lifecycle-separation-clearances-fnf",
+      "1752250000000_lifecycle-transfers",
+      "1752260000000_helpdesk-engagement-surveys",
+      "1752270000000_claims-reconciliation"
+    ],
+    "workflowHoldSubscriptions": [
+      {
+        "recipient_kind": "role",
+        "recipient_ref": "hr_head"
+      }
+    ],
+    "invalidActiveDefinitions": [
+      {
+        "code": "claim",
+        "issues": [
+          {
+            "path": [
+              1,
+              "approver"
+            ],
+            "message": "Use a reporting manager, functional manager, role code or positive user ID"
+          }
+        ]
+      },
+      {
+        "code": "travel_budget",
+        "issues": [
+          {
+            "path": [
+              1,
+              "approver"
+            ],
+            "message": "Use a reporting manager, functional manager, role code or positive user ID"
+          }
+        ]
+      }
+    ],
+    "historicalApprovedWithoutSteps": [
+      {
+        "definition": "overtime",
+        "count": 98
+      },
+      {
+        "definition": "privacy_rights",
+        "count": 52
+      }
+    ],
+    "activeCheckedFixtureUsers": 0,
+    "openCheckedFixtureRequests": 0,
+    "limit": "Column/default/nullability/type parity is not proof of every CHECK, trigger behavior, field necessity or full SOW completion."
+  },
+  "source_files_compared": 505,
+  "application_source_changes": 0,
+  "react_doctor": {
+    "files": 3,
+    "warnings": 13,
+    "use": "Advisory hypotheses; not counted as additional confirmed defects",
+    "report": "react-doctor.txt"
+  },
+  "full_verify_rerun": false,
+  "reason": "No backend/frontend application, test, migration or config source changed; 505 files match the prior full-run source inventory.",
+  "previous_full_verification": {
+    "backend_tests": 498,
+    "frontend_tests": 246,
+    "backend_build": "passed separately",
+    "frontend_verify": "passed",
+    "backend_verify": "failed unchanged coverage floor",
+    "backend_lines_pct": 76.56,
+    "backend_branches_pct": 71.84,
+    "evidence": "../sow-regression-review-2026-10-16/verification.json"
+  }
+}

@@ -19,8 +19,30 @@ import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { hashPassword } from '../src/modules/auth/index.js';
-import { escalateBreachedTickets, helpdeskPerformance } from '../src/modules/helpdesk/helpdesk.service.js';
-import { createSurvey, respondToSurvey, surveyResults } from '../src/modules/engagement/surveys.service.js';
+import {
+  escalateBreachedTickets,
+  helpdeskPerformance,
+  raiseTicket,
+  replyToTicket,
+  setTicketStatus,
+  listTickets,
+  listCategories,
+} from '../src/modules/helpdesk/helpdesk.service.js';
+import {
+  createSurvey,
+  respondToSurvey,
+  surveyResults,
+  closeSurvey,
+  listSurveysForUser,
+  listAllSurveys,
+} from '../src/modules/engagement/surveys.service.js';
+import {
+  createPoll,
+  respondToPoll,
+  pollResults,
+  closePoll,
+  listPollsForUser,
+} from '../src/modules/engagement/polls.service.js';
 
 const DB_URL = process.env['DATABASE_URL'];
 const JWT_SECRET = process.env['JWT_SECRET'] ?? 'integration-test-secret-at-least-32-chars!';
@@ -433,5 +455,339 @@ run('Stage 3.4 — Helpdesk & Workplace Engagement (live Postgres)', () => {
         }
       },
     );
+  });
+
+  describe('3. Helpdesk Branch Coverage & Validation Guards', () => {
+    it('covers priority variations, unknown categories, status transitions, and empty performance periods', async () => {
+      // 1. listCategories
+      const cats = await listCategories(db);
+      expect(cats.length).toBeGreaterThanOrEqual(1);
+      const testCategoryCode = cats[0]?.code ?? 'it';
+
+      // 2. raiseTicket with priority 'high' and 'low'
+      const highT = await raiseTicket(db, {
+        raisedByUserId: userAId,
+        categoryCode: testCategoryCode,
+        subject: 'High priority laptop monitor flicker',
+        body: 'Screen flickers when connected to HDMI',
+        priority: 'high',
+        ip: null,
+      });
+      expect(highT.id).toBeGreaterThan(0);
+
+      const lowT = await raiseTicket(db, {
+        raisedByUserId: userAId,
+        categoryCode: testCategoryCode,
+        subject: 'Low priority mouse pad replacement',
+        body: 'Need new gel mouse pad',
+        priority: 'low',
+        ip: null,
+      });
+      expect(lowT.id).toBeGreaterThan(0);
+
+      // 3. raiseTicket unknown category throws
+      await expect(
+        raiseTicket(db, {
+          raisedByUserId: userAId,
+          categoryCode: 'non_existent_category_xyz',
+          subject: 'Test',
+          body: 'Test',
+          ip: null,
+        }),
+      ).rejects.toThrow(/Unknown helpdesk category/);
+
+      // 4. setTicketStatus validation guards
+      await expect(
+        setTicketStatus(db, {
+          ticketId: 999999,
+          status: 'resolved',
+          actorUserId: userAId,
+          ip: null,
+        }),
+      ).rejects.toThrow(/Ticket not found/);
+
+      // Close the high priority ticket
+      await setTicketStatus(db, {
+        ticketId: highT.id,
+        status: 'closed',
+        resolution: 'Closed by user',
+        actorUserId: userAId,
+        ip: null,
+      });
+
+      // Reopening closed ticket without reason throws
+      await expect(
+        setTicketStatus(db, {
+          ticketId: highT.id,
+          status: 'open',
+          resolution: '   ',
+          actorUserId: userAId,
+          ip: null,
+        }),
+      ).rejects.toThrow(/reason for reopening/i);
+
+      // Reopen with reason
+      await setTicketStatus(db, {
+        ticketId: highT.id,
+        status: 'open',
+        resolution: 'Flickering recurred today',
+        actorUserId: userAId,
+        ip: null,
+      });
+
+      // 5. replyToTicket validation guards
+      await expect(
+        replyToTicket(db, {
+          ticketId: 999999,
+          authorUserId: userAId,
+          body: 'Hello',
+          isInternal: false,
+        }),
+      ).rejects.toThrow(/Ticket not found/);
+
+      // Close ticket and verify reply is refused
+      await setTicketStatus(db, {
+        ticketId: highT.id,
+        status: 'closed',
+        resolution: 'Issue resolved successfully',
+        actorUserId: userAId,
+        ip: null,
+      });
+      await expect(
+        replyToTicket(db, {
+          ticketId: highT.id,
+          authorUserId: userAId,
+          body: 'Replying after close',
+          isInternal: false,
+        }),
+      ).rejects.toThrow(/This ticket is closed/);
+
+      // 6. listTickets with status and raisedByUserId filters
+      const userTickets = await listTickets(db, {
+        raisedByUserId: userAId,
+        status: 'closed',
+        limit: 5,
+        offset: 0,
+      });
+      expect(Array.isArray(userTickets.rows)).toBe(true);
+
+      // 7. helpdeskPerformance with historical period having 0 tickets
+      const perfEmpty = await helpdeskPerformance(db, { month: '1980-01' });
+      expect(perfEmpty).toEqual([]);
+
+      // Current month performance shows the tickets raised
+      const curMonth = new Date().toISOString().slice(0, 7);
+      const perfCur = await helpdeskPerformance(db, { month: curMonth });
+      expect(Array.isArray(perfCur)).toBe(true);
+      expect(perfCur.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('covers survey validation guards, listSurveysForUser, listAllSurveys, and closeSurvey', async () => {
+      // 1. createSurvey empty questions throws
+      await expect(
+        createSurvey(db, {
+          title: 'Empty Survey',
+          questions: [],
+          isAnonymous: true,
+          actorUserId: userAId,
+        }),
+      ).rejects.toThrow(/at least one question/);
+
+      // 2. createSurvey missing prompt throws
+      await expect(
+        createSurvey(db, {
+          title: 'Invalid Question Survey',
+          questions: [{ id: 'q1', prompt: '', type: 'text' }],
+          isAnonymous: true,
+          actorUserId: userAId,
+        }),
+      ).rejects.toThrow(/must have an id and prompt/);
+
+      // 3. createSurvey choice with <2 options throws
+      await expect(
+        createSurvey(db, {
+          title: 'Invalid Choice Survey',
+          questions: [{ id: 'q_c', prompt: 'Choice', type: 'choice', options: ['Only One'] }],
+          isAnonymous: true,
+          actorUserId: userAId,
+        }),
+      ).rejects.toThrow(/must have at least 2 options/);
+
+      // 4. Create valid named survey
+      const namedSurveyId = await createSurvey(db, {
+        title: 'Named Annual Survey',
+        description: 'Feedback on company facilities',
+        questions: [
+          { id: 'q_rate', prompt: 'Rate workplace', type: 'rating', required: true },
+          { id: 'q_text', prompt: 'Suggestions', type: 'text', required: false },
+        ],
+        isAnonymous: false,
+        actorUserId: userAId,
+      });
+      expect(namedSurveyId).toBeGreaterThan(0);
+
+      // 5. listAllSurveys includes the newly created survey
+      const allSurveys = await listAllSurveys(db);
+      expect(allSurveys.some((s) => s.id === namedSurveyId)).toBe(true);
+
+      // 6. listSurveysForUser shows the survey with hasResponded = false
+      const userSurveys = await listSurveysForUser(db, userAId, JWT_SECRET);
+      const targetSurvey = userSurveys.find((s) => s.id === namedSurveyId);
+      expect(targetSurvey).toBeDefined();
+      expect(targetSurvey?.hasResponded).toBe(false);
+
+      // 7. respondToSurvey non-existent survey throws
+      await expect(
+        respondToSurvey(db, {
+          surveyId: 999999,
+          userId: userAId,
+          answers: [{ questionId: 'q_rate', answer: 5 }],
+          appSecret: JWT_SECRET,
+        }),
+      ).rejects.toThrow(/Survey not found/);
+
+      // 8. respondToSurvey missing required question throws
+      await expect(
+        respondToSurvey(db, {
+          surveyId: namedSurveyId,
+          userId: userAId,
+          answers: [{ questionId: 'q_text', answer: 'Good' }],
+          appSecret: JWT_SECRET,
+        }),
+      ).rejects.toThrow(/is required/);
+
+      // 9. respondToSurvey successfully
+      await respondToSurvey(db, {
+        surveyId: namedSurveyId,
+        userId: userAId,
+        answers: [
+          { questionId: 'q_rate', answer: 5 },
+          { questionId: 'q_text', answer: 'Excellent cafeteria' },
+        ],
+        appSecret: JWT_SECRET,
+      });
+
+      // After responding, listSurveysForUser reflects hasResponded = true
+      const userSurveysAfter = await listSurveysForUser(db, userAId, JWT_SECRET);
+      const targetSurveyAfter = userSurveysAfter.find((s) => s.id === namedSurveyId);
+      expect(targetSurveyAfter?.hasResponded).toBe(true);
+
+      // 10. closeSurvey closes it
+      await closeSurvey(db, namedSurveyId, userAId);
+      await expect(
+        respondToSurvey(db, {
+          surveyId: namedSurveyId,
+          userId: userBId,
+          answers: [{ questionId: 'q_rate', answer: 4 }],
+          appSecret: JWT_SECRET,
+        }),
+      ).rejects.toThrow(/This survey is closed/);
+
+      // 11. closeSurvey non-existent throws
+      await expect(closeSurvey(db, 999999, userAId)).rejects.toThrow(/Survey not found/);
+    });
+
+    it('covers polls creation, listing, voting, comments, results, and closing', async () => {
+      // 1. createPoll with <2 options throws
+      await expect(
+        createPoll(db, {
+          question: 'One option poll',
+          options: ['Option 1'],
+          isAnonymous: true,
+          actorUserId: userAId,
+        }),
+      ).rejects.toThrow(/needs at least two options/);
+
+      // 2. createPoll valid
+      const pollId = await createPoll(db, {
+        question: 'What canteen cuisine do you prefer?',
+        options: ['North Indian', 'South Indian', 'Continental'],
+        kind: 'poll',
+        isAnonymous: true,
+        actorUserId: userAId,
+      });
+      expect(pollId).toBeGreaterThan(0);
+
+      // 3. listPollsForUser shows the poll with hasResponded = false
+      const pollsBefore = await listPollsForUser(db, userAId, JWT_SECRET);
+      const p = pollsBefore.find((item) => item.id === pollId);
+      expect(p).toBeDefined();
+      expect(p?.hasResponded).toBe(false);
+
+      // 4. respondToPoll invalid poll throws
+      await expect(
+        respondToPoll(db, {
+          pollId: 999999,
+          userId: userAId,
+          optionIndex: 0,
+          appSecret: JWT_SECRET,
+        }),
+      ).rejects.toThrow(/Poll not found/);
+
+      // 5. respondToPoll invalid option index throws
+      await expect(
+        respondToPoll(db, {
+          pollId,
+          userId: userAId,
+          optionIndex: 99,
+          appSecret: JWT_SECRET,
+        }),
+      ).rejects.toThrow(/Invalid option/);
+
+      // 6. respondToPoll successfully with comment
+      await respondToPoll(db, {
+        pollId,
+        userId: userAId,
+        optionIndex: 0,
+        comment: 'More paneer dishes please!',
+        appSecret: JWT_SECRET,
+      });
+
+      // 7. respondToPoll duplicate voting throws
+      await expect(
+        respondToPoll(db, {
+          pollId,
+          userId: userAId,
+          optionIndex: 1,
+          appSecret: JWT_SECRET,
+        }),
+      ).rejects.toThrow(/already responded/);
+
+      // User B votes for option 1
+      await respondToPoll(db, {
+        pollId,
+        userId: userBId,
+        optionIndex: 1,
+        appSecret: JWT_SECRET,
+      });
+
+      // 8. pollResults aggregates responses
+      const res = await pollResults(db, pollId);
+      expect(res.pollId).toBe(pollId);
+      expect(res.totalResponses).toBe(2);
+      expect(res.options[0]?.votes).toBe(1);
+      expect(res.options[1]?.votes).toBe(1);
+      expect(res.comments.length).toBe(1);
+      expect(res.comments[0]?.comment).toContain('paneer');
+
+      // pollResults non-existent throws
+      await expect(pollResults(db, 999999)).rejects.toThrow(/Poll not found/);
+
+      // 9. closePoll closes the poll
+      await closePoll(db, pollId, userAId);
+
+      // respond after close throws
+      await expect(
+        respondToPoll(db, {
+          pollId,
+          userId: hrHeadUserId,
+          optionIndex: 2,
+          appSecret: JWT_SECRET,
+        }),
+      ).rejects.toThrow(/This poll is closed/);
+
+      // closePoll non-existent throws
+      await expect(closePoll(db, 999999, userAId)).rejects.toThrow(/Poll not found/);
+    });
   });
 });

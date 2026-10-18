@@ -11,6 +11,7 @@ interface RequestDetail {
   type: string;
   payload: unknown;
   canResubmit: boolean;
+  routingState?: 'held_for_hr' | 'awaiting_approver' | null;
   steps: {
     stepNo: number; action: string | null; comment: string | null;
     notifiedAt: string; actedAt: string | null;
@@ -36,9 +37,11 @@ export function ApprovalRequestStatus({ requestId, onBack }: { requestId: number
   const summary = summarizeRequest(request.type, request.payload);
   return <Card>
     <h1 className="text-3xl font-light text-ink">Request {requestId}</h1>
-    <p className="my-3 text-sm text-ink-muted">This request is not awaiting your decision.</p>
+    <p className="my-3 text-sm text-ink-muted">{request.routingState === 'held_for_hr'
+      ? 'Waiting for HR to restore approval routing. Your request is not approved.'
+      : 'This request is not awaiting your decision.'}</p>
     <StatusBadge tone={request.status === 'approved' ? 'positive' : request.status === 'rejected' ? 'negative' : 'warning'}>
-      {request.status.replaceAll('_', ' ')}
+      {request.routingState === 'held_for_hr' ? 'Waiting for HR' : request.status.replaceAll('_', ' ')}
     </StatusBadge>
     <dl className="my-5 grid gap-3 sm:grid-cols-2">
       {summary.rows.map(row => <div key={row.label}>

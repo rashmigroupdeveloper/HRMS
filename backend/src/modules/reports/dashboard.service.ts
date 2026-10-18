@@ -4,17 +4,19 @@
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { formatDbDate, istDateString } from '../../core/dates.js';
+import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
+import { companyScopeSql } from '../../core/rbac/company-scope.js';
 import { getTypedSetting } from '../settings/index.js';
 import { policyAckStatus } from '../policies/index.js';
 import { getBalances } from '../leave/index.js';
 import { readSessionStatuses } from '../attendance/index.js';
 
-export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
+export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number, scope?: EmployeeScope) {
   const today = istDateString();
   const monthStart = `${today.slice(0, 7)}-01`;
 
   let empQ = db
-    .selectFrom('core.employees')
+    .selectFrom('core.employees as e').where(employeeScopeSql(scope, 'e'))
     .select((eb) => ['category', eb.fn.countAll<number>().as('n')])
     .where('status', 'in', ['active', 'on_notice'])
     .groupBy('category');
@@ -22,7 +24,7 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
   const byCategory = await empQ.execute();
 
   let joinQ = db
-    .selectFrom('core.employees')
+    .selectFrom('core.employees as e').where(employeeScopeSql(scope, 'e'))
     .select(({ fn }) => fn.countAll<number>().as('n'))
     .where('doj', '>=', sql<Date>`${monthStart}::date`)
     .where('doj', '<=', sql<Date>`${today}::date`);
@@ -30,7 +32,7 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
   const joinersMtd = (await joinQ.executeTakeFirstOrThrow()).n;
 
   let exitQ = db
-    .selectFrom('core.employees')
+    .selectFrom('core.employees as e').where(employeeScopeSql(scope, 'e'))
     .select(({ fn }) => fn.countAll<number>().as('n'))
     .where('dol', '>=', sql<Date>`${monthStart}::date`)
     .where('dol', '<=', sql<Date>`${today}::date`);
@@ -39,7 +41,7 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
 
   let absentQ = db
     .selectFrom('att.day_records as d')
-    .innerJoin('core.employees as e', 'e.id', 'd.employee_id')
+    .innerJoin('core.employees as e', 'e.id', 'd.employee_id').where(employeeScopeSql(scope, 'e'))
     .select(({ fn }) => fn.countAll<number>().as('n'))
     .where('d.work_date', '=', sql<Date>`${today}::date`)
     .where('d.status', 'in', ['A', 'UAB']);
@@ -49,7 +51,7 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
   let pendingApprovalsQuery = db
       .selectFrom('wf.request_steps as step')
       .innerJoin('wf.requests as request', 'request.id', 'step.request_id')
-      .innerJoin('core.employees as employee', 'employee.id', 'request.subject_employee_id')
+      .innerJoin('core.employees as employee', 'employee.id', 'request.subject_employee_id').where(employeeScopeSql(scope, 'employee'))
       .select(({ fn }) => fn.countAll<number>().as('n'))
       .where('step.action', 'is', null);
   if (companyId !== undefined) {
@@ -59,7 +61,7 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
 
   let openAbsenceQuery = db
     .selectFrom('att.absence_cases as absence')
-    .innerJoin('core.employees as employee', 'employee.id', 'absence.employee_id')
+    .innerJoin('core.employees as employee', 'employee.id', 'absence.employee_id').where(employeeScopeSql(scope, 'employee'))
     .select((eb) => ['absence.stage', eb.fn.countAll<number>().as('n')])
     .where('absence.closed_at', 'is', null)
     .groupBy('absence.stage');
@@ -70,7 +72,7 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
 
   let pendingOtQuery = db
       .selectFrom('att.overtime_entries as overtime')
-      .innerJoin('core.employees as employee', 'employee.id', 'overtime.employee_id')
+      .innerJoin('core.employees as employee', 'employee.id', 'overtime.employee_id').where(employeeScopeSql(scope, 'employee'))
       .select(({ fn }) => fn.countAll<number>().as('n'))
       .where('overtime.status', '=', 'pending');
   if (companyId !== undefined) {
@@ -82,7 +84,7 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
   const cutoff = new Date(Date.now() - silentMinutes * 60_000);
   let silentDevicesQuery = db
       .selectFrom('att.devices as device')
-      .leftJoin('core.locations as location', 'location.id', 'device.location_id')
+      .leftJoin('core.locations as location', 'location.id', 'device.location_id').where(companyScopeSql(scope, 'location.company_id'))
       .select(({ fn }) => fn.countAll<number>().as('n'))
       .where('device.is_active', '=', true)
       .where((eb) =>
@@ -94,8 +96,8 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number) {
   const silentDevices = (await silentDevicesQuery.executeTakeFirstOrThrow()).n;
 
   // Overall ack % = acked/targeted across every live policy (audience-aware;
-  // company scoping folds in when policies grow a company dimension).
-  const perPolicy = await policyAckStatus(db);
+  // scoped to the same employee population as this dashboard).
+  const perPolicy = await policyAckStatus(db, scope, companyId);
   const ackTotals = perPolicy.reduce((acc, p) => ({ targeted: acc.targeted + p.targeted, acked: acc.acked + p.acknowledged }), { targeted: 0, acked: 0 });
   const policyAck = { percent: ackTotals.targeted === 0 ? 100 : Math.round((ackTotals.acked / ackTotals.targeted) * 100) };
 

@@ -1,7 +1,9 @@
+import { useAttendanceSchedule, schedulePortionOptions, windowTiming } from '../attendance/attendance-schedule';
+import { readDayPortion, type DayPortion } from '../attendance/attendance-portion';
 import { useState } from 'react';
 import { apiFetch } from '../../lib/api';
 import { notifyWorkflowChanged } from '../../lib/workflow-events';
-import { Button, Checkbox, DatePicker, Textarea, TextField, toast } from '../../ui';
+import { Button, Checkbox, DatePicker, Select, Textarea, TextField, toast } from '../../ui';
 
 export function ResubmitRequestForm({ requestId, type, payload: raw, onSubmitted }: {
   requestId: number; type: string; payload: unknown; onSubmitted: () => void;
@@ -13,21 +15,25 @@ export function ResubmitRequestForm({ requestId, type, payload: raw, onSubmitted
   const [reason, setReason] = useState(typeof payload['reason'] === 'string' ? payload['reason'] : '');
   const [fromTime, setFromTime] = useState(typeof payload['fromTime'] === 'string' ? payload['fromTime'] : '');
   const [toTime, setToTime] = useState(typeof payload['toTime'] === 'string' ? payload['toTime'] : '');
+  const [dayPortion, setDayPortion] = useState<DayPortion>(() => readDayPortion(payload['dayPortion']));
   const [fromHalf, setFromHalf] = useState(payload['fromHalf'] === true);
   const [toHalf, setToHalf] = useState(payload['toHalf'] === true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const leave = type === 'leave' || type === 'comp_off';
   const permission = payload['kind'] === 'PERMISSION';
+  const schedule = useAttendanceSchedule(fromDate, !leave && !permission, toDate);
+  const selectedWindow = schedule.data?.windows.find(window => window.dayPortion === dayPortion);
   const submit = async () => {
     if (!fromDate || !toDate || fromDate > toDate || (!leave && reason.trim().length < 5)) {
       setError('Choose a valid date range and add a specific reason.'); return;
     }
+    if (!leave && !permission && !selectedWindow) { setError(schedule.error ?? 'Wait for the assigned shift timings and choose an available period.'); return; }
     setSaving(true); setError(null);
     try {
       await apiFetch(`/api/workflows/requests/${String(requestId)}/resubmit`, {
         method: 'POST', body: JSON.stringify({ payload: { ...payload, fromDate, toDate, reason: reason.trim(),
-          ...(leave ? { fromHalf, toHalf } : { fromTime: fromTime || null, toTime: toTime || null }),
+          ...(leave ? { fromHalf, toHalf } : { fromTime: fromTime || null, toTime: toTime || null, dayPortion }),
         } }),
       });
       toast.success('Request resubmitted', { description: 'Your corrected details are back in the approval chain.' });
@@ -43,6 +49,10 @@ export function ResubmitRequestForm({ requestId, type, payload: raw, onSubmitted
       <DatePicker label="Revised from" required value={fromDate} onChange={setFromDate} />
       <DatePicker label="Revised to" required value={toDate} min={fromDate ?? undefined} onChange={setToDate} />
     </div>
+    {!leave && !permission && <Select label="Revised part of each day" value={dayPortion}
+      onChange={value => { setDayPortion(readDayPortion(value)); }} options={schedulePortionOptions(schedule.data)} disabled={schedule.loading}
+      hint={selectedWindow ? windowTiming(selectedWindow) : schedule.error ?? (schedule.loading
+        ? 'Loading assigned shift timings…' : 'No working half is available. Check the dates or contact HR.')} />}
     {permission && <div className="grid gap-3 sm:grid-cols-2">
       <TextField label="Permission from" type="time" required value={fromTime} onChange={event => { setFromTime(event.currentTarget.value); }} />
       <TextField label="Permission to" type="time" required value={toTime} onChange={event => { setToTime(event.currentTarget.value); }} />
@@ -53,6 +63,6 @@ export function ResubmitRequestForm({ requestId, type, payload: raw, onSubmitted
     </div>}
     <Textarea label="Revised reason" value={reason} required={!leave} error={error ?? undefined}
       onChange={event => { setReason(event.currentTarget.value); }} />
-    <Button type="submit" loading={saving}>Resubmit for approval</Button>
+    <Button type="submit" loading={saving} disabled={!leave && !permission && !selectedWindow}>Resubmit for approval</Button>
   </form>;
 }

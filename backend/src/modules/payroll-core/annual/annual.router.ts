@@ -49,7 +49,7 @@ export const annualProcessesRouter = {
   /**
    * Payment of Bonus Act annual statutory calculation & true-up against advances.
    */
-  calculateBonusTrueup: withPermission('payroll.reports')
+  calculateBonusTrueup: withPermission('payroll.reports', 'read')
     .input(
       z.object({
         accountingYear: z.string(),
@@ -127,7 +127,7 @@ export const annualProcessesRouter = {
   /**
    * Simulate annual increment distribution, CTC impact, and retro arrears liability.
    */
-  simulateIncrement: withPermission('payroll.reports')
+  simulateIncrement: withPermission('payroll.reports', 'read')
     .input(
       z.object({
         policy: IncrementPolicySchema,

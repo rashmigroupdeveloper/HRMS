@@ -18,6 +18,7 @@ import type { Express } from 'express';
 import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
+import { writeAudit } from '../src/core/audit/audit.service.js';
 import { hashPassword } from '../src/modules/auth/index.js';
 import {
   createRegularization,
@@ -168,11 +169,19 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
       .set({ is_active: false, employee_id: null })
       .where('email', 'like', `s14-%-${stamp}@hrms.test`)
       .execute();
+    // Immutable swipe/audit FKs retain these synthetic employees. Keep them
+    // outside active/payroll populations rather than leaking active fixtures.
+    await db.updateTable('core.employees').set({ status: 'onboarding', reporting_manager_id: null,
+      biometric_registered: false }).where('id', 'in', empIds).execute();
     await db.destroy();
   });
 
   it('V: the validators hold the line (AR past-only, caps, permission shape)', async () => {
     const base = { employeeId: empId, requestedByUserId: empUserId, reason: 'validator probe' };
+
+    await expect(
+      createRegularization(db, { ...base, kind: 'OD', fromDate: addDaysIso(today, 5), toDate: addDaysIso(today, 2) }),
+    ).rejects.toThrow(/fromDate must be on or before toDate/);
 
     await expect(
       createRegularization(db, { ...base, kind: 'AR', fromDate: addDaysIso(today, 2), toDate: addDaysIso(today, 2) }),
@@ -187,8 +196,87 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
     ).rejects.toThrow(/one day/);
 
     await expect(
+      createRegularization(db, { ...base, kind: 'PERMISSION', fromDate: arDay, toDate: arDay }),
+    ).rejects.toThrow(/needs from\/to times/);
+
+    await expect(
+      createRegularization(db, { ...base, kind: 'PERMISSION', fromDate: arDay, toDate: arDay, fromTime: '11:00', toTime: '10:00' }),
+    ).rejects.toThrow(/toTime must be after fromTime/);
+
+    await expect(
       createRegularization(db, { ...base, kind: 'PERMISSION', fromDate: arDay, toDate: arDay, fromTime: '09:00', toTime: '14:00' }),
     ).rejects.toThrow(/capped/);
+
+    await expect(
+      createRegularization(db, { ...base, kind: 'PERMISSION', fromDate: arDay, toDate: arDay, fromTime: '10:00', toTime: '11:00', dayPortion: 'first_half' }),
+    ).rejects.toThrow(/Short permission uses times/);
+
+    await expect(
+      createRegularization(db, { ...base, kind: 'AR', fromDate: arDay, toDate: arDay, fromTime: '10:00', dayPortion: 'first_half' }),
+    ).rejects.toThrow(/without custom times/);
+  });
+
+  it('holds a real OD domain request without posting attendance when every approver is vacant', async () => {
+    const request = await createRegularization(db, { employeeId: mgrId, requestedByUserId: mgrUserId,
+      kind: 'OD', fromDate: odDay, toDate: odDay, reason: 'Vacant chain must not create OD attendance' });
+    expect((await db.selectFrom('wf.requests').select('status').where('id', '=', request.workflowRequestId).executeTakeFirstOrThrow()).status)
+      .toBe('pending');
+    expect((await db.selectFrom('att.regularizations').select('applied').where('id', '=', request.id).executeTakeFirstOrThrow()).applied)
+      .toBe(false);
+    expect(await db.selectFrom('att.day_records').select('id').where('employee_id', '=', mgrId)
+      .where('work_date', '=', sql<Date>`${odDay}::date`).executeTakeFirst()).toBeUndefined();
+  });
+
+  it('preserves the hard OT lapse deadline while an all-vacant request waits for HR', async () => {
+    await swipe(mgrId, ist(otDay, '08:00'));
+    await swipe(mgrId, ist(otDay, '20:00'));
+    await recomputeDay(db, mgrId, otDay);
+    const entry = await otEntry(mgrId, otDay);
+    expect(entry.workflow_request_id).not.toBeNull();
+    const workflowId = entry.workflow_request_id ?? -1;
+    expect((await db.selectFrom('wf.requests').select('status').where('id', '=', workflowId).executeTakeFirstOrThrow()).status).toBe('pending');
+    const beforeDeadline = new Date();
+    await runEscalations(db, beforeDeadline);
+    expect((await otEntry(mgrId, otDay)).status).toBe('pending');
+    await db.updateTable('wf.requests').set({ created_at: new Date(Date.now() - 100 * 3600_000) }).where('id', '=', workflowId).execute();
+    await db.updateTable('att.overtime_entries').set({ deadline_at: new Date(Date.now() - 60_000) }).where('id', '=', entry.id).execute();
+    await runEscalations(db);
+    expect((await db.selectFrom('wf.requests').select('status').where('id', '=', workflowId).executeTakeFirstOrThrow()).status).toBe('lapsed');
+    expect((await otEntry(mgrId, otDay)).status).toBe('lapsed');
+  });
+
+  it.each(['employee', 'attendance_day'] as const)('does not hold the global audit lock while waiting for a %s lock during approval', async lockKind => {
+    let requestedDate = addDaysIso(odDay, lockKind === 'employee' ? 22 : 25);
+    if (dow(requestedDate) === 0) requestedDate = addDaysIso(requestedDate, 1);
+    const request = await createRegularization(db, { employeeId: empId, requestedByUserId: empUserId,
+      kind: 'OD', fromDate: requestedDate, toDate: requestedDate, reason: 'Audit and employee lock order regression' });
+    if (lockKind === 'attendance_day') await db.insertInto('att.day_records').values({ employee_id: empId,
+      work_date: sql<Date>`${requestedDate}::date`, status: 'A', source: 'auto' }).execute();
+    let decision: Promise<{ outcome: string } | { failure: unknown }> | undefined;
+    let blockerFailure: unknown;
+    try {
+      await db.transaction().execute(async trx => {
+        await sql`SET LOCAL statement_timeout = '3s'`.execute(trx);
+        const pid = (await sql<{ pid: number }>`SELECT pg_backend_pid() AS pid`.execute(trx)).rows[0]?.pid;
+        if (!pid) throw new Error('No blocker PID');
+        if (lockKind === 'employee') await trx.selectFrom('core.employees').select('id').where('id', '=', empId)
+          .forUpdate().executeTakeFirstOrThrow();
+        else await trx.selectFrom('att.day_records').select('id').where('employee_id', '=', empId)
+          .where('work_date', '=', sql<Date>`${requestedDate}::date`).forUpdate().executeTakeFirstOrThrow();
+        decision = act(db, { requestId: request.workflowRequestId, actorUserId: mgrUserId, action: 'approve' })
+          .then(outcome => ({ outcome }), (failure: unknown) => ({ failure }));
+        // Observe the real wait, rather than assuming a sleep interleaves two transactions.
+        await expect.poll(async () => (await sql<{ waiting: boolean }>`SELECT EXISTS (
+          SELECT 1 FROM pg_locks WHERE NOT granted AND ${pid} = ANY(pg_blocking_pids(pid))
+        ) AS waiting`.execute(trx)).rows[0]?.waiting, { interval: 10, timeout: 2000 }).toBe(true);
+        await writeAudit(trx, { actorUserId: empUserId, action: 'update', entity: 'core.employees',
+          entityId: empId, field: 'lock_order_regression', newValue: 'Synthetic transaction completed' });
+      });
+    } catch (cause) { blockerFailure = cause; }
+    const result = await decision;
+    expect(blockerFailure).toBeUndefined();
+    expect(result).toEqual({ outcome: 'approved' });
+    expect((await day(empId, requestedDate)).status).toBe('OD');
   });
 
   it('R1: AR approved by the manager flips the absent day to P and survives recompute', async () => {

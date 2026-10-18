@@ -17,11 +17,11 @@
  */
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import type { AttShiftsTable, Database, DayStatus } from '../../core/db/types.js';
-import { writeAudit } from '../../core/audit/audit.service.js';
 import { getTypedSetting } from '../settings/index.js';
-import { addDaysIso, formatDbDate, istDateTime } from '../../core/dates.js';
+import { addDaysIso, formatDbDate, istDateTime, istDateString } from '../../core/dates.js';
 import { recordDetectedOvertime } from './overtime.service.js';
-import { readSessionStatuses, validateSessionSummary, type SessionStatuses } from './session-status.js';
+import { approvedHalfRequests, overlayHalfRequests } from './half-requests.js';
+import { readSessionStatuses } from './session-status.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 type ShiftRow = Selectable<AttShiftsTable>;
@@ -277,7 +277,7 @@ async function attributeOwnedSwipes(
 
 interface SessionStatus {
   session: number;
-  status: 'P' | 'A';
+  status: 'P' | 'A' | 'O' | 'OD';
 }
 
 export interface ComputedDay {
@@ -385,8 +385,14 @@ export function computeDayStatus(
   return { ...base, status, firstIn, lastOut, workedMinutes, lateMinutes, earlyExitMinutes, sessionStatuses, otMinutes };
 }
 
-/** Recompute one employee-day from raw truth. Manual/regularized/locked rows
- *  are never overwritten — enforced both by the pre-check AND the
+async function queueHalfRecompute(db: Kysely<Database>, employeeId: number, isoDate: string, due: Date) {
+  await db.insertInto('att.recompute_queue').values({ employee_id: employeeId,
+    work_date: sql<Date>`${isoDate}::date`, queued_at: due })
+    .onConflict(oc => oc.columns(['employee_id', 'work_date']).doUpdateSet({ queued_at: due })).execute();
+}
+
+/** Recompute one employee-day from raw truth. Manual/whole-day regularized/locked rows
+ *  are never overwritten; partial approvals are overlaid under the employee lock — enforced both by the pre-check AND the
  *  conflict-WHERE, so an override or an approved regularization committed
  *  concurrently is not clobbered (review F9; Stage 1.4). */
 export async function recomputeDay(
@@ -396,14 +402,37 @@ export async function recomputeDay(
   policy?: AttendancePolicy,
 ): Promise<DayStatus | 'held' | 'skipped'> {
   const pol = policy ?? (await loadAttendancePolicy(db));
+  if (!db.isTransaction) {
+    const result = await db.transaction().execute(tx => recomputeDay(tx, employeeId, isoDate, pol));
+    if (result !== 'held' && result !== 'skipped') {
+      const posted = await db.selectFrom('att.day_records').select('ot_minutes').where('employee_id', '=', employeeId)
+        .where('work_date', '=', sql<Date>`${isoDate}::date`).executeTakeFirst();
+      if (posted && posted.ot_minutes >= pol.otMinMinutes) await recordDetectedOvertime(db, employeeId, isoDate, posted.ot_minutes, pol, true);
+    }
+    return result;
+  }
+  await db.selectFrom('core.employees').select('id').where('id','=',employeeId).forUpdate().executeTakeFirstOrThrow();
+  const monthLock = await db.selectFrom('att.month_locks as m').innerJoin('core.employees as e','e.company_id','m.company_id')
+    .select('m.id').where('e.id','=',employeeId).where('m.month','=',sql<Date>`date_trunc('month', ${isoDate}::date)::date`).executeTakeFirst();
+  if (monthLock) return 'skipped';
+  const halves = await approvedHalfRequests(db, employeeId, isoDate);
+  if (halves.length > 0) {
+    if (isoDate > istDateString()) {
+      const planned = await resolveDay(db, employeeId, isoDate);
+      const due = shiftInterval(planned, isoDate);
+      if (due) await queueHalfRecompute(db, employeeId, isoDate, new Date(due.end));
+      return 'held';
+    }
+  }
+
 
   const existing = await db
     .selectFrom('att.day_records')
-    .select(['source', 'is_locked'])
+    .select(['source', 'is_locked', 'leave_type_id'])
     .where('employee_id', '=', employeeId)
     .where('work_date', '=', sql<Date>`${isoDate}::date`)
     .executeTakeFirst();
-  if (existing && (existing.is_locked || existing.source !== 'auto')) return 'skipped';
+  if (existing && (existing.is_locked || existing.leave_type_id !== null || (existing.source !== 'auto' && !(halves.length > 0 && existing.source === 'regularized')))) return 'skipped';
 
   const resolved = await resolveDay(db, employeeId, isoDate);
   const cur = shiftInterval(resolved, isoDate);
@@ -436,7 +465,17 @@ export async function recomputeDay(
     owned = swipes.map((s) => s.swipe_ts);
   }
 
-  const computed = computeDayStatus(resolved, isoDate, owned, pol);
+  let computed = computeDayStatus(resolved, isoDate, owned, pol);
+  if (halves.length > 0 && !resolved.isHoliday && !resolved.isWeekOff) {
+    computed = { ...computed, ...overlayHalfRequests(readSessionStatuses(computed.sessionStatuses), halves),
+      lateMinutes: halves.some(h => h.day_portion === 'first_half') ? 0 : computed.lateMinutes,
+      earlyExitMinutes: halves.some(h => h.day_portion === 'second_half') ? 0 : computed.earlyExitMinutes,
+    };
+    if (computed.sessionStatuses?.some(s => s.status === 'A') && cur && cur.end > Date.now()) {
+      await queueHalfRecompute(db, employeeId, isoDate, new Date(cur.end));
+      return 'held';
+    }
+  }
   if (computed.status === 'A' || computed.sessionStatuses?.some((session) => session.status === 'A')) {
     const readiness = await getAbsenceFinalizationReadiness(
       db,
@@ -473,7 +512,7 @@ export async function recomputeDay(
     ot_minutes: computed.otMinutes,
     session_statuses: computed.sessionStatuses ? JSON.stringify(computed.sessionStatuses) : null,
     scheme_code: computed.schemeCode,
-    source: 'auto' as const,
+    source: halves.length > 0 ? 'regularized' as const : 'auto' as const,
     computed_at: new Date(),
   };
 
@@ -486,16 +525,11 @@ export async function recomputeDay(
         .doUpdateSet(row)
         // Only plain auto rows are recomputable — the guard makes the
         // check-then-write race safe and avoids tripping the lock trigger.
-        .where('att.day_records.source', '=', 'auto')
+        .where(eb => halves.length > 0 ? eb('att.day_records.source', 'in', ['auto', 'regularized']) : eb('att.day_records.source', '=', 'auto'))
+        .where('att.day_records.leave_type_id', 'is', null)
         .where('att.day_records.is_locked', '=', false),
     )
     .execute();
-
-  // Detection → entry + intimation happens here so EVERY recompute path (sync
-  // drain, roster edit, manual API) surfaces OT the moment swipes show it.
-  if (computed.otMinutes >= pol.otMinMinutes) {
-    await recordDetectedOvertime(db, employeeId, isoDate, computed.otMinutes, pol);
-  }
 
   return computed.status;
 }
@@ -554,6 +588,7 @@ export async function drainRecomputeQueue(db: Kysely<Database>, batch = 500): Pr
     DELETE FROM att.recompute_queue
     WHERE ctid IN (
       SELECT ctid FROM att.recompute_queue
+      WHERE queued_at <= now()
       ORDER BY queued_at
       LIMIT ${batch}
       FOR UPDATE SKIP LOCKED
@@ -583,51 +618,7 @@ export async function drainRecomputeQueue(db: Kysely<Database>, batch = 500): Pr
 /** HR-only manual override — mandatory reason, audited, survives recompute
  *  (ATT-17). Derived columns are reset so the row never shows stale swipe times
  *  next to an overridden status (review att5). */
-export async function setManualStatus(
-  db: Kysely<Database>,
-  params: { employeeId: number; isoDate: string; status: DayStatus; sessionStatuses?: SessionStatuses | null; reason: string; actorUserId: number },
-): Promise<void> {
-  const sessions = readSessionStatuses(params.sessionStatuses);
-  validateSessionSummary(params.status, sessions);
-  const previous = await db
-    .selectFrom('att.day_records')
-    .select(['status', 'session_statuses'])
-    .where('employee_id', '=', params.employeeId)
-    .where('work_date', '=', sql<Date>`${params.isoDate}::date`)
-    .executeTakeFirst();
-
-  const row = {
-    status: params.status,
-    source: 'manual' as const,
-    override_reason: params.reason,
-    first_in: null,
-    last_out: null,
-    worked_minutes: null,
-    late_minutes: 0,
-    early_exit_minutes: 0,
-    session_statuses: sessions ? JSON.stringify(sessions) : null,
-    computed_at: new Date(),
-  };
-
-  await db
-    .insertInto('att.day_records')
-    .values({ employee_id: params.employeeId, work_date: sql<Date>`${params.isoDate}::date` as unknown as Date, ...row })
-    .onConflict((oc) =>
-      oc.columns(['employee_id', 'work_date']).doUpdateSet(row).where('att.day_records.is_locked', '=', false),
-    )
-    .execute();
-
-  await writeAudit(db, {
-    actorUserId: params.actorUserId,
-    action: 'update',
-    entity: 'att.day_records',
-    entityId: params.employeeId,
-    subjectEmployeeId: params.employeeId,
-    field: `manual_override:${params.isoDate}`,
-    oldValue: previous ? JSON.stringify({ status: previous.status, sessionStatuses: previous.session_statuses }) : null,
-    newValue: JSON.stringify({ status: params.status, sessionStatuses: sessions, reason: params.reason }),
-  });
-}
+export { setManualStatus } from './manual-status.service.js';
 
 /**
  * Week-off eligibility at week close (ATT-09, PI-PAY-1/2): an employee present

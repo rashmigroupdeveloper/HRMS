@@ -6,18 +6,18 @@
 import bcrypt from 'bcryptjs';
 import type { Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
-import { signAccessToken, signRefreshToken, verifyToken } from '../../core/auth/jwt.js';
+import { createSession, rotateSession } from './auth.sessions.js';
+import { readAuthPolicy } from './auth.policy.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import {
   findUserByIdentifier,
-  findUserById,
   recordLoginFailure,
   recordLoginSuccess,
   type UserRow,
 } from './auth.repository.js';
 
 export type LoginResult =
-  | { ok: true; user: UserRow; accessToken: string; refreshToken: string }
+  | { ok: true; user: UserRow; accessToken: string; refreshToken: string; refreshExpiresAt: Date }
   | { ok: false; reason: 'invalid_credentials' | 'locked' | 'inactive'; lockedUntil?: Date };
 
 export async function login(
@@ -27,51 +27,51 @@ export async function login(
   password: string,
   ip: string | null,
 ): Promise<LoginResult> {
-  const user = await findUserByIdentifier(db, identifier);
+  const attempt = async (tx: Kysely<Database>): Promise<LoginResult> => {
+    const user = await findUserByIdentifier(tx, identifier, true);
 
-  // Uniform failure path: same audit + same response whether the account
-  // exists or not (no user-enumeration oracle).
-  if (!user) {
-    await writeAudit(db, { action: 'login_failed', entity: 'core.users', ip, newValue: 'unknown identifier' });
-    return { ok: false, reason: 'invalid_credentials' };
-  }
+    // Uniform failure path: same audit + same response whether the account
+    // exists or not (no user-enumeration oracle).
+    if (!user) {
+      await writeAudit(tx, { action: 'login_failed', entity: 'core.users', ip, newValue: 'unknown identifier' });
+      return { ok: false, reason: 'invalid_credentials' };
+    }
 
-  if (!user.is_active) {
-    await writeAudit(db, { action: 'login_failed', entity: 'core.users', entityId: user.id, ip, newValue: 'inactive account' });
-    return { ok: false, reason: 'inactive' };
-  }
+    if (!user.is_active) {
+      await writeAudit(tx, { action: 'login_failed', entity: 'core.users', entityId: user.id, ip, newValue: 'inactive account' });
+      return { ok: false, reason: 'inactive' };
+    }
 
-  if (user.locked_until && user.locked_until.getTime() > Date.now()) {
-    await writeAudit(db, { action: 'login_failed', entity: 'core.users', entityId: user.id, ip, newValue: 'locked' });
-    return { ok: false, reason: 'locked', lockedUntil: user.locked_until };
-  }
+    if (user.locked_until && user.locked_until.getTime() > Date.now()) {
+      await writeAudit(tx, { action: 'login_failed', entity: 'core.users', entityId: user.id, ip, newValue: 'locked' });
+      return { ok: false, reason: 'locked', lockedUntil: user.locked_until };
+    }
 
-  const valid = await bcrypt.compare(password, user.password_hash);
-  if (!valid) {
-    const { fails, lockedUntil } = await recordLoginFailure(db, user.id, user.failed_attempts);
-    await writeAudit(db, {
-      action: 'login_failed',
-      entity: 'core.users',
-      entityId: user.id,
-      ip,
-      newValue: `wrong password (attempt ${fails})${lockedUntil ? ' — locked' : ''}`,
-    });
-    if (lockedUntil) return { ok: false, reason: 'locked', lockedUntil };
-    return { ok: false, reason: 'invalid_credentials' };
-  }
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      const { fails, lockedUntil } = await recordLoginFailure(tx, user.id, await readAuthPolicy(tx));
+      await writeAudit(tx, {
+        action: 'login_failed',
+        entity: 'core.users',
+        entityId: user.id,
+        ip,
+        newValue: `wrong password (attempt ${fails})${lockedUntil ? ' — locked' : ''}`,
+      });
+      if (lockedUntil) return { ok: false, reason: 'locked', lockedUntil };
+      return { ok: false, reason: 'invalid_credentials' };
+    }
 
-  await recordLoginSuccess(db, user.id);
-  await writeAudit(db, { actorUserId: user.id, action: 'login', entity: 'core.users', entityId: user.id, ip });
+    await recordLoginSuccess(tx, user.id);
+    await writeAudit(tx, { actorUserId: user.id, action: 'login', entity: 'core.users', entityId: user.id, ip });
 
-  const [accessToken, refreshToken] = await Promise.all([
-    signAccessToken(user.id, user.email, jwtSecret),
-    signRefreshToken(user.id, user.email, jwtSecret),
-  ]);
-  return { ok: true, user, accessToken, refreshToken };
+    const pair = await createSession(tx, user, jwtSecret, ip, await readAuthPolicy(tx));
+    return { ok: true, user, ...pair };
+  };
+  return db.isTransaction ? attempt(db) : db.transaction().execute(attempt);
 }
 
 export type RefreshResult =
-  | { ok: true; accessToken: string; refreshToken: string }
+  | { ok: true; accessToken: string; refreshToken: string; refreshExpiresAt: Date }
   | { ok: false };
 
 /** Rotates the refresh token: a used token is answered with a fresh pair. */
@@ -79,18 +79,9 @@ export async function refresh(
   db: Kysely<Database>,
   jwtSecret: string,
   token: string,
+  ip: string | null = null,
 ): Promise<RefreshResult> {
-  const claims = await verifyToken(token, jwtSecret);
-  if (claims?.typ !== 'refresh') return { ok: false };
-
-  const user = await findUserById(db, claims.userId);
-  if (!user?.is_active) return { ok: false };
-
-  const [accessToken, refreshToken] = await Promise.all([
-    signAccessToken(user.id, user.email, jwtSecret),
-    signRefreshToken(user.id, user.email, jwtSecret),
-  ]);
-  return { ok: true, accessToken, refreshToken };
+  return rotateSession(db, jwtSecret, token, ip);
 }
 
 export function hashPassword(plain: string): Promise<string> {

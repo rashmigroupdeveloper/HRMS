@@ -4,6 +4,7 @@
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { formatDbDate, istDateString } from '../../core/dates.js';
+import { companyScopeSql } from '../../core/rbac/company-scope.js';
 import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { monthStart, nextMonthStart } from '../attendance/index.js';
 
@@ -281,6 +282,7 @@ export interface R3Row {
   ecode: string;
   employeeName: string;
   kind: string;
+  dayPortion: string;
   fromDate: string;
   toDate: string;
   fromTime: string | null;
@@ -326,6 +328,7 @@ export async function reportR3Regularizations(
       'e.first_name',
       'e.last_name',
       'reg.kind',
+      'reg.day_portion',
       'reg.from_date',
       'reg.to_date',
       'reg.from_time',
@@ -402,6 +405,7 @@ export async function reportR3Regularizations(
     ecode: r.ecode,
     employeeName: fullName(r.first_name, r.last_name),
     kind: r.kind,
+    dayPortion: r.day_portion,
     fromDate: formatDbDate(r.from_date),
     toDate: formatDbDate(r.to_date),
     fromTime: r.from_time,
@@ -923,6 +927,8 @@ export async function reportR21Offers(
 ): Promise<R21Row[]> {
   let q = db
     .selectFrom('core.onboarding_candidates as c')
+    .leftJoin('core.employees as offer_employee', 'offer_employee.id', 'c.employee_id')
+    .where(sql<boolean>`(${companyScopeSql(params.scope, 'c.company_id')} OR (offer_employee.id IS NOT NULL AND ${employeeScopeSql(params.scope, 'offer_employee')}))`)
     .select([
       'c.id',
       'c.full_name',
@@ -1262,6 +1268,7 @@ export async function reportR28Assets(
       join.onRef('asgn.asset_id', '=', 'a.id').on('asgn.returned_at', 'is', null),
     )
     .leftJoin('core.employees as holder', 'holder.id', 'asgn.employee_id')
+    .where(sql<boolean>`(${companyScopeSql(params.scope, 'a.company_id')} OR (holder.id IS NOT NULL AND ${employeeScopeSql(params.scope, 'holder')}))`)
     .select([
       'a.id as asset_id',
       'a.asset_no',

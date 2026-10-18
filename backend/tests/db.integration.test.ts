@@ -132,7 +132,7 @@ run('database integration (live Postgres)', () => {
     }
     const fifth = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password: 'wrong!' });
     expect(fifth.status).toBe(401);
-    expect((fifth.body as { message?: string }).message).toMatch(/locked/i);
+    expect((fifth.body as { message?: string }).message).toBe('Invalid email or password');
 
     // Even the CORRECT password is refused while locked.
     const locked = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });

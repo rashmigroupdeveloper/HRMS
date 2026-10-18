@@ -173,9 +173,10 @@ const reply = authed
   )
   .output(z.object({ id: z.number() }))
   .handler(async ({ input, context }) => {
+    // Only a writable agent grant may authorize another employee's ticket.
     // Only an agent may write an internal note — a raiser marking their own
     // reply "internal" must not hide it from the desk.
-    const permissions = await getUserPermissions(context.db, context.user.id);
+    const permissions = await getUserPermissions(context.db, context.user.id, 'write');
     const isAgent = permissions.has('helpdesk.agent') || permissions.has('helpdesk.manage');
     try {
       return await replyToTicket(context.db, {

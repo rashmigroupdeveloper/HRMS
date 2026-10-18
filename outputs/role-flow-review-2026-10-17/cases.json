@@ -1,0 +1,399 @@
+{
+  "prepared": "2026-10-17",
+  "case_count": 49,
+  "note": "Cases are separated by user action. A source review or passing existing test is not a new browser/UAT pass. See each evidence cell.",
+  "cases": [
+    {
+      "role": "Employee",
+      "id": "E01",
+      "action": "Clock in/out through Kent",
+      "expected": "Actual device event commits once; own identity, IST work date and source retained.",
+      "current_verdict": "Integration blocked",
+      "evidence": "F01; source mock adapter; no live Kent contact"
+    },
+    {
+      "role": "Employee",
+      "id": "E02",
+      "action": "Only first half is attended",
+      "expected": "P:A \u2192 Half-day present; first/second result and configured times shown separately.",
+      "current_verdict": "Automated cases covered; live preview evidence from16Oct",
+      "evidence": "Pack26/27; half-attendance integration + AttendanceHalfDetails tests"
+    },
+    {
+      "role": "Employee",
+      "id": "E03",
+      "action": "Only second half is attended",
+      "expected": "A:P \u2192 Half-day present, not full Present.",
+      "current_verdict": "Automated cases covered",
+      "evidence": "Pack26/27 session-format and half-request tests"
+    },
+    {
+      "role": "Employee",
+      "id": "E04",
+      "action": "Regularise first half",
+      "expected": "Configured half time, reason, own request; selected half only becomes P after final approval.",
+      "current_verdict": "Implemented slice; broader attendance gaps remain",
+      "evidence": "Pack26/27 tests; F02\u2013F06"
+    },
+    {
+      "role": "Employee",
+      "id": "E05",
+      "action": "Request second-half OD in future",
+      "expected": "Configured second window; approved selected half only; other half not prematurely absent.",
+      "current_verdict": "Implemented slice with automated cases",
+      "evidence": "Pack26 native future coverage/queue tests; no external-device UAT"
+    },
+    {
+      "role": "Employee",
+      "id": "E06",
+      "action": "Resubmit sent-back AR/OD",
+      "expected": "Preserve/edit selected half; current date timing fetched again, overlap/lock rechecked.",
+      "current_verdict": "Implemented slice with automated cases",
+      "evidence": "Pack26/27 request/resubmit tests"
+    },
+    {
+      "role": "Employee",
+      "id": "E07",
+      "action": "Request bounded short permission",
+      "expected": "Separate from half-day AR/OD; actual bounded from/to time and configured cap.",
+      "current_verdict": "Existing service; not independently browser rerun today",
+      "evidence": "regularization.service.ts; current test suite"
+    },
+    {
+      "role": "Employee",
+      "id": "E08",
+      "action": "Request/cancel leave",
+      "expected": "Ledger reservation\u2192approval debit\u2192approved cancellation reversal; half-leave overlap reconciled.",
+      "current_verdict": "Partial; leave/off-half reconciliation remains",
+      "evidence": "stage15 tests; pack26 limit; A04 plan"
+    },
+    {
+      "role": "Manager",
+      "id": "M01",
+      "action": "Approve/reject/send back own team request",
+      "expected": "Only assigned authorized active step; out-of-scope/self/closed actions refused.",
+      "current_verdict": "Core workflow automated coverage; version/delegation acceptance still open",
+      "evidence": "stage13/workflow-scope/half-request tests; pack21 remaining"
+    },
+    {
+      "role": "Manager",
+      "id": "M02",
+      "action": "No configured approver is active",
+      "expected": "Hold for HR; no automatic consent; explicit lapse policy preserved.",
+      "current_verdict": "Implemented/tested",
+      "evidence": "Pack21; workflow holds integration tests; F15 UI missing"
+    },
+    {
+      "role": "Manager",
+      "id": "M03",
+      "action": "Directly mark an employee Present",
+      "expected": "Denied unless separately authorized HR override permission is explicitly held.",
+      "current_verdict": "Permission protection exists; other scope checks unsafe",
+      "evidence": "Seed grid; earlier H manager403 positive control; RF03 ordinary employee403"
+    },
+    {
+      "role": "Manager",
+      "id": "M04",
+      "action": "Assign shifts/roster",
+      "expected": "Only permitted employees, active shift and unlocked facts; audit/recompute.",
+      "current_verdict": "Scheme path unsafe",
+      "evidence": "RF08; F05; bulk roster route has a scope assertion but scheme does not"
+    },
+    {
+      "role": "Manager",
+      "id": "M05",
+      "action": "Approve team month",
+      "expected": "Attest exact company/month and reviewed facts before HR lock.",
+      "current_verdict": "Partial; approval policy disabled in native fixture context",
+      "evidence": "RF16; manager-approval service; F06"
+    },
+    {
+      "role": "Manager",
+      "id": "M06",
+      "action": "Decide OT within deadline",
+      "expected": "Approved minutes or WO/H comp-off alternative; lapse at configured deadline; no duplicate benefit.",
+      "current_verdict": "Request slice tested; payroll consumption incomplete",
+      "evidence": "stage14/half-request tests; F09"
+    },
+    {
+      "role": "HR Ops",
+      "id": "H01",
+      "action": "Mark own-unit day A/P/HD",
+      "expected": "Reasoned scoped correction with old/new audit and consistent session/derived facts.",
+      "current_verdict": "Unsafe",
+      "evidence": "RF02 works but RF04/RF06 show reason/derived failures; F03/F04"
+    },
+    {
+      "role": "HR Ops",
+      "id": "H02",
+      "action": "Mark another unit employee Absent",
+      "expected": "403 and zero mutation outside authorized population.",
+      "current_verdict": "Failed: returned200 and wrote day",
+      "evidence": "RF01; F02"
+    },
+    {
+      "role": "HR Ops",
+      "id": "H03",
+      "action": "Correct an already locked day",
+      "expected": "Clear refusal; no success/audit for unchanged facts; approved retro path only.",
+      "current_verdict": "Failed:200 with original P unchanged",
+      "evidence": "RF05; F03"
+    },
+    {
+      "role": "HR Ops",
+      "id": "H04",
+      "action": "Read other-unit attendance",
+      "expected": "Denied or filtered by authorized scope.",
+      "current_verdict": "Failed:foreign day returned200",
+      "evidence": "RF07; F02"
+    },
+    {
+      "role": "HR Ops",
+      "id": "H05",
+      "action": "Issue absence letter",
+      "expected": "Scoped case, authorized signatory, actual generated document/delivery history.",
+      "current_verdict": "Open source-confirmed scope and delivery acceptance",
+      "evidence": "F14; prior H12"
+    },
+    {
+      "role": "HR Ops",
+      "id": "H06",
+      "action": "Export muster/AR/OD/HR reports",
+      "expected": "Same population/filters/half labels as list; statutory masking and audit.",
+      "current_verdict": "Selected muster/AR tests pass; all HR report families not safe",
+      "evidence": "Pack26 R1/R3 exports; F14 R21/asset gaps"
+    },
+    {
+      "role": "HR Ops",
+      "id": "H07",
+      "action": "Convert joined candidate",
+      "expected": "Approved accepted-offer revision, DOJ/readiness, correct entity/org masters, one transaction.",
+      "current_verdict": "Unsafe",
+      "evidence": "F10; prior H08/H14 evidence + current code"
+    },
+    {
+      "role": "HR Head",
+      "id": "HH01",
+      "action": "Review company HR dashboard",
+      "expected": "Authorized population; explainable KPI drill-down and no substituted financial values.",
+      "current_verdict": "Partial; scope/KPI obligations open",
+      "evidence": "F14/F17; H13/R32"
+    },
+    {
+      "role": "HR Head",
+      "id": "HH02",
+      "action": "Review held approvals and retry",
+      "expected": "Visible HR queue; repair configured hierarchy; reasoned retry only routes.",
+      "current_verdict": "API tested; dedicated screen missing",
+      "evidence": "F15"
+    },
+    {
+      "role": "HR Head",
+      "id": "HH03",
+      "action": "Read payroll register",
+      "expected": "Read permission works; compute denied without manage grant.",
+      "current_verdict": "Native API positive control",
+      "evidence": "RF12=200 readonly list; RF13=403 compute"
+    },
+    {
+      "role": "HR Head",
+      "id": "HH04",
+      "action": "Co-sign payroll",
+      "expected": "Independent authorized HR decision bound to computed result revision, in addition to payroll maker.",
+      "current_verdict": "Unsafe:two payroll users can replace HR co-sign",
+      "evidence": "RF14/15; F08"
+    },
+    {
+      "role": "HR Head",
+      "id": "HH05",
+      "action": "Confirm probation",
+      "expected": "Manager review\u2192HR decision\u2192correct salary boundary/breakup\u2192approved archived letter.",
+      "current_verdict": "Incomplete chain and salary/document linkage",
+      "evidence": "F12; R19/R20"
+    },
+    {
+      "role": "HR Head",
+      "id": "HH06",
+      "action": "Approve transfer/resignation",
+      "expected": "Required sequential approvers/receipts; effective-date application; clearance/settlement status distinct.",
+      "current_verdict": "Incomplete",
+      "evidence": "F12; R19/R22"
+    },
+    {
+      "role": "HR Head",
+      "id": "HH07",
+      "action": "Approve offer/LOI",
+      "expected": "Plant Head/GM and HR/CEO steps required as configured; issue only approved snapshot.",
+      "current_verdict": "Planned Phase4 flow absent here",
+      "evidence": "RF19; F13; ATS source contract required"
+    },
+    {
+      "role": "Payroll Admin",
+      "id": "P01",
+      "action": "Create company/month run",
+      "expected": "Locked correct attendance period; eligible entity and full employee population.",
+      "current_verdict": "Backend primitives exist; UI disconnected",
+      "evidence": "F06/F07/F09; run create/compute lock guards"
+    },
+    {
+      "role": "Payroll Admin",
+      "id": "P02",
+      "action": "Compute missing attendance/salary",
+      "expected": "Fail safely with affected employees; never silently skip or pay invented defaults.",
+      "current_verdict": "Protective checks exist; segmentation still incomplete",
+      "evidence": "readLockedPayableDays; run-compute salary snapshot/segment checks"
+    },
+    {
+      "role": "Payroll Admin",
+      "id": "P03",
+      "action": "Compute actual gross/statutory/net",
+      "expected": "Effective salary + locked days + policy statutory/YTD/loan sources; exact money/order and explanations.",
+      "current_verdict": "Not fully connected",
+      "evidence": "F09; R05/R08; unit statutory goldens alone are insufficient"
+    },
+    {
+      "role": "Payroll Admin",
+      "id": "P04",
+      "action": "Pay approved overtime",
+      "expected": "Consume approved obligation once with configured rate; comp-off never also paid.",
+      "current_verdict": "Deliberately blocked pending integration",
+      "evidence": "run-compute approved OT refusal; F09"
+    },
+    {
+      "role": "Payroll Admin",
+      "id": "P05",
+      "action": "Approve own computation",
+      "expected": "Refused; useful domain message.",
+      "current_verdict": "Guard blocks, error contract poor",
+      "evidence": "RF14 HTTP500; F08"
+    },
+    {
+      "role": "Payroll Admin",
+      "id": "P06",
+      "action": "Approve using a second payroll account",
+      "expected": "Cannot substitute for required HR co-sign.",
+      "current_verdict": "Failed:200",
+      "evidence": "RF15; F08"
+    },
+    {
+      "role": "Payroll Admin",
+      "id": "P07",
+      "action": "Finalize/reopen run",
+      "expected": "Exact independent reconciliation, required co-sign, immutable versions; reopen reason and artifact regeneration.",
+      "current_verdict": "Partial primitives; UI simulated and full evidence incomplete",
+      "evidence": "F07/F08; R10/R33"
+    },
+    {
+      "role": "Payroll Admin",
+      "id": "P08",
+      "action": "Download payslip/bank/JV/statutory output",
+      "expected": "Artifact tied to company/run/version, held payments excluded, document bytes and totals reconciled.",
+      "current_verdict": "Incomplete end-to-end ownership/generation",
+      "evidence": "F07/F09; outputs-bundle filename-only SAP lookup; R33/R34"
+    },
+    {
+      "role": "Payroll Admin",
+      "id": "P09",
+      "action": "Parallel run and annual/YTD actions",
+      "expected": "Two complete consecutive populations/components; durable opening facts; actual salary revisions.",
+      "current_verdict": "Remaining",
+      "evidence": "R29/R30/R31; prior financial audits, source reconfirmed"
+    },
+    {
+      "role": "LOI / Onboarding",
+      "id": "L01",
+      "action": "Create/modify LOI",
+      "expected": "Stable ATS candidate/offer identity and version; changed approved CTC/probation requires reapproval.",
+      "current_verdict": "Source contract required; not implemented end-to-end",
+      "evidence": "F13; R01 ATS plan"
+    },
+    {
+      "role": "LOI / Onboarding",
+      "id": "L02",
+      "action": "Approve then issue LOI",
+      "expected": "Initiator\u2192Plant Head/GM\u2192HR Head\u2192CEO\u2192issue; each actual step/delivery recorded.",
+      "current_verdict": "Scheduled Phase4; not implemented here",
+      "evidence": "RF19; docs08 catalog"
+    },
+    {
+      "role": "LOI / Onboarding",
+      "id": "L03",
+      "action": "Accept/reject an offer",
+      "expected": "Authoritative accepted/rejected event separate from prejoin/no-show.",
+      "current_verdict": "Incorrect inference in report",
+      "evidence": "RF18 no_show\u2192Rejected; F13"
+    },
+    {
+      "role": "LOI / Onboarding",
+      "id": "L04",
+      "action": "Nightly ATS handoff",
+      "expected": "Authorized read-only connector/cursor and replay-safe candidate intake from accepted/joined source.",
+      "current_verdict": "No registered ATS sync worker found",
+      "evidence": "F13; worker.ts; recruitment UI promise unsupported"
+    },
+    {
+      "role": "LOI / Onboarding",
+      "id": "L05",
+      "action": "Prejoin link and documents",
+      "expected": "Real dispatched link, single-use token handling, validated sensitive fields/documents and expiry.",
+      "current_verdict": "Partial scaffold; token/delivery gaps retained",
+      "evidence": "F10/F11; R35; no external SMTP tested"
+    },
+    {
+      "role": "LOI / Onboarding",
+      "id": "L06",
+      "action": "DOJ conversion to employee",
+      "expected": "Source/target scoped validated masters; employee\u2194candidate identity; usable login, pay, tasks and probation atomically.",
+      "current_verdict": "Unsafe",
+      "evidence": "F10; H08/H09/H14"
+    },
+    {
+      "role": "LOI / Onboarding",
+      "id": "L07",
+      "action": "IT completes onboarding task",
+      "expected": "Only assigned limited task access; provider proof for biometric registration.",
+      "current_verdict": "Failed access; false proof risk",
+      "evidence": "RF17; F11"
+    },
+    {
+      "role": "Other HR / Exit",
+      "id": "O01",
+      "action": "Separation clearances and F&F",
+      "expected": "Actual approval\u2192clearances\u2192true computed obligation\u2192approval\u2192payment acknowledgment\u2192letters/alumni.",
+      "current_verdict": "Not accepted; sample/pay-state gaps",
+      "evidence": "F12; R16/R17"
+    },
+    {
+      "role": "Other HR / Exit",
+      "id": "O02",
+      "action": "Announcements/polls/surveys",
+      "expected": "Scoped audience and exact valid response/result contracts.",
+      "current_verdict": "Previous defects remain; not rerun today",
+      "evidence": "F17; O01\u2013O03/O11 pack22"
+    },
+    {
+      "role": "Other HR / Exit",
+      "id": "O03",
+      "action": "Policy acknowledgment/helpdesk SLA",
+      "expected": "Authorized content/task population, category ownership and correct closed/reopen/history metrics.",
+      "current_verdict": "Previous defects/metric decision remain",
+      "evidence": "F17; O04\u2013O08/O12 pack22"
+    },
+    {
+      "role": "Other HR / Exit",
+      "id": "O04",
+      "action": "Assets assignment and exit recovery",
+      "expected": "One custody chain, valid transitions, scoped report and approved recovery obligation.",
+      "current_verdict": "Remaining custody/report/finance acceptance",
+      "evidence": "F14/F17; prior asset findings"
+    },
+    {
+      "role": "Other HR / Exit",
+      "id": "O05",
+      "action": "Training and rollout",
+      "expected": "Role guides, real HR UAT, Kent/SMTP/storage proof, restore/scale checks and signed gates.",
+      "current_verdict": "Remaining",
+      "evidence": "CORE-14; F17; all original phase gates retained"
+    }
+  ]
+}
