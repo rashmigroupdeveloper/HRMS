@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useEffectEvent, useState } from 'react';
+import { DelegationPanel } from './DelegationPanel';
 import { Check, CheckCircle2, Clock3, RotateCcw, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../../lib/api';
@@ -185,6 +186,7 @@ export function ApprovalsPage() {
           SLA-sorted requests waiting specifically for your decision.
         </p>
       </header>
+      <DelegationPanel />
       <div className="grid gap-3 sm:grid-cols-3">
         <Card>
           <p className="text-xs text-ink-muted">Waiting</p>

@@ -7,12 +7,15 @@
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { withPermission } from '../../api/orpc.js';
+import { withAnyPermission, withPermission } from '../../api/orpc.js';
+import { writeAudit } from '../../core/audit/audit.service.js';
+import { assertEmployeesInScope } from '../../core/rbac/employee-scope.js';
 import { getTypedSetting } from '../settings/index.js';
 import { runKentSync, KentIntegrationUnavailable } from './kent-sync.job.js';
 import { kentConnectorFromEnv } from './kent-source-connectors.js';
 import { reingestQuarantined } from './ingest.service.js';
-import { listFinalizationHolds } from './day-status.service.js';
+import { drainRecomputeQueue, listFinalizationHolds } from './day-status.service.js';
+import { sql } from 'kysely';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -201,7 +204,64 @@ const reingestProcedure = withPermission('admin.integrations')
     return reingestQuarantined(context.db, input?.ids);
   });
 
+/** E2E-031: IT / HR ops record biometric enrolment (and access card) after onboarding — feeds the readiness check. */
+const biometricEnrolmentProcedure = withAnyPermission('admin.devices', 'attendance.manual_override')
+  .route({ method: 'POST', path: '/attendance/biometric-enrolment', summary: 'Mark an employee biometric-enrolled (audited)' })
+  .input(z.object({ ecode: z.string().trim().min(1), registered: z.boolean(), accessCardNo: z.string().trim().max(40).optional() }).strict())
+  .output(z.object({ employeeId: z.number(), ecode: z.string(), biometricRegistered: z.boolean(), accessCardNo: z.string().nullable() }))
+  .handler(async ({ input, context }) => {
+    const emp = await context.db.selectFrom('core.employees').select(['id', 'ecode', 'biometric_registered', 'access_card_no'])
+      .where('ecode', '=', input.ecode.toUpperCase()).executeTakeFirst();
+    if (!emp) throw new ORPCError('NOT_FOUND', { message: `No employee with e-code ${input.ecode}` });
+    await assertEmployeesInScope(context.db, { ...context.permissionAccess, actorEmployeeId: context.user.employee_id }, [emp.id]);
+    const card = input.accessCardNo === undefined ? emp.access_card_no : input.accessCardNo === '' ? null : input.accessCardNo;
+    await context.db.updateTable('core.employees').set({ biometric_registered: input.registered, access_card_no: card }).where('id', '=', emp.id).execute();
+    await writeAudit(context.db, {
+      actorUserId: context.user.id, action: 'update', entity: 'core.employees', entityId: emp.id, field: 'biometric_registered',
+      oldValue: JSON.stringify({ biometric_registered: emp.biometric_registered, access_card_no: emp.access_card_no }),
+      newValue: JSON.stringify({ biometric_registered: input.registered, access_card_no: card }), ip: context.req.ip ?? null,
+    });
+    return { employeeId: emp.id, ecode: emp.ecode, biometricRegistered: input.registered, accessCardNo: card };
+  });
+
+/**
+ * E2E-032: when punches arrive by manual upload (no live Kent feed), an admin
+ * confirms the doors are complete through a past date. Watermarks only move
+ * forward (GREATEST + monotonic trigger), the reason is audited, and held days
+ * are recomputed straight away.
+ */
+const markDoorsCompleteProcedure = withAnyPermission('admin.devices', 'attendance.month_lock')
+  .route({ method: 'POST', path: '/attendance/doors/mark-complete', summary: 'Mark door data complete through a date after a manual upload (audited)' })
+  .input(z.object({ through: isoDate, locationId: z.number().int().positive().optional(), reason: z.string().trim().min(10).max(500) }).strict())
+  .output(z.object({ doors: z.array(z.string()), watermarkAt: z.string(), recomputed: z.number() }))
+  .handler(async ({ input, context }) => {
+    const watermark = new Date(`${input.through}T23:59:59.999+05:30`);
+    if (watermark.getTime() >= Date.now()) throw new ORPCError('BAD_REQUEST', { message: 'Only a past date can be marked complete' });
+    let q = context.db.selectFrom('att.devices').select(['id', 'door_code']).where('is_active', '=', true);
+    if (input.locationId !== undefined) q = q.where('location_id', '=', input.locationId);
+    const devices = await q.orderBy('door_code').execute();
+    if (devices.length === 0) throw new ORPCError('BAD_REQUEST', { message: 'No active doors match' });
+    const apply = async (trx: typeof context.db): Promise<void> => {
+      for (const d of devices) {
+        await trx.insertInto('att.device_watermarks').values({ device_id: d.id, watermark_ts: watermark })
+          .onConflict((oc) => oc.column('device_id').doUpdateSet({ watermark_ts: sql`GREATEST(att.device_watermarks.watermark_ts, excluded.watermark_ts)`, updated_at: new Date() }))
+          .execute();
+      }
+      await writeAudit(trx, {
+        actorUserId: context.user.id, action: 'update', entity: 'att.device_watermarks', field: 'manual_complete',
+        newValue: JSON.stringify({ through: input.through, locationId: input.locationId ?? null, doors: devices.map((d) => d.door_code), reason: input.reason }),
+        ip: context.req.ip ?? null,
+      });
+    };
+    if (context.db.isTransaction) await apply(context.db);
+    else await context.db.transaction().execute(apply);
+    const recomputed = await drainRecomputeQueue(context.db);
+    return { doors: devices.map((d) => d.door_code), watermarkAt: watermark.toISOString(), recomputed };
+  });
+
 export const attendanceRouter = {
+  markDoorsComplete: markDoorsCompleteProcedure,
+  biometricEnrolment: biometricEnrolmentProcedure,
   devices: devicesProcedure,
   finalizationHolds: finalizationHoldsProcedure,
   unmatched: unmatchedProcedure,

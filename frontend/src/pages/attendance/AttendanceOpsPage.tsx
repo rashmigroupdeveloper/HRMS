@@ -7,6 +7,7 @@ import {
   ScanSearch,
   UserMinus,
 } from 'lucide-react';
+import { DayCorrectionCard } from './DayCorrectionCard';
 import { Link } from 'react-router-dom';
 import type { SessionUser } from '../../lib/session';
 import { hasPermission } from '../../lib/session';
@@ -137,6 +138,8 @@ function AttendanceOpsContent({ user, unmatchedRows }: { user: SessionUser; unma
           </div>
         )}
       </DarkCard>
+
+      {hasPermission(user, 'attendance.manual_override') && <DayCorrectionCard user={user} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {visibleSurfaces.map(({ to, title, body, icon: Icon }) => (

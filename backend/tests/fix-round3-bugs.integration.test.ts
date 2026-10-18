@@ -71,6 +71,37 @@ describe.skipIf(!DB_URL)('fix round 3 bugs', () => {
     expect((await call('ops', 'post', '/api/letters/issue', { employeeId: e, templateCode: 'experience' })).status).toBe(403);
   });
 
+  it('E2E-039 / E2E-013 / E2E-007: leave register, delegation by e-code, correction by e-code', async () => {
+    const unit = (await tx.selectFrom('core.org_units').select('id').where('company_id', '=', companyA).executeTakeFirstOrThrow()).id;
+    const ec = `RG${randomUUID().slice(0, 6).toUpperCase()}`;
+    const emp = (await tx.insertInto('core.employees').values({ company_id: companyA, org_unit_id: unit, ecode: ec, first_name: 'Reg', status: 'active', doj: '2020-01-01' }).returning('id').executeTakeFirstOrThrow()).id;
+    const cl = await tx.selectFrom('lv.leave_types').select(['id', 'code']).limit(1).executeTakeFirst();
+    if (cl) await tx.insertInto('lv.ledger').values({ employee_id: emp, leave_type_id: cl.id, txn_type: 'accrual', delta: '2.5', effective_date: new Date('2026-01-01T00:00:00Z') }).execute();
+    const reg = await call('ops', 'get', `/api/leave/register?q=${ec}`);
+    expect(reg.status).toBe(200);
+    const body = reg.body as { rows: { ecode: string; balances: Record<string, number>; onLeave: unknown }[] };
+    expect(body.rows.map((r) => r.ecode)).toEqual([ec]);
+    if (cl) expect(body.rows[0]?.balances[cl.code]).toBe(2.5);
+    expect(((await call('ops', 'get', '/api/leave/register?onLeaveOnly=true')).body as { rows: unknown[] }).rows).toEqual([]);
+    expect((await call('emp', 'get', '/api/leave/register')).status).toBe(403);
+
+    const mate = await roleUser(tx, { email: `${ec.toLowerCase()}@hrms.invalid`, role: 'employee', employeeId: emp, jwtSecret: JWT_SECRET });
+    const future = new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10);
+    expect((await call('head', 'put', '/api/workflows/delegations', { to: 'nobody-x@hrms.invalid', fromDate: future, toDate: future })).status).toBe(404);
+    expect((await call('head', 'put', '/api/workflows/delegations', { fromDate: future, toDate: future })).status).toBe(400);
+    expect((await call('head', 'put', '/api/workflows/delegations', { to: ec.toLowerCase(), fromDate: future, toDate: future })).status).toBe(200);
+    const list = (await call('head', 'get', '/api/workflows/delegations')).body as { id: number; toUserId: number }[];
+    expect(list.some((d) => d.toUserId === mate.userId)).toBe(true);
+    const del = await (await httpRequest(app)).delete(`/api/workflows/delegations/${String(list[0]?.id ?? 0)}`).set('Authorization', `Bearer ${t['head'] ?? ''}`);
+    expect(del.status).toBe(200);
+
+    const ov = await call('ops', 'put', '/api/attendance/days/override', { ecode: ec.toLowerCase(), date: '2026-05-04', status: 'P', reason: 'gate reader down, verified by supervisor' });
+    expect([200, 409]).toContain(ov.status);
+    expect((await call('ops', 'put', '/api/attendance/days/override', { ecode: 'NOPE00', date: '2026-05-04', status: 'P', reason: 'xxxxxxxx' })).status).toBe(404);
+    expect((await call('ops', 'put', '/api/attendance/days/override', { date: '2026-05-04', status: 'P', reason: 'xxxxxxxx' })).status).toBe(400);
+    expect((await call('it', 'post', '/api/attendance/recompute', { ecode: ec, date: '2026-05-04' })).status).toBe(200);
+  });
+
   it('E2E-033: POST /attendance/recompute with {} drains; a partial body is still refused', async () => {
     const r = await call('it', 'post', '/api/attendance/recompute', {});
     expect(r.status).toBe(200);

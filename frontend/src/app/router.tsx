@@ -48,6 +48,7 @@ const OtDecisionsPage = lazy(() => import('../pages/team/OtDecisionsPage').then(
 const AbsenceCasesPage = lazy(() => import('../pages/attendance/AbsenceCasesPage').then((m) => ({ default: m.AbsenceCasesPage })));
 const PoliciesPage = lazy(() => import('../pages/policies/PoliciesPage').then((m) => ({ default: m.PoliciesPage })));
 const LettersPage = lazy(() => import('../pages/letters/LettersPage').then((m) => ({ default: m.LettersPage })));
+const MyResignationPage = lazy(() => import('../pages/lifecycle/MyResignationPage').then((m) => ({ default: m.MyResignationPage })));
 const MyLettersPage = lazy(() => import('../pages/letters/MyLettersPage').then((m) => ({ default: m.MyLettersPage })));
 const AccessControlPage = lazy(() => import('../pages/admin/AccessControlPage').then((m) => ({ default: m.AccessControlPage })));
 const SettingsPage = lazy(() => import('../pages/admin/SettingsPage').then((m) => ({ default: m.SettingsPage })));
@@ -103,13 +104,14 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="my/team" element={<TeamPage user={user} />} />
         <Route path="my/team/overtime" element={<OtDecisionsPage />} />
         <Route path="my/letters" element={<MyLettersPage />} />
+        <Route path="my/resignation" element={<MyResignationPage />} />
         <Route path="policies" element={<PoliciesPage user={user} />} />
         <Route path="letters" element={<LettersPage />} />
 
         <Route path="attendance" element={<AttendanceOpsPage user={user} />} />
         <Route path="attendance/muster" element={<MusterPage />} />
         <Route path="attendance/exceptions" element={<ExceptionsPage />} />
-        <Route path="attendance/devices" element={<DeviceHealthPage />} />
+        <Route path="attendance/devices" element={<DeviceHealthPage user={user} />} />
         <Route path="attendance/month-lock" element={<MonthLockPage />} />
         <Route path="attendance/absence-cases" element={<AbsenceCasesPage user={user} />} />
 

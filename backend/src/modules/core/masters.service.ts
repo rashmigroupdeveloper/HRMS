@@ -9,13 +9,13 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import type { Database } from '../../core/db/types.js';
 import { DomainError, NotFoundError } from '../../core/errors/index.js';
 
-export const MASTER_KINDS = ['companies', 'org_units', 'locations', 'cost_centers', 'departments', 'designations', 'grades'] as const;
+export const MASTER_KINDS = ['companies', 'org_units', 'locations', 'cost_centers', 'departments', 'designations', 'grades', 'plants'] as const;
 export type MasterKind = (typeof MASTER_KINDS)[number];
 
-type Table = 'core.companies' | 'core.org_units' | 'core.locations' | 'core.cost_centers' | 'core.departments' | 'core.designations' | 'core.grades';
+type Table = 'core.companies' | 'core.org_units' | 'core.locations' | 'core.cost_centers' | 'core.departments' | 'core.designations' | 'core.grades' | 'core.plants';
 const TABLE: Record<MasterKind, Table> = {
   companies: 'core.companies', org_units: 'core.org_units', locations: 'core.locations', cost_centers: 'core.cost_centers',
-  departments: 'core.departments', designations: 'core.designations', grades: 'core.grades',
+  departments: 'core.departments', designations: 'core.designations', grades: 'core.grades', plants: 'core.plants',
 };
 
 /** Columns a caller may set, per master (anything else is ignored). */
@@ -23,16 +23,18 @@ const WRITABLE: Record<MasterKind, readonly string[]> = {
   companies: ['code', 'name', 'ecode_prefix', 'gstin', 'pan', 'tan', 'pf_establishment_code', 'esic_code', 'pt_registration_no', 'address'],
   org_units: ['company_id', 'parent_id', 'name'],
   locations: ['company_id', 'name', 'state_code'],
-  cost_centers: ['company_id', 'code', 'name'],
+  cost_centers: ['company_id', 'code', 'name', 'plant_id'],
   departments: ['name'],
   designations: ['name'],
   grades: ['code', 'name', 'rank'],
+  plants: ['company_id', 'plant_code', 'name', 'location_id'], // E2E-030: GL mapping is keyed by plant
 };
 
 /** Columns that must be present on create. */
 const REQUIRED: Record<MasterKind, readonly string[]> = {
   companies: ['code', 'name', 'ecode_prefix'], org_units: ['company_id', 'name'], locations: ['company_id', 'name', 'state_code'],
   cost_centers: ['company_id', 'code', 'name'], departments: ['name'], designations: ['name'], grades: ['code', 'name', 'rank'],
+  plants: ['company_id', 'plant_code', 'name'],
 };
 
 /** Who references each master — a delete is refused while any row points at it. */
@@ -44,6 +46,7 @@ const REFERENCES: Record<MasterKind, readonly [string, string][]> = {
   departments: [['core.employees', 'department_id'], ['core.department_heads', 'department_id']],
   designations: [['core.employees', 'designation_id']],
   grades: [['core.employees', 'grade_id']],
+  plants: [['core.employees', 'plant_id'], ['core.cost_centers', 'plant_id']],
 };
 
 /** Company statutory registration formats (India). null = valid. */
@@ -96,6 +99,10 @@ export function validateMaster(kind: MasterKind, values: MasterValues, creating:
   }
   if (kind === 'locations' && typeof out['state_code'] === 'string' && !/^[A-Z]{2}$/i.test(out['state_code'])) throw new DomainError('State code must be 2 letters (e.g. WB)');
   if (kind === 'locations' && typeof out['state_code'] === 'string') out['state_code'] = out['state_code'].toUpperCase();
+  if (kind === 'plants' && typeof out['plant_code'] === 'string') {
+    if (!/^[A-Z0-9_-]{2,20}$/i.test(out['plant_code'])) throw new DomainError('Plant code must be 2–20 letters/digits');
+    out['plant_code'] = out['plant_code'].toUpperCase();
+  }
   if (kind === 'grades' && out['rank'] !== undefined && out['rank'] !== null && (!Number.isInteger(Number(out['rank'])) || Number(out['rank']) < 0)) throw new DomainError('Rank must be a whole number ≥ 0');
   return out;
 }
@@ -114,6 +121,7 @@ export async function listMasters(db: Kysely<Database>, kind: MasterKind, compan
 export async function createMaster(db: Kysely<Database>, kind: MasterKind, values: MasterValues, actorUserId: number, ip: string | null): Promise<{ id: number }> {
   const clean = validateMaster(kind, values, true);
   if (kind === 'org_units') await assertParentSameCompany(db, clean);
+  await assertLinksSameCompany(db, kind, clean);
   const row = await db.insertInto(TABLE[kind]).values(clean as never).returning('id' as never).executeTakeFirstOrThrow() as { id: number };
   await writeAudit(db, { actorUserId, action: 'create', entity: TABLE[kind], entityId: row.id, newValue: JSON.stringify(clean), ip });
   return { id: row.id };
@@ -132,6 +140,7 @@ export async function updateMaster(db: Kysely<Database>, kind: MasterKind, id: n
     if (clean['parent_id'] === id) throw new DomainError('An org unit cannot be its own parent');
     await assertParentSameCompany(db, { company_id: before['company_id'] as number, ...clean });
   }
+  await assertLinksSameCompany(db, kind, { company_id: before['company_id'] as number, ...clean });
   await db.updateTable(TABLE[kind]).set({ ...clean, updated_at: new Date() } as never).where('id' as never, '=', id as never).execute();
   const old: Record<string, unknown> = {};
   for (const k of Object.keys(clean)) old[k] = before[k];
@@ -165,4 +174,19 @@ async function assertParentSameCompany(db: Kysely<Database>, v: MasterValues): P
   const parent = await db.selectFrom('core.org_units').select(['company_id']).where('id', '=', Number(parentId)).executeTakeFirst();
   if (!parent) throw new DomainError('Parent org unit not found');
   if (v['company_id'] !== undefined && parent.company_id !== Number(v['company_id'])) throw new DomainError('Parent org unit belongs to another company');
+}
+
+/** A cost centre's plant and a plant's location must belong to the same company. */
+async function assertLinksSameCompany(db: Kysely<Database>, kind: MasterKind, v: MasterValues): Promise<void> {
+  const company = v['company_id'];
+  if (kind === 'cost_centers' && v['plant_id'] !== null && v['plant_id'] !== undefined) {
+    const p = await db.selectFrom('core.plants').select('company_id').where('id', '=', Number(v['plant_id'])).executeTakeFirst();
+    if (!p) throw new DomainError('Plant not found');
+    if (p.company_id !== Number(company)) throw new DomainError('The plant belongs to another company');
+  }
+  if (kind === 'plants' && v['location_id'] !== null && v['location_id'] !== undefined) {
+    const l = await db.selectFrom('core.locations').select('company_id').where('id', '=', Number(v['location_id'])).executeTakeFirst();
+    if (!l) throw new DomainError('Location not found');
+    if (l.company_id !== Number(company)) throw new DomainError('The location belongs to another company');
+  }
 }

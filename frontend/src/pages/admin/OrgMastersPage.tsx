@@ -11,7 +11,7 @@ import { hasPermission } from '../../lib/session';
 import { Button, Card, ConfirmModal, DataTable, Drawer, PageHeader, Select, TextField, toast } from '../../ui';
 import type { Column } from '../../ui';
 
-type Kind = 'companies' | 'org_units' | 'locations' | 'cost_centers' | 'departments' | 'designations' | 'grades';
+type Kind = 'companies' | 'org_units' | 'locations' | 'cost_centers' | 'departments' | 'designations' | 'grades' | 'plants';
 type Row = Record<string, unknown> & { id: number };
 interface FieldDef { key: string; label: string; required?: boolean; company?: boolean; hint?: string; numeric?: boolean }
 
@@ -26,9 +26,10 @@ const MASTER_FIELDS: Record<Kind, { title: string; fields: FieldDef[] }> = {
   ] },
   org_units: { title: 'Org units', fields: [{ key: 'company_id', label: 'Company', required: true, company: true }, { key: 'name', label: 'Name', required: true }] },
   locations: { title: 'Locations', fields: [{ key: 'company_id', label: 'Company', required: true, company: true }, { key: 'name', label: 'Name', required: true }, { key: 'state_code', label: 'State code', required: true, hint: 'e.g. WB (drives PT slab)' }] },
-  cost_centers: { title: 'Cost centres', fields: [{ key: 'company_id', label: 'Company', required: true, company: true }, { key: 'code', label: 'Code', required: true }, { key: 'name', label: 'Name', required: true }] },
+  cost_centers: { title: 'Cost centres', fields: [{ key: 'company_id', label: 'Company', required: true, company: true }, { key: 'code', label: 'Code', required: true }, { key: 'name', label: 'Name', required: true }, { key: 'plant_id', label: 'Plant id', numeric: true, hint: 'From the Plants tab; drives SAP JV GL mapping' }] },
   departments: { title: 'Departments', fields: [{ key: 'name', label: 'Name', required: true }] },
   designations: { title: 'Designations', fields: [{ key: 'name', label: 'Name', required: true }] },
+  plants: { title: 'Plants', fields: [{ key: 'company_id', label: 'Company', required: true, company: true }, { key: 'plant_code', label: 'Plant code', required: true, hint: 'e.g. KGP (used by GL mapping)' }, { key: 'name', label: 'Name', required: true }, { key: 'location_id', label: 'Location id', numeric: true, hint: 'Optional; from the Locations tab' }] },
   grades: { title: 'Grades', fields: [{ key: 'code', label: 'Code', required: true }, { key: 'name', label: 'Name', required: true }, { key: 'rank', label: 'Rank', required: true, numeric: true, hint: 'Lower = more senior' }] },
 };
 
