@@ -17,6 +17,7 @@ import {
   StatusBadge,
   TextField,
   toast,
+  PersonCell,
 } from '../../ui';
 import type { Column } from '../../ui';
 import { currentMonthIST } from '../home/dashboard-format';
@@ -90,10 +91,7 @@ const columns: Column<MusterRow>[] = [
     header: 'Employee',
     width: 'minmax(180px,1.4fr)',
     render: (row) => (
-      <div>
-        <p className="font-semibold text-ink">{row.employeeName}</p>
-        <p className="text-xs text-ink-muted">{row.ecode}</p>
-      </div>
+      <PersonCell name={row.employeeName} sub={row.ecode} />
     ),
   },
   {

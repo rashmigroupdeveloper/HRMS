@@ -409,7 +409,7 @@ export function SalaryStructuresPage() {
         <Card>
           <CardHeader
             title="Salary Components Master"
-            subtitle="Seeded with live RML ground truth (09-RECON §2): Basic, HRA 50%, fixed Medical/Education, Special balancing."
+            subtitle="Basic, HRA at 50%, fixed Medical and Education, with Special as the balancing head."
           />
           <div className="p-4">
             <DataTable<SalaryComponent>
@@ -629,7 +629,7 @@ export function SalaryStructuresPage() {
                           {code}
                         </span>
                         <ArrowRight className="size-3 ml-auto text-ink-subtle" />
-                        <span className="font-mono font-medium text-accent">
+                        <span className="font-mono font-medium text-ink">
                           ₹{(breakup.monthly[code] ?? 0).toLocaleString('en-IN')}
                         </span>
                       </div>

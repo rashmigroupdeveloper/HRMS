@@ -51,7 +51,7 @@ const DEMOGRAPHIC_ROWS = [
   { label: 'Tenure', formula: 'AVG(age(doj)) of active, by category' },
   { label: 'Leadership %', formula: 'Active with grade.rank ≥ leadership cutoff ÷ active' },
   { label: 'Gender diversity %', formula: 'Active female employees ÷ total headcount' },
-  { label: 'Contract dependency ratio', formula: 'Contract count ÷ total manpower (Phase 4)' },
+  { label: 'Contract dependency ratio', formula: 'Contract count ÷ total manpower (contract staff not tracked yet)' },
   { label: 'Average CTC', formula: 'AVG(annual_ctc) by category and grade band' },
 ];
 
@@ -310,7 +310,7 @@ export function ExecutivePage() {
       <PageHeader
         eyebrow="Executive"
         title="Group dashboard"
-        description="See how the group is doing — headcount, cost, absence and attrition — from last night’s snapshot, never a live guess."
+        description="Headcount, cost, absence and attrition across the group, from last night’s snapshot."
         actions={
           <div className="flex items-center gap-2">
             {kpis.data === null ? (
@@ -343,7 +343,7 @@ export function ExecutivePage() {
             </p>
           </div>
           <p className="max-w-md text-sm leading-6 text-hero-muted">
-            From last night’s snapshot — opening this page never runs a heavy query. A dash means
+            From last night’s snapshot. A dash means
             not measured yet.
           </p>
         </div>
@@ -381,7 +381,7 @@ export function ExecutivePage() {
         <div className="p-6 pb-0">
           <CardHeader
             title="Manpower & demographics"
-            subtitle="The pptx table, column for column. Contract reads “Phase 4” until that module exists — it is never estimated."
+            subtitle="By employment category. Contract staff are not tracked in HRMS yet, so that column stays blank rather than estimated."
           />
         </div>
         <div className="overflow-x-auto" role="region" aria-label="Manpower and demographics table" tabIndex={0}>
@@ -418,7 +418,7 @@ export function ExecutivePage() {
                           key={category}
                           className="border-b border-line/50 px-3 py-3 text-right"
                         >
-                          <Pill>Phase 4</Pill>
+                          <Pill>Not tracked yet</Pill>
                         </div>
                       );
                     }
@@ -457,7 +457,7 @@ export function ExecutivePage() {
       <Card>
         <CardHeader
           title="Productivity & cost"
-          subtitle="Two-series gold/charcoal charts only — the locked chart palette (docs/05 §4.8)."
+          subtitle="Month by month, from the nightly snapshot."
           action={<Gauge className="size-5 text-ink-subtle" />}
         />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -567,7 +567,7 @@ export function ExecutivePage() {
         <Card>
           <CardHeader
             title="Absenteeism trend"
-            subtitle="(UAB + A) days ÷ scheduled working days, by month (docs/06 §4)"
+            subtitle="Absent and unauthorised-absent days ÷ scheduled working days, by month"
           />
           <TrendChart
             points={absenteeism.data ?? []}
@@ -619,13 +619,12 @@ export function ExecutivePage() {
         <PendingModule
           phase="Phase 3"
           task="RPT-03"
-          description="You will read group KPIs here. A snapshot has not been built yet — dashes mean not measured, never a made-up number."
+          description="Group KPIs appear here once the first nightly snapshot is built. Until then, dashes mean not measured."
         />
       ) : (
         <p className="text-xs leading-5 text-ink-muted">
-          Read from a precomputed nightly snapshot — opening this page never runs an aggregation
-          (docs/06 §4). Cells showing an em dash carry the reason on hover; not measured is not the
-          same as zero.
+          Read from the nightly snapshot. A dash means not measured yet (hover for the reason) — it
+          is not the same as zero.
         </p>
       )}
 

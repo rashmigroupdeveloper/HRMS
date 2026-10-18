@@ -82,13 +82,13 @@ function homeBlurb(user: SessionUser): { title: string; body: string } {
   if (hasRole(user, 'ceo_cell')) {
     return {
       title: 'Executive overview',
-      body: 'The group dashboard at /executive ships in Phase 3. Reports already export what is live today — we show nothing invented.',
+      body: 'The group dashboard is not live yet. Reports already export what is available today.',
     };
   }
   if (hasRole(user, 'payroll_admin')) {
     return {
       title: 'Payroll console',
-      body: 'You will run payroll here. The engine is still being built in Phase 2 — this landing stays empty rather than showing figures that were never computed.',
+      body: 'You will run payroll here. Until it is live this page stays empty rather than showing figures that were never computed.',
     };
   }
   if (hasRole(user, 'hr_ops') || hasRole(user, 'hr_head') || hasRole(user, 'super_admin')) {
