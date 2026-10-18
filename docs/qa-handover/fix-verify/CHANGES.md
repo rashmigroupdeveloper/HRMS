@@ -18,6 +18,12 @@
 - New admin screen: Admin → Heads of department. "Head of department" is added to the approver presets on Approval chains.
 - Seeded HOD on the fix instance: RML033904 is head of RML Production (fix-verify/env/hod-seed.sql), login rml033904@qa-payroll.rashmi.test. The directory shows 28 RML Production employees only.
 
+## UI/UX pass (job/uiux, frontend presentation only)
+- Crextio-referenced Warm Editorial polish: new `StatTile`/`StatGrid` KPI tiles (lifecycle, loans, travel, transfers), `HeadlineStats` big light numerals with count-up, `CardLink` round ↗ card actions.
+- Removed uppercase tracked "kicker" labels, raw palette colours, `transition-all`, requirement ids (LC-06 etc.) and build-phase copy from the UI; PendingModule says "Coming soon".
+- Data Imports and Department Heads restyled; ESS hero punch tiles no longer overflow; Profile tab empty states give a next step.
+- Fonts self-hosted (Manrope, Fraunces; latin + latin-ext for ₹) with preload — no Google Fonts request.
+
 ## Client decisions needed
 | # | Topic | Default chosen | Source | How to change |
 |---|---|---|---|---|
