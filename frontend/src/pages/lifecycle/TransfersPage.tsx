@@ -401,7 +401,7 @@ export function TransfersPage() {
               <span className="text-ink-muted">{r.currentCompanyName}</span> →{' '}
               <span className="font-semibold text-ink">{r.targetCompanyName}</span>
               {r.targetEcode && (
-                <div className="text-accent font-mono text-[11px]">New E-Code: {r.targetEcode}</div>
+                <div className="text-ink font-mono text-[11px]">New E-Code: {r.targetEcode}</div>
               )}
             </div>
           )}

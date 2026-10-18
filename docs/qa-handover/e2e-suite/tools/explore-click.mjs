@@ -1,6 +1,6 @@
 // Dev helper: open a page, click a sequence of buttons (by accessible name regex), dump the resulting dialog/main ARIA.
 import { chromium } from '@playwright/test';
-const BASE = 'http://localhost:5193';
+const BASE = 'http://localhost:5176';
 const [email, path, ...clicks] = process.argv.slice(2);
 const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome' });
 const page = await (await b.newContext({ viewport: { width: 1440, height: 900 } })).newPage();

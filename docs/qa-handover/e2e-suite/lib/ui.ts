@@ -16,8 +16,11 @@ export async function choose(s: Session, combo: Locator, option: string | RegExp
 export async function pickDate(s: Session, trigger: Locator, dayLabel: string) {
   await s.click(trigger);
   const day = s.page.getByRole('button', { name: dayLabel, exact: true }).last();
-  for (let i = 0; i < 4 && !(await day.isVisible().catch(() => false)); i++) {
-    await s.page.getByRole('button', { name: /next month/i }).last().click();
+  // Walk the calendar towards the target month (past dates go back, future dates go forward).
+  const target = new Date(`${dayLabel} UTC`);
+  const back = !Number.isNaN(target.getTime()) && target.getTime() < Date.now() - 86_400_000;
+  for (let i = 0; i < 12 && !(await day.isVisible().catch(() => false)); i++) {
+    await s.page.getByRole('button', { name: back ? /previous month|prev(ious)? month/i : /next month/i }).last().click();
   }
   await s.click(day);
 }

@@ -10,6 +10,8 @@
 
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../../core/db/types.js';
+import { employeeScopeSql, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
+import { DomainError, NotFoundError } from '../../../core/errors/index.js';
 
 export interface SubmitEvaluationInput {
   reviewId: number;
@@ -47,13 +49,16 @@ export interface ProbationReviewItem {
   confirmationDate: string | null;
 }
 
+/** pg DATE is parsed as UTC midnight (core/db/database.ts); mocks pass strings. */
+const dbDate = (d: unknown): string => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10));
+
 export const ProbationService = {
   /**
    * Retrieves probation reviews list with employee and organization info.
    */
   async listReviews(
     db: Kysely<Database>,
-    filters?: { status?: 'pending' | 'under_review' | 'completed' | undefined }
+    filters?: { status?: 'pending' | 'under_review' | 'completed' | undefined; scope?: EmployeeScope | undefined }
   ): Promise<ProbationReviewItem[]> {
     let query = db
       .selectFrom('core.probation_reviews as pr')
@@ -78,6 +83,7 @@ export const ProbationService = {
         'pr.confirmation_date as confirmationDate',
       ]);
 
+    query = query.where(employeeScopeSql(filters?.scope, 'e'));
     if (filters?.status) {
       query = query.where('pr.status', '=', filters.status);
     }
@@ -91,14 +97,14 @@ export const ProbationService = {
       name: `${r.first_name} ${r.last_name ?? ''}`.trim(),
       department: r.departmentName ?? null,
       designation: r.designationName ?? null,
-      doj: r.doj ? String(r.doj).slice(0, 10) : null,
-      dueDate: String(r.dueDate).slice(0, 10),
+      doj: r.doj ? dbDate(r.doj) : null,
+      dueDate: dbDate(r.dueDate),
       managerRecommendation: r.managerRecommendation,
       extensionMonths: r.extensionMonths,
       reviewNotes: r.reviewNotes,
       status: r.status,
       outcome: r.outcome,
-      confirmationDate: r.confirmationDate ? String(r.confirmationDate).slice(0, 10) : null,
+      confirmationDate: r.confirmationDate ? dbDate(r.confirmationDate) : null,
     }));
   },
 
@@ -116,11 +122,11 @@ export const ProbationService = {
       .executeTakeFirst();
 
     if (!review) {
-      throw new Error(`Probation review ${input.reviewId} not found.`);
+      throw new NotFoundError(`Probation review ${String(input.reviewId)} not found.`);
     }
 
     if (input.managerRecommendation === 'extend' && (!input.extensionMonths || input.extensionMonths < 1)) {
-      throw new Error('Extension requires a valid duration between 1 and 6 months.');
+      throw new DomainError('Extension requires a valid duration between 1 and 6 months.');
     }
 
     await db
@@ -153,7 +159,7 @@ export const ProbationService = {
       .executeTakeFirst();
 
     if (!review) {
-      throw new Error(`Probation review ${input.reviewId} not found.`);
+      throw new NotFoundError(`Probation review ${String(input.reviewId)} not found.`);
     }
 
     let confirmationLetterId: number | undefined;
@@ -238,7 +244,7 @@ export const ProbationService = {
       }
     } else if (input.outcome === 'extended') {
       const extMonths = input.extensionMonths ?? review.extension_months ?? 3;
-      const [curY, curM, curD] = String(review.due_date).slice(0, 10).split('-').map(Number);
+      const [curY, curM, curD] = dbDate(review.due_date).split('-').map(Number);
       const nextDate = new Date(Date.UTC(curY ?? 2026, (curM ?? 1) - 1 + extMonths, curD ?? 1));
       const nextDueDate = nextDate.toISOString().slice(0, 10);
 
@@ -291,7 +297,8 @@ export const ProbationService = {
    */
   async getUpcomingProbationAlerts(
     db: Kysely<Database>,
-    currentDate: Date = new Date()
+    currentDate: Date = new Date(),
+    scope?: EmployeeScope
   ): Promise<{ d30: number[]; d14: number[]; d7: number[] }> {
     const addDays = (d: Date, n: number) =>
       new Date(d.getTime() + n * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -300,7 +307,7 @@ export const ProbationService = {
     const d14Str = addDays(currentDate, 14);
     const d7Str = addDays(currentDate, 7);
 
-    const reviews = await db
+    let alertsQuery = db
       .selectFrom('core.probation_reviews')
       .select(['id', 'due_date'])
       .where('status', '=', 'pending')
@@ -308,7 +315,11 @@ export const ProbationService = {
         sql<Date>`${d30Str}::date`,
         sql<Date>`${d14Str}::date`,
         sql<Date>`${d7Str}::date`,
-      ])
+      ]);
+    if (scope !== undefined && !scope.all) {
+      alertsQuery = alertsQuery.where('employee_id', 'in', db.selectFrom('core.employees as e').select('e.id').where(employeeScopeSql(scope, 'e')));
+    }
+    const reviews = await alertsQuery
       .execute();
 
     const d30: number[] = [];
@@ -316,7 +327,7 @@ export const ProbationService = {
     const d7: number[] = [];
 
     for (const r of reviews) {
-      const due = String(r.due_date).slice(0, 10);
+      const due = dbDate(r.due_date);
       if (due === d30Str) d30.push(r.id);
       else if (due === d14Str) d14.push(r.id);
       else if (due === d7Str) d7.push(r.id);

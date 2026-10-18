@@ -57,6 +57,13 @@
   - `run-matrix.sh` runs `backend/tests/payroll-scenario-matrix.integration.test.ts` on a pristine scratch DB.
   - 49 cases: 40 payroll (proration, half days, sandwich, divisors, 26–25 cycle, joiner/leaver, PF actual/ceiling, ESIC ₹21k gate and period continuity, WB PT, TDS new/old/87A/marginal relief/surcharge, OT), 3 cycle-switch windows, holiday scope, 4 gratuity and 1 F&F.
 
+## E2E suite (job/e2e, test code only)
+- Suite is portable: app = repo root, ports 5104/5176, DB hrms_e2e, base = hrms_snapshot template (or /workspace/STATE/hrms_snapshot.dump), then migrate + seeds + recon prep + e2e-prep.sql.
+- e2e-prep.sql adds personas: hod@ (dept 4 head), hrops.rgh@ (RGH-scoped hr_ops), payroll.rgh@ (RGH payroll_admin), payroll.group@ (unscoped payroll_admin for group-wide statutory config). payroll@ is RML-scoped.
+- New specs: tests/api/scope.spec.ts (entity, department and team isolation, cross-entity reads/writes, IDOR) and tests/api/concurrency.spec.ts (parallel leave submit/approve, approve-vs-reject, bulk commit, duplicate punches, payroll compute/approve/finalize/outputs/markPaid, clearance sign-off, F&F pay). Concurrency runs as its own project after `payroll`.
+- Date-stable helpers (lib/dates.ts), drawer-based regularisation (E5), KPI snapshot rebuilt in global setup.
+- Results and bugs go to /workspace/STATE/BUGS.md (E2E-0xx).
+
 ## Client decisions needed
 | # | Topic | Default chosen | Source | How to change |
 |---|---|---|---|---|

@@ -43,6 +43,7 @@ New directives queued (parent steering 23:21–23:27):
   punches (Kent EmployeeSwipeDetails layout), leave balance adjustments, loans, statutory rates/PT slabs, holidays, assets, F&F inputs (SOW-221).
 - DOCS_READ §D items 1–18.
 
+E2E (job/e2e, 01:40 IST 19-Oct): baseline on main c1cfe2c with the snapshot was 269 tests: 196 pass, 69 fail, 4 skip. Added scope and concurrency specs. Concurrency found E2E-022 (F&F double pay → 5 letters), E2E-023 (duplicate bank batches) and E2E-024 (overlapping punch uploads fail with 409). Production-readiness pass is next.
 ## Update 19-Oct IST (job/payroll)
 - PG17 on the box (see /workspace/STATE/ENV.md). DBs: hrms_base (stage-1 template), hrms_snapshot (June-2026 runs 4/5 finalized, rebuilt by fix-verify/seed), hrms_recon/fix/ui/e2e, hrms_test_blank (pristine test template).
 - Recon: `fix-verify/recon/run-recon.sh` → RECON PASS: MATCH 44, RML033625 net 59124 (baseline c1cfe2c and after every payroll round).

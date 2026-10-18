@@ -1,4 +1,4 @@
-const API='http://localhost:5130', PW='Rashmi#Test2026';
+const API=process.env.E2E_API_URL||'http://localhost:5104', PW='Rashmi#Test2026';
 const users={employee:'employee@rashmi.test',manager:'manager@rashmi.test',senior_manager:'srmanager@rashmi.test',hod:'hod@rashmi.test',hr_ops_rml:'hrops@rashmi.test',hr_ops_rgh:'hrops.rgh@rashmi.test',hr_head:'hrhead@rashmi.test',payroll_admin:'payroll@rashmi.test',plant_head:'planthead@rashmi.test',ceo_cell:'ceo@rashmi.test',it_admin:'itadmin@rashmi.test',super_admin:'admin@rashmi.test'};
 const eps=process.argv.slice(2).map(s=>{const [m,p,b]=s.split(' ');return {m,p,b}});
 const rows=[];
