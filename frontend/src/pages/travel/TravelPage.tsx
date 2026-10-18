@@ -127,12 +127,12 @@ export function TravelPage() {
   const [endDate, setEndDate] = useState(new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10));
 
   const [advanceTripId, setAdvanceTripId] = useState<number | ''>('');
-  const [advanceAmountRupees, setAdvanceAmountRupees] = useState('10000');
+  const [advanceAmountRupees, setAdvanceAmountRupees] = useState('');
   const [advancePurpose, setAdvancePurpose] = useState('');
 
   const [claimTripId, setClaimTripId] = useState<number | ''>('');
   const [claimCategory, setClaimCategory] = useState<'hotel' | 'flight' | 'train' | 'food' | 'misc'>('hotel');
-  const [claimAmountRupees, setClaimAmountRupees] = useState('5000');
+  const [claimAmountRupees, setClaimAmountRupees] = useState('');
   const [claimDescription, setClaimDescription] = useState('');
 
   const loadData = useCallback(async () => {

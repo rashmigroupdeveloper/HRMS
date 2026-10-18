@@ -146,7 +146,7 @@ export function SeparationBoardPage() {
   // HR Absconding Form State
   const [abscondingEmpId, setAbscondingEmpId] = useState('');
   const [abscondingLwd, setAbscondingLwd] = useState(new Date().toISOString().slice(0, 10));
-  const [abscondingReason, setAbscondingReason] = useState('Consecutive 8 days unapproved absence (ATT-10)');
+  const [abscondingReason, setAbscondingReason] = useState('');
 
   // Approve Form State
   const [approveLwd, setApproveLwd] = useState('');
