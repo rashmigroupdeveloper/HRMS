@@ -7,7 +7,8 @@ export E2E_DB=${E2E_DB:-hrms_e2e}
 export E2E_BACKEND_PORT=${E2E_BACKEND_PORT:-5104}
 export E2E_FRONTEND_PORT=${E2E_FRONTEND_PORT:-5176}
 export E2E_PGHOST=${E2E_PGHOST:-localhost} E2E_PGPORT=${E2E_PGPORT:-5432} E2E_PGUSER=${E2E_PGUSER:-hrms}
-export E2E_DATABASE_URL=${E2E_DATABASE_URL:-postgres://$E2E_PGUSER:$PGPASSWORD@$E2E_PGHOST:$E2E_PGPORT/$E2E_DB}
+# Always follow E2E_DB (a stale URL exported by an earlier `source` must not point the scripts at another DB).
+case "${E2E_DATABASE_URL:-}" in */"$E2E_DB") ;; *) export E2E_DATABASE_URL=postgres://$E2E_PGUSER:$PGPASSWORD@$E2E_PGHOST:$E2E_PGPORT/$E2E_DB ;; esac
 # Base DB dump (QA users + June-2026 payroll cohort). Not in git (size); the payroll job publishes it.
 export E2E_SNAPSHOT=${E2E_SNAPSHOT:-/workspace/STATE/hrms_snapshot.dump}
 # Fallback template DBs, first that exists wins (stage-2 June snapshot, then stage-1 base users+cohort).

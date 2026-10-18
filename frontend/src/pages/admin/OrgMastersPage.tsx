@@ -100,7 +100,7 @@ export function OrgMastersPage({ user }: { user: SessionUser }) {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Admin · SOW 004" title="Org masters"
+      <PageHeader eyebrow="Admin" title="Org masters"
         description={canEdit ? 'Companies and their statutory registrations, and the structure every employee is placed in. Masters still in use cannot be deleted.' : 'Read-only: only a super administrator can change org masters.'}
         actions={canEdit ? <Button variant="primary" leadingIcon={<Plus />} onClick={() => { setForm({ id: null, values: {} }); }}>Add {def.title.toLowerCase().replace(/s$/, '')}</Button> : undefined} />
       <Card>

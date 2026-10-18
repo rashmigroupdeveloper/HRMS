@@ -7,7 +7,8 @@ import { sql, type Insertable, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { formatDbDate } from '../../core/dates.js';
 import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
-import { attendanceGlyph, monthStart, nextMonthStart } from '../attendance/index.js';
+import { attendanceGlyph, monthStart } from '../attendance/index.js';
+import { resolveAttendanceWindow } from '../../core/db/attendance-cycle.js';
 import { inTransaction } from '../../core/db/database.js';
 
 function fullName(first: string, last: string | null): string {
@@ -70,7 +71,8 @@ export async function buildMusterMonth(
   month: string,
 ): Promise<number> {
   const m = monthStart(month);
-  const mEnd = nextMonthStart(m);
+  // C-17: a 26th–25th (or other) attendance cycle shows the payroll month's attendance window.
+  const { from: wFrom, until: mEnd } = await resolveAttendanceWindow(db, companyId, m);
 
   const employees = await db
     .selectFrom('core.employees as e')
@@ -86,7 +88,7 @@ export async function buildMusterMonth(
       eb.and([
         eb('e.status', 'in', ['active', 'on_notice', 'exited']),
         eb.or([eb('e.doj', 'is', null), eb('e.doj', '<', sql<Date>`${mEnd}::date`)]),
-        eb.or([eb('e.dol', 'is', null), eb('e.dol', '>=', sql<Date>`${m}::date`)]),
+        eb.or([eb('e.dol', 'is', null), eb('e.dol', '>=', sql<Date>`${wFrom}::date`)]),
       ]),
     )
     .select([
@@ -122,9 +124,10 @@ export async function buildMusterMonth(
           'dr.ot_minutes',
           'dr.weekoff_paid',
           'lt.code as leave_code',
+          'lt.is_paid as leave_paid',
         ])
         .where('dr.employee_id', 'in', employeeIds)
-        .where('dr.work_date', '>=', sql<Date>`${m}::date`)
+        .where('dr.work_date', '>=', sql<Date>`${wFrom}::date`)
         .where('dr.work_date', '<', sql<Date>`${mEnd}::date`)
         .execute();
 
@@ -177,7 +180,7 @@ export async function buildMusterMonth(
           break;
         case 'L':
           leaveDays += 1;
-          if (d.leave_code === 'LWP') lwpDays += 1;
+          if (d.leave_paid === false) lwpDays += 1;
           break;
         case 'OD':
           odDays += 1;

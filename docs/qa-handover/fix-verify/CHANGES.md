@@ -24,6 +24,39 @@
 - Data Imports and Department Heads restyled; ESS hero punch tiles no longer overflow; Profile tab empty states give a next step.
 - Fonts self-hosted (Manrope, Fraunces; latin + latin-ext for ₹) with preload — no Google Fonts request.
 
+## Round: payroll & attendance — recon rebuild + handover item 4 (job/payroll, 2026-10-19 IST)
+- Recon snapshot rebuilt from seed through the real APIs (`fix-verify/seed/build-snapshot.sh` + `10_finalize.py`; the tester's dump was never shipped). `recon/run-recon.sh` runs from any checkout against template DB `hrms_snapshot` (or `/workspace/STATE/hrms_snapshot.dump`). Baseline on main c1cfe2c: **MATCH 44, RML033625 net 59,124**.
+- P-19 fix: assigning a probation salary always failed with 400, because the scaled (probation %) breakup was validated against the confirmed CTC. It is now validated against the unscaled breakup.
+- Separation approval now sets `employees.dol` to the approved LWD (resignation chain, absconding and termination); withdraw or reject clears it. Before this, DOL was set only when the F&F was paid, so an approved leaver was paid the full month and the month close expected attendance after the LWD.
+- Item 4, configurable attendance-to-payroll. Every default reproduces the old behaviour; recon is unchanged.
+  - `att.cycle_start_day`: 1 = calendar month (default); 2–28 sets the cycle (26 = 26th to 25th).
+    - Month lock, the close checklist (it shows the window), manager sign-off, the muster, payroll LOP and OT all use the payroll month's attendance window.
+    - Days after the cut-off are paid as present. LOP found in them is deducted in the next month.
+    - Every month lock stores the window it froze (`period_from`/`period_until`). The next window starts where the previous lock ended, so changing the cycle never skips or double-counts a day.
+    - Day-level lock guards (approvals, recompute, scheme change) map each date to its payroll month.
+  - `pay.lop_divisor` options:
+    - CALENDAR (default)
+    - FIXED_30: days outside employment are deducted day for day
+    - FIXED_26: week-offs and holidays are excluded on both sides
+    - WORKING_DAYS
+    - All of these go through one pure evaluator (`payroll-core/runs/payable-days.ts`).
+  - `att.sandwich_rule` (default off): week-offs and holidays between two full-day unpaid absences become LOP. Applies to CALENDAR and FIXED_30 only.
+  - Half-day leave bug fixed: a half day of paid leave whose other half was worked is now paid 1.0 (it was 0.5); a half day of LWP with no work is now 0. Leave approval keeps the other half's punches/sessions, and recompute refreshes them.
+  - Holiday calendars by group, company, plant or location (C-35):
+    - Migration 1752700000100 adds `company_id`/`plant_id` to att.holidays and backfills location rows.
+    - One resolver is shared by day status, leave spans, payroll working days and the ESS calendar.
+    - `PUT /attendance/config/holidays` accepts companyId/plantId/locationId, with entity-scope checks: entity HR can only set its own company, and group-wide holidays need group scope.
+    - `GET ...?mine=true` returns only the caller's holidays; `?companyId=` filters by company.
+    - The Excel importer has Company / Plant / Location columns.
+    - Adding a holiday requeues covered, unlocked auto days.
+  - Muster LOP now counts unpaid leave by leave type (it used to count only the LWP code).
+  - Settings writes validate `pay.lop_divisor`, `att.cycle_start_day`, `att.sandwich_rule`, `pay.pf_wage_base` and `pay.negative_net_policy`. Seeds are added for the three new keys.
+- Statutory fix: the old-regime TDS had no surcharge. It now applies 10% above ₹50L, 15% above ₹1Cr, 25% above ₹2Cr and 37% above ₹5Cr, with marginal relief (the new regime already had it).
+- Scenario matrix (`attendance-payroll/scripts`):
+  - `build_matrix.py` has independent hand-computed expectations and derivations; it writes `scenario-matrix.json`.
+  - `run-matrix.sh` runs `backend/tests/payroll-scenario-matrix.integration.test.ts` on a pristine scratch DB.
+  - 49 cases: 40 payroll (proration, half days, sandwich, divisors, 26–25 cycle, joiner/leaver, PF actual/ceiling, ESIC ₹21k gate and period continuity, WB PT, TDS new/old/87A/marginal relief/surcharge, OT), 3 cycle-switch windows, holiday scope, 4 gratuity and 1 F&F.
+
 ## E2E suite (job/e2e, test code only)
 - Suite is portable: app = repo root, ports 5104/5176, DB hrms_e2e, base = hrms_snapshot template (or /workspace/STATE/hrms_snapshot.dump), then migrate + seeds + recon prep + e2e-prep.sql.
 - e2e-prep.sql adds personas: hod@ (dept 4 head), hrops.rgh@ (RGH-scoped hr_ops), payroll.rgh@ (RGH payroll_admin), payroll.group@ (unscoped payroll_admin for group-wide statutory config). payroll@ is RML-scoped.
@@ -42,8 +75,8 @@
 | CD-6 | PF wage base (C-13) | ACTUAL basic (matches the client register; RML033625 nets 59,124) | sample register, greytHR | setting `pay.pf_wage_base` (ACTUAL / CEILING_15000) |
 | CD-7 | Gratuity eligibility (C-14) | As in the statutory params table (effective-dated) | docs/10 | Payroll settings → Statutory rates (scheme GRATUITY) |
 | CD-8 | OT rate base (C-15) | Factories Act base, (Basic+DA+allowances)/208 × 2 | docs/10, OT payslip template | Payroll settings → Statutory rates (scheme OT) |
-| CD-9 | LOP divisor / proration (C-16) | Calendar days of the month (register parity) | sample register | Statutory params (proration mode); worked LOP example still needed from RML |
-| CD-10 | Attendance cycle 26→25 (C-17) | Calendar month (no cycle setting yet) | docs + code | **Open — needs engine change (payroll job) once RML confirms** |
+| CD-9 | LOP divisor / proration (C-16) | Calendar days of the month (register parity) | sample register | setting `pay.lop_divisor` (see CD-P1); worked LOP example still needed from RML |
+| CD-10 | Attendance cycle 26→25 (C-17) | Calendar month (default) | docs + code | Engine done (job/payroll item 4): setting `att.cycle_start_day`, see CD-P2; RML to confirm 26 |
 | CD-11 | ESIC on OT (C-18), LWF frequency (C-19) | OT excluded from ESIC wages; WB LWF half-yearly | docs/10 | Statutory rates; `pay.lwf_deduct_in_payroll` |
 | CD-12 | TDS scope (C-20) | All employees with taxable income | PRD | **Open — no white-collar-only switch yet** |
 | CD-13 | Investment declaration / proof windows (new, item 3) | Declarations 1 Apr–15 Jan, proofs 1 Jan–28 Feb of the FY | common practice | settings `tax.declaration_open/close`, `tax.proof_open/close` |
@@ -59,4 +92,11 @@
 | CD-23 | Notice period (E2E-002) | 90 days white collar, 30 days otherwise | docs | settings `lifecycle.notice_days_white_collar/default` |
 | CD-24 | Probation decision rights (E2E-008) | hr_ops/managers view; managers evaluate own reports; only hr_head decides | docs/08, O17 | permissions `lifecycle.probation.view/decide` |
 | CD-25 | Entity-scoped role grants (E2E-010) | hr_ops / payroll_admin / plant_head must be granted with an org unit | owner rule | API refuses unscoped grants; existing unscoped grants (base seed payroll@) need review |
+| CD-P1 | LOP divisor (C-16) | CALENDAR (days in month). FIXED_30 deducts non-employment days day-for-day (Feb joiner on 27th → 3/30 incl. 1 LOP); FIXED_26/WORKING_DAYS exclude WO/H | docs/10 §10.4 "confirm with payroll" | setting pay.lop_divisor |
+| CD-P2 | Attendance cycle (C-17) | Calendar month (1). 26 = 26th–25th; days after the cut-off are paid as present and trued up next month. Change only between payroll months | client practice (26–25 muster) | setting att.cycle_start_day |
+| CD-P3 | Sandwich rule for absences (C-28) | Off. Leave-type sandwich (lv.leave_types.sandwich_rule) still governs leave spans | docs/04 | setting att.sandwich_rule |
+| CD-P4 | Holiday granularity (C-35) | Group / company / plant / location; most-specific name wins; any applicable row makes the day a holiday | C-35 | holiday calendar / Excel import |
+| CD-P5 | Maternity leave entitlement | Not accrued; HR grants 182 days by adjustment (seeded that way for the RML033916 case) | Maternity Benefit Act | make ML an event entitlement (open) |
+| CD-P6 | F&F leave encashment / notice recovery basis | (Basic+DA)/30 per day | fnf-engine | confirm /30 vs /26 |
+| CD-P7 | Gratuity eligibility | 4 years 240 days (1700 days) or more; ≥ 6 months rounds up a year | Payment of Gratuity Act s.2A/s.4 | gratuity-calculator |
 

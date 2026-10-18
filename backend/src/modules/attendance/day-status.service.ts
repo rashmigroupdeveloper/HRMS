@@ -16,6 +16,8 @@
  * core.settings (review F10), never hardcoded.
  */
 import { closeWeekOffs } from '../../core/db/attendance-period.js';
+import { findHoliday, loadHolidaySubject } from '../../core/db/holiday-calendar.js';
+import { loadCycleStartDay, periodMonthOf } from '../../core/db/attendance-cycle.js';
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import type { AttShiftsTable, Database, DayStatus } from '../../core/db/types.js';
 import { getTypedSetting } from '../settings/index.js';
@@ -69,22 +71,8 @@ export interface ResolvedShift {
  *  Exported so the regularization write-back can skip off-days authoritatively
  *  instead of re-deriving the calendar. */
 export async function resolveDay(db: Db, employeeId: number, isoDate: string): Promise<ResolvedShift> {
-  const employee = await db
-    .selectFrom('core.employees')
-    .select(['location_id'])
-    .where('id', '=', employeeId)
-    .executeTakeFirstOrThrow();
-
-  const holiday = await db
-    .selectFrom('att.holidays')
-    .select('name')
-    .where('holiday_date', '=', sql<Date>`${isoDate}::date`)
-    .where((eb) =>
-      employee.location_id === null
-        ? eb('location_id', 'is', null)
-        : eb.or([eb('location_id', 'is', null), eb('location_id', '=', employee.location_id)]),
-    )
-    .executeTakeFirst();
+  // C-35: group / company / plant / location holiday calendars.
+  const holiday = await findHoliday(db, await loadHolidaySubject(db, employeeId), isoDate);
   if (holiday) return { shift: null, isWeekOff: false, isHoliday: true, holidayName: holiday.name };
 
   const roster = await db
@@ -413,8 +401,9 @@ export async function recomputeDay(
     return result;
   }
   await db.selectFrom('core.employees').select('id').where('id','=',employeeId).forUpdate().executeTakeFirstOrThrow();
+  const lockMonth = periodMonthOf(isoDate, await loadCycleStartDay(db));
   const monthLock = await db.selectFrom('att.month_locks as m').innerJoin('core.employees as e','e.company_id','m.company_id')
-    .select('m.id').where('e.id','=',employeeId).where('m.month','=',sql<Date>`date_trunc('month', ${isoDate}::date)::date`).executeTakeFirst();
+    .select('m.id').where('e.id','=',employeeId).where('m.month','=',sql<Date>`${lockMonth}::date`).executeTakeFirst();
   if (monthLock) return 'skipped';
   const halves = await approvedHalfRequests(db, employeeId, isoDate);
   if (halves.length > 0) {
@@ -429,11 +418,15 @@ export async function recomputeDay(
 
   const existing = await db
     .selectFrom('att.day_records')
-    .select(['source', 'is_locked', 'leave_type_id'])
+    .select(['source', 'is_locked', 'leave_type_id', 'status'])
     .where('employee_id', '=', employeeId)
     .where('work_date', '=', sql<Date>`${isoDate}::date`)
     .executeTakeFirst();
-  if (existing && (existing.is_locked || existing.leave_type_id !== null || (existing.source !== 'auto' && !(halves.length > 0 && existing.source === 'regularized')))) return 'skipped';
+  // Half-day leave: the leave owns the status, but the punches of the other half
+  // are still recorded so payroll can pay a worked half (item 4 / docs/09 §4).
+  const halfLeave = existing !== undefined && !existing.is_locked && existing.leave_type_id !== null
+    && existing.status === 'HD' && existing.source !== 'manual';
+  if (existing && !halfLeave && (existing.is_locked || existing.leave_type_id !== null || (existing.source !== 'auto' && !(halves.length > 0 && existing.source === 'regularized')))) return 'skipped';
 
   const resolved = await resolveDay(db, employeeId, isoDate);
   const cur = shiftInterval(resolved, isoDate);
@@ -467,6 +460,15 @@ export async function recomputeDay(
   }
 
   let computed = computeDayStatus(resolved, isoDate, owned, pol);
+  if (halfLeave) {
+    await db.updateTable('att.day_records')
+      .set({ shift_id: computed.shiftId, first_in: computed.firstIn, last_out: computed.lastOut,
+        worked_minutes: computed.workedMinutes,
+        session_statuses: computed.sessionStatuses ? JSON.stringify(computed.sessionStatuses) : null, computed_at: new Date() })
+      .where('employee_id', '=', employeeId).where('work_date', '=', sql<Date>`${isoDate}::date`)
+      .where('is_locked', '=', false).where('status', '=', 'HD').execute();
+    return 'HD';
+  }
   if (halves.length > 0 && !resolved.isHoliday && !resolved.isWeekOff) {
     computed = { ...computed, ...overlayHalfRequests(readSessionStatuses(computed.sessionStatuses), halves),
       lateMinutes: halves.some(h => h.day_portion === 'first_half') ? 0 : computed.lateMinutes,
