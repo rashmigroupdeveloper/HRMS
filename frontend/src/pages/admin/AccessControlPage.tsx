@@ -200,7 +200,7 @@ function PermissionGrid() {
             description="Pick another domain."
           />
         ) : (
-          <div className="overflow-auto">
+          <div className="relative overflow-auto">
             <div className="min-w-max">
               <div
                 className="sticky top-0 z-10 grid bg-surface-2 text-xs text-ink-muted"
