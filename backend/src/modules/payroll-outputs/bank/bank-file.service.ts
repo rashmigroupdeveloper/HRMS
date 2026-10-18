@@ -11,6 +11,7 @@
 import type { Kysely } from 'kysely';
 import type { Database } from '../../../core/db/types.js';
 import { createDocument } from '../../../core/storage/index.js';
+import { formulaSafe } from '../../../core/bulk/index.js';
 import { createHash } from 'node:crypto';
 
 export interface BankPaymentRecord {
@@ -138,12 +139,12 @@ export class BankFileService {
 
     // Format Bank Batch CSV Lines
     const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const headerLine = `H,NEFT_RTGS,${run.company_name.replace(/,/g, ' ')},${todayStr},RUN_${String(runId)}`;
+    const headerLine = `H,NEFT_RTGS,${formulaSafe(run.company_name.replace(/,/g, ' '))},${todayStr},RUN_${String(runId)}`;
 
     const detailLines = payableRecords.map((r) => {
       const amtStr = r.amountRupees.toFixed(2);
-      const cleanName = r.beneficiaryName.replace(/,/g, ' ');
-      return `D,${cleanName},${r.accountNumber},${r.ifsc},${amtStr},${r.ecode},${r.narration}`;
+      const cleanName = formulaSafe(r.beneficiaryName.replace(/,/g, ' '));
+      return `D,${cleanName},${r.accountNumber},${r.ifsc},${amtStr},${r.ecode},${formulaSafe(r.narration.replace(/,/g, ' '))}`;
     });
 
     const totalAmtStr = totalPayableAmount.toFixed(2);

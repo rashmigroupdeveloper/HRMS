@@ -60,7 +60,7 @@ const loginProcedure = base
   .handler(async ({ input, context }) => {
     if (!context.db) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'Database unavailable' });
 
-    const result = await login(context.db, context.jwtSecret, input.identifier, input.password, context.req.ip ?? null);
+    const result = await login(context.db, context.jwtSecret, input.identifier, input.password, context.req.ip ?? null, context.req.get('user-agent') ?? null);
 
     if (!result.ok) {
       // invalid_credentials and inactive answer identically — no account oracle.
@@ -173,7 +173,7 @@ const resetPasswordProcedure = base
   });
 
 /** it_admin may only manage accounts whose roles it holds itself (grant ≤ own level). */
-async function assertManageable(db: Parameters<typeof getUserRoleCodes>[0], actorUserId: number, targetUserId: number) {
+export async function assertManageable(db: Parameters<typeof getUserRoleCodes>[0], actorUserId: number, targetUserId: number) {
   const [mine, theirs] = await Promise.all([getUserRoleCodes(db, actorUserId), getUserRoleCodes(db, targetUserId)]);
   const above = [...theirs].filter((r) => !mine.has(r) && r !== 'employee' && r !== 'manager' && r !== 'senior_manager');
   if (above.length > 0) throw new ForbiddenError(`You cannot manage an account holding ${above.join(', ')}`);

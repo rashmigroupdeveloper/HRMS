@@ -7,6 +7,10 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CalendarCheck, FileText, Inbox, Laptop, Palmtree, UserRound, Wallet } from 'lucide-react';
 import { apiFetch, ApiError } from '../../lib/api';
+import type { SessionUser } from '../../lib/session';
+import { hasPermission } from '../../lib/session';
+import { EmployeeFormDrawer } from './EmployeeFormDrawer';
+import { FamilyPanel } from './FamilyPanel';
 import {
   Card,
   CardHeader,
@@ -64,6 +68,7 @@ interface EmployeeProfile {
 
 type TabId =
   | 'overview'
+  | 'family'
   | 'job'
   | 'compensation'
   | 'statutory'
@@ -103,12 +108,15 @@ function MaskedNote({ masked }: { masked: boolean }) {
  * @param self When true, render the signed-in user's OWN profile via the
  *   self-service endpoint (/me route) — no e-code param, no directory back-link.
  */
-export function ProfilePage({ self = false }: { self?: boolean } = {}) {
+export function ProfilePage({ self = false, user }: { self?: boolean; user?: SessionUser } = {}) {
   const { ecode = '' } = useParams<{ ecode: string }>();
   const [profile, setProfile] = useState<EmployeeProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>('overview');
+  const [editOpen, setEditOpen] = useState(false);
+  const [version, setVersion] = useState(0);
+  const canWrite = user !== undefined && hasPermission(user, 'employee.write');
 
   useEffect(() => {
     let cancelled = false;
@@ -131,7 +139,7 @@ export function ProfilePage({ self = false }: { self?: boolean } = {}) {
     return () => {
       cancelled = true;
     };
-  }, [ecode, self]);
+  }, [ecode, self, version]);
 
   if (loading) {
     return (
@@ -169,6 +177,7 @@ export function ProfilePage({ self = false }: { self?: boolean } = {}) {
       ? [{ id: 'compensation' as const, label: 'Compensation' }]
       : []),
     { id: 'statutory', label: 'Statutory & Bank' },
+    { id: 'family', label: 'Family' },
     { id: 'documents', label: 'Documents & Letters' },
     { id: 'attendance', label: 'Attendance' },
     { id: 'leave', label: 'Leave' },
@@ -209,8 +218,16 @@ export function ProfilePage({ self = false }: { self?: boolean } = {}) {
               </StatusBadge>
             </div>
           </div>
+          {!self && canWrite && (
+            <Button variant="secondary" onClick={() => { setEditOpen(true); }}>Edit details</Button>
+          )}
         </div>
       </Card>
+      {!self && canWrite && (
+        <EmployeeFormDrawer open={editOpen} onClose={() => { setEditOpen(false); }} ecode={profile.ecode}
+          initial={{ firstName: profile.name.split(' ')[0] ?? '', gender: profile.gender ?? '', dob: profile.dob ?? '', doj: profile.doj ?? '', mobile: profile.mobile ?? '', workEmail: profile.workEmail ?? '' }}
+          onSaved={() => { setVersion((n) => n + 1); }} />
+      )}
 
       <div
         role="tablist"
@@ -313,6 +330,8 @@ export function ProfilePage({ self = false }: { self?: boolean } = {}) {
           </dl>
         </Card>
       )}
+
+      {tab === 'family' && <FamilyPanel self={self} ecode={profile.ecode} canEdit={canWrite} />}
 
       {tab === 'documents' && (
         <Card>

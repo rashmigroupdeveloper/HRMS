@@ -5,6 +5,8 @@
 
 export { payrollOutputsRouter } from './payroll-outputs.router.js';
 
+export { SimplePdfDocument } from './payslip/pdf-builder.js';
+
 export {
   PayslipGeneratorService,
 } from './payslip/payslip-generator.js';
