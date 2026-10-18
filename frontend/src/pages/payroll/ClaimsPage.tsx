@@ -14,6 +14,7 @@ import {
   PlusCircle,
   ShieldCheck,
   XCircle,
+  Wallet,
 } from 'lucide-react';
 import {
   Button,
@@ -30,6 +31,7 @@ import {
   TextField,
   ConfirmModal,
   toast,
+  EmptyState,
 } from '../../ui';
 import { takeActionParam } from '../_shared/action-param';
 
@@ -460,8 +462,17 @@ export function ClaimsPage() {
           {/* Entitlement Cards Grid */}
           <div>
             <h3 className="text-sm font-semibold text-ink mb-3">
-              Entitlement & Available Balances
+              Entitlements & available balances
             </h3>
+            {entitlements.length === 0 ? (
+              <Card>
+                <EmptyState
+                  icon={<Wallet />}
+                  title="No claim entitlements"
+                  description="Entitlements come from your grade. If you expected some, ask HR to check your grade and claim policy."
+                />
+              </Card>
+            ) : null}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {entitlements.map((e) => (
                 <Card key={e.claimTypeCode} className="p-5 flex flex-col justify-between">
