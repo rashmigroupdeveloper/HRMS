@@ -132,7 +132,7 @@ export function SeparationBoardPage() {
   const [showFnfDrawer, setShowFnfDrawer] = useState(false);
 
   // Apply Resignation Form State
-  const [applyEmployeeId, setApplyEmployeeId] = useState('301');
+  const [myNotice, setMyNotice] = useState<{ noticePeriodDays: number; ecode: string; name: string } | null>(null);
   const [applyReason, setApplyReason] = useState('');
   const [applyRequestedLwd, setApplyRequestedLwd] = useState(() => {
     const d = new Date();
@@ -180,9 +180,15 @@ export function SeparationBoardPage() {
     today.setHours(0, 0, 0, 0);
     const req = new Date(applyRequestedLwd);
     const days = Math.max(0, Math.ceil((req.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
-    const shortfall = Math.max(0, 90 - days); // 90 days policy
-    setEstimatedShortfall(shortfall);
-  }, [applyRequestedLwd]);
+    setEstimatedShortfall(Math.max(0, (myNotice?.noticePeriodDays ?? 0) - days));
+  }, [applyRequestedLwd, myNotice]);
+
+  useEffect(() => {
+    if (!showApplyDrawer || myNotice) return;
+    apiFetch<{ noticePeriodDays: number; ecode: string; name: string }>('/api/lifecycle/separations/my-notice')
+      .then(setMyNotice)
+      .catch((e: unknown) => { toast.error(e instanceof Error ? e.message : 'Could not load your notice policy.'); });
+  }, [showApplyDrawer, myNotice]);
 
   const loadSeparations = useCallback(async () => {
     try {
@@ -227,7 +233,6 @@ export function SeparationBoardPage() {
       await apiFetch('/api/lifecycle/separations/apply', {
         method: 'POST',
         body: JSON.stringify({
-          employeeId: Number(applyEmployeeId),
           reason: applyReason,
           requestedLwd: applyRequestedLwd,
         }),
@@ -845,7 +850,7 @@ export function SeparationBoardPage() {
                 <Card className="p-4 bg-surface-2 border border-line">
                   <div className="text-xs uppercase text-ink-muted">Notice Shortfall Recovery</div>
                   <div className="mt-2 text-sm text-ink space-y-1">
-                    <div>• Required Notice: 90 days (white collar)</div>
+                    <div>• Required notice: per policy (white collar / default), set in Settings</div>
                     <div>• Shortfall days deducted at Basic/30 per day</div>
                     <div>• Automatically deducted from Gross F&F</div>
                     <div className="font-bold text-negative-ink mt-1">Recovery = (Basic / 30) × shortfall</div>
@@ -922,9 +927,9 @@ export function SeparationBoardPage() {
       >
         <div className="space-y-4">
           <TextField
-            label="Employee ID / Ecode"
-            value={applyEmployeeId}
-            onChange={(e) => { setApplyEmployeeId(e.target.value); }}
+            label="Employee"
+            value={myNotice ? `${myNotice.ecode} · ${myNotice.name}` : 'Loading…'}
+            readOnly
             disabled
           />
           <TextField
@@ -935,11 +940,11 @@ export function SeparationBoardPage() {
           />
           <div className="p-3 rounded-lg bg-surface-2 text-xs space-y-1 border border-line">
             <div className="font-medium text-ink">Notice Period Policy Check:</div>
-            <div>Standard Notice Period: 90 days</div>
+            <div>Your notice period: {myNotice ? `${String(myNotice.noticePeriodDays)} days` : '…'}</div>
             <div className={estimatedShortfall > 0 ? 'text-negative-ink font-bold' : 'text-positive-ink'}>
               {estimatedShortfall > 0
                 ? `Notice Shortfall: ${String(estimatedShortfall)} days (will be recovered in F&F at Basic/30 rate)`
-                : 'Full 90 days notice satisfied without shortfall recovery.'}
+                : 'Full notice served — no shortfall recovery.'}
             </div>
           </div>
           <TextField

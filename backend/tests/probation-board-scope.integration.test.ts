@@ -79,4 +79,11 @@ describe.skipIf(!DB_URL)('probation board scope', () => {
     const extended = next.reviews.find((r) => r.id !== rv['a'] && r.id !== rv['b']);
     expect(extended?.dueDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
+
+  it('E2E-002: my notice policy comes from settings + category', async () => {
+    const r = await call('get', 'emp', '/api/lifecycle/separations/my-notice');
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ noticePeriodDays: 30, category: null });
+    expect((await call('get', 'head', '/api/lifecycle/separations/my-notice')).status).toBe(404);
+  });
 });
