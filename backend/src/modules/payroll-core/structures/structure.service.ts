@@ -10,6 +10,7 @@ import {
   buildAndValidateDag,
   resolveSalaryStructure,
   validateCtcBreakup,
+  structureLineNode,
   type ComponentFormulaNode,
   type EvaluatedBreakup,
 } from './dag-evaluator.js';
@@ -134,15 +135,7 @@ async function assembleComponentNodes(
     if (!meta) {
       throw new Error(`Salary component '${item.component_code}' does not exist in component catalog`);
     }
-    return {
-      code: meta.code,
-      kind: meta.kind,
-      formula: item.formula_override !== undefined ? item.formula_override : (meta.formula ?? undefined),
-      rounding: meta.rounding,
-      part_of_gross: meta.part_of_gross,
-      part_of_pf_wages: meta.part_of_pf_wages,
-      prorate_on_lop: meta.prorate_on_lop,
-    };
+    return structureLineNode(item, meta);
   });
 }
 

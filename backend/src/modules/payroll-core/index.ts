@@ -49,6 +49,7 @@ export {
 export {
   buildAndValidateDag,
   resolveSalaryStructure,
+  structureLineNode,
   validateCtcBreakup,
   evaluateExpression,
   applyRounding,

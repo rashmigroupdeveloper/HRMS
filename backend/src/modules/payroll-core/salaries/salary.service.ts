@@ -10,6 +10,7 @@ import { listComponents } from '../components/component.service.js';
 import {
   resolveSalaryStructure,
   validateCtcBreakup,
+  structureLineNode,
   type ComponentFormulaNode,
 } from '../structures/dag-evaluator.js';
 import {
@@ -57,6 +58,12 @@ export async function assignSalary(
     throw new Error(`Salary structure #${input.structure_id} not found`);
   }
 
+  const employee = await db.selectFrom('core.employees').select('company_id').where('id', '=', input.employee_id).executeTakeFirst();
+  if (!employee) throw new Error(`Employee #${input.employee_id} not found`);
+  if (employee.company_id !== structure.company_id) {
+    throw new Error(`Salary structure "${structure.name}" belongs to another company than the employee`);
+  }
+
   const allComponents = await listComponents(db);
   const compMap = new Map(allComponents.map((c) => [c.code, c]));
 
@@ -65,15 +72,7 @@ export async function assignSalary(
     if (!meta) {
       throw new Error(`Salary component '${item.component_code}' not found`);
     }
-    return {
-      code: meta.code,
-      kind: meta.kind,
-      formula: item.formula_override !== undefined ? item.formula_override : (meta.formula ?? undefined),
-      rounding: meta.rounding,
-      part_of_gross: meta.part_of_gross,
-      part_of_pf_wages: meta.part_of_pf_wages,
-      prorate_on_lop: meta.prorate_on_lop,
-    };
+    return structureLineNode(item, meta);
   });
 
   const annualCtcPaise = fromRupees(input.annual_ctc_rupees);

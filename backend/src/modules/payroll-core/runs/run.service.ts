@@ -334,12 +334,13 @@ export class PayrollRunService {
 
   /**
    * Send an unapproved run back to draft so variable inputs can be corrected
-   * (inputs_locked / computed / under_review → draft). Computed items are
+   * (inputs_locked / computed / under_review / reopened → draft). Computed items are
    * discarded on the next compute; audited.
    */
   async returnToDraft(runId: number, actorUserId: number, reason: string): Promise<void> {
     return this.withLockedRun(runId, async (trx, run) => {
-      if (!['inputs_locked', 'computed', 'under_review'].includes(run.status)) {
+      // E2E-021: a reopened run (super-admin sanctioned) may also go back to draft to correct inputs.
+      if (!['inputs_locked', 'computed', 'under_review', 'reopened'].includes(run.status)) {
         throw new DomainError(`A ${run.status} run cannot go back to draft${run.status === 'approved' || run.status === 'finalized' ? ' (ask a super admin to reopen it)' : ''}`, 'CONFLICT');
       }
       await trx.updateTable('pay.payroll_runs').set({ status: 'draft' }).where('id', '=', runId).execute();

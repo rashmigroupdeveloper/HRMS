@@ -111,6 +111,10 @@ describe.skipIf(!url)('Payroll run compute edge cases', () => {
         const again = await service.computeRun(runId, u.id);
         expect(again.exceptions.length).toBe(result.exceptions.length);
         expect((await trx.selectFrom('pay.recovery_carry_forwards').select('id').where('from_run_id', '=', june.id).where('consumed_run_id', '=', runId).execute()).length).toBe(1);
+        // E2E-021: a reopened run can go back to draft so its inputs can be corrected.
+        await trx.updateTable('pay.payroll_runs').set({ status: 'reopened' }).where('id', '=', runId).execute();
+        await service.returnToDraft(runId, u.id, 'Fix after reopen');
+        expect((await trx.selectFrom('pay.payroll_runs').select('status').where('id', '=', runId).executeTakeFirstOrThrow()).status).toBe('draft');
         throw rollback;
       });
     } catch (error) {
