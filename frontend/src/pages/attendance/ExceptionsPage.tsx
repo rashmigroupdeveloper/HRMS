@@ -68,7 +68,7 @@ export function ExceptionsPage() {
       />
 
       <DarkCard>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+        <p className="text-sm font-medium text-hero-muted">
           Mapping queue
         </p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-6">

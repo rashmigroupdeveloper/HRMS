@@ -89,7 +89,7 @@ function AttendanceOpsContent({ unmatchedRows }: { unmatchedRows?: UnmatchedSwip
       />
 
       <DarkCard>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+        <p className="text-sm font-medium text-hero-muted">
           Operational priority
         </p>
         {gated ? (

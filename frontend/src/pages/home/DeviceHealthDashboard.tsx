@@ -60,7 +60,7 @@ export function DeviceHealthDashboard({
       <DarkCard>
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+            <p className="text-sm font-medium text-hero-muted">
               Ingestion readiness
             </p>
             <h2 className="mt-3 text-4xl font-light">

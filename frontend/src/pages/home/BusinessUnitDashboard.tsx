@@ -108,14 +108,14 @@ export function BusinessUnitDashboard({ quickLinks }: { quickLinks?: QuickLink[]
       <PageHeader
         eyebrow={todayLongIST()}
         title="Business unit"
-        description={`${data.scopeLabel} · every figure below is scoped to your unit (RPT-04).`}
+        description={`${data.scopeLabel} · every figure below is scoped to your unit.`}
       />
 
       {quickLinks && quickLinks.length > 0 ? <QuickLinks links={quickLinks} /> : null}
 
       <DarkCard className="grid gap-8 md:grid-cols-[1.3fr_1fr]">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+          <p className="text-xs font-semibold text-hero-muted">
             Absent today
           </p>
           <h2 className="mt-4 text-5xl font-light tabular-nums">
@@ -168,7 +168,7 @@ export function BusinessUnitDashboard({ quickLinks }: { quickLinks?: QuickLink[]
       {/* ── Operational Health & Shift Compliance ───────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+          <p className="text-xs font-semibold text-ink-muted">
             Plant presence today
           </p>
           <p className="mt-2 text-3xl font-light tabular-nums text-ink">
@@ -182,7 +182,7 @@ export function BusinessUnitDashboard({ quickLinks }: { quickLinks?: QuickLink[]
         </Card>
 
         <Card className="p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+          <p className="text-xs font-semibold text-ink-muted">
             Shift compliance
           </p>
           <p className="mt-2 text-3xl font-light tabular-nums text-ink">
@@ -197,7 +197,7 @@ export function BusinessUnitDashboard({ quickLinks }: { quickLinks?: QuickLink[]
         </Card>
 
         <Card className="p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+          <p className="text-xs font-semibold text-ink-muted">
             Active OT hours
           </p>
           <p className="mt-2 text-3xl font-light tabular-nums text-ink">
@@ -211,7 +211,7 @@ export function BusinessUnitDashboard({ quickLinks }: { quickLinks?: QuickLink[]
         </Card>
 
         <Card className="p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+          <p className="text-xs font-semibold text-ink-muted">
             Pending approvals
           </p>
           <div className="mt-2 flex items-baseline justify-between">

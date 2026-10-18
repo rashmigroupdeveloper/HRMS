@@ -24,22 +24,22 @@ interface BoardingExit {
 const BOARDS: { code: Board; label: string; task: string }[] = [
   {
     code: 'onboarding',
-    label: 'Onboarding (LC-01/02)',
+    label: 'Onboarding',
     task: 'LC-01 / LC-02',
   },
   {
     code: 'probation',
-    label: 'Probation (LC-04)',
+    label: 'Probation',
     task: 'LC-04',
   },
   {
     code: 'transfers',
-    label: 'Transfers (LC-05)',
+    label: 'Transfers',
     task: 'LC-05 / Mobility',
   },
   {
     code: 'separation',
-    label: 'Separations (LC-06)',
+    label: 'Separations',
     task: 'LC-06 / PAY-15',
   },
 ];

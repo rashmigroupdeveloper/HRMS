@@ -30,7 +30,6 @@ import {
   DataTable,
   Drawer,
   EmptyState,
-  KpiNumber,
   PageHeader,
   StatusBadge,
   TextField,
@@ -38,6 +37,7 @@ import {
   toast,
   type Column,
   type StatusTone,
+  StatGrid, StatTile,
 } from '../../ui';
 import { apiFetch } from '../../lib/api';
 
@@ -497,7 +497,7 @@ export function TravelPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Travel & Expense (TE-01..12)"
+        eyebrow="Travel & Expense"
         title="Business Travel & Expense Settlement"
         description="Raise travel itineraries, disburse advances into the immutable wallet ledger, capture multi-currency receipts, and settle to the exact rupee."
         actions={
@@ -526,47 +526,18 @@ export function TravelPage() {
         }
       />
 
-      {/* KPI Ribbon */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <p className="text-xs uppercase font-medium text-ink-muted tracking-wider">Active Trips</p>
-          <div className="mt-2 flex items-baseline justify-between">
-            <KpiNumber value={trips.filter((t) => t.status !== 'cancelled').length} />
-            <Briefcase className="h-5 w-5 text-ink-muted opacity-60" />
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <p className="text-xs uppercase font-medium text-ink-muted tracking-wider">Disbursed Advances</p>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-semibold tracking-tight text-ink font-mono">
-              ₹
-              {(
-                advances.reduce((acc, a) => acc + (a.status === 'disbursed' ? a.amountPaise : 0), 0) / 100
-              ).toLocaleString('en-IN')}
-            </span>
-            <CreditCard className="h-5 w-5 text-ink-muted opacity-60" />
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <p className="text-xs uppercase font-medium text-ink-muted tracking-wider">Pending Claims</p>
-          <div className="mt-2 flex items-baseline justify-between">
-            <KpiNumber value={claims.filter((c) => c.settlementStatus === 'unsettled').length} />
-            <Clock className="h-5 w-5 text-warning-ink opacity-60" />
-          </div>
-        </Card>
-
-        <Card className="p-4 border-l-4 border-l-accent">
-          <p className="text-xs uppercase font-medium text-ink-muted tracking-wider">Wallet Balance (TE-08)</p>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold tracking-tight text-accent font-mono">
-              ₹{(walletBalancePaise / 100).toLocaleString('en-IN')}
-            </span>
-            <ShieldCheck className="h-5 w-5 text-accent opacity-80" />
-          </div>
-        </Card>
-      </div>
+      {/* KPI Ribbon — the wallet is today's one gold figure (TE-08). */}
+      <StatGrid>
+        <StatTile label="Active trips" icon={<Briefcase />} value={trips.filter((t) => t.status !== 'cancelled').length} />
+        <StatTile
+          label="Disbursed advances"
+          icon={<CreditCard />}
+          value={advances.reduce((acc, a) => acc + (a.status === 'disbursed' ? a.amountPaise : 0), 0) / 100}
+          prefix="₹"
+        />
+        <StatTile tone="hatched" label="Pending claims" icon={<Clock />} value={claims.filter((c) => c.settlementStatus === 'unsettled').length} />
+        <StatTile tone="accent" label="Wallet balance" icon={<ShieldCheck />} value={walletBalancePaise / 100} prefix="₹" hint="Advances less settled claims" />
+      </StatGrid>
 
       {/* Main Content by Tab */}
       {tab === 'trips' && (
@@ -600,7 +571,7 @@ export function TravelPage() {
       {tab === 'advances' && (
         <Card>
           <CardHeader
-            title="Travel Advances (TE-07)"
+            title="Travel Advances"
             subtitle="Approved advances automatically credit the employee travel wallet"
             action={
               <Button size="sm" onClick={() => { setShowNewAdvanceDrawer(true); }}>
@@ -628,7 +599,7 @@ export function TravelPage() {
       {tab === 'claims' && (
         <Card>
           <CardHeader
-            title="Expense Claims & Reimbursements (TE-10)"
+            title="Expense Claims & Reimbursements"
             subtitle="Itemized claims reconciled directly against advance balances in the wallet"
             action={
               <Button size="sm" onClick={() => { setShowNewClaimDrawer(true); }}>
@@ -658,9 +629,9 @@ export function TravelPage() {
           <DarkCard padded={false} className="p-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted flex items-center gap-1.5">
-                  <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                  Immutable Ledger Guarantee (TE-08)
+                <p className="text-xs font-semibold text-hero-muted flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-positive-ink" />
+                  Immutable Ledger Guarantee
                 </p>
                 <h3 className="mt-2 text-3xl font-light text-hero-ink font-mono">
                   ₹{(walletBalancePaise / 100).toLocaleString('en-IN')}
@@ -671,11 +642,11 @@ export function TravelPage() {
               </div>
               <div className="bg-surface-1/10 rounded-xl p-4 border border-white/10 text-xs space-y-2">
                 <div className="flex items-center gap-2 text-hero-ink">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  <CheckCircle2 className="h-4 w-4 text-positive-ink" />
                   <span>Append-Only DB Trigger Verified</span>
                 </div>
                 <div className="flex items-center gap-2 text-hero-ink">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  <CheckCircle2 className="h-4 w-4 text-positive-ink" />
                   <span>Zero Write-off Reconciliation Policy</span>
                 </div>
               </div>
@@ -773,7 +744,7 @@ export function TravelPage() {
       <Drawer
         open={showNewAdvanceDrawer}
         onClose={() => { setShowNewAdvanceDrawer(false); }}
-        title="Request Travel Advance (TE-07)"
+        title="Request Travel Advance"
         subtitle="Advance funds credited directly to wallet on approval"
       >
         <div className="space-y-4">
@@ -817,7 +788,7 @@ export function TravelPage() {
       <Drawer
         open={showNewClaimDrawer}
         onClose={() => { setShowNewClaimDrawer(false); }}
-        title="File Expense Claim (TE-10)"
+        title="File Expense Claim"
         subtitle="Submit itemized receipts for settlement against advance"
       >
         <div className="space-y-4">

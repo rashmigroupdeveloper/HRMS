@@ -12,7 +12,7 @@
 
 import { useState, useEffect, useId, useCallback, useRef } from 'react';
 import { UserPlus, Copy, ShieldCheck, ShieldAlert } from 'lucide-react';
-import { Button, Card, CardHeader, DataTable, PageHeader, toast, type SelectOption } from '../../ui';
+import { Button, Card, CardHeader, DataTable, PageHeader, StatGrid, StatTile, toast, type SelectOption } from '../../ui';
 import { OnboardingDrawers } from './OnboardingDrawers';
 import { OnboardingTasks } from './OnboardingBoardViews';
 import { onboardingColumns } from './onboarding-columns';
@@ -283,30 +283,12 @@ export function OnboardingBoardPage() {
 
       {candidateError && <div role="alert" className="space-y-2"><p className="text-sm text-negative-ink">{candidateError}</p><Button variant="secondary" onClick={()=>{void loadData();}}>Retry onboarding data</Button></div>}
       {/* Quick KPI stats row */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-ink-muted">In pipeline</p>
-          <p className="mt-2 text-3xl font-light text-ink">{candidateError ? '—' : candidates.filter(c=>['awaiting_prejoin','link_sent','prejoin_done'].includes(c.status)).length}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-ink-muted">Pre-join Completed</p>
-          <p className="mt-2 text-3xl font-light text-positive-ink">
-            {candidateError ? '—' : candidates.filter((c) => c.status === 'prejoin_done').length}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-ink-muted">Employees created</p>
-          <p className="mt-2 text-3xl font-light text-ink">
-            {candidateError ? '—' : candidates.filter((c) => c.status === 'converted').length}
-          </p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs uppercase tracking-wider text-ink-muted">Open IT/Admin Tasks</p>
-          <p className="mt-2 text-3xl font-light text-warning-ink">
-            {taskError ? '—' : tasks.filter((t) => t.status === 'open' || t.status === 'escalated').length}
-          </p>
-        </Card>
-      </div>
+      <StatGrid>
+        <StatTile tone="accent" label="In pipeline" value={candidateError ? '—' : candidates.filter(c=>['awaiting_prejoin','link_sent','prejoin_done'].includes(c.status)).length} />
+        <StatTile label="Pre-join completed" value={candidateError ? '—' : candidates.filter((c) => c.status === 'prejoin_done').length} />
+        <StatTile label="Employees created" value={candidateError ? '—' : candidates.filter((c) => c.status === 'converted').length} />
+        <StatTile tone="hatched" label="Open IT/Admin tasks" value={taskError ? '—' : tasks.filter((t) => t.status === 'open' || t.status === 'escalated').length} />
+      </StatGrid>
 
       {/* Copied token notification box */}
       {copiedToken && (
