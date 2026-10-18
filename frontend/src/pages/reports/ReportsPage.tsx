@@ -142,7 +142,7 @@ export function ReportsPage() {
       />
 
       <DarkCard>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+        <p className="text-sm font-medium text-hero-muted">
           {featured.code} · daily loop
         </p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-6">

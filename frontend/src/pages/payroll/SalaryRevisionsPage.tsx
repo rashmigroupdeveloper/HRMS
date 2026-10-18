@@ -235,7 +235,7 @@ export function SalaryRevisionsPage() {
       {effectiveData?.salary ? (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="p-5">
-            <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
+            <div className="text-xs text-ink-muted font-semibold">
               Current Annual CTC
             </div>
             <div className="text-2xl font-bold font-mono mt-1 text-ink">
@@ -247,7 +247,7 @@ export function SalaryRevisionsPage() {
           </Card>
 
           <Card className="p-5">
-            <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
+            <div className="text-xs text-ink-muted font-semibold">
               Employment Phase
             </div>
             <div className="mt-2 flex items-center gap-2">
@@ -263,7 +263,7 @@ export function SalaryRevisionsPage() {
           </Card>
 
           <Card className="p-5">
-            <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
+            <div className="text-xs text-ink-muted font-semibold">
               Revision Reason
             </div>
             <div className="text-base font-semibold mt-1 text-ink capitalize">
@@ -276,7 +276,7 @@ export function SalaryRevisionsPage() {
 
           <Card className="p-5 flex flex-col justify-between">
             <div>
-              <div className="text-xs text-ink-muted uppercase tracking-wider font-semibold">
+              <div className="text-xs text-ink-muted font-semibold">
                 Probation Actions
               </div>
               <div className="text-xs text-ink-muted mt-1">

@@ -37,6 +37,7 @@ import {
   type Column,
   type SelectOption,
   type StatusTone,
+  StatGrid, StatTile,
 } from '../../ui';
 import { apiFetch } from '../../lib/api';
 
@@ -409,7 +410,7 @@ export function TransfersPage() {
               <span className="text-ink-muted">{r.currentDesignationName ?? '—'}</span> →{' '}
               <span className="font-semibold text-ink">{r.targetDesignationName ?? '—'}</span>
               {r.salaryRevisionAmount && (
-                <div className="text-emerald-700 dark:text-emerald-400 font-mono">
+                <div className="text-positive-ink font-mono">
                   Rev. CTC: ₹{(r.salaryRevisionAmount / 100000).toFixed(2)}L
                 </div>
               )}
@@ -484,7 +485,7 @@ export function TransfersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Employee Movement & Transfers"
-        description="Manage department, plant, inter-entity company movements (LC-05), and promotion grade revisions."
+        description="Manage department, plant, inter-entity company movements, and promotion grade revisions."
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -510,60 +511,12 @@ export function TransfersPage() {
       />
 
       {/* Overview Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-surface-2 text-ink">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="text-xs text-ink-muted">Department Transfers</div>
-              <div className="text-xl font-serif font-bold text-ink">
-                {transfers.filter((t) => t.transferType === 'department').length}
-              </div>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-surface-2 text-ink">
-              <MapPin className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="text-xs text-ink-muted">Location / Plant</div>
-              <div className="text-xl font-serif font-bold text-ink">
-                {transfers.filter((t) => t.transferType === 'location').length}
-              </div>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-surface-2 text-ink">
-              <ArrowRightLeft className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="text-xs text-ink-muted">Inter-Entity Movements</div>
-              <div className="text-xl font-serif font-bold text-ink">
-                {transfers.filter((t) => t.transferType === 'inter_entity').length}
-              </div>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-surface-2 text-ink">
-              <TrendingUp className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="text-xs text-ink-muted">Promotions & Revisions</div>
-              <div className="text-xl font-serif font-bold text-ink">
-                {transfers.filter((t) => t.transferType === 'promotion').length}
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
+      <StatGrid>
+        <StatTile label="Department transfers" icon={<Building2 />} value={transfers.filter((t) => t.transferType === 'department').length} />
+        <StatTile label="Location / plant" icon={<MapPin />} value={transfers.filter((t) => t.transferType === 'location').length} />
+        <StatTile label="Inter-entity moves" icon={<ArrowRightLeft />} value={transfers.filter((t) => t.transferType === 'inter_entity').length} />
+        <StatTile label="Promotions & revisions" icon={<TrendingUp />} value={transfers.filter((t) => t.transferType === 'promotion').length} />
+      </StatGrid>
 
       {/* Tabs & Search Filter */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-3">
@@ -609,11 +562,12 @@ export function TransfersPage() {
           <Button
             size="sm"
             variant="ghost"
+            aria-label="Refresh transfers"
             onClick={() => {
               void loadTransfers();
             }}
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw aria-hidden className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
@@ -841,7 +795,7 @@ export function TransfersPage() {
           setShowAsOfDrawer(false);
         }}
         title="Organization As-Of Date Explorer"
-        subtitle="Reconstruct employee placement and reporting structure as-of any past historical date (LC-05)."
+        subtitle="Reconstruct employee placement and reporting structure as-of any past historical date."
       >
         <form onSubmit={(e) => { void handleRunAsOfQuery(e); }} className="space-y-4 p-4">
           <TextField

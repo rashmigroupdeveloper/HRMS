@@ -1,3 +1,4 @@
+import { registerEmployeesWorkflowHooks } from '../modules/employees/index.js';
 /**
  * hrms-worker — the background-job process (docs/02 §2 topology: api ×N,
  * worker ×M, scheduler). pg-boss keeps queue state in Postgres (schema
@@ -66,6 +67,7 @@ async function main(): Promise<void> {
   registerLeaveWorkflowHooks();
   registerLettersWorkflowHooks();
   registerLifecycleWorkflowHooks();
+  registerEmployeesWorkflowHooks();
   registerTravelWorkflowHooks();
   registerLoansWorkflowHooks();
 

@@ -18,11 +18,11 @@ async function tokenPair(user: UserRow, secret: string, sid: string, expires: Da
   ]);
   return { accessToken, refreshToken, refreshExpiresAt: expires };
 }
-export async function createSession(db: Kysely<Database>, user: UserRow, secret: string, ip: string | null, policy: AuthPolicy) {
+export async function createSession(db: Kysely<Database>, user: UserRow, secret: string, ip: string | null, policy: AuthPolicy, userAgent: string | null = null) {
   const sid = randomUUID();
   const expires = new Date(Date.now() + policy.refreshTtlSeconds * 1000);
   const pair = await tokenPair(user, secret, sid, expires, policy);
-  await db.insertInto('sec.sessions').values({ sid, user_id: user.id, expires_at: expires, ip, refresh_token_hash: digest(pair.refreshToken) }).execute();
+  await db.insertInto('sec.sessions').values({ sid, user_id: user.id, expires_at: expires, ip, user_agent: userAgent?.slice(0, 300) ?? null, refresh_token_hash: digest(pair.refreshToken) }).execute();
   return pair;
 }
 export async function rotateSession(db: Kysely<Database>, secret: string, token: string, ip: string | null) {

@@ -2,8 +2,7 @@
  * The honesty scaffolding (docs/05 §4.8 — "never fake data").
  *
  * Eleven Phase 2–4 screens depend on these two pieces. What matters is that a
- * screen whose backend does not exist yet says SO — naming the phase, the plan
- * task and the endpoint — instead of rendering plausible-looking numbers. In a
+ * screen whose backend does not exist yet says SO instead of rendering plausible-looking numbers. In a
  * payroll system a fabricated figure is indistinguishable from a real one.
  */
 import { describe, expect, it } from 'vitest';
@@ -13,7 +12,7 @@ import { renderRouted, THEMES, type Theme } from '../../test/render';
 import { runAxe } from '../../test/axe';
 
 describe('PendingModule', () => {
-  it('names the phase, the task and the endpoint so the gap is traceable', () => {
+  it('says the module is not live yet and keeps build-team ids off screen', () => {
     renderRouted(
       <PendingModule
         phase="Phase 2"
@@ -23,10 +22,11 @@ describe('PendingModule', () => {
       />,
     );
 
-    expect(screen.getByText(/Awaiting the Phase 2 backend/)).toBeInTheDocument();
-    expect(screen.getByText('P2-T04')).toBeInTheDocument();
-    expect(screen.getByText('/api/payroll/runs')).toBeInTheDocument();
+    expect(screen.getByText('Not live yet')).toBeInTheDocument();
     expect(screen.getByText(/compute engine/)).toBeInTheDocument();
+    expect(screen.queryByText(/Phase 2/)).not.toBeInTheDocument();
+    expect(screen.queryByText('P2-T04')).not.toBeInTheDocument();
+    expect(screen.queryByText('/api/payroll/runs')).not.toBeInTheDocument();
   });
 
   it('states plainly that nothing is shown rather than showing invented data', () => {
@@ -38,7 +38,7 @@ describe('PendingModule', () => {
 
   it('renders without an endpoint', () => {
     renderRouted(<PendingModule phase="Phase 4" task="ATS" description="Requisitions." />);
-    expect(screen.getByText('Phase 4')).toBeInTheDocument();
+    expect(screen.getByText('Coming soon')).toBeInTheDocument();
   });
 
   it.each(THEMES)('has no axe violations in the %s theme', async (theme: Theme) => {

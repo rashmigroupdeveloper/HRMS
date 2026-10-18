@@ -97,7 +97,7 @@ export const authed = base.use(async ({ context, next }) => {
 
   // Inject the now-verified user AND a NON-NULL db, so downstream handlers use
   // context.db directly without re-checking (kills the ~27 duplicated guards).
-  return next({ context: { user, db: context.db } });
+  return next({ context: { user, db: context.db, sessionSid: claims.sid ?? null } });
 });
 
 /**
