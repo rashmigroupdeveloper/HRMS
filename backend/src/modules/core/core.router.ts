@@ -71,6 +71,16 @@ export const coreRouter = {
       return { companies: rows };
     }),
 
+  /** Org units (scope picker for entity-scoped role grants, E2E-010). */
+  orgUnits: authed
+    .route({ method: 'GET', path: '/core/org-units', summary: 'List org units with their company' })
+    .output(z.object({ orgUnits: z.array(z.object({ id: z.number(), name: z.string(), companyId: z.number(), companyCode: z.string() })) }))
+    .handler(async ({ context }) => {
+      const rows = await context.db.selectFrom('core.org_units as u').innerJoin('core.companies as c', 'c.id', 'u.company_id')
+        .select(['u.id', 'u.name', 'u.company_id as companyId', 'c.code as companyCode']).orderBy('c.code').orderBy('u.name').execute();
+      return { orgUnits: rows };
+    }),
+
   /** List all departments */
   departments: authed
     .route({

@@ -14,7 +14,7 @@ import { authed, withAnyPermission, withPermission } from '../../../api/orpc.js'
 import { getUserPermissionAccess, getUserPermissions } from '../../../core/rbac/permissions.service.js';
 import { assertEmployeesInScope, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
 import { DomainError, ForbiddenError, NotFoundError } from '../../../core/errors/index.js';
-import { SeparationService } from './separation.service.js';
+import { SeparationService, myNoticePolicy } from './separation.service.js';
 import { ClearanceService, type ClearanceDepartment } from './clearance.service.js';
 import type { PermissionCode } from '../../../core/rbac/seed-data.js';
 
@@ -110,6 +110,14 @@ export const separationRouter = {
       if (context.user.employee_id === null) return { separations: [], items: [] };
       const separations = await new SeparationService(context.db).getSeparations({ employeeId: context.user.employee_id });
       return { separations, items: separations };
+    }),
+
+  myNotice: authed
+    .route({ method: 'GET', path: '/lifecycle/separations/my-notice', summary: 'My notice-period policy (for the resignation form)' })
+    .output(z.object({ noticePeriodDays: z.number(), category: z.string().nullable(), ecode: z.string(), name: z.string() }))
+    .handler(async ({ context }) => {
+      if (context.user.employee_id === null) throw new NotFoundError('Your account is not linked to an employee record');
+      return myNoticePolicy(context.db, context.user.employee_id);
     }),
 
   getById: authed

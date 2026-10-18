@@ -86,6 +86,12 @@ async function noticeDaysFor(db: Db, category: string | null): Promise<number> {
     : getTypedSetting<number>(db, 'lifecycle.notice_days_default', 'number', 30);
 }
 
+/** E2E-002: the notice the signed-in employee owes, from policy settings and their category. */
+export async function myNoticePolicy(db: Db, employeeId: number): Promise<{ noticePeriodDays: number; category: string | null; ecode: string; name: string }> {
+  const e = await db.selectFrom('core.employees').select(['category', 'ecode', 'first_name', 'last_name']).where('id', '=', employeeId).executeTakeFirstOrThrow();
+  return { noticePeriodDays: await noticeDaysFor(db, e.category), category: e.category, ecode: e.ecode, name: `${e.first_name} ${e.last_name ?? ''}`.trim() };
+}
+
 async function assertNoOpenCase(db: Db, employeeId: number): Promise<void> {
   const open = await db
     .selectFrom('core.separations')
