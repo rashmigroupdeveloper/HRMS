@@ -131,7 +131,7 @@ export function AssetsPage() {
       />
 
       <DarkCard padded={false} className="hidden p-6 sm:block md:p-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+        <p className="text-sm font-medium text-hero-muted">
           Why this exists
         </p>
         <h2 className="mt-4 max-w-xl text-4xl font-light tracking-tight text-hero-ink">
@@ -590,7 +590,7 @@ function AllocationDrawer({
           {assigned ? (
             <>
               <div className="rounded-row bg-surface-2 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                <p className="text-xs font-medium text-ink-muted">
                   Currently held by
                 </p>
                 <p className="mt-1 text-sm font-semibold text-ink">{asset.holderName}</p>

@@ -37,7 +37,7 @@ export function LeaveAdminPage() {
         </p>
       </header>
       <DarkCard>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+        <p className="text-sm font-medium text-hero-muted">
           Ledger discipline
         </p>
         <h2 className="mt-3 text-3xl font-light">Balances are never edited counters</h2>

@@ -30,6 +30,7 @@ import {
   StatusBadge,
   cn,
   todayISOIST,
+  CardLink,
 } from '../../ui';
 import type { StatusTone } from '../../ui';
 import { DashboardError, DashboardSkeleton } from './DashboardFeedback';
@@ -324,9 +325,7 @@ export function PayrollDashboard() {
             title="Recent runs"
             subtitle={`${String(runs.length)} run${runs.length === 1 ? '' : 's'} across ${String(new Set(runs.map((r) => r.companyId)).size)} compan${new Set(runs.map((r) => r.companyId)).size === 1 ? 'y' : 'ies'}`}
             action={
-              <Link to="/payroll" className="text-sm font-semibold text-ink hover:underline">
-                All runs
-              </Link>
+<CardLink to="/payroll" label="All runs" />
             }
           />
           <ul className="u-stagger divide-y divide-dotted divide-line-strong">

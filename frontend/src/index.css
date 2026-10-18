@@ -163,13 +163,14 @@ body {
  * ------------------------------------------------------------------------- */
 
 /* Soft, borderless card shadow — separation by shadow + surface, never a 1px line. */
-.u-shadow-card {
+/* @utility (not a plain class) so variants like `hover:u-shadow-float` work. */
+@utility u-shadow-card {
   box-shadow: var(--shadow-1);
 }
-.u-shadow-float {
+@utility u-shadow-float {
   box-shadow: var(--shadow-2);
 }
-.u-shadow-lift {
+@utility u-shadow-lift {
   box-shadow: var(--shadow-3);
 }
 

@@ -390,13 +390,13 @@ export function ExecutivePage() {
               className="grid text-sm"
               style={{ gridTemplateColumns: `minmax(240px,1.4fr) repeat(${String(CATEGORIES.length)}, minmax(120px,1fr))` }}
             >
-              <div className="border-b border-line px-3 py-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+              <div className="border-b border-line px-3 py-3 text-xs font-medium text-ink-muted">
                 Metric
               </div>
               {CATEGORIES.map((category) => (
                 <div
                   key={category}
-                  className="border-b border-line px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-ink-muted"
+                  className="border-b border-line px-3 py-3 text-right text-xs font-medium text-ink-muted"
                 >
                   {category}
                 </div>
@@ -463,7 +463,7 @@ export function ExecutivePage() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {PRODUCTIVITY.map((metric, index) => (
             <div key={metric.label} className="rounded-row bg-surface-2 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+              <p className="text-xs font-medium text-ink-muted">
                 {metric.label}
               </p>
               <p className="mt-2 text-3xl font-light tabular-nums text-ink">
@@ -582,7 +582,7 @@ export function ExecutivePage() {
         <Card>
           <CardHeader
             title="Overtime hours"
-            subtitle="Σ approved OT minutes ÷ 60, by month (ATT-08)"
+            subtitle="Σ approved OT minutes ÷ 60, by month"
           />
           <TrendChart
             points={overtime.data ?? []}

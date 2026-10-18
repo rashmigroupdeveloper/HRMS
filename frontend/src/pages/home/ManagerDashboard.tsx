@@ -121,7 +121,7 @@ export function ManagerDashboard({
 
       <DarkCard className="grid gap-8 md:grid-cols-[1.25fr_1fr]">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+          <p className="text-sm font-medium text-hero-muted">
             Team attendance
           </p>
           <h2 className="mt-3 text-4xl font-light">

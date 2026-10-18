@@ -24,35 +24,22 @@ interface PendingModuleProps {
   action?: ReactNode;
 }
 
-export function PendingModule({ phase, task, description, endpoint, action }: PendingModuleProps) {
+export function PendingModule({ phase, description, action }: PendingModuleProps) {
+  // `task` / `endpoint` stay in the props for traceability in code review, but
+  // are never rendered: plan ids and API paths are build-team detail, not
+  // something an employee or HR head should read (.impeccable critique P1).
   return (
     <Card>
       <EmptyState
         icon={<Hourglass />}
-        title={`Awaiting the ${phase} backend`}
+        title="Not live yet"
         description={description}
-        action={
-          action ?? (
-            <div className="flex flex-col items-center gap-3">
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <Pill>{phase}</Pill>
-                <Pill>{task}</Pill>
-              </div>
-              {endpoint !== undefined && (
-                <details className="max-w-sm text-left text-xs text-ink-muted">
-                  <summary className="cursor-pointer font-medium text-ink">For the build team</summary>
-                  <code className="mt-2 block rounded-row bg-surface-2 px-2 py-1">{endpoint}</code>
-                </details>
-              )}
-            </div>
-          )
-        }
+        action={action ?? <Pill>Planned · {phase}</Pill>}
       />
-      <p className="mt-4 text-center text-xs leading-5 text-ink-muted">
-        The screen is built and wired. Nothing is shown here rather than showing numbers that were
-        never computed — see{' '}
-        <Link to="/reports" className="underline underline-offset-2">
-          the reports catalog
+      <p className="mt-4 text-center text-sm leading-6 text-ink-muted">
+        Nothing is shown here rather than numbers that were never computed. See{' '}
+        <Link to="/reports" className="font-medium text-ink underline underline-offset-2">
+          Reports
         </Link>{' '}
         for what is live today.
       </p>

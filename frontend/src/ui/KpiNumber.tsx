@@ -98,11 +98,9 @@ export function KpiNumber({
   });
 
   return (
-    <span
-      data-numeric
-      className={cn('tabular-nums', className)}
-      aria-label={`${prefix ?? ''}${value.toLocaleString(locale)}${suffix ?? ''}`}
-    >
+    // No aria-label: it is prohibited on a role-less <span> (ARIA 1.2, axe
+    // "aria-prohibited-attr"). The count runs 800ms once, so AT reads the text.
+    <span data-numeric className={cn('tabular-nums', className)}>
       {prefix}
       {formatted}
       {suffix}

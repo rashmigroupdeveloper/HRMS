@@ -33,6 +33,7 @@ import {
   toast,
   type Column,
   type SelectOption,
+  StatTile,
 } from '../../ui';
 import { apiFetch } from '../../lib/api';
 
@@ -243,7 +244,7 @@ export function ProbationBoardPage() {
       render: (r) => (
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-semibold text-brand-ink">{r.ecode}</span>
+            <span className="font-mono text-xs font-semibold text-ink">{r.ecode}</span>
             <p className="font-medium text-ink">{r.name}</p>
           </div>
           <p className="text-xs text-ink-muted">
@@ -258,7 +259,7 @@ export function ProbationBoardPage() {
       render: (r) => (
         <div>
           <p className="text-xs text-ink">DOJ: {r.doj ?? '2026-05-01'}</p>
-          <div className="mt-0.5 flex items-center gap-1.5 font-medium text-xs text-brand-accent">
+          <div className="mt-0.5 flex items-center gap-1.5 font-medium text-xs text-warning-ink">
             <Clock className="h-3 w-3" />
             <span>Due: {r.dueDate}</span>
           </div>
@@ -325,7 +326,7 @@ export function ProbationBoardPage() {
           )}
 
           {r.status === 'completed' && r.outcome === 'confirmed' && (
-            <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-positive-ink">
               <CheckCircle2 className="h-4 w-4" />
               <span>Confirmed on {r.confirmationDate}</span>
             </div>
@@ -338,44 +339,16 @@ export function ProbationBoardPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Lifecycle / Probation (LC-04)"
+        eyebrow="Lifecycle / Probation"
         title="Probation Review & Confirmation Board"
         description="Automated due date alerts (-30d, -14d, -7d), manager evaluations, 100% CTC salary transition upon confirmation, and instant confirmation letter generation."
       />
 
-      {/* Upcoming Alert Notifications Banner */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="border border-brand-accent/30 bg-brand-surface/20 p-4">
-          <div className="flex items-center gap-3">
-            <Bell className="h-5 w-5 text-brand-accent" />
-            <div>
-              <p className="text-xs uppercase tracking-wider text-ink-muted">Due in 30 Days</p>
-              <p className="text-2xl font-light text-ink">{alerts.d30.length} Employees</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="bg-[color-mix(in_srgb,var(--warning)_14%,var(--surface))] p-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-warning-ink" />
-            <div>
-              <p className="text-xs uppercase tracking-wider text-warning-ink">Due in 14 Days (Urgent)</p>
-              <p className="text-2xl font-light text-ink">{alerts.d14.length} Employees</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="border border-emerald-300 bg-emerald-50/50 p-4">
-          <div className="flex items-center gap-3">
-            <Award className="h-5 w-5 text-emerald-600" />
-            <div>
-              <p className="text-xs uppercase tracking-wider text-emerald-800">Confirmed This Month</p>
-              <p className="text-2xl font-light text-emerald-900">
-                {reviews.filter((r) => r.status === 'completed' && r.outcome === 'confirmed').length} Employees
-              </p>
-            </div>
-          </div>
-        </Card>
+      {/* Upcoming alerts — the 14-day queue is today's one gold figure. */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:gap-4">
+        <StatTile tone="hatched" label="Due in 30 days" icon={<Bell />} value={alerts.d30.length} suffix=" employees" />
+        <StatTile tone="accent" label="Due in 14 days (urgent)" icon={<AlertTriangle />} value={alerts.d14.length} suffix=" employees" />
+        <StatTile label="Confirmed this month" icon={<Award />} value={reviews.filter((r) => r.status === 'completed' && r.outcome === 'confirmed').length} suffix=" employees" />
       </div>
 
       {/* Main Probation Review Board Table */}
@@ -448,7 +421,7 @@ export function ProbationBoardPage() {
             )}
 
             <div className="space-y-3 pt-2">
-              <p className="text-xs font-semibold text-ink uppercase tracking-wider">Performance Ratings (1-5)</p>
+              <p className="text-xs font-semibold text-ink">Performance Ratings (1-5)</p>
               <div className="grid grid-cols-2 gap-3">
                 <TextField
                   label="Technical Competence"
@@ -540,7 +513,7 @@ export function ProbationBoardPage() {
                   options={STRUCTURE_OPTIONS}
                 />
 
-                <div className="rounded border border-emerald-300 bg-emerald-50/40 p-3 text-xs text-emerald-900">
+                <div className="rounded-row bg-[color-mix(in_srgb,var(--positive)_10%,var(--surface))] p-3 text-xs text-ink">
                   <p className="font-semibold">Automatic Confirmation Actions:</p>
                   <ul className="mt-1 list-disc pl-4 space-y-0.5 text-[11px]">
                     <li>Transitions core.employees contract_type from 'probationary' to 'permanent'</li>

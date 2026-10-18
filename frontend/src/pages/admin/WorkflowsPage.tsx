@@ -399,7 +399,7 @@ function ChainEditor({
           )}
 
           <p className="text-xs leading-5 text-ink-muted">
-            Every step records a notification receipt when it opens (WF-04), so “the approver was
+            Every step records a notification receipt when it opens, so “the approver was
             never notified” stays provable rather than arguable.
           </p>
         </div>

@@ -7,12 +7,13 @@ import {
   DarkCard,
   EmptyState,
   KpiNumber,
-  KpiPillRow,
+  HeadlineStats,
   PageHeader,
   Pill,
   StatusBadge,
   formatDateIN,
   QuickLinks,
+  CardLink,
 } from '../../ui';
 import type { QuickLink } from '../../ui';
 import type { HrDashboardData } from './dashboard-types';
@@ -55,43 +56,27 @@ export function HrOpsDashboard({
         <PageHeader
           eyebrow={todayLongIST()}
           title="HR operations"
-          description={`${scopeLabel ?? 'Your scope'} · signals as of ${formatDateIN(data.asOf)}. Every tile opens the list behind the number.`}
+          description={`${scopeLabel ?? 'Your scope'} · signals as of ${formatDateIN(data.asOf)}.`}
         />
 
-        <KpiPillRow
-          pills={[
-            {
-              label: 'Headcount',
-              value: headcount,
-              state: 'filled',
-              icon: <Users />,
-              to: '/people',
-            },
+        <HeadlineStats
+          stats={[
+            { label: 'Headcount', value: headcount, icon: <Users />, to: '/people' },
             {
               label: 'Absent today',
               value: data.absentToday,
-              state: absentIsTheJob ? 'accent' : 'outline',
+              emphasis: absentIsTheJob,
               icon: <AlertTriangle />,
               to: '/attendance',
             },
             {
               label: 'Pending approvals',
               value: data.pendingApprovals,
-              state: approvalsAreTheJob
-                ? 'accent'
-                : data.pendingApprovals > 0
-                  ? 'hatched'
-                  : 'outline',
+              emphasis: approvalsAreTheJob,
               icon: <CheckCircle2 />,
               to: '/approvals',
             },
-            {
-              label: 'Exits MTD',
-              value: data.exitsMtd,
-              state: 'outline',
-              icon: <UserMinus />,
-              to: '/people',
-            },
+            { label: 'Exits MTD', value: data.exitsMtd, icon: <UserMinus />, to: '/people' },
           ]}
         />
       </div>
@@ -101,7 +86,7 @@ export function HrOpsDashboard({
       <DarkCard className="grid gap-8 md:grid-cols-[1.4fr_1fr]">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-hero-muted">
+            <p className="text-sm font-medium text-hero-muted">
               Attendance today
             </p>
             <StatusBadge tone={data.silentDevices > 0 ? 'negative' : 'positive'}>
@@ -156,12 +141,7 @@ export function HrOpsDashboard({
             title="Absence cases"
             subtitle="Open cases by action stage"
             action={
-              <Link
-                to="/attendance/absence-cases"
-                className="text-sm font-semibold text-ink hover:underline"
-              >
-                Open queue
-              </Link>
+              <CardLink to="/attendance/absence-cases" label="Open queue" />
             }
           />
           {data.openAbsenceByStage.length === 0 ? (

@@ -168,7 +168,7 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
         </div>
 
         <div className="u-enter max-w-lg" style={enterDelay(50)}>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color-mix(in_srgb,var(--hero-ink)_78%,var(--hero-muted))]">
+          <p className="text-sm font-medium text-[color-mix(in_srgb,var(--hero-ink)_78%,var(--hero-muted))]">
             One platform · 14 entities
           </p>
           <h1 className="mt-5 text-5xl font-light leading-[1.12] tracking-tight">
@@ -211,7 +211,7 @@ export function LoginPage({ onSuccess, loadSession }: LoginPageProps) {
             <span className="text-sm font-semibold text-ink">Rashmi HRMS</span>
           </div>
 
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
+          <p className="text-xs font-medium text-ink-muted">
             Employee sign-in
           </p>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight text-ink">
