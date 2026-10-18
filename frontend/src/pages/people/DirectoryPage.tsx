@@ -21,6 +21,7 @@ import {
   TextField,
   Tooltip,
   toast,
+  PersonCell,
 } from '../../ui';
 import type { Column, StatusTone } from '../../ui';
 import {
@@ -138,7 +139,7 @@ const COLUMNS: Column<DirectoryItem>[] = [
     locked: true,
     header: 'Name',
     width: 'minmax(0,1.4fr)',
-    render: (r) => <span className="font-medium text-ink">{r.name}</span>,
+    render: (r) => <PersonCell name={r.name} />,
   },
   {
     key: 'designation',

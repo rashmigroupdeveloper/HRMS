@@ -1,3 +1,4 @@
+import type React from 'react';
 import { cn } from './cn';
 
 /**
@@ -25,29 +26,50 @@ const DOT_STYLE: Record<DotState, string> = {
   none: 'bg-[color-mix(in_srgb,var(--ink)_8%,transparent)]',
 };
 
+/** On a charcoal card (Crextio "Attendance report"): gold / cream / muted. */
+const DOT_STYLE_DARK: Record<DotState, string> = {
+  present: 'bg-accent',
+  absent: 'bg-[color-mix(in_srgb,var(--negative)_80%,var(--hero))]',
+  leave: 'bg-[color-mix(in_srgb,var(--hero-ink)_70%,transparent)]',
+  weekoff: 'ring-1 ring-inset ring-[color-mix(in_srgb,var(--hero-ink)_25%,transparent)]',
+  none: 'bg-[color-mix(in_srgb,var(--hero-ink)_14%,transparent)]',
+};
+
 export function DotMatrix({
   dots,
   columns = 7,
   size = 'md',
+  tone = 'light',
+  label,
+  animate = false,
 }: {
   dots: Dot[];
   columns?: number;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
+  tone?: 'light' | 'dark';
+  /** Summary for screen readers; each cell keeps its own date/status name too. */
+  label?: string;
+  animate?: boolean;
 }) {
-  const dotSize = size === 'sm' ? 'size-2.5' : 'size-3.5';
+  const dotSize = size === 'sm' ? 'size-2.5' : size === 'lg' ? 'size-4' : 'size-3.5';
+  const styles = tone === 'dark' ? DOT_STYLE_DARK : DOT_STYLE;
   return (
     <div
-      className="grid gap-1.5"
+      role="group"
+      aria-label={label}
+      className="grid w-max gap-1.5"
       style={{
-        gridTemplateColumns: `repeat(${String(columns)}, minmax(0, 1fr))`,
+        gridTemplateColumns: `repeat(${String(columns)}, max-content)`,
       }}
     >
-      {dots.map((d) => (
+      {dots.map((d, i) => (
         <span
           key={d.key}
+          role="img"
           title={d.title}
           aria-label={d.title ?? d.state}
-          className={cn('rounded-[4px]', dotSize, DOT_STYLE[d.state])}
+          style={animate ? ({ '--i': Math.min(i, 60) } as React.CSSProperties) : undefined}
+          className={cn('rounded-full', dotSize, styles[d.state], animate && 'u-dot-in')}
         />
       ))}
     </div>

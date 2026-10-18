@@ -114,7 +114,7 @@ export function Drawer({
           // Phones: a bottom sheet within thumb reach (docs/05 §8); desktop: right drawer.
           sheet
             ? 'pb-safe inset-x-0 bottom-0 max-h-[92dvh] rounded-t-[var(--radius-card)]'
-            : 'right-0 top-0 h-full',
+            : 'bottom-3 right-3 top-3 overflow-hidden rounded-[var(--radius-card)]',
           'shadow-[0_0_60px_-12px_color-mix(in_srgb,var(--ink)_40%,transparent)]',
           'transition-transform duration-[var(--motion-medium)] ease-[var(--ease-drawer)]',
           'will-change-transform',
@@ -123,8 +123,8 @@ export function Drawer({
           sheet
             ? { transform: entered ? 'translateY(0)' : 'translateY(100%)' }
             : {
-                width: `min(${String(width)}px, 100vw)`,
-                transform: entered ? 'translateX(0)' : 'translateX(100%)',
+                width: `min(${String(width)}px, calc(100vw - 24px))`,
+                transform: entered ? 'translateX(0)' : 'translateX(calc(100% + 24px))',
               }
         }
       >
@@ -132,7 +132,7 @@ export function Drawer({
         <div className={cn('flex items-start justify-between gap-4 pb-4', sheet ? 'px-4 pt-3' : 'px-6 pt-5')}>
           <div className="min-w-0">
             {title && (
-              <h2 id="drawer-title" className="text-lg font-semibold text-ink">
+              <h2 id="drawer-title" className="text-xl font-medium tracking-tight text-ink">
                 {title}
               </h2>
             )}

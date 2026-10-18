@@ -213,7 +213,7 @@ export function WorkflowsPage({ user }: { user: SessionUser }) {
           <EmptyState
             icon={<Workflow />}
             title="No workflows defined"
-            description="Run npm run seed:workflows to load the docs/08 §4 catalog."
+            description="No approval chains are set up yet. Ask your system administrator to load the standard chains."
           />
         }
       />

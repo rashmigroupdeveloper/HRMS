@@ -7,7 +7,9 @@ import {
   CardHeader,
   DarkCard,
   EmptyState,
-  KpiPillRow,
+  HeadlineStats,
+  StatusStrip,
+  KpiNumber,
   PageHeader,
   Pill,
   StatusBadge,
@@ -242,13 +244,11 @@ export function EssDashboard({
             ) : undefined
           }
         />
-        <KpiPillRow
-          pills={[
+        <HeadlineStats
+          stats={[
             {
-              label: 'Leave available',
+              label: 'Leave days left',
               value: totalAvailable,
-              suffix: ' days',
-              state: 'filled',
               precision: totalAvailable % 1 === 0 ? 0 : 1,
               icon: <Palmtree />,
               to: '/my/leave',
@@ -256,13 +256,28 @@ export function EssDashboard({
             {
               label: 'Pending requests',
               value: pendingTotal,
-              state: pendingIsTheJob ? 'accent' : pendingTotal > 0 ? 'hatched' : 'outline',
+              emphasis: pendingIsTheJob,
               icon: <FileClock />,
               to: '/my/leave',
             },
           ]}
         />
       </div>
+
+      {data.leaveBalances.some((leave) => leave.available > 0) ? (
+        <StatusStrip
+          label="Leave available by type"
+          segments={[...data.leaveBalances]
+            .filter((leave) => leave.available > 0)
+            .sort((a, b) => b.available - a.available)
+            .slice(0, 4)
+            .map((leave, index) => ({
+              label: leave.name,
+              value: leave.available,
+              tone: (['dark', 'hatched', 'outline', 'outline'] as const)[index] ?? 'outline',
+            }))}
+        />
+      ) : null}
 
       {quickLinks && quickLinks.length > 0 ? <QuickLinks links={quickLinks} /> : null}
 
@@ -337,19 +352,14 @@ export function EssDashboard({
               title="Leave balances"
               subtitle="Days available by leave type, net of anything already approved."
               action={
-                <div className="flex flex-wrap gap-3">
-                  <Link
-                    to="/my/pay"
-                    className="hidden text-sm font-medium text-ink hover:underline sm:inline"
-                  >
-                    This month’s pay
-                  </Link>
+                <div className="flex items-center gap-2">
                   <Link
                     to="/my/leave?action=apply"
-                    className="text-sm font-semibold text-ink hover:underline"
+                    className="u-press inline-flex h-9 items-center rounded-full bg-hero px-4 text-sm font-medium text-hero-ink"
                   >
                     Apply for a day off
                   </Link>
+                  <CardLink to="/my/leave" label="Open my leave" />
                 </div>
               }
             />
@@ -376,7 +386,7 @@ export function EssDashboard({
                       </span>
                     </div>
                     <p className="mt-4 text-3xl font-light tabular-nums text-ink sm:mt-6">
-                      {leave.available.toLocaleString('en-IN')}
+                      <KpiNumber value={leave.available} precision={leave.available % 1 === 0 ? 0 : 1} />
                     </p>
                     <p className="text-xs text-ink-muted">days available</p>
                   </div>
