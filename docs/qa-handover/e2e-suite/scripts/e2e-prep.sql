@@ -43,6 +43,14 @@ SELECT u.id, r.id, CASE WHEN r.code='payroll_admin' THEN 2 END FROM core.users u
  WHERE u.email='payroll.rgh@rashmi.test' AND r.code IN ('employee','payroll_admin')
    AND NOT EXISTS (SELECT 1 FROM core.user_roles x WHERE x.user_id=u.id AND x.role_id=r.id)
 ON CONFLICT DO NOTHING;
+-- Group-level payroll admin (unscoped): statutory rates / PT slabs are group-wide config.
+INSERT INTO core.users (email, password_hash)
+SELECT 'payroll.group@rashmi.test', (SELECT password_hash FROM core.users WHERE email='employee@rashmi.test')
+ON CONFLICT (email) DO NOTHING;
+INSERT INTO core.user_roles (user_id, role_id, scope_org_unit_id)
+SELECT u.id, r.id, NULL FROM core.users u, core.roles r
+ WHERE u.email='payroll.group@rashmi.test' AND r.code='payroll_admin'
+   AND NOT EXISTS (SELECT 1 FROM core.user_roles x WHERE x.user_id=u.id AND x.role_id=r.id);
 -- Clear lockouts / forced changes left in the snapshot.
 UPDATE core.users SET failed_attempts=0, locked_until=NULL, must_change_password=false;
 COMMIT;

@@ -27,7 +27,7 @@ const READ_RULES: Rule[] = [
 // Writes are only sent for roles that must be refused (no side effects when the app is correct).
 const WRITE_RULES: Rule[] = [
   { id: 'runs.create', m: 'POST', p: '/api/payroll/runs/create', body: { company_id: 1, month: '2027-03-01' }, allow: PAYROLL, why: 'payroll.run.manage' },
-  { id: 'statutory.write', m: 'POST', p: '/api/payroll/config/statutory-rates', body: { scheme: 'PF', param: 'ee_rate_pct', value: 99, effectiveFrom: '2030-01-01', sourceNote: 'e2e negative test' }, allow: PAYROLL, why: 'payroll config write (hr_head is read-only)' },
+  { id: 'statutory.write', m: 'POST', p: '/api/payroll/config/statutory-rates', body: { scheme: 'PF', param: 'ee_rate_pct', value: 99, effectiveFrom: '2030-01-01', sourceNote: 'e2e negative test' }, allow: ['super_admin'], why: 'group-wide payroll config write: entity-scoped payroll_admin and read-only hr_head are refused' },
   { id: 'rbac.grant', m: 'POST', p: '/api/rbac/user-roles', body: { userId: 8, roleCode: 'super_admin', action: 'grant' }, allow: ['super_admin', 'it_admin'], why: 'admin.roles' },
   { id: 'user.unlock', m: 'POST', p: '/api/auth/users/9/unlock', allow: ['it_admin', 'super_admin'], why: 'admin.users' },
   { id: 'leave.adjust', m: 'POST', p: '/api/leave/adjustments', body: { employeeId: 9, leaveType: 'CL', delta: 30, note: 'e2e negative test' }, allow: ['hr_ops_rml', 'hr_head', 'super_admin'], why: 'leave.admin' },

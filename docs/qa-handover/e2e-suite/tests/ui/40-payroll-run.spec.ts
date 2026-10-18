@@ -4,6 +4,7 @@
  * configurability (PT slab change alters next compute, revert restores) → review → hr_head approves + finalizes →
  * outputs → mark paid → sample employee RML033625 sees net ₹59,124 in My Pay.
  */
+import { EXTRA } from '../../lib/personas';
 import { test, expect, task, type Session } from '../../lib/fixtures';
 import { choose } from '../../lib/ui';
 import { apiLogin } from '../../lib/api';
@@ -212,7 +213,7 @@ test(task('payroll_admin', 'P8', 'payroll settings page exists to edit statutory
 test(task('payroll_admin', 'P8b', 'configurability: a PT slab change alters the next compute; reverting restores it'), async ({ as, ux }) => {
   ux.start('Config change → recompute');
   const s = await as('payroll_admin');
-  const api = await apiLogin('payroll@rashmi.test');
+  const api = await apiLogin(EXTRA.payroll_group) /* group-wide config needs an unscoped payroll admin */;
   const slabs = (await (await api.get('/api/payroll/config/pt-slabs')).json() as any[]).filter((x) => x.stateCode === 'WB');
   const orig = { stateCode: 'WB', effectiveFrom: '2026-06-01', basis: slabs[0]?.basis ?? 'earned_monthly', slabs: slabs.map((x) => ({ minMonthly: x.minMonthly, maxMonthly: x.maxMonthly, amount: x.amount })) };
   const bumped = { ...orig, slabs: orig.slabs.map((x) => (x.maxMonthly === null ? { ...x, amount: x.amount + 50 } : x)) };
@@ -247,7 +248,7 @@ test(task('payroll_admin', 'P8b', 'configurability: a PT slab change alters the 
 
 test(task('payroll_admin', 'P8c', 'configurability: a future-dated statutory rate does not change this month (no retro)'), async ({ as }) => {
   const s = await as('payroll_admin');
-  const api = await apiLogin('payroll@rashmi.test');
+  const api = await apiLogin(EXTRA.payroll_group) /* group-wide config needs an unscoped payroll admin */;
   const r = await api.post('/api/payroll/config/statutory-rates', { scheme: 'ESIC', param: 'ee_rate_pct', value: 1.0, effectiveFrom: '2027-04-01', sourceNote: 'E2E future-dated test version' });
   expect(r.status(), await r.text()).toBe(200);
   await openRun(s);
@@ -308,7 +309,7 @@ test(task('hr_head', 'P16', 'mark the run paid with a bank reference'), async ({
 });
 
 test(task('payroll_admin', 'P8d', 'no retro: changing PT slabs for a finalized month is refused'), async () => {
-  const api = await apiLogin('payroll@rashmi.test');
+  const api = await apiLogin(EXTRA.payroll_group) /* group-wide config needs an unscoped payroll admin */;
   const slabs = (await (await api.get('/api/payroll/config/pt-slabs')).json() as any[]).filter((x) => x.stateCode === 'WB');
   const res = await api.put('/api/payroll/config/pt-slabs', { stateCode: 'WB', effectiveFrom: '2026-06-01', basis: slabs[0].basis, slabs: slabs.map((x) => ({ minMonthly: x.minMonthly, maxMonthly: x.maxMonthly, amount: x.amount + 1 })) });
   expect(res.status(), 'retro change into a finalized/paid month must be refused').toBeGreaterThanOrEqual(400);
