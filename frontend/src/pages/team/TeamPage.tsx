@@ -382,7 +382,7 @@ export function TeamPage({ user }: { user: SessionUser }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow={tab === 'roster' ? 'Manager workspace · ATT-04' : 'Manager workspace · ATT-12'}
+        eyebrow="Manager workspace"
         title="My team"
         description={
           tab === 'roster'

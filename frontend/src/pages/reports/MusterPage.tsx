@@ -266,7 +266,7 @@ export function MusterPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="RPT-01 · snapshot-backed"
+        eyebrow="Reports"
         title="Muster summary"
         description="On-screen grid and Excel use the same filters (entity, plant, cost centre, department, RM subtree, category, status)."
       />

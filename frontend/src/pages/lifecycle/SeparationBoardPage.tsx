@@ -43,6 +43,30 @@ import {
 } from '../../ui';
 import { apiFetch } from '../../lib/api';
 
+/**
+ * The list endpoint names people fields `employeeName` / `departmentName` /
+ * `designationName`; older payloads used `name` / `department` / `designation`.
+ * Accept both so the board never crashes on a missing name.
+ */
+type SeparationApiItem = Omit<SeparationItem, 'name' | 'department' | 'designation'> & {
+  name?: string;
+  employeeName?: string;
+  department?: string | null;
+  departmentName?: string | null;
+  designation?: string | null;
+  designationName?: string | null;
+};
+
+function fromApi(item: SeparationApiItem): SeparationItem {
+  const { employeeName, departmentName, designationName, ...rest } = item;
+  return {
+    ...rest,
+    name: item.name ?? employeeName ?? item.ecode,
+    department: item.department ?? departmentName ?? null,
+    designation: item.designation ?? designationName ?? null,
+  };
+}
+
 interface SeparationItem {
   id: number;
   employeeId: number;
@@ -194,9 +218,9 @@ export function SeparationBoardPage() {
 
   const loadSeparations = useCallback(async () => {
     try {
-      const res = await apiFetch<{ items: SeparationItem[] }>('/api/lifecycle/separations');
+      const res = await apiFetch<{ items?: SeparationApiItem[] }>('/api/lifecycle/separations');
       if (Array.isArray(res.items)) {
-        setSeparations(res.items);
+        setSeparations(res.items.map(fromApi));
       } else {
         setSeparations([]);
       }
@@ -560,11 +584,11 @@ export function SeparationBoardPage() {
       {/* Top Header & Fast Metric Tiles */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <PageHeader
-          eyebrow="Lifecycle / Separation & Settlement"
-          title="Separation, Clearances & F&F Console"
-          description="Orchestrates ESS resignation approval, 4-tier departmental clearances (IT/Admin/Finance/HR), unreturned asset recovery, and 3-day statutory F&F settlement with Exit Day Cascade (LC-06, LC-07, PAY-15)."
+          eyebrow="Lifecycle"
+          title="Separation & settlement"
+          description="Resignations, departmental clearances, asset recovery and full & final settlement in one place."
         />
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="secondary"
             size="sm"

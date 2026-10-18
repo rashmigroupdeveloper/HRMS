@@ -136,7 +136,7 @@ export function ReportsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Self-service reporting · RPT-01"
+        eyebrow="Self-service reporting"
         title="Reports catalog"
         description="Attendance and workforce reports. Each opens with filters and Excel export. Muster shows this month until you change it."
       />
