@@ -371,6 +371,36 @@ body {
   animation: u-draw var(--motion-medium) var(--ease-out-strong) 120ms forwards;
 }
 
+/* Hover lift for pressable cards: rises 2px on real hover devices and its
+   float shadow fades in on a pseudo-element (opacity only — no box-shadow
+   transition), presses to 0.98 on :active. */
+.u-lift {
+  position: relative;
+  transition: transform var(--motion-short) var(--ease-out-strong);
+}
+.u-lift::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-short) var(--ease-out-strong);
+}
+@media (hover: hover) and (pointer: fine) {
+  .u-lift:hover {
+    transform: translateY(-2px);
+  }
+  .u-lift:hover::after {
+    opacity: 1;
+  }
+}
+.u-lift:active {
+  transform: scale(0.98);
+  transition-duration: var(--motion-press);
+}
+
 .u-pop-in {
   transform-origin: top center;
   animation: u-pop var(--motion-short) var(--ease-out-strong);
@@ -389,7 +419,9 @@ body {
   /* Reduced motion = gentler, not zero: kill positional/scale movement,
      keep color/opacity that aids comprehension (docs/05 §2.3). */
   .u-press,
-  .u-press:active {
+  .u-press:active,
+  .u-lift:hover,
+  .u-lift:active {
     transform: none;
   }
   .u-enter {

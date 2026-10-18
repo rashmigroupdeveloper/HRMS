@@ -193,7 +193,7 @@ export function ManagerDashboard({
               <Link
                 key={member.employeeId}
                 to={`/people/${member.ecode}`}
-                className="rounded-tile bg-surface-2 p-4 transition-colors hover:bg-accent-soft"
+                className="u-lift rounded-tile bg-surface-2 p-4 hover:bg-accent-soft"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
