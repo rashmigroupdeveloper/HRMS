@@ -10,6 +10,7 @@
  */
 
 import { useState, useEffect, useId, useCallback } from 'react';
+import { hasPermission, type SessionUser } from '../../lib/session';
 import {
   Bell,
   CheckCircle2,
@@ -79,12 +80,12 @@ const EXTENSION_OPTIONS: SelectOption[] = [
   { value: '6', label: '6 Months (Maximum)' },
 ];
 
-const STRUCTURE_OPTIONS: SelectOption[] = [
-  { value: '1', label: 'Standard Confirmed CTC Structure (M1-M3)' },
-  { value: '2', label: 'Technical Confirmed Structure (T1-T4)' },
-];
+interface AlertsResponse { d30ReviewIds: number[]; d14ReviewIds: number[]; d7ReviewIds: number[] }
 
-export function ProbationBoardPage() {
+export function ProbationBoardPage({ user }: { user?: SessionUser | undefined } = {}) {
+  const canEvaluate = user !== undefined && hasPermission(user, 'lifecycle.confirmation.approve');
+  const canDecide = user !== undefined && hasPermission(user, 'lifecycle.probation.decide');
+  const [structureOptions, setStructureOptions] = useState<SelectOption[]>([]);
   const [reviews, setReviews] = useState<ProbationReviewItem[]>([]);
   const [alerts, setAlerts] = useState<UpcomingAlerts>({ d30: [], d14: [], d7: [] });
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -110,7 +111,7 @@ export function ProbationBoardPage() {
     outcome: 'confirmed' as 'confirm' | 'extend' | 'separate' | 'confirmed' | 'extended' | 'separated',
     confirmationDate: new Date().toISOString().slice(0, 10),
     confirmedAnnualCtc: '600000',
-    salaryStructureId: '1',
+    salaryStructureId: '',
     extensionMonths: '3',
     decisionNotes: 'Confirmed after comprehensive evaluation and manager recommendation.',
   });
@@ -128,13 +129,17 @@ export function ProbationBoardPage() {
     }
 
     try {
-      const aRes = await apiFetch<UpcomingAlerts>('/api/lifecycle/probation/alerts');
-      setAlerts(aRes);
+      const aRes = await apiFetch<AlertsResponse>('/api/lifecycle/probation/alerts');
+      setAlerts({ d30: aRes.d30ReviewIds, d14: aRes.d14ReviewIds, d7: aRes.d7ReviewIds });
     } catch {
-      setAlerts({ d30: [1001], d14: [1002], d7: [] });
+      setAlerts({ d30: [], d14: [], d7: [] });
+    }
+    if (canDecide) {
+      const structures = await apiFetch<{ id: number; name: string }[]>('/api/payroll/structures').catch(() => []);
+      setStructureOptions(structures.map((st) => ({ value: String(st.id), label: st.name })));
     }
     setLoading(false);
-  }, []);
+  }, [canDecide]);
 
   useEffect(() => {
     void loadData();
@@ -193,7 +198,7 @@ export function ProbationBoardPage() {
       outcome: initialOutcome,
       confirmationDate: r.dueDate,
       confirmedAnnualCtc: '600000',
-      salaryStructureId: '1',
+      salaryStructureId: structureOptions[0]?.value ?? '',
       extensionMonths: String(r.extensionMonths ?? 3),
       decisionNotes: `Approved based on manager evaluation (${r.reviewNotes ?? 'Satisfactory completion'}).`,
     });
@@ -216,7 +221,7 @@ export function ProbationBoardPage() {
           outcome: outcomeVal,
           confirmationDate: outcomeVal === 'confirmed' ? decisionForm.confirmationDate : undefined,
           confirmedAnnualCtc: outcomeVal === 'confirmed' ? Number(decisionForm.confirmedAnnualCtc) : undefined,
-          salaryStructureId: outcomeVal === 'confirmed' ? Number(decisionForm.salaryStructureId) : undefined,
+          salaryStructureId: outcomeVal === 'confirmed' && decisionForm.salaryStructureId ? Number(decisionForm.salaryStructureId) : undefined,
           extensionMonths: outcomeVal === 'extended' ? Number(decisionForm.extensionMonths) : undefined,
           decisionNotes: decisionForm.decisionNotes,
         }),
@@ -305,22 +310,22 @@ export function ProbationBoardPage() {
         <div className="flex items-center gap-2">
           {r.status !== 'completed' && (
             <>
-              <Button
+              {canEvaluate && <Button
                 size="sm"
                 variant="secondary"
                 leadingIcon={<Sliders className="h-4 w-4" />}
                 onClick={() => { openEvaluationDrawer(r); }}
               >
                 Evaluate
-              </Button>
-              <Button
+              </Button>}
+              {canDecide && <Button
                 size="sm"
                 variant="primary"
                 leadingIcon={<UserCheck className="h-4 w-4" />}
                 onClick={() => { openDecisionDrawer(r); }}
               >
                 Decide
-              </Button>
+              </Button>}
             </>
           )}
 
@@ -537,7 +542,7 @@ export function ProbationBoardPage() {
                   label="Confirmed Salary Structure"
                   value={decisionForm.salaryStructureId}
                   onChange={(val) => { setDecisionForm({ ...decisionForm, salaryStructureId: val }); }}
-                  options={STRUCTURE_OPTIONS}
+                  options={structureOptions}
                 />
 
                 <div className="rounded border border-emerald-300 bg-emerald-50/40 p-3 text-xs text-emerald-900">

@@ -9,12 +9,25 @@
  */
 
 import { z } from 'zod';
+import type { Kysely } from 'kysely';
 import { withPermission } from '../../../api/orpc.js';
+import type { Database } from '../../../core/db/types.js';
+import type { PermissionAccess } from '../../../core/rbac/permissions.service.js';
+import { assertEmployeesInScope, employeeScopeSql, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
+import { NotFoundError } from '../../../core/errors/index.js';
 import { ProbationService } from './probation.service.js';
+
+interface ScopeCtx { db: Kysely<Database>; user: { employee_id: number | null }; permissionAccess: PermissionAccess }
+const scopeOf = (c: ScopeCtx): EmployeeScope => ({ ...c.permissionAccess, actorEmployeeId: c.user.employee_id });
+async function assertReviewInScope(c: ScopeCtx, reviewId: number): Promise<void> {
+  const row = await c.db.selectFrom('core.probation_reviews').select('employee_id').where('id', '=', reviewId).executeTakeFirst();
+  if (!row) throw new NotFoundError(`Probation review ${String(reviewId)} not found`);
+  await assertEmployeesInScope(c.db, scopeOf(c), [row.employee_id]);
+}
 
 export const probationRouter = {
   // List probation reviews
-  listReviews: withPermission('lifecycle.confirmation.approve')
+  listReviews: withPermission('lifecycle.probation.view', 'read')
     .route({ method: 'GET', path: '/lifecycle/probation/reviews', summary: 'List probation reviews' })
     .input(
       z.object({
@@ -44,7 +57,7 @@ export const probationRouter = {
       })
     )
     .handler(async ({ context, input }) => {
-      const reviews = await ProbationService.listReviews(context.db, { status: input?.status });
+      const reviews = await ProbationService.listReviews(context.db, { status: input?.status, scope: scopeOf(context) });
       return { reviews };
     }),
 
@@ -62,12 +75,13 @@ export const probationRouter = {
     )
     .output(z.object({ success: z.boolean() }))
     .handler(async ({ context, input }) => {
+      await assertReviewInScope(context, input.reviewId);
       await ProbationService.submitEvaluation(context.db, input);
       return { success: true };
     }),
 
   // Execute Confirmation / Extension / Separation Decision
-  decideReview: withPermission('lifecycle.confirmation.approve')
+  decideReview: withPermission('lifecycle.probation.decide')
     .route({ method: 'POST', path: '/lifecycle/probation/decide', summary: 'Execute probation decision and confirmed salary transition' })
     .input(
       z.object({
@@ -88,6 +102,7 @@ export const probationRouter = {
     )
     .handler(async ({ context, input }) => {
       const userId = context.user.id;
+      await assertReviewInScope(context, input.reviewId);
       return ProbationService.decideReview(context.db, {
         ...input,
         decidedByUserId: userId,
@@ -95,7 +110,7 @@ export const probationRouter = {
     }),
 
   // Upcoming Due Reminders (30d, 14d, 7d)
-  getUpcomingAlerts: withPermission('lifecycle.confirmation.approve')
+  getUpcomingAlerts: withPermission('lifecycle.probation.view', 'read')
     .route({ method: 'GET', path: '/lifecycle/probation/alerts', summary: 'Get upcoming probation reviews due in 30, 14, 7 days' })
     .input(z.object({ referenceDate: z.string().optional() }).optional())
     .output(
@@ -107,7 +122,7 @@ export const probationRouter = {
     )
     .handler(async ({ context, input }) => {
       const refDate = input?.referenceDate ? new Date(input.referenceDate) : new Date();
-      const res = await ProbationService.getUpcomingProbationAlerts(context.db, refDate);
+      const res = await ProbationService.getUpcomingProbationAlerts(context.db, refDate, scopeOf(context));
       return {
         d30ReviewIds: res.d30,
         d14ReviewIds: res.d14,

@@ -10,6 +10,7 @@ import { Button, StatusBadge } from '../../ui';
 import { useModuleResource } from '../_shared/useModuleResource';
 import { OnboardingBoardPage } from './OnboardingBoardPage';
 import { ProbationBoardPage } from './ProbationBoardPage';
+import type { SessionUser } from '../../lib/session';
 import { SeparationBoardPage } from './SeparationBoardPage';
 import { TransfersPage } from './TransfersPage';
 
@@ -43,7 +44,7 @@ const BOARDS: { code: Board; label: string; task: string }[] = [
   },
 ];
 
-export function LifecyclePage() {
+export function LifecyclePage({ user }: { user?: SessionUser } = {}) {
   const location = useLocation();
   const initialBoard: Board = location.pathname.includes('/probation')
     ? 'probation'
@@ -100,7 +101,7 @@ export function LifecyclePage() {
       {/* Render active board */}
       {board === 'onboarding' && <OnboardingBoardPage />}
 
-      {board === 'probation' && <ProbationBoardPage />}
+      {board === 'probation' && <ProbationBoardPage user={user} />}
 
       {board === 'transfers' && <TransfersPage />}
 

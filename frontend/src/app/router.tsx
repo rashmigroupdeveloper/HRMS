@@ -119,7 +119,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="admin/salary-structures" element={<SalaryStructuresPage />} />
         <Route path="loans" element={<LoansPage />} />
         <Route path="claims" element={<ClaimsPage />} />
-        <Route path="lifecycle/*" element={<LifecyclePage />} />
+        <Route path="lifecycle/*" element={<LifecyclePage user={user} />} />
         <Route path="onboard/prejoin" element={<PrejoinPortalPage />} />
         <Route path="alumni" element={<AlumniPortalPage />} />
         <Route path="assets" element={<AssetsPage />} />
