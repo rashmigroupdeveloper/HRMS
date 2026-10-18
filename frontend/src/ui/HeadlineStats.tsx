@@ -35,7 +35,7 @@ function StatBody({ s }: { s: HeadlineStat }) {
           {s.label}
         </span>
       </span>
-      <span className="text-5xl font-light leading-none tracking-tight text-ink sm:text-6xl">
+      <span className="text-4xl font-light leading-none tracking-tight text-ink sm:text-5xl lg:text-6xl">
         <KpiNumber value={s.value} suffix={s.suffix} precision={s.precision ?? 0} />
       </span>
     </>
@@ -44,7 +44,7 @@ function StatBody({ s }: { s: HeadlineStat }) {
 
 export function HeadlineStats({ stats, className }: { stats: HeadlineStat[]; className?: string }) {
   return (
-    <ul className={cn('flex flex-wrap items-end gap-x-8 gap-y-4', className)}>
+    <ul className={cn('grid grid-cols-2 items-end gap-x-6 gap-y-4 sm:flex sm:flex-wrap sm:gap-x-8', className)}>
       {stats.map((s) => {
         const shell = 'flex items-end gap-2.5 rounded-tile';
         return (

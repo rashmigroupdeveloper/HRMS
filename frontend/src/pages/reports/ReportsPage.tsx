@@ -138,7 +138,7 @@ export function ReportsPage() {
       <PageHeader
         eyebrow="Self-service reporting · RPT-01"
         title="Reports catalog"
-        description="Stage 1 attendance and workforce reports. Each row opens the live filter + Excel surface. Muster is this month until you change it."
+        description="Attendance and workforce reports. Each opens with filters and Excel export. Muster shows this month until you change it."
       />
 
       <DarkCard>
