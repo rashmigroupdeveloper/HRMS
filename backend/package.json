@@ -25,7 +25,9 @@
     "migrate:down": "tsx -r dotenv/config node_modules/node-pg-migrate/bin/node-pg-migrate.js -j ts --ignore-pattern \".*\\.md\" --no-check-order down",
     "migrate:create": "tsx -r dotenv/config node_modules/node-pg-migrate/bin/node-pg-migrate -j ts --ignore-pattern \".*\\.md\" create",
     "test:coverage": "vitest run --coverage",
-    "verify:migrations": "tsx scripts/verify-migrations.ts"
+    "verify:migrations": "tsx scripts/verify-migrations.ts",
+    "seed:masters": "tsx src/core/seed/masters.ts",
+    "kent:simulator": "tsx scripts/kent-simulator.ts"
   },
   "dependencies": {
     "@orpc/openapi": "^1.15.5",
