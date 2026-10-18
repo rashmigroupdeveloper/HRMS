@@ -5,7 +5,8 @@ import {
   CardHeader,
   DarkCard,
   EmptyState,
-  KpiPillRow,
+  HeadlineStats,
+  StatusStrip,
   PageHeader,
   StatusBadge,
   QuickLinks,
@@ -36,24 +37,32 @@ export function DeviceHealthDashboard({
         description="Kent doors, last contact and per-device ingestion watermarks. Month lock waits on every expected door."
       />
 
-      <KpiPillRow
-        pills={[
-          { label: 'Active devices', value: active.length, state: 'filled', icon: <RadioTower /> },
-          { label: 'Healthy', value: healthy, state: 'outline', icon: <CheckCircle2 /> },
-          {
-            label: 'Silent',
-            value: silent.length,
-            state: silent.length > 0 ? 'accent' : 'outline',
-            icon: <AlertTriangle />,
-          },
-          {
-            label: 'No watermark',
-            value: missingWatermarks.length,
-            state: 'hatched',
-            icon: <DatabaseZap />,
-          },
-        ]}
-      />
+      <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+        <HeadlineStats
+          stats={[
+            { label: 'Active devices', value: active.length, icon: <RadioTower /> },
+            { label: 'Healthy', value: healthy, icon: <CheckCircle2 /> },
+            {
+              label: 'Silent',
+              value: silent.length,
+              emphasis: silent.length > 0,
+              icon: <AlertTriangle />,
+            },
+            { label: 'No watermark', value: missingWatermarks.length, icon: <DatabaseZap /> },
+          ]}
+        />
+      </div>
+
+      {active.length > 0 ? (
+        <StatusStrip
+          label="Active doors by state"
+          segments={[
+            { label: 'Reporting', value: healthy, tone: 'dark' },
+            { label: 'Silent', value: silent.length, tone: silent.length > 0 ? 'gold' : 'outline' },
+            { label: 'Inactive', value: data.length - active.length, tone: 'outline' },
+          ]}
+        />
+      ) : null}
 
       {quickLinks && quickLinks.length > 0 ? <QuickLinks links={quickLinks} /> : null}
 

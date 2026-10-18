@@ -24,7 +24,8 @@ import {
   DarkCard,
   EmptyState,
   KpiNumber,
-  KpiPillRow,
+  HeadlineStats,
+  StatusStrip,
   PageHeader,
   QuickLinks,
   StatusBadge,
@@ -183,41 +184,39 @@ export function PayrollDashboard() {
         <PageHeader
           eyebrow={todayLongIST()}
           title="Payroll"
-          description="Run state, the next statutory deadline and what is waiting on you. Every tile opens the screen behind it."
+          description="Run state, the next statutory deadline and what is waiting on you."
         />
-        <KpiPillRow
-          pills={[
-            {
-              label: 'Open runs',
-              value: open.length,
-              state: 'hatched',
-              icon: <Layers />,
-              to: '/payroll',
-            },
+        <HeadlineStats
+          stats={[
+            { label: 'Open runs', value: open.length, icon: <Layers />, to: '/payroll' },
             {
               label: 'Awaiting sign-off',
               value: awaiting.length,
-              state: awaiting.length > 0 ? 'accent' : 'outline',
+              emphasis: awaiting.length > 0,
               icon: <TrendingUp />,
               to: '/payroll',
             },
-            {
-              label: 'Finalized',
-              value: finalized.length,
-              state: 'filled',
-              icon: <Banknote />,
-              to: '/payroll',
-            },
-            {
-              label: 'Active loans',
-              value: activeLoans,
-              state: 'outline',
-              icon: <Coins />,
-              to: '/loans',
-            },
+            { label: 'Finalized', value: finalized.length, icon: <Banknote />, to: '/payroll' },
+            { label: 'Active loans', value: activeLoans, icon: <Coins />, to: '/loans' },
           ]}
         />
       </div>
+
+      {runs.length > 0 ? (
+        <StatusStrip
+          label="Runs by stage"
+          segments={[
+            { label: 'Finalized / paid', value: finalized.length, tone: 'dark' },
+            { label: 'Awaiting sign-off', value: awaiting.length, tone: awaiting.length > 0 ? 'gold' : 'outline' },
+            { label: 'In progress', value: open.length - awaiting.length, tone: 'hatched' },
+            {
+              label: 'Other',
+              value: runs.length - finalized.length - open.length,
+              tone: 'outline',
+            },
+          ]}
+        />
+      ) : null}
 
       <QuickLinks
         links={[
@@ -296,7 +295,7 @@ export function PayrollDashboard() {
                 className="rounded-tile bg-[color-mix(in_srgb,var(--hero-ink)_8%,transparent)] p-4"
               >
                 <dt className="text-xs text-hero-muted">{tile.label}</dt>
-                <dd className="mt-1 truncate text-2xl font-semibold">
+                <dd className="mt-1 truncate text-2xl font-light tabular-nums sm:text-3xl">
                   <KpiNumber value={tile.value} prefix={tile.prefix} />
                 </dd>
               </div>
@@ -325,7 +324,7 @@ export function PayrollDashboard() {
             title="Recent runs"
             subtitle={`${String(runs.length)} run${runs.length === 1 ? '' : 's'} across ${String(new Set(runs.map((r) => r.companyId)).size)} compan${new Set(runs.map((r) => r.companyId)).size === 1 ? 'y' : 'ies'}`}
             action={
-<CardLink to="/payroll" label="All runs" />
+              <CardLink to="/payroll" label="All runs" />
             }
           />
           <ul className="u-stagger divide-y divide-dotted divide-line-strong">
@@ -374,7 +373,7 @@ export function PayrollDashboard() {
             </p>
             <p className="mt-3 text-xs leading-5 text-ink-muted">
               ECR is uploaded to the EPFO portal and the ESIC challan paid by the 15th of the
-              following month (docs/10).
+              following month.
             </p>
           </div>
         </Card>

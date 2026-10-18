@@ -24,6 +24,8 @@ import {
   StatusBadge,
   TrendChart,
   QuickLinks,
+  StatGrid,
+  StatTile,
 } from '../../ui';
 import type { QuickLink } from '../../ui';
 import type { Column } from '../../ui';
@@ -115,7 +117,7 @@ export function BusinessUnitDashboard({ quickLinks }: { quickLinks?: QuickLink[]
 
       <DarkCard className="grid gap-8 md:grid-cols-[1.3fr_1fr]">
         <div>
-          <p className="text-xs font-semibold text-hero-muted">
+          <p className="text-sm font-medium text-hero-muted">
             Absent today
           </p>
           <h2 className="mt-4 text-5xl font-light tabular-nums">
@@ -165,69 +167,36 @@ export function BusinessUnitDashboard({ quickLinks }: { quickLinks?: QuickLink[]
         </dl>
       </DarkCard>
 
-      {/* ── Operational Health & Shift Compliance ───────────────────────── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="p-4">
-          <p className="text-xs font-semibold text-ink-muted">
-            Plant presence today
-          </p>
-          <p className="mt-2 text-3xl font-light tabular-nums text-ink">
-            {data.presenceTodayPct !== null && data.presenceTodayPct !== undefined ? (
-              <KpiNumber value={data.presenceTodayPct} precision={1} suffix="%" />
-            ) : (
-              <span className="text-ink-subtle">—</span>
-            )}
-          </p>
-          <p className="mt-1 text-xs text-ink-muted">Active attendance vs scheduled</p>
-        </Card>
-
-        <Card className="p-4">
-          <p className="text-xs font-semibold text-ink-muted">
-            Shift compliance
-          </p>
-          <p className="mt-2 text-3xl font-light tabular-nums text-ink">
-            {data.shiftScheduleCompliancePct !== null &&
-            data.shiftScheduleCompliancePct !== undefined ? (
-              <KpiNumber value={data.shiftScheduleCompliancePct} precision={1} suffix="%" />
-            ) : (
-              <span className="text-ink-subtle">—</span>
-            )}
-          </p>
-          <p className="mt-1 text-xs text-ink-muted">Roster assignment adherence</p>
-        </Card>
-
-        <Card className="p-4">
-          <p className="text-xs font-semibold text-ink-muted">
-            Active OT hours
-          </p>
-          <p className="mt-2 text-3xl font-light tabular-nums text-ink">
-            {data.activeOvertimeHours !== null && data.activeOvertimeHours !== undefined ? (
-              <KpiNumber value={data.activeOvertimeHours} precision={1} suffix=" h" />
-            ) : (
-              <span className="text-ink-subtle">—</span>
-            )}
-          </p>
-          <p className="mt-1 text-xs text-ink-muted">Recorded overtime across unit</p>
-        </Card>
-
-        <Card className="p-4">
-          <p className="text-xs font-semibold text-ink-muted">
-            Pending approvals
-          </p>
-          <div className="mt-2 flex items-baseline justify-between">
-            <p className="text-3xl font-light tabular-nums text-ink">
-              <KpiNumber value={data.pendingApprovalsCount ?? 0} />
-            </p>
-            <Link
-              to="/attendance/exceptions"
-              className="text-xs font-semibold text-ink underline decoration-accent decoration-2 underline-offset-4"
-            >
-              Review queue →
-            </Link>
-          </div>
-          <p className="mt-1 text-xs text-ink-muted">AR & overtime requests</p>
-        </Card>
-      </div>
+            <StatGrid>
+        <StatTile
+          label="Plant presence today"
+          value={data.presenceTodayPct ?? <span className="text-ink-subtle">—</span>}
+          precision={1}
+          suffix="%"
+          hint="Active attendance vs scheduled"
+        />
+        <StatTile
+          label="Shift compliance"
+          value={data.shiftScheduleCompliancePct ?? <span className="text-ink-subtle">—</span>}
+          precision={1}
+          suffix="%"
+          hint="Roster assignment adherence"
+        />
+        <StatTile
+          label="Active OT hours"
+          value={data.activeOvertimeHours ?? <span className="text-ink-subtle">—</span>}
+          precision={1}
+          suffix=" h"
+          hint="Recorded overtime across unit"
+        />
+        <StatTile
+          label="Pending approvals"
+          value={data.pendingApprovalsCount ?? 0}
+          tone={(data.pendingApprovalsCount ?? 0) > 0 ? 'accent' : 'default'}
+          hint="AR & overtime requests"
+          to="/attendance/exceptions"
+        />
+      </StatGrid>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

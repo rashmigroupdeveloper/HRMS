@@ -334,6 +334,17 @@ body {
   }
 }
 
+/* Strip segments / bars grow in from the left once on mount (transform only). */
+.u-grow-x {
+  transform-origin: left center;
+  animation: u-gold-sweep var(--motion-medium) var(--ease-out-strong) both;
+}
+/* Dot-grid cells fade+scale in, staggered by --i (capped by the caller). */
+.u-dot-in {
+  animation: u-pop var(--motion-short) var(--ease-out-strong) both;
+  animation-delay: calc(var(--i, 0) * 8ms);
+}
+
 .u-pop-in {
   transform-origin: top center;
   animation: u-pop var(--motion-short) var(--ease-out-strong);
@@ -360,9 +371,13 @@ body {
     opacity: 1;
     transform: none;
   }
-  .u-gold-sweep {
+  .u-gold-sweep,
+  .u-grow-x {
     animation: none;
     transform: scaleX(1);
+  }
+  .u-dot-in {
+    animation: none;
   }
   *,
   *::before,
