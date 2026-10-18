@@ -178,15 +178,15 @@ export function EngagementPage({ user }: { user?: SessionUser }) {
 
       <DarkCard padded={false} className="p-8 md:p-10">
         <p className="text-xs font-semibold text-hero-muted">
-          Rashmi Engagement Protocol
+          How it works
         </p>
         <h2 className="mt-4 max-w-xl text-3xl font-light tracking-tight text-hero-ink">
-          Audience-targeted. Cryptographically anonymous.
+          The right people hear it. Answers stay anonymous.
         </h2>
         <p className="mt-4 max-w-2xl text-sm leading-7 text-hero-muted">
-          Announcements reach specifically designated plants, departments, and workforce categories.
-          Pulse polls and surveys protect employee psychological safety using HMAC ballot tokens —
-          ensuring genuine feedback without the risk of attribution.
+          Announcements reach only the plants, departments and categories you choose. Pulse polls
+          and surveys never link a response back to the person who gave it, so feedback stays
+          honest.
         </p>
       </DarkCard>
 
