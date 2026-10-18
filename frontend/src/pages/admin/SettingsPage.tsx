@@ -298,7 +298,7 @@ function SettingEditor({
       {setting && (
         <div className="space-y-5">
           <div className="rounded-row bg-surface-2 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Current</p>
+            <p className="text-xs font-medium text-ink-muted">Current</p>
             <code className="mt-1 block break-all text-sm text-ink">{displayValue(setting)}</code>
           </div>
 

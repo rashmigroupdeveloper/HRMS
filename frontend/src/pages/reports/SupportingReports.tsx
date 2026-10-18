@@ -598,7 +598,7 @@ export function R6AbsencePage() {
     <SupportingReportPage<R6Row>
       code="R6"
       title="Absence cases"
-      subtitle="Continuous-absence watch and show-cause queue (ATT-10)."
+      subtitle="Continuous-absence watch and show-cause queue."
       listPath="/api/reports/r6-absence"
       exportPath="/api/reports/r6-absence/export"
       columns={r6Columns}
@@ -695,7 +695,7 @@ export function R24BoardingPage() {
     <SupportingReportPage<BoardingRow>
       code="R24"
       title="Boarding & exits"
-      subtitle="Date-range joiners and exits; the daily slice drives the 07:00 plant email (LC-03)."
+      subtitle="Date-range joiners and exits; the daily slice drives the 07:00 plant email."
       listPath="/api/reports/r24-boarding"
       exportPath="/api/reports/r24-boarding/export"
       columns={r24Columns}
