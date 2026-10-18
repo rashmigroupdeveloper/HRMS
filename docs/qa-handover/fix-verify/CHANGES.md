@@ -57,6 +57,12 @@
   - `run-matrix.sh` runs `backend/tests/payroll-scenario-matrix.integration.test.ts` on a pristine scratch DB.
   - 49 cases: 40 payroll (proration, half days, sandwich, divisors, 26–25 cycle, joiner/leaver, PF actual/ceiling, ESIC ₹21k gate and period continuity, WB PT, TDS new/old/87A/marginal relief/surcharge, OT), 3 cycle-switch windows, holiday scope, 4 gratuity and 1 F&F.
 
+## Round: Kent feed → muster → payroll (job/payroll, owner bar #2, 2026-10-19 IST)
+- Gap fixed: a day with no swipe (absence, Sunday, holiday) never got a day record, so a month fed only by Kent could never pass the month-lock check `attendance_complete` and payroll could not run. New `queueMissingDays` / hourly worker job `attendance-materialize` (setting `att.materialize_lookback_days`, default 45) queues every employment day without a record outside locked periods; the normal recompute decides WO/H/A (A only once the location's doors are complete through shift end). `POST /api/attendance/recompute` also takes `{companyId, from, until}` (≤ 62 days, entity-scoped).
+- Fresh-install bug fixed (migration 1752700000200): stage-17 seeded `att.manager_approval_required_for_lock = false` before the settings seed, and the month-lock checklist refuses `false` ("repair the policy configuration"), so no month could be locked on a new install.
+- Muster LOP now equals the payroll deduction (shared `unpaidDayEquivalents`): half-day leave halves, sandwich rule, FIXED_26/WORKING_DAYS exclude week-offs. Before, a half-day CL with the other half worked showed 0.5 LOP but paid in full.
+- Scenario matrix +3 Kent cases (52 total): K01 June via the simulator (two doors, half day, single punch, short day, duplicate delivery, 16 Jun buffered and back-filled, a whole absent week forfeiting its Sunday) → 19.5/30; K02 26–25 cycle (after-cut-off punches stay unlocked, counted next month) → 28.5/31; K03 door without a location holds the absence and blocks the lock until HR maps it → 29/30. Each checks sync counts (fetched/inserted/dedupe/unmatched), every day status, the muster row and the payslip.
+
 ## E2E suite (job/e2e, test code only)
 - Suite is portable: app = repo root, ports 5104/5176, DB hrms_e2e, base = hrms_snapshot template (or /workspace/STATE/hrms_snapshot.dump), then migrate + seeds + recon prep + e2e-prep.sql.
 - e2e-prep.sql adds personas: hod@ (dept 4 head), hrops.rgh@ (RGH-scoped hr_ops), payroll.rgh@ (RGH payroll_admin), payroll.group@ (unscoped payroll_admin for group-wide statutory config). payroll@ is RML-scoped.

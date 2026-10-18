@@ -49,3 +49,4 @@ E2E (job/e2e, 01:40 IST 19-Oct): baseline on main c1cfe2c with the snapshot was 
 - Recon: `fix-verify/recon/run-recon.sh` → RECON PASS: MATCH 44, RML033625 net 59124 (baseline c1cfe2c and after every payroll round).
 - Matrix: `attendance-payroll/scripts/run-matrix.sh` → MATRIX PASS 49/49.
 - Item 4 done (cycle, divisor, sandwich, half-day, holidays per company/plant + import). Old-regime surcharge fixed. See CHANGES.md "payroll & attendance" round and CD-P1..P7.
+- Kent → muster → payroll (owner bar #2): no-swipe days materialised (hourly job + recompute API range), fresh-install month-lock blocker fixed (migration 1752700000200), muster LOP = payroll LOP. Matrix K01–K03 drive the simulator through adapter → ingest → lock → muster → payroll: MATRIX PASS 52/52.
