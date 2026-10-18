@@ -327,9 +327,6 @@ export function EssDashboard({
 <CardLink to="/my/pay" label="Open my pay" />
                 }
               />
-              <p className="text-sm leading-6 text-ink-muted">
-                Net pay, deductions and the PDF live on My Pay once the run is finalized.
-              </p>
             </Card>
           )}
         </div>

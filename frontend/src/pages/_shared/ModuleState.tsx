@@ -24,8 +24,8 @@ interface PendingModuleProps {
   action?: ReactNode;
 }
 
-export function PendingModule({ phase, description, action }: PendingModuleProps) {
-  // `task` / `endpoint` stay in the props for traceability in code review, but
+export function PendingModule({ description, action }: PendingModuleProps) {
+  // `phase` / `task` / `endpoint` stay in the props for traceability in code review, but
   // are never rendered: plan ids and API paths are build-team detail, not
   // something an employee or HR head should read (.impeccable critique P1).
   return (
@@ -34,7 +34,7 @@ export function PendingModule({ phase, description, action }: PendingModuleProps
         icon={<Hourglass />}
         title="Not live yet"
         description={description}
-        action={action ?? <Pill>Planned · {phase}</Pill>}
+        action={action ?? <Pill>Coming soon</Pill>}
       />
       <p className="mt-4 text-center text-sm leading-6 text-ink-muted">
         Nothing is shown here rather than numbers that were never computed. See{' '}
