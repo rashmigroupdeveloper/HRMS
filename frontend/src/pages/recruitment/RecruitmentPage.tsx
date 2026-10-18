@@ -49,7 +49,7 @@ export function RecruitmentPage() {
           What you will do here
         </p>
         <h2 className="mt-4 max-w-xl text-4xl font-light tracking-tight text-hero-ink">
-          Hiring already works. This page waits to bring it home.
+          Hiring is on its way to HRMS.
         </h2>
         <p className="mt-4 max-w-xl text-sm leading-7 text-hero-muted">
           You will run requisitions, interviews and offers here once hiring moves into HRMS. Until

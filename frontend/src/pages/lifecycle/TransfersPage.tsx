@@ -484,8 +484,8 @@ export function TransfersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Employee Movement & Transfers"
-        description="Manage department, plant, inter-entity company movements, and promotion grade revisions."
+        title="Transfers & promotions"
+        description="Move people between departments, plants and companies, and record grade changes."
         actions={
           <div className="flex items-center gap-2">
             <Button

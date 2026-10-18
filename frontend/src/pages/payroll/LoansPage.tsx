@@ -355,8 +355,8 @@ export function LoansPage() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Payroll & Benefits"
-        title="Staff Loans & Advances"
-        description="Transparent loan application, automated payroll EMI recovery, and immutable balance ledgers under Section 17(2)."
+        title="Loans & advances"
+        description="Apply for a loan or salary advance; EMIs are recovered through payroll and every balance change is recorded."
         actions={
           <div className="flex items-center gap-2">
             <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
