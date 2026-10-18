@@ -85,6 +85,10 @@ describe.skipIf(!DB_URL)('probation board scope', () => {
     expect(r.status).toBe(200);
     expect(r.body).toMatchObject({ noticePeriodDays: 30, category: null });
     expect((await call('get', 'head', '/api/lifecycle/separations/my-notice')).status).toBe(404);
+    const alum = (await call('get', 'emp', '/api/lifecycle/alumni/me')).body as { profile: { ecode: string }; settlement: unknown };
+    expect(alum.profile.ecode).toMatch(/B$/);
+    expect(alum.settlement).toBeNull();
+    expect((await call('get', 'head', '/api/lifecycle/alumni/me')).status).toBe(404);
     const units = (await call('get', 'head', '/api/core/org-units')).body as { orgUnits: { id: number; companyCode: string }[] };
     expect(units.orgUnits.length).toBeGreaterThan(1);
   });
