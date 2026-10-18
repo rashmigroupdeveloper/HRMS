@@ -12,7 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql, type Kysely } from 'kysely';
 import type { Database, DayStatus, SalaryComponentItem } from '../src/core/db/types.js';
 import { createDatabase } from '../src/core/db/database.js';
-import { addDaysIso } from '../src/core/dates.js';
+import { addDaysIso, formatDbDate } from '../src/core/dates.js';
 import { resolveAttendanceWindow } from '../src/core/db/attendance-cycle.js';
 import { findHoliday } from '../src/core/db/holiday-calendar.js';
 import { setSetting } from '../src/modules/settings/index.js';
@@ -20,6 +20,10 @@ import { PayrollRunService } from '../src/modules/payroll-core/runs/run.service.
 import { insertSalaryRevision } from '../src/modules/payroll-core/salaries/assignment.repository.js';
 import { calculateGratuity } from '../src/modules/payroll-core/fnf/gratuity-calculator.js';
 import { computeFnfSettlement } from '../src/modules/payroll-core/fnf/fnf-engine.js';
+import { createKentSimulator, KentHttpConnector, kentConfigFromEnv, lockMonth, queueMissingDays, runKentSync } from '../src/modules/attendance/index.js';
+import { drainRecomputeQueue } from '../src/modules/attendance/day-status.service.js';
+import { closeWeekOffs, weekStartOf } from '../src/core/db/attendance-period.js';
+import { buildMusterMonth } from '../src/modules/reports/muster.service.js';
 
 interface PayrollCase {
   id: string; kind: 'payroll'; title: string; month: string;
@@ -34,7 +38,16 @@ interface WindowCase { id: string; kind: 'window'; title: string; month: string;
 interface HolidayCase { id: string; kind: 'holiday'; title: string; holidays: { date: string; scope: 'group' | 'company' | 'plant' | 'location' }[]; expect: Record<string, string[]> }
 interface GratuityCase { id: string; kind: 'gratuity'; title: string; basic: number; doj: string; lwd: string; expect: { eligible: boolean; years: number; gratuity: number } }
 interface FnfCase { id: string; kind: 'fnf'; title: string; params: { basic: number; gross: number; daysPayable: number; elBalanceDays: number; shortfallDays: number; doj: string; lwd: string }; expect: Record<string, number> }
-type MatrixCase = PayrollCase | WindowCase | HolidayCase | GratuityCase | FnfCase;
+interface KentPunch { employeeNo: string; deviceId: string; punchTime: string; direction: 'in' | 'out'; receivedAt: string }
+interface KentCase {
+  id: string; kind: 'kent'; title: string; month: string; settings: Record<string, string | number | boolean>;
+  salary: Record<string, number>; shift: { start: string; end: string; break: number; full: number; half: number };
+  window: { from: string; until: string }; punches: KentPunch[]; backfill: KentPunch[]; unmappedDevice: boolean;
+  expect: Record<string, number>; expectDays: Record<string, string>; expectAfterCutoff: Record<string, string>;
+  expectMuster: Record<string, number>; expectSync: { firstFetched: number; firstInserted: number; secondInserted: number; thirdInserted: number; unmatched: string[] };
+  expectBlocked?: string[];
+}
+type MatrixCase = PayrollCase | WindowCase | HolidayCase | GratuityCase | FnfCase | KentCase;
 
 const matrix = JSON.parse(readFileSync(new URL('../../docs/qa-handover/attendance-payroll/scripts/scenario-matrix.json', import.meta.url), 'utf8')) as { cases: MatrixCase[] };
 const url = process.env['DATABASE_URL'];
@@ -135,6 +148,93 @@ async function runPayrollCase(db: Kysely<Database>, c: PayrollCase): Promise<Rec
   return actual;
 }
 
+const noSleep = () => Promise.resolve();
+
+/** Owner bar #2: Kent simulator → HTTP adapter → ingest → day status → materialise → week close → lock → muster → payroll. */
+async function runKentCase(db: Kysely<Database>, c: KentCase) {
+  const got: { sync: Record<string, unknown>; days: Record<string, string>; afterCutoff: Record<string, string>; blocked: string[]; muster: Record<string, number>; pay: Record<string, number> } =
+    { sync: {}, days: {}, afterCutoff: {}, blocked: [], muster: {}, pay: {} };
+  const sim = createKentSimulator({ apiKey: 'matrix-key', failEvery: 4 });
+  const port = await sim.listen();
+  try {
+    await inRollback(db, async (trx) => {
+      const tag = `KX${c.id}${String(Date.now()).slice(-6)}`;
+      await applySettings(trx, c.settings);
+      const o = await org(trx, tag);
+      const user = await trx.insertInto('core.users').values({ email: `${tag.toLowerCase()}@hrms.invalid`, password_hash: '!disabled!' }).returning('id').executeTakeFirstOrThrow();
+      const structure = await trx.insertInto('pay.salary_structures').values({ company_id: o.companyId, name: tag, components: sql<SalaryComponentItem[]>`${JSON.stringify([{ component_code: 'BASIC' }])}::jsonb` }).returning('id').executeTakeFirstOrThrow();
+      const ecode = `${tag}E`;
+      const emp = await trx.insertInto('core.employees').values({
+        company_id: o.companyId, ecode, first_name: c.id, status: 'active', doj: '2020-01-01' as never, location_id: o.locationId, plant_id: o.plantId,
+        pf_applicable: true, tax_regime: 'new', attendance_mode: 'biometric', biometric_registered: true,
+      }).returning('id').executeTakeFirstOrThrow();
+      await insertSalaryRevision(trx, { employee_id: emp.id, structure_id: structure.id, effective_from: '2020-01-01', annual_ctc: '1.00', phase: 'confirmed', component_amounts: Object.fromEntries(Object.entries(c.salary).map(([k, v]) => [k, v * 100])), revision_reason: 'joining', approved_by: user.id });
+      const shift = await trx.insertInto('att.shifts').values({ code: tag, name: tag, start_time: c.shift.start, end_time: c.shift.end, break_minutes: c.shift.break, min_full_day_hours: String(c.shift.full), min_half_day_hours: String(c.shift.half), grace_in_minutes: 10, grace_out_minutes: 10 }).returning('id').executeTakeFirstOrThrow();
+      await trx.insertInto('att.employee_shifts').values({ employee_id: emp.id, weekday_shift_id: shift.id, saturday_shift_id: shift.id }).execute();
+      // Admin → Attendance masters: the plant's doors (K03 leaves G1 unmapped).
+      const doors = { G1: `${tag}-G1`, G2: `${tag}-G2` };
+      await trx.insertInto('att.devices').values([
+        { door_code: doors.G1, location_id: c.unmappedDevice ? null : o.locationId },
+        { door_code: doors.G2, location_id: c.unmappedDevice ? null : o.locationId },
+      ]).execute();
+      // Isolate from devices other suites left behind (rolled back with the case).
+      await trx.updateTable('att.devices').set({ is_active: false }).where('door_code', 'not like', `${tag}-%`).where('is_active', '=', true).execute();
+
+      const cfg = kentConfigFromEnv({ KENT_BASE_URL: `http://127.0.0.1:${String(port)}`, KENT_API_KEY: 'matrix-key', KENT_PAGE_SIZE: '50', KENT_DEVICE_MAP: JSON.stringify(doors) });
+      if (!cfg) throw new Error('kent config');
+      const connector = new KentHttpConnector(cfg, undefined, noSleep); // simulator fails every 4th call → retries
+      const source = `kent-${tag.toLowerCase()}`;
+      const self = (p: KentPunch) => ({ ...p, employeeNo: p.employeeNo === 'SELF' ? ecode.toLowerCase() : p.employeeNo });
+      sim.add(c.punches.map(self));
+      const first = await runKentSync(trx, connector, source);
+      const now = Date.now();
+      const beat = (deviceId: string) => ({ employeeNo: 'KENTHB01', deviceId, punchTime: new Date(now - 60_000).toISOString(), direction: 'in' as const, receivedAt: new Date(now).toISOString() });
+      sim.add([...c.backfill.map(self), beat('G1'), beat('G2')]); // buffered punches + live doors today
+      const second = await runKentSync(trx, connector, source);
+      const third = await runKentSync(trx, connector, source);
+      got.sync = { firstFetched: first.fetched, firstInserted: first.inserted, secondInserted: second.inserted, thirdInserted: third.inserted, unmatched: second.unmatchedEmployeeNos };
+
+      const prepare = async () => {
+        await queueMissingDays(trx, { companyId: o.companyId, from: c.window.from, until: c.window.until });
+        await drainRecomputeQueue(trx);
+        for (let w = weekStartOf(c.window.from); w < c.window.until; w = addDaysIso(w, 7)) await closeWeekOffs(trx, w, 1, emp.id);
+      };
+      await prepare();
+      if (c.expectBlocked) {
+        const err = await lockMonth(trx, { companyId: o.companyId, month: c.month, actorUserId: user.id }).then(() => null, (e: unknown) => e);
+        got.blocked = err instanceof Error ? (/blocked: (.*)$/.exec(err.message)?.[1] ?? err.message).split(', ').sort() : [];
+        await trx.updateTable('att.devices').set({ location_id: o.locationId }).where('door_code', 'in', Object.values(doors)).execute(); // HR maps the door
+        await prepare();
+      }
+      await lockMonth(trx, { companyId: o.companyId, month: c.month, actorUserId: user.id });
+
+      const rows = await trx.selectFrom('att.day_records').select(['work_date', 'status', 'weekoff_paid', 'is_locked']).where('employee_id', '=', emp.id).orderBy('work_date').execute();
+      for (const r of rows) {
+        const iso = formatDbDate(r.work_date);
+        if (iso < c.window.from) continue; // a swipe also dirties the previous day (night-shift attribution)
+        if (iso < c.window.until) got.days[iso] = r.status === 'WO' && r.weekoff_paid === false ? 'WO:unpaid' : r.status;
+        else got.afterCutoff[iso] = r.is_locked ? `LOCKED:${r.status}` : r.status;
+      }
+      await buildMusterMonth(trx, o.companyId, c.month);
+      const m = await trx.selectFrom('reporting.muster_month').selectAll().where('company_id', '=', o.companyId).where('employee_id', '=', emp.id).executeTakeFirstOrThrow();
+      got.muster = { present: m.present, absent: m.absent, halfDays: m.half_days, weekoffs: m.weekoffs, weekoffsUnpaid: m.weekoffs_unpaid, lopDays: Number(m.lop_days) };
+
+      const service = new PayrollRunService(trx);
+      const runId = await service.createRun({ companyId: o.companyId, month: c.month, actorUserId: user.id });
+      await service.lockInputs(runId, user.id);
+      const result = await service.computeRun(runId, user.id);
+      expect(result.exceptions).toEqual([]);
+      const item = await trx.selectFrom('pay.payroll_items').selectAll().where('run_id', '=', runId).where('employee_id', '=', emp.id).executeTakeFirstOrThrow();
+      const lines = await trx.selectFrom('pay.payroll_item_lines').select(['component_code', 'amount']).where('item_id', '=', item.id).execute();
+      const line = (code: string) => Number(lines.find((l) => l.component_code === code)?.amount ?? 0);
+      got.pay = { days_in_month: Number(item.days_in_month), payable_days: Number(item.payable_days), gross: Number(item.gross), net: Number(item.net_pay), PF_EE: line('PF_EE'), ESI_EE: line('ESI_EE'), PT: line('PT'), TDS: line('TDS') };
+    });
+  } finally {
+    await sim.close();
+  }
+  return got;
+}
+
 describe.skipIf(!url)('Attendance → payroll scenario matrix', () => {
   let db: Kysely<Database>;
   beforeAll(() => { db = createDatabase(url ?? ''); });
@@ -142,7 +242,15 @@ describe.skipIf(!url)('Attendance → payroll scenario matrix', () => {
 
   for (const c of matrix.cases) {
     it(`${c.id} ${c.title}`, async () => {
-      if (c.kind === 'payroll') {
+      if (c.kind === 'kent') {
+        const got = await runKentCase(db, c);
+        expect(got.sync).toEqual(c.expectSync);
+        expect(got.days).toEqual(c.expectDays);
+        expect(got.afterCutoff).toEqual(c.expectAfterCutoff);
+        expect(got.blocked).toEqual(c.expectBlocked ?? []);
+        expect(got.muster).toEqual(c.expectMuster);
+        expect(Object.fromEntries(Object.keys(c.expect).map((k) => [k, got.pay[k]]))).toEqual(c.expect);
+      } else if (c.kind === 'payroll') {
         const actual = await runPayrollCase(db, c);
         const picked = Object.fromEntries(Object.keys(c.expect).map((k) => [k, actual[k]]));
         expect(picked).toEqual(c.expect);
