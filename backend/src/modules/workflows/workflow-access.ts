@@ -64,7 +64,7 @@ export function workflowPermissionSql(userId: Id, definition: Text, subjectId: I
 }
 
 /** Routing administration cannot grant consent, and readonly grants cannot repair it. */
-export function workflowAdministrationSql(userId: Id, subjectId: Id) {
+function workflowAdministrationSql(userId: Id, subjectId: Id) {
   return employeePermissionSql(userId, sql<string>`'admin.settings'`, subjectId);
 }
 
