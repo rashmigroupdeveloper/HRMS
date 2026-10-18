@@ -13,7 +13,7 @@
  *   employee without Form 11 data never loses EPS silently.
  * International workers follow the same membership rules; for them PF has no wage ceiling (engine).
  */
-export const EPS_CUTOFF_DATE = '2014-09-01';
+const EPS_CUTOFF_DATE = '2014-09-01';
 const EPS_WAGE_CEILING_PAISE = 1_500_000;
 
 export interface EpsEligibilityInput {

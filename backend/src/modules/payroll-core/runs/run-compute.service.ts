@@ -299,7 +299,7 @@ export async function computeLockedRun(
           wageBasis: resolvePfWageBasis(pfSetting, company.pf_wage_basis, emp.pf_wage_basis),
           internationalWorker: emp.international_worker,
           epsEligible: epsEligibility({
-            monthStart: monthStr, dob: emp.dob ? formatDbDate(emp.dob) : null, doj: emp.doj ? formatDbDate(emp.doj) : null,
+            monthStart: monthStr, dob: emp.dob ? formatDbDate(emp.dob) : null, doj: formatDbDate(emp.doj),
             epsEligible: emp.eps_eligible, memberBeforeSep2014: emp.epf_member_before_sep2014,
             firstEnrolledOn: emp.epf_first_enrolled_on ? formatDbDate(emp.epf_first_enrolled_on) : null,
             firstEnrolmentPfWagesPaise: emp.epf_first_wages !== null ? Math.round(Number(emp.epf_first_wages) * 100) : null,
