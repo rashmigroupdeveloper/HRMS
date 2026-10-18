@@ -69,8 +69,8 @@ test.describe('cross-entity writes are refused', () => {
     const problems: string[] = [];
     const tries: [string, Promise<import('@playwright/test').APIResponse>][] = [
       ['leave.adjust', c.post('/api/leave/adjustments', { employeeId: RGH_EMP, leaveType: 'CL', delta: 1, note: 'e2e cross-entity negative' })],
-      ['letters.issue', c.post('/api/letters/issue', { employeeId: RGH_EMP, templateCode: 'experience' })],
-      ['attendance.override', c.put('/api/attendance/days/override', { employeeId: RGH_EMP, workDate: '2026-10-05', status: 'P', reason: 'e2e cross-entity negative' })],
+      ['letters.issue', c.post('/api/letters/issue', { employeeId: RGH_EMP, templateCode: 'experience', extraFields: { dol: '2026-09-30' } })],
+      ['attendance.override', c.put('/api/attendance/days/override', { employeeId: RGH_EMP, date: '2026-10-05', status: 'P', reason: 'e2e cross-entity negative' })],
     ];
     for (const [id, p] of tries) { const r = await p; if (!DENY.includes(r.status())) problems.push(`${id}: ${r.status()} ${(await r.text()).slice(0, 140)}`); }
     expect(problems, problems.join('\n')).toEqual([]);

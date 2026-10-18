@@ -206,7 +206,7 @@ test(task('payroll_admin', 'P8', 'payroll settings page exists to edit statutory
   await s.nav('Payroll', '/payroll');
   await s.click(s.main().getByRole('link', { name: /payroll settings/i }).or(s.main().getByRole('button', { name: /payroll settings/i })).first());
   await expect(s.page, 'payroll settings route must not bounce to the dashboard').toHaveURL(/\/payroll\/settings/);
-  await expect(s.main()).toContainText(/professional tax|PT slab/i);
+  await expect(s.main()).toContainText(/professional.tax|PT slab/i);
   await expect(s.main()).toContainText(/provident fund|PF/);
 });
 

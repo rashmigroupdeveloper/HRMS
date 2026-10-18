@@ -10,7 +10,7 @@ import { test, expect, task } from '../../lib/fixtures';
 import { PERSONAS } from '../../lib/personas';
 type PersonaKey = keyof typeof PERSONAS;
 
-type T = { id: string; role: PersonaKey; title: string; nav: [string, string]; need: RegExp; control?: RegExp; tab?: RegExp; /** click this first; control is then looked up in the dialog */ open?: RegExp; /** open this combobox (in the dialog) before looking for the control among its options */ expand?: RegExp };
+type T = { id: string; role: PersonaKey; title: string; nav: [string, string]; need: RegExp; control?: RegExp; tab?: RegExp; /** click this first; control is then looked up in the dialog */ open?: RegExp; /** open this combobox (in the dialog) before looking for the control among its options */ expand?: RegExp; /** page renders outside the app shell (no <main>) */ standalone?: boolean; /** fill [textbox label, value] before `open` (e.g. Company ID, which no longer defaults) */ prefill?: [RegExp, string] };
 const DENIED = /missing permission|not allowed|access denied|don.t have|forbidden|not authori[sz]ed|no access/i;
 
 const TASKS: T[] = [
@@ -27,7 +27,7 @@ const TASKS: T[] = [
   { id: 'E17', role: 'employee', title: 'expense claim with bills', nav: ['My Claims', '/my/claims'], need: /claim/i, control: /new claim|submit claim|raise claim|add claim/i },
   { id: 'E19', role: 'employee', title: 'alumni portal (payslips/letters only)', nav: ['Alumni', '/alumni'], need: /payslip|letter|alumni/i },
   { id: 'E23', role: 'employee', title: 'mobile ESS home and geo check-in', nav: ['Home', '/'], need: /check.?in|punch/i, control: /check.?in/i },
-  { id: 'E24', role: 'employee', title: 'prejoin portal opens (link-gated)', nav: ['Prejoin', '/onboard/prejoin'], need: /link|token|invalid|expired|prejoin|application/i },
+  { id: 'E24', role: 'employee', title: 'prejoin portal opens (link-gated)', nav: ['Prejoin', '/onboard/prejoin'], need: /link|token|invalid|expired|prejoin|application/i, standalone: true },
   // Manager
   { id: 'M2', role: 'manager', title: 'approvals inbox lists AR/leave/OD types', nav: ['Approvals', '/approvals'], need: /approv/i },
   { id: 'M3', role: 'manager', title: 'OT decisions within 48h', nav: ['OT Decisions', '/my/team/overtime'], need: /overtime|\bOT\b/i },
@@ -57,7 +57,7 @@ const TASKS: T[] = [
   { id: 'O8', role: 'hr_ops_rml', title: 'recompute attendance for a range', nav: ['Attendance', '/attendance'], need: /attendance/i, control: /recompute/i },
   { id: 'O9', role: 'hr_ops_rml', title: 'month-lock checklist and lock', nav: ['Month lock', '/attendance/month-lock'], need: /checklist|lock/i, control: /lock|run checklist/i },
   { id: 'O10', role: 'hr_ops_rml', title: 'absence cases → show-cause', nav: ['Absence cases', '/attendance/absence-cases'], need: /absence|show.?cause/i },
-  { id: 'O11', role: 'hr_ops_rml', title: 'muster 26th–25th with Excel export', nav: ['Muster', '/attendance/muster'], need: /muster/i, open: /^rebuild & view$/i, control: /export|excel|download/i },
+  { id: 'O11', role: 'hr_ops_rml', title: 'muster 26th–25th with Excel export', nav: ['Muster', '/attendance/muster'], need: /muster/i, prefill: [/Company ID/i, '1'], open: /^rebuild & view$/i, control: /export|excel|download/i },
   { id: 'O12', role: 'hr_ops_rml', title: 'leave types, accrual, adjustments', nav: ['Leave', '/leave'], need: /accrual|adjust|leave type/i, control: /adjust|accrual|run/i },
   { id: 'O14', role: 'hr_ops_rml', title: 'onboarding board and prejoin link', nav: ['Onboarding', '/lifecycle/onboarding'], need: /onboard|candidate/i },
   { id: 'O15', role: 'hr_ops_rml', title: 'onboarding task follow-up', nav: ['Onboarding', '/lifecycle/onboarding'], need: /task/i },
@@ -81,7 +81,7 @@ const TASKS: T[] = [
   { id: 'HH8', role: 'hr_head', title: 'executive dashboards', nav: ['Executive', '/executive'], need: /headcount|attrition/i },
   { id: 'HH9', role: 'hr_head', title: 'org masters and entity statutory IDs', nav: ['Masters', '/admin/masters'], need: /compan|entity|department/i },
   // Payroll
-  { id: 'P1', role: 'payroll_admin', title: 'components/structures + G1 sample preview', nav: ['Payroll', '/payroll/structures'], need: /structure|component/i, control: /preview|create structure/i },
+  { id: 'P1', role: 'payroll_admin', title: 'components/structures + G1 sample preview', nav: ['Payroll', '/payroll/structures'], need: /structure|component/i, control: /preview|create structure|new structure|ctc simulator/i },
   { id: 'P2', role: 'payroll_admin', title: 'salary assignment and revisions', nav: ['Payroll', '/payroll/revisions'], need: /revision|CTC|salary/i },
   { id: 'P3', role: 'payroll_admin', title: 'probation % salary', nav: ['Payroll', '/payroll/structures'], need: /probation/i },
   { id: 'P6', role: 'payroll_admin', title: 'holds, LOP reversal', nav: ['Payroll', '/payroll'], need: /hold|LOP/i, open: /June 2026 RML/ },
@@ -132,10 +132,11 @@ for (const t of TASKS) {
     }
     await s.page.waitForLoadState('networkidle').catch(() => {});
     expect(new URL(s.page.url()).pathname, `${t.id}: ${t.nav[1]} must not redirect away`).toBe(t.nav[1]);
-    const main = s.main();
+    const main = t.standalone ? s.page.locator('body') : s.main();
     await expect(main).not.toContainText(DENIED, { timeout: 3000 });
-    if (t.tab) await s.click(main.getByRole('tab', { name: t.tab }));
+    if (t.tab) await s.click(main.getByRole('tab', { name: t.tab }).or(main.getByRole('button', { name: t.tab })).first());
     await expect(main, `${t.id}: screen ${t.nav[1]} must show ${t.need}`).toContainText(t.need, { timeout: 6000 });
+    if (t.prefill) await s.fill(main.getByRole('textbox', { name: t.prefill[0] }).first(), t.prefill[1]);
     if (t.open) await s.click(main.getByRole('button', { name: t.open }).first());
     if (t.control && t.open && await s.page.getByRole('dialog').last().isVisible().catch(() => false)) {
       const dlg = s.page.getByRole('dialog').last();

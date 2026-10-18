@@ -23,18 +23,18 @@ test.describe('approval chains', () => {
     const m = await as('manager');
     await m.step('Reject without a note is blocked', async () => {
       await m.nav('Approvals', '/approvals');
-      await m.click(m.main().getByRole('button', { name: new RegExp(`Debajit Roy.*Leave.*SL · ${r1.label}`, 's') }).first());
+      await m.click(m.main().getByRole('button', { name: new RegExp(`Debajit Roy.*Leave.*SL · ${r1.rx}`, 's') }).first());
       await m.click(m.main().getByRole('button', { name: /^Reject$/ }));
       await expect(m.main().getByText(/required|add a note|reason/i).first()).toBeVisible();
-      await expect(m.main().getByRole('button', { name: new RegExp(`Debajit Roy.*SL · ${r1.label}`, 's') })).toBeVisible();
+      await expect(m.main().getByRole('button', { name: new RegExp(`Debajit Roy.*SL · ${r1.rx}`, 's') })).toBeVisible();
     });
     await m.step('Reject with a note', async () => {
-      await decide(m, new RegExp(`Debajit Roy.*Leave.*SL · ${r1.label}`, 's'), 'Reject', 'E2E: critical audit that day, please re-plan');
+      await decide(m, new RegExp(`Debajit Roy.*Leave.*SL · ${r1.rx}`, 's'), 'Reject', 'E2E: critical audit that day, please re-plan');
       await m.expectToast(/reject|decision|recorded/i);
     });
     await e.step('employee sees "rejected" and the reason', async () => {
       await e.goto('/my/leave');
-      const row = e.main().getByRole('listitem').filter({ hasText: new RegExp(`SL · ${r1.label}`) });
+      const row = e.main().getByRole('listitem').filter({ hasText: new RegExp(`SL · ${r1.rx}`) });
       await expect(row).toContainText(/rejected/i);
       await e.click(row.getByRole('link'));
       await expect(e.main()).toContainText(/critical audit/);

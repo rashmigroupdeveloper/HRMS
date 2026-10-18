@@ -15,7 +15,10 @@ export async function choose(s: Session, combo: Locator, option: string | RegExp
 /** DatePicker trigger button → calendar day button named like "28 Oct 2026". */
 export async function pickDate(s: Session, trigger: Locator, dayLabel: string) {
   await s.click(trigger);
-  const day = s.page.getByRole('button', { name: dayLabel, exact: true }).last();
+  // Day cells are labelled "02 Nov 2026" (2-digit day) or "2 Nov 2026" depending on the formatter: accept both.
+  const m = /^0?(\d{1,2}) (.+)$/.exec(dayLabel);
+  const name = m ? new RegExp(`^0?${m[1]} ${m[2].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) : dayLabel;
+  const day = s.page.getByRole('button', { name, exact: typeof name === 'string' }).last();
   // Walk the calendar towards the target month (past dates go back, future dates go forward).
   const target = new Date(`${dayLabel} UTC`);
   const back = !Number.isNaN(target.getTime()) && target.getTime() < Date.now() - 86_400_000;

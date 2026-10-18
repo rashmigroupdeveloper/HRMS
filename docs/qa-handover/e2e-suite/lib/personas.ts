@@ -70,7 +70,8 @@ export const PERSONAS: Record<string, Persona> = {
     key: 'payroll_admin', role: 'payroll_admin', email: 'payroll@rashmi.test', ecode: 'RML000004', name: 'Subhasis Panda',
     nav: ['Dashboard', 'Payroll'],
     allowed: ['/', '/payroll', '/payroll/structures', '/payroll/revisions', '/payroll/parallel-run', '/loans', '/claims', '/reports'],
-    forbidden: ['/admin/users', '/executive', '/admin/workflows'],
+    // /admin/workflows is reachable: docs/08 grants payroll_admin admin.settings (payroll policies) and admin.settings authorizes chain edits.
+    forbidden: ['/admin/users', '/executive'],
   },
   plant_head: {
     key: 'plant_head', role: 'plant_head', email: 'planthead@rashmi.test', ecode: 'RML000005', name: 'Sapikul Ali',
