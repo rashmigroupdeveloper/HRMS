@@ -59,6 +59,8 @@ const PayrollPage = lazy(() => import('../pages/payroll/PayrollPage').then((m) =
 const SalaryStructuresPage = lazy(() => import('../pages/payroll/SalaryStructuresPage').then((m) => ({ default: m.SalaryStructuresPage })));
 const SalaryRevisionsPage = lazy(() => import('../pages/payroll/SalaryRevisionsPage').then((m) => ({ default: m.SalaryRevisionsPage })));
 const ParallelRunPage = lazy(() => import('../pages/payroll/ParallelRunPage').then((m) => ({ default: m.ParallelRunPage })));
+const TaxDeclarationPage = lazy(() => import('../pages/tax/TaxDeclarationPage').then((m) => ({ default: m.TaxDeclarationPage })));
+const TdsCompliancePage = lazy(() => import('../pages/tax/TdsCompliancePage').then((m) => ({ default: m.TdsCompliancePage })));
 const MyPayPage = lazy(() => import('../pages/payroll/MyPayPage').then((m) => ({ default: m.MyPayPage })));
 const ClaimsPage = lazy(() => import('../pages/payroll/ClaimsPage').then((m) => ({ default: m.ClaimsPage })));
 const LoansPage = lazy(() => import('../pages/payroll/LoansPage').then((m) => ({ default: m.LoansPage })));
@@ -93,6 +95,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="my/attendance" element={<MyAttendancePage />} />
         <Route path="my/leave" element={<MyLeavePage />} />
         <Route path="my/pay" element={<MyPayPage />} />
+        <Route path="my/tax" element={<TaxDeclarationPage />} />
         <Route path="my/claims" element={<ClaimsPage />} />
         <Route path="my/team" element={<TeamPage user={user} />} />
         <Route path="my/team/overtime" element={<OtDecisionsPage />} />
@@ -109,6 +112,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
 
         <Route path="leave" element={<LeaveAdminPage />} />
         <Route path="payroll" element={<PayrollPage user={user} />} />
+        <Route path="payroll/tds" element={<TdsCompliancePage />} />
         <Route path="payroll/structures" element={<SalaryStructuresPage />} />
         <Route path="payroll/revisions" element={<SalaryRevisionsPage />} />
         <Route path="payroll/parallel-run" element={<ParallelRunPage />} />

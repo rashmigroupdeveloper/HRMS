@@ -30,6 +30,7 @@ import { claimsRouter } from '../modules/claims/index.js';
 import { travelRouter } from '../modules/travel/index.js';
 import { coreRouter, mastersRouter } from '../modules/core/index.js';
 import { bulkRouter, employeeMasterRouter } from '../modules/bulk/index.js';
+import { tdsRouter } from '../modules/tds/index.js';
 
 export const appRouter = {
   system: systemRouter,
@@ -66,6 +67,7 @@ export const appRouter = {
   travel: travelRouter,
   bulk: bulkRouter,
   employeeMaster: employeeMasterRouter,
+  tds: tdsRouter,
 };
 
 export type AppRouter = typeof appRouter;

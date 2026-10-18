@@ -47,7 +47,7 @@ const REFERENCES: Record<MasterKind, readonly [string, string][]> = {
 };
 
 /** Company statutory registration formats (India). null = valid. */
-export const COMPANY_ID_RULES: Record<string, [RegExp, string]> = {
+const COMPANY_ID_RULES: Record<string, [RegExp, string]> = {
   pan: [/^[A-Z]{3}[ABCFGHLJPT][A-Z]\d{4}[A-Z]$/, 'Company PAN must look like AABCR1234K'],
   tan: [/^[A-Z]{4}\d{5}[A-Z]$/, 'TAN must look like CALR12345A'],
   gstin: [/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/, 'GSTIN must be 15 characters like 19AABCR1234K1Z5'],

@@ -59,7 +59,7 @@ export async function listPendingFamilyChanges(db: Db, employeeId: number) {
 }
 
 /** Validates a change against the current family; returns the normalized member values. */
-export async function validateFamilyChange(db: Db, employeeId: number, change: FamilyChange): Promise<FamilyMemberInput | null> {
+async function validateFamilyChange(db: Db, employeeId: number, change: FamilyChange): Promise<FamilyMemberInput | null> {
   const existing = await db.selectFrom('core.employee_family').selectAll().where('employee_id', '=', employeeId).execute();
   if (change.action !== 'add') {
     if (change.memberId === undefined || !existing.some((e) => e.id === change.memberId)) throw new NotFoundError('Family member not found');

@@ -114,6 +114,7 @@ export function navForUser(user: SessionUser): NavItem[] {
   }
   if (hasPermission(user, 'employee.compensation.read') && !isOps) {
     push({ label: 'My Pay', to: '/my/pay', icon: Wallet });
+    push({ label: 'My Tax', to: '/my/tax', icon: ReceiptText });
   }
   if (!isOps && !isCeo && !isIt) {
     push({ label: 'My Claims', to: '/my/claims', icon: ReceiptText });
@@ -196,6 +197,9 @@ export function navForUser(user: SessionUser): NavItem[] {
   // Payroll
   if (hasPermission(user, 'payroll.run.view') || hasPermission(user, 'payroll.run.manage')) {
     push({ label: 'Payroll', to: '/payroll', match: '/payroll', icon: Banknote });
+  }
+  if (hasPermission(user, 'payroll.run.view')) {
+    push({ label: 'TDS compliance', to: '/payroll/tds', icon: ReceiptText });
   }
   if (
     hasPermission(user, 'payroll.run.manage') || hasPermission(user, 'payroll.reports')
