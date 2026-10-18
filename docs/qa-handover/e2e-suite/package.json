@@ -1,0 +1,25 @@
+{
+  "name": "hrms-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "End-to-end UI + API test suite for Rashmi HRMS (Playwright, TypeScript)",
+  "scripts": {
+    "e2e": "bash scripts/run-all.sh",
+    "test": "playwright test",
+    "test:api": "playwright test --project=api",
+    "report": "tsx scripts/build-results.ts",
+    "show-report": "playwright show-report reports/html",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^22.15.0",
+    "@types/pg": "^8.23.1",
+    "exceljs": "^4.4.0",
+    "pg": "^8.23.1",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0"
+  }
+}

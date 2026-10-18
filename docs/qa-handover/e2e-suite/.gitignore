@@ -1,0 +1,7 @@
+node_modules/
+reports/
+.logs/
+.storage/
+.explore/
+test-results/
+.app
