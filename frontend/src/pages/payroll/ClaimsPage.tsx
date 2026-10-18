@@ -412,9 +412,9 @@ export function ClaimsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Employee Claims & Reimbursements"
-        title="Reimbursements & Claims"
-        description="Submit expenses against grade entitlement limits with multi-bill verification and flexible payroll or off-cycle payout routing."
+        eyebrow="Claims"
+        title="Reimbursements"
+        description="Claim expenses within your grade limits. Approved claims are paid with payroll or off-cycle."
         actions={
           <div className="flex items-center gap-2">
             <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">

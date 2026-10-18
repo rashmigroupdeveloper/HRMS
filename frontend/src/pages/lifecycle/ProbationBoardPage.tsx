@@ -345,8 +345,8 @@ export function ProbationBoardPage({ user }: { user?: SessionUser | undefined } 
     <div className="space-y-8">
       <PageHeader
         eyebrow="Lifecycle / Probation"
-        title="Probation Review & Confirmation Board"
-        description="Automated due date alerts (-30d, -14d, -7d), manager evaluations, 100% CTC salary transition upon confirmation, and instant confirmation letter generation."
+        title="Probation"
+        description="Reviews due in the next 30 days, manager evaluations and confirmations — the confirmation letter and full salary follow automatically."
       />
 
       {/* Upcoming alerts — the 14-day queue is today's one gold figure. */}

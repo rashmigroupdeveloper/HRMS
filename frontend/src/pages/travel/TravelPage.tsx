@@ -498,8 +498,8 @@ export function TravelPage() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Travel & Expense"
-        title="Business Travel & Expense Settlement"
-        description="Raise travel itineraries, disburse advances into the immutable wallet ledger, capture multi-currency receipts, and settle to the exact rupee."
+        title="Business travel"
+        description="Plan trips, take an advance, add receipts and settle what you spent."
         actions={
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => void loadData()}>

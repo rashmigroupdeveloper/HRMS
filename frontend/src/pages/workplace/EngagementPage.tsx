@@ -137,8 +137,8 @@ export function EngagementPage({ user }: { user?: SessionUser }) {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Engagement"
-        title="Workplace Communication"
-        description="Targeted announcements, cryptographic anonymous pulse polls, and structured workplace surveys."
+        title="Engagement"
+        description="Announcements, anonymous pulse polls and surveys for the people you choose."
         actions={
           <div className="flex items-center gap-2">
             <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
