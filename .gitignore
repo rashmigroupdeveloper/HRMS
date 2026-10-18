@@ -32,3 +32,4 @@ coverage/
 backend/var/
 docs/qa-handover/fix-verify/recon/out/
 __pycache__/
+docs/qa-handover/attendance-payroll/scripts/out/

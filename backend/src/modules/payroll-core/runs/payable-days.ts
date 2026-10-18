@@ -26,7 +26,7 @@
 import type { DayStatus } from '../../../core/db/types.js';
 import { addDaysIso } from '../../../core/dates.js';
 
-export const LOP_DIVISORS = ['CALENDAR', 'FIXED_30', 'FIXED_26', 'WORKING_DAYS'] as const;
+const LOP_DIVISORS = ['CALENDAR', 'FIXED_30', 'FIXED_26', 'WORKING_DAYS'] as const;
 export type LopDivisor = (typeof LOP_DIVISORS)[number];
 
 export function parseLopDivisor(value: string): LopDivisor {

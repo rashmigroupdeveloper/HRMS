@@ -200,6 +200,7 @@ function computeNewRegimeTax(taxableIncomePaise: Paise): AnnualTaxResult {
  *  - 5,00,001 to 10,00,000: 20%
  *  - Above 10,00,000: 30%
  *  - 87A rebate: max ₹12,500 if income <= ₹5,00,000
+ *  - Surcharge 10% > ₹50L, 15% > ₹1Cr, 25% > ₹2Cr, 37% > ₹5Cr, with marginal relief
  *  - 4% cess
  */
 function computeOldRegimeTax(taxableIncomePaise: Paise): AnnualTaxResult {
@@ -239,14 +240,29 @@ function computeOldRegimeTax(taxableIncomePaise: Paise): AnnualTaxResult {
   }
 
   const netTaxAfterRebate = Math.max(0, baseTaxPaise - rebate87aPaise);
-  const cessPaise = paise(Math.round(netTaxAfterRebate * 0.04));
-  const totalTaxWithCessPaise = paise(netTaxAfterRebate + cessPaise);
+
+  // Surcharge (old regime: 10% > 50L, 15% > 1Cr, 25% > 2Cr, 37% > 5Cr) with marginal relief:
+  // tax + surcharge may not exceed the tax at the threshold (with its lower surcharge) plus the income above it.
+  let surchargePaise = paise(0);
+  const bands: [Paise, number][] = [[paise(5000000000), 37], [paise(2000000000), 25], [paise(1000000000), 15], [paise(500000000), 10]];
+  const band = bands.find(([threshold]) => taxableIncomePaise > threshold);
+  if (band) {
+    const [threshold, pct] = band;
+    surchargePaise = mulDiv(paise(netTaxAfterRebate), pct, 100);
+    const atThreshold = computeOldRegimeTax(threshold);
+    const ceiling = atThreshold.baseTaxPaise - atThreshold.rebate87aPaise + atThreshold.surchargePaise + (taxableIncomePaise - threshold);
+    if (netTaxAfterRebate + surchargePaise > ceiling) surchargePaise = paise(Math.max(0, ceiling - netTaxAfterRebate));
+  }
+
+  const taxBeforeCess = netTaxAfterRebate + surchargePaise;
+  const cessPaise = paise(Math.round(taxBeforeCess * 0.04));
+  const totalTaxWithCessPaise = paise(taxBeforeCess + cessPaise);
 
   return {
     taxableIncomePaise,
     baseTaxPaise,
     rebate87aPaise,
-    surchargePaise: paise(0),
+    surchargePaise,
     cessPaise,
     totalTaxWithCessPaise,
   };

@@ -42,3 +42,9 @@ New directives queued (parent steering 23:21–23:27):
   Importers: payroll inputs/recoveries (+Report 4 layout), parallel-run register (Report 4), salary assignment/revision, employee master,
   punches (Kent EmployeeSwipeDetails layout), leave balance adjustments, loans, statutory rates/PT slabs, holidays, assets, F&F inputs (SOW-221).
 - DOCS_READ §D items 1–18.
+
+## Update 19-Oct IST (job/payroll)
+- PG17 on the box (see /workspace/STATE/ENV.md). DBs: hrms_base (stage-1 template), hrms_snapshot (June-2026 runs 4/5 finalized, rebuilt by fix-verify/seed), hrms_recon/fix/ui/e2e, hrms_test_blank (pristine test template).
+- Recon: `fix-verify/recon/run-recon.sh` → RECON PASS: MATCH 44, RML033625 net 59124 (baseline c1cfe2c and after every payroll round).
+- Matrix: `attendance-payroll/scripts/run-matrix.sh` → MATRIX PASS 49/49.
+- Item 4 done (cycle, divisor, sandwich, half-day, holidays per company/plant + import). Old-regime surcharge fixed. See CHANGES.md "payroll & attendance" round and CD-P1..P7.

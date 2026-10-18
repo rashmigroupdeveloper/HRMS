@@ -14,7 +14,7 @@
 import { sql, type Kysely, type RawBuilder } from 'kysely';
 import type { Database } from './types.js';
 
-export const CYCLE_START_SETTING = 'att.cycle_start_day';
+const CYCLE_START_SETTING = 'att.cycle_start_day';
 
 export function assertCycleStartDay(value: unknown): number {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 1 || value > 28)

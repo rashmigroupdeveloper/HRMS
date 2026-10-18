@@ -17,7 +17,7 @@ import { withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
-import { resolveHolidayScope, upsertScopedHoliday } from '../../core/db/holiday-calendar.js';
+import { holidayAppliesSql, loadHolidaySubject, resolveHolidayScope, upsertScopedHoliday } from '../../core/db/holiday-calendar.js';
 import { assertCompanyInScope } from '../../core/rbac/company-scope.js';
 import { assertEmployeesInScope } from '../../core/rbac/employee-scope.js';
 import {
@@ -172,7 +172,12 @@ const holidayRow = z.object({
 
 const listHolidays = withPermission('attendance.own')
   .route({ method: 'GET', path: '/attendance/config/holidays', summary: 'Holiday calendar (ESS-readable; group, company, plant or location scope)' })
-  .input(z.object({ year: z.coerce.number().int().optional(), companyId: z.coerce.number().int().positive().optional() }).optional())
+  .input(z.object({
+    year: z.coerce.number().int().optional(),
+    companyId: z.coerce.number().int().positive().optional(),
+    /** Only the holidays that apply to the caller's own company / plant / location (ESS calendar). */
+    mine: booleanQuery().optional(),
+  }).optional())
   .output(z.array(holidayRow))
   .handler(async ({ input, context }) => {
     let q = context.db.selectFrom('att.holidays').selectAll().orderBy('holiday_date').orderBy('id');
@@ -184,6 +189,11 @@ const listHolidays = withPermission('attendance.own')
     if (input?.companyId) {
       const companyId = input.companyId;
       q = q.where((eb) => eb.or([eb('company_id', 'is', null), eb('company_id', '=', companyId)]));
+    }
+    if (input?.mine) {
+      const employeeId = context.user.employee_id;
+      if (employeeId === null) return [];
+      q = q.where(holidayAppliesSql('att.holidays', await loadHolidaySubject(context.db, employeeId)));
     }
     const rows = await q.execute();
     return rows.map((r) => ({
