@@ -8,7 +8,10 @@ import { DomainError } from '../../../core/errors/index.js';
 import { type Paise, paise, toRupees, parseRupees, decimalRupees, add } from '../../../core/money/index.js';
 import { getTypedSetting } from '../../settings/index.js';
 import { validateRunTransition } from './run-state-machine.js';
-import { readLockedPayableDays } from './attendance.repository.js';
+import { readLockedDayFacts } from './attendance.repository.js';
+import { evaluatePayableDays, parseLopDivisor } from './payable-days.js';
+import { resolveAttendanceWindow } from '../../../core/db/attendance-cycle.js';
+import { readPlannedOffDays } from '../../../core/db/holiday-calendar.js';
 import { computeEmployeePayroll, computeProfessionalTax, type ComponentMetadata, type RecoveryInput } from '../engine/compute-engine.js';
 import { SalaryHoldsService } from '../holds/holds.service.js';
 import { salarySnapshotToPaise } from '../salaries/salary-snapshot.js';
@@ -55,8 +58,8 @@ export async function computeLockedRun(
 
   const monthStr = formatDbDate(run.month);
   const [year = 0, month = 0] = monthStr.split('-').map(Number);
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const monthUntil = addDaysIso(monthStr, daysInMonth);
+  const calendarDays = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const monthUntil = addDaysIso(monthStr, calendarDays);
   const attendanceLock = await trx
     .selectFrom('att.month_locks')
     .select('id')
@@ -72,6 +75,10 @@ export async function computeLockedRun(
   const pfSetting = await getTypedSetting<string>(trx, 'pay.pf_wage_base', 'string', 'ACTUAL');
   const lwfInPayroll = await getTypedSetting<boolean>(trx, 'pay.lwf_deduct_in_payroll', 'boolean', false);
   const negativeNetPolicy = await getTypedSetting<string>(trx, 'pay.negative_net_policy', 'string', 'carry_forward');
+  // Item 4 (C-16/C-17/C-28): LOP divisor, attendance cycle and sandwich policy.
+  const lopDivisor = parseLopDivisor(await getTypedSetting<string>(trx, 'pay.lop_divisor', 'string', 'CALENDAR'));
+  const sandwichRule = await getTypedSetting<boolean>(trx, 'att.sandwich_rule', 'boolean', false);
+  const attWindow = await resolveAttendanceWindow(trx, run.company_id, monthStr);
   const company = await trx.selectFrom('core.companies').select(['pf_wage_basis']).where('id', '=', run.company_id).executeTakeFirstOrThrow();
   const fy = financialYear(monthStr);
   const esicStart = esicPeriodStart(monthStr);
@@ -167,7 +174,22 @@ export async function computeLockedRun(
       const m = catalog.get(code);
       return m?.kind === 'earning' && m.partOfGross ? add(s, v) : s;
     }, paise(0));
-    const payableDays = await readLockedPayableDays(trx, emp.id, from, until);
+    // Attendance facts come from the cycle window (clipped to employment); pay-month
+    // days after the cycle cut-off are paid as assumed present.
+    const attFrom = doj > attWindow.from ? doj : attWindow.from;
+    const attUntil = exitUntil < attWindow.until ? exitUntil : attWindow.until;
+    const facts = await readLockedDayFacts(trx, emp.id, attFrom, attUntil);
+    const needsCalendar = lopDivisor === 'FIXED_26' || lopDivisor === 'WORKING_DAYS';
+    const { daysInMonth, payableDays } = evaluatePayableDays({
+      divisor: lopDivisor,
+      sandwich: sandwichRule,
+      monthFrom: monthStr,
+      monthUntil,
+      employedFrom: from,
+      employedUntil: until,
+      facts,
+      plannedOffDays: needsCalendar ? await readPlannedOffDays(trx, emp.id, monthStr, monthUntil) : new Set<string>(),
+    });
 
     // P-06: approved, unconsumed OT in the period is paid and consumed.
     const otRows = await trx
@@ -177,8 +199,8 @@ export async function computeLockedRun(
       .where('status', '=', 'approved')
       .where('payroll_item_id', 'is', null)
       .where('comp_off_credit_id', 'is', null)
-      .where('work_date', '>=', sql<Date>`${from}::date`)
-      .where('work_date', '<', sql<Date>`${until}::date`)
+      .where('work_date', '>=', sql<Date>`${attFrom}::date`)
+      .where('work_date', '<', sql<Date>`${attUntil}::date`)
       .execute();
     const otMinutes = otRows.reduce((s, r) => s + (r.approved_minutes ?? 0), 0);
 

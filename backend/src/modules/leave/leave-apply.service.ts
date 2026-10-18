@@ -104,14 +104,15 @@ export async function applyLeaveOnFinal(db: Db, request: RequestRow, status: Wor
 
   const employee = await db.selectFrom('core.employees').select(['id', 'location_id']).where('id', '=', app.employee_id).executeTakeFirstOrThrow();
   const { span } = await computeLeaveSpan(db, employee, type, formatDbDate(app.from_date), formatDbDate(app.to_date), app.from_half, app.to_half);
-  // Full day → L (or CO for comp-off); half-day edge → HD so payroll's HD×0.5
-  // pays the leave half. (The single-status day model can't also record a
-  // worked other-half — the two-session refinement, docs/09 §4, covers that.)
+  // Full day → L (or CO for comp-off); half-day edge → HD + leave type: payroll pays
+  // the leave half (if paid) plus the other half when its punches show it worked.
   const fullStatus = type.code === 'CO' ? ('CO' as const) : ('L' as const);
   for (const day of span.filter((d) => d.writesRecord)) {
+    // A half day keeps the recorded punches/sessions of the other half so a worked
+    // half is paid alongside the leave half (item 4); a full day clears them.
     const row = {
       status: day.isHalf ? ('HD' as const) : fullStatus,
-      session_statuses: null,
+      ...(day.isHalf ? {} : { session_statuses: null }),
       leave_type_id: app.leave_type_id,
       source: 'regularized' as const,
       computed_at: new Date(),

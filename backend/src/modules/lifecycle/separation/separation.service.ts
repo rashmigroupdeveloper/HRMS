@@ -15,6 +15,7 @@
  *    in one transaction, then the LC-07 exit-day cascade.
  */
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
+import { loadCycleStartDay, periodMonthOf } from '../../../core/db/attendance-cycle.js';
 import type { Database, SeparationsTable } from '../../../core/db/types.js';
 import { addDaysIso, formatDbDate, istDateString } from '../../../core/dates.js';
 import { writeAudit } from '../../../core/audit/audit.service.js';
@@ -387,11 +388,13 @@ export class SeparationService {
     } else if (params.daysPayable !== undefined) {
       daysPayable = params.daysPayable;
     } else {
+      // C-17: the lock covering the LWD is the payroll month of its attendance cycle.
+      const lockMonth = periodMonthOf(lwdStr, await loadCycleStartDay(this.db));
       const lock = await this.db
         .selectFrom('att.month_locks')
         .select('id')
         .where('company_id', '=', employee.company_id)
-        .where('month', '=', sql<Date>`${monthStart}::date`)
+        .where('month', '=', sql<Date>`${lockMonth}::date`)
         .executeTakeFirst();
       const from = formatDbDate(employee.doj) > monthStart ? formatDbDate(employee.doj) : monthStart;
       daysPayable = lock ? await readLockedPayableDays(this.db, employee.id, from, addDaysIso(lwdStr, 1)) : dayDiff(from, lwdStr) + 1;

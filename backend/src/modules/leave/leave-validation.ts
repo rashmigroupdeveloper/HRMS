@@ -3,6 +3,7 @@ import { DomainError } from '../../core/errors/index.js';
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { addDaysIso } from '../../core/dates.js';
+import { findHoliday, loadHolidaySubject } from '../../core/db/holiday-calendar.js';
 import { getLeaveType, getBalance, type LeaveTypeRow } from './leave-core.service.js';
 type Db = Kysely<Database>;
 
@@ -30,17 +31,9 @@ export async function computeLeaveSpan(
   toHalf: boolean,
 ): Promise<{ days: number; span: SpanDay[] }> {
   const span: SpanDay[] = [];
+  const who = await loadHolidaySubject(db, employee.id);
   for (let iso = fromDate; iso <= toDate; iso = addDaysIso(iso, 1)) {
-    const holiday = await db
-      .selectFrom('att.holidays')
-      .select('id')
-      .where('holiday_date', '=', sql<Date>`${iso}::date`)
-      .where((eb) =>
-        employee.location_id === null
-          ? eb('location_id', 'is', null)
-          : eb.or([eb('location_id', 'is', null), eb('location_id', '=', employee.location_id)]),
-      )
-      .executeTakeFirst();
+    const holiday = await findHoliday(db, who, iso);
     let offDay = holiday !== undefined;
     if (!offDay) {
       const roster = await db
