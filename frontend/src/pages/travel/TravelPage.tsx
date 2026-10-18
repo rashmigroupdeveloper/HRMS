@@ -277,7 +277,7 @@ export function TravelPage() {
       key: 'reference',
       header: 'Reference',
       render: (r: TripItem) => (
-        <span className="font-mono text-xs font-semibold text-accent">{r.referenceNo}</span>
+        <span className="font-mono text-xs font-semibold text-ink">{r.referenceNo}</span>
       ),
     },
     {
@@ -355,7 +355,7 @@ export function TravelPage() {
       header: 'Amount',
       numeric: true,
       render: (r: AdvanceItem) => (
-        <span className="font-mono text-xs font-semibold text-accent">
+        <span className="font-mono text-xs font-semibold text-ink">
           ₹{(r.amountPaise / 100).toLocaleString('en-IN')}
         </span>
       ),
@@ -382,7 +382,7 @@ export function TravelPage() {
     {
       key: 'referenceNo',
       header: 'Claim Ref',
-      render: (r: ClaimItem) => <span className="font-mono text-xs font-semibold text-accent">{r.referenceNo}</span>,
+      render: (r: ClaimItem) => <span className="font-mono text-xs font-semibold text-ink">{r.referenceNo}</span>,
     },
     {
       key: 'totalClaimed',

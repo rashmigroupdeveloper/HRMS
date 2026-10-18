@@ -629,7 +629,7 @@ export function SalaryStructuresPage() {
                           {code}
                         </span>
                         <ArrowRight className="size-3 ml-auto text-ink-subtle" />
-                        <span className="font-mono font-medium text-accent">
+                        <span className="font-mono font-medium text-ink">
                           ₹{(breakup.monthly[code] ?? 0).toLocaleString('en-IN')}
                         </span>
                       </div>

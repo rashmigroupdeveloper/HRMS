@@ -70,3 +70,4 @@ export type { CalendarDay } from './calendar';
 export { CardLink } from './CardLink';
 export { StatusStrip } from './StatusStrip';
 export type { StripSegment, StripTone } from './StatusStrip';
+export { PersonCell } from './PersonCell';

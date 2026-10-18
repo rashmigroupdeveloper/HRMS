@@ -5,7 +5,7 @@ import { dayPortionLabel } from '../attendance/attendance-portion';
 import { useState } from 'react';
 import { apiFetch } from '../../lib/api';
 import { Send } from 'lucide-react';
-import { Button, Drawer, formatDateIN, TextField, StatusBadge, toast, type Column } from '../../ui';
+import { Button, Drawer, PersonCell, formatDateIN, TextField, StatusBadge, toast, type Column } from '../../ui';
 import { SupportingReportPage } from './SupportingReportPage';
 import { qs } from './report-utils';
 
@@ -52,10 +52,7 @@ const r2Columns: Column<R2Row>[] = [
     header: 'Employee',
     width: 'minmax(160px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={r.ecode} />
     ),
   },
   { key: 'date', header: 'Date', width: '110px', render: (r) => formatDateIN(r.workDate) },
@@ -218,10 +215,7 @@ const r3Columns: Column<R3Row>[] = [
     header: 'Employee',
     width: 'minmax(150px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={r.ecode} />
     ),
   },
   { key: 'kind', header: 'Kind', width: '110px', render: (r) => r.kind },
@@ -334,10 +328,7 @@ const r4Columns: Column<R4Row>[] = [
     header: 'Employee',
     width: 'minmax(160px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={r.ecode} />
     ),
   },
   { key: 'date', header: 'Date', width: '110px', render: (r) => formatDateIN(r.workDate) },
@@ -419,10 +410,7 @@ const r5Columns: Column<R5Row>[] = [
     header: 'Employee',
     width: 'minmax(150px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={r.ecode} />
     ),
   },
   { key: 'date', header: 'Date', width: '110px', render: (r) => formatDateIN(r.workDate) },
@@ -546,10 +534,7 @@ const r6Columns: Column<R6Row>[] = [
     header: 'Employee',
     width: 'minmax(150px,1.2fr)',
     render: (r) => (
-      <div>
-        <p className="font-semibold text-ink">{r.employeeName}</p>
-        <p className="text-xs text-ink-muted">{r.ecode}</p>
-      </div>
+      <PersonCell name={r.employeeName} sub={r.ecode} />
     ),
   },
   { key: 'start', header: 'Start', width: '110px', render: (r) => formatDateIN(r.startDate) },

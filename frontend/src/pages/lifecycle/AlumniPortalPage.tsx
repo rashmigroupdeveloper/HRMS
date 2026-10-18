@@ -78,7 +78,7 @@ export function AlumniPortalPage() {
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-auto text-xs text-ink-muted bg-surface-1 px-3 py-2 rounded-lg border border-line">
-            <Shield className="h-4 w-4 text-accent-positive" />
+            <Shield className="h-4 w-4 text-positive-ink" />
             <span>Restricted Alumni Self-Service Access</span>
           </div>
         </div>
@@ -99,7 +99,7 @@ export function AlumniPortalPage() {
           </div>
           <div>
             <div className="text-ink-muted">Final Settlement Paid</div>
-            <div className="font-semibold text-accent-positive mt-0.5">{profile.settlementDate}</div>
+            <div className="font-semibold text-positive-ink mt-0.5">{profile.settlementDate}</div>
           </div>
         </div>
       </div>
@@ -115,7 +115,7 @@ export function AlumniPortalPage() {
             <div className="p-4 rounded-xl bg-surface-2 border border-line space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FileCheck className="h-5 w-5 text-accent-positive" />
+                  <FileCheck className="h-5 w-5 text-positive-ink" />
                   <span className="font-medium text-sm text-ink">Relieving Letter (Ref: RML/REL/2024/091)</span>
                 </div>
                 <StatusBadge tone="positive">Issued</StatusBadge>
@@ -184,7 +184,7 @@ export function AlumniPortalPage() {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-ink-muted">Statutory Gratuity Included:</span>
-                <span className="font-semibold text-accent-positive">₹1,67,639.00 (Golden G8)</span>
+                <span className="font-semibold text-positive-ink">₹1,67,639.00 (Golden G8)</span>
               </div>
             </div>
             <Button
