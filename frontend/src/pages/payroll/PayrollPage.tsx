@@ -173,7 +173,7 @@ export function PayrollPage({ user }: { user: SessionUser }) {
   function exportRegister() {
     if (!run) return;
     const head = 'ecode,name,payable_days,lop_days,gross,deductions,net,employer_cost,status';
-    const rows = items.map((i) => [i.ecode, `"${i.name}"`, i.payableDays, i.lopDays, i.grossRupees, i.deductionsRupees, i.netRupees, i.employerCostRupees, i.paymentStatus].join(','));
+    const rows = items.map((i) => [i.ecode, `"${(/^[=+\-@]/.test(i.name) ? `'${i.name}` : i.name).replace(/"/g, '""')}"`, i.payableDays, i.lopDays, i.grossRupees, i.deductionsRupees, i.netRupees, i.employerCostRupees, i.paymentStatus].join(','));
     download(`${company?.code ?? 'run'}-${run.month.slice(0, 7)}-register.csv`, [head, ...rows].join('\n'));
   }
 

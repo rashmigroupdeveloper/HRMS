@@ -93,3 +93,11 @@ export function isFormulaLike(value: string): boolean {
 export function formulaSafe(value: string): string {
   return isFormulaLike(value) && !/^[+-]?[\d\s().]+$/.test(value) ? `'${value}` : value;
 }
+
+/** One RFC 4180 CSV field, quoted and formula-safe (MNC hardening: CSV injection guard). */
+export function csvCell(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number') return String(value);
+  const safe = formulaSafe(value);
+  return `"${safe.replace(/"/g, '""')}"`;
+}

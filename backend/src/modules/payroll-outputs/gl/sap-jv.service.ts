@@ -11,6 +11,7 @@
 import type { Kysely } from 'kysely';
 import type { Database } from '../../../core/db/types.js';
 import { createDocument } from '../../../core/storage/index.js';
+import { csvCell } from '../../../core/bulk/index.js';
 
 export interface SapJvLine {
   glCode: string;
@@ -265,7 +266,7 @@ export class SapJvService {
     const csvRows = jvLines
       .map(
         (l) =>
-          `"${l.glCode}","${l.glDescription}","${l.costCenterCode}",${l.debitRupees.toFixed(2)},${l.creditRupees.toFixed(2)},${l.postingType}`
+          `${csvCell(l.glCode)},${csvCell(l.glDescription)},${csvCell(l.costCenterCode)},${l.debitRupees.toFixed(2)},${l.creditRupees.toFixed(2)},${l.postingType}`
       )
       .join('\n');
     const csvTotals = `\n"TOTAL","BALANCE CHECK","ALL",${totalDebits.toFixed(2)},${totalCredits.toFixed(2)},${isBalanced ? 'BALANCED' : 'UNBALANCED'}\n`;
