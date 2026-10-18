@@ -31,13 +31,12 @@ export function DeviceHealthDashboard({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow={todayLongIST()}
-        title={title}
-        description="Kent doors, last contact and per-device ingestion watermarks. Month lock waits on every expected door."
-      />
-
       <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+        <PageHeader
+          eyebrow={todayLongIST()}
+          title={title}
+          description="Kent doors, last contact and per-device ingestion watermarks. Month lock waits on every expected door."
+        />
         <HeadlineStats
           stats={[
             { label: 'Active devices', value: active.length, icon: <RadioTower /> },

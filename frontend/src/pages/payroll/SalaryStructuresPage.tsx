@@ -409,7 +409,7 @@ export function SalaryStructuresPage() {
         <Card>
           <CardHeader
             title="Salary Components Master"
-            subtitle="Seeded with live RML ground truth (09-RECON §2): Basic, HRA 50%, fixed Medical/Education, Special balancing."
+            subtitle="Basic, HRA at 50%, fixed Medical and Education, with Special as the balancing head."
           />
           <div className="p-4">
             <DataTable<SalaryComponent>

@@ -165,7 +165,7 @@ export function SupportingReportPage<T extends object>({
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-sm text-ink-muted">{code} · Stage 1 report</p>
+        <p className="text-sm text-ink-muted">{code}</p>
         <h1 className="mt-1 text-4xl font-light tracking-tight text-ink">{title}</h1>
         <p className="mt-1 text-sm text-ink-muted">{subtitle}</p>
       </header>
