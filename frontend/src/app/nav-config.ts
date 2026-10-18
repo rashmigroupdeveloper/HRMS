@@ -13,6 +13,7 @@
  */
 import type { LucideIcon } from 'lucide-react';
 import {
+  Building2,
   BarChart3,
   Banknote,
   CalendarCheck,
@@ -250,6 +251,9 @@ export function navForUser(user: SessionUser): NavItem[] {
         icon: SlidersHorizontal,
       }),
     );
+  }
+  if (hasPermission(user, 'org.masters.manage')) {
+    push(grouped('Admin', { label: 'Org masters', to: '/admin/org-masters', icon: Building2 }));
   }
   if (hasPermission(user, 'employee.write')) {
     push(grouped('Admin', { label: 'Heads of department', to: '/admin/department-heads', icon: Network }));

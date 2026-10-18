@@ -13,6 +13,7 @@
  * silently grants the wrong person a role, which is exactly the failure this
  * console exists to prevent.
  */
+import { SessionsPanel } from './SessionsPanel';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { KeyRound, Search, ShieldCheck, UserRoundCog } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
@@ -53,7 +54,7 @@ function domainOf(permission: string): string {
 }
 
 export function AccessControlPage() {
-  const [tab, setTab] = useState<'permissions' | 'people'>('permissions');
+  const [tab, setTab] = useState<'permissions' | 'people' | 'sessions'>('permissions');
 
   return (
     <div className="space-y-6">
@@ -87,10 +88,19 @@ export function AccessControlPage() {
           >
             People
           </Button>
+          <Button
+            size="sm"
+            variant={tab === 'sessions' ? 'primary' : 'ghost'}
+            onClick={() => {
+              setTab('sessions');
+            }}
+          >
+            Sessions
+          </Button>
         </div>
       </header>
 
-      {tab === 'permissions' ? <PermissionGrid /> : <PeoplePanel />}
+      {tab === 'permissions' ? <PermissionGrid /> : tab === 'people' ? <PeoplePanel /> : <SessionsPanel />}
     </div>
   );
 }

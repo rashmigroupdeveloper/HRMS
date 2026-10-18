@@ -3,7 +3,7 @@
  * This object's shape IS the API; the OpenAPI spec is generated from it.
  */
 import { systemRouter } from '../modules/system/index.js';
-import { authRouter } from '../modules/auth/index.js';
+import { authRouter, sessionsRouter } from '../modules/auth/index.js';
 import { settingsRouter } from '../modules/settings/index.js';
 import { rbacRouter } from '../modules/rbac/index.js';
 import {
@@ -13,7 +13,7 @@ import {
   absenceRouter,
 } from '../modules/attendance/index.js';
 import { workflowsRouter } from '../modules/workflows/index.js';
-import { employeesRouter } from '../modules/employees/index.js';
+import { employeesRouter, familyRouter } from '../modules/employees/index.js';
 import { leaveRouter } from '../modules/leave/index.js';
 import { lettersRouter } from '../modules/letters/index.js';
 import { policiesRouter } from '../modules/policies/index.js';
@@ -28,13 +28,15 @@ import { payrollOutputsRouter } from '../modules/payroll-outputs/index.js';
 import { loansRouter } from '../modules/loans/index.js';
 import { claimsRouter } from '../modules/claims/index.js';
 import { travelRouter } from '../modules/travel/index.js';
-import { coreRouter } from '../modules/core/index.js';
-import { bulkRouter } from '../modules/bulk/index.js';
+import { coreRouter, mastersRouter } from '../modules/core/index.js';
+import { bulkRouter, employeeMasterRouter } from '../modules/bulk/index.js';
 
 export const appRouter = {
   system: systemRouter,
   core: coreRouter,
+  masters: mastersRouter,
   auth: authRouter,
+  sessions: sessionsRouter,
   settings: settingsRouter,
   rbac: rbacRouter,
   attendance: {
@@ -45,6 +47,7 @@ export const appRouter = {
   },
   workflows: workflowsRouter,
   employees: employeesRouter,
+  family: familyRouter,
   leave: leaveRouter,
   letters: lettersRouter,
   policies: policiesRouter,
@@ -62,6 +65,7 @@ export const appRouter = {
   claims: claimsRouter,
   travel: travelRouter,
   bulk: bulkRouter,
+  employeeMaster: employeeMasterRouter,
 };
 
 export type AppRouter = typeof appRouter;

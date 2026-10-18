@@ -31,6 +31,7 @@ export async function login(
   identifier: string, // email OR employee e-code
   password: string,
   ip: string | null,
+  userAgent: string | null = null,
 ): Promise<LoginResult> {
   const attempt = async (tx: Kysely<Database>): Promise<LoginResult> => {
     const user = await findUserByIdentifier(tx, identifier, true);
@@ -72,7 +73,7 @@ export async function login(
     await recordLoginSuccess(tx, user.id);
     await writeAudit(tx, { actorUserId: user.id, action: 'login', entity: 'core.users', entityId: user.id, ip });
 
-    const pair = await createSession(tx, user, jwtSecret, ip, await readAuthPolicy(tx));
+    const pair = await createSession(tx, user, jwtSecret, ip, await readAuthPolicy(tx), userAgent);
     return { ok: true, user, ...pair };
   };
   return db.isTransaction ? attempt(db) : inTransaction(db, attempt);

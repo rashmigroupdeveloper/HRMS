@@ -1,3 +1,4 @@
+import { registerEmployeesWorkflowHooks } from './modules/employees/index.js';
 import { sql } from 'kysely';
 import { registerLoansWorkflowHooks } from './modules/loans/index.js';
 import { registerTravelWorkflowHooks } from './modules/travel/index.js';
@@ -94,6 +95,7 @@ export function createApp(deps?: Partial<AppDeps>): Express {
   registerLeaveWorkflowHooks();
   registerLettersWorkflowHooks();
   registerLifecycleWorkflowHooks();
+  registerEmployeesWorkflowHooks();
   registerTravelWorkflowHooks();
   registerLoansWorkflowHooks();
 

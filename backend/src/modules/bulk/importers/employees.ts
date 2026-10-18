@@ -222,6 +222,7 @@ export const employeesImporter: BulkImporter<NoCtx> = {
           status: 'active', contract_type: (opt(v['contract_type']) ?? 'probationary') as 'probationary',
         } as never).returning('id').executeTakeFirstOrThrow();
         await writeAudit(trx, { actorUserId: actor.userId, action: 'create', entity: 'core.employees', entityId: inserted.id, field: ecode, newValue: 'created via bulk import', ip: actor.ip });
+        v['created_ecode'] = ecode;
         created++;
       }
       if ((i + 1) % 100 === 0) await progress(i + 1);
