@@ -98,7 +98,7 @@ export function ProbationBoardPage({ user }: { user?: SessionUser | undefined } 
   const [evalForm, setEvalForm] = useState({
     recommendation: 'confirm' as 'confirm' | 'extend' | 'separate',
     extensionMonths: '3',
-    reviewNotes: 'Demonstrated exceptional performance and adherence to plant safety standards.',
+    reviewNotes: '',
     ratingCompetence: '5',
     ratingAttendance: '5',
     ratingTeamwork: '4',
@@ -111,10 +111,10 @@ export function ProbationBoardPage({ user }: { user?: SessionUser | undefined } 
   const [decisionForm, setDecisionForm] = useState({
     outcome: 'confirmed' as 'confirm' | 'extend' | 'separate' | 'confirmed' | 'extended' | 'separated',
     confirmationDate: new Date().toISOString().slice(0, 10),
-    confirmedAnnualCtc: '600000',
+    confirmedAnnualCtc: '',
     salaryStructureId: '',
     extensionMonths: '3',
-    decisionNotes: 'Confirmed after comprehensive evaluation and manager recommendation.',
+    decisionNotes: '',
   });
 
   const filterSelectId = useId();
@@ -156,7 +156,7 @@ export function ProbationBoardPage({ user }: { user?: SessionUser | undefined } 
     setEvalForm({
       recommendation: r.managerRecommendation ?? 'confirm',
       extensionMonths: String(r.extensionMonths ?? 3),
-      reviewNotes: r.reviewNotes ?? 'Employee has completed training objectives satisfactorily.',
+      reviewNotes: r.reviewNotes ?? '',
       ratingCompetence: '5',
       ratingAttendance: '5',
       ratingTeamwork: '4',
@@ -198,10 +198,10 @@ export function ProbationBoardPage({ user }: { user?: SessionUser | undefined } 
     setDecisionForm({
       outcome: initialOutcome,
       confirmationDate: r.dueDate,
-      confirmedAnnualCtc: '600000',
+      confirmedAnnualCtc: '',
       salaryStructureId: structureOptions[0]?.value ?? '',
       extensionMonths: String(r.extensionMonths ?? 3),
-      decisionNotes: `Approved based on manager evaluation (${r.reviewNotes ?? 'Satisfactory completion'}).`,
+      decisionNotes: '',
     });
     setDecisionOpen(true);
   };

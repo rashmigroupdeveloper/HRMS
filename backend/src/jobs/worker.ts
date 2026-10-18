@@ -23,6 +23,7 @@ import {
   lapseExpiredOvertime,
   registerAttendanceWorkflowHooks,
   runAbsenceScan,
+  kentConnectorFromEnv,
   runKentSync,
   sendOvertimeSummaries,
 } from '../modules/attendance/index.js';
@@ -170,7 +171,9 @@ async function main(): Promise<void> {
   // Every 5 minutes (ATT-01: ≤5 min lag). One pending run at a time.
   await boss.schedule(KENT_SYNC_QUEUE, '*/5 * * * *');
   await boss.work(KENT_SYNC_QUEUE, async () => {
-    await runKentSync(db);
+    const connector = kentConnectorFromEnv();
+    if (!connector) { logger.warn('kent-sync skipped: KENT_BASE_URL not configured (docs/integrations/KENT.md)'); return; }
+    await runKentSync(db, connector);
   });
 
   // Safety-net drain each minute — catches roster edits between sync cycles (ATT-03).
