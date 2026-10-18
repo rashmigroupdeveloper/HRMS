@@ -23,6 +23,9 @@ type Row = {
   error: string; ux?: any; diag: any[]; repro: string[]; a11y: any[]; shots: string[]; trace?: string; steps: string[];
 };
 const json = JSON.parse(fs.readFileSync(RES, 'utf8'));
+// Second pass (E2E_CONC=1) writes its own JSON; fold its suites in when present and newer than the main pass.
+const CONC_RES = path.join(ROOT, 'reports/results-concurrency.json');
+if (fs.existsSync(CONC_RES) && fs.statSync(CONC_RES).mtimeMs >= fs.statSync(RES).mtimeMs) json.suites.push(...(JSON.parse(fs.readFileSync(CONC_RES, 'utf8')).suites ?? []));
 const rows: Row[] = [];
 const strip = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
 function stepTitles(steps: any[] | undefined, depth = 0, out: string[] = []) {

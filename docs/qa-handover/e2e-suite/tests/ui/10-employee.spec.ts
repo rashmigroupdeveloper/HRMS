@@ -26,16 +26,16 @@ test.describe('employee self-service', () => {
     await s.step('send to manager and see it in motion', async () => {
       await s.click(dlg.getByRole('button', { name: 'Send to my manager' }));
       await s.expectToast(/sent|submitted|applied|manager/i);
-      await expect(s.main().getByRole('link', { name: new RegExp(`CL · ${d1.label}`) })).toBeVisible();
+      await expect(s.main().getByRole('link', { name: new RegExp(`CL · ${d1.rx}`) })).toBeVisible();
     });
     const m = await as('manager');
     await m.step('manager approves it from the Approvals inbox', async () => {
-      await decide(m, new RegExp(`Priya Sharma.*Leave.*CL · ${d1.label}`, 's'), 'Approve');
+      await decide(m, new RegExp(`Priya Sharma.*Leave.*CL · ${d1.rx}`, 's'), 'Approve');
       await m.expectToast(/approved|decision|recorded/i);
     });
     await s.step('employee sees the leave approved', async () => {
       await s.page.reload(); await s.page.waitForLoadState('networkidle');
-      await expect(s.main().getByRole('listitem').filter({ hasText: new RegExp(`CL · ${d1.label}`) })).toContainText(/approved/i);
+      await expect(s.main().getByRole('listitem').filter({ hasText: new RegExp(`CL · ${d1.rx}`) })).toContainText(/approved/i);
     });
   });
 
@@ -203,8 +203,8 @@ test.describe('employee — other cohort members', () => {
     });
     const dlg = s.page.getByRole('dialog').last();
     await s.step('fill reason + last working day and submit', async () => {
-      await expect(dlg.getByRole('textbox', { name: /Employee ID/ }), 'form is pre-filled with MY employee identity').not.toHaveValue('301');
-      await s.fill(dlg.getByRole('textbox', { name: /Requested Last Working Day/ }), '2026-12-31');
+      await expect(dlg.getByLabel('Employee', { exact: true }), 'form is pre-filled with MY employee identity (no hard-coded id)').toHaveValue(/RML033924/);
+      await s.fill(dlg.getByLabel(/Requested Last Working Day/), '2026-12-31');
       await s.fill(dlg.getByRole('textbox', { name: 'Reason for Resignation' }), 'E2E: relocating to Pune for family reasons');
       await s.click(dlg.getByRole('button', { name: 'Submit Resignation' }));
       await s.expectToast(/resignation|submitted/i);

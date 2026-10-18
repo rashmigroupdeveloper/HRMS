@@ -87,7 +87,11 @@ test.describe('account security', () => {
     const it = await as('it_admin');
     await it.step('IT admin finds the locked account in Users & Roles and unlocks it', async () => {
       await it.nav(/Users|Access/i, '/admin/users');
-      await it.fill(it.main().getByRole('textbox').first(), AUTH_TEST_USERS.lockout);
+      // Login accounts panel (E2E-006): "Find an account" search; open the Accounts tab when it is not the default.
+      const accountsTab = it.main().getByRole('button', { name: /^(login )?accounts$/i });
+      if (await accountsTab.isVisible().catch(() => false)) await it.click(accountsTab);
+      const find = it.main().getByRole('textbox', { name: /find an account/i });
+      await it.fill((await find.isVisible({ timeout: 3000 }).catch(() => false)) ? find : it.main().getByRole('textbox').first(), AUTH_TEST_USERS.lockout);
       await it.click(it.main().getByRole('button', { name: /unlock/i }).first());
     });
     await s.step('user can sign in after unlock', async () => {
