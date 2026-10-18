@@ -88,7 +88,7 @@ export function DeviceHealthDashboard({
             description="Register expected Kent doors before enabling attendance finalisation."
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" role="region" aria-label="Kent doors table" tabIndex={0}>
             <table className="w-full min-w-[680px] border-separate border-spacing-y-2 text-left">
               <thead>
                 <tr className="text-xs text-ink-muted">

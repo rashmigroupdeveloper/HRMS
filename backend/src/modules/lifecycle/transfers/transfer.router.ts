@@ -12,9 +12,15 @@
  */
 
 import { z } from 'zod';
+import type { Kysely } from 'kysely';
 import { withPermission } from '../../../api/orpc.js';
+import type { Database } from '../../../core/db/types.js';
+import { ConflictError, NotFoundError } from '../../../core/errors/index.js';
+import type { PermissionAccess } from '../../../core/rbac/permissions.service.js';
+import { assertEmployeesInScope, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
+import { requireCompanyInScope } from '../../../core/rbac/company-scope.js';
 import {
-  createTransferRequest,
+  submitTransferForApproval,
   approveTransferRequest,
   rejectTransferRequest,
   getEmployeeHistoryTimeline,
@@ -23,6 +29,23 @@ import {
 } from './transfer.service.js';
 
 const guard = () => withPermission('lifecycle.transfers.manage');
+
+interface ScopeContext {
+  db: Kysely<Database>;
+  permissionAccess: PermissionAccess;
+  user: { employee_id: number | null };
+}
+
+/** B-16 / C-16: every transfer action is bounded by the caller's employee scope. */
+function scopeOf(context: ScopeContext): EmployeeScope {
+  return { ...context.permissionAccess, actorEmployeeId: context.user.employee_id };
+}
+
+async function requireTransferInScope(context: ScopeContext, transferId: number): Promise<void> {
+  const row = await context.db.selectFrom('core.transfers').select('employee_id').where('id', '=', transferId).executeTakeFirst();
+  if (!row) throw new NotFoundError('Transfer request not found');
+  await assertEmployeesInScope(context.db, scopeOf(context), [row.employee_id]);
+}
 
 const transferShape = z.object({
   id: z.number(),
@@ -62,6 +85,7 @@ const transferShape = z.object({
   leaveTreatment: z.enum(['transfer', 'encash']),
   reason: z.string(),
   remarks: z.string().nullable(),
+  workflowRequestId: z.number().nullable(),
   approvedBy: z.number().nullable(),
   approvedAt: z.string().nullable(),
   notifiedAt: z.string().nullable(),
@@ -91,7 +115,7 @@ export const transferRouter = {
       }),
     )
     .handler(async ({ context, input }) => {
-      return await listTransfers(context.db, input ?? {});
+      return await listTransfers(context.db, { ...(input ?? {}), scope: scopeOf(context) });
     }),
 
   // 2. Create transfer / promotion request
@@ -121,7 +145,12 @@ export const transferRouter = {
       }),
     )
     .handler(async ({ context, input }) => {
-      return await createTransferRequest(
+      await assertEmployeesInScope(context.db, scopeOf(context), [input.employeeId]);
+      // Moving someone INTO another entity needs authority over that entity too.
+      if (input.targetCompanyId !== undefined && input.targetCompanyId !== null) {
+        await requireCompanyInScope(context, input.targetCompanyId);
+      }
+      return await submitTransferForApproval(
         context.db,
         input,
         context.user.id,
@@ -144,6 +173,12 @@ export const transferRouter = {
       }),
     )
     .handler(async ({ context, input }) => {
+      await requireTransferInScope(context, input.id);
+      const chained = await context.db.selectFrom('core.transfers').select('workflow_request_id').where('id', '=', input.id).executeTakeFirst();
+      if ((chained?.workflow_request_id ?? null) !== null) {
+        // C-17: RM then HR approve in the inbox; HR cannot shortcut the chain here.
+        throw new ConflictError('This transfer is decided through its approval chain (Approvals inbox), not directly');
+      }
       return await approveTransferRequest(
         context.db,
         input.id,
@@ -167,6 +202,11 @@ export const transferRouter = {
       }),
     )
     .handler(async ({ context, input }) => {
+      await requireTransferInScope(context, input.id);
+      const chained = await context.db.selectFrom('core.transfers').select(['workflow_request_id', 'status']).where('id', '=', input.id).executeTakeFirst();
+      if (chained !== undefined && chained.workflow_request_id !== null && chained.status === 'pending') {
+        throw new ConflictError('This transfer is decided through its approval chain (Approvals inbox), not directly');
+      }
       return await rejectTransferRequest(
         context.db,
         input.id,
@@ -206,6 +246,7 @@ export const transferRouter = {
       }),
     )
     .handler(async ({ context, input }) => {
+      await assertEmployeesInScope(context.db, scopeOf(context), [input.employeeId]);
       const history = await getEmployeeHistoryTimeline(context.db, input.employeeId);
       return { history };
     }),
@@ -237,6 +278,7 @@ export const transferRouter = {
       }),
     )
     .handler(async ({ context, input }) => {
+      await assertEmployeesInScope(context.db, scopeOf(context), [input.employeeId]);
       return await getEmployeeAsOfDate(context.db, input.employeeId, input.asOfDate);
     }),
 };

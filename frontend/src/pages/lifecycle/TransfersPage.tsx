@@ -83,6 +83,8 @@ interface TransferItem {
   remarks: string | null;
   approvedBy: number | null;
   approvedAt: string | null;
+  /** C-17: decided by RM → HR in the Approvals inbox, not from this table. */
+  workflowRequestId?: number | null;
   notifiedAt: string | null;
   createdAt: string;
 }
@@ -210,11 +212,14 @@ export function TransfersPage() {
 
   const handleApprove = async (id: number) => {
     try {
-      const res = await apiFetch<{ success: boolean; newEcode: string | null }>(
+      const res = await apiFetch<{ success: boolean; newEcode: string | null; scheduled?: boolean }>(
         `/api/lifecycle/transfers/${String(id)}/approve`,
         { method: 'POST' },
       );
-      if (res.success) {
+      if (res.success && res.scheduled === true) {
+        toast.success('Transfer approved', { description: 'It takes effect on its effective date.' });
+        void loadTransfers();
+      } else if (res.success) {
         toast.success('Transfer Approved & Committed', {
           description: res.newEcode
             ? `Inter-entity transfer executed. New e-code: ${res.newEcode}`
@@ -419,12 +424,14 @@ export function TransfersPage() {
       header: 'Status',
       render: (r) => {
         const tone: StatusTone =
-          r.status === 'completed' || r.status === 'approved'
+          r.status === 'completed'
             ? 'positive'
+            : r.status === 'approved'
+            ? 'info'
             : r.status === 'rejected'
             ? 'negative'
             : 'warning';
-        return <StatusBadge tone={tone}>{r.status.toUpperCase()}</StatusBadge>;
+        return <StatusBadge tone={tone}>{r.status === 'approved' ? 'SCHEDULED' : r.status.toUpperCase()}</StatusBadge>;
       },
     },
     {
@@ -443,7 +450,10 @@ export function TransfersPage() {
             History
           </Button>
 
-          {r.status === 'pending' && (
+          {r.status === 'pending' && (r.workflowRequestId ?? null) !== null && (
+            <StatusBadge tone="info">In approval chain</StatusBadge>
+          )}
+          {r.status === 'pending' && (r.workflowRequestId ?? null) === null && (
             <>
               <Button
                 size="sm"

@@ -402,6 +402,7 @@ export interface TransfersTable {
   transfer_type: TransferType;
   effective_date: Timestamp;
   status: Generated<TransferStatus>;
+  workflow_request_id: number | null;
   current_company_id: number;
   current_department_id: number | null;
   current_location_id: number | null;

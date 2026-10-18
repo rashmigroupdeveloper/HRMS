@@ -384,7 +384,7 @@ export function ExecutivePage() {
             subtitle="The pptx table, column for column. Contract reads “Phase 4” until that module exists — it is never estimated."
           />
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" role="region" aria-label="Manpower and demographics table" tabIndex={0}>
           <div className="min-w-max p-6 pt-2">
             <div
               className="grid text-sm"

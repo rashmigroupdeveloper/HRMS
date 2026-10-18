@@ -40,7 +40,7 @@ const STATE_SHELL: Record<PillState, string> = {
 
 const STATE_LABEL: Record<PillState, string> = {
   filled: 'text-hero-muted',
-  accent: 'text-[color-mix(in_srgb,var(--accent-ink)_65%,transparent)]',
+  accent: 'text-[color-mix(in_srgb,var(--accent-ink)_80%,transparent)]',
   hatched: 'text-ink-muted',
   outline: 'text-ink-muted',
 };

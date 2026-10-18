@@ -175,14 +175,16 @@ export function AppShell({ user, onSignedOut }: AppShellProps) {
         <div className="px-safe mx-auto flex max-w-(--shell-max) items-center gap-2 py-3 sm:gap-3 lg:py-4">
           <Link
             to={catalog[0]?.to ?? '/'}
-            aria-label="Rashmi HRMS — home"
             className="u-press flex shrink-0 items-center gap-2.5 rounded-full"
           >
-            <span className="relative grid size-9 place-items-center rounded-full bg-hero text-sm font-bold text-hero-ink">
+            <span aria-hidden className="relative grid size-9 place-items-center rounded-full bg-hero text-sm font-bold text-hero-ink">
               R
               <span aria-hidden className="absolute bottom-1.5 right-1.5 size-1.5 rounded-full bg-accent" />
             </span>
-            <span className="hidden text-[15px] font-semibold tracking-tight text-ink xl:inline">Rashmi</span>
+            <span className="sr-only xl:not-sr-only xl:text-[15px] xl:font-semibold xl:tracking-tight xl:text-ink">
+              Rashmi
+            </span>
+            <span className="sr-only"> HRMS home</span>
           </Link>
 
           {groupScope ? <CompanySwitcher compact={compact} /> : null}

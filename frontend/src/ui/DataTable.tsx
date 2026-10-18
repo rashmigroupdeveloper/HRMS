@@ -370,7 +370,7 @@ export function DataTable<T>({
     ) : null;
 
   const emptyState = (
-    <div role="presentation" className="p-6">
+    <div className="p-6">
       {rows.length > 0 && shown.length === 0 ? (
         <div className="py-6 text-center">
           <p className="text-sm font-semibold text-ink">Nothing matches “{search}”.</p>
@@ -580,9 +580,22 @@ export function DataTable<T>({
         </div>
 
         {shown.length === 0 ? (
-          emptyState
+          <div role="rowgroup">
+            <div role="row">
+              <div role="cell" aria-colspan={visibleColumns.length + (selectable ? 1 : 0)}>
+                {emptyState}
+              </div>
+            </div>
+          </div>
         ) : virtualize ? (
-          <div ref={scrollRef} role="rowgroup" className="overflow-auto" style={{ maxHeight }}>
+          <div
+            ref={scrollRef}
+            role="rowgroup"
+            className="overflow-auto"
+            style={{ maxHeight }}
+            // Keyboard users must be able to scroll the region (axe scrollable-region-focusable).
+            tabIndex={clickable ? undefined : 0}
+          >
             {/* Presentational: the virtualizer's sizer must not sit in the
                 accessibility tree between the rowgroup and its rows. */}
             <div
@@ -632,6 +645,7 @@ export function DataTable<T>({
             role="rowgroup"
             className="overflow-auto"
             style={{ maxHeight: shown.length * rowHeight > maxHeight ? maxHeight : undefined }}
+            tabIndex={!clickable && shown.length * rowHeight > maxHeight ? 0 : undefined}
           >
             {shown.map((row, index) => {
               const key = rowKey(row);

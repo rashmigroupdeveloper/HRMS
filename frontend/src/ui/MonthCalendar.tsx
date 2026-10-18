@@ -137,7 +137,8 @@ export function MonthCalendar({
                   type="button"
                   data-day={cell.day}
                   tabIndex={tabbable ? 0 : -1}
-                  aria-label={`${cell.iso}${info ? ` — ${info.note ?? STATE_LABEL[info.state]}` : ''}`}
+                  // Starts with the visible day number (WCAG 2.5.3 label-in-name).
+                  aria-label={`${String(cell.day)}${info?.label ? ` ${info.label},` : ''} ${monthLabel(year, month)}${info ? ` — ${info.note ?? STATE_LABEL[info.state]}` : ''}`}
                   onClick={() => onSelectDay?.(cell.iso)}
                   className={cn(
                     'u-press relative grid h-11 w-full place-items-center rounded-[10px]',
@@ -151,7 +152,7 @@ export function MonthCalendar({
                     onSelectDay === undefined && 'cursor-default',
                   )}
                 >
-                  <span>{cell.day}</span>
+                  <span>{cell.day}</span>{' '}
                   {info?.label && (
                     <span aria-hidden className="text-[10px] leading-none">
                       {info.label}

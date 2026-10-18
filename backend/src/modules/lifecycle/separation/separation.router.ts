@@ -27,6 +27,27 @@ const CLEARANCE_PERMISSION: Record<ClearanceDepartment, PermissionCode> = {
 };
 const SEPARATION_VIEWERS: PermissionCode[] = ['lifecycle.separation.approve', 'payroll.run.manage', 'assets.manage'];
 
+interface SeparationScopeContext {
+  db: Parameters<typeof assertEmployeesInScope>[0];
+  user: { id: number; employee_id: number | null };
+  permissionAccess: Omit<EmployeeScope, 'actorEmployeeId'>;
+}
+
+/**
+ * B-16 / C-16: clearances and F&F act on one employee's exit — the caller's
+ * scope (for `permission`, else the route's own) must cover that employee.
+ */
+async function requireSeparationInScope(context: SeparationScopeContext, separationId: number, permission?: PermissionCode): Promise<number> {
+  const row = await context.db.selectFrom('core.separations').select('employee_id').where('id', '=', separationId).executeTakeFirst();
+  if (!row) throw new NotFoundError('Separation not found');
+  const access = permission === undefined
+    ? context.permissionAccess
+    : await getUserPermissionAccess(context.db, context.user.id, permission, 'write');
+  if (!access) throw new ForbiddenError('Separation outside your permitted data scope');
+  await assertEmployeesInScope(context.db, { ...access, actorEmployeeId: context.user.employee_id }, [row.employee_id]);
+  return row.employee_id;
+}
+
 
 const separationItemSchema = z.object({
   id: z.number(),
@@ -229,6 +250,7 @@ export const separationRouter = {
     .input(z.object({ separationId: z.coerce.number().int().positive() }))
     .output(z.object({ clearances: z.array(clearanceItemSchema), items: z.array(clearanceItemSchema) }))
     .handler(async ({ input, context }) => {
+      await requireSeparationInScope(context, input.separationId);
       const clearances = await new ClearanceService(context.db).getClearancesBySeparation(input.separationId);
       return { clearances, items: clearances };
     }),
@@ -263,8 +285,8 @@ export const separationRouter = {
       if (input.isFinanceSignoff && !held.has('payroll.run.manage')) {
         throw new ForbiddenError('Finance sign-off requires payroll authority');
       }
-      const sep = await context.db.selectFrom('core.separations').select('employee_id').where('id', '=', input.separationId).executeTakeFirst();
-      if (sep?.employee_id === context.user.employee_id) throw new ForbiddenError('You cannot sign off your own clearance');
+      const subject = await requireSeparationInScope(context, input.separationId, CLEARANCE_PERMISSION[input.department]);
+      if (subject === context.user.employee_id) throw new ForbiddenError('You cannot sign off your own clearance');
       const clearance = await new ClearanceService(context.db).updateClearance({ ...input, userId: context.user.id });
       return { clearance };
     }),
@@ -281,6 +303,7 @@ export const separationRouter = {
     )
     .output(z.object({ calculation: z.unknown() }))
     .handler(async ({ input, context }) => {
+      await requireSeparationInScope(context, input.separationId);
       const calculation = await new SeparationService(context.db).computeFnf({ ...input, userId: context.user.id });
       return { calculation };
     }),
@@ -305,6 +328,7 @@ export const separationRouter = {
       })
     )
     .handler(async ({ input, context }) => {
+      await requireSeparationInScope(context, input.separationId);
       return await new SeparationService(context.db).finalizeAndPayFnf({
         fnfId: input.fnfId,
         separationId: input.separationId,
@@ -325,6 +349,7 @@ export const separationRouter = {
     )
     .output(z.object({ separation: separationItemSchema }))
     .handler(async ({ input, context }) => {
+      await requireSeparationInScope(context, input.separationId);
       const separation = await new SeparationService(context.db).ceoReview({
         separationId: input.separationId,
         decision: input.decision,

@@ -28,7 +28,7 @@ import {
 import { registerLeaveWorkflowHooks, runCompOffExpiry, runMonthlyAccrual } from '../modules/leave/index.js';
 import { registerLettersWorkflowHooks } from '../modules/letters/index.js';
 import { runPolicyAckNag } from '../modules/policies/index.js';
-import { sendBoardingExitEmail } from '../modules/lifecycle/index.js';
+import { applyDueTransfers, sendBoardingExitEmail } from '../modules/lifecycle/index.js';
 import {
   createNotificationTransport,
   enqueueEvent,
@@ -47,6 +47,7 @@ const WF_ESCALATION_QUEUE = 'workflow-escalation';
 const OT_SUMMARY_QUEUE = 'ot-daily-summary';
 const LEAVE_ACCRUAL_QUEUE = 'leave-accrual';
 const COMP_OFF_EXPIRY_QUEUE = 'comp-off-expiry';
+const TRANSFER_EFFECTIVE_QUEUE = 'transfer-effective';
 const BOARDING_EXIT_QUEUE = 'boarding-exit-email';
 const ABSENCE_SCAN_QUEUE = 'absence-scan';
 const POLICY_NAG_QUEUE = 'policy-ack-nag';
@@ -83,6 +84,7 @@ async function main(): Promise<void> {
     OT_SUMMARY_QUEUE,
     LEAVE_ACCRUAL_QUEUE,
     COMP_OFF_EXPIRY_QUEUE,
+    TRANSFER_EFFECTIVE_QUEUE,
     BOARDING_EXIT_QUEUE,
     ABSENCE_SCAN_QUEUE,
     POLICY_NAG_QUEUE,
@@ -140,6 +142,13 @@ async function main(): Promise<void> {
   await boss.schedule(COMP_OFF_EXPIRY_QUEUE, '0 19 * * *');
   await boss.work(COMP_OFF_EXPIRY_QUEUE, async () => {
     await runCompOffExpiry(db);
+  });
+
+  // C-17: approved future-dated transfers take effect on their date — 00:10 IST.
+  await boss.schedule(TRANSFER_EFFECTIVE_QUEUE, '40 18 * * *');
+  await boss.work(TRANSFER_EFFECTIVE_QUEUE, async () => {
+    const result = await applyDueTransfers(db);
+    logger.info(result, 'due transfers applied');
   });
 
   // Approval SLA sweep, hourly (WF-03): breach → escalate/auto-reject/lapse/

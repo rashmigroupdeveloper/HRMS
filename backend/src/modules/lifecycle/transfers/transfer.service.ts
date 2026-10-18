@@ -18,9 +18,12 @@ import type {
   TransferType,
 } from '../../../core/db/types.js';
 import { writeAudit } from '../../../core/audit/audit.service.js';
-import { formatDbDate } from '../../../core/dates.js';
+import { formatDbDate, istDateString } from '../../../core/dates.js';
+import { DomainError, NotFoundError } from '../../../core/errors/index.js';
+import { createRequest } from '../../workflows/index.js';
 import { allocateEmployeeCode } from '../../../core/employee-code.js';
 import { inTransaction } from '../../../core/db/database.js';
+import { employeeScopeSql, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
 
 export interface CreateTransferInput {
   employeeId: number;
@@ -80,6 +83,8 @@ export interface TransferRecord {
   approvedAt: string | null;
   notifiedAt: string | null;
   createdAt: string;
+  /** C-17: set when the transfer is decided through its approval chain. */
+  workflowRequestId: number | null;
 }
 
 export interface EmployeeHistoryEntry {
@@ -225,17 +230,34 @@ export async function approveTransferRequest(
   transferId: number,
   actorUserId: number,
   ip: string | null = null,
-): Promise<{ success: boolean; newEcode: string | null }> {
+  /** Scheduler path: apply an already-approved transfer whose date has arrived. */
+  applyScheduled = false,
+): Promise<{ success: boolean; newEcode: string | null; scheduled?: boolean }> {
   return await inTransaction(db, async (trx) => {
     const transfer = await trx
       .selectFrom('core.transfers')
       .selectAll()
       .where('id', '=', transferId)
+      .forUpdate()
       .executeTakeFirst();
 
-    if (!transfer) throw new Error(`Transfer request #${transferId} not found`);
-    if (transfer.status !== 'pending') {
-      throw new Error(`Transfer #${transferId} is not pending (status: ${transfer.status})`);
+    if (!transfer) throw new NotFoundError(`Transfer request #${String(transferId)} not found`);
+    const expected = applyScheduled ? 'approved' : 'pending';
+    if (transfer.status !== expected) {
+      throw new DomainError(`Transfer #${String(transferId)} is not ${expected} (status: ${transfer.status})`);
+    }
+
+    // C-17 / B-18: a future-dated transfer is approved now but changes nothing
+    // until its effective date; the daily job applies it (applyDueTransfers).
+    if (!applyScheduled && toDateString(transfer.effective_date) > istDateString()) {
+      await trx.updateTable('core.transfers')
+        .set({ status: 'approved', approved_by: actorUserId, approved_at: sql`now()`, updated_at: sql`now()` })
+        .where('id', '=', transfer.id).execute();
+      await writeAudit(trx, {
+        actorUserId, action: 'update', entity: 'core.transfers', entityId: transfer.id,
+        field: 'status', oldValue: 'pending', newValue: 'approved', ip,
+      });
+      return { success: true, newEcode: null, scheduled: true };
     }
 
     const emp = await trx
@@ -425,8 +447,7 @@ export async function approveTransferRequest(
       .set({
         status: 'completed',
         target_ecode: allocatedEcode,
-        approved_by: actorUserId,
-        approved_at: sql`now()`,
+        ...(applyScheduled ? {} : { approved_by: actorUserId, approved_at: sql`now()` }),
         notified_at: sql`now()`,
         updated_at: sql`now()`,
       })
@@ -439,13 +460,83 @@ export async function approveTransferRequest(
       entity: 'core.transfers',
       entityId: transfer.id,
       field: 'status',
-      oldValue: 'pending',
+      oldValue: expected,
       newValue: 'completed',
       ip,
     });
 
     return { success: true, newEcode: allocatedEcode };
   });
+}
+
+/**
+ * C-17: apply every approved transfer whose effective date (IST) has arrived.
+ * Idempotent; each transfer commits on its own so one failure cannot block the rest.
+ */
+export async function applyDueTransfers(db: Kysely<Database>, today: string = istDateString()): Promise<{ applied: number; failed: number }> {
+  const due = await db.selectFrom('core.transfers').select(['id', 'approved_by', 'created_by'])
+    .where('status', '=', 'approved')
+    .where('effective_date', '<=', sql<Date>`${today}::date`)
+    .orderBy('effective_date').orderBy('id').execute();
+  let applied = 0;
+  let failed = 0;
+  for (const row of due) {
+    try {
+      await approveTransferRequest(db, row.id, row.approved_by ?? row.created_by, null, true);
+      applied += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+  return { applied, failed };
+}
+
+/**
+ * C-17 / B-18: raise a transfer through its approval chain (RM → HR Ops by
+ * default, runtime-editable). The transfer row is attached to the request and
+ * is approved only when the chain completes (applyTransferOnFinal).
+ */
+export async function submitTransferForApproval(
+  db: Kysely<Database>,
+  input: CreateTransferInput,
+  actorUserId: number,
+  ip: string | null = null,
+): Promise<{ id: number; targetEcode: string | null }> {
+  let created: { id: number; targetEcode: string | null } = { id: 0, targetEcode: null };
+  await createRequest(
+    db,
+    {
+      definitionCode: 'transfer',
+      subjectEmployeeId: input.employeeId,
+      requestedByUserId: actorUserId,
+      payload: { transferType: input.transferType, effectiveDate: input.effectiveDate },
+    },
+    async (trx, requestId) => {
+      created = await createTransferRequest(trx, input, actorUserId, ip);
+      await trx.updateTable('core.transfers').set({ workflow_request_id: requestId }).where('id', '=', created.id).execute();
+    },
+  );
+  return created;
+}
+
+/** Workflow final hook for 'transfer': approve (apply now or schedule) or reject. */
+export async function applyTransferOnFinal(
+  db: Kysely<Database>,
+  request: { id: number; requested_by: number },
+  status: 'approved' | 'rejected' | 'lapsed',
+): Promise<void> {
+  const transfer = await db.selectFrom('core.transfers').select(['id', 'status'])
+    .where('workflow_request_id', '=', request.id).executeTakeFirst();
+  if (transfer?.status !== 'pending') return; // idempotent
+  const lastApprover = await db.selectFrom('wf.request_steps').select('approver_user_id')
+    .where('request_id', '=', request.id).where('action', '=', 'approved')
+    .orderBy('step_no', 'desc').executeTakeFirst();
+  const actor = lastApprover?.approver_user_id ?? request.requested_by;
+  if (status === 'approved') {
+    await approveTransferRequest(db, transfer.id, actor);
+  } else {
+    await rejectTransferRequest(db, transfer.id, `Approval chain ${status}`, actor);
+  }
 }
 
 /**
@@ -464,9 +555,10 @@ export async function rejectTransferRequest(
     .where('id', '=', transferId)
     .executeTakeFirst();
 
-  if (!transfer) throw new Error(`Transfer #${transferId} not found`);
-  if (transfer.status !== 'pending') {
-    throw new Error(`Transfer #${transferId} is not pending (status: ${transfer.status})`);
+  if (!transfer) throw new NotFoundError(`Transfer #${String(transferId)} not found`);
+  // A scheduled (approved, not yet effective) transfer can still be called off.
+  if (transfer.status !== 'pending' && transfer.status !== 'approved') {
+    throw new DomainError(`Transfer #${String(transferId)} is not pending (status: ${transfer.status})`);
   }
 
   await db
@@ -613,18 +705,22 @@ export async function listTransfers(
     status?: TransferStatus | undefined;
     limit?: number | undefined;
     offset?: number | undefined;
+    /** B-16 / C-16: entity-scoped HR sees only transfers of employees in its scope. */
+    scope?: EmployeeScope | undefined;
   },
 ): Promise<{ rows: TransferRecord[]; total: number }> {
   const limit = params.limit ?? 50;
   const offset = params.offset ?? 0;
 
   const countQuery = db
-    .selectFrom('core.transfers')
-    .select(db.fn.count<number>('id').as('cnt'))
-    .$if(params.employeeId !== undefined, (qb) => params.employeeId === undefined ? qb : qb.where('employee_id', '=', params.employeeId))
-    .$if(params.companyId !== undefined, (qb) => params.companyId === undefined ? qb : qb.where('current_company_id', '=', params.companyId))
-    .$if(params.transferType !== undefined, (qb) => params.transferType === undefined ? qb : qb.where('transfer_type', '=', params.transferType))
-    .$if(params.status !== undefined, (qb) => params.status === undefined ? qb : qb.where('status', '=', params.status));
+    .selectFrom('core.transfers as t')
+    .innerJoin('core.employees as e', 'e.id', 't.employee_id')
+    .select((eb) => eb.fn.count<number>('t.id').as('cnt'))
+    .where(employeeScopeSql(params.scope, 'e'))
+    .$if(params.employeeId !== undefined, (qb) => params.employeeId === undefined ? qb : qb.where('t.employee_id', '=', params.employeeId))
+    .$if(params.companyId !== undefined, (qb) => params.companyId === undefined ? qb : qb.where('t.current_company_id', '=', params.companyId))
+    .$if(params.transferType !== undefined, (qb) => params.transferType === undefined ? qb : qb.where('t.transfer_type', '=', params.transferType))
+    .$if(params.status !== undefined, (qb) => params.status === undefined ? qb : qb.where('t.status', '=', params.status));
 
   const countResult = await countQuery.executeTakeFirst();
   const total = countResult?.cnt ?? 0;
@@ -685,11 +781,13 @@ export async function listTransfers(
       't.leave_treatment',
       't.reason',
       't.remarks',
+      't.workflow_request_id',
       't.approved_by',
       't.approved_at',
       't.notified_at',
       't.created_at',
     ])
+    .where(employeeScopeSql(params.scope, 'e'))
     .$if(params.employeeId !== undefined, (qb) => params.employeeId === undefined ? qb : qb.where('t.employee_id', '=', params.employeeId))
     .$if(params.companyId !== undefined, (qb) => params.companyId === undefined ? qb : qb.where('t.current_company_id', '=', params.companyId))
     .$if(params.transferType !== undefined, (qb) => params.transferType === undefined ? qb : qb.where('t.transfer_type', '=', params.transferType))
@@ -742,6 +840,7 @@ export async function listTransfers(
       leaveTreatment: r.leave_treatment,
       reason: r.reason,
       remarks: r.remarks,
+      workflowRequestId: r.workflow_request_id,
       approvedBy: r.approved_by ?? null,
       approvedAt: toIsoString(r.approved_at),
       notifiedAt: toIsoString(r.notified_at),

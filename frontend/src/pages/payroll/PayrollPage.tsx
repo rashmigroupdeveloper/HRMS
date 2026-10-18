@@ -245,7 +245,7 @@ export function PayrollPage({ user }: { user: SessionUser }) {
                 <div><p className="text-xs text-ink-muted">Deductions</p><p className="text-xl font-semibold">{inr(run.totalDeductionsRupees)}</p></div>
                 <div><p className="text-xs text-ink-muted">Net pay</p><p className="text-xl font-semibold">{inr(run.netPayRupees)}</p></div>
               </div>
-              <div className="mt-5 flex flex-wrap gap-2" aria-label="Run actions">
+              <div role="group" className="mt-5 flex flex-wrap gap-2" aria-label="Run actions">
                 {canManage && isDraft && <Button leadingIcon={<Lock size={16} />} loading={busy === 'Lock inputs'} onClick={() => void step('Lock inputs', '/api/payroll/runs/lockInputs', {})}>Lock inputs</Button>}
                 {canManage && status === 'inputs_locked' && <Button loading={busy === 'Compute'} onClick={() => void step('Compute', '/api/payroll/runs/compute', {}, (r) => { setLastCompute(r as ComputeResult); setTab('register'); })}>Compute payroll</Button>}
                 {canManage && status === 'computed' && <Button loading={busy === 'Send for review'} onClick={() => void step('Send for review', '/api/payroll/runs/review', {})}>Send for approval</Button>}

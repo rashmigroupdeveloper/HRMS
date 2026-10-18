@@ -62,7 +62,7 @@ export function AccountMenu({ user, onSignedOut }: AccountMenuProps) {
         className="u-press u-shadow-card grid size-9 place-items-center rounded-full bg-hero text-xs font-bold text-hero-ink transition-transform hover:brightness-110"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Account menu"
+        aria-label={`${accountInitials(user)}, account menu`}
         title={`${user.email} · ${role}`}
       >
         {accountInitials(user)}

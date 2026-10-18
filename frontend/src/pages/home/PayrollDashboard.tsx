@@ -301,9 +301,10 @@ export function PayrollDashboard() {
               </div>
             ))}
             {current.employeeCount === 0 ? (
-              <p className="col-span-2 text-xs leading-5 text-hero-muted">
-                Not computed yet — figures appear after Compute.
-              </p>
+              <div className="col-span-2">
+                <dt className="sr-only">Status</dt>
+                <dd className="text-xs leading-5 text-hero-muted">Not computed yet — figures appear after Compute.</dd>
+              </div>
             ) : null}
           </dl>
         </DarkCard>

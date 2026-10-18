@@ -118,4 +118,41 @@ describe.skipIf(!DB_URL)('group vs entity scope', () => {
     expect(res.status).toBe(403);
     expect((await post('payGroup', '/api/payroll/config/statutory-rates', { scheme: 'ESIC', param: 'wage_ceiling', value: 21000, effectiveFrom: '2097-04-01', sourceNote: 'group change' })).status).toBe(200);
   });
+
+  it('B-16: lifecycle transfers and exit clearances/F&F are confined to the entity', async () => {
+    const empId = async (k: string) => (await tx().selectFrom('core.employees').select('id').where('ecode', '=', ecode[k] ?? '').executeTakeFirstOrThrow()).id;
+    const [a, b] = [await empId('A'), await empId('B')];
+    const dept = (await tx().insertInto('core.departments').values({ name: `B16 ${randomUUID().slice(0, 6)}` }).returning('id').executeTakeFirstOrThrow()).id;
+    const transfer = (employeeId: number, extra: object = {}) => ({ employeeId, transferType: 'department', effectiveDate: '2097-06-01', targetDepartmentId: dept, reason: 'scope test', ...extra });
+    expect((await post('opsA', '/api/lifecycle/transfers', transfer(b))).status).toBe(403);
+    expect((await post('opsA', '/api/lifecycle/transfers', transfer(a, { transferType: 'inter_entity', targetCompanyId: co['B'] }))).status).toBe(403);
+    const mine = await post('opsA', '/api/lifecycle/transfers', transfer(a));
+    expect(mine.status).toBe(200);
+    // A legacy (chain-less) pending transfer for the other entity's employee.
+    const theirId = (await tx().insertInto('core.transfers').values({
+      employee_id: b, transfer_type: 'department', effective_date: '2097-06-01', status: 'pending', current_company_id: co['B'] ?? 0,
+      current_ecode: ecode['B'] ?? '', target_department_id: dept, reason: 'scope test', created_by: uid['hrHead'] ?? 0,
+    }).returning('id').executeTakeFirstOrThrow()).id;
+    const list = await (await httpRequest(app)).get('/api/lifecycle/transfers?limit=200').set('Authorization', `Bearer ${t['opsA'] ?? ''}`);
+    expect(list.status).toBe(200);
+    const seen = (list.body as { rows: { employeeId: number }[]; total: number });
+    expect(seen.rows.map((r) => r.employeeId)).toContain(a);
+    expect(seen.rows.map((r) => r.employeeId)).not.toContain(b);
+    expect(seen.total).toBe(seen.rows.length);
+    expect((await post('opsA', `/api/lifecycle/transfers/${String(theirId)}/approve`, {})).status).toBe(403);
+    expect((await post('opsA', `/api/lifecycle/transfers/${String(theirId)}/reject`, { remarks: 'no' })).status).toBe(403);
+    expect((await post('opsA', '/api/lifecycle/transfers/999999999/approve', {})).status).toBe(404);
+    const hist = await (await httpRequest(app)).get(`/api/lifecycle/transfers/history/${String(b)}`).set('Authorization', `Bearer ${t['opsA'] ?? ''}`);
+    expect(hist.status).toBe(403);
+
+    const sep = (await tx().insertInto('core.separations').values({
+      employee_id: b, initiated_by: 'hr', reason: 'scope test', resignation_date: '2097-05-01', notice_period_days: 30, requested_lwd: '2097-05-31',
+    }).returning('id').executeTakeFirstOrThrow()).id;
+    const clearances = (who: string) => httpRequest(app).then((r) => r.get(`/api/lifecycle/clearances?separationId=${String(sep)}`).set('Authorization', `Bearer ${t[who] ?? ''}`));
+    expect((await clearances('opsA')).status).toBe(403);
+    expect((await clearances('hrHead')).status).toBe(200);
+    expect((await post('opsA', '/api/lifecycle/clearances/update', { separationId: sep, department: 'HR', status: 'cleared' })).status).toBe(403);
+    expect((await post('payA', `/api/lifecycle/separations/${String(sep)}/compute-fnf`, {})).status).toBe(403);
+    expect((await post('opsA', '/api/lifecycle/clearances/update', { separationId: 999999999, department: 'HR', status: 'cleared' })).status).toBe(404);
+  });
 });
