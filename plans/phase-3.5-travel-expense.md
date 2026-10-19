@@ -81,3 +81,7 @@
 - [ ] Recoverable/reimbursable amounts flow through payroll correctly (verified in a live run)
 - [ ] Yatra Avedan data migrated with clean reconciliation; system decommissioned
 - [ ] No MUI anywhere in the T&E surfaces (design review)
+
+###19 Oct independent connection/foundation audit qualification
+
+The sponsor in this chat still defers claims/reimbursements/budgets; the concurrent StageT2.5 implementation is not a signed scope or release acceptance here. Current full backend verify passes typecheck but stops at18 settlement/budget-test lint errors. Claims/budget native concurrency, approved month policy and schema invariants remain OPEN; see pack34's final review observations. In particular, a read-headroom→insert-reservation sequence without trip/claim serialization is not proof against duplicate submission or concurrent overspend. Historical `[x]` entries above mean source exists, not that gates/G3.5 or production financial acceptance passed. This task did not apply1752500000500/0600 or perform financial transactions.

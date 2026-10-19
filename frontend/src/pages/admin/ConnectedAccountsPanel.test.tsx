@@ -59,3 +59,25 @@ it('reports unavailable account lists visibly', async () => {
   render(<ConnectedAccountsPanel />);
   expect(await screen.findByRole('alert')).toHaveTextContent('Access denied');
 });
+
+it('loads older links using the server cursor without hiding the current page', async () => {
+  const row = (id: number) => ({
+    id,
+    userId: id,
+    email: `person${String(id)}@hrms.invalid`,
+    clientId: 'ats',
+    externalSubject: String(id),
+    active: false,
+  });
+  vi.mocked(apiFetch)
+    .mockResolvedValueOnce({ links: Array.from({ length: 50 }, (_, index) => row(100 - index)) })
+    .mockResolvedValueOnce({ links: [row(50)] });
+  render(<ConnectedAccountsPanel />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Load more connected accounts' }));
+  expect(await screen.findByText('person50@hrms.invalid')).toBeInTheDocument();
+  expect(screen.getByText('person100@hrms.invalid')).toBeInTheDocument();
+  expect(apiFetch).toHaveBeenLastCalledWith('/api/sso/links?cursor=51');
+  expect(
+    screen.queryByRole('button', { name: 'Load more connected accounts' }),
+  ).not.toBeInTheDocument();
+});

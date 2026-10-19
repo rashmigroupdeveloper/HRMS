@@ -55,6 +55,7 @@ export const ROLES: readonly RoleSeed[] = [
 
 export const PERMISSIONS = [
   'auth.sso',
+  'integration.ats.receive',
   'employee.read',
   'employee.write',
   'employee.compensation.read',
@@ -136,6 +137,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
   ],
   manager: [
     { permission: 'employee.read', scope: 'subtree' },
+    { permission: 'lifecycle.probation.view', scope: 'subtree' },
     { permission: 'auth.sso', scope: 'all' },
     { permission: 'lifecycle.probation.view', scope: 'subtree' },
     { permission: 'attendance.own', scope: 'all' },
@@ -151,6 +153,7 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
   ],
   senior_manager: [
     { permission: 'employee.read', scope: 'subtree' },
+    { permission: 'lifecycle.probation.view', scope: 'subtree' },
     { permission: 'auth.sso', scope: 'all' },
     { permission: 'lifecycle.probation.view', scope: 'subtree' },
     { permission: 'attendance.own', scope: 'all' },

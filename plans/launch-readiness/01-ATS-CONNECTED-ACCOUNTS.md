@@ -4,6 +4,10 @@ Sponsor, 17 Oct 2026: ATS lives beside HRMS on the same server, in separate appl
 
 Requirement anchors: D4, NFR-03, CORE-10; docs02 §3, docs08, P0-T20/G0. Keep independent frontends/backends/databases. This is the integration increment, not Phase4 ATS absorption. Both working trees already contain substantial unrelated changes: preserve them.
 
+## 19 Oct implementation update
+
+Sponsor confirmed HR records candidate acceptance date/evidence. Receipt/outbox delivery, separate HRMS prejoining, explicit verified account links, session-bound one-use PKCE codes, live ATS parent introspection and current-session linked logout are implemented. See [pack34](../sow-completion/34-ATS-ACCEPTANCE-AND-CONNECTED-SIGNIN.md). Browser/native proof is synthetic/local; production callback/proxy, cookie paths, rollout, operational acceptance and UAT remain open. Normal environments are not enabled.
+
 ## Source facts inspected
 
 - ATS `backend/src/models/User.js`: local numeric `id`; `employee_id` is text, not HRMS's numeric FK; email, `is_active`, `token_version`; public profile omits password hash.
@@ -13,7 +17,7 @@ Requirement anchors: D4, NFR-03, CORE-10; docs02 §3, docs08, P0-T20/G0. Keep in
 - HRMS `backend/src/modules/auth/auth.sessions.ts`: fixed-duration, single-use refresh sessions and immediate current-session logout. Preserve these semantics across any federated adapter.
 - ATS `backend/src/models/Offer.js`: internal approval stage/status and compensation text, plus `loi_custom_fields`. Internal offer approval does not prove candidate acceptance; candidate conversion or no-show cannot supply a missing LOI acceptance/rejection event. Source-contract reconciliation remains required before importing these outcomes.
 
-## Required implementation and data contract (not yet implemented)
+## Required implementation and data contract
 
 1. HRMS remains canonical issuer (docs02). Use an authorization-code handoff with S256 PKCE, exact registered callback URI and caller-generated state. Never place access/refresh tokens in navigation URLs or copy credentials between apps. Access tokens for one app are not accepted as arbitrary role assertions in the other.
 2. Persist an explicit, audited link between HRMS `core.users.id` and ATS `users.id` under one configured ATS client identity. Admin verifies the person using employee e-code and email; neither email matching nor numeric-ID coincidence silently provisions a link. Unique client+ATS subject and client+HRMS user prevent ambiguous mapping. Disabling/unlinking must deny subsequent exchanges. No automatic HR/payroll role creation.
@@ -28,4 +32,4 @@ Connected user moves both directions; unlinked user gets no implicit account; em
 
 ## Missing launch inputs
 
-Actual HTTPS origins/callback paths, authorized account-link population/owner, and production process/proxy details remain unspecified. Do not fabricate them or enable a partially configured integration. No ATS DB connection, secrets, migrations or application files were changed during this source inspection. The SSO gate remains open.
+Actual HTTPS origins/callback paths, authorized account-link population/owner, and production process/proxy details remain unspecified. Do not fabricate them or enable a partially configured integration. The original source inspection was read-only; the19 Oct authorized implementation subsequently changed both apps and applied reviewed migrations only to loopback TEST databases. No production secrets or real account links were installed. The SSO gate remains open.

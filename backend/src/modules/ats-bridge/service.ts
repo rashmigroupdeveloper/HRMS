@@ -9,7 +9,7 @@ import { atsCompanyIds } from './company-scope.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { OnboardingService } from '../lifecycle/index.js';
 import { acceptedOfferSchema, acceptanceDigest, type AcceptedOffer } from './contract.js';
-export async function receiveAcceptedOffer(db: Kysely<Database>, raw: AcceptedOffer) {
+export async function receiveAcceptedOffer(db: Kysely<Database>, raw: AcceptedOffer, actorUserId: number | null = null) {
   const input = acceptedOfferSchema.parse(raw);
   const digest = acceptanceDigest(input);
   if (new Date(input.acceptedAt).getTime() > Date.now())
@@ -78,7 +78,7 @@ export async function receiveAcceptedOffer(db: Kysely<Database>, raw: AcceptedOf
       })
       .execute();
     await writeAudit(tx, {
-      actorUserId: null,
+      actorUserId,
       subjectEmployeeId: null,
       action: 'ats.acceptance_received',
       entity: 'core.onboarding_candidates',

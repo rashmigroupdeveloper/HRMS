@@ -4,6 +4,8 @@ Sponsor instruction17 Oct2026 supersedes the older one-stage-and-stop preference
 
 ## Current position
 
+**19 Oct integration update:** [pack34](../sow-completion/34-ATS-ACCEPTANCE-AND-CONNECTED-SIGNIN.md) and [connection evidence](../../outputs/ats-bridge-2026-10-19/REVIEW.md) supersede the older “not implemented/no ATS edits” statements. ATS acceptance receipt/outbox → signed HRMS prejoining and explicit account linking/PKCE sign-in are implemented and locally exercised. Actual joining still gates employee creation. Production configuration, full quality gates and UAT stay OPEN.
+
 Read the [consolidated phase status](03-PHASE-STATUS.md) for the18 Oct sponsor checklist reconciliation. “Code exists,” “locally verified repair” and “accepted stage” are distinct. No phase gate is passed by historical checked tasks.
 
 **18 Oct2026 update:** [pack33](../sow-completion/33-ACTUAL-JOINING-AND-DEPLOYMENT-AUDIT.md) and [deployment audit](../../outputs/deployment-audit-2026-10-18/REVIEW.md) supersede historical test totals below.42 focused onboarding tests and frontend full298 pass. Backend runtime640 pass/5 fail, branch coverage76.88% below80; shared-test typecheck also fails. Another AI remains active. Actual joining/token/UI repair is partial; Stage3.1 stays open. Sponsor will supply Kent raw data and integration locations later.
@@ -24,6 +26,6 @@ Authorized Kent protocol/source access and real delayed/reconnect delivery; actu
 
 Read this file, AGENTS and governing docs first. Preserve the dirty checkout. Announce stage transitions, implement and verify rather than only listing defects. Keep full verification thresholds; do not treat fixture-only/unit/browser screenshots as real integration acceptance. Do not send external messages/deploy/payout without the required explicit authority. Keep this file and the detailed handoff current after each verified increment.
 
-ATS source located at `/Users/anooppratapsingh/Documents/interview_scheduling`; source/identity facts and required connected-account contract are in `01-ATS-CONNECTED-ACCOUNTS.md`. ATS files/DB have not been changed; SSO is not yet implemented. Detailed continuation is in `HANDOFF.md`.
+ATS source located at `/Users/anooppratapsingh/Documents/interview_scheduling`; source/identity facts and required connected-account contract are in `01-ATS-CONNECTED-ACCOUNTS.md`. ATS acceptance/SSO files and reviewed local TEST migrations were changed on19 Oct; production configuration and full acceptance remain pending. Detailed continuation is in `HANDOFF.md`.
 
-Sponsor confirmed: permanent e-code is issued only after HR confirms actual joining, even if the application was approved earlier. See `02-CANDIDATE-TO-EMPLOYEE.md`. Candidates remain outside real employee MIS until that boundary. Separate-app SSO and the ATS source adapter remain unimplemented.
+Sponsor confirmed: permanent e-code is issued only after HR confirms actual joining, even if the application was approved earlier. See `02-CANDIDATE-TO-EMPLOYEE.md`. Candidates remain outside real employee MIS until that boundary. Separate-app SSO and the ATS acceptance source adapter are locally implemented; see pack34 for proof limits and remaining gates.

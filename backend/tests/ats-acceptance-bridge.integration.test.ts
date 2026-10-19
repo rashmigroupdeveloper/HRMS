@@ -42,6 +42,34 @@ describe.skipIf(!url)('ATS accepted LOI bridge (native PostgreSQL)', () => {
             .values({ key, value, value_type, description: 'Synthetic ATS bridge setting' })
             .onConflict((oc) => oc.column('key').doUpdateSet({ value, value_type }))
             .execute();
+        const account = await tx
+          .insertInto('core.users')
+          .values({
+            email: tag + '-client@hrms.invalid',
+            password_hash: '!disabled!',
+            is_active: true,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        const role = await tx
+          .selectFrom('core.roles')
+          .select('id')
+          .where('code', '=', 'super_admin')
+          .executeTakeFirstOrThrow();
+        await tx
+          .insertInto('core.user_roles')
+          .values({ user_id: account.id, role_id: role.id })
+          .execute();
+        await tx
+          .insertInto('core.settings')
+          .values({
+            key: 'integration.ats.service_user_id',
+            value: JSON.stringify(account.id),
+            value_type: 'number',
+            description: 'Synthetic rollback-only service account',
+          })
+          .onConflict((oc) => oc.column('key').doUpdateSet({ value: JSON.stringify(account.id) }))
+          .execute();
         const input: AcceptedOffer = {
           eventId: randomUUID(),
           offerId: company.id,
@@ -221,6 +249,10 @@ describe.skipIf(!url)('ATS accepted LOI bridge (native PostgreSQL)', () => {
       };
       expect(body.success).toBe(true);
       expect(body.data.created).toBe(true);
+      const principalSetting = await tx.selectFrom('core.settings').select('value').where('key','=','integration.ats.service_user_id').executeTakeFirstOrThrow();
+      const receivedAudit = await tx.selectFrom('core.audit_log').select('actor_user_id').where('action','=','ats.acceptance_received').where('entity_id','=',body.data.candidateId).executeTakeFirstOrThrow();
+      expect(receivedAudit.actor_user_id).toBe(Number(principalSetting.value));
+
       const again = await request
         .post('/api/integrations/ats/accepted-offers')
         .auth(token, { type: 'bearer' })
@@ -231,6 +263,42 @@ describe.skipIf(!url)('ATS accepted LOI bridge (native PostgreSQL)', () => {
         created: false,
       });
       expect(JSON.stringify(response.body)).not.toMatch(/rawToken|password|secret|ecode/);
+    }));
+  it('denies disabled, unconfigured or permission-revoked machine principals despite a valid signature', async () =>
+    fixture(async (tx, input) => {
+      config();
+      const request = await httpRequest(
+        createApp({ db: tx, jwtSecret: 'synthetic-local-key', secureCookies: false }),
+      );
+      const token = await signed(input);
+      const send = () =>
+        request
+          .post('/api/integrations/ats/accepted-offers')
+          .auth(token, { type: 'bearer' })
+          .send(input);
+      const setting = await tx
+        .selectFrom('core.settings')
+        .select('value')
+        .where('key', '=', 'integration.ats.service_user_id')
+        .executeTakeFirstOrThrow();
+      const id = Number(setting.value);
+      await tx.updateTable('core.users').set({ is_active: false }).where('id', '=', id).execute();
+      expect((await send()).status).toBe(401);
+      await tx.updateTable('core.users').set({ is_active: true }).where('id', '=', id).execute();
+      await tx.deleteFrom('core.user_roles').where('user_id', '=', id).execute();
+      expect((await send()).status).toBe(403);
+      await tx
+        .deleteFrom('core.settings')
+        .where('key', '=', 'integration.ats.service_user_id')
+        .execute();
+      expect((await send()).status).toBe(503);
+      expect(
+        await tx
+          .selectFrom('core.ats_acceptance_receipts')
+          .select('event_id')
+          .where('ats_offer_id', '=', input.offerId)
+          .execute(),
+      ).toHaveLength(0);
     }));
   it('rolls back intake when prejoin issuance configuration is missing', async () =>
     fixture(async (tx, input) => {

@@ -203,8 +203,8 @@ async function resolveTravelRegionalReviewer(
       .where('id', '=', requestId)
       .executeTakeFirst();
     const payload = (req?.payload ?? {}) as Record<string, unknown>;
-    const rawRegion = payload['destinationRegion'] ?? payload['region'];
-    const reg = typeof rawRegion === 'string' ? rawRegion.toLowerCase() : '';
+    const regionValue = payload['destinationRegion'] ?? payload['region'];
+    const reg = typeof regionValue === 'string' ? regionValue.toLowerCase() : '';
     inRegion = reg === targetRegion.toLowerCase();
   }
   if (!inRegion) return null;

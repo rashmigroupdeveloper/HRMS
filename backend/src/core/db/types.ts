@@ -1439,6 +1439,7 @@ export interface Database {
   'te.claims': TeClaimsTable;
   'te.claim_items': TeClaimItemsTable;
   'te.settlements': TeSettlementsTable;
+  'te.budget_reservations': TeBudgetReservationsTable;
 }
 
 /* ── M6 Payroll & Statutory (pay) — PAY-01..18, docs/03 §6 ────────────────── */
@@ -2085,8 +2086,23 @@ export interface TeClaimsTable {
   status: ColumnType<'draft' | 'submitted' | 'approved' | 'rejected' | 'sent_back' | 'settled', string | undefined, string>;
   settlement_status: ColumnType<'unsettled' | 'settled', string | undefined, string>;
   workflow_request_id: number | null;
+  summary_document_id: number | null;
+  summary_document_url: string | null;
+  period_from: ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
+  period_to: ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
   created_at: DefaultedTimestamp;
   updated_at: DefaultedTimestamp;
+}
+
+export interface TeBudgetReservationsTable {
+  id: Generated<number>;
+  trip_id: number;
+  claim_id: number;
+  movement: 'reserve' | 'release';
+  amount_paise: number;
+  reason: string;
+  actor_user_id: number | null;
+  created_at: DefaultedTimestamp;
 }
 
 export interface TeClaimItemsTable {

@@ -10,10 +10,11 @@
  */
 
 import { z } from 'zod';
+import { NotFoundError } from '../../core/errors/index.js';
 import { authed, withPermission } from '../../api/orpc.js';
 import { TravelService } from './travel.service.js';
 import { WalletService } from './wallet.service.js';
-import { SettlementService } from './settlement.service.js';
+import { SettlementService, getTripBudgetHeadroom } from './settlement.service.js';
 import { assertTravelReadable, requireSelf, resolveListSubject } from './travel-access.js';
 
 const tripItemSchema = z.object({
@@ -87,6 +88,7 @@ const claimItemDetailSchema = z.object({
   currency: z.string(),
   fxRateToInr: z.union([z.number(), z.string()]),
   inrAmountPaise: z.number(),
+  receiptDocumentId: z.number().nullable().optional(),
   receiptUrl: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   createdAt: z.union([z.date(), z.string()]),
@@ -104,6 +106,10 @@ const claimSchema = z.object({
   netRecoverablePaise: z.number(),
   status: z.string(),
   settlementStatus: z.string(),
+  summaryDocumentId: z.number().nullable().optional(),
+  summaryDocumentUrl: z.string().nullable().optional(),
+  periodFrom: z.union([z.date(), z.string()]).nullable().optional(),
+  periodTo: z.union([z.date(), z.string()]).nullable().optional(),
   createdAt: z.union([z.date(), z.string()]),
   updatedAt: z.union([z.date(), z.string()]),
 });
@@ -427,6 +433,29 @@ export const travelRouter = {
       };
     }),
 
+  getTripBudgetHeadroom: authed
+    .route({ method: 'GET', path: '/travel/trips/{tripId}/budget-headroom', summary: 'Get trip budget headroom and commitment reservation totals' })
+    .input(z.object({ tripId: z.coerce.number().int().positive() }))
+    .output(
+      z.object({
+        tripId: z.number(),
+        estimatedBudgetPaise: z.number(),
+        approvedBudgetPaise: z.number(),
+        reservedBudgetPaise: z.number(),
+        availableBudgetPaise: z.number(),
+      })
+    )
+    .handler(async ({ input, context }) => {
+      const trip = await context.db.selectFrom('te.trips').select('employee_id').where('id', '=', input.tripId).executeTakeFirst();
+      if (!trip) throw new NotFoundError(`Trip #${input.tripId} not found`);
+      await assertTravelReadable(context, trip.employee_id, true);
+      const headroom = await getTripBudgetHeadroom(context.db, input.tripId);
+      return {
+        tripId: input.tripId,
+        ...headroom,
+      };
+    }),
+
   // ── Claims & Settlement ────────────────────────────────────────────────
   listClaims: authed
     .route({ method: 'GET', path: '/travel/claims', summary: 'List travel expense claims' })
@@ -449,6 +478,10 @@ export const travelRouter = {
         netRecoverablePaise: c.net_recoverable_paise,
         status: c.status,
         settlementStatus: c.settlement_status,
+        summaryDocumentId: c.summary_document_id,
+        summaryDocumentUrl: c.summary_document_url,
+        periodFrom: c.period_from,
+        periodTo: c.period_to,
         createdAt: c.created_at,
         updatedAt: c.updated_at,
       }));
@@ -457,7 +490,7 @@ export const travelRouter = {
 
   createClaim: authed
     .route({ method: 'POST', path: '/travel/claims', summary: 'Create new expense claim' })
-    .input(z.object({ tripId: z.number() }))
+    .input(z.object({ tripId: z.number(), periodFrom: z.string().optional(), periodTo: z.string().optional() }))
     .output(z.object({ claim: claimSchema }))
     .handler(async ({ input, context }) => {
       const service = new SettlementService(context.db);
@@ -465,6 +498,8 @@ export const travelRouter = {
       const claim = await service.createClaim({
         tripId: input.tripId,
         employeeId: empId,
+        periodFrom: input.periodFrom,
+        periodTo: input.periodTo,
       });
       return {
         claim: {
@@ -479,6 +514,10 @@ export const travelRouter = {
           netRecoverablePaise: claim.net_recoverable_paise,
           status: claim.status,
           settlementStatus: claim.settlement_status,
+          summaryDocumentId: claim.summary_document_id,
+          summaryDocumentUrl: claim.summary_document_url,
+          periodFrom: claim.period_from,
+          periodTo: claim.period_to,
           createdAt: claim.created_at,
           updatedAt: claim.updated_at,
         },
@@ -495,6 +534,7 @@ export const travelRouter = {
         amountPaise: z.number().min(100),
         currency: z.string().optional(),
         fxRateToInr: z.number().optional(),
+        receiptDocumentId: z.number().optional(),
         receiptUrl: z.string().optional(),
         description: z.string().optional(),
       })
@@ -513,6 +553,7 @@ export const travelRouter = {
           currency: item.currency,
           fxRateToInr: Number(item.fx_rate_to_inr),
           inrAmountPaise: item.inr_amount_paise,
+          receiptDocumentId: item.receipt_document_id,
           receiptUrl: item.receipt_url,
           description: item.description,
           createdAt: item.created_at,
@@ -522,16 +563,30 @@ export const travelRouter = {
 
   submitClaim: authed
     .route({ method: 'POST', path: '/travel/claims/{claimId}/submit', summary: 'Submit my claim for reporting-manager approval' })
-    .input(z.object({ claimId: z.coerce.number().int().positive() }))
+    .input(
+      z.object({
+        claimId: z.coerce.number().int().positive(),
+        summaryDocumentId: z.number().optional(),
+        summaryDocumentUrl: z.string().optional(),
+      })
+    )
     .output(z.object({ claim: claimSchema }))
     .handler(async ({ input, context }) => {
-      const c = await new SettlementService(context.db).submitClaim({ claimId: input.claimId, actorEmployeeId: context.user.employee_id, actorUserId: context.user.id });
+      const c = await new SettlementService(context.db).submitClaim({
+        claimId: input.claimId,
+        actorEmployeeId: context.user.employee_id,
+        actorUserId: context.user.id,
+        summaryDocumentId: input.summaryDocumentId,
+        summaryDocumentUrl: input.summaryDocumentUrl,
+      });
       return {
         claim: {
           id: c.id, referenceNo: c.reference_no, tripId: c.trip_id, employeeId: c.employee_id,
           totalClaimedPaise: c.total_claimed_paise, approvedAmountPaise: c.approved_amount_paise,
           advanceAdjustedPaise: c.advance_adjusted_paise, netPayablePaise: c.net_payable_paise,
           netRecoverablePaise: c.net_recoverable_paise, status: c.status, settlementStatus: c.settlement_status,
+          summaryDocumentId: c.summary_document_id, summaryDocumentUrl: c.summary_document_url,
+          periodFrom: c.period_from, periodTo: c.period_to,
           createdAt: c.created_at, updatedAt: c.updated_at,
         },
       };

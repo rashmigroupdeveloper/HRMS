@@ -1,13 +1,13 @@
 /** External endpoint: ATS client authentication replaces human role assertions. */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { base } from '../../api/orpc.js';
-import { acceptedOfferSchema, acceptanceDigest } from './contract.js';
-import { verifyAtsAssertion } from './security.js';
+import { withPermission } from '../../api/orpc.js';
+import { acceptedOfferSchema } from './contract.js';
+import { atsClientAccount } from './client-account.js';
 import { atsCompanyIds } from './company-scope.js';
 import { receiveAcceptedOffer } from './service.js';
 export const atsBridgeRouter = {
-  companies: base
+  companies: withPermission('integration.ats.receive', 'read', atsClientAccount)
     .route({
       method: 'GET',
       path: '/integrations/ats/employing-entities',
@@ -25,9 +25,10 @@ export const atsBridgeRouter = {
       }),
     )
     .handler(async ({ context }) => {
-      if (!context.db)
-        throw new ORPCError('SERVICE_UNAVAILABLE', { message: 'Database unavailable' });
-      await verifyAtsAssertion(context.db, context.req.headers.authorization, acceptanceDigest({}));
+      if (!context.permissionAccess.all)
+        throw new ORPCError('FORBIDDEN', {
+          message: 'Configured integration requires group-scoped authority',
+        });
       const ids = await atsCompanyIds(context.db);
       const rows = await context.db
         .selectFrom('core.companies')
@@ -42,7 +43,7 @@ export const atsBridgeRouter = {
         },
       };
     }),
-  receive: base
+  receive: withPermission('integration.ats.receive', 'write', atsClientAccount)
     .route({
       method: 'POST',
       path: '/integrations/ats/accepted-offers',
@@ -56,13 +57,10 @@ export const atsBridgeRouter = {
       }),
     )
     .handler(async ({ context, input }) => {
-      if (!context.db)
-        throw new ORPCError('SERVICE_UNAVAILABLE', { message: 'Database unavailable' });
-      await verifyAtsAssertion(
-        context.db,
-        context.req.headers.authorization,
-        acceptanceDigest(input),
-      );
-      return { success: true as const, data: await receiveAcceptedOffer(context.db, input) };
+      if (!context.permissionAccess.all)
+        throw new ORPCError('FORBIDDEN', {
+          message: 'Configured integration requires group-scoped authority',
+        });
+      return { success: true as const, data: await receiveAcceptedOffer(context.db, input, context.user.id) };
     }),
 };

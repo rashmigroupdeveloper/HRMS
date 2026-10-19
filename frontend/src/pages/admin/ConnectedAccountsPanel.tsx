@@ -31,18 +31,23 @@ export function ConnectedAccountsPanel() {
   const [subject, setSubject] = useState('');
   const [reason, setReason] = useState('');
   const [links, setLinks] = useState<LinkRow[]>([]);
+  const [hasMore, setHasMore] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   async function reload() {
     const result = await apiFetch<{ links: LinkRow[] }>('/api/sso/links');
     setLinks(result.links);
+    setHasMore(result.links.length === 50);
   }
   useEffect(() => {
     let active = true;
     void apiFetch<{ links: LinkRow[] }>('/api/sso/links')
       .then((result) => {
-        if (active) setLinks(result.links);
+        if (active) {
+          setLinks(result.links);
+          setHasMore(result.links.length === 50);
+        }
       })
       .catch((cause: unknown) => {
         if (active)
@@ -52,6 +57,25 @@ export function ConnectedAccountsPanel() {
       active = false;
     };
   }, []);
+  async function loadMore() {
+    const cursor = links.at(-1)?.id;
+    if (busy || !cursor) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await apiFetch<{ links: LinkRow[] }>(
+        `/api/sso/links?cursor=${String(cursor)}`,
+      );
+      setLinks((current) => [
+        ...new Map([...current, ...result.links].map((link) => [link.id, link])).values(),
+      ]);
+      setHasMore(result.links.length === 50);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not load more account links');
+    } finally {
+      setBusy(false);
+    }
+  }
   async function search(which: 'local' | 'external') {
     setBusy(true);
     setError(null);
@@ -227,8 +251,16 @@ export function ConnectedAccountsPanel() {
           </li>
         ))}
       </ul>
-      {links.length === 50 && (
-        <p className="text-xs text-ink-muted">Showing the latest 50 links.</p>
+      {hasMore && (
+        <Button
+          variant="secondary"
+          disabled={busy}
+          onClick={() => {
+            void loadMore();
+          }}
+        >
+          Load more connected accounts
+        </Button>
       )}
     </Card>
   );

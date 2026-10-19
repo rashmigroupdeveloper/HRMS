@@ -13,6 +13,7 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { ConflictError, DomainError, ForbiddenError, NotFoundError } from '../../core/errors/index.js';
 import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { createRequest } from '../workflows/index.js';
+import { assertDate, assertWithinTrip } from './travel-utils.js';
 import { WalletService } from './wallet.service.js';
 import { inTransaction } from '../../core/db/database.js';
 
@@ -59,29 +60,6 @@ export interface RequestAdvanceInput {
 }
 
 type Db = Kysely<Database> | Transaction<Database>;
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-function assertDate(value: string, label: string): string {
-  const day = value.slice(0, 10);
-  if (!ISO_DATE.test(day) || Number.isNaN(Date.parse(`${day}T00:00:00Z`))) {
-    throw new DomainError(`${label} must be a valid date (YYYY-MM-DD)`);
-  }
-  return day;
-}
-
-function isoDay(value: Date | string): string {
-  if (typeof value === 'string') return value.slice(0, 10);
-  const y = value.getFullYear();
-  const m = String(value.getMonth() + 1).padStart(2, '0');
-  const d = String(value.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-export function assertWithinTrip(trip: { start_date: Date | string; end_date: Date | string }, day: string, label: string): void {
-  if (day < isoDay(trip.start_date) || day > isoDay(trip.end_date)) {
-    throw new DomainError(`${label} must fall within the trip dates (${isoDay(trip.start_date)} to ${isoDay(trip.end_date)})`);
-  }
-}
 
 function scopeFilter(scope: EmployeeScope | undefined) {
   return sql<boolean>`employee_id IN (SELECT e.id FROM core.employees e WHERE ${employeeScopeSql(scope, 'e')})`;

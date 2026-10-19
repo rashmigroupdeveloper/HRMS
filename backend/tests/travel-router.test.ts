@@ -24,7 +24,7 @@ const DB_URL = process.env['DATABASE_URL'];
 const JWT_SECRET = process.env['JWT_SECRET'] ?? 'synthetic-jwt-test-secret-at-least-32-characters-long';
 
 interface TravelBody {
-  budgets:unknown[];trip:{id:number;status:string;approvedBudgetPaise?:number};trips:unknown[];
+  budgets:unknown[];trip:{id:number;status:string;approvedBudgetPaise:number};trips:unknown[];
   itinerary:{estimatedCostPaise:number};itineraries:unknown[];
   advance:{id:number;status:string};advances:unknown[];claim:{id:number};claims:unknown[];
   item:{amountPaise:number};settlementId:number;advanceAdjustedPaise:number;netRecoverablePaise:number;
@@ -90,21 +90,21 @@ describe.skipIf(!DB_URL)('Travel & Expense Router Endpoints (TE-01..12, C-02, P-
     const get = (path:string, who: keyof typeof tokens) => client.get(path).auth(as(who).token,{type:'bearer'});
 
     // Inverted dates are refused (P-23).
-    expect((await post('/api/travel/trips','employee',{tripName:'Inverted',travelType:'domestic',purpose:'Inverted trip dates check',destinationCity:'Jajpur',startDate:'2026-06-05',endDate:'2026-06-01'})).status).toBe(400);
+    expect((await post('/api/travel/trips','employee',{tripName:'Inverted',travelType:'domestic',purpose:'Inverted trip dates check',destinationCity:'Jajpur',startDate:'2026-07-05',endDate:'2026-07-01'})).status).toBe(400);
 
-    const tripRes = await post('/api/travel/trips','employee',{tripName:'Kalinganagar Plant Audit',travelType:'domestic',purpose:'Annual blast furnace safety audit',destinationCity:'Jajpur',startDate:'2026-06-01',endDate:'2026-06-05'});
+    const tripRes = await post('/api/travel/trips','employee',{tripName:'Kalinganagar Plant Audit',travelType:'domestic',purpose:'Annual blast furnace safety audit',destinationCity:'Jajpur',startDate:'2026-07-01',endDate:'2026-07-05',estimatedBudgetPaise:5000000});
     expect(tripRes.status).toBe(200);
     const tripId = (tripRes.body as TravelBody).trip.id;
     expect((tripRes.body as TravelBody).trip.status).toBe('submitted');
 
     // Segment outside the trip window is refused; inside is accepted.
-    expect((await post(`/api/travel/trips/${tripId}/itineraries`,'employee',{tripId,segmentType:'flight',origin:'Kolkata',destination:'Bhubaneswar',departureDate:'2026-07-01'})).status).toBe(400);
-    const itRes = await post(`/api/travel/trips/${tripId}/itineraries`,'employee',{tripId,segmentType:'flight',origin:'Kolkata',destination:'Bhubaneswar',departureDate:'2026-06-01',estimatedCostPaise:450000});
+    expect((await post(`/api/travel/trips/${tripId}/itineraries`,'employee',{tripId,segmentType:'flight',origin:'Kolkata',destination:'Bhubaneswar',departureDate:'2026-08-01'})).status).toBe(400);
+    const itRes = await post(`/api/travel/trips/${tripId}/itineraries`,'employee',{tripId,segmentType:'flight',origin:'Kolkata',destination:'Bhubaneswar',departureDate:'2026-07-01',estimatedCostPaise:450000});
     expect(itRes.status).toBe(200);
 
     // C-02 / B-05: another employee can neither read nor act on this trip or wallet.
     expect((await get(`/api/travel/trips/${tripId}`,'outsider')).status).toBe(403);
-    expect((await post(`/api/travel/trips/${tripId}/itineraries`,'outsider',{tripId,segmentType:'hotel',origin:'X',destination:'Y',departureDate:'2026-06-02'})).status).toBe(403);
+    expect((await post(`/api/travel/trips/${tripId}/itineraries`,'outsider',{tripId,segmentType:'hotel',origin:'X',destination:'Y',departureDate:'2026-07-02'})).status).toBe(403);
     expect((await post('/api/travel/advances','outsider',{tripId,amountPaise:100000,purpose:'Advance on someone else trip'})).status).toBe(403);
     expect((await get(`/api/travel/wallet?employeeId=${ids.employee}`,'outsider')).status).toBe(403);
     expect((await get(`/api/travel/trips?employeeId=${ids.employee}`,'outsider')).status).toBe(403);
@@ -132,14 +132,14 @@ describe.skipIf(!DB_URL)('Travel & Expense Router Endpoints (TE-01..12, C-02, P-
     const claimRes = await post('/api/travel/claims','employee',{tripId});
     expect(claimRes.status).toBe(200);
     const claimId = (claimRes.body as TravelBody).claim.id;
-    expect((await post(`/api/travel/claims/${claimId}/items`,'employee',{claimId,category:'hotel',itemDate:'2026-06-20',amountPaise:400000})).status).toBe(400);
-    expect((await post(`/api/travel/claims/${claimId}/items`,'outsider',{claimId,category:'hotel',itemDate:'2026-06-02',amountPaise:400000})).status).toBe(403);
-    const itemRes = await post(`/api/travel/claims/${claimId}/items`,'employee',{claimId,category:'hotel',itemDate:'2026-06-02',amountPaise:400000,description:'Hotel (2 nights)'});
+    expect((await post(`/api/travel/claims/${claimId}/items`,'employee',{claimId,category:'hotel',itemDate:'2026-07-20',amountPaise:400000,receiptUrl:'https://storage.hrms/receipts/bill1.pdf'})).status).toBe(400);
+    expect((await post(`/api/travel/claims/${claimId}/items`,'outsider',{claimId,category:'hotel',itemDate:'2026-07-02',amountPaise:400000,receiptUrl:'https://storage.hrms/receipts/bill1.pdf'})).status).toBe(403);
+    const itemRes = await post(`/api/travel/claims/${claimId}/items`,'employee',{claimId,category:'hotel',itemDate:'2026-07-02',amountPaise:400000,description:'Hotel (2 nights)',receiptUrl:'https://storage.hrms/receipts/bill1.pdf'});
     expect(itemRes.status).toBe(200);
 
     // Draft claims cannot be settled (P-23).
     expect((await post(`/api/travel/claims/${claimId}/settle`,'payroll',{claimId,approvedAmountPaise:400000})).status).toBe(409);
-    expect((await post(`/api/travel/claims/${claimId}/submit`,'employee')).status).toBe(200);
+    expect((await post(`/api/travel/claims/${claimId}/submit`,'employee',{claimId,summaryDocumentUrl:'https://storage.hrms/summary.pdf'})).status).toBe(200);
     expect(await approveAs('te.claims', claimId, ids.managerUser)).toBe('approved');
 
     const settleRes = await post(`/api/travel/claims/${claimId}/settle`,'payroll',{claimId,approvedAmountPaise:400000,settlementMode:'AUTO'});
