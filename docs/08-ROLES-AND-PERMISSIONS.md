@@ -17,7 +17,7 @@ The single reference for "who sees what and can do what." An implementing AI/dev
 | `it_admin` | ERP/IT team (Sharique) | Users, roles, devices, integrations, settings — **no HR data authority** (cannot see salaries) |
 | `super_admin` | 1–2 named people only | Everything `it_admin` + role grants + settings + audit access + payroll unlock authority. Not for daily use |
 
-Roles are **additive**: a person holds several (Chaitanya = employee + manager + hr_head). Scoping: `user_roles.scope_org_unit_id` restricts hr_ops/plant_head to their entity/plant.
+Roles are **additive**: a person holds several (Chaitanya = employee + manager + hr_head). Scoping: `user_roles.scope_org_unit_id` restricts hr_ops and plant_head to their entity or plant. Payroll is not limited to one entity. A super admin assigns `payroll_admin` either to one entity or to the whole group, and the grant says which. A blank grant is refused. `super_admin`, `it_admin`, `hr_head` and `ceo_cell` are never bound to one entity. An employee directory lists colleagues in the same company (name, role, department). Opening a colleague does not reveal pay, statutory IDs, phone or address. Joining medical notes are `employee.medical.read`, held by HR operations and HR head only.
 
 ## 2. Permission grid (seed data)
 
@@ -77,7 +77,7 @@ Dashboard: 05-UIUX §4.1 (joiners/exits, absence cases, OT aging, probation due,
 Adds: approval-of-record queues (confirmations, separations step-final, offers per LOI chain), settings (HR policy values), full-company scope, audit view (P). Same HR dashboard, company-wide.
 
 ### payroll_admin
-Nav: **Payroll Console (run stepper) · Inputs · Review Grid · Outputs (bank/JV/statutory) · Salary Structures · Loans & Advances · Claims (payment batch) · Declarations Verification · Statutory Calendar · Payroll Reports**
+Coverage is chosen per person by a super admin: one entity, or the whole group. There is no separate group-only payroll role. Nav: **Payroll Console (run stepper) · Inputs · Review Grid · Outputs (bank/JV/statutory) · Salary Structures · Loans & Advances · Claims (payment batch) · Declarations Verification · Statutory Calendar · Payroll Reports**
 Dashboard: current run state, exceptions (negative net, missing salaries, ESIC boundary changes), statutory due dates (ECR/ESIC/PT/TDS), parallel-run status (transition).
 
 ### plant_head
@@ -136,3 +136,10 @@ All chains editable by hr_head via UI (WF-01 configurability); these are the shi
 
 
 `integration.ats.receive` is the sole business permission for the ATS machine's configured company catalog/accepted-offer intake. It is required in the same central `withPermission` gate as human APIs; a dedicated client proof resolves the explicitly configured active service principal, never ATS role claims. Group scope and `integration.ats.company_ids` both restrict access. Only the normal super-admin catch-all receives this new permission by seed; provisioning a dedicated service principal and its role grants is an explicit deployment-admin task. No new principal is created or silently granted access. Revocation/account disable takes effect on the next request even if the signing key remains valid.
+
+
+## Sponsor amendment — recovered document vault, 19 October 2026
+
+DOC-01/02/03 is authorized by `docs/15-WAVE-0-RECOVERY-SCOPE.md`. `doc.vault.own` is own-record access for the employee-facing roles (and unrestricted administrative permission for super_admin); `doc.vault.manage` belongs to hr_ops at org_unit scope and hr_head/super_admin at group scope. Runtime grants remain database-driven. An HR vault permission does not reveal unmasked identity-document contents: non-owner downloads of configured identity types additionally require `employee.statutory_ids.read` covering that employee. Catalog filenames are redacted for non-owners because the filename itself can contain a statutory ID. Every content download requires a purpose and writes an audit row before returning bytes. Separate own/managed catalog procedures avoid requiring an unrelated own-vault grant for HR operations.
+
+SEC-04 password re-entry before role/permission mutations uses the existing `admin.roles` authority and a short, runtime-configured window on the current session; it never grants a permission. MFA is explicitly excluded by the sponsor.

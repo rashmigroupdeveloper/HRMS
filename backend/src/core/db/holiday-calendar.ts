@@ -5,6 +5,7 @@
  * Shared by day resolution, leave spans, payroll working-day divisors and the muster.
  */
 import { sql, type Kysely, type RawBuilder } from 'kysely';
+import { inTransaction } from './database.js';
 import type { Database } from './types.js';
 
 export interface HolidayScopeSubject {
@@ -101,10 +102,20 @@ export async function resolveHolidayScope(db: Kysely<Database>, input: HolidaySc
 export async function upsertScopedHoliday(
   db: Kysely<Database>, scope: HolidayScope, isoDate: string, name: string,
 ): Promise<boolean> {
-  const res = await db.insertInto('att.holidays')
+  return inTransaction(db, async trx => {
+  // Target-free insert handles both old and new null-aware unique indexes.
+  // A losing concurrent insert waits for its winner, then updates that row.
+  const inserted = await trx.insertInto('att.holidays')
     .values({ holiday_date: sql<Date>`${isoDate}::date` as unknown as Date, name, ...scope })
-    .onConflict((oc) => oc.columns(['company_id', 'plant_id', 'location_id', 'holiday_date']).doUpdateSet({ name }))
-    .returning(sql<boolean>`(xmax = 0)`.as('inserted')).executeTakeFirstOrThrow();
+    .onConflict(oc => oc.doNothing()).returning('id').executeTakeFirst();
+  if (!inserted) {
+    await trx.updateTable('att.holidays').set({ name })
+      .where('holiday_date', '=', sql<Date>`${isoDate}::date`)
+      .where(sql<boolean>`company_id IS NOT DISTINCT FROM ${scope.company_id}::bigint`)
+      .where(sql<boolean>`plant_id IS NOT DISTINCT FROM ${scope.plant_id}::bigint`)
+      .where(sql<boolean>`location_id IS NOT DISTINCT FROM ${scope.location_id}::bigint`)
+      .returning('id').executeTakeFirstOrThrow();
+  }
   await sql`
     INSERT INTO att.recompute_queue (employee_id, work_date)
     SELECT d.employee_id, d.work_date
@@ -114,6 +125,7 @@ export async function upsertScopedHoliday(
       AND (${scope.plant_id}::bigint IS NULL OR e.plant_id = ${scope.plant_id}::bigint)
       AND (${scope.location_id}::bigint IS NULL OR e.location_id = ${scope.location_id}::bigint)
     ON CONFLICT (employee_id, work_date) DO NOTHING
-  `.execute(db);
-  return res.inserted;
+  `.execute(trx);
+  return inserted !== undefined;
+  });
 }

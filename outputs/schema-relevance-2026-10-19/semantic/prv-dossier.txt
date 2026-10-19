@@ -1,0 +1,146 @@
+
+## prv.breach_register
+id: bigint NOT NULL | 
+discovered_at: timestamp with time zone NOT NULL | 
+summary: text NOT NULL | 
+notified_board_at: timestamp with time zone NULL | 
+notified_principals_at: timestamp with time zone NULL | 
+recorded_by: bigint NOT NULL | 
+Constraints: ["FOREIGN KEY (recorded_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+
+## prv.consent_events
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+purpose: text NOT NULL | 
+action: text NOT NULL | 
+actor_user_id: bigint NOT NULL | 
+occurred_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((action = ANY (ARRAY['grant'::text, 'withdraw'::text])))", "FOREIGN KEY (actor_user_id) REFERENCES core.users(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)"]
+
+## prv.consents
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+purpose: text NOT NULL | 
+granted: boolean NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((purpose = ANY (ARRAY['photograph'::text, 'wellness'::text, 'bgv'::text, 'family'::text, 'alumni'::text])))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)", "UNIQUE (employee_id, purpose)"]
+
+## prv.declaration_texts
+id: bigint NOT NULL | 
+kind: text NOT NULL | 
+version: integer NOT NULL | 
+title: text NOT NULL | 
+body: text NOT NULL | 
+sha256: text NOT NULL | 
+is_current: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((version > 0))", "PRIMARY KEY (id)", "UNIQUE (kind, version)"]
+
+## prv.declarations
+id: bigint NOT NULL | 
+text_id: bigint NOT NULL | 
+kind: text NOT NULL | 
+text_version: integer NOT NULL | 
+text_sha256: text NOT NULL | 
+candidate_id: bigint NULL | 
+employee_id: bigint NULL | 
+actor_user_id: bigint NULL | 
+accepted: boolean NOT NULL | 
+signature_kind: text NOT NULL | 
+signed_name: text NOT NULL | 
+signature_document_id: bigint NULL | 
+ip: text NULL | 
+user_agent: text NULL | 
+accepted_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((candidate_id IS NOT NULL) OR (employee_id IS NOT NULL)))", "CHECK (((signature_kind <> 'drawn'::text) OR (signature_document_id IS NOT NULL)))", "CHECK ((signature_kind = ANY (ARRAY['typed'::text, 'drawn'::text])))", "FOREIGN KEY (actor_user_id) REFERENCES core.users(id)", "FOREIGN KEY (candidate_id) REFERENCES core.onboarding_candidates(id) ON DELETE SET NULL", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (signature_document_id) REFERENCES core.documents(id)", "FOREIGN KEY (text_id) REFERENCES prv.declaration_texts(id)", "PRIMARY KEY (id)"]
+
+## prv.legal_holds
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+data_class: text NULL | 
+reason: text NOT NULL | 
+placed_by: bigint NOT NULL | 
+released_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (placed_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+
+## prv.notice_acks
+id: bigint NOT NULL | 
+notice_id: bigint NOT NULL | 
+user_id: bigint NOT NULL | 
+acknowledged_at: timestamp with time zone NOT NULL | 
+ip: text NULL | 
+Constraints: ["FOREIGN KEY (notice_id) REFERENCES prv.notices(id)", "FOREIGN KEY (user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)", "UNIQUE (notice_id, user_id)"]
+
+## prv.notices
+id: bigint NOT NULL | 
+version: integer NOT NULL | 
+principal_class: text NOT NULL | 
+title: text NOT NULL | 
+body: text NOT NULL | 
+effective_from: timestamp with time zone NOT NULL | 
+is_current: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((principal_class = ANY (ARRAY['employee'::text, 'candidate'::text, 'contractor_worker'::text, 'dependant'::text])))", "PRIMARY KEY (id)", "UNIQUE (principal_class, version)"]
+
+## prv.processing_register
+id: bigint NOT NULL | 
+data_class: text NOT NULL | 
+purpose: text NOT NULL | 
+lawful_basis: text NOT NULL | 
+retention_days: integer NOT NULL | 
+recipients: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((lawful_basis = ANY (ARRAY['employment'::text, 'consent'::text, 'legal_obligation'::text])))", "CHECK ((retention_days > 0))", "PRIMARY KEY (id)", "UNIQUE (data_class)"]
+
+## prv.processors
+id: bigint NOT NULL | 
+name: text NOT NULL | 
+purpose: text NOT NULL | 
+dpa_status: text NOT NULL | 
+dpa_expires_on: date NULL | 
+owner_email: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((dpa_status = ANY (ARRAY['active'::text, 'expired'::text, 'missing'::text])))", "PRIMARY KEY (id)"]
+
+## prv.purge_log
+id: bigint NOT NULL | 
+proposal_id: bigint NOT NULL | 
+data_class: text NOT NULL | 
+row_count: integer NOT NULL | 
+rule: text NOT NULL | 
+executed_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (proposal_id) REFERENCES prv.purge_proposals(id)", "PRIMARY KEY (id)"]
+
+## prv.purge_proposals
+id: bigint NOT NULL | 
+data_class: text NOT NULL | 
+row_count: integer NOT NULL | 
+excluded_holds: integer NOT NULL | 
+proposed_by: bigint NOT NULL | 
+proposed_at: timestamp with time zone NOT NULL | 
+confirmed_by: bigint NULL | 
+confirmed_at: timestamp with time zone NULL | 
+Constraints: ["CHECK (((confirmed_by IS NULL) OR (confirmed_by <> proposed_by)))", "CHECK ((row_count >= 0))", "FOREIGN KEY (confirmed_by) REFERENCES core.users(id)", "FOREIGN KEY (proposed_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+
+## prv.retention_rules
+id: bigint NOT NULL | 
+data_class: text NOT NULL | 
+retention_days: integer NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((retention_days > 0))", "FOREIGN KEY (data_class) REFERENCES prv.processing_register(data_class)", "PRIMARY KEY (id)", "UNIQUE (data_class)"]
+
+## prv.rights_requests
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+kind: text NOT NULL | 
+status: text NOT NULL | 
+reason: text NULL | 
+refusal_reason: text NULL | 
+workflow_request_id: bigint NULL | 
+due_at: timestamp with time zone NOT NULL | 
+closed_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((kind = ANY (ARRAY['access'::text, 'correction'::text, 'erasure'::text])))", "CHECK ((status = ANY (ARRAY['open'::text, 'in_progress'::text, 'fulfilled'::text, 'refused'::text])))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (workflow_request_id) REFERENCES wf.requests(id)", "PRIMARY KEY (id)"]

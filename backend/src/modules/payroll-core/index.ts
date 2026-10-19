@@ -230,6 +230,8 @@ export {
   type FnfBreakdownLine,
 } from './fnf/fnf-engine.js';
 
+export { fnfCycles, fnfCycleForDate, fnfTatState, type FnfCycle, type FnfTatState } from './fnf/fnf-calendar.js';
+
 export { readLockedPayableDays } from './runs/attendance.repository.js';
 
 // Bulk import (CSV/Excel) building blocks — consumed by modules/bulk.

@@ -9,6 +9,7 @@ import { DomainError } from '../../../core/errors/index.js';
 import { type Paise, paise, toRupees, parseRupees, decimalRupees, add } from '../../../core/money/index.js';
 import { getTypedSetting } from '../../settings/index.js';
 import { validateRunTransition } from './run-state-machine.js';
+import { assertIndiaPayroll } from './run-country.js';
 import { readLockedDayFacts } from './attendance.repository.js';
 import { evaluatePayableDays, parseLopDivisor } from './payable-days.js';
 import { resolveAttendanceWindow } from '../../../core/db/attendance-cycle.js';
@@ -56,6 +57,7 @@ export async function computeLockedRun(
   const runId = run.id;
   const validation = validateRunTransition({ fromStatus: run.status, toStatus: 'computed', attendanceLockId: run.attendance_lock_id, actorUserId });
   if (!validation.valid) throw new DomainError(validation.error ?? 'Run cannot be computed now', 'CONFLICT');
+  await assertIndiaPayroll(trx, run.company_id);
 
   const monthStr = formatDbDate(run.month);
   const [year = 0, month = 0] = monthStr.split('-').map(Number);
@@ -270,14 +272,11 @@ export async function computeLockedRun(
       esicCovered = grossAtStart <= rates.esicCeilingPaise;
     }
 
-    // P-04: TDS = projected annual tax ÷ 12, for the days actually paid.
-    let monthlyTdsPaise = paise(0);
-    if (!apprentice) {
-      const ptMonthly = computeProfessionalTax(contractedGross, contractedGross, ptSlabs);
-      const annualTax = await projectAnnualTax(trx, { employeeId: emp.id, regime: emp.tax_regime, contractedMonthlyGrossPaise: contractedGross, monthlyPtPaise: ptMonthly, fy });
-      const effectiveDays = Math.min(daysInMonth, payableDays);
-      monthlyTdsPaise = roundMonthlyTds(paise(Math.round((annualTax / 12) * (effectiveDays / daysInMonth))));
-    }
+    // P-04 / PAY-14: TDS applies when the stipend is taxable. PF, ESIC and bonus do not (docs/10 §9).
+    const ptMonthly = computeProfessionalTax(contractedGross, contractedGross, ptSlabs);
+    const annualTax = await projectAnnualTax(trx, { employeeId: emp.id, regime: emp.tax_regime, contractedMonthlyGrossPaise: contractedGross, monthlyPtPaise: ptMonthly, fy });
+    const effectiveDays = Math.min(daysInMonth, payableDays);
+    const monthlyTdsPaise = roundMonthlyTds(paise(Math.round((annualTax / 12) * (effectiveDays / daysInMonth))));
 
     const lwfPaise = lwfInPayroll ? computeLwf(month, stateCode).eeLwfPaise : paise(0);
     const hold = await new SalaryHoldsService(trx).getActiveHold(emp.id, monthStr);

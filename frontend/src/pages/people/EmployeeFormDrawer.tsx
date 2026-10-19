@@ -116,7 +116,7 @@ export function EmployeeFormDrawer({ open, onClose, ecode, initial, onSaved }: {
             options={(m['companies'] ?? []).map((c) => ({ value: c.code ?? '', label: `${c.code ?? ''} · ${c.name}` }))} />}
           {text('firstName', 'First name')}
           {text('lastName', 'Last name')}
-          <Select label="Gender" value={v.gender} onChange={set('gender')} placeholder="Choose…" options={['Male', 'Female', 'Other'].map((g) => ({ value: g, label: g }))} />
+          <Select label="Gender" value={v.gender} onChange={set('gender')} placeholder="Choose…" options={['Male', 'Female', 'Transgender'].map((g) => ({ value: g, label: g }))} />
           {text('dob', 'Date of birth', { type: 'date', hint: 'Must be 18+ on the joining date' })}
           {text('doj', 'Date of joining', { type: 'date' })}
         </section>

@@ -1,0 +1,422 @@
+
+## att.absence_cases
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+start_date: date NOT NULL | 
+days_absent: smallint NOT NULL | 
+stage: text NOT NULL | 
+letter_id: bigint NULL | 
+hr_owner_id: bigint NULL | 
+resolution: text NULL | 
+closed_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((resolution IS NULL) = (closed_at IS NULL)))", "CHECK ((resolution = ANY (ARRAY['returned'::text, 'regularized'::text, 'exited'::text])))", "CHECK ((stage = ANY (ARRAY['watch'::text, 'show_cause'::text, 'warning'::text, 'termination_review'::text])))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (hr_owner_id) REFERENCES core.users(id)", "FOREIGN KEY (letter_id) REFERENCES core.letters(id)", "PRIMARY KEY (id)"]
+backend/src/modules/attendance/absence.service.ts:109 runAbsenceScan updateTable write=days_absent,stage indirect=True locks=[]
+backend/src/modules/attendance/absence.service.ts:126 opened insertInto write=employee_id,start_date,days_absent,stage indirect=False locks=[]
+backend/src/modules/attendance/absence.service.ts:182 runAbsenceScan updateTable write=resolution,closed_at indirect=False locks=[]
+backend/src/modules/attendance/absence.service.ts:201 setAbsenceCaseStage updateTable write=stage,hr_owner_id indirect=False locks=[]
+backend/src/modules/attendance/absence.service.ts:241 issueAbsenceCaseLetter updateTable write=letter_id,hr_owner_id indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## att.coverage_targets
+id: bigint NOT NULL | 
+location_id: bigint NOT NULL | 
+department_id: bigint NULL | 
+shift_id: bigint NOT NULL | 
+weekday: smallint NOT NULL | 
+sanctioned: integer NOT NULL | 
+updated_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((weekday >= 0) AND (weekday <= 6)))", "CHECK ((sanctioned >= 0))", "FOREIGN KEY (department_id) REFERENCES core.departments(id)", "FOREIGN KEY (location_id) REFERENCES core.locations(id)", "FOREIGN KEY (shift_id) REFERENCES att.shifts(id)", "FOREIGN KEY (updated_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+
+## att.day_records
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+work_date: date NOT NULL | 
+shift_id: bigint NULL | 
+status: att.day_status NOT NULL | 
+leave_type_id: bigint NULL | 
+first_in: timestamp with time zone NULL | 
+last_out: timestamp with time zone NULL | 
+worked_minutes: integer NULL | 
+late_minutes: smallint NOT NULL | 
+early_exit_minutes: smallint NOT NULL | 
+ot_minutes: smallint NOT NULL | 
+weekoff_paid: boolean NULL | 
+session_statuses: jsonb NULL | 
+scheme_code: text NULL | 
+penalty_flag: boolean NOT NULL | 
+source: text NOT NULL | 
+override_reason: text NULL | 
+is_locked: boolean NOT NULL | 
+computed_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+penalty_evaluation: jsonb NULL | SHF-01: frozen late/early rule findings; [] evaluated none, NULL historical/not evaluated. Never a payable-day quantity.
+Constraints: ["CHECK (\nCASE\n    WHEN (session_statuses IS NULL) THEN true\n    WHEN (jsonb_typeof(session_statuses) <> 'array'::text) THEN false\n    ELSE COALESCE(((jsonb_array_length(session_statuses) = 2) AND (((session_statuses -> 0) -> 'session'::text) = '1'::jsonb) AND (((session_statuses -> 1) -> 'session'::text) = '2'::jsonb) AND (((session_statuses -> 0) ->> 'status'::text) = ANY (ARRAY['P'::text, 'A'::text, 'O'::text, 'OD'::text])) AND (((session_statuses -> 1) ->> 'status'::text) = ANY (ARRAY['P'::text, 'A'::text, 'O'::text, 'OD'::text]))), false)\nEND)", "CHECK (((penalty_evaluation IS NULL) OR (penalty_flag = (jsonb_array_length(penalty_evaluation) > 0))))", "CHECK (((source <> 'manual'::text) OR (override_reason IS NOT NULL)))", "CHECK (((worked_minutes IS NULL) OR (worked_minutes >= 0))) NOT VALID", "CHECK ((source = ANY (ARRAY['auto'::text, 'regularized'::text, 'manual'::text])))", "CHECK (att.valid_penalty_evaluation(penalty_evaluation))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (leave_type_id) REFERENCES lv.leave_types(id)", "FOREIGN KEY (shift_id) REFERENCES att.shifts(id)", "PRIMARY KEY (id)", "UNIQUE (employee_id, work_date)"]
+backend/src/modules/reports/reports.service.ts:89 q raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/reports/reports.service.ts:111 q raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/reports/reports.service.ts:134 q raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/reports/reports.service.ts:234 rows raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/leave/leave-apply.service.ts:121 applied insertInto write=employee_id,work_date,status,penalty_flag,penalty_evaluation,leave_type_id,source,computed_at indirect=True locks=[]
+backend/src/modules/leave/leave-apply.service.ts:217 applyCancelOnFinal updateTable write=status,source,leave_type_id,session_statuses,penalty_flag,penalty_evaluation indirect=False locks=[]
+backend/src/modules/leave/leave-apply.service.ts:359 applied insertInto write=employee_id,work_date,penalty_flag,penalty_evaluation,status,source,leave_type_id,session_statuses,computed_at indirect=False locks=[]
+backend/src/modules/leave/leave-core.service.ts:96 flagged raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/month-lock.service.ts:308 lockMonth raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/day-materialize.ts:26 result raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/day-status.service.ts:460 recomputeDay updateTable write=shift_id,first_in,last_out,worked_minutes,penalty_flag,penalty_evaluation,session_statuses,computed_at indirect=False locks=[]
+backend/src/modules/attendance/day-status.service.ts:486 recomputeDay deleteFrom write= indirect=False locks=[]
+backend/src/modules/attendance/day-status.service.ts:525 recomputeDay insertInto write=employee_id,work_date,penalty_flag,penalty_evaluation,shift_id,status,first_in,last_out,worked_minutes,late_minutes,early_exit_minutes,ot_minutes,session_statuses,scheme_code,source,computed_at indirect=False locks=[]
+backend/src/modules/attendance/regularization.service.ts:230 applied insertInto write=employee_id,work_date,status,late_minutes,early_exit_minutes,penalty_flag,penalty_evaluation,leave_type_id,session_statuses,source,computed_at indirect=False locks=[]
+backend/src/modules/attendance/attendance-config.router.ts:128 upsertShift raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/close-readiness.ts:11 rows raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/manual-status.service.ts:30 previous selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/attendance/manual-status.service.ts:42 posted insertInto write=employee_id,work_date,status,source,override_reason,first_in,last_out,worked_minutes,late_minutes,early_exit_minutes,ot_minutes,penalty_flag,penalty_evaluation,leave_type_id,weekoff_paid,session_statuses,computed_at indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/db/attendance-period.ts:24 protectedDay selectFrom write= indirect=False locks=['forUpdate']
+backend/src/core/db/attendance-period.ts:45 result raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/db/holiday-calendar.ts:119 upsertScopedHoliday raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## att.device_watermarks
+device_id: bigint NOT NULL | 
+watermark_ts: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (device_id) REFERENCES att.devices(id) ON DELETE CASCADE", "PRIMARY KEY (device_id)"]
+backend/src/modules/attendance/month-lock.service.ts:125 watermarkCoverage raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/ingest.service.ts:185 ingestOnce insertInto write=device_id,watermark_ts indirect=False locks=[]
+backend/src/modules/attendance/ingest.service.ts:190 ingestOnce raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/attendance.router.ts:246 apply insertInto write=device_id,watermark_ts indirect=False locks=[]
+backend/src/modules/attendance/attendance.router.ts:247 apply raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## att.devices
+id: bigint NOT NULL | 
+source: text NOT NULL | 
+door_code: text NOT NULL | 
+location_id: bigint NULL | 
+last_seen_at: timestamp with time zone NULL | 
+expected_hourly_swipes: numeric(8,2) NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+alerted_silent_at: timestamp with time zone NULL | 
+Constraints: ["FOREIGN KEY (location_id) REFERENCES core.locations(id)", "PRIMARY KEY (id)", "UNIQUE (door_code)"]
+backend/src/modules/reports/reports.service.ts:77 q raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/month-lock.service.ts:125 watermarkCoverage raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/ingest.service.ts:163 device insertInto write=door_code,source,last_seen_at indirect=False locks=[]
+backend/src/modules/attendance/ingest.service.ts:174 device raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/ingest.service.ts:178 device raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/ingest.service.ts:333 alertSilentDevices updateTable write=alerted_silent_at indirect=False locks=[]
+
+## att.employee_shifts
+employee_id: bigint NOT NULL | 
+weekday_shift_id: bigint NOT NULL | 
+saturday_shift_id: bigint NULL | 
+updated_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (saturday_shift_id) REFERENCES att.shifts(id)", "FOREIGN KEY (updated_by) REFERENCES core.users(id)", "FOREIGN KEY (weekday_shift_id) REFERENCES att.shifts(id)", "PRIMARY KEY (employee_id)"]
+backend/src/modules/attendance/scheme.service.ts:37 assignEmployeeScheme insertInto write=employee_id,weekday_shift_id,saturday_shift_id,updated_by indirect=False locks=[]
+
+## att.holidays
+id: bigint NOT NULL | 
+location_id: bigint NULL | 
+holiday_date: date NOT NULL | 
+name: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+company_id: bigint NULL | C-35 scope: NULL company = whole group; plant/location narrow it further (all non-null columns must match).
+plant_id: bigint NULL | 
+Constraints: ["CHECK ((((plant_id IS NULL) AND (location_id IS NULL)) OR (company_id IS NOT NULL)))", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (location_id) REFERENCES core.locations(id)", "FOREIGN KEY (location_id, company_id) REFERENCES core.locations(id, company_id)", "FOREIGN KEY (plant_id) REFERENCES core.plants(id)", "FOREIGN KEY (plant_id, company_id) REFERENCES core.plants(id, company_id)", "PRIMARY KEY (id)"]
+backend/src/core/db/holiday-calendar.ts:50 rows raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/db/holiday-calendar.ts:108 inserted insertInto write=holiday_date,name indirect=True locks=[]
+backend/src/core/db/holiday-calendar.ts:112 upsertScopedHoliday updateTable write=name indirect=False locks=[]
+
+## att.ingest_watermarks
+source: text NOT NULL | 
+watermark_ts: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["PRIMARY KEY (source)"]
+backend/src/modules/attendance/ingest.service.ts:200 ingestOnce insertInto write=source,watermark_ts indirect=False locks=[]
+
+## att.kent_unknown_faces
+id: bigint NOT NULL | 
+batch_id: bigint NOT NULL | 
+event_ts: timestamp with time zone NULL | 
+device_id: text NULL | 
+device_name: text NULL | 
+location_name: text NULL | 
+image_url: text NULL | 
+raw: jsonb NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (batch_id) REFERENCES att.kent_webhook_batches(id) ON DELETE CASCADE", "PRIMARY KEY (id)"]
+backend/src/modules/attendance/kent-webhook.ts:82 processKentWebhook insertInto write= indirect=True locks=[]
+
+## att.kent_webhook_batches
+id: bigint NOT NULL | 
+received_at: timestamp with time zone NOT NULL | 
+remote_ip: text NULL | 
+raw_body: text NOT NULL | 
+records: integer NOT NULL | 
+accepted: integer NOT NULL | 
+inserted: integer NOT NULL | 
+unknown_faces: integer NOT NULL | 
+rejected: integer NOT NULL | 
+processed_at: timestamp with time zone NULL | 
+error: text NULL | 
+Constraints: ["PRIMARY KEY (id)"]
+backend/src/modules/attendance/kent-webhook.ts:60 batch insertInto write=raw_body,remote_ip,received_at indirect=False locks=[]
+backend/src/modules/attendance/kent-webhook.ts:63 processKentWebhook updateTable write=error,processed_at indirect=False locks=[]
+backend/src/modules/attendance/kent-webhook.ts:92 processKentWebhook updateTable write=error,records,unknown_faces,rejected indirect=False locks=[]
+backend/src/modules/attendance/kent-webhook.ts:96 processKentWebhook updateTable write=records,accepted,inserted,unknown_faces,rejected,processed_at indirect=False locks=[]
+
+## att.leave_blackouts
+id: bigint NOT NULL | 
+blackout_date: date NOT NULL | 
+location_id: bigint NULL | 
+name: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (location_id) REFERENCES core.locations(id)", "PRIMARY KEY (id)", "UNIQUE (location_id, blackout_date)"]
+backend/src/modules/attendance/scheduling.router.ts:356 upsertBlackout insertInto write=blackout_date,name,location_id indirect=False locks=[]
+
+## att.manager_month_approvals
+id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+month: date NOT NULL | 
+manager_employee_id: bigint NOT NULL | 
+approved_by_user_id: bigint NULL | 
+approved_at: timestamp with time zone NOT NULL | 
+note: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+event_type: text NOT NULL | 
+Constraints: ["CHECK ((event_type = ANY (ARRAY['approve'::text, 'invalidate'::text])))", "FOREIGN KEY (approved_by_user_id) REFERENCES core.users(id)", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (manager_employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)"]
+backend/src/modules/attendance/scheme.service.ts:48 assignEmployeeScheme insertInto write=company_id,manager_employee_id,month,event_type,approved_by_user_id,note indirect=False locks=[]
+backend/src/modules/attendance/manager-approval.service.ts:162 approveManagerMonth insertInto write=company_id,month,manager_employee_id,approved_by_user_id,event_type,note indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## att.month_locks
+id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+month: date NOT NULL | 
+locked_by: bigint NOT NULL | 
+locked_at: timestamp with time zone NOT NULL | 
+checklist: jsonb NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+period_from: date NULL | C-17: attendance window [period_from, period_until) frozen by this lock (NULL on pre-cycle locks = calendar month).
+period_until: date NULL | 
+Constraints: ["CHECK ((((period_from IS NULL) = (period_until IS NULL)) AND ((period_from IS NULL) OR (period_from < period_until))))", "CHECK ((month = (date_trunc('month'::text, (month)::timestamp with time zone))::date))", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (locked_by) REFERENCES core.users(id)", "PRIMARY KEY (id)", "UNIQUE (company_id, month)"]
+backend/src/modules/attendance/month-lock.service.ts:295 lock insertInto write=company_id,month,locked_by,checklist,period_from,period_until indirect=False locks=[]
+backend/src/modules/attendance/day-materialize.ts:26 result raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/scheme.service.ts:33 affected raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## att.overtime_entries
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+work_date: date NOT NULL | 
+detected_minutes: smallint NOT NULL | 
+claimed_minutes: smallint NOT NULL | 
+approved_minutes: smallint NULL | 
+status: text NOT NULL | 
+manager_id: bigint NULL | 
+decided_at: timestamp with time zone NULL | 
+deadline_at: timestamp with time zone NOT NULL | 
+workflow_request_id: bigint NULL | 
+comp_off_credit_id: bigint NULL | 
+payroll_item_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((approved_minutes IS NULL) OR (approved_minutes <= claimed_minutes)))", "CHECK (((comp_off_credit_id IS NULL) OR (payroll_item_id IS NULL)))", "CHECK ((claimed_minutes <= detected_minutes))", "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'lapsed'::text, 'converted_comp_off'::text])))", "FOREIGN KEY (comp_off_credit_id) REFERENCES lv.ledger(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (manager_id) REFERENCES core.employees(id)", "FOREIGN KEY (workflow_request_id) REFERENCES wf.requests(id)", "PRIMARY KEY (id)", "UNIQUE (employee_id, work_date)"]
+backend/src/modules/leave/leave-core.service.ts:153 creditCompOffForOvertime updateTable write=comp_off_credit_id indirect=False locks=[]
+backend/src/modules/attendance/overtime.service.ts:73 recordDetectedOvertime updateTable write=detected_minutes,claimed_minutes indirect=False locks=[]
+backend/src/modules/attendance/overtime.service.ts:124 recordDetectedOvertime insertInto write=employee_id,work_date,detected_minutes,claimed_minutes,manager_id,deadline_at,workflow_request_id indirect=False locks=[]
+backend/src/modules/attendance/overtime.service.ts:155 recordDetectedOvertime insertInto write=employee_id,work_date,detected_minutes,claimed_minutes,manager_id,deadline_at indirect=False locks=[]
+backend/src/modules/attendance/overtime.service.ts:191 applyOvertimeOnFinal updateTable write=status,approved_minutes,decided_at indirect=False locks=[]
+backend/src/modules/attendance/overtime.service.ts:262 update updateTable write=status,approved_minutes,manager_id,decided_at indirect=False locks=[]
+backend/src/modules/attendance/overtime.service.ts:309 rows updateTable write=status,decided_at indirect=False locks=[]
+backend/src/modules/attendance/close-readiness.ts:11 rows raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/payroll-core/runs/run-compute.service.ts:137 computeLockedRun updateTable write=payroll_item_id indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run-compute.service.ts:360 computeLockedRun updateTable write=payroll_item_id indirect=False locks=[]
+
+## att.quarantined_swipes
+id: bigint NOT NULL | 
+employee_no: text NOT NULL | 
+swipe_ts: timestamp with time zone NOT NULL | 
+door_code: text NULL | 
+direction: text NULL | 
+swipe_type: text NULL | 
+received_at: timestamp with time zone NOT NULL | 
+source: text NOT NULL | 
+reason: text NOT NULL | 
+reviewed: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["PRIMARY KEY (id)", "UNIQUE (employee_no, swipe_ts, door_code, source)"]
+backend/src/modules/attendance/ingest.service.ts:96 ingestOnce insertInto write=employee_no,swipe_ts,door_code,direction,swipe_type,received_at,source,reason indirect=False locks=[]
+backend/src/modules/attendance/ingest.service.ts:270 marked updateTable write=reviewed indirect=False locks=[]
+
+## att.recompute_queue
+employee_id: bigint NOT NULL | 
+work_date: date NOT NULL | 
+queued_at: timestamp with time zone NOT NULL | 
+Constraints: ["PRIMARY KEY (employee_id, work_date)"]
+backend/src/modules/leave/leave-apply.service.ts:229 applyCancelOnFinal insertInto write=employee_id,work_date indirect=False locks=[]
+backend/src/modules/attendance/day-materialize.ts:26 result raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/day-status.service.ts:374 queueHalfRecompute insertInto write=employee_id,work_date,queued_at indirect=False locks=[]
+backend/src/modules/attendance/day-status.service.ts:493 recomputeDay insertInto write=employee_id,work_date indirect=False locks=[]
+backend/src/modules/attendance/day-status.service.ts:593 claimed raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/day-status.service.ts:615 drainRecomputeQueue insertInto write=employee_id,work_date indirect=False locks=[]
+backend/src/modules/attendance/scheme.service.ts:40 assignEmployeeScheme insertInto write=employee_id,work_date indirect=False locks=[]
+backend/src/modules/attendance/attendance-config.router.ts:128 upsertShift raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/roster.service.ts:114 applyRosterEntries insertInto write=employee_id,work_date indirect=False locks=[]
+backend/src/core/db/holiday-calendar.ts:119 upsertScopedHoliday raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## att.regularizations
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+kind: text NOT NULL | 
+from_date: date NOT NULL | 
+to_date: date NOT NULL | 
+from_time: time without time zone NULL | 
+to_time: time without time zone NULL | 
+reason: text NOT NULL | 
+requested_status: att.day_status NOT NULL | 
+workflow_request_id: bigint NOT NULL | 
+applied: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+day_portion: text NOT NULL | 
+Constraints: ["CHECK (((kind <> 'PERMISSION'::text) OR ((from_time IS NOT NULL) AND (to_time IS NOT NULL) AND (from_date = to_date))))", "CHECK ((day_portion = ANY (ARRAY['full_day'::text, 'first_half'::text, 'second_half'::text])))", "CHECK ((from_date <= to_date))", "CHECK ((kind = ANY (ARRAY['AR'::text, 'OD'::text, 'PERMISSION'::text])))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (workflow_request_id) REFERENCES wf.requests(id)", "PRIMARY KEY (id)"]
+backend/src/modules/attendance/regularization.service.ts:159 inserted insertInto write=employee_id,kind,day_portion,from_date,to_date,from_time,to_time,reason,requested_status,workflow_request_id indirect=False locks=[]
+backend/src/modules/attendance/regularization.service.ts:208 applyRegularizationOnFinal updateTable write=applied indirect=False locks=[]
+backend/src/modules/attendance/regularization.service.ts:244 applyRegularizationOnFinal updateTable write=applied indirect=False locks=[]
+backend/src/modules/attendance/regularization.service.ts:280 reg selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/attendance/regularization.service.ts:288 resubmitRegularization updateTable write=from_date,to_date,from_time,to_time,reason,day_portion indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## att.roster_publications
+id: bigint NOT NULL | 
+manager_employee_id: bigint NOT NULL | 
+period_from: date NOT NULL | 
+period_to: date NOT NULL | 
+published_at: timestamp with time zone NOT NULL | 
+published_by: bigint NOT NULL | 
+revision: integer NOT NULL | 
+reason: text NULL | 
+Constraints: ["CHECK ((period_to >= period_from))", "FOREIGN KEY (manager_employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (published_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/attendance/scheduling.router.ts:144 row updateTable write=published_at,published_by,revision,reason indirect=False locks=[]
+backend/src/modules/attendance/scheduling.router.ts:152 row insertInto write=manager_employee_id,period_from,period_to,published_at,published_by,revision,reason indirect=False locks=[]
+
+## att.roster_revisions
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+work_date: date NOT NULL | 
+old_shift_id: bigint NULL | 
+new_shift_id: bigint NULL | 
+old_week_off: boolean NOT NULL | 
+new_week_off: boolean NOT NULL | 
+reason: text NOT NULL | 
+changed_by: bigint NOT NULL | 
+changed_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (changed_by) REFERENCES core.users(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (new_shift_id) REFERENCES att.shifts(id)", "FOREIGN KEY (old_shift_id) REFERENCES att.shifts(id)", "PRIMARY KEY (id)"]
+backend/src/modules/attendance/roster-guard.service.ts:262 recordPublishedRevisions insertInto write=employee_id,work_date,old_shift_id,new_shift_id,old_week_off,new_week_off,reason,changed_by indirect=False locks=[]
+
+## att.rosters
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+work_date: date NOT NULL | 
+shift_id: bigint NULL | 
+is_week_off: boolean NOT NULL | 
+set_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((is_week_off OR (shift_id IS NOT NULL)))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (set_by) REFERENCES core.users(id)", "FOREIGN KEY (shift_id) REFERENCES att.shifts(id)", "PRIMARY KEY (id)", "UNIQUE (employee_id, work_date)"]
+backend/src/modules/attendance/scheme.service.ts:32 affected raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/roster.service.ts:86 persisted insertInto write=employee_id,work_date,shift_id,is_week_off,set_by indirect=False locks=[]
+backend/src/modules/attendance/roster.service.ts:104 persisted raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/db/holiday-calendar.ts:50 rows raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## att.shift_patterns
+id: bigint NOT NULL | 
+code: text NOT NULL | 
+name: text NOT NULL | 
+cycle: jsonb NOT NULL | 
+created_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((jsonb_typeof(cycle) = 'array'::text))", "FOREIGN KEY (created_by) REFERENCES core.users(id)", "PRIMARY KEY (id)", "UNIQUE (code)"]
+backend/src/modules/attendance/shift-pattern.service.ts:49 upsertPattern insertInto write=code,name,cycle,created_by indirect=False locks=[]
+
+## att.shift_swaps
+id: bigint NOT NULL | 
+requester_employee_id: bigint NOT NULL | 
+counterpart_employee_id: bigint NULL | 
+work_date: date NOT NULL | 
+requester_shift_id: bigint NULL | 
+counterpart_shift_id: bigint NULL | 
+kind: text NOT NULL | 
+workflow_request_id: bigint NOT NULL | 
+applied: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((kind = ANY (ARRAY['swap'::text, 'bid'::text])))", "FOREIGN KEY (counterpart_employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (counterpart_shift_id) REFERENCES att.shifts(id)", "FOREIGN KEY (requester_employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (requester_shift_id) REFERENCES att.shifts(id)", "FOREIGN KEY (workflow_request_id) REFERENCES wf.requests(id)", "PRIMARY KEY (id)"]
+backend/src/modules/attendance/shift-swap.service.ts:156 inserted insertInto write=requester_employee_id,counterpart_employee_id,work_date,requester_shift_id,counterpart_shift_id,kind,workflow_request_id indirect=False locks=[]
+backend/src/modules/attendance/shift-swap.service.ts:298 applyShiftSwapOnFinal updateTable write=applied indirect=False locks=[]
+
+## att.shifts
+id: bigint NOT NULL | 
+code: text NOT NULL | 
+name: text NOT NULL | 
+start_time: time without time zone NOT NULL | 
+end_time: time without time zone NOT NULL | 
+crosses_midnight: boolean NOT NULL | 
+session_split: time without time zone NULL | 
+grace_in_minutes: smallint NOT NULL | 
+grace_out_minutes: smallint NOT NULL | 
+min_half_day_hours: numeric(4,2) NOT NULL | 
+min_full_day_hours: numeric(4,2) NOT NULL | 
+break_minutes: smallint NOT NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+break_paid: boolean NOT NULL | 
+ot_start_offset_minutes: smallint NOT NULL | 
+late_slabs: jsonb NOT NULL | 
+early_exit_slabs: jsonb NOT NULL | 
+allowance_component_code: text NULL | 
+session2_start: time without time zone NULL | 
+session2_end: time without time zone NULL | 
+Constraints: ["CHECK (((grace_in_minutes >= 0) AND (grace_out_minutes >= 0) AND (break_minutes >= 0) AND (min_half_day_hours >= (0)::numeric) AND (min_full_day_hours >= min_half_day_hours)))", "CHECK (((jsonb_typeof(late_slabs) = 'array'::text) AND (jsonb_typeof(early_exit_slabs) = 'array'::text)))", "CHECK (((ot_start_offset_minutes >= 0) AND (ot_start_offset_minutes <= 240)))", "CHECK (((session2_start IS NULL) = (session2_end IS NULL)))", "CHECK (((session2_start IS NULL) OR ((NOT crosses_midnight) AND (session_split IS NULL) AND (session2_start >= end_time) AND (session2_end > session2_start))))", "CHECK (((session_split IS NULL) OR ((NOT crosses_midnight) AND (session2_start IS NULL) AND (session_split > start_time) AND (session_split < end_time))))", "CHECK (((start_time <> end_time) AND ((crosses_midnight AND (end_time < start_time)) OR ((NOT crosses_midnight) AND (end_time > start_time)))))", "CHECK ((min_full_day_hours >= min_half_day_hours))", "PRIMARY KEY (id)", "UNIQUE (code)"]
+backend/src/modules/attendance/attendance-config.router.ts:99 previous selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/attendance/attendance-config.router.ts:123 saved insertInto write=code,name,start_time,end_time,crosses_midnight,grace_in_minutes,grace_out_minutes,min_half_day_hours,min_full_day_hours,break_minutes,is_active indirect=True locks=[]
+
+## att.swipe_events
+id: bigint NOT NULL | 
+employee_id: bigint NULL | 
+employee_no: text NOT NULL | 
+access_card: text NULL | 
+shift_label: text NULL | 
+swipe_ts: timestamp with time zone NOT NULL | 
+door_code: text NULL | 
+longitude: numeric(9,6) NULL | 
+latitude: numeric(9,6) NULL | 
+location_type: text NULL | 
+mobile_device_name: text NULL | 
+mobile_device_id: text NULL | 
+swipe_type: text NULL | 
+direction: text NULL | 
+remarks: text NULL | 
+permission_reason: text NULL | 
+signed_by: text NULL | 
+received_at: timestamp with time zone NOT NULL | 
+source: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["PRIMARY KEY (id, swipe_ts)", "UNIQUE (employee_no, swipe_ts, door_code)"]
+backend/src/modules/reports/reports.service.ts:77 q raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/reports/reports.service.ts:89 q raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/reports/reports.service.ts:111 q raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/reports/reports.service.ts:134 q raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/bulk/importers/punches.ts:96 res insertInto write=employee_id,employee_no,access_card,shift_label,swipe_ts,door_code,longitude,latitude,location_type,mobile_device_name,mobile_device_id,swipe_type,direction,remarks,permission_reason,signed_by,received_at,source indirect=False locks=[]
+backend/src/modules/attendance/ingest.service.ts:122 result insertInto write=employee_id,employee_no,access_card,swipe_ts,door_code,direction,swipe_type,received_at,source indirect=False locks=[]
+backend/src/modules/attendance/ingest.service.ts:252 result insertInto write=employee_id,employee_no,swipe_ts,door_code,direction,swipe_type,received_at,source indirect=False locks=[]

@@ -21,6 +21,7 @@ import { companyScopeSql, assertCompanyInScope } from '../../../core/rbac/compan
 import { formatDbDate } from '../../../core/dates.js';
 import { employeeScopeSql, assertEmployeesInScope } from '../../../core/rbac/employee-scope.js';
 import { TaskFanoutService, KentEnrollmentUnavailable } from './task-fanout.service.js';
+import { offerPayloadSchema, submitOffer } from '../offers/offer.service.js';
 
 
 
@@ -46,6 +47,7 @@ export const onboardingRouter = {
         candidateId: z.number().optional(),
         candidateName: z.string().optional(),
         positionTitle: z.string().optional(),
+        category: z.string().optional(),
         error: z.string().optional(),
       })
     )
@@ -61,7 +63,7 @@ export const onboardingRouter = {
 
       const candidate = await context.db
         .selectFrom('core.onboarding_candidates')
-        .select(['full_name', 'position_title'])
+        .select(['full_name', 'position_title', 'category'])
         .where('id', '=', result.candidateId)
         .executeTakeFirst();
 
@@ -70,6 +72,7 @@ export const onboardingRouter = {
         candidateId: result.candidateId,
         candidateName: candidate?.full_name,
         positionTitle: candidate?.position_title,
+        category: candidate?.category,
       };
     }),
 
@@ -370,5 +373,21 @@ export const onboardingRouter = {
         throw cause;
       }
       return { success: true };
+    }),
+
+  submitOffer: withPermission('lifecycle.onboard.convert')
+    .route({ method: 'POST', path: '/lifecycle/offers', summary: 'Draft an offer or LOI and send it for approval (SOW 3.1)' })
+    .input(offerPayloadSchema)
+    .output(z.object({ requestId: z.number(), letter: z.string() }))
+    .handler(async ({ context, input }) => {
+      if (context.user.employee_id === null) {
+        throw new ORPCError('BAD_REQUEST', { message: 'Your account has no employee profile linked, so the approval chain has no initiator.' });
+      }
+      try {
+        return await submitOffer(context.db, { actorUserId: context.user.id, subjectEmployeeId: context.user.employee_id, input });
+      } catch (cause) {
+        if (cause instanceof Error && cause.message.includes('does not match')) throw new ORPCError('BAD_REQUEST', { message: cause.message });
+        throw cause;
+      }
     }),
 };

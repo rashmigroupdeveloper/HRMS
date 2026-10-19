@@ -118,14 +118,14 @@ run('Stage 1.2 — day-status processor golden fixtures (live Postgres)', () => 
     expect(sessions.map((s) => s.status)).toEqual(['P', 'P']);
   });
 
-  it('TUE late arrival 09:25 (grace 10) → P with late_minutes 25', async () => {
+  it('TUE late arrival 09:25 (grace 10) → P with late_minutes 15', async () => {
     const d = addDays(MON, 1);
     await swipe(emp1, ist(d, '09:25'));
     await swipe(emp1, ist(d, '18:00'));
     await recomputeDay(db, emp1, d);
     const r = await day(emp1, d);
     expect(r.status).toBe('P');
-    expect(r.late_minutes).toBe(25);
+    expect(r.late_minutes).toBe(15); // 25-minute delay minus 10-minute configured grace (docs04 §1.1)
   });
 
   it('WED 09:00–13:30 → HD via sessions [P, A] (the live A:P dual-status shape)', async () => {
@@ -140,7 +140,7 @@ run('Stage 1.2 — day-status processor golden fixtures (live Postgres)', () => 
       { session: 1, status: 'P' },
       { session: 2, status: 'A' },
     ]);
-    expect(r.early_exit_minutes).toBe(270); // magnitude vs shift END 18:00 (grace only gates whether it counts)
+    expect(r.early_exit_minutes).toBe(260); // 18:00 − 13:30 − 10-minute configured grace (docs04 §1.1)
   });
 
   it('THU one short hour → A (below both session halves)', async () => {

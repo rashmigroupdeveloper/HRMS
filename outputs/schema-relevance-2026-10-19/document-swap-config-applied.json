@@ -1,0 +1,12 @@
+{
+  "migrations_table": "public.pgmigrations",
+  "selected": [
+    "1753000000500_document-class-authority",
+    "1753000000600_shift-swap-workflow"
+  ],
+  "applied": [
+    "1753000000500_document-class-authority",
+    "1753000000600_shift-swap-workflow"
+  ],
+  "target": "authorized loopback /hrms TEST only"
+}

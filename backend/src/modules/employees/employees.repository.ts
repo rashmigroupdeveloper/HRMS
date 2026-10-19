@@ -4,7 +4,7 @@
  */
 import { sql, type Kysely, type ExpressionBuilder } from 'kysely';
 import type { Database, EmployeeStatus, EmploymentCategory } from '../../core/db/types.js';
-import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
+import { directoryScopeSql, employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 
 export interface DirectoryFilters {
   q?: string | undefined;
@@ -149,7 +149,7 @@ export async function countDirectory(
     .select((eb) => eb.fn.countAll<string>().as('n'))
     .where((eb) => applyFilters(eb as unknown as DirEB, filters))
     .$if(filters.scope !== undefined && !filters.scope.all, (qb) =>
-      qb.where(employeeScopeSql(filters.scope, 'e')),
+      qb.where(directoryScopeSql(filters.scope, 'e')),
     )
     .executeTakeFirstOrThrow();
   return Number(row.n);
@@ -178,7 +178,7 @@ export async function listDirectory(
     ])
     .where((eb) => applyFilters(eb as unknown as DirEB, filters))
     .$if(filters.scope !== undefined && !filters.scope.all, (qb) =>
-      qb.where(employeeScopeSql(filters.scope, 'e')),
+      qb.where(directoryScopeSql(filters.scope, 'e')),
     )
     .orderBy('e.ecode', 'asc')
     .limit(filters.limit)

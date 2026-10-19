@@ -1,0 +1,172 @@
+
+## te.advances
+id: bigint NOT NULL | 
+trip_id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+amount_paise: bigint NOT NULL | 
+purpose: text NOT NULL | 
+status: text NOT NULL | 
+workflow_request_id: bigint NULL | 
+disbursed_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((amount_paise > 0))", "CHECK ((status = ANY (ARRAY['requested'::text, 'approved'::text, 'rejected'::text, 'sent_back'::text, 'disbursed'::text, 'cancelled'::text])))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (trip_id) REFERENCES te.trips(id)", "PRIMARY KEY (id)"]
+backend/src/modules/travel/travel.service.ts:82 applyAdvanceOnFinal updateTable write=status,updated_at indirect=False locks=[]
+backend/src/modules/travel/travel.service.ts:259 row insertInto write=trip_id,employee_id,amount_paise,purpose,status,workflow_request_id indirect=False locks=[]
+backend/src/modules/travel/travel.service.ts:274 advance selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/travel/travel.service.ts:291 <module> updateTable write=status,disbursed_at,updated_at indirect=False locks=[]
+
+## te.budget_reservations
+id: bigint NOT NULL | 
+trip_id: bigint NOT NULL | 
+claim_id: bigint NOT NULL | 
+movement: text NOT NULL | 
+amount_paise: bigint NOT NULL | 
+reason: text NOT NULL | 
+actor_user_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((amount_paise > 0))", "CHECK ((movement = ANY (ARRAY['reserve'::text, 'release'::text])))", "FOREIGN KEY (actor_user_id) REFERENCES core.users(id)", "FOREIGN KEY (claim_id) REFERENCES te.claims(id)", "FOREIGN KEY (trip_id) REFERENCES te.trips(id)", "PRIMARY KEY (id)"]
+backend/src/modules/travel/settlement.service.ts:141 applyTravelClaimOnFinal insertInto write=trip_id,claim_id,movement,amount_paise,reason,actor_user_id indirect=False locks=[]
+backend/src/modules/travel/settlement.service.ts:403 <module> insertInto write=trip_id,claim_id,movement,amount_paise,reason,actor_user_id indirect=False locks=[]
+
+## te.budgets
+id: bigint NOT NULL | 
+grade_level: text NOT NULL | 
+travel_type: text NOT NULL | 
+flight_class: text NOT NULL | 
+hotel_per_night_paise: bigint NOT NULL | 
+daily_allowance_paise: bigint NOT NULL | 
+local_conveyance_paise: bigint NOT NULL | 
+is_active: boolean NOT NULL | 
+Constraints: ["CHECK ((travel_type = ANY (ARRAY['domestic'::text, 'international'::text])))", "PRIMARY KEY (id)", "UNIQUE (grade_level, travel_type)"]
+
+## te.claim_items
+id: bigint NOT NULL | 
+claim_id: bigint NOT NULL | 
+category: text NOT NULL | 
+item_date: date NOT NULL | 
+amount_paise: bigint NOT NULL | 
+currency: text NOT NULL | 
+fx_rate_to_inr: numeric(10,4) NOT NULL | 
+inr_amount_paise: bigint NOT NULL | 
+receipt_document_id: bigint NULL | 
+receipt_url: text NULL | 
+description: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((category = ANY (ARRAY['flight'::text, 'train'::text, 'bus'::text, 'hotel'::text, 'daily_allowance'::text, 'local_travel'::text, 'visa'::text, 'food'::text, 'misc'::text])))", "FOREIGN KEY (claim_id) REFERENCES te.claims(id) ON DELETE CASCADE", "PRIMARY KEY (id)"]
+backend/src/modules/travel/settlement.service.ts:253 item insertInto write=claim_id,category,item_date,amount_paise,currency,fx_rate_to_inr,inr_amount_paise,receipt_document_id,receipt_url,description indirect=False locks=[]
+
+## te.claims
+id: bigint NOT NULL | 
+reference_no: text NOT NULL | 
+trip_id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+total_claimed_paise: bigint NOT NULL | 
+approved_amount_paise: bigint NOT NULL | 
+advance_adjusted_paise: bigint NOT NULL | 
+net_payable_paise: bigint NOT NULL | 
+net_recoverable_paise: bigint NOT NULL | 
+status: text NOT NULL | 
+settlement_status: text NOT NULL | 
+workflow_request_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+summary_document_id: bigint NULL | 
+summary_document_url: text NULL | 
+period_from: date NULL | 
+period_to: date NULL | 
+Constraints: ["CHECK ((settlement_status = ANY (ARRAY['unsettled'::text, 'settled'::text])))", "CHECK ((status = ANY (ARRAY['draft'::text, 'submitted'::text, 'approved'::text, 'rejected'::text, 'sent_back'::text, 'settled'::text])))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (summary_document_id) REFERENCES core.documents(id)", "FOREIGN KEY (trip_id) REFERENCES te.trips(id)", "PRIMARY KEY (id)", "UNIQUE (reference_no)"]
+backend/src/modules/travel/settlement.service.ts:123 applyTravelClaimOnFinal updateTable write=status,approved_amount_paise,updated_at indirect=False locks=[]
+backend/src/modules/travel/settlement.service.ts:153 applyTravelClaimOnFinal updateTable write=status,updated_at indirect=False locks=[]
+backend/src/modules/travel/settlement.service.ts:200 <module> insertInto write=reference_no,trip_id,employee_id,total_claimed_paise,approved_amount_paise,advance_adjusted_paise,net_payable_paise,net_recoverable_paise,status,settlement_status,period_from,period_to indirect=False locks=[]
+backend/src/modules/travel/settlement.service.ts:276 <module> updateTable write=total_claimed_paise,period_from,period_to,updated_at indirect=False locks=[]
+backend/src/modules/travel/settlement.service.ts:424 <module> updateTable write=status,workflow_request_id,summary_document_id,summary_document_url,updated_at indirect=False locks=[]
+backend/src/modules/travel/settlement.service.ts:545 updatedClaim updateTable write=approved_amount_paise,advance_adjusted_paise,net_payable_paise,net_recoverable_paise,status,settlement_status,updated_at indirect=False locks=[]
+
+## te.settlements
+id: bigint NOT NULL | 
+claim_id: bigint NOT NULL | 
+trip_id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+settlement_mode: text NOT NULL | 
+claimed_amount_paise: bigint NOT NULL | 
+advance_amount_paise: bigint NOT NULL | 
+net_payable_paise: bigint NOT NULL | 
+net_recoverable_paise: bigint NOT NULL | 
+recovery_channel: text NULL | 
+settled_by: bigint NULL | 
+settled_at: timestamp with time zone NOT NULL | 
+status: text NOT NULL | 
+Constraints: ["CHECK ((recovery_channel = ANY (ARRAY['payroll_deduction'::text, 'wallet_carry_forward'::text, 'direct_refund'::text])))", "CHECK ((settlement_mode = ANY (ARRAY['AUTO'::text, 'MANUAL'::text])))", "CHECK ((status = ANY (ARRAY['pending'::text, 'settled'::text, 'payroll_posted'::text])))", "FOREIGN KEY (claim_id) REFERENCES te.claims(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (settled_by) REFERENCES core.users(id)", "FOREIGN KEY (trip_id) REFERENCES te.trips(id)", "PRIMARY KEY (id)"]
+backend/src/modules/travel/settlement.service.ts:525 settlement insertInto write=claim_id,trip_id,employee_id,settlement_mode,claimed_amount_paise,advance_amount_paise,net_payable_paise,net_recoverable_paise,recovery_channel,settled_by,settled_at,status indirect=False locks=[]
+
+## te.trip_itineraries
+id: bigint NOT NULL | 
+trip_id: bigint NOT NULL | 
+segment_type: text NOT NULL | 
+origin: text NOT NULL | 
+destination: text NOT NULL | 
+departure_date: timestamp with time zone NOT NULL | 
+arrival_date: timestamp with time zone NULL | 
+provider: text NULL | 
+booking_reference: text NULL | 
+estimated_cost_paise: bigint NOT NULL | 
+actual_cost_paise: bigint NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((segment_type = ANY (ARRAY['flight'::text, 'train'::text, 'bus'::text, 'hotel'::text, 'car'::text, 'other'::text])))", "FOREIGN KEY (trip_id) REFERENCES te.trips(id) ON DELETE CASCADE", "PRIMARY KEY (id)"]
+backend/src/modules/travel/travel.service.ts:198 segment insertInto write=trip_id,segment_type,origin,destination,departure_date,arrival_date,provider,booking_reference,estimated_cost_paise,actual_cost_paise indirect=False locks=[]
+
+## te.trips
+id: bigint NOT NULL | 
+reference_no: text NOT NULL | 
+employee_id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+trip_name: text NOT NULL | 
+travel_type: text NOT NULL | 
+purpose: text NOT NULL | 
+destination_country: text NOT NULL | 
+destination_city: text NOT NULL | 
+start_date: date NOT NULL | 
+end_date: date NOT NULL | 
+visa_required: boolean NOT NULL | 
+visa_status: text NULL | 
+status: text NOT NULL | 
+estimated_budget_paise: bigint NOT NULL | 
+approved_budget_paise: bigint NOT NULL | 
+cancellation_reason: text NULL | 
+cancellation_cost_paise: bigint NULL | 
+workflow_request_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+destination_region: text NOT NULL | 
+Constraints: ["CHECK ((destination_region = ANY (ARRAY['domestic'::text, 'sea'::text, 'africa'::text, 'middle_east'::text, 'europe'::text, 'americas'::text, 'other'::text])))", "CHECK ((status = ANY (ARRAY['draft'::text, 'submitted'::text, 'approved'::text, 'rejected'::text, 'in_progress'::text, 'completed'::text, 'cancelled'::text])))", "CHECK ((travel_type = ANY (ARRAY['domestic'::text, 'international'::text])))", "CHECK ((visa_status = ANY (ARRAY['not_applicable'::text, 'applied'::text, 'approved'::text, 'rejected'::text])))", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)", "UNIQUE (reference_no)"]
+backend/src/modules/travel/travel.service.ts:72 applyTripOnFinal updateTable write=status,approved_budget_paise,updated_at indirect=True locks=[]
+backend/src/modules/travel/travel.service.ts:150 row insertInto write=reference_no,employee_id,company_id,trip_name,travel_type,destination_region,purpose,destination_country,destination_city,start_date,end_date,visa_required,visa_status,status,estimated_budget_paise,approved_budget_paise,workflow_request_id indirect=False locks=[]
+backend/src/modules/travel/travel.service.ts:214 <module> updateTable write=estimated_budget_paise,updated_at indirect=False locks=[]
+backend/src/modules/travel/travel.service.ts:226 <module> updateTable write=status,cancellation_reason,cancellation_cost_paise,updated_at indirect=False locks=[]
+
+## te.wallet_transactions
+id: bigint NOT NULL | 
+wallet_id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+trip_id: bigint NULL | 
+source: text NOT NULL | 
+type: text NOT NULL | 
+amount_paise: bigint NOT NULL | 
+balance_after_paise: bigint NOT NULL | 
+transaction_reference: text NOT NULL | 
+notes: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((amount_paise > 0))", "CHECK ((balance_after_paise >= 0))", "CHECK ((source = ANY (ARRAY['ADVANCE'::text, 'CLAIM_SETTLEMENT'::text, 'RECOVERY'::text, 'ADJUSTMENT'::text])))", "CHECK ((type = ANY (ARRAY['credit'::text, 'debit'::text])))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (trip_id) REFERENCES te.trips(id)", "FOREIGN KEY (wallet_id) REFERENCES te.wallets(id)", "PRIMARY KEY (id)", "UNIQUE (transaction_reference)"]
+backend/src/modules/travel/wallet.service.ts:86 transaction insertInto write=wallet_id,employee_id,trip_id,source,type,amount_paise,balance_after_paise,transaction_reference,notes indirect=False locks=[]
+backend/src/modules/travel/wallet.service.ts:136 transaction insertInto write=wallet_id,employee_id,trip_id,source,type,amount_paise,balance_after_paise,transaction_reference,notes indirect=False locks=[]
+
+## te.wallets
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+balance_paise: bigint NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((balance_paise >= 0))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)", "UNIQUE (employee_id)"]
+backend/src/modules/travel/wallet.service.ts:52 <module> insertInto write=employee_id,balance_paise indirect=False locks=[]
+backend/src/modules/travel/wallet.service.ts:103 updatedWallet updateTable write=balance_paise,updated_at indirect=False locks=[]
+backend/src/modules/travel/wallet.service.ts:153 updatedWallet updateTable write=balance_paise,updated_at indirect=False locks=[]

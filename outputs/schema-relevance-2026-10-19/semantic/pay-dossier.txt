@@ -1,0 +1,481 @@
+
+## pay.arrears
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+source_salary_id: bigint NOT NULL | 
+for_month: date NOT NULL | 
+paid_in_run_id: bigint NULL | 
+component_code: text NOT NULL | 
+amount: numeric(14,2) NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (component_code) REFERENCES pay.salary_components(code)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (paid_in_run_id) REFERENCES pay.payroll_runs(id)", "FOREIGN KEY (source_salary_id) REFERENCES pay.employee_salaries(id)", "PRIMARY KEY (id)"]
+backend/src/modules/payroll-core/runs/run.service.ts:391 settled updateTable write=paid_in_run_id indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:408 <module> updateTable write=paid_in_run_id indirect=False locks=[]
+backend/src/modules/payroll-core/annual/annual.router.ts:233 annualProcessesRouter insertInto write=employee_id,source_salary_id,for_month,paid_in_run_id,component_code,amount indirect=False locks=[]
+
+## pay.bank_batches
+id: bigint NOT NULL | 
+run_id: bigint NOT NULL | 
+file_document_id: bigint NOT NULL | 
+total_amount: numeric(16,2) NOT NULL | 
+record_count: integer NOT NULL | 
+generated_by: bigint NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (file_document_id) REFERENCES core.documents(id)", "FOREIGN KEY (generated_by) REFERENCES core.users(id)", "FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id)", "PRIMARY KEY (id)"]
+backend/src/modules/payroll-outputs/bank/bank-file.service.ts:168 batchRow insertInto write=run_id,file_document_id,total_amount,record_count,generated_by indirect=False locks=[]
+
+## pay.budget_categories
+id: bigint NOT NULL | 
+budget_id: bigint NOT NULL | 
+claim_type_id: bigint NOT NULL | 
+allowance: numeric(14,2) NOT NULL | 
+Constraints: ["CHECK ((allowance >= (0)::numeric))", "FOREIGN KEY (budget_id) REFERENCES pay.budgets(id) ON DELETE CASCADE", "FOREIGN KEY (claim_type_id) REFERENCES pay.claim_types(id)", "PRIMARY KEY (id)", "UNIQUE (budget_id, claim_type_id)"]
+
+## pay.budgets
+id: bigint NOT NULL | 
+reference: text NOT NULL | 
+title: text NOT NULL | 
+purpose: text NULL | 
+employee_id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+cost_center_id: bigint NULL | 
+period_from: date NOT NULL | 
+period_to: date NOT NULL | 
+travel_type: text NULL | 
+region: text NULL | 
+from_location: text NULL | 
+to_location: text NULL | 
+travel_start: date NULL | 
+travel_end: date NULL | 
+nights: smallint NULL | 
+desk_books_air: boolean NOT NULL | 
+desk_books_hotel: boolean NOT NULL | 
+desk_books_visa: boolean NOT NULL | 
+own_arrangement_reason: text NULL | 
+limit_exceed_reason: text NULL | 
+allowance: numeric(14,2) NOT NULL | Requested total. The ledger draws on `approved_allowance` once approved.
+approved_allowance: numeric(14,2) NULL | 
+currency: text NOT NULL | 
+fx_rate_to_inr: numeric(14,6) NOT NULL | 
+fx_rate_date: date NULL | 
+status: text NOT NULL | 
+overspend_allowed: boolean NOT NULL | 
+workflow_request_id: bigint NULL | 
+approved_by_user_id: bigint NULL | 
+approved_at: timestamp with time zone NULL | 
+rejection_reason: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((approved_allowance IS NULL) OR (approved_allowance >= (0)::numeric)))", "CHECK (((nights IS NULL) OR (nights >= 0)))", "CHECK (((status <> 'approved'::text) OR ((approved_by_user_id IS NOT NULL) AND (approved_at IS NOT NULL))))", "CHECK (((status <> 'approved'::text) OR (approved_allowance IS NOT NULL)))", "CHECK (((status <> 'rejected'::text) OR (length(btrim(COALESCE(rejection_reason, ''::text))) >= 3)))", "CHECK (((travel_start IS NULL) OR (travel_end IS NULL) OR (travel_end >= travel_start)))", "CHECK ((allowance > (0)::numeric))", "CHECK ((fx_rate_to_inr > (0)::numeric))", "CHECK ((period_to >= period_from))", "CHECK ((status = ANY (ARRAY['draft'::text, 'pending'::text, 'approved'::text, 'rejected'::text, 'closed'::text])))", "CHECK ((travel_type = ANY (ARRAY['domestic'::text, 'international'::text])))", "FOREIGN KEY (approved_by_user_id) REFERENCES core.users(id)", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (cost_center_id) REFERENCES core.cost_centers(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)", "UNIQUE (reference)"]
+
+## pay.claim_bills
+id: bigint NOT NULL | 
+claim_id: bigint NOT NULL | 
+document_id: bigint NOT NULL | 
+bill_no: text NULL | 
+bill_date: date NULL | 
+amount: numeric(14,2) NOT NULL | 
+verified: boolean NOT NULL | 
+verified_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (claim_id) REFERENCES pay.claims(id) ON DELETE CASCADE", "FOREIGN KEY (document_id) REFERENCES core.documents(id)", "FOREIGN KEY (verified_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/claims/claims.service.ts:162 <module> insertInto write=claim_id,document_id,bill_no,bill_date,amount,verified,verified_by indirect=False locks=[]
+backend/src/modules/claims/claims.service.ts:210 <module> updateTable write=verified,verified_by indirect=False locks=[]
+backend/src/modules/reports/reports.service.ts:1501 q raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/reports/reports.service.ts:1502 q raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## pay.claim_entitlements
+id: bigint NOT NULL | 
+claim_type_id: bigint NOT NULL | 
+grade_id: bigint NULL | 
+amount: numeric(14,2) NOT NULL | 
+effective_from: date NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (claim_type_id) REFERENCES pay.claim_types(id)", "FOREIGN KEY (grade_id) REFERENCES core.grades(id)", "PRIMARY KEY (id)"]
+
+## pay.claim_lines
+id: bigint NOT NULL | 
+claim_id: bigint NOT NULL | 
+claim_type_id: bigint NOT NULL | 
+description: text NULL | 
+spent_on: date NOT NULL | 
+bill_no: text NULL | 
+original_amount: numeric(14,2) NOT NULL | 
+original_currency: text NOT NULL | 
+fx_rate_to_inr: numeric(14,6) NOT NULL | 
+amount: numeric(14,2) NOT NULL | 
+document_path: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((amount > (0)::numeric))", "CHECK ((fx_rate_to_inr > (0)::numeric))", "CHECK ((original_amount > (0)::numeric))", "FOREIGN KEY (claim_id) REFERENCES pay.claims(id) ON DELETE CASCADE", "FOREIGN KEY (claim_type_id) REFERENCES pay.claim_types(id)", "PRIMARY KEY (id)"]
+
+## pay.claim_reservations
+id: bigint NOT NULL | 
+budget_id: bigint NOT NULL | 
+claim_id: bigint NOT NULL | 
+movement: text NOT NULL | 
+amount: numeric(14,2) NOT NULL | 
+by_category: jsonb NULL | Per-category breakdown, mirroring the live budgetReserved{} snapshot.
+reason: text NOT NULL | 
+actor_user_id: bigint NULL | 
+occurred_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((amount > (0)::numeric))", "CHECK ((movement = ANY (ARRAY['reserve'::text, 'release'::text])))", "FOREIGN KEY (actor_user_id) REFERENCES core.users(id)", "FOREIGN KEY (budget_id) REFERENCES pay.budgets(id)", "FOREIGN KEY (claim_id) REFERENCES pay.claims(id)", "PRIMARY KEY (id)"]
+
+## pay.claim_types
+id: bigint NOT NULL | 
+code: text NOT NULL | 
+name: text NOT NULL | 
+requires_bill: boolean NOT NULL | 
+is_taxable: boolean NOT NULL | 
+is_active: boolean NOT NULL | 
+sort_order: smallint NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+entitlement_basis: text NOT NULL | 
+bill_required: boolean NOT NULL | 
+taxable_if_unsubstantiated: boolean NOT NULL | 
+payout_component_code: text NOT NULL | 
+Constraints: ["PRIMARY KEY (id)", "UNIQUE (code)"]
+backend/src/modules/claims/claims.service.ts:285 claim selectFrom write= indirect=False locks=['forUpdate']
+
+## pay.claims
+id: bigint NOT NULL | 
+reference: text NULL | 
+employee_id: bigint NOT NULL | 
+funding_kind: text NOT NULL | 
+budget_id: bigint NULL | 
+reserved_budget_id: bigint NULL | 
+period_from: date NOT NULL | 
+period_to: date NOT NULL | 
+claimed_amount: numeric(14,2) NOT NULL | 
+approved_amount: numeric(14,2) NULL | 
+display_currency: text NOT NULL | 
+fx_rates_to_inr: jsonb NULL | 
+fx_rate_date: date NULL | 
+settlement_status: text NOT NULL | 
+settlement_mode: text NULL | 
+settlement_amount: numeric(14,2) NULL | 
+net_payable: numeric(14,2) NULL | 
+settled_by_user_id: bigint NULL | 
+settled_at: timestamp with time zone NULL | 
+status: text NOT NULL | 
+workflow_request_id: bigint NULL | 
+rejection_reason: text NULL | 
+submitted_at: timestamp with time zone NULL | 
+decided_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+claim_type_id: bigint NULL | 
+advance_loan_id: bigint NULL | 
+paid_in_run_id: bigint NULL | 
+paid_in_batch_id: bigint NULL | 
+Constraints: ["CHECK (((approved_amount IS NULL) OR (approved_amount <= claimed_amount)))", "CHECK (((approved_amount IS NULL) OR (approved_amount >= (0)::numeric)))", "CHECK (((funding_kind <> 'budget'::text) OR (budget_id IS NOT NULL)))", "CHECK (((settlement_amount IS NULL) OR (settlement_amount <= claimed_amount)))", "CHECK (((settlement_amount IS NULL) OR (settlement_amount >= (0)::numeric)))", "CHECK (((settlement_status <> 'settled'::text) OR ((settlement_mode IS NOT NULL) AND (settlement_amount IS NOT NULL) AND (settled_by_user_id IS NOT NULL) AND (settled_at IS NOT NULL))))", "CHECK (((status <> 'rejected'::text) OR (length(btrim(COALESCE(rejection_reason, ''::text))) >= 3)))", "CHECK ((claimed_amount > (0)::numeric))", "CHECK ((funding_kind = ANY (ARRAY['budget'::text, 'entitlement'::text])))", "CHECK ((period_to >= period_from))", "CHECK ((settlement_mode = ANY (ARRAY['AUTO'::text, 'MANUAL'::text])))", "CHECK ((settlement_status = ANY (ARRAY['unsettled'::text, 'settled'::text])))", "CHECK ((status = ANY (ARRAY['draft'::text, 'submitted'::text, 'sent_back'::text, 'pending'::text, 'verified'::text, 'approved'::text, 'rejected'::text, 'paid'::text, 'settled'::text])))", "FOREIGN KEY (advance_loan_id) REFERENCES pay.loans(id)", "FOREIGN KEY (budget_id) REFERENCES pay.budgets(id)", "FOREIGN KEY (claim_type_id) REFERENCES pay.claim_types(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (paid_in_batch_id) REFERENCES pay.bank_batches(id)", "FOREIGN KEY (paid_in_run_id) REFERENCES pay.payroll_runs(id)", "FOREIGN KEY (reserved_budget_id) REFERENCES pay.budgets(id)", "FOREIGN KEY (settled_by_user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)", "UNIQUE (reference)"]
+backend/src/modules/claims/claims.service.ts:142 inserted insertInto write=employee_id,claim_type_id,period_from,period_to,claimed_amount,approved_amount,status,workflow_request_id,rejection_reason,advance_loan_id,paid_in_run_id,paid_in_batch_id indirect=False locks=[]
+backend/src/modules/claims/claims.service.ts:197 claim selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/claims/claims.service.ts:248 <module> updateTable write=status,approved_amount,rejection_reason indirect=False locks=[]
+backend/src/modules/claims/claims.service.ts:285 claim selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/claims/claims.service.ts:356 <module> updateTable write=status,paid_in_run_id,paid_in_batch_id indirect=False locks=[]
+backend/src/modules/claims/claims.service.ts:366 <module> updateTable write=status,paid_in_run_id,paid_in_batch_id indirect=False locks=[]
+
+## pay.employee_salaries
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+structure_id: bigint NOT NULL | 
+effective_from: date NOT NULL | 
+effective_to: date NOT NULL | 
+annual_ctc: numeric(14,2) NOT NULL | 
+phase: text NOT NULL | 
+component_amounts: jsonb NOT NULL | Monthly integer paise snapshot written by salary assignment (PAY-02).
+probation_percent: numeric(5,2) NULL | 
+revision_reason: text NULL | 
+approved_by: bigint NULL | 
+approved_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((effective_from < effective_to))", "CHECK ((phase = ANY (ARRAY['probation'::text, 'confirmed'::text])))", "CHECK ((revision_reason = ANY (ARRAY['joining'::text, 'annual_increment'::text, 'promotion'::text, 'confirmation'::text, 'correction'::text, 'probation_start'::text])))", "EXCLUDE USING gist (employee_id WITH =, daterange(effective_from, effective_to, '[)'::text) WITH &&)", "FOREIGN KEY (approved_by) REFERENCES core.users(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (structure_id) REFERENCES pay.salary_structures(id)", "PRIMARY KEY (id)"]
+backend/src/modules/lifecycle/probation/probation.service.ts:202 ProbationService updateTable write=effective_to indirect=False locks=[]
+backend/src/modules/lifecycle/probation/probation.service.ts:212 ProbationService insertInto write=employee_id,structure_id,effective_from,effective_to,annual_ctc,phase,component_amounts indirect=False locks=[]
+backend/src/modules/lifecycle/onboarding/onboarding.service.ts:359 convert insertInto write=employee_id,structure_id,effective_from,effective_to,annual_ctc,phase,component_amounts,probation_percent,revision_reason,approved_by,approved_at indirect=False locks=[]
+backend/src/modules/payroll-core/salaries/assignment.repository.ts:79 insertSalaryRevision updateTable write=effective_to indirect=False locks=[]
+backend/src/modules/payroll-core/salaries/assignment.repository.ts:88 insertSalaryRevision insertInto write=employee_id,structure_id,effective_from,effective_to,annual_ctc,phase,component_amounts,probation_percent,revision_reason,approved_by,approved_at indirect=False locks=[]
+
+## pay.fnf_settlements
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+separation_id: bigint NOT NULL | 
+run_id: bigint NULL | 
+last_working_day: date NOT NULL | 
+days_payable: numeric(4,1) NOT NULL | 
+leave_encash_days: numeric(5,2) NOT NULL | 
+notice_recovery_days: numeric(4,1) NOT NULL | 
+gratuity_amount: numeric(14,2) NOT NULL | 
+other_payments: numeric(14,2) NOT NULL | 
+other_deductions: numeric(14,2) NOT NULL | 
+held_salary_released: numeric(14,2) NOT NULL | 
+status: text NOT NULL | 
+tat_due_date: date NULL | 
+created_at: timestamp with time zone NOT NULL | 
+leave_encash_amount: numeric(14,2) NOT NULL | 
+notice_recovery_amount: numeric(14,2) NOT NULL | 
+gross_payable: numeric(14,2) NOT NULL | 
+total_deductions: numeric(14,2) NOT NULL | 
+net_payable: numeric(14,2) NOT NULL | 
+paid_at: timestamp with time zone NULL | 
+relieving_letter_id: bigint NULL | 
+service_certificate_id: bigint NULL | 
+calc_breakdown: jsonb NULL | 
+Constraints: ["CHECK ((status = ANY (ARRAY['draft'::text, 'clearances_pending'::text, 'computed'::text, 'approved'::text, 'paid'::text])))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (relieving_letter_id) REFERENCES core.letters(id)", "FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id)", "FOREIGN KEY (service_certificate_id) REFERENCES core.letters(id)", "PRIMARY KEY (id)"]
+backend/src/modules/lifecycle/separation/separation.service.ts:493 <module> updateTable write=last_working_day,days_payable,leave_encash_days,leave_encash_amount,notice_recovery_days,notice_recovery_amount,gratuity_amount,held_salary_released,other_payments,other_deductions,gross_payable,total_deductions,net_payable,status,tat_due_date,calc_breakdown,run_id indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:496 inserted insertInto write=last_working_day,days_payable,leave_encash_days,leave_encash_amount,notice_recovery_days,notice_recovery_amount,gratuity_amount,held_salary_released,other_payments,other_deductions,gross_payable,total_deductions,net_payable,status,tat_due_date,calc_breakdown,run_id,employee_id,separation_id indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:553 claimed selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/lifecycle/separation/separation.service.ts:564 <module> updateTable write=status,paid_at,relieving_letter_id,service_certificate_id indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:620 <module> updateTable write=notice_recovery_amount,total_deductions,net_payable indirect=False locks=[]
+
+## pay.gl_accounts
+id: bigint NOT NULL | 
+company_code: text NOT NULL | 
+plant_code: text NOT NULL | 
+cost_center_code: text NOT NULL | 
+component_code: text NOT NULL | 
+gl_code: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((length(btrim(gl_code)) > 0))", "PRIMARY KEY (id)", "UNIQUE (company_code, plant_code, cost_center_code, component_code)"]
+backend/src/modules/payroll-core/config/config.service.ts:129 row insertInto write=company_code,plant_code,cost_center_code,component_code,gl_code indirect=False locks=[]
+
+## pay.inputs
+id: bigint NOT NULL | 
+run_id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+component_code: text NOT NULL | 
+amount: numeric(14,2) NOT NULL | 
+note: text NOT NULL | 
+entered_by: bigint NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (component_code) REFERENCES pay.salary_components(code)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (entered_by) REFERENCES core.users(id)", "FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id)", "PRIMARY KEY (id)"]
+backend/src/modules/claims/claims.service.ts:342 <module> insertInto write=run_id,employee_id,component_code,amount,note,entered_by indirect=False locks=[]
+backend/src/modules/payroll-core/config/config.service.ts:193 addRunInputs insertInto write= indirect=True locks=[]
+backend/src/modules/payroll-core/config/config.service.ts:202 row deleteFrom write= indirect=False locks=[]
+
+## pay.investment_declarations
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+fy: text NOT NULL | 
+section: text NOT NULL | 
+declared_amount: numeric(14,2) NOT NULL | 
+proof_document_id: bigint NULL | 
+verified_amount: numeric(14,2) NULL | 
+verified_by: bigint NULL | 
+verified_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (proof_document_id) REFERENCES core.documents(id)", "FOREIGN KEY (verified_by) REFERENCES core.users(id)", "PRIMARY KEY (id)", "UNIQUE (employee_id, fy, section)"]
+backend/src/modules/tds/tds.service.ts:105 row insertInto write=employee_id,fy,section,declared_amount,proof_document_id indirect=False locks=[]
+backend/src/modules/payroll-core/tax-declaration/declaration.service.ts:72 inserted insertInto write=employee_id,fy,section,declared_amount,proof_document_id indirect=False locks=[]
+backend/src/modules/payroll-core/tax-declaration/declaration.service.ts:107 updated updateTable write=verified_amount,verified_by,verified_at indirect=False locks=[]
+
+## pay.it_slabs
+id: bigint NOT NULL | 
+fy: text NOT NULL | 
+regime: text NOT NULL | 
+slab_from: numeric(14,2) NOT NULL | 
+slab_to: numeric(14,2) NULL | 
+rate: numeric(6,4) NOT NULL | 
+surcharge_rules: jsonb NULL | 
+cess_rate: numeric(6,4) NOT NULL | 
+standard_deduction: numeric(14,2) NOT NULL | 
+rebate_87a: jsonb NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((regime = ANY (ARRAY['old'::text, 'new'::text])))", "PRIMARY KEY (id)"]
+
+## pay.loan_postings
+id: bigint NOT NULL | 
+loan_id: bigint NOT NULL | 
+run_id: bigint NOT NULL | 
+principal_part: numeric(14,2) NOT NULL | 
+interest_part: numeric(14,2) NOT NULL | 
+perquisite_value: numeric(14,2) NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (loan_id) REFERENCES pay.loans(id)", "FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id)", "PRIMARY KEY (id)"]
+backend/src/modules/loans/loans.service.ts:341 <module> insertInto write=loan_id,run_id,principal_part,interest_part,perquisite_value indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:387 <module> insertInto write=loan_id,run_id,principal_part,interest_part indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:407 <module> deleteFrom write= indirect=False locks=[]
+
+## pay.loans
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+loan_type: text NOT NULL | 
+principal: numeric(14,2) NOT NULL | 
+interest_rate: numeric(6,3) NOT NULL | 
+emi: numeric(14,2) NOT NULL | 
+start_month: date NOT NULL | 
+tenure_months: smallint NOT NULL | 
+outstanding: numeric(14,2) NOT NULL | 
+perquisite_applicable: boolean NOT NULL | 
+source: text NOT NULL | 
+workflow_request_id: bigint NULL | 
+status: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+source_reference: text NULL | 
+Constraints: ["CHECK (((interest_rate >= (0)::numeric) AND (interest_rate <= (100)::numeric)))", "CHECK (((outstanding >= (0)::numeric) AND (outstanding <= principal)))", "CHECK ((emi > (0)::numeric))", "CHECK ((loan_type = ANY (ARRAY['loan_diminishing'::text, 'loan_flat'::text, 'emi_no_interest'::text, 'salary_advance'::text, 'travel_advance'::text])))", "CHECK ((principal > (0)::numeric))", "CHECK ((source = ANY (ARRAY['hrms'::text, 'sap_legacy'::text])))", "CHECK ((status = ANY (ARRAY['pending'::text, 'active'::text, 'closed'::text, 'written_off'::text, 'rejected'::text, 'cancelled'::text])))", "CHECK ((tenure_months > 0))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)"]
+backend/src/modules/claims/claims.service.ts:315 advLoan selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/claims/claims.service.ts:328 <module> updateTable write=outstanding,status indirect=False locks=[]
+backend/src/modules/loans/loans.service.ts:75 applyLoanOnFinal updateTable write=status indirect=False locks=[]
+backend/src/modules/loans/loans.service.ts:249 inserted insertInto write=employee_id,loan_type,principal,interest_rate,emi,start_month,tenure_months,outstanding,perquisite_applicable,source,workflow_request_id,status indirect=False locks=[]
+backend/src/modules/loans/loans.service.ts:292 inserted insertInto write=employee_id,loan_type,principal,interest_rate,emi,start_month,tenure_months,outstanding,perquisite_applicable,source,source_reference,status indirect=False locks=[]
+backend/src/modules/loans/loans.service.ts:333 loan selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/loans/loans.service.ts:370 <module> updateTable write=outstanding,status indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:388 <module> updateTable write=outstanding,status indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:405 <module> updateTable write= indirect=True locks=[]
+
+## pay.payroll_item_lines
+id: bigint NOT NULL | 
+item_id: bigint NOT NULL | 
+component_code: text NOT NULL | 
+amount: numeric(14,2) NOT NULL | 
+calc_note: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+loan_id: bigint NULL | 
+carry_forward_id: bigint NULL | 
+Constraints: ["FOREIGN KEY (carry_forward_id) REFERENCES pay.recovery_carry_forwards(id) ON DELETE SET NULL", "FOREIGN KEY (component_code) REFERENCES pay.salary_components(code)", "FOREIGN KEY (item_id) REFERENCES pay.payroll_items(id) ON DELETE CASCADE", "FOREIGN KEY (loan_id) REFERENCES pay.loans(id)", "PRIMARY KEY (id)"]
+backend/src/modules/payroll-core/runs/run-compute.service.ts:346 computeLockedRun insertInto write=item_id,component_code,amount,calc_note,loan_id,carry_forward_id indirect=False locks=[]
+
+## pay.payroll_items
+id: bigint NOT NULL | 
+run_id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+days_in_month: numeric(4,1) NOT NULL | 
+payable_days: numeric(4,1) NOT NULL | 
+lop_days: numeric(4,1) NOT NULL | 
+lop_reversal_days: numeric(4,1) NOT NULL | 
+ot_minutes: integer NOT NULL | 
+gross: numeric(14,2) NOT NULL | 
+total_deductions: numeric(14,2) NOT NULL | 
+net_pay: numeric(14,2) NOT NULL | 
+payment_status: text NOT NULL | 
+payslip_document_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+employer_cost: numeric(14,2) NOT NULL | 
+Constraints: ["CHECK ((payment_status = ANY (ARRAY['payable'::text, 'hold_payment'::text, 'hold_process'::text])))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (payslip_document_id) REFERENCES core.documents(id)", "FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id) ON DELETE CASCADE", "PRIMARY KEY (id)", "UNIQUE (run_id, employee_id)"]
+backend/src/modules/payroll-outputs/payslip/payslip-generator.ts:302 linked updateTable write=payslip_document_id indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run-compute.service.ts:139 computeLockedRun deleteFrom write= indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run-compute.service.ts:326 item insertInto write=run_id,employee_id,days_in_month,payable_days,lop_days,lop_reversal_days,ot_minutes,gross,total_deductions,net_pay,employer_cost,payment_status indirect=False locks=[]
+
+## pay.payroll_runs
+id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+month: date NOT NULL | 
+run_type: text NOT NULL | 
+status: text NOT NULL | 
+attendance_lock_id: bigint NULL | 
+computed_at: timestamp with time zone NULL | 
+approved_at: timestamp with time zone NULL | 
+approved_by: bigint NULL | 
+finalized_at: timestamp with time zone NULL | 
+finalized_by: bigint NULL | 
+notes: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((status = ANY (ARRAY['draft'::text, 'inputs_locked'::text])) OR (attendance_lock_id IS NOT NULL)))", "CHECK ((run_type = ANY (ARRAY['regular'::text, 'off_cycle'::text, 'fnf'::text, 'bonus'::text, 'arrears'::text])))", "CHECK ((status = ANY (ARRAY['draft'::text, 'inputs_locked'::text, 'computed'::text, 'under_review'::text, 'approved'::text, 'finalized'::text, 'reopened'::text, 'paid'::text])))", "FOREIGN KEY (approved_by) REFERENCES core.users(id)", "FOREIGN KEY (attendance_lock_id) REFERENCES att.month_locks(id)", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (finalized_by) REFERENCES core.users(id)", "PRIMARY KEY (id)", "UNIQUE (company_id, month, run_type)"]
+backend/src/modules/payroll-core/runs/run-compute.service.ts:377 computeLockedRun updateTable write=status,computed_at indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:73 inserted insertInto write=company_id,month,run_type,status,attendance_lock_id,notes indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:118 <module> updateTable write=status,attendance_lock_id indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:160 <module> updateTable write=status indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:223 <module> updateTable write=status,approved_at,approved_by indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:268 <module> updateTable write=status,finalized_at,finalized_by indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:315 <module> updateTable write=status,notes indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:346 <module> updateTable write=status indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:362 <module> updateTable write=status,notes indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run.service.ts:427 run selectFrom write= indirect=False locks=['forUpdate']
+
+## pay.pt_slabs
+id: bigint NOT NULL | 
+state_code: text NOT NULL | 
+min_monthly: numeric(14,2) NOT NULL | 
+max_monthly: numeric(14,2) NULL | 
+amount: numeric(8,2) NOT NULL | 
+effective_from: date NOT NULL | 
+basis: text NOT NULL | 
+Constraints: ["CHECK ((basis = ANY (ARRAY['earned_monthly'::text, 'contracted_monthly'::text])))", "PRIMARY KEY (id)"]
+backend/src/modules/payroll-core/config/config.service.ts:101 setPtSlabs deleteFrom write= indirect=False locks=[]
+backend/src/modules/payroll-core/config/config.service.ts:103 setPtSlabs insertInto write=state_code,min_monthly,max_monthly,amount,effective_from,basis indirect=False locks=[]
+
+## pay.recovery_carry_forwards
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+component_code: text NOT NULL | 
+amount: numeric(14,2) NOT NULL | 
+from_run_id: bigint NOT NULL | 
+consumed_run_id: bigint NULL | 
+note: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((amount > (0)::numeric))", "FOREIGN KEY (component_code) REFERENCES pay.salary_components(code)", "FOREIGN KEY (consumed_run_id) REFERENCES pay.payroll_runs(id) ON DELETE SET NULL", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (from_run_id) REFERENCES pay.payroll_runs(id) ON DELETE CASCADE", "PRIMARY KEY (id)", "UNIQUE (from_run_id, employee_id, component_code)"]
+backend/src/modules/payroll-core/runs/run-compute.service.ts:138 computeLockedRun updateTable write=consumed_run_id indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run-compute.service.ts:140 computeLockedRun deleteFrom write= indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run-compute.service.ts:363 computeLockedRun updateTable write=consumed_run_id indirect=False locks=[]
+backend/src/modules/payroll-core/runs/run-compute.service.ts:372 computeLockedRun insertInto write=employee_id,component_code,amount,from_run_id,note indirect=False locks=[]
+
+## pay.salary_components
+code: text NOT NULL | 
+name: text NOT NULL | 
+kind: text NOT NULL | 
+formula: text NULL | 
+rounding: text NOT NULL | 
+taxable: boolean NOT NULL | 
+part_of_gross: boolean NOT NULL | 
+part_of_pf_wages: boolean NOT NULL | 
+prorate_on_lop: boolean NOT NULL | 
+display_order: smallint NOT NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((kind = ANY (ARRAY['earning'::text, 'deduction'::text, 'employer_contribution'::text])))", "CHECK ((rounding = ANY (ARRAY['round'::text, 'floor'::text, 'ceil'::text, 'nearest_10'::text])))", "PRIMARY KEY (code)"]
+backend/src/modules/payroll-core/components/component.service.ts:71 createComponent insertInto write=code,name,kind,formula,rounding,taxable,part_of_gross,part_of_pf_wages,prorate_on_lop,display_order,is_active indirect=False locks=[]
+backend/src/modules/payroll-core/components/component.service.ts:137 updateComponent updateTable write= indirect=False locks=[]
+
+## pay.salary_holds
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+hold_type: text NOT NULL | 
+reason: text NOT NULL | 
+start_month: date NOT NULL | 
+released_month: date NULL | 
+created_by: bigint NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((hold_type = ANY (ARRAY['payment'::text, 'process'::text])))", "FOREIGN KEY (created_by) REFERENCES core.users(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)"]
+backend/src/modules/lifecycle/separation/separation.service.ts:572 <module> updateTable write=released_month indirect=False locks=[]
+backend/src/modules/payroll-core/holds/holds.service.ts:69 inserted insertInto write=employee_id,hold_type,reason,start_month,released_month,created_by indirect=False locks=[]
+backend/src/modules/payroll-core/holds/holds.service.ts:89 <module> updateTable write=released_month indirect=False locks=[]
+
+## pay.salary_structures
+id: bigint NOT NULL | 
+name: text NOT NULL | 
+company_id: bigint NOT NULL | 
+description: text NULL | 
+components: jsonb NOT NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (company_id) REFERENCES core.companies(id)", "PRIMARY KEY (id)", "UNIQUE (name)"]
+backend/src/modules/lifecycle/onboarding/joining-validation.ts:78 structure selectFrom write= indirect=False locks=['forShare']
+backend/src/modules/payroll-core/structures/structure.service.ts:150 createStructure insertInto write=name,company_id,description,components,is_active indirect=False locks=[]
+backend/src/modules/payroll-core/structures/structure.service.ts:211 updateStructure updateTable write= indirect=True locks=[]
+
+## pay.statutory_rates
+id: bigint NOT NULL | 
+scheme: text NOT NULL | 
+param: text NOT NULL | 
+value: numeric(14,4) NOT NULL | 
+effective_from: date NOT NULL | 
+source_note: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["PRIMARY KEY (id)"]
+backend/src/modules/payroll-core/config/config.service.ts:63 row insertInto write=scheme,param,value,effective_from,source_note indirect=False locks=[]
+
+## pay.tds_challans
+id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+month: date NOT NULL | 
+amount: numeric(14,2) NOT NULL | 
+challan_no: text NOT NULL | 
+bsr_code: text NULL | 
+paid_on: date NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (company_id) REFERENCES core.companies(id)", "PRIMARY KEY (id)"]
+backend/src/modules/tds/tds.service.ts:132 row insertInto write=company_id,month,amount,challan_no,bsr_code,paid_on indirect=False locks=[]
+backend/src/modules/tds/tds.service.ts:143 deleteChallan deleteFrom write= indirect=False locks=[]

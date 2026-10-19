@@ -9,6 +9,7 @@ import { withPermission } from '../../api/orpc.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { readDocument } from '../../core/storage/index.js';
 import { assertEmployeesInScope } from '../../core/rbac/employee-scope.js';
+import { getUserPermissionAccess } from '../../core/rbac/permissions.service.js';
 import { issueLetter, listLetters, type LetterRow } from './letters.service.js';
 
 function asBadRequest(err: unknown): never {
@@ -35,6 +36,7 @@ function toDto(r: LetterRow): z.infer<typeof letterShape> {
 
 const listTemplates = withPermission('letters.issue')
   .route({ method: 'GET', path: '/letters/templates', summary: 'Letter template catalog (CORE-09)' })
+  .input(z.object({}).optional())
   .output(z.array(z.object({ code: z.string(), name: z.string(), mergeFields: z.array(z.string()), isActive: z.boolean() })))
   .handler(async ({ context }) => {
     const rows = await context.db.selectFrom('core.letter_templates').selectAll().orderBy('code').execute();
@@ -109,6 +111,7 @@ const issue = withPermission('letters.issue')
 
 const myLetters = withPermission('employee.read')
   .route({ method: 'GET', path: '/letters/mine', summary: 'My issued letters (ESS)' })
+  .input(z.object({}).optional())
   .output(z.array(letterShape))
   .handler(async ({ context }) => {
     if (context.user.employee_id === null) return [];
@@ -119,7 +122,10 @@ const employeeLetters = withPermission('letters.issue')
   .route({ method: 'GET', path: '/letters/employee/{employeeId}', summary: 'All letters on an employee record, drafts included (HR)' })
   .input(z.object({ employeeId: z.coerce.number().int().positive() }))
   .output(z.array(letterShape))
-  .handler(async ({ input, context }) => (await listLetters(context.db, input.employeeId, true)).map(toDto));
+  .handler(async ({ input, context }) => {
+    await assertEmployeesInScope(context.db, { ...context.permissionAccess, actorEmployeeId: context.user.employee_id }, [input.employeeId]);
+    return (await listLetters(context.db, input.employeeId, true)).map(toDto);
+  });
 
 const letterContent = withPermission('employee.read')
   .route({ method: 'GET', path: '/letters/{id}/content', summary: 'Rendered letter body (owner, or any holder of letters.issue)' })
@@ -131,8 +137,10 @@ const letterContent = withPermission('employee.read')
     // Owner sees own ISSUED letters; drafts and other employees' letters need
     // the letters.issue PERMISSION (still the central grid, never a role check).
     const isOwner = context.user.employee_id !== null && context.user.employee_id === letter.employee_id && letter.issued_at !== null;
-    if (!isOwner && !context.permissions.has('letters.issue')) {
-      throw new ORPCError('FORBIDDEN', { message: 'Not your letter' });
+    if (!isOwner) {
+      const access = await getUserPermissionAccess(context.db, context.user.id, 'letters.issue', 'read');
+      if (!access) throw new ORPCError('FORBIDDEN', { message: 'Not your letter' });
+      await assertEmployeesInScope(context.db, { ...access, actorEmployeeId: context.user.employee_id }, [letter.employee_id]);
     }
     if (letter.document_id !== null) {
       const doc = await readDocument(context.db, letter.document_id);

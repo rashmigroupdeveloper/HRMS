@@ -4,7 +4,9 @@ import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { addDaysIso } from '../../core/dates.js';
 import { findHoliday, loadHolidaySubject } from '../../core/db/holiday-calendar.js';
-import { getLeaveType, getBalance, type LeaveTypeRow } from './leave-core.service.js';
+import { genderCode, getLeaveType, getBalance, type LeaveTypeRow } from './leave-core.service.js';
+import { assertNoLeaveBlackout } from './leave-blackout.js';
+import { evaluateLeaveCoverage } from './coverage-check.service.js';
 type Db = Kysely<Database>;
 
 interface SpanDay {
@@ -17,6 +19,8 @@ interface SpanDay {
   isHalf: boolean;
   /** gets a leave day-record on approval (any working, non-holiday/WO day) */
   writesRecord: boolean;
+  /** why the day is off — null on a working day */
+  skipReason: 'holiday' | 'week_off' | null;
 }
 
 /** Sandwich rule (LV-03): 'exclude' skips holidays/week-offs inside the span;
@@ -34,17 +38,19 @@ export async function computeLeaveSpan(
   const who = await loadHolidaySubject(db, employee.id);
   for (let iso = fromDate; iso <= toDate; iso = addDaysIso(iso, 1)) {
     const holiday = await findHoliday(db, who, iso);
-    let offDay = holiday !== undefined;
-    if (!offDay) {
+    let skipReason: 'holiday' | 'week_off' | null = holiday !== undefined ? 'holiday' : null;
+    if (skipReason === null) {
       const roster = await db
         .selectFrom('att.rosters')
         .select('is_week_off')
         .where('employee_id', '=', employee.id)
         .where('work_date', '=', sql<Date>`${iso}::date`)
         .executeTakeFirst();
-      offDay = roster ? roster.is_week_off : new Date(`${iso}T00:00:00Z`).getUTCDay() === 0;
+      const weekOff = roster ? roster.is_week_off : new Date(`${iso}T00:00:00Z`).getUTCDay() === 0;
+      if (weekOff) skipReason = 'week_off';
     }
 
+    const offDay = skipReason !== null;
     const counted = type.sandwich_rule === 'include' || !offDay;
     const isHalf = (iso === fromDate && fromHalf) || (iso === toDate && toHalf);
     span.push({
@@ -55,6 +61,7 @@ export async function computeLeaveSpan(
       // Every working day of the leave gets a record (full → L/CO, half → HD),
       // so payroll counts it. Only holidays/week-offs are left untouched.
       writesRecord: counted && !offDay,
+      skipReason,
     });
   }
   const days = span.filter((d) => d.counted).reduce((acc, d) => acc + d.weight, 0);
@@ -127,11 +134,22 @@ export async function validateLeaveApplication(db: Db, params: ApplyLeaveParams,
     if (available + reservation < days) throw new DomainError(`Insufficient ${type.code} balance: ${available} available, ${days} requested`);
   }
 
-  return { type, fromHalf, toHalf, days };
-}
+  await assertNoLeaveBlackout(db, {
+    locationId: employee.location_id,
+    from: params.fromDate,
+    to: params.toDate,
+  });
 
-/** Normalises 'Female' / 'female' / 'F' → 'F' (and so on) for gender-restricted leave. */
-function genderCode(value: string | null): string | null {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed.charAt(0).toUpperCase() : null;
+  const coverage = await evaluateLeaveCoverage(db, {
+    employeeId: params.employeeId,
+    from: params.fromDate,
+    to: params.toDate,
+    fromHalf,
+    toHalf,
+  });
+  if (coverage.blocked) {
+    throw new DomainError(coverage.warnings[0] ?? 'Leave blocked by team coverage (SHF-08)');
+  }
+
+  return { type, fromHalf, toHalf, days };
 }

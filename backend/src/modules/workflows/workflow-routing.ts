@@ -99,7 +99,10 @@ export async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definiti
   const steps = await getSteps(db, request.definition_code);
 
   const vacant: StepSpec[] = [];
+  const collapsed: { step: number; userId: number; approver: string }[] = [];
   const auditVacancies = async () => {
+    for (const item of collapsed) await writeAudit(db, { action: 'update', entity: 'wf.requests', entityId: request.id,
+      field: `step_${item.step}`, newValue: `collapsed — approver #${item.userId} ('${item.approver}') already approved in prior step` });
     for (const spec of vacant) await writeAudit(db, { action: 'update', entity: 'wf.requests', entityId: request.id,
       field: `step_${spec.step}`, newValue: `skipped — approver '${spec.approver}' vacant` });
   };
@@ -115,13 +118,7 @@ export async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definiti
         .where('action', '=', 'approved')
         .execute();
       if (priorApproved.some((s) => s.approver_user_id === approver.userId)) {
-        await writeAudit(db, {
-          action: 'update',
-          entity: 'wf.requests',
-          entityId: request.id,
-          field: `step_${spec.step}`,
-          newValue: `collapsed — approver #${approver.userId} ('${spec.approver}') already approved in prior step`,
-        });
+        collapsed.push({ step: spec.step, userId: approver.userId, approver: spec.approver });
         continue;
       }
 
@@ -155,8 +152,6 @@ export async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definiti
   }
 
   await db.updateTable('wf.requests').set({ status: 'approved', decided_at: new Date() }).where('id', '=', request.id).execute();
-  await writeAudit(db, { action: 'approve', entity: 'wf.requests', entityId: request.id,
-    subjectEmployeeId: request.subject_employee_id, newValue: 'All steps approved' });
   const requester = await db.selectFrom('wf.requests').select('requested_by').where('id', '=', request.id).executeTakeFirstOrThrow();
   await enqueue(db, {
     recipientUserId: requester.requested_by,
@@ -165,6 +160,8 @@ export async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definiti
     payload: { requestId: request.id },
   });
   await fireFinalHooks(db, request.id, 'approved');
+  await writeAudit(db, { action: 'approve', entity: 'wf.requests', entityId: request.id,
+    subjectEmployeeId: request.subject_employee_id, newValue: 'All steps approved' });
   await auditVacancies();
 }
 

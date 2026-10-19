@@ -4,6 +4,7 @@
     "src/core/db/database.ts",
     "src/core/money/index.ts",
     "src/core/rbac/seed-data.ts",
+    "src/core/validation/india-states.ts",
     "src/api/orpc.ts",
     "src/api/router.ts",
     "src/modules/*/index.ts",

@@ -1,0 +1,2035 @@
+{
+  "source_ref": "remediation/wave-0",
+  "source_tip": "940e23f2051f371e2e16bc394d500d2d444a9fc2",
+  "head": "9094b779f004cc131c0fa7b3aa9660043605e0b3",
+  "warning": "Byte equality is not functional acceptance; differences need review. This inventory does not authorize deletion and records no file contents. Uncommitted work is not preserved by a branch pointer.",
+  "counts": {
+    "different_requires_semantic_review": 183,
+    "byte_equal_or_same_absence": 30,
+    "source_only_preserve_pending_review": 124
+  },
+  "entries": [
+    {
+      "path": ".gitignore",
+      "source_blob": "7ae8d6bba835e260be216418eafd7f39b7f13c0d",
+      "working_blob": "ac3e4ddb44236848c21d2a1834f330c68b1defd9",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": ".impeccable/live/server.json",
+      "source_blob": null,
+      "working_blob": null,
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "CLAUDE.md",
+      "source_blob": "71bd8b34b55b9a41c0d7e459dcb2a37548587612",
+      "working_blob": "b19fa3373df3aa4ad088f1ac31743380f1074937",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/.env.example",
+      "source_blob": "ecf470e924e0c367dc713557024a06c875dff8d5",
+      "working_blob": "cb6f7ceb9e183e2dd9184b942a4cf756fa53ecd0",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/migrations/1751860000000_phase1-review-fixes.ts",
+      "source_blob": "3a01f451de05a96d04044bf9c00fb128aba4b25d",
+      "working_blob": "a4587ab4df1f6cd612347e7de18672604a2eea7a",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/migrations/1752060000000_sec-identity-hardening.ts",
+      "source_blob": "df172df3c620f3d78010ed043717e092093b542c",
+      "working_blob": "df172df3c620f3d78010ed043717e092093b542c",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752070000000_cmp-licences-calendar.ts",
+      "source_blob": "93e1380a23eb713ef6c1e06e005f253511f9cc3e",
+      "working_blob": "93e1380a23eb713ef6c1e06e005f253511f9cc3e",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752080000000_shift-micro-scheduling.ts",
+      "source_blob": "e200a5e3147f8b8fb023e8a808b9b05f9de0d00d",
+      "working_blob": "e200a5e3147f8b8fb023e8a808b9b05f9de0d00d",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752090000000_org-mis-spine.ts",
+      "source_blob": "3f441af09c7509218724193ed9b64b4ce4bcc9c2",
+      "working_blob": "3f441af09c7509218724193ed9b64b4ce4bcc9c2",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752100000000_prv-dpdp.ts",
+      "source_blob": "92bbe71c2e9ddebbea9aaa5eeb2b53c3e7b70e43",
+      "working_blob": "92bbe71c2e9ddebbea9aaa5eeb2b53c3e7b70e43",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752110000000_ess-identity-daily.ts",
+      "source_blob": "0c9dcb53863bd33cdd17248cf904f0224c9c1e0b",
+      "working_blob": "0c9dcb53863bd33cdd17248cf904f0224c9c1e0b",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752120000000_doc-vault.ts",
+      "source_blob": "3e51200ef1c4e2b2a69e20a5e110f0360b76fafe",
+      "working_blob": "3e51200ef1c4e2b2a69e20a5e110f0360b76fafe",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752140000000_ird-posh-grievance.ts",
+      "source_blob": "8b6e8c5435b06fd380b75b72df7614c1f67a299c",
+      "working_blob": "8b6e8c5435b06fd380b75b72df7614c1f67a299c",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752150000000_pay-budgets-claims.ts",
+      "source_blob": "7f7beb15d1627867d192a3c3943bd5d3b56f8d23",
+      "working_blob": "7f7beb15d1627867d192a3c3943bd5d3b56f8d23",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752160000000_employee-hod.ts",
+      "source_blob": "28925b5e4939b6f0f13559c46fb39d6cb9332592",
+      "working_blob": "28925b5e4939b6f0f13559c46fb39d6cb9332592",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752170000000_audit-chain-seq.ts",
+      "source_blob": "3100e69d2b54d8e6a77e826c7479f1c574cb4af5",
+      "working_blob": "3100e69d2b54d8e6a77e826c7479f1c574cb4af5",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752180000000_org-spine-integrity.ts",
+      "source_blob": "ca50fa3d9d1ee890757dff17e2556d470d2cf56b",
+      "working_blob": "ca50fa3d9d1ee890757dff17e2556d470d2cf56b",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752190000000_attendance-day-integrity.ts",
+      "source_blob": "15f2a37b4e6510818c26170d3a3adeb6dc3dbe15",
+      "working_blob": "15f2a37b4e6510818c26170d3a3adeb6dc3dbe15",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/migrations/1752200000000_rbac-last-admin-guard.ts",
+      "source_blob": "37eed8e930d634f96fa98e858e2473ce6c03017a",
+      "working_blob": "d781deeca6296dd357032ec751a38d313aa11205",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/migrations/1752210000000_notification-sending-state.ts",
+      "source_blob": "c9f567626775188984ca480d267f64edc58dd759",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/package-lock.json",
+      "source_blob": "4506c230e63692ddf8b405ff2f154c01db727b15",
+      "working_blob": "a244dd6dd583f59e1683c0585753a15fb9a5c09c",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/package.json",
+      "source_blob": "e591b75e0d57ac14200108f13df1c095b7f32a23",
+      "working_blob": "aff1ab74217e81ee480e701c51a99489589ed413",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/parked/README.md",
+      "source_blob": "da07fa98035e3c791625593a3e08ba1045ed3c9e",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/scripts/create-dev-all-roles.ts",
+      "source_blob": "72dd9f42dbadad8ab9e5d9509e87912374943df9",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/scripts/create-dev-role-accounts.ts",
+      "source_blob": "159e458ac375f053b318e8357396b7f218ba1278",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/api/handler.ts",
+      "source_blob": "a94386ec0d727c743d5d0f063004f24e9dbd6ef7",
+      "working_blob": "4ced2cb8a5b21820ba9aca83db3bf7bbfdc19e36",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/api/orpc.ts",
+      "source_blob": "f5a0661565a52b9b915c171d55375e4842529508",
+      "working_blob": "7c92aec802d923f9272deff6be5f2bc5421bade6",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/api/rate-limits.ts",
+      "source_blob": "04ecf31ece6ff9782d05ed3a66d77e580e8b7098",
+      "working_blob": "a41117289668c41690212a67267e6430dd3d0cb5",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/api/router.ts",
+      "source_blob": "8a6b29b0779c7ad99f2478900e642c1ebf36a138",
+      "working_blob": "f34374aa8dc39f2d0255e90f9444c3aa84e1c106",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/app.ts",
+      "source_blob": "9da1d629fc51642356003360c03b5e095054b743",
+      "working_blob": "d6a061d124e144fb676d9d4eff1d08a2888f8f7f",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/core/audit/audit.service.ts",
+      "source_blob": "b3b14f03e2d97d18b8ae32a4b12f2b9bf2d5adad",
+      "working_blob": "4e97cd82e9f78729c0e6d069ca5b7e8a88636aa4",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/core/auth/jwt.ts",
+      "source_blob": "7aa6a569ce600f6eedf4a9bda68920a31e210c14",
+      "working_blob": "6b0dc7b17c92c66eb07fcb11bd8013be7b59f4f0",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/core/auth/password-policy.ts",
+      "source_blob": "bb1aeaa1c285d5591c5d11d8643fabc187985483",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/core/auth/security-policy.ts",
+      "source_blob": "baf13865ecd416a12930d9631eb9906bd219d082",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/core/auth/session.ts",
+      "source_blob": "e212592fd3f5aec132d0aebe6da7c418c21acf65",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/core/auth/totp.ts",
+      "source_blob": "25e66ef66e6267dec43a2cb9e0d8eef9376241d1",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/core/config/env.ts",
+      "source_blob": "b185c957cd770a3987092c3691489256d8067e37",
+      "working_blob": "59abb62f96c3704bc751a8bdcaeaa25f574f03a9",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/core/dates.ts",
+      "source_blob": "48215d0bedb819fe3be8abb6bcfcd58abbdff2a0",
+      "working_blob": "5aaf493070bb6804a23d126322e4687301166305",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/core/db/types.cmp.ts",
+      "source_blob": "f4279d6ace89c201dd33bdb9b358bf55f9a8996e",
+      "working_blob": "f4279d6ace89c201dd33bdb9b358bf55f9a8996e",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/src/core/db/types.doc.ts",
+      "source_blob": "7ef25a00b94cd8deb2e16a877e321bc41d70af31",
+      "working_blob": "d459fd06591b55c0deffc970c0616fa706687de4",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/core/db/types.ird.ts",
+      "source_blob": "1c0398f831b58447116f9f9bdf8048439c749dec",
+      "working_blob": "9a026d7a101c85a788e4330cecf9c890aee10bad",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/core/db/types.org.ts",
+      "source_blob": "7eb336d4b7611155986b9aa18fe5930675f466cb",
+      "working_blob": "7eb336d4b7611155986b9aa18fe5930675f466cb",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/src/core/db/types.pay-claims.ts",
+      "source_blob": "940ff2957cebcf55501a005a73e1da1b6758f11d",
+      "working_blob": "3bc1df0a968f9a4a936b3918c60a5e23c1a380db",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/core/db/types.prv.ts",
+      "source_blob": "eaed882bb621df1059a718155facab0a05acfb30",
+      "working_blob": "eaed882bb621df1059a718155facab0a05acfb30",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/src/core/db/types.ts",
+      "source_blob": "5f8e5610785bf341765fd4588b96e524bc674291",
+      "working_blob": "b613608f5f4381850d7ff610f8e92ca35c251cf7",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/core/org/scope.ts",
+      "source_blob": "b62876f4951af6e2aeed18535e613a766d2b5ddc",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/core/org/states.ts",
+      "source_blob": "be120ea9e2c392d23577f9163f24baa96e1043a2",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/core/rbac/employee-scope.ts",
+      "source_blob": "2ed8f0d90a3cc8f7c5791092eb3954368283c214",
+      "working_blob": "97deccffefb231e51ee82739a9d8fbab5a1e4055",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/core/rbac/seed-data.ts",
+      "source_blob": "632b7834187a869198da8f903045440c71ea8f4c",
+      "working_blob": "bd8cc8b0c1847ef97c47867dea24c8bf362b9281",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/core/settings/read.ts",
+      "source_blob": "35024105750d6cd791cca1df80453054caa6b649",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/core/storage/documents.ts",
+      "source_blob": "bec60c2320fb56e209b851d7492ab41dfbeb3f0d",
+      "working_blob": "f2b5b011c56c405ea14c0bd1e855af7adf773dd7",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/jobs/worker.ts",
+      "source_blob": "e5e83abdaccc25265288d448d32fe4919db95ad8",
+      "working_blob": "eb740db81ccc0425eda4e93e2c7cff8c7f6f2a1a",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/assets/assets.router.ts",
+      "source_blob": "92e89e337ca3bae7b1c2583ea2b89f3d0c0520d8",
+      "working_blob": "62bead529bc81ecfaade8c2d7ed4269c3e7ad822",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/attendance/attendance-config.router.ts",
+      "source_blob": "e1a06ccc413df045483469764600cae0dbcb09f1",
+      "working_blob": "636abb13d0b7a9d9cfec2a86e67f34b0c09bb3a2",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/attendance/coverage.service.ts",
+      "source_blob": "b4123962dc8b4bae6ed0a219f494ae911b29e129",
+      "working_blob": "8abe8a7654c292297c7c76e7b0577bf1e5810367",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/attendance/day-status.service.ts",
+      "source_blob": "0ad6783eb378725523c610bdc9c40e5d17bea921",
+      "working_blob": "d04bcb0d43998f39ca3b64662e366cb4ae4ed118",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/attendance/index.ts",
+      "source_blob": "facfa869e2894867bca0ed1b4db2efa752c789f9",
+      "working_blob": "32c32eff4f1a419d94d56fe5c35ce303d2aeb854",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/attendance/kent-sync.job.ts",
+      "source_blob": "f4292c50aa1ce31cee1435db7dd63e91036d3b98",
+      "working_blob": "b2eb1e2b1c009ae9de5cbd78aa4ec6608d651236",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/attendance/month-lock.service.ts",
+      "source_blob": "7c62daa388cde091640824f6acc3d793174f408c",
+      "working_blob": "9dc606e2a183def318fc8d29560e42e0ce297bd4",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/attendance/roster-guard.service.ts",
+      "source_blob": "0618370856b0509c378e011260399c27d71b624b",
+      "working_blob": "f94b90f5fa53f154e869f82c76d421fda9da62f3",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/attendance/roster.service.ts",
+      "source_blob": "345669599fc1f0eea73947edb1441f3f8cf4abd0",
+      "working_blob": "eead69c55c037c569db65307d1e1d1f8ca41875c",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/attendance/scheduling.router.ts",
+      "source_blob": "930bb3265f0fe165185022bb65c254f43caa365b",
+      "working_blob": "b608ef7fc9ea3005d507660b4ecf68c6421e40c0",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/attendance/shift-pattern.service.ts",
+      "source_blob": "5d18a662f46974585be19c38dc89152e5c4b53e8",
+      "working_blob": "5d18a662f46974585be19c38dc89152e5c4b53e8",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/src/modules/attendance/shift-swap.service.ts",
+      "source_blob": "4b69171282436448e1372d70df3fa629143e487f",
+      "working_blob": "a551aee7e8ef25f854f2c5db20451925662f3850",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/attendance/shift-windows.ts",
+      "source_blob": "5769aaefbe977b096ff7b2791fbcd8996bb7b2cc",
+      "working_blob": "d606cfb93503e5350f4c5cf0fe2d42366fb9df72",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/attendance/team-calendar.service.ts",
+      "source_blob": "64f09b2aa60b2574bc8b0332a4247a08e08a1696",
+      "working_blob": "64f09b2aa60b2574bc8b0332a4247a08e08a1696",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/src/modules/attendance/workflow-hooks.ts",
+      "source_blob": "2f6c0772548208dbb4f8743f56ea1be2ce2df801",
+      "working_blob": "1029c86c06dfdc180f5580585f3e77daf4541fbb",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/auth/auth.password-reset.ts",
+      "source_blob": "8d47d959f40c7eeca00e3c6ec59e31ff98e08bb9",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/auth/auth.repository.ts",
+      "source_blob": "28aa4c28056f8788b0290713390269eadc5e3f41",
+      "working_blob": "b468a1c7f616b349a373c22d3fe48e3300eae544",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/auth/auth.router.ts",
+      "source_blob": "d4fe77c756aefa15f5cc81cea401c8dbed380b4d",
+      "working_blob": "fb4b5ac1503196024a5c9228a78b334afaa234c0",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/auth/auth.service.ts",
+      "source_blob": "84dbf80f1b7340b884a694b220bd9457a7940bd8",
+      "working_blob": "5dad3e2d50e430892cfb428dccf6663fdeaef247",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/claims/approval-chain.ts",
+      "source_blob": "2c681104373534382468ade02b602f587d57af90",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/claims/category-caps.ts",
+      "source_blob": "26b8b778b3871f89c3344a7ba581d592e9273db7",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/claims/claims.router.ts",
+      "source_blob": "1c215fd22a97a37c7428768963fa6f1a5c1c30ef",
+      "working_blob": "c07b08d367af67fe1e72d8ea4e96845ed9425152",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/claims/claims.service.ts",
+      "source_blob": "9e09588c8553a6fc1bbcf04737707754e482735a",
+      "working_blob": "e4b8c54b759d6ec506eab008c5e9ad149fc8b9b8",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/claims/index.ts",
+      "source_blob": "469919deb7b21e0f6a1dcca12f7ca31af24556e6",
+      "working_blob": "a3fb96fea451d4767f26c58eedff69bff6aba7b9",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/claims/ledger.service.ts",
+      "source_blob": "15ae1de2d806093c0c420361a2b73d3d57d89956",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/claims/reservation.ts",
+      "source_blob": "b899a8d6da78a0b909c51f39830d359c19c2eedb",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/claims/settlement.ts",
+      "source_blob": "8bafdcb9a080d1c57dd9cc106ec2079920ad7689",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/claims/workflow-hooks.ts",
+      "source_blob": "3f76197a1bfccda619e68c6fe72f07e106f153bf",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/compliance/calendar.service.ts",
+      "source_blob": "73a3f3f8acac2ebdb732ec276eca8ef66f8de6fa",
+      "working_blob": "cd7ecd3128cfbc01015040f6d443c5ebee83f906",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/compliance/compliance.router.ts",
+      "source_blob": "72550babc3ed82ab5b849943c56636f42ba9c8fb",
+      "working_blob": "5eeeda3ac3632009e9f8b41be1f8b81ca3b99c6b",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/compliance/expiry.ts",
+      "source_blob": "e317468261f4710d22d627b69936c23194492e37",
+      "working_blob": "43496f0a287852bc4129b7866a50ae93f65b9a41",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/compliance/index.ts",
+      "source_blob": "aef492b87589c5d5620aa84288a8c23c0ff83b57",
+      "working_blob": "8ff79827db05dbf5e248906fea137f55fe69f027",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/compliance/registers.router.ts",
+      "source_blob": "b45378c04c3fd44644addc5fcbcab7e7ebdc4aaa",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/compliance/registers.service.ts",
+      "source_blob": "03024a65bc8f087a65ec26d8262f3e8a7387c84d",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/compliance/registrations.service.ts",
+      "source_blob": "7494115505cf5b141f4a0cd303f306e11f5e7c2d",
+      "working_blob": "02ef0a8b74e8b13bd67545b627eba3365de88caf",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/compliance/wage-definition.ts",
+      "source_blob": "561f59213537ac2a50dde9c808229401c2cd9de0",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/compliance/wage.router.ts",
+      "source_blob": "25f53795bbf26a08e408f2780277f2f5f1b8d40f",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/documents/documents.router.ts",
+      "source_blob": "1c8f11837efc7023e3064225aa74b04ec066b149",
+      "working_blob": "ec8ebaf4878c9aa3504cc65ede48a6e23068458f",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/documents/esign.ts",
+      "source_blob": "d81098939bc44bab36b9c2aba84bbc72949de782",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/documents/expiry.ts",
+      "source_blob": "3bf21354ed53805fa076ae2a08768b55ddc9c747",
+      "working_blob": "9d90ba00662dd8b519a40c6a07234f52689fdf55",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/documents/index.ts",
+      "source_blob": "22397e74ff752ef49c8d0ff8232d7714937c7857",
+      "working_blob": "bdb15dabfe211991ed3b156e74bb38b33fe9f058",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/documents/vault.service.ts",
+      "source_blob": "9045644e2973b46c1b51f11f6e400f1a9f6d7d62",
+      "working_blob": "8f5cabf96257b73f57f220fc22e6726675ed71b3",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/employees/employees.repository.ts",
+      "source_blob": "14b819725be12e4d7eb7c95b099b38f101a3e994",
+      "working_blob": "e27603fc51d1963c0598048bb0a7e43af229ad7b",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/employees/employees.router.ts",
+      "source_blob": "31679dae98d2fb20f5b9824217b2d0b71b7b2f09",
+      "working_blob": "4515fa30fd79cb0bf77ae5e97fac4abd1e108441",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/employees/employees.service.ts",
+      "source_blob": "cd31a5a151c97f57373da8e16e0b67846e56c106",
+      "working_blob": "ca7139155076eafc790af716d8e6640b9586c3fa",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/ird/index.ts",
+      "source_blob": "088df07e524e4f3f90238b75cbfb01cc087d122e",
+      "working_blob": "b29f3efcf337ecae533fcc6505177156dab1a94f",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/ird/ird.router.ts",
+      "source_blob": "b4a84757a833398d5a7d09024d91ff758cb3a11a",
+      "working_blob": "9ad49dffa42bd326617a2fe7d168b1de2be922de",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/ird/ird.service.ts",
+      "source_blob": "7f2237dece41ab98940faba5ead5b11f435d5e90",
+      "working_blob": "80675628eba1c1d1256eed6ce97d6d85bcceac0a",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/leave/coverage-check.service.ts",
+      "source_blob": "7a473a8f39b3dcc2ba16cba6c0938b0f48a9c82b",
+      "working_blob": "7fecbd2831046c31ab20dda5c92aa32ab45dfc9f",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/leave/index.ts",
+      "source_blob": "cfdec25046dffc01e5e88882c2607fb843bdd719",
+      "working_blob": "cfdec25046dffc01e5e88882c2607fb843bdd719",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/src/modules/leave/leave-apply.service.ts",
+      "source_blob": "1580f0906985f5e40adf5284f78f0eeb8b372ca0",
+      "working_blob": "065cef08b16a7fb3c5847d4e56eaa4baf36ed09e",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/leave/leave-blackout.ts",
+      "source_blob": "71aed6a8d83303d7e1d7e6d7820512a578a73952",
+      "working_blob": "fc22696962d9aa64b91d3069babc4ff8de38131b",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/leave/leave-preview.service.ts",
+      "source_blob": "ef173fb052e6224c5ca7c0a204fd9b4d896558fb",
+      "working_blob": "3849321ee822761668833f1b310d12f00eb2ca05",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/leave/leave.router.ts",
+      "source_blob": "8a249bf245a4d4945b9c3abbd4e6bf5c39943da2",
+      "working_blob": "76cb58344a2582a56156fac8c5dbba654ea1371e",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/letters/letters.router.ts",
+      "source_blob": "7b61cbd4f02b9eac22938c16520c9c0445be4de2",
+      "working_blob": "fd8d391fd63c7ec8063ec62fcd5e2844bf3fcf67",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/notifications/index.ts",
+      "source_blob": "352cb00648985331593b0d199ff581f3684bde3b",
+      "working_blob": "7df9d7219d3aa9618dc45c1480c762c8e89d2fc4",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/notifications/notifications.repository.ts",
+      "source_blob": "20495f72aa25d3fcb5bcbeb531509b2eede5f6c4",
+      "working_blob": "79076e70b18d71f4bd233540b75d1608e04e6a09",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/notifications/notifications.service.ts",
+      "source_blob": "4cb98c998ce1d29a1eec8fdbb6fdd3450a01331f",
+      "working_blob": "ff48ca86d15636be406e7512ceb01c73969e0be0",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/notifications/smtp.transport.ts",
+      "source_blob": "15a36d146648bc6a9b5604bd0faa4176a34cdd73",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/notifications/transport.ts",
+      "source_blob": "7f9fa7036e7520e1ae61240ac0b7ee91b8858349",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/org/index.ts",
+      "source_blob": "edc5209d234e5dc8c000ba15f143f3c2115efe9c",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/org/org-mappings.service.ts",
+      "source_blob": "6eeb93d22d275129a569dc7e8f976186b7fed728",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/org/org.router.ts",
+      "source_blob": "74c4b22e9992b8a2ee4dcc4b241aad3849f19a98",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/org/org.service.ts",
+      "source_blob": "a0bd8d9492c4730f54376452f7544f01edb79828",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/org/scope-sql.ts",
+      "source_blob": "29bcb1c0eb6492fbc05fe2a3e7b9657935541fdf",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/policies/policies.router.ts",
+      "source_blob": "0fdb5fc1359853aebb02cd826e91c286df3946bf",
+      "working_blob": "dc5c23e91769dd449b283fa8ddfd96ebce7b1b0f",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/policies/policies.service.ts",
+      "source_blob": "fe4585d0bb0bc78d076d5faa7130a45e68d70081",
+      "working_blob": "77e9d68731c5e8e4f07d8c396501b8c4cb21f2bb",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/privacy/consents.service.ts",
+      "source_blob": "0baa731946ce1b398356702344244b61f4f3e3be",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/privacy/export.service.ts",
+      "source_blob": "8fec8826ea931f375b7c0ee6d2f7c1bc2caf33cc",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/privacy/index.ts",
+      "source_blob": "3631d7022ba35a1047879416a0f05047b1096e0f",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/privacy/notices.service.ts",
+      "source_blob": "a4447595677f49393cf62210e08fe4fe7bab4d94",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/privacy/privacy.router.ts",
+      "source_blob": "d76ea066d5d51b8f985590637942b0bf6aa300b3",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/privacy/processors.service.ts",
+      "source_blob": "7b5e4c1030ea0c64c95397ed40c27eef110e69df",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/privacy/retention.service.ts",
+      "source_blob": "51ba5784c2829fa843c1f48c7d01dbf46aca06f9",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/privacy/rights.service.ts",
+      "source_blob": "635cd6f1dedec3c7540a56eedc4a47a4bd032c8a",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/privacy/would-purge.ts",
+      "source_blob": "f450d320a94ead8e42093d8a3d89cd3bf5a78ac0",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/rbac/rbac.guard.ts",
+      "source_blob": "bb302f995e6cdc62d855f1f3fc08296ac384091a",
+      "working_blob": "c0b5ba9169a77e3b980bbd194dfb6262e074a255",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/rbac/rbac.router.ts",
+      "source_blob": "9045369316349a209e662dfd39963e38c4089dac",
+      "working_blob": "7268711c084962e272eed4802b2693c09b33b393",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/reports/dashboard.service.ts",
+      "source_blob": "c959b51dda17aebac67b538657aa1dc2d3a867ab",
+      "working_blob": "6b70e1a7889a1ad3c602fba3c0f674d2dac8e716",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/reports/index.ts",
+      "source_blob": "0cf0c842575930d58e8ecd091a01ce60af788c22",
+      "working_blob": "235c271a46387364e59b55242be06519643a6b40",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/reports/kpi-snapshot.service.ts",
+      "source_blob": "63732ced7d778a7df328c1c3e0feb96a75c12d85",
+      "working_blob": "77f0da7b32e12208b16fd9239a610fc73bc2558e",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/reports/muster.service.ts",
+      "source_blob": "e3888b8ceaf9a641f9b4f204569d8683a9665be6",
+      "working_blob": "b88e0ee1ff522ba6721909e92b3ab927c3a3dc98",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/reports/reports-export.service.ts",
+      "source_blob": "ed261879d42a58f6019c6502c2237dce69653287",
+      "working_blob": "20fc3bcc406ed6df328743dacbd54faf96a7e89d",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/reports/reports.router.ts",
+      "source_blob": "4753f1069457cd35d04696594af2f6a768054669",
+      "working_blob": "11871dbb26725e421f63dececcef2d942f7157ba",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/reports/reports.service.ts",
+      "source_blob": "f17c656c33c8a8fc2e01f1997139d6fce5b84501",
+      "working_blob": "7646cbafb38e41ecebcf42e8e04823e67aba5525",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/security/access-log.service.ts",
+      "source_blob": "d13cbf5cd2751dd2c0bcde278de0381ce92b4e6f",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/security/index.ts",
+      "source_blob": "8a4f998b7c97221509b80a02747d72f3a125e152",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/security/mfa.service.ts",
+      "source_blob": "afbb8b24e8fb910dc6ed599d3b94b0248c2196b2",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/security/security.router.ts",
+      "source_blob": "43f07f9f6f3397542364ce0932a2d73470a7f011",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/security/security.service.ts",
+      "source_blob": "eadf3f140f089f38307eb75c9249f09e97fc9c1c",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/src/modules/settings/seed.ts",
+      "source_blob": "8fb8f221300266c25f4f188dfde07be341d21e4f",
+      "working_blob": "3d84c61e42a49e25a481a3c55deff51714c90249",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/settings/settings.service.ts",
+      "source_blob": "db463dedb0150fb7f5e5aa433de1b4141d63f8ba",
+      "working_blob": "880a48dfe5036f9d293ef3b17ce4ac87adbc1165",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/workflows/definitions.seed.ts",
+      "source_blob": "610b46a51b79319d0c68f6d8bc32b55881d361d1",
+      "working_blob": "65012984358f30d172274751c085a814155dd720",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/workflows/index.ts",
+      "source_blob": "8e45c98f8a717a5b10873eef5965c52dd9a21ebb",
+      "working_blob": "d443ce937eb7735a9afd447736d44fe90c30eac2",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/workflows/workflow.service.ts",
+      "source_blob": "fe81c1f82b8c6a001323f66e13c4ce210039b701",
+      "working_blob": "ceb1e96fb21f421766eec1cab4a349b0dc3c5cea",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/src/modules/workflows/workflows.router.ts",
+      "source_blob": "f62a4e147bdbd336c43c5aa53158ff0fd4fb8c9e",
+      "working_blob": "8bf12328df7f865deb2094ee1c693d58ac5d8ece",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/access-control.integration.test.ts",
+      "source_blob": "b4db296efe0f23904dd25b721c71d900c95dd450",
+      "working_blob": "de80ccf90f0112005f7a688088fe603464025c35",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/access-matrix.integration.test.ts",
+      "source_blob": "cdff3c1176ca888498f25ea69848b58318f8b0de",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/api.test.ts",
+      "source_blob": "e68080c405b4e61b22e4f7a174c8c112d557ab30",
+      "working_blob": "0583f95e6d8171934136a91f27cd61c68fe31a3e",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/approval-chain.test.ts",
+      "source_blob": "55f737e6d0b44efe88adbba71e35b3c87458940d",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/assets.integration.test.ts",
+      "source_blob": "8f00913e207709c831cfb041e93f799515ce963e",
+      "working_blob": "94142d91ea76717bdc40bae5393b28503ae3497e",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/audit-chain-concurrency.integration.test.ts",
+      "source_blob": "1a5fd975ed0ff1ea154a21927945c24dc6e87391",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/audit-read.integration.test.ts",
+      "source_blob": "b84a8679059649e3fbfdc529e7773908bba54662",
+      "working_blob": "c849b1400cdf7c3b32fce239f7eaa9c232ccf655",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/auth-employee-link.integration.test.ts",
+      "source_blob": "eb692b5e3ee4b3beace2771f407fd6b9dcd9ce48",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/claim-category-caps.test.ts",
+      "source_blob": "5ce52727826a1b0182f9583c443aba8914749d26",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/claim-reservation.test.ts",
+      "source_blob": "653251eacd8bd48b3f32f272a0e8c5cfaae7efdc",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/claim-settlement.test.ts",
+      "source_blob": "b1cb4180feaf1c9467321acaeca04867213ffdeb",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/compliance-calendar.integration.test.ts",
+      "source_blob": "8a7753d7b9e9a3b3422197049a9152bc637eb5bc",
+      "working_blob": "b57b8216b44f61aca3732ceb95a45c34287726af",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/compliance-expiry.test.ts",
+      "source_blob": "8addca623e3f0db299d203ed3755df1429531186",
+      "working_blob": "4ea577648500c457849745f215319095e68d034c",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/dates.test.ts",
+      "source_blob": "dbaee728c3b8686f369252a84c29027f56971ea4",
+      "working_blob": "dbaee728c3b8686f369252a84c29027f56971ea4",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "backend/tests/day-status-compute.test.ts",
+      "source_blob": "78919f04858b1fac0fc12f6dd4ec95f467735a84",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/db.integration.test.ts",
+      "source_blob": "e462bcfad4259b5099f98fefc33f6920c9f49fee",
+      "working_blob": "ffda19dcaab5c88689e6f160c4fe4452526f688c",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/directory-facets.integration.test.ts",
+      "source_blob": "29fccb4cde38f933e920cccaecd8a7fab7915243",
+      "working_blob": "4335dabdc111fe33b79e411309f4edb46bab3f74",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/document-expiry.test.ts",
+      "source_blob": "c017f5a0520dc480adff28d5323de3b78c4276f4",
+      "working_blob": "e3f771eb4a265d3d2814da2448aa339dbfcb067e",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/document-vault.integration.test.ts",
+      "source_blob": "946aff4015655486139cfdf654a689e94486ffd0",
+      "working_blob": "c3036a25d79463f533587ad6021ef767958155cd",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/employee-import.integration.test.ts",
+      "source_blob": "aa037edf080c5195f10e9331aedd808fe8ad2369",
+      "working_blob": "01e6e64a11d48ca8136cb40bb1dadba33bbcae80",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/employees-masking.test.ts",
+      "source_blob": "9d4629f7e93bea0c079eab868e2a0d1f09a4de21",
+      "working_blob": "3d5511231c2b823db2143eba334022db70dace40",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/employees-self.integration.test.ts",
+      "source_blob": "36ddce6619de9adfa0f14ce62f38d8acb9bf79c4",
+      "working_blob": "367031739e38765e2d487776d09583530695ddfb",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/engagement.integration.test.ts",
+      "source_blob": "7c1398b4c84ef0a3ee93366847e35cb99d97ac8b",
+      "working_blob": "1e2be11e098a858a831d9d0ea41a8c2eaf7e1834",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/exports.integration.test.ts",
+      "source_blob": "f2f2735557784931e2c10e980641cbcc6b8c3cdc",
+      "working_blob": "c23fdacbff1294f2a35160ee9bce00ad9cd9b52a",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/fixtures/payroll/golden/G1b-monthly-register-jun2026.json",
+      "source_blob": "81f9334669e35d34513a2308b3708e456f921919",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/global-setup.ts",
+      "source_blob": "947ab554a6c4f9ea7579990818e5910e5d4f634b",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/helpdesk.integration.test.ts",
+      "source_blob": "268cae2d2195e679996a5e9ab229e563aa427f57",
+      "working_blob": "829af3fd351b0d7a6d170f3e679c71447299a994",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/helpers/rate-limits.ts",
+      "source_blob": "cbf944ac693004bd4e300d977f16ccf466396602",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/http-hardening.integration.test.ts",
+      "source_blob": "331cf4d772e7bb9ea0f6e354e9eee3fbcf4ec7fb",
+      "working_blob": "a89f9d5d1883670f27b3b953acfe82f2f84b8023",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/ird-posh.integration.test.ts",
+      "source_blob": "9be16fb133951c6a9fbfdb991820d4d4a060065a",
+      "working_blob": "cc98d11566c12981d2cc8ff6619759256703554b",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/ird-posh.unit.test.ts",
+      "source_blob": "6af66ac3874750923f1d0458c1bdc4608e2deb0f",
+      "working_blob": "b05936b9f9dab135cf5ad04a77d2e5f227b23346",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/leave-coverage.test.ts",
+      "source_blob": "264e198c935e168559d733c35e428c769ede5a33",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/notification-delivery.integration.test.ts",
+      "source_blob": "f000cec3276f5f011079723043ce29e1d8f98692",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/org-integrity.integration.test.ts",
+      "source_blob": "f9b09cea1965dac4c197cf6aab1275deca36f920",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/org-scope.integration.test.ts",
+      "source_blob": "93e8cabc19f61e14328a194d82e825fbccd17ee1",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/org-scope.test.ts",
+      "source_blob": "b2455a215ea53208eee199e402be80e460bbea91",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/password-policy.test.ts",
+      "source_blob": "f6f24546f1c72f1a0340070eb668a6dae59f14de",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/password-reset.integration.test.ts",
+      "source_blob": "fb7ed57c4059794fc3d581bc4ec6773cc685af1f",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/privacy-dpdp.integration.test.ts",
+      "source_blob": "5e9f16af1f854b2504a613a9ba698ae9e8350037",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/privacy-retention.test.ts",
+      "source_blob": "eea14caac0414c3a6c8344fb2e093ee038a6096e",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/production-guards.test.ts",
+      "source_blob": "2d718a5d05c88e5a373f1a3562830d7ad76b5d77",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/punch-edge-cases.test.ts",
+      "source_blob": "d393740861ac3f0df1f843caf268ce852f4b3d50",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/rbac-ceiling.integration.test.ts",
+      "source_blob": "cc0dd1a52e95d78a7b3489bf7aa6d7926416dbf1",
+      "working_blob": "c1af792964261799854b1ce43af3ba50f7457537",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/rbac-seed.test.ts",
+      "source_blob": "1c5e35eee83d7b821c4e5c110521a5b51fdd7227",
+      "working_blob": "e7ae64ea0f9dea5b6e27bcca5072bf2a2018f9ad",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/registers.test.ts",
+      "source_blob": "b8ac9884e4b03b50d9ee667e07616bf93120df23",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/role-access.integration.test.ts",
+      "source_blob": "72b4818162e1e4c5f6bd0f6b61c87f5b5789a8dd",
+      "working_blob": "4e030f875877b528376fdc9ab7a7c5b52b409855",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/security-identity.integration.test.ts",
+      "source_blob": "6c6ed4d5b260cb413cd8a452dc339321311f1fb0",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/settings-seed.test.ts",
+      "source_blob": "ce99662953850b478210ab5bf2d9d5be00445e4f",
+      "working_blob": "25bfbe4864e24c4b237a6c12352e8cabfb37ab88",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/shift-micro-scheduling.integration.test.ts",
+      "source_blob": "5e4b3ea5311ba13b90d1dbd2f3381b680f93998a",
+      "working_blob": "a9bb110dbf12ff5fbe4ad65fa5d1d3e726eea70b",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/shift-windows.test.ts",
+      "source_blob": "8a85700ca56a430e023f3a5e41897b3711fe751b",
+      "working_blob": "53ebee0a23eb7756762efce48c4cfaca0308a584",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/stage1-review-fixes.integration.test.ts",
+      "source_blob": "b67a50d0476215e28ace5d6ecdc54f722ece7d50",
+      "working_blob": "279cb3b8f7674a1156b586e6179bff93a03bbef3",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/stage11-ingestion.integration.test.ts",
+      "source_blob": "0b353f83f08c9183cb83366c98f59fd9f713fe81",
+      "working_blob": "ae8248ea1b3c71cd6981346795ae59daeafe8c83",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/stage12-attendance-api.integration.test.ts",
+      "source_blob": "77896f1cea0cdbb6d053c138f2630700b17e5cf2",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/stage12-day-status.integration.test.ts",
+      "source_blob": "cc5dba05ef2c34933a6326ac4fda73192d88627c",
+      "working_blob": "1a08f7f0b5faef46e2ba125b268479d65a0526e0",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/stage13-workflows.integration.test.ts",
+      "source_blob": "4ca6afa72e4b3ce26771ac0ce86d3fc8be68bd7f",
+      "working_blob": "da16e193861e72ca5ab0b1e3ff1051783dadcf45",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/stage14-requests-overtime.integration.test.ts",
+      "source_blob": "2c635ee0f9173f4cd1bf97e28f329dda9277a667",
+      "working_blob": "760db8ff8bef017816fde9134b5ba167015098ba",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/stage15-leave.integration.test.ts",
+      "source_blob": "7a8bd541c9567bb657032cd2d35c657e4d3dd708",
+      "working_blob": "eac411968c7961f0f43ec753f803a836bd8c5c0a",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/stage17-absence-api.integration.test.ts",
+      "source_blob": "d27137c7decbc6bd3ce805f8265bee6ff4c7834b",
+      "working_blob": "7d3909a0af5e54d53d5249a292a239563b27e82a",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/stage17-data-accuracy.integration.test.ts",
+      "source_blob": "b239d93f82205294cbfad1b965123022bc25e65a",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/stage17-device-watermark.integration.test.ts",
+      "source_blob": "afcd7a1c512ab4082dd918cb18a54bf445cf9616",
+      "working_blob": "b4bca18fcce5476f659f6a087f7c81a5fabfe7bd",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/stage17-supporting-reports.integration.test.ts",
+      "source_blob": "32e02ec94595c0494644dc2a822abf2cca524f05",
+      "working_blob": "86ef97fd705aec88b689bb102f0ee1eb79105874",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "backend/tests/states.test.ts",
+      "source_blob": "86c77eb165a59c7b9f3b29f098afdd73c146a50a",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/totp.test.ts",
+      "source_blob": "1da26e8f2d2ca3fd6a3ee2ac514540b6810f243d",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/tests/wage-definition.test.ts",
+      "source_blob": "2ae774e14b98b01f680306e1ff34c07701955282",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "backend/vitest.config.ts",
+      "source_blob": "06b6c8dfc55128de4d7ec54498158da08d6a18b7",
+      "working_blob": "ae91fe68b8ce370b2597448eed5b36d9c6eadcdf",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "docs/05-UIUX-SPEC.md",
+      "source_blob": "43b559249764f77edba0632991f7e8efa502c0b6",
+      "working_blob": "ff45e744f5f9c28c5844e4b40707a7f3f465ef97",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "docs/06-REPORTS-AND-DASHBOARDS.md",
+      "source_blob": "8c6202b28abbfcee5b834a26cf300d443e6ee25f",
+      "working_blob": "2e4b7839dd9bc41a3140300b3de683e2970501b4",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "docs/09-GREYTHR-RECON-FINDINGS.md",
+      "source_blob": "97d0ad8fcf413cf60810b8595b5df6a5cddeffa4",
+      "working_blob": "504dfd3460dd698004c73378d1aff72b989faef2",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "docs/10-INDIA-PAYROLL-STATUTORY-REFERENCE.md",
+      "source_blob": "938c4abf1051503f68aa87faf80aaf04fefbb884",
+      "working_blob": "3cade57aab73d814f85cd7746226153e31c68a42",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "docs/11-EXISTING-EMS-YATRA-AVEDAN.md",
+      "source_blob": "45db7627c41291012bf7f1dcf3a436b2be2d30e7",
+      "working_blob": "5deba6236b2f4770e177c3e56365f0c719939585",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "docs/15-FEATURE-GAP-AUDIT.md",
+      "source_blob": "46cf4cdd097aa01116f5e91678d48ce5555a40c4",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "docs/16-MICROFEATURE-INVENTORY.md",
+      "source_blob": "c6adb66e0d3b782648a4f0a038bc243193931589",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "docs/audit/00-EXECUTIVE-VERDICT.md",
+      "source_blob": "59bc549719c0ed03ffdb673171ac38f5ff1dda9c",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "docs/audit/01-FINDINGS.md",
+      "source_blob": "90c4672449ef71f9d11cb91adec2950d8c5671d1",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "docs/audit/02-WHATS-WORKING.md",
+      "source_blob": "e7467937faae09bf4951763379a8e3c1239d80d0",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "docs/audit/03-DATA-ISSUES.md",
+      "source_blob": "77a52f20c527dde217309eaf62011517b22e4a6f",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "docs/audit/04-UI-UX-ISSUES.md",
+      "source_blob": "f08ee6615625acde3876e2f3eaad9eefca546092",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "docs/audit/05-SECURITY-REVIEW.md",
+      "source_blob": "f53248c025d765ad8126736868cb81e960d730ef",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "docs/audit/06-SPEC-DRIFT.md",
+      "source_blob": "7eca6fb711bcb08e4e6b010409c0584f00b4f6f5",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "docs/audit/07-REMEDIATION-PLAN.md",
+      "source_blob": "d669ada89ed4965b46c893f7fc3fbefd7e06830d",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "docs/audit/PROGRESS.md",
+      "source_blob": "1b3bb4c32cd2aa3d36ee36f208c6fdfb431a4c66",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "docs/recon/ems-claims-live-schema.md",
+      "source_blob": "ffeb39859c19ccb623cd59f27541555a9cdff007",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "docs/recon/greythr-monthly-salary-register.md",
+      "source_blob": "cc258106d857436f73902f12a1ac26cd90707172",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "ecosystem.config.cjs",
+      "source_blob": "d4ef0ebbcf7ba8b6ca76455e292b14fb0d458573",
+      "working_blob": "934a03f6a7a7bf964e2aee0d7c4926c67cccaa19",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/index.html",
+      "source_blob": "3db7c33e542d22fef05adc9cbf5838df308ff086",
+      "working_blob": "7ec0149d14794f7ef5eee8aceed4fb7e9eaa0d0f",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "source_blob": "6572792ef8944e8c6330182c099ff9f6230337a6",
+      "working_blob": "0dfe0be503133aa1a34ad53ef5b0c5fd48a7cc7d",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/app/AccountMenu.tsx",
+      "source_blob": "326be6de901092dfb88ffc38133f86beb3fdae92",
+      "working_blob": "b80ad561fc0bf06ce359151697ede38d568e2b0e",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/app/AppShell.test.tsx",
+      "source_blob": "8881fb9b66173dd7e547d80a65506baf46ef0dbb",
+      "working_blob": "58a0fb40149377c818f860f395958c28e1b6efec",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/app/AppShell.tsx",
+      "source_blob": "d78d9b53775682b275c37fb90d9889b3d0d72360",
+      "working_blob": "e2ad6d85f4d7f4ad5f1b16de5d0f3094102711d7",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/app/CommandPalette.test.ts",
+      "source_blob": "e94e70f316eed4d43e3f7e2bdaad6f73426df3b5",
+      "working_blob": "ff2658d6c13da77dd271b0455622ffdd83819dcb",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/app/PillNav.tsx",
+      "source_blob": "322958ede504dd28b44840ee4d213edd0a2b962e",
+      "working_blob": "e510d8e7c7fc8e9df5c6413dfe3807641c3797c0",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/app/PrivacyNoticeGate.test.tsx",
+      "source_blob": "454c3e60d582f80b7622ed511abd7a546af39671",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/app/PrivacyNoticeGate.tsx",
+      "source_blob": "6a3bbbfa4ed06f331e6d43e5bded619234e17979",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/app/StepUpDialog.test.tsx",
+      "source_blob": "7d828c1d4cea11c27509e76aaef799bb7cc0ed95",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/app/StepUpDialog.tsx",
+      "source_blob": "f6fcba085207290d6c416fe6758cfd8ecec23866",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/app/nav-config.test.ts",
+      "source_blob": "5b9f0e47c4c3e8a5b20966e67efb13ec412ab7bb",
+      "working_blob": "e519d7cf0f1808ccfb5394d67c9f7fe4f2a44a37",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/app/nav-config.ts",
+      "source_blob": "9288cf8293aa930ca9852e8965c6b795f42959c6",
+      "working_blob": "b7066a5fdbfceb731c6c82b0b54ca11226d4bb0d",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/app/router.tsx",
+      "source_blob": "26e6e957d650715a94e13ebc461c16562925f2af",
+      "working_blob": "45b320decfaac45ee7150da72ee28f8200d11c3a",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/index.css",
+      "source_blob": "b12b35c6451237d15c566739c7f46b351afe2d20",
+      "working_blob": "ce20cc91b8ea2298d5774f4740cfdfcd047f22ef",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/lib/api.test.ts",
+      "source_blob": "cff14b8ca33abcbe9b6fe2fe80327ffce5c7cd00",
+      "working_blob": "fa9e5029bbc92f3a1665f6e2d1a0316ed3c6d0fa",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/lib/api.ts",
+      "source_blob": "7b6516ce088e2a9058a4f37a4450c22fa0559ebd",
+      "working_blob": "b2135de41c23ad7809fb6c32fe01164cc5e53266",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/lib/session.test.ts",
+      "source_blob": "43dde3805beedd567bb91f1efaa70629ab9f3812",
+      "working_blob": "9b95959fa2161d578d88f12df7af2664a4374627",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/lib/session.ts",
+      "source_blob": "20acbe58a25c396b77bd686c1e079894d30ab582",
+      "working_blob": "54ab3a7d47852d92370f1374dfb9f25a90813455",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/_shared/CompanySelect.tsx",
+      "source_blob": "c5ba1591b3c7d0edf1d2308731b6613ad916cbce",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/admin/AttendanceMastersPage.tsx",
+      "source_blob": "61f6f84159ac0e866bd22ac2db752c72def32126",
+      "working_blob": "d6c37d7629d6302b70e9d006dbdfda9a6fa92bbb",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/admin/DepartmentsPanel.tsx",
+      "source_blob": "b5bcb1b836596fa88c005a7958b8183961610b35",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/admin/OrgMastersPage.test.tsx",
+      "source_blob": "89daacdc20c50ccb7305392b9e552c3ab1042769",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/admin/OrgMastersPage.tsx",
+      "source_blob": "a86a11612253bb5e8e6a38f1f09ce8c895fa8e63",
+      "working_blob": "fa69e204112f780d58bd8fa93f864ad7f1406b5b",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/admin/OrgMisCostCenterPanels.tsx",
+      "source_blob": "827320db82039d2b3b3416c7c0a76dc2256ea171",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/admin/SecurityPage.tsx",
+      "source_blob": "08c3ba8982b0ea7c9e2ea3c81bb47cdea5c21fb4",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/admin/ShiftEditor.tsx",
+      "source_blob": "398015b8069258e25cf228a3459a8ba4d96eb68f",
+      "working_blob": "9bfcfba2091bdec93fd239a0b245067a5da35b40",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/admin/shift-slabs.test.ts",
+      "source_blob": "d8b0cb0e65023ba28af483930e18e06e9cf1a530",
+      "working_blob": "68d2a4b431759dca075a33ebc8cf88ca725094a7",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/admin/shift-slabs.ts",
+      "source_blob": "5e5052b95f816d373c81c07ac19ff3c28d0b6114",
+      "working_blob": "6da3782116ccc62ffb051abcd0ab5cd9bd3fa577",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/approvals/ApprovalsPage.tsx",
+      "source_blob": "02d7001c64506d01ce8bd2ba56a126d5730e8249",
+      "working_blob": "52a1fabdfdbc7b6f4b810ef53e625fe94fb05cc4",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/approvals/request-summary.test.ts",
+      "source_blob": "3f82a98492b70127e9dd6de2c05de25dbf8baeb3",
+      "working_blob": "0764fd4e5c89f4e450edd924f704b9394de97267",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/approvals/request-summary.ts",
+      "source_blob": "440816afd6375767f3a1b67c387cbb1c9c3c7fc4",
+      "working_blob": "8c25a46dd3f4aa4f18d4651b2a2dab974e318d11",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/attendance/AttendanceHolidayCard.tsx",
+      "source_blob": "cbc36a12470067446d0e5fa53b1f37e06913aa33",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/attendance/AttendanceRequestDrawer.tsx",
+      "source_blob": "50952b3949f0495ca8cd04606d02e178e01f9106",
+      "working_blob": "501379b690c0029d7473ac6d947d78a126d4db1b",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/attendance/MonthLockPage.tsx",
+      "source_blob": "4e61e54e33557064f528888b844dc32249fabe51",
+      "working_blob": "ba76aafc962ef9091e6052dc4d3592442d306c29",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+      "source_blob": "1a022ea9dde4edf5022edd0d437e943dd6881d59",
+      "working_blob": "7e4da48e8a345b1d6dc561da523034e963945e9e",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/attendance/attendance-display.test.ts",
+      "source_blob": "43ec976853e35d85ff1436a29dd54cf7d34be26a",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/attendance/attendance-display.ts",
+      "source_blob": "697d1dce17861d8fc59b11afa965fbff47b580be",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/attendance/attendance-types.ts",
+      "source_blob": "a7032fe4e9d4a935e681bb046c2fb8f8f5f8f8ef",
+      "working_blob": "03c1858b710aeaa1b247be32cb6b13f316c995a8",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/auth/ForgotPasswordPanel.tsx",
+      "source_blob": "956d36419f7eed412c1ebf546205a8789cf81b12",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/auth/LoginPage.test.tsx",
+      "source_blob": "0604db38a929666ac4464cbf57476e634a2189ff",
+      "working_blob": "0559a474198d42aa7d1f20e4d157aeaca2e35296",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/auth/LoginPage.tsx",
+      "source_blob": "4bd0fe41af3a283cb7524960cf75dcb7c8e797d3",
+      "working_blob": "d773ca09f4c0a9864baf56eabe0ce6fe26080544",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/auth/ResetPasswordPage.tsx",
+      "source_blob": "ef6986905b08135cfc329fe89ab98f85e2060e17",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/compliance/CompliancePage.tsx",
+      "source_blob": "7ac4e023b62794de67ad9469717ba27c53774cf6",
+      "working_blob": "3fd68393280a5193723b4f1a0797ea798112e102",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/compliance/IrdCompliancePanels.tsx",
+      "source_blob": "b24d9ecd59c9b57883894a80ca26f897bcb35bcb",
+      "working_blob": "c0cb174fb7159779a0f6324c975882fd246bf382",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/compliance/RegistersTab.tsx",
+      "source_blob": "eeca481c1a4c774f98e31f37ce8abb225e4a7d68",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/compliance/wage-check.test.ts",
+      "source_blob": "e650049fc2eb8e3c455536eef78ef68a600bc013",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/compliance/wage-check.ts",
+      "source_blob": "f728a51a80cd081477c79a13e6de54e94d36345d",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/documents/DocumentsPage.tsx",
+      "source_blob": "c41d480f6976b5e419670021fea10fc30c234ae2",
+      "working_blob": "60704c0e9ad2709f3bb13e191361d1cb20673ed6",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/home/BusinessUnitDashboard.tsx",
+      "source_blob": "76b98f8748d910f69e96de5858a128323de061dd",
+      "working_blob": "5632310e7208f4d4418dd446d5eaba11789f0a35",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/home/DashboardFeedback.test.tsx",
+      "source_blob": "f59ad43f1d7d4ae0b3d1e611cdc1b14530e36e9e",
+      "working_blob": "aebcf30d81e9c95f032d0facfec1fe318cdbcf5f",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/home/DashboardFeedback.tsx",
+      "source_blob": "631fc59fe5597a6e887ee0e72494b344a8bb0fc8",
+      "working_blob": "a60fb4564c89b03e37ffe95c22bf8cca96404d5c",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/home/EssDashboard.test.tsx",
+      "source_blob": "e4e79e9c7eef8f433630087ad1c6bd57a8522e35",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/home/EssDashboard.tsx",
+      "source_blob": "64147ba640def825c2ed58d483d77d57e348e537",
+      "working_blob": "63b962b56e374a3976d80f77aff6d2e8ffe8ba1f",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/home/HrOpsDashboard.tsx",
+      "source_blob": "3dc57f97206655acac4bba694e749803e0953b54",
+      "working_blob": "9b0c0cd29acd5e24786b0e5118437f3cad91f842",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/home/ManagerDashboard.tsx",
+      "source_blob": "509e2776d44d711a40419be2d3380142a34c7a5e",
+      "working_blob": "a5aa935b14891d73427b69837872c8a217599f82",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/home/RoleHomePage.test.tsx",
+      "source_blob": "1cfc8ca4c582cdfc85aeb63b1f49ea6cd28df2bf",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/home/RoleHomePage.tsx",
+      "source_blob": "eff5d8c9787accc8bc1c28a07a0da57657474b66",
+      "working_blob": "a51b7ff26611fa24c10db0838459bacde0a4c848",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/home/dashboard-format.ts",
+      "source_blob": "7dbc6a17077219b1a7a45971faa2b21e31dadccf",
+      "working_blob": "4d5d53d27978462921bc2079107ca99fe02fec65",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/home/ess-today.tsx",
+      "source_blob": "65892859bdb064a5ea18aa0cef881f1d4dfe6d99",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/home/useDashboardResource.ts",
+      "source_blob": "2cb508ea4e70b36a9119e2a06387b013ca45f019",
+      "working_blob": "e337627845bd85e597004090a9e6b5519710fafc",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/leave/LeaveApplyDrawer.tsx",
+      "source_blob": "36e14c01252ac1ab8337fcbfc1a097b9f489d468",
+      "working_blob": "36e14c01252ac1ab8337fcbfc1a097b9f489d468",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "frontend/src/pages/leave/leave-preview.test.ts",
+      "source_blob": "c94faea145157f2230c83f438c70a545ffd85910",
+      "working_blob": "c94faea145157f2230c83f438c70a545ffd85910",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "frontend/src/pages/leave/leave-preview.ts",
+      "source_blob": "9caf15b0ab1872a06248f9d7ccdb6bc067da7bda",
+      "working_blob": "9caf15b0ab1872a06248f9d7ccdb6bc067da7bda",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "frontend/src/pages/my/MyDocumentsPage.tsx",
+      "source_blob": "a75d0407f23d3422ec7f4ff4138fdaa877eced31",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/my/PrivacyEssSections.tsx",
+      "source_blob": "3da2a398c849dd63ad0f393b4d2d37155d46142b",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/my/PrivacyPage.tsx",
+      "source_blob": "12eb0051141624a122ea086692cca8d8702188f6",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/my/privacy-labels.test.ts",
+      "source_blob": "5c1d355d04d2a00b83982ea4f1588bc87f7c374b",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/my/privacy-labels.ts",
+      "source_blob": "a44a7506e3e762f0caf7e2a5ac0bfa15cb72a9a9",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/payroll/MyClaimsPage.tsx",
+      "source_blob": "1d21b3d9c5781cb19353f13021beff280e2c73fc",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/privacy/PrivacyOpsPage.tsx",
+      "source_blob": "8fa6559a3b9d70bc49fd8741e5c1923bd90cefae",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/pages/reports/MusterPage.tsx",
+      "source_blob": "072316e82cc6331bacdd2bf72e73dfba5db780f7",
+      "working_blob": "9cd3cde13803bbfc5b5754322c09e6e29e5572b2",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/reports/SupportingReportPage.tsx",
+      "source_blob": "e23059332f646f1993bba91b21f8c5d509b1b6ae",
+      "working_blob": "5ac3937f1a37e2d95b1d0a0399ef1ea671acb79c",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/reports/SupportingReports.tsx",
+      "source_blob": "0050caee7799c6f19120bc3cbad2f4d6151eb75c",
+      "working_blob": "77ded64ad3aea3535d8835f96da66cf26d79ccb4",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/reports/report-utils.ts",
+      "source_blob": "8e7edfd3ba545ed0a4eed7480f15b9c2ed4d2132",
+      "working_blob": "ea86537c149b6e46ea7a131857d3a04d770bdd9c",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/team/TeamCalendarTab.tsx",
+      "source_blob": "0d2eb25714632519d6b5f82a3ff8292286b99c19",
+      "working_blob": "0d2eb25714632519d6b5f82a3ff8292286b99c19",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "frontend/src/pages/team/TeamPage.tsx",
+      "source_blob": "945378577786ddb378f4ac5a2ca175684a01f98b",
+      "working_blob": "94f4620b5911e12c09ffc6ae83694d51a35e4515",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/team/TeamRosterEditor.tsx",
+      "source_blob": "2427f02117c48d65a8e1f26bc8c55553cbd1e599",
+      "working_blob": "096f0b5f2923fc3ca806b2246e666e087fef19cf",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/pages/team/roster-coverage.test.ts",
+      "source_blob": "3721727651bdf5b06b4032e7f27a119163ed790f",
+      "working_blob": "3721727651bdf5b06b4032e7f27a119163ed790f",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "frontend/src/pages/team/roster-coverage.ts",
+      "source_blob": "e9eb39aed522577030180226de963dde65907143",
+      "working_blob": "e9eb39aed522577030180226de963dde65907143",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "frontend/src/pages/team/team-month.ts",
+      "source_blob": "01dbfe33ce9f685337be52778d331bac13918581",
+      "working_blob": "01dbfe33ce9f685337be52778d331bac13918581",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "frontend/src/pages/workflows/ChainPreview.test.ts",
+      "source_blob": "0bde4feaeb235914134569ec8d8b7ba60cbceea2",
+      "working_blob": "0bde4feaeb235914134569ec8d8b7ba60cbceea2",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "frontend/src/pages/workflows/ChainPreview.tsx",
+      "source_blob": "5d79e662a854ecef423d9b1194876c430ade0987",
+      "working_blob": "5d79e662a854ecef423d9b1194876c430ade0987",
+      "comparison": "byte_equal_or_same_absence"
+    },
+    {
+      "path": "frontend/src/ui/Card.tsx",
+      "source_blob": "a89aec6bf6ae97acea6dafabbc169f07e669afd5",
+      "working_blob": "9e48eca9d7a068b145712eaffaed7cfe247e450e",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/ui/DarkCard.tsx",
+      "source_blob": "e53f640cf1e9b5d5408e412a936603001d13d0de",
+      "working_blob": "4175ff418e82acd1748b3560aa862b1b5f4ae98e",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/ui/KpiPillRow.tsx",
+      "source_blob": "796d422e6af8ebe0faed668deeeeeedd9b9c3438",
+      "working_blob": "86726cff094f0b9d38329b81e9e9136994779886",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/ui/MetricMark.tsx",
+      "source_blob": "3925b2bcea53e210b588000260217f7cc0dbebc2",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "frontend/src/ui/PageHeader.tsx",
+      "source_blob": "bf26fc8d14cef79c6ceff0eba81bde65d258aefb",
+      "working_blob": "55a9d8c5392b30c53d82d4ab75c9367bc8c0c081",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/ui/index.ts",
+      "source_blob": "502627d05597064a0c63bdb730beaf345c823fa8",
+      "working_blob": "6c4b5d419af76833167835ed24820b0437a3d088",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/ui/pickers.test.tsx",
+      "source_blob": "fde47c92a9192a8c876092c55bb071194605acc7",
+      "working_blob": "e969e4770d5a4f4c41433d8c79f031362e40ff96",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "frontend/src/ui/surfaces.test.tsx",
+      "source_blob": "201ee2a6e23f5cbcaf4be4263f49b092b656f414",
+      "working_blob": "bbba2a76a21fa4c666d606af9de58510333d0e18",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "parked/phase-4-ats-absorption.superseded.md",
+      "source_blob": "521c496aa40f1c89e24f4475f594015d0ad332ce",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "plans/README.md",
+      "source_blob": "1e0b1de913876b750e66520fa9b2dc2f7f83fb2b",
+      "working_blob": "27fbc8b01df57b3560a1d7e1f0919047db165975",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "plans/agent-operating-model.md",
+      "source_blob": "d33d0ffc945e4f9c2f7c00f3090dd1a6cc2ab951",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "plans/amendments-existing-phases.md",
+      "source_blob": "d54b613f9cbc44918cbbfe53fc4d769efe3cf06d",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "plans/coverage-closeout.md",
+      "source_blob": "56ffe30580fdd468ded65d17ca32ec0d6e50faff",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "plans/extended-roadmap.md",
+      "source_blob": "c7d20a5a775e8c3fdaa596a8da623b8142f38cec",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "plans/phase-1-attendance-leave-workflows.md",
+      "source_blob": "81158fe0324d13307e000a02edfc7af0ae0c0ca9",
+      "working_blob": "c137fc4713fdee315d57a768321a10dc7d721ebf",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "plans/phase-2-payroll-statutory.md",
+      "source_blob": "b2371c0ee739f39b26581e8f605a431c87cfea36",
+      "working_blob": "1e976ebfed1e7ebc4acddd9e6964b3222220dca3",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "plans/phase-3.5-travel-expense.md",
+      "source_blob": "119ae3d0819d6a1b11ddef81b81be37293929f60",
+      "working_blob": "8e2781e20af9366a711eb9cdc718762268af6ba7",
+      "comparison": "different_requires_semantic_review"
+    },
+    {
+      "path": "plans/phase-4-ats-integration.md",
+      "source_blob": "8604a8f41c268f8a1c4d3515ef7654c84105b9a1",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "plans/phase-5-compliance-and-trust.md",
+      "source_blob": "278f739484ca4eb6abbcead29af15678b1cdfcf4",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "plans/phase-6-plant-operations.md",
+      "source_blob": "0e15f03b31ba7e92f00ed64c5037da8b32cd2e57",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "plans/phase-7-talent-and-growth.md",
+      "source_blob": "49dc1756c2b9d6ffdc34d628034f321d0159d029",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    },
+    {
+      "path": "plans/phase-8-frontline-and-intelligence.md",
+      "source_blob": "0bc83ae41292a6b65a295acab4102612460a3e4d",
+      "working_blob": null,
+      "comparison": "source_only_preserve_pending_review"
+    }
+  ]
+}

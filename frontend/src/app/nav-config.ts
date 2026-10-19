@@ -37,6 +37,7 @@ import {
   Plane,
   ReceiptText,
   Route,
+  Scale,
   ScrollText,
   Settings,
   SlidersHorizontal,
@@ -125,6 +126,9 @@ export function navForUser(user: SessionUser): NavItem[] {
     push({ label: 'My Claims', to: '/my/claims', icon: ReceiptText });
   }
 
+  if (hasPermission(user, 'doc.vault.own') && user.employeeId !== null) push({ label: 'My documents', to: '/my/documents', icon: FileSpreadsheet, section: 'secondary', group: 'Me' });
+  if (hasPermission(user, 'doc.vault.manage')) push({ label: 'Employee documents', to: '/documents', icon: FileSpreadsheet, section: 'secondary', group: 'People' });
+
   // Manager
   if (isManager || hasPermission(user, 'attendance.team.read')) {
     if (!isOps) {
@@ -151,6 +155,7 @@ export function navForUser(user: SessionUser): NavItem[] {
     );
   }
   if (user.employeeId !== null) {
+    push(grouped('Me', { label: 'My loans', to: '/my/loans', icon: Coins }));
     push(grouped('Me', { label: 'Resignation', to: '/my/resignation', icon: LogOut })); // GUIDE-01
   }
   if (hasPermission(user, 'letters.issue')) {
@@ -214,6 +219,12 @@ export function navForUser(user: SessionUser): NavItem[] {
     hasPermission(user, 'payroll.run.manage') || hasPermission(user, 'payroll.reports')
   ) {
     push({ label: 'Loans', to: '/loans', icon: Coins });
+  }
+  if (
+    hasPermission(user, 'payroll.run.manage') ||
+    hasPermission(user, 'payroll.reports') ||
+    hasPermission(user, 'claims.approve')
+  ) {
     push({ label: 'Claims', to: '/claims', icon: ReceiptText });
   }
 
@@ -225,6 +236,24 @@ export function navForUser(user: SessionUser): NavItem[] {
     hasPermission(user, 'payroll.reports')
   ) {
     push({ label: 'Reports', to: '/reports', icon: BarChart3 });
+  }
+
+  // Compliance — statutory obligations + Stage 5.5 POSH/grievance hub (More only)
+  if (
+    hasAnyPermission(user, [
+      'ird.posh.handle',
+      'ird.grievance.handle',
+      'ird.whistle.intake',
+    ])
+  ) {
+    push(
+      grouped('Compliance', {
+        label: 'Compliance',
+        to: '/compliance',
+        match: '/compliance',
+        icon: Scale,
+      }),
+    );
   }
 
   // Workplace

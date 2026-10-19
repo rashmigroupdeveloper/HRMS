@@ -1,0 +1,88 @@
+[
+  {
+    "id": "A01-confirmation-salary-and-date-gap",
+    "status": "OBSERVED",
+    "confirmedComponents": {},
+    "previousDayHasSalary": false,
+    "completedDecisionRewritten": "extended",
+    "databaseRowsRolledBack": true
+  },
+  {
+    "id": "A02-joining-without-salary-and-dropped-fields",
+    "status": "OBSERVED",
+    "conversionSucceeded": true,
+    "salaryRows": 0,
+    "genderStored": null,
+    "maritalStatusStored": null,
+    "invalidBankAccountAccepted": true,
+    "invalidIfscAccepted": true,
+    "databaseRowsRolledBack": true
+  },
+  {
+    "id": "A03-missing-employee-reconciles",
+    "status": "OBSERVED",
+    "employeeCount": 1,
+    "omittedCount": 1,
+    "reconciliationPassed": true,
+    "anomalies": [],
+    "databaseRowsRolledBack": true
+  },
+  {
+    "id": "A04-midmonth-revision-omitted",
+    "status": "OBSERVED",
+    "employeeCount": 0,
+    "exceptionReasons": [
+      "Needs exactly one effective salary covering 2025-07-01 to 2025-08-01"
+    ],
+    "databaseRowsRolledBack": true
+  },
+  {
+    "id": "A05-nonindia-offcycle-and-unapproved-bank-file",
+    "status": "OBSERVED",
+    "nonIndiaRunComputed": true,
+    "regularGrossPaise": 1000000,
+    "offcycleGrossPaise": 1000000,
+    "bankGeneratedAtStatus": "computed",
+    "bankRecordCount": 1,
+    "bankTotalRupees": 10000,
+    "databaseRowsRolledBack": true
+  },
+  {
+    "id": "A06-hra-treated-as-full-deduction",
+    "status": "OBSERVED",
+    "annualTaxBeforeRupees": 537451.2,
+    "annualTaxAfterRupees": 350251.2,
+    "taxReductionRupees": 187200,
+    "databaseRowsRolledBack": true
+  },
+  {
+    "id": "A07-g10-main-engine-ot",
+    "status": "OBSERVED",
+    "actualOtRupees": 769,
+    "expectedUnroundedG10Rupees": 1076.92,
+    "expectedRupeeRounded": 1077
+  },
+  {
+    "id": "A08-flat-loan-posting",
+    "status": "OBSERVED",
+    "schedulePrincipalRupees": 1000,
+    "scheduleInterestRupees": 120,
+    "payrollPrincipalRupees": 1120,
+    "payrollInterestRupees": 0
+  },
+  {
+    "id": "A09-fnf-leave-loan-and-tax",
+    "status": "OBSERVED",
+    "settlementPaid": "paid",
+    "daysPaidWithoutAttendanceLock": 15,
+    "tdsDefaultPaise": 0,
+    "loanRecoveredPaise": 100000,
+    "loanAfterPayment": {
+      "outstanding": "1000.00",
+      "status": "active"
+    },
+    "elEncashedDays": 10,
+    "elLedgerBalanceAfterPayment": 10,
+    "databaseRowsRolledBack": true
+  }
+]

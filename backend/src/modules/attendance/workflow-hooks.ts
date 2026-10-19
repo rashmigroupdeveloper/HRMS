@@ -4,9 +4,10 @@
  * Called once from app assembly (app.ts) and the worker (jobs/worker.ts) —
  * both processes finalize requests (API acts, escalation sweeps).
  */
-import { onWorkflowFinal, onWorkflowResubmit } from '../workflows/index.js';
+import { onWorkflowFinal, onWorkflowResubmit, onWorkflowLockSubjects } from '../workflows/index.js';
 import { applyRegularizationOnFinal, resubmitRegularization } from './regularization.service.js';
 import { applyOvertimeOnFinal } from './overtime.service.js';
+import { applyShiftSwapOnFinal, shiftSwapSubjects } from './shift-swap.service.js';
 
 let registered = false;
 
@@ -18,4 +19,6 @@ export function registerAttendanceWorkflowHooks(): void {
   onWorkflowResubmit('regularization', resubmitRegularization);
   onWorkflowResubmit('od', resubmitRegularization);
   onWorkflowFinal('overtime', applyOvertimeOnFinal);
+  onWorkflowFinal('shift_swap', applyShiftSwapOnFinal);
+  onWorkflowLockSubjects('shift_swap', shiftSwapSubjects);
 }

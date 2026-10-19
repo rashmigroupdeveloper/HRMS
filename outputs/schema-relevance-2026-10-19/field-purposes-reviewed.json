@@ -1,0 +1,1717 @@
+[
+  {
+    "table": "core.documents",
+    "field": "id",
+    "meaning": "Registry row identity used by download/audit references.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "owner_employee_id",
+    "meaning": "Employee whose live HR scope controls employee-vault access; NULL while only candidate-owned.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "candidate_id",
+    "meaning": "Pre-joining candidate provenance; does not itself make a person an employee.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "kind",
+    "meaning": "Generic file/storage category, such as letter, policy, joining or employee_document.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "doc_type",
+    "meaning": "Existing FK to doc.types.code; canonical catalog classification for joining and new employee-vault files.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "path",
+    "meaning": "Private object-storage key, not a public download URL.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "original_name",
+    "meaning": "Original client filename; potentially sensitive and redacted from non-owner catalog lists.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "mime",
+    "meaning": "Stored content type, checked against accepted file signatures for vault uploads.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "size_bytes",
+    "meaning": "Byte size of stored content, separate from business policy limits.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "uploaded_by",
+    "meaning": "Account responsible for submitting the file.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "created_at",
+    "meaning": "Creation provenance timestamp.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "updated_at",
+    "meaning": "Metadata modification provenance timestamp.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "expires_on",
+    "meaning": "Validity calendar DATE; NULL means no expiry.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "status",
+    "meaning": "Registry lifecycle: active, superseded or withdrawn; downloads require active.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "verification_status",
+    "meaning": "Joining-document HR verification state; not the same as registry active/withdrawn status. Verification workflow is not complete.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "verified_by",
+    "meaning": "Account recording the joining-document verification decision.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "verified_at",
+    "meaning": "Time of verification decision.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "rejection_reason",
+    "meaning": "Reason an HR verifier rejected the evidence; not a file deletion flag.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "sha256",
+    "meaning": "Digest of bytes; now stored on creation and used for identical-upload retry identity. Read-time integrity verification remains separate work.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "core.documents",
+    "field": "document_number",
+    "meaning": "Permission-sensitive identifier printed on evidence; do not infer it from a filename or log it.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "id",
+    "meaning": "Catalog row identity referenced by employee schemes, rosters and processed days.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "code",
+    "meaning": "Unique business shift code, used by configuration and fallback resolution.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "name",
+    "meaning": "Human-readable shift label.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "start_time",
+    "meaning": "Primary session start in IST wall-clock time.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "end_time",
+    "meaning": "Primary session end; second session, when configured, has its own end.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "crosses_midnight",
+    "meaning": "Primary session end is on the following calendar day; attribution stays on the shift date.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "session_split",
+    "meaning": "Boundary dividing one continuous shift into two attendance halves; mutually exclusive with separate second-session fields.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "session2_start",
+    "meaning": "Start of a separate second session; its preceding gap is not worked coverage.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "session2_end",
+    "meaning": "End of the separate second session; also extends biometric completeness and request schedule through the final session.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "grace_in_minutes",
+    "meaning": "Configured grace subtracted from late duration under docs04 \u00a71.1; does not manufacture present-half coverage.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "grace_out_minutes",
+    "meaning": "Configured grace subtracted from early-exit duration under docs04 \u00a71.1.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "min_half_day_hours",
+    "meaning": "Configured worked-hours threshold for a non-session half-day summary.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "min_full_day_hours",
+    "meaning": "Configured worked-hours threshold for a non-session full-day summary; cannot be less than half-day threshold.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "break_minutes",
+    "meaning": "Configured break deduction when the break is unpaid.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "break_paid",
+    "meaning": "Controls whether break_minutes is deducted; now connected to computation and HTTP persistence.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "ot_start_offset_minutes",
+    "meaning": "Configured delay after the final shift end before detected overtime starts; actual OT approval/pay remains a separate flow.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "late_slabs",
+    "meaning": "Approved model for late policy tiers. Nonempty half-day penalty activation remains blocked pending the sponsor\u2019s half-session/penalty contract.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "early_exit_slabs",
+    "meaning": "Approved model for early-exit policy tiers; same pending contract as late_slabs. Stored representation is an array.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "allowance_component_code",
+    "meaning": "Reserved link to a payroll earning component; consumption/FK validation is not complete, so nonempty activation is refused.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "is_active",
+    "meaning": "Catalog availability for new assignments.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "created_at",
+    "meaning": "Catalog creation provenance.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shifts",
+    "field": "updated_at",
+    "meaning": "Catalog modification provenance.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "id",
+    "meaning": "Processed attendance row identity for read/audit/lock operations.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "employee_id",
+    "meaning": "Employee whose attendance facts are represented.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "work_date",
+    "meaning": "Shift-attribution date, including overnight shifts; not necessarily a swipe calendar date.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "shift_id",
+    "meaning": "Resolved shift used for calculation.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "status",
+    "meaning": "Whole-day attendance summary, separate from ordered half-session detail.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "leave_type_id",
+    "meaning": "Approved leave provenance; prevents recomputation from overwriting leave-owned attendance.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "first_in",
+    "meaning": "Selected earliest explicit IN, with unknown-direction fallback only when needed.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "last_out",
+    "meaning": "Selected latest explicit OUT after the selected IN; not any later IN.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "worked_minutes",
+    "meaning": "Derived worked duration from owned swipes and configured windows/breaks; not a mutable running counter.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "late_minutes",
+    "meaning": "Derived arrival delay beyond configured grace.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "early_exit_minutes",
+    "meaning": "Derived departure shortfall beyond configured grace.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "ot_minutes",
+    "meaning": "Detected overtime minutes; does not by itself mean approved or payable OT.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "weekoff_paid",
+    "meaning": "Week-close eligibility result; does not invent a new attendance/payable policy.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "session_statuses",
+    "meaning": "Ordered first/second-half facts; preserve P/A/O/OD and mixed-half display.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "scheme_code",
+    "meaning": "Resolved scheme/shift label stored with the processed result.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "penalty_flag",
+    "meaning": "Compatibility indicator for any recorded penalty finding, not a day quantity. When snapshot exists, DB requires flag=(findings nonempty). Legacy true without snapshot is explicitly unexplained.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "source",
+    "meaning": "Auto/manual/regularized provenance that controls safe recomputation.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "override_reason",
+    "meaning": "Required explanation for HR manual correction.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "is_locked",
+    "meaning": "Payroll attendance lock, enforced at the database as well as the API.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "computed_at",
+    "meaning": "Time this derived result was calculated.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "created_at",
+    "meaning": "Creation provenance.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "updated_at",
+    "meaning": "Last modification provenance.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shift_swaps",
+    "field": "id",
+    "meaning": "Domain request identity.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shift_swaps",
+    "field": "requester_employee_id",
+    "meaning": "First employee whose roster would change.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shift_swaps",
+    "field": "counterpart_employee_id",
+    "meaning": "Second affected employee; both need approval scope.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shift_swaps",
+    "field": "work_date",
+    "meaning": "Roster date affected by the exchange/bid.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shift_swaps",
+    "field": "requester_shift_id",
+    "meaning": "Original first-person shift snapshot; week-off snapshot lives in existing workflow payload.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shift_swaps",
+    "field": "counterpart_shift_id",
+    "meaning": "Original counterpart shift snapshot.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shift_swaps",
+    "field": "kind",
+    "meaning": "Exchange versus bid operation; must not be inferred from missing people.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shift_swaps",
+    "field": "workflow_request_id",
+    "meaning": "Approval-chain link; generic creation cannot manufacture an unattached swap.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shift_swaps",
+    "field": "applied",
+    "meaning": "Idempotent final-effect marker committed with both roster changes, not a substitute for workflow approval.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.shift_swaps",
+    "field": "created_at",
+    "meaning": "Request provenance timestamp.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "wf.requests",
+    "field": "id",
+    "meaning": "Workflow identity referenced by domain rows, steps and audit.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "wf.requests",
+    "field": "definition_code",
+    "meaning": "Configured chain type; domain-owned definitions are reserved from generic creation.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "wf.requests",
+    "field": "subject_employee_id",
+    "meaning": "Primary subject used by authorization and locking; multi-person domains add all affected subjects before locking.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "wf.requests",
+    "field": "requested_by",
+    "meaning": "Account that submitted the request, distinct from its approver.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "wf.requests",
+    "field": "payload",
+    "meaning": "Versioned request context. For swaps it now records both original shift/week-off pairs so approval cannot silently apply changed rosters; no duplicate table columns are needed.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "wf.requests",
+    "field": "current_step",
+    "meaning": "Current step cursor, not a list of approvals.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "wf.requests",
+    "field": "status",
+    "meaning": "Workflow state with controlled transitions.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "wf.requests",
+    "field": "decided_at",
+    "meaning": "Final decision instant, not submission time.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "wf.requests",
+    "field": "created_at",
+    "meaning": "Submission provenance.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "wf.requests",
+    "field": "updated_at",
+    "meaning": "Workflow mutation provenance.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "id",
+    "meaning": "Leave application identity.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "employee_id",
+    "meaning": "Employee requesting leave.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "leave_type_id",
+    "meaning": "Configured leave category/policy.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "from_date",
+    "meaning": "Inclusive first leave date.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "to_date",
+    "meaning": "Inclusive final leave date.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "from_half",
+    "meaning": "Whether the first date is a half-day for quantity calculation. The exact session coverage contract still needs end-to-end review.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "to_half",
+    "meaning": "Whether the last date is a half-day for quantity calculation; does not by itself establish an ordered P/A display.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "days",
+    "meaning": "Validated requested units derived from dates, half flags and calendar; balance still comes from immutable ledger rows.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "reason",
+    "meaning": "Application explanation.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "status",
+    "meaning": "Domain application state linked to workflow state.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "workflow_request_id",
+    "meaning": "Original approval workflow.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "cancel_workflow_request_id",
+    "meaning": "Separate cancellation approval, preserving the original decision.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "ledger_txn_id",
+    "meaning": "Immutable leave-ledger posting provenance; no mutable balance counter.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "created_at",
+    "meaning": "Submission provenance.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "lv.applications",
+    "field": "updated_at",
+    "meaning": "Last application change provenance.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/04-MODULE-SPECS.md",
+      "docs/08-ROLES-AND-PERMISSIONS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.day_records",
+    "field": "penalty_evaluation",
+    "meaning": "Frozen per-cause late/early rule matches and net measured minutes, distinct from actual presence and payable quantities. NULL historical/not evaluated, [] evaluated none. Same row/month immutability; clear with manual or whole-day approved replacement.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/04-MODULE-SPECS.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "id",
+    "meaning": "Raw immutable event identity; partitioned uniqueness pairs identity with event timestamp.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "employee_id",
+    "meaning": "Resolved employee FK; NULL retains unmatched evidence for HR reconciliation, not an invented employee.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "employee_no",
+    "meaning": "Verbatim external e-code retained alongside resolved FK for reconciliation and idempotency.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "access_card",
+    "meaning": "Source card identifier retained as evidence; employee identity resolution currently uses external e-code.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "shift_label",
+    "meaning": "Source diagnostic label, never authority over configured roster. Documented passthrough but current RawSwipe interface/ingest does not populate it.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "swipe_ts",
+    "meaning": "Device event instant; drives partition, employee-day attribution and unique event key.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "door_code",
+    "meaning": "External door identity; ties heartbeat/location and event idempotency. Cross-plant punches remain valid.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "longitude",
+    "meaning": "ATT-14 mobile/geolocation evidence. Required planned scope; current RawSwipe pipeline does not carry it.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "latitude",
+    "meaning": "ATT-14 mobile/geolocation evidence paired with longitude. Required planned scope; current RawSwipe pipeline does not carry it.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "location_type",
+    "meaning": "Source check-in location category; specified Kent export/mobile parity, not current employee placement. Pipeline incomplete.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "mobile_device_name",
+    "meaning": "ATT-14 source mobile device diagnostic/fraud evidence. Current RawSwipe pipeline does not populate it.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "mobile_device_id",
+    "meaning": "ATT-14 source mobile device identity/fraud evidence. Current RawSwipe pipeline does not populate it.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "swipe_type",
+    "meaning": "Biometric/source event technology tag preserved by ingestion, not shift authority.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "direction",
+    "meaning": "Known IN/OUT constrains FILO boundaries; NULL permits unknown-direction fallback, not a manufactured known punch.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "remarks",
+    "meaning": "Verbatim Kent diagnostic text required for source parity; current RawSwipe contract does not carry it.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "permission_reason",
+    "meaning": "Source permission evidence for parity, not approval authority. Current RawSwipe contract does not carry it.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "signed_by",
+    "meaning": "Source signatory evidence for parity, not runtime HRMS authorization. Current RawSwipe contract does not carry it.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "received_at",
+    "meaning": "Source receipt instant drives source-cursor progression and clock-drift quarantine; distinct from event time and DB creation.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "source",
+    "meaning": "Connector provenance separates Kent/manual/mobile sources; retained with immutable event.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.swipe_events",
+    "field": "created_at",
+    "meaning": "Database ingestion provenance, distinct from device event and source receipt timestamps.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.devices",
+    "field": "id",
+    "meaning": "Internal door identity used by per-door completeness FK.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.devices",
+    "field": "source",
+    "meaning": "Connector provenance for health/ingestion diagnostics.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.devices",
+    "field": "door_code",
+    "meaning": "Unique source door identity linked by raw punches and connector reports.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.devices",
+    "field": "location_id",
+    "meaning": "Configured physical location FK for health/scope/reconciliation; must not reject legitimate cross-plant punches.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.devices",
+    "field": "last_seen_at",
+    "meaning": "Latest source contact/receipt heartbeat. Never proves ingestion completeness.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.devices",
+    "field": "expected_hourly_swipes",
+    "meaning": "Documented expected-traffic baseline for device anomaly review; no current service consumer was found. Required but incomplete, not a fabricated active threshold.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.devices",
+    "field": "is_active",
+    "meaning": "Configured active-device population for health/completeness checks.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.devices",
+    "field": "alerted_silent_at",
+    "meaning": "Last silent-device alert receipt/cooldown marker; re-arms only after renewed contact.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.devices",
+    "field": "created_at",
+    "meaning": "Device registry provenance timestamp.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.devices",
+    "field": "updated_at",
+    "meaning": "Device registry modification provenance timestamp.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.device_watermarks",
+    "field": "device_id",
+    "meaning": "FK to actual device, distinct from source cursor.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.device_watermarks",
+    "field": "watermark_ts",
+    "meaning": "Connector-proven gap-free completeness instant; monotonic DB rule prevents regression. Heartbeats alone cannot advance it.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.device_watermarks",
+    "field": "updated_at",
+    "meaning": "Completeness receipt persistence timestamp, distinct from proved-through instant.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.ingest_watermarks",
+    "field": "source",
+    "meaning": "Connector stream identity and cursor primary key.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.ingest_watermarks",
+    "field": "watermark_ts",
+    "meaning": "Source received-time fetch cursor committed with ingestion; does not authorize final absence.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "att.ingest_watermarks",
+    "field": "updated_at",
+    "meaning": "Cursor persistence timestamp, not device completeness.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "doc.types",
+    "field": "code",
+    "meaning": "Canonical document classification key; existing core.documents.doc_type FK, legacy kind fallback only.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "doc.types",
+    "field": "name",
+    "meaning": "Employee/HR-facing catalog label.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "doc.types",
+    "field": "typically_expires",
+    "meaning": "Requires expiry at vault upload; classifies attention on read, not delivered reminders.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "doc.types",
+    "field": "retention_class",
+    "meaning": "Document purpose/security class; statutory_id and health classes require extra field authority. Retention/purge enforcement remains open.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "doc.types",
+    "field": "mandatory_for",
+    "meaning": "Configured category checklist requirements; exposed by vault but actual mandatory coverage/collection engine remains open.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "doc.types",
+    "field": "sort_order",
+    "meaning": "Stable catalog/checklist presentation order, not policy priority.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "doc.types",
+    "field": "is_active",
+    "meaning": "Catalog availability for new uploads/active vault reads; retirement lifecycle/history handling requires full acceptance.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "doc.types",
+    "field": "joining_checklist",
+    "meaning": "Documented joining-form checklist inclusion; not currently consumed by recovered vault and not proof joining checklist is implemented.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "doc.types",
+    "field": "max_files",
+    "meaning": "Documented joining checklist per-type file limit; current recovered vault does not enforce it. Define scope/version semantics before connecting; do not claim active constraint.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "doc.types",
+    "field": "created_at",
+    "meaning": "Catalog provenance timestamp.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  },
+  {
+    "table": "doc.types",
+    "field": "updated_at",
+    "meaning": "Catalog modification timestamp; not a versioned retention policy.",
+    "scope": "Manual purpose/connection review; not full flow acceptance",
+    "specifications": [
+      "docs/03-DATABASE-SCHEMA.md",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md",
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md"
+    ]
+  }
+]

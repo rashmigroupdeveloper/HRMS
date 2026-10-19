@@ -1,0 +1,895 @@
+
+## core.ats_acceptance_receipts
+event_id: uuid NOT NULL | 
+ats_offer_id: bigint NOT NULL | 
+candidate_id: bigint NOT NULL | 
+source_digest: text NOT NULL | 
+accepted_at: timestamp with time zone NOT NULL | 
+accepted_by_subject: text NOT NULL | 
+evidence_ref: text NOT NULL | 
+received_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((length(btrim(evidence_ref)) >= 1) AND (length(btrim(evidence_ref)) <= 2000)))", "CHECK ((accepted_at <= received_at))", "CHECK ((accepted_by_subject ~ '^[1-9][0-9]*$'::text))", "CHECK ((ats_offer_id > 0))", "CHECK ((source_digest ~ '^[a-f0-9]{64}$'::text))", "FOREIGN KEY (candidate_id) REFERENCES core.onboarding_candidates(id)", "PRIMARY KEY (event_id)", "UNIQUE (ats_offer_id)", "UNIQUE (candidate_id)"]
+backend/src/modules/ats-bridge/service.ts:68 receiveAcceptedOffer insertInto write=event_id,ats_offer_id,candidate_id,source_digest,accepted_at,accepted_by_subject,evidence_ref indirect=False locks=[]
+
+## core.audit_log
+id: bigint NOT NULL | 
+actor_user_id: bigint NULL | 
+action: text NOT NULL | 
+entity: text NOT NULL | 
+entity_id: bigint NULL | 
+field: text NULL | 
+old_value: text NULL | 
+new_value: text NULL | 
+ip: inet NULL | 
+at: timestamp with time zone NOT NULL | 
+prev_hash: text NOT NULL | Set by the DB trigger — never write from the app.
+row_hash: text NOT NULL | Set by the DB trigger — never write from the app.
+scope_org_unit_id: bigint NULL | Historical data scope captured when the event is written (CORE-10).
+hash_version: smallint NOT NULL | V1 predates scoped audit rows; V2 commits scope_org_unit_id into row_hash.
+chain_seq: bigint NOT NULL | Hashing order, assigned INSIDE the chain trigger's advisory lock. `id`
+comes from a sequence evaluated before that lock, so under concurrency the
+two disagree — the chain is ordered by this, never by id.
+Constraints: ["CHECK ((hash_version = ANY (ARRAY[1, 2])))", "FOREIGN KEY (actor_user_id) REFERENCES core.users(id)", "FOREIGN KEY (scope_org_unit_id) REFERENCES core.org_units(id)", "PRIMARY KEY (id)"]
+backend/src/modules/workflows/workflow-holds.service.ts:18 routingHeldSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/audit/audit.service.ts:27 writeAudit insertInto write=actor_user_id,action,entity,entity_id,field,old_value,new_value,ip,scope_org_unit_id indirect=False locks=[]
+
+## core.bulk_jobs
+id: bigint NOT NULL | 
+importer: text NOT NULL | 
+context: jsonb NOT NULL | 
+context_key: text NOT NULL | 
+company_id: bigint NULL | 
+filename: text NOT NULL | 
+file_sha256: text NOT NULL | 
+status: text NOT NULL | 
+total_rows: integer NOT NULL | 
+error_rows: integer NOT NULL | 
+warning_rows: integer NOT NULL | 
+processed_rows: integer NOT NULL | 
+rows: jsonb NOT NULL | 
+report: jsonb NOT NULL | 
+result: jsonb NULL | 
+error: text NULL | 
+created_by: bigint NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+committed_by: bigint NULL | 
+committed_at: timestamp with time zone NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((status = ANY (ARRAY['previewed'::text, 'committing'::text, 'committed'::text, 'failed'::text, 'discarded'::text])))", "FOREIGN KEY (committed_by) REFERENCES core.users(id)", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (created_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/core/bulk/engine.ts:160 job insertInto write=importer,context,context_key,company_id,filename,file_sha256,total_rows,error_rows,warning_rows,rows,report,created_by indirect=False locks=[]
+backend/src/core/bulk/engine.ts:210 updated updateTable write=status indirect=False locks=[]
+backend/src/core/bulk/engine.ts:219 progress updateTable write=processed_rows indirect=False locks=[]
+backend/src/core/bulk/engine.ts:223 runCommit updateTable write=status,processed_rows,result,committed_by,committed_at indirect=False locks=[]
+backend/src/core/bulk/engine.ts:232 runCommit updateTable write=status,error indirect=False locks=[]
+backend/src/core/bulk/engine.ts:261 claimed updateTable write=status,processed_rows indirect=False locks=[]
+
+## core.clearances
+id: bigint NOT NULL | 
+separation_id: bigint NOT NULL | 
+department: text NOT NULL | 
+status: text NOT NULL | 
+remarks: text NULL | 
+unreturned_assets: jsonb NULL | 
+recovery_amount: numeric(14,2) NOT NULL | 
+cleared_by: bigint NULL | 
+cleared_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((department = ANY (ARRAY['IT'::text, 'Admin'::text, 'Finance'::text, 'HR'::text])))", "CHECK ((status = ANY (ARRAY['pending'::text, 'cleared'::text, 'flagged'::text])))", "FOREIGN KEY (cleared_by) REFERENCES core.users(id)", "FOREIGN KEY (separation_id) REFERENCES core.separations(id) ON DELETE CASCADE", "PRIMARY KEY (id)", "UNIQUE (separation_id, department)"]
+backend/src/modules/lifecycle/separation/clearance.service.ts:61 inserted insertInto write=separation_id,department,status,remarks,recovery_amount indirect=False locks=[]
+backend/src/modules/lifecycle/separation/clearance.service.ts:149 updated updateTable write=status,remarks,unreturned_assets,recovery_amount,cleared_by,cleared_at indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:288 <module> deleteFrom write= indirect=False locks=[]
+
+## core.companies
+id: bigint NOT NULL | 
+code: text NOT NULL | 
+name: text NOT NULL | 
+ecode_prefix: text NOT NULL | 
+ecode_next_seq: integer NOT NULL | 
+is_india_payroll: boolean NOT NULL | 
+gstin: text NULL | 
+pan: text NULL | 
+pf_establishment_code: text NULL | 
+esic_code: text NULL | 
+pt_registration_no: text NULL | 
+tan: text NULL | 
+address: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+sap_company_code: text NULL | 
+pf_wage_basis: text NULL | 
+country_code: text NOT NULL | 
+currency_code: text NOT NULL | 
+timezone: text NOT NULL | 
+locale: text NOT NULL | 
+Constraints: ["CHECK ((country_code ~ '^[A-Z]{2}$'::text))", "CHECK ((currency_code ~ '^[A-Z]{3}$'::text))", "CHECK ((locale ~ '^[a-z]{2}(-[A-Z]{2})?$'::text))", "CHECK ((pf_wage_basis = ANY (ARRAY['ACTUAL'::text, 'CEILING_15000'::text])))", "CHECK ((timezone ~ '^[A-Za-z_]+(/[A-Za-z_+-]+)*$'::text))", "PRIMARY KEY (id)", "UNIQUE (code)", "UNIQUE (ecode_prefix)", "UNIQUE (name)", "UNIQUE (sap_company_code)"]
+backend/src/modules/ats-bridge/service.ts:46 company selectFrom write= indirect=False locks=['forShare']
+backend/src/core/employee-code.ts:7 allocate selectFrom write= indirect=False locks=['forUpdate']
+backend/src/core/seed/masters.ts:37 seedMasters updateTable write=name indirect=True locks=[]
+backend/src/core/seed/masters.ts:38 ins insertInto write=code,name,ecode_prefix,pan,tan indirect=False locks=[]
+
+## core.cost_centers
+id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+code: text NOT NULL | 
+name: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+plant_id: bigint NULL | 
+Constraints: ["FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (plant_id) REFERENCES core.plants(id)", "FOREIGN KEY (plant_id, company_id) REFERENCES core.plants(id, company_id)", "PRIMARY KEY (id)", "UNIQUE (company_id, code)", "UNIQUE (id, company_id)"]
+backend/src/core/seed/masters.ts:64 seedMasters insertInto write=company_id,code,name indirect=False locks=[]
+
+## core.department_heads
+id: bigint NOT NULL | 
+department_id: bigint NOT NULL | 
+company_id: bigint NULL | 
+employee_id: bigint NOT NULL | 
+created_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (company_id) REFERENCES core.companies(id) ON DELETE CASCADE", "FOREIGN KEY (created_by) REFERENCES core.users(id)", "FOREIGN KEY (department_id) REFERENCES core.departments(id) ON DELETE CASCADE", "FOREIGN KEY (employee_id) REFERENCES core.employees(id) ON DELETE CASCADE", "PRIMARY KEY (id)"]
+backend/src/modules/workflows/workflow-access.ts:29 permittedGrant raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/core/core.router.ts:196 row insertInto write=department_id,company_id,employee_id,created_by indirect=False locks=[]
+backend/src/modules/core/core.router.ts:216 coreRouter deleteFrom write= indirect=False locks=[]
+backend/src/core/rbac/effective-role-grants.ts:5 effectiveRoleGrants raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/rbac/employee-scope.ts:49 departmentHeadSql raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## core.departments
+id: bigint NOT NULL | 
+name: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+mis_code_id: bigint NULL | 
+Constraints: ["FOREIGN KEY (mis_code_id) REFERENCES core.mis_codes(id)", "PRIMARY KEY (id)", "UNIQUE (name)"]
+backend/src/modules/lifecycle/onboarding/joining-validation.ts:29 department selectFrom write= indirect=False locks=['forShare']
+backend/src/core/seed/masters.ts:68 seedMasters insertInto write=name indirect=False locks=[]
+
+## core.designations
+id: bigint NOT NULL | 
+name: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["PRIMARY KEY (id)", "UNIQUE (name)"]
+backend/src/modules/lifecycle/onboarding/joining-validation.ts:36 designation selectFrom write= indirect=False locks=['forShare']
+backend/src/core/seed/masters.ts:72 seedMasters insertInto write=name indirect=False locks=[]
+
+## core.documents
+id: bigint NOT NULL | 
+owner_employee_id: bigint NULL | 
+kind: text NOT NULL | 
+path: text NOT NULL | 
+original_name: text NOT NULL | 
+mime: text NOT NULL | 
+size_bytes: integer NOT NULL | 
+uploaded_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+expires_on: date NULL | NULL = no expiry (PAN / appointment letter). DOC-03 colour language.
+status: text NOT NULL | 
+candidate_id: bigint NULL | 
+doc_type: text NULL | 
+verification_status: text NULL | 
+verified_by: bigint NULL | 
+verified_at: timestamp with time zone NULL | 
+rejection_reason: text NULL | 
+sha256: text NULL | 
+document_number: text NULL | 
+Constraints: ["CHECK (((verification_status IS DISTINCT FROM 'rejected'::text) OR (length(btrim(COALESCE(rejection_reason, ''::text))) >= 3)))", "CHECK (((verification_status IS NULL) OR (verification_status = ANY (ARRAY['pending'::text, 'verified'::text, 'rejected'::text]))))", "CHECK ((status = ANY (ARRAY['active'::text, 'superseded'::text, 'withdrawn'::text])))", "FOREIGN KEY (candidate_id) REFERENCES core.onboarding_candidates(id) ON DELETE SET NULL", "FOREIGN KEY (doc_type) REFERENCES doc.types(code)", "FOREIGN KEY (owner_employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (uploaded_by) REFERENCES core.users(id)", "FOREIGN KEY (verified_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/documents/download.service.ts:37 doc selectFrom write= indirect=False locks=['forShare']
+backend/src/core/storage/documents.ts:35 row insertInto write=owner_employee_id,kind,doc_type,path,original_name,mime,size_bytes,sha256,uploaded_by,expires_on,status indirect=False locks=[]
+
+## core.employee_addresses
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+kind: text NOT NULL | 
+house: text NOT NULL | 
+locality: text NULL | 
+city: text NOT NULL | 
+post_office: text NULL | 
+police_station: text NULL | 
+sub_division: text NULL | 
+district: text NOT NULL | 
+state_code: text NOT NULL | 
+country_code: text NOT NULL | 
+pin: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((country_code <> 'IN'::text) OR (pin ~ '^[1-9][0-9]{5}$'::text)))", "CHECK ((country_code ~ '^[A-Z]{2}$'::text))", "CHECK ((kind = ANY (ARRAY['present'::text, 'permanent'::text])))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id) ON DELETE CASCADE", "PRIMARY KEY (id)", "UNIQUE (employee_id, kind)"]
+
+## core.employee_certifications
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+name: text NOT NULL | 
+issuer: text NOT NULL | 
+issued_on: date NULL | 
+expires_on: date NULL | 
+specialization: text NULL | 
+grade: text NULL | 
+sort_order: smallint NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((expires_on IS NULL) OR (issued_on IS NULL) OR (expires_on > issued_on)))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id) ON DELETE CASCADE", "PRIMARY KEY (id)"]
+
+## core.employee_education
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+qualification: text NOT NULL | 
+institute: text NOT NULL | 
+year_of_passing: smallint NULL | 
+specialization: text NULL | 
+score: numeric(6,2) NULL | 
+score_type: text NULL | 
+sort_order: smallint NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((score IS NULL) OR ((score_type = 'percent'::text) AND (score <= (100)::numeric)) OR ((score_type = 'cgpa'::text) AND (score <= (10)::numeric))))", "CHECK (((score IS NULL) OR (score >= (0)::numeric)))", "CHECK (((score_type IS NULL) OR (score_type = ANY (ARRAY['percent'::text, 'cgpa'::text]))))", "CHECK (((year_of_passing IS NULL) OR ((year_of_passing >= 1950) AND (year_of_passing <= 2100))))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id) ON DELETE CASCADE", "PRIMARY KEY (id)"]
+
+## core.employee_experience
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+employer: text NOT NULL | 
+designation: text NULL | 
+from_date: date NOT NULL | 
+to_date: date NULL | 
+reason_for_leaving: text NULL | 
+last_ctc: numeric(14,2) NULL | 
+sort_order: smallint NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((last_ctc IS NULL) OR (last_ctc >= (0)::numeric)))", "CHECK (((to_date IS NULL) OR (to_date >= from_date)))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id) ON DELETE CASCADE", "PRIMARY KEY (id)"]
+
+## core.employee_family
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+name: text NOT NULL | 
+relation: text NOT NULL | 
+dob: date NULL | 
+aadhaar: text NULL | 
+is_esic_dependent: boolean NOT NULL | 
+is_nominee: boolean NOT NULL | 
+nominee_share_pct: numeric(5,2) NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+gender: text NULL | 
+address: text NULL | 
+residing_with_employee: boolean NULL | 
+residing_town: text NULL | 
+residing_state_code: text NULL | 
+occupation: text NULL | 
+is_dependent: boolean NOT NULL | 
+Constraints: ["CHECK (((gender IS NULL) OR (gender = ANY (ARRAY['Male'::text, 'Female'::text, 'Transgender'::text]))))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)"]
+backend/src/modules/employees/family.service.ts:102 before deleteFrom write= indirect=False locks=[]
+backend/src/modules/employees/family.service.ts:114 applyFamilyChange insertInto write=employee_id,name,relation,dob,aadhaar,is_esic_dependent,is_nominee,nominee_share_pct indirect=False locks=[]
+backend/src/modules/employees/family.service.ts:117 applyFamilyChange updateTable write=name,relation,dob,aadhaar,is_esic_dependent,is_nominee,nominee_share_pct indirect=False locks=[]
+
+## core.employee_history
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+effective_date: date NOT NULL | 
+change_type: text NOT NULL | 
+field: text NOT NULL | 
+old_value: text NULL | 
+new_value: text NULL | 
+reference_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)"]
+backend/src/modules/lifecycle/transfers/transfer.service.ts:376 approveTransferRequest insertInto write=employee_id,effective_date,change_type,field,old_value,new_value,reference_id indirect=False locks=[]
+backend/src/modules/lifecycle/transfers/transfer.service.ts:397 approveTransferRequest insertInto write=employee_id,effective_date,change_type,field,old_value,new_value,reference_id indirect=False locks=[]
+
+## core.employee_nominations
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+scheme: text NOT NULL | 
+version: integer NOT NULL | 
+status: text NOT NULL | 
+family_member_id: bigint NULL | 
+nominee_name: text NOT NULL | 
+relation: text NOT NULL | 
+dob: date NULL | 
+gender: text NULL | 
+address: text NOT NULL | 
+share_pct: numeric(5,2) NOT NULL | 
+guardian_name: text NULL | 
+guardian_relation: text NULL | 
+guardian_address: text NULL | 
+created_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((gender IS NULL) OR (gender = ANY (ARRAY['Male'::text, 'Female'::text, 'Transgender'::text]))))", "CHECK (((share_pct > (0)::numeric) AND (share_pct <= (100)::numeric)))", "CHECK ((scheme = ANY (ARRAY['pf'::text, 'eps'::text, 'gratuity'::text, 'esic'::text, 'gpa'::text, 'gmc'::text, 'gtli'::text])))", "CHECK ((status = ANY (ARRAY['active'::text, 'superseded'::text])))", "CHECK ((version > 0))", "FOREIGN KEY (created_by) REFERENCES core.users(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id) ON DELETE CASCADE", "FOREIGN KEY (family_member_id) REFERENCES core.employee_family(id) ON DELETE SET NULL", "PRIMARY KEY (id)"]
+
+## core.employee_statutory_profile
+employee_id: bigint NOT NULL | 
+epf_prev_member: boolean NULL | 
+eps_prev_member: boolean NULL | 
+prev_pf_number: text NULL | 
+prev_exit_date: date NULL | 
+scheme_certificate_no: text NULL | 
+ppo_no: text NULL | 
+epf_withdrawn: boolean NULL | 
+eps_withdrawn: boolean NULL | 
+eps_withdrawn_after_sep2014: boolean NULL | 
+kyc_status: text NULL | 
+transfer_request_status: text NULL | 
+esic_prev_ip_number: text NULL | 
+esic_prev_employer_code: text NULL | 
+esic_prev_employer_name: text NULL | 
+esic_prev_employer_address: text NULL | 
+esic_branch_office: text NULL | 
+esic_dispensary: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((esic_prev_ip_number IS NULL) OR (esic_prev_ip_number ~ '^[0-9]{10}$'::text)))", "CHECK (((kyc_status IS NULL) OR (kyc_status = ANY (ARRAY['not_uploaded'::text, 'uploaded_pending'::text, 'approved'::text, 'rejected'::text]))))", "CHECK (((transfer_request_status IS NULL) OR (transfer_request_status = ANY (ARRAY['not_needed'::text, 'pending'::text, 'submitted'::text, 'completed'::text]))))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id) ON DELETE CASCADE", "PRIMARY KEY (employee_id)"]
+
+## core.employees
+id: bigint NOT NULL | 
+ecode: text NOT NULL | 
+company_id: bigint NOT NULL | 
+first_name: text NOT NULL | 
+last_name: text NULL | 
+photo_path: text NULL | 
+gender: text NULL | 
+dob: date NULL | 
+marital_status: text NULL | 
+blood_group: text NULL | 
+personal_email: text NULL | 
+work_email: citext NULL | 
+mobile: text NULL | 
+emergency_contact_name: text NULL | 
+emergency_contact_phone: text NULL | 
+present_address: text NULL | 
+permanent_address: text NULL | 
+category: core.employment_category NULL | 
+contract_type: core.contract_type NULL | 
+contract_end_date: date NULL | 
+doj: date NULL | 
+dol: date NULL | 
+status: core.employee_status NOT NULL | 
+exit_reason: text NULL | 
+designation_id: bigint NULL | 
+department_id: bigint NULL | 
+org_unit_id: bigint NULL | 
+location_id: bigint NULL | 
+cost_center_id: bigint NULL | 
+grade_id: bigint NULL | 
+reporting_manager_id: bigint NULL | 
+functional_manager_id: bigint NULL | 
+probation_months: smallint NULL | 
+probation_salary_pct: smallint NULL | 
+probation_due_date: date NULL | 
+confirmation_date: date NULL | 
+pan: text NULL | 
+aadhaar: text NULL | 
+uan: text NULL | 
+pf_number: text NULL | 
+esic_ip_number: text NULL | 
+pf_applicable: boolean NOT NULL | 
+esic_applicable: boolean NOT NULL | 
+pt_applicable: boolean NOT NULL | 
+lwf_applicable: boolean NOT NULL | 
+tax_regime: text NOT NULL | 
+bank_name: text NULL | 
+bank_account: text NULL | 
+bank_ifsc: text NULL | 
+payment_mode: text NOT NULL | 
+access_card_no: text NULL | 
+biometric_registered: boolean NOT NULL | 
+attendance_mode: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+plant_id: bigint NULL | 
+hod_employee_id: bigint NULL | Head of Department — the SECOND approver on claims, budgets and advances.
+pf_wage_basis: text NULL | NULL inherits the company basis, then the pay.pf_wage_base setting
+epf_member_before_sep2014: boolean NULL | REQ-003 EPF Form 11 facts (EPS membership).
+epf_first_enrolled_on: date NULL | 
+epf_first_wages: numeric(12,2) NULL | 
+international_worker: boolean NOT NULL | 
+eps_eligible: boolean NULL | HR-confirmed EPS membership (Form 11); NULL = derive from enrolment date and first PF wages
+father_name: text NULL | 
+spouse_name: text NULL | 
+form11_relative: text NOT NULL | 
+marriage_date: date NULL | 
+nationality: text NULL | 
+country_of_origin: text NULL | 
+religion: text NULL | 
+caste: text NULL | Sensitive (DPDP): optional, shown only to employee.statutory_ids.read holders
+height_cm: numeric(5,1) NULL | 
+weight_kg: numeric(5,1) NULL | 
+is_pwd: boolean NOT NULL | 
+disability_type: text NULL | 
+disability_pct: numeric(5,2) NULL | 
+identification_mark: text NULL | 
+passport_no: text NULL | 
+passport_valid_until: date NULL | 
+driving_licence_no: text NULL | 
+driving_licence_valid_until: date NULL | 
+name_as_per_aadhaar: text NULL | 
+aadhaar_linked_mobile: boolean NULL | 
+emergency_contact_relation: text NULL | 
+emergency_contact_alt_phone: text NULL | 
+emergency_contact_address: text NULL | 
+bank_branch: text NULL | 
+bank_account_holder: text NULL | 
+bank_account_type: text NULL | 
+joining_form_date: date NULL | 
+bgv_status: text NULL | 
+induction_date: date NULL | 
+joining_signed_off_by: bigint NULL | 
+joining_signed_off_at: timestamp with time zone NULL | 
+Constraints: ["CHECK (((bank_account_type IS NULL) OR (bank_account_type = ANY (ARRAY['savings'::text, 'current'::text]))))", "CHECK (((bgv_status IS NULL) OR (bgv_status = ANY (ARRAY['not_started'::text, 'initiated'::text, 'cleared'::text, 'failed'::text, 'not_applicable'::text]))))", "CHECK (((disability_pct IS NULL) OR ((disability_pct >= (0)::numeric) AND (disability_pct <= (100)::numeric))))", "CHECK (((epf_first_wages IS NULL) OR (epf_first_wages >= (0)::numeric)))", "CHECK (((gender IS NULL) OR (gender = ANY (ARRAY['Male'::text, 'Female'::text, 'Transgender'::text]))))", "CHECK (((height_cm IS NULL) OR ((height_cm >= (50)::numeric) AND (height_cm <= (250)::numeric))))", "CHECK (((hod_employee_id IS NULL) OR (hod_employee_id <> id)))", "CHECK (((marital_status IS NULL) OR (marital_status = ANY (ARRAY['single'::text, 'married'::text, 'widowed'::text, 'divorced'::text, 'separated'::text]))))", "CHECK (((status <> 'exited'::core.employee_status) OR (dol IS NOT NULL)))", "CHECK (((weight_kg IS NULL) OR ((weight_kg >= (20)::numeric) AND (weight_kg <= (300)::numeric))))", "CHECK ((attendance_mode = ANY (ARRAY['biometric'::text, 'mobile'::text, 'manual'::text])))", "CHECK ((form11_relative = ANY (ARRAY['father'::text, 'spouse'::text])))", "CHECK ((payment_mode = ANY (ARRAY['bank'::text, 'cheque'::text, 'hold'::text])))", "CHECK ((pf_wage_basis = ANY (ARRAY['ACTUAL'::text, 'CEILING_15000'::text])))", "CHECK ((tax_regime = ANY (ARRAY['old'::text, 'new'::text])))", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (cost_center_id) REFERENCES core.cost_centers(id)", "FOREIGN KEY (cost_center_id, company_id) REFERENCES core.cost_centers(id, company_id)", "FOREIGN KEY (department_id) REFERENCES core.departments(id)", "FOREIGN KEY (designation_id) REFERENCES core.designations(id)", "FOREIGN KEY (functional_manager_id) REFERENCES core.employees(id)", "FOREIGN KEY (grade_id) REFERENCES core.grades(id)", "FOREIGN KEY (hod_employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (joining_signed_off_by) REFERENCES core.users(id)", "FOREIGN KEY (location_id) REFERENCES core.locations(id)", "FOREIGN KEY (location_id, company_id) REFERENCES core.locations(id, company_id)", "FOREIGN KEY (org_unit_id) REFERENCES core.org_units(id)", "FOREIGN KEY (org_unit_id, company_id) REFERENCES core.org_units(id, company_id)", "FOREIGN KEY (plant_id) REFERENCES core.plants(id)", "FOREIGN KEY (plant_id, company_id) REFERENCES core.plants(id, company_id)", "FOREIGN KEY (reporting_manager_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)", "UNIQUE (ecode)", "UNIQUE (work_email)"]
+backend/src/modules/employees/import.service.ts:101 employee insertInto write=ecode,company_id,first_name,last_name,gender,mobile,work_email,department_id,designation_id indirect=False locks=[]
+backend/src/modules/employees/import.service.ts:159 importEmsSeed updateTable write= indirect=True locks=[]
+backend/src/modules/employees/import.service.ts:210 importGreythrEnrich updateTable write= indirect=True locks=[]
+backend/src/modules/leave/leave-core.service.ts:76 inserted raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/travel/travel.service.ts:65 scopeFilter raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/travel/settlement.service.ts:296 <module> raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/documents/documents.router.ts:228 uploadManaged selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/documents/download.service.ts:31 downloadFile selectFrom write= indirect=False locks=['forShare']
+backend/src/modules/documents/vault.service.ts:213 uploadVaultDocument selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/tds/tds.service.ts:117 setMyRegime updateTable write=tax_regime indirect=False locks=[]
+backend/src/modules/workflows/workflow-locks.ts:8 lockWorkflowSubject selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/workflows/workflow-access.ts:49 employeePermissionSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/workflows/workflow-access.ts:78 workflowRoleSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/bulk/importers/employees.ts:215 employeesImporter updateTable write= indirect=False locks=[]
+backend/src/modules/bulk/importers/employees.ts:222 inserted insertInto write= indirect=True locks=[]
+backend/src/modules/lifecycle/probation/probation.service.ts:186 ProbationService updateTable write=contract_type,confirmation_date indirect=False locks=[]
+backend/src/modules/attendance/month-lock.service.ts:125 watermarkCoverage raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/month-lock.service.ts:273 lockMonth selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/attendance/month-lock.service.ts:308 lockMonth raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/day-materialize.ts:26 result raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/day-status.service.ts:399 recomputeDay selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/attendance/attendance-mutation.ts:15 employee selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/attendance/close-readiness.ts:11 rows raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/attendance.router.ts:218 biometricEnrolmentProcedure updateTable write=biometric_registered,access_card_no indirect=False locks=[]
+backend/src/modules/attendance/manager-approval.service.ts:142 approveManagerMonth selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/lifecycle/separation/separation.service.ts:133 applyResignationOnFinal updateTable write=status,dol indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:222 id updateTable write=status,dol indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:287 <module> updateTable write=status,dol indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:570 <module> updateTable write=status,dol indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:613 <module> updateTable write=status,dol indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/rbac/company-scope.ts:15 companyScopeSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/rbac/effective-role-grants.ts:5 effectiveRoleGrants raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/lifecycle/transfers/transfer.service.ts:438 approveTransferRequest updateTable write=updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/onboarding/joining-validation.ts:64 manager selectFrom write= indirect=False locks=['forShare']
+backend/src/modules/lifecycle/onboarding/task-fanout.service.ts:110 complete selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/lifecycle/onboarding/onboarding.service.ts:275 empInsert insertInto write=ecode,company_id,first_name,last_name,dob,personal_email,work_email,mobile,present_address,permanent_address,emergency_contact_name,emergency_contact_phone,blood_group,category,contract_type,doj,status,designation_id,department_id,location_id,org_unit_id,grade_id,reporting_manager_id,pan,aadhaar,uan,bank_name,bank_account,bank_ifsc,payment_mode,biometric_registered,attendance_mode indirect=False locks=[]
+backend/src/core/db/attendance-period.ts:13 employee selectFrom write= indirect=False locks=['forUpdate']
+backend/src/core/db/holiday-calendar.ts:119 upsertScopedHoliday raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## core.grades
+id: bigint NOT NULL | 
+code: text NOT NULL | 
+name: text NOT NULL | 
+rank: smallint NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["PRIMARY KEY (id)", "UNIQUE (code)"]
+backend/src/modules/lifecycle/onboarding/joining-validation.ts:55 grade selectFrom write= indirect=False locks=['forShare']
+backend/src/core/seed/masters.ts:76 seedMasters insertInto write=code,name,rank indirect=False locks=[]
+
+## core.letter_templates
+id: bigint NOT NULL | 
+code: text NOT NULL | 
+name: text NOT NULL | 
+body_template: text NOT NULL | 
+body_docx_document_id: bigint NULL | 
+merge_fields: jsonb NOT NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (body_docx_document_id) REFERENCES core.documents(id)", "PRIMARY KEY (id)", "UNIQUE (code)"]
+backend/src/modules/letters/letters.router.ts:71 upsertTemplate insertInto write=code,name,body_template,merge_fields,is_active indirect=False locks=[]
+
+## core.letters
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+template_code: text NOT NULL | 
+document_id: bigint NULL | 
+issued_by: bigint NULL | 
+issued_at: timestamp with time zone NULL | 
+workflow_request_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+body_rendered: text NOT NULL | 
+status: text NOT NULL | 
+Constraints: ["CHECK ((status = ANY (ARRAY['draft'::text, 'pending_signature'::text, 'issued'::text])))", "FOREIGN KEY (document_id) REFERENCES core.documents(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (issued_by) REFERENCES core.users(id)", "FOREIGN KEY (workflow_request_id) REFERENCES wf.requests(id)", "PRIMARY KEY (id)"]
+backend/src/modules/lifecycle/probation/probation.service.ts:227 letterInsert insertInto write=employee_id,template_code,document_id,body_rendered,status,issued_by,issued_at,workflow_request_id indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:556 letter insertInto write=employee_id,template_code,body_rendered,status,issued_by,issued_at indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/letters/letters.service.ts:98 letter insertInto write=employee_id,template_code,document_id,body_rendered,status,issued_by indirect=False locks=[]
+backend/src/modules/letters/letters.service.ts:122 issueLetter updateTable write=workflow_request_id indirect=False locks=[]
+backend/src/modules/letters/letters.service.ts:126 issueLetter updateTable write=issued_at indirect=False locks=[]
+backend/src/modules/letters/letters.service.ts:151 applyLetterOnFinal updateTable write=issued_at indirect=False locks=[]
+
+## core.locations
+id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+name: text NOT NULL | 
+state_code: text NOT NULL | 
+timezone: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (company_id) REFERENCES core.companies(id)", "PRIMARY KEY (id)", "UNIQUE (company_id, name)", "UNIQUE (id, company_id)"]
+backend/src/modules/reports/reports.service.ts:77 q raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/lifecycle/onboarding/joining-validation.ts:43 location selectFrom write= indirect=False locks=['forShare']
+backend/src/core/seed/masters.ts:59 seedMasters insertInto write=company_id,name,state_code indirect=False locks=[]
+
+## core.mis_codes
+id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+code: text NOT NULL | 
+name: text NOT NULL | 
+parent_id: bigint NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((length(btrim(code)) > 0))", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (parent_id) REFERENCES core.mis_codes(id)", "FOREIGN KEY (parent_id, company_id) REFERENCES core.mis_codes(id, company_id)", "PRIMARY KEY (id)", "UNIQUE (company_id, code)", "UNIQUE (id, company_id)"]
+
+## core.nomination_declarations
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+scheme: text NOT NULL | 
+version: integer NOT NULL | 
+status: text NOT NULL | 
+statements: jsonb NOT NULL | 
+witness1_name: text NULL | 
+witness1_address: text NULL | 
+witness2_name: text NULL | 
+witness2_address: text NULL | 
+declared_at: timestamp with time zone NOT NULL | 
+declared_by: bigint NULL | 
+employer_verified_by: bigint NULL | 
+employer_verified_at: timestamp with time zone NULL | 
+employer_reference_no: text NULL | 
+employer_signatory_designation: text NULL | 
+employee_acknowledged_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((scheme = ANY (ARRAY['pf'::text, 'eps'::text, 'gratuity'::text, 'esic'::text, 'gpa'::text, 'gmc'::text, 'gtli'::text])))", "CHECK ((status = ANY (ARRAY['active'::text, 'superseded'::text])))", "CHECK ((version > 0))", "FOREIGN KEY (declared_by) REFERENCES core.users(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id) ON DELETE CASCADE", "FOREIGN KEY (employer_verified_by) REFERENCES core.users(id)", "PRIMARY KEY (id)", "UNIQUE (employee_id, scheme, version)"]
+
+## core.onboarding_candidates
+id: bigint NOT NULL | 
+ats_candidate_id: bigint NULL | 
+loi_reference: text NULL | 
+full_name: text NOT NULL | 
+personal_email: text NOT NULL | 
+mobile: text NOT NULL | 
+dob: date NULL | 
+address: text NULL | 
+total_experience_years: numeric(4,1) NULL | 
+previous_company: text NULL | 
+current_salary: numeric(14,2) NULL | 
+expected_salary: numeric(14,2) NULL | 
+position_title: text NOT NULL | 
+department: text NULL | 
+org_unit: text NULL | 
+designation: text NULL | 
+company_id: bigint NULL | 
+category: core.employment_category NOT NULL | 
+replacement_of_ecode: text NULL | 
+offered_ctc: numeric(14,2) NOT NULL | 
+probation_months: smallint NULL | 
+probation_salary_pct: smallint NULL | 
+proposed_doj: date NOT NULL | 
+offer_date: date NOT NULL | 
+work_location: text NULL | 
+prejoin_link_token: text NULL | 
+prejoin_token_hash: text NULL | 
+prejoin_token_expires_at: timestamp with time zone NULL | 
+prejoin_link_sent_at: timestamp with time zone NULL | 
+prejoin_completed_at: timestamp with time zone NULL | 
+prejoin_submitted_data: jsonb NULL | 
+status: text NOT NULL | 
+employee_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+prejoin_draft_data: jsonb NULL | 
+gender: text NULL | 
+Constraints: ["CHECK (((gender IS NULL) OR (gender = ANY (ARRAY['Male'::text, 'Female'::text, 'Transgender'::text]))))", "CHECK ((prejoin_link_token IS NULL))", "CHECK ((status = ANY (ARRAY['awaiting_prejoin'::text, 'link_sent'::text, 'prejoin_done'::text, 'converted'::text, 'no_show'::text])))", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)", "UNIQUE (prejoin_link_token)"]
+backend/src/modules/lifecycle/onboarding/prejoin-link.router.ts:21 candidate selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/lifecycle/onboarding/prejoin-link.router.ts:56 prejoinLinkRouter updateTable write=prejoin_token_hash,prejoin_token_expires_at,prejoin_link_token,prejoin_link_sent_at,status,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/onboarding/prejoin.service.ts:126 candidate updateTable write=prejoin_completed_at,prejoin_submitted_data,prejoin_link_token,status,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/onboarding/onboarding.service.ts:85 insertResult insertInto write=ats_candidate_id,loi_reference,full_name,personal_email,mobile,dob,address,total_experience_years,previous_company,current_salary,expected_salary,position_title,department,org_unit,designation,company_id,category,offered_ctc,probation_months,probation_salary_pct,proposed_doj,offer_date,work_location,prejoin_link_token,prejoin_token_hash,prejoin_token_expires_at,prejoin_link_sent_at,status,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/onboarding/onboarding.service.ts:221 candidate selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/lifecycle/onboarding/onboarding.service.ts:378 convert updateTable write=status,employee_id,updated_at indirect=False locks=[]
+
+## core.onboarding_tasks
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+candidate_id: bigint NULL | 
+task_code: text NOT NULL | 
+task_name: text NOT NULL | 
+department: text NOT NULL | 
+owner_role: text NOT NULL | 
+due_date: date NOT NULL | 
+sla_hours: integer NOT NULL | 
+status: text NOT NULL | 
+escalated_at: timestamp with time zone NULL | 
+done_by: bigint NULL | 
+done_at: timestamp with time zone NULL | 
+notes: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((department = ANY (ARRAY['IT'::text, 'Admin'::text, 'HR'::text, 'Payroll'::text])))", "CHECK ((status = ANY (ARRAY['open'::text, 'completed'::text, 'escalated'::text])))", "FOREIGN KEY (candidate_id) REFERENCES core.onboarding_candidates(id)", "FOREIGN KEY (done_by) REFERENCES core.users(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)"]
+backend/src/modules/lifecycle/onboarding/task-fanout.service.ts:80 TaskFanoutService insertInto write=employee_id,candidate_id,task_code,task_name,department,owner_role,due_date,sla_hours,status,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/onboarding/task-fanout.service.ts:111 task selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/lifecycle/onboarding/task-fanout.service.ts:115 complete updateTable write=status,done_by,done_at,notes,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/onboarding/task-fanout.service.ts:139 TaskFanoutService updateTable write=status,escalated_at,updated_at indirect=False locks=[]
+
+## core.org_units
+id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+parent_id: bigint NULL | 
+name: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (parent_id) REFERENCES core.org_units(id)", "PRIMARY KEY (id)", "UNIQUE (id, company_id)"]
+backend/src/core/rbac/company-scope.ts:15 companyScopeSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/lifecycle/onboarding/joining-validation.ts:52 unit selectFrom write= indirect=False locks=['forShare']
+backend/src/core/seed/masters.ts:54 seedMasters insertInto write=company_id,name,parent_id indirect=False locks=[]
+
+## core.password_reset_tokens
+id: bigint NOT NULL | 
+user_id: bigint NOT NULL | 
+token_hash: text NOT NULL | 
+expires_at: timestamp with time zone NOT NULL | 
+used_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)", "UNIQUE (token_hash)"]
+backend/src/modules/auth/auth.passwords.ts:114 requestPasswordReset updateTable write=used_at indirect=False locks=[]
+backend/src/modules/auth/auth.passwords.ts:116 requestPasswordReset insertInto write=user_id,token_hash,expires_at indirect=False locks=[]
+backend/src/modules/auth/auth.passwords.ts:133 row selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/auth/auth.passwords.ts:145 resetPasswordWithToken updateTable write=used_at indirect=False locks=[]
+
+## core.permissions
+id: bigint NOT NULL | 
+code: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["PRIMARY KEY (id)", "UNIQUE (code)"]
+backend/src/modules/workflows/workflow-access.ts:49 employeePermissionSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/workflows/workflow-access.ts:78 workflowRoleSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/rbac/seed.ts:22 main insertInto write=code indirect=False locks=[]
+
+## core.plants
+id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+plant_code: text NOT NULL | 
+name: text NOT NULL | 
+location_id: bigint NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((length(btrim(plant_code)) > 0))", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (location_id) REFERENCES core.locations(id)", "FOREIGN KEY (location_id, company_id) REFERENCES core.locations(id, company_id)", "PRIMARY KEY (id)", "UNIQUE (company_id, plant_code)", "UNIQUE (id, company_id)"]
+
+## core.policies
+id: bigint NOT NULL | 
+title: text NOT NULL | 
+document_id: bigint NULL | 
+effective_date: date NOT NULL | 
+requires_acknowledgment: boolean NOT NULL | 
+audience: jsonb NULL | 
+is_active: boolean NOT NULL | 
+created_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+body_summary: text NULL | 
+Constraints: ["CHECK (((document_id IS NOT NULL) OR (body_summary IS NOT NULL)))", "FOREIGN KEY (created_by) REFERENCES core.users(id)", "FOREIGN KEY (document_id) REFERENCES core.documents(id)", "PRIMARY KEY (id)"]
+backend/src/modules/policies/policies.service.ts:64 policy insertInto write=title,document_id,body_summary,effective_date,requires_acknowledgment,audience,created_by indirect=False locks=[]
+
+## core.policy_acknowledgments
+id: bigint NOT NULL | 
+policy_id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+acknowledged_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (policy_id) REFERENCES core.policies(id)", "PRIMARY KEY (id)", "UNIQUE (policy_id, employee_id)"]
+backend/src/modules/policies/policies.service.ts:151 acknowledgePolicy insertInto write=policy_id,employee_id indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## core.probation_reviews
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+due_date: date NOT NULL | 
+manager_recommendation: text NULL | 
+extension_months: smallint NULL | 
+review_notes: text NULL | 
+ratings: jsonb NULL | 
+status: text NOT NULL | 
+outcome: text NULL | 
+decided_by: bigint NULL | 
+decided_at: timestamp with time zone NULL | 
+confirmation_date: date NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((extension_months >= 1) AND (extension_months <= 6)))", "CHECK ((manager_recommendation = ANY (ARRAY['confirm'::text, 'extend'::text, 'separate'::text])))", "CHECK ((outcome = ANY (ARRAY['confirmed'::text, 'extended'::text, 'separated'::text])))", "CHECK ((status = ANY (ARRAY['pending'::text, 'under_review'::text, 'completed'::text])))", "FOREIGN KEY (decided_by) REFERENCES core.users(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)"]
+backend/src/modules/lifecycle/probation/probation.service.ts:132 ProbationService updateTable write=manager_recommendation,extension_months,review_notes,ratings,status,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/probation/probation.service.ts:171 ProbationService updateTable write=outcome,status,decided_by,decided_at,confirmation_date,review_notes,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/probation/probation.service.ts:252 ProbationService updateTable write=outcome,status,extension_months,decided_by,decided_at,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/probation/probation.service.ts:266 ProbationService insertInto write=employee_id,due_date,status,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/probation/probation.service.ts:276 ProbationService updateTable write=outcome,status,decided_by,decided_at,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/onboarding/onboarding.service.ts:395 convert insertInto write=employee_id,due_date,status,updated_at indirect=False locks=[]
+
+## core.profile_change_requests
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+field: text NOT NULL | 
+old_value: text NULL | 
+new_value: text NOT NULL | 
+status: text NOT NULL | 
+workflow_request_id: bigint NULL | 
+decided_by: bigint NULL | 
+decided_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])))", "FOREIGN KEY (decided_by) REFERENCES core.users(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (workflow_request_id) REFERENCES wf.requests(id)", "PRIMARY KEY (id)"]
+backend/src/modules/employees/family.service.ts:130 wfId insertInto write=employee_id,field,old_value,new_value,workflow_request_id indirect=False locks=[]
+backend/src/modules/employees/family.service.ts:143 applyFamilyOnFinal updateTable write=status,decided_by,decided_at indirect=False locks=[]
+
+## core.reporting_tree
+manager_id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+depth: smallint NOT NULL | 
+Constraints: ["PRIMARY KEY (manager_id, employee_id)"]
+backend/src/modules/reports/muster.service.ts:346 listMuster raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/workflows/workflow-access.ts:29 permittedGrant raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/attendance-config.router.ts:288 getTeamRoster raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/scheduling.router.ts:52 teamIds raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/rbac/effective-role-grants.ts:5 effectiveRoleGrants raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/rbac/employee-scope.ts:25 employeeScopeSql raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## core.role_permissions
+id: bigint NOT NULL | 
+role_id: bigint NOT NULL | 
+permission_id: bigint NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+scope: text NOT NULL | 
+Constraints: ["CHECK ((scope = ANY (ARRAY['all'::text, 'subtree'::text, 'own'::text, 'org_unit'::text, 'readonly'::text, 'department'::text])))", "FOREIGN KEY (permission_id) REFERENCES core.permissions(id) ON DELETE CASCADE", "FOREIGN KEY (role_id) REFERENCES core.roles(id) ON DELETE CASCADE", "PRIMARY KEY (id)", "UNIQUE (role_id, permission_id)"]
+backend/src/modules/workflows/workflow-access.ts:49 employeePermissionSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/workflows/workflow-access.ts:78 workflowRoleSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/rbac/rbac.repository.ts:39 res insertInto write=role_id,permission_id,scope indirect=False locks=[]
+backend/src/modules/rbac/rbac.repository.ts:50 res deleteFrom write= indirect=False locks=[]
+backend/src/core/rbac/seed.ts:55 main insertInto write= indirect=False locks=[]
+
+## core.roles
+id: bigint NOT NULL | 
+code: text NOT NULL | 
+name: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["PRIMARY KEY (id)", "UNIQUE (code)"]
+backend/src/modules/workflows/workflow-access.ts:78 workflowRoleSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/rbac/effective-role-grants.ts:5 effectiveRoleGrants raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/rbac/seed.ts:16 main insertInto write=code,name indirect=False locks=[]
+
+## core.separations
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+initiated_at: timestamp with time zone NOT NULL | 
+initiated_by: text NOT NULL | 
+reason: text NOT NULL | 
+resignation_date: date NOT NULL | 
+notice_period_days: smallint NOT NULL | 
+requested_lwd: date NOT NULL | 
+approved_lwd: date NULL | 
+shortfall_days: numeric(4,1) NOT NULL | 
+workflow_request_id: bigint NULL | 
+status: text NOT NULL | 
+fnf_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((initiated_by = ANY (ARRAY['employee'::text, 'hr'::text])))", "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'withdrawn'::text, 'rejected'::text, 'completed'::text])))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)"]
+backend/src/modules/lifecycle/separation/separation.service.ts:112 sep selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/lifecycle/separation/separation.service.ts:120 applyResignationOnFinal updateTable write=status,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:126 applyResignationOnFinal updateTable write=status,approved_lwd,shortfall_days,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:168 row insertInto write=employee_id,initiated_by,reason,resignation_date,notice_period_days,requested_lwd,approved_lwd,shortfall_days,status,workflow_request_id indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:206 inserted insertInto write=employee_id,initiated_by,reason,resignation_date,notice_period_days,requested_lwd,approved_lwd,shortfall_days,status indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:256 <module> updateTable write=approved_lwd indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:282 <module> updateTable write=status,reason,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:503 <module> updateTable write=fnf_id indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:569 <module> updateTable write=status,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:612 <module> updateTable write=status,updated_at indirect=False locks=[]
+
+## core.settings
+key: text NOT NULL | 
+value: jsonb NOT NULL | 
+value_type: text NOT NULL | 
+description: text NOT NULL | 
+updated_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (updated_by) REFERENCES core.users(id)", "PRIMARY KEY (key)"]
+backend/src/modules/settings/seed.ts:290 result insertInto write=key,value,value_type,description indirect=False locks=[]
+backend/src/modules/settings/settings.repository.ts:27 upsertSetting insertInto write=value indirect=True locks=[]
+
+## core.transfers
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+transfer_type: text NOT NULL | 
+effective_date: date NOT NULL | 
+status: text NOT NULL | 
+current_company_id: bigint NOT NULL | 
+current_department_id: bigint NULL | 
+current_location_id: bigint NULL | 
+current_designation_id: bigint NULL | 
+current_grade_id: bigint NULL | 
+current_reporting_manager_id: bigint NULL | 
+current_ecode: text NOT NULL | 
+target_company_id: bigint NULL | 
+target_department_id: bigint NULL | 
+target_location_id: bigint NULL | 
+target_designation_id: bigint NULL | 
+target_grade_id: bigint NULL | 
+target_reporting_manager_id: bigint NULL | 
+target_ecode: text NULL | 
+salary_revision_amount: numeric(12,2) NULL | 
+leave_treatment: text NOT NULL | 
+reason: text NOT NULL | 
+remarks: text NULL | 
+approved_by: bigint NULL | 
+approved_at: timestamp with time zone NULL | 
+notified_at: timestamp with time zone NULL | 
+created_by: bigint NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+workflow_request_id: bigint NULL | 
+Constraints: ["CHECK ((leave_treatment = ANY (ARRAY['transfer'::text, 'encash'::text])))", "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'completed'::text, 'cancelled'::text])))", "CHECK ((transfer_type = ANY (ARRAY['department'::text, 'location'::text, 'inter_entity'::text, 'promotion'::text])))", "FOREIGN KEY (approved_by) REFERENCES core.users(id)", "FOREIGN KEY (created_by) REFERENCES core.users(id)", "FOREIGN KEY (current_company_id) REFERENCES core.companies(id)", "FOREIGN KEY (current_department_id) REFERENCES core.departments(id)", "FOREIGN KEY (current_designation_id) REFERENCES core.designations(id)", "FOREIGN KEY (current_grade_id) REFERENCES core.grades(id)", "FOREIGN KEY (current_location_id) REFERENCES core.locations(id)", "FOREIGN KEY (current_reporting_manager_id) REFERENCES core.employees(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (target_company_id) REFERENCES core.companies(id)", "FOREIGN KEY (target_department_id) REFERENCES core.departments(id)", "FOREIGN KEY (target_designation_id) REFERENCES core.designations(id)", "FOREIGN KEY (target_grade_id) REFERENCES core.grades(id)", "FOREIGN KEY (target_location_id) REFERENCES core.locations(id)", "FOREIGN KEY (target_reporting_manager_id) REFERENCES core.employees(id)", "FOREIGN KEY (workflow_request_id) REFERENCES wf.requests(id)", "PRIMARY KEY (id)"]
+backend/src/modules/lifecycle/transfers/transfer.service.ts:173 inserted insertInto write=employee_id,transfer_type,effective_date,status,current_company_id,current_department_id,current_location_id,current_designation_id,current_grade_id,current_reporting_manager_id,current_ecode,target_company_id,target_department_id,target_location_id,target_designation_id,target_grade_id,target_reporting_manager_id,target_ecode,salary_revision_amount,leave_treatment,reason,remarks,created_by indirect=False locks=[]
+backend/src/modules/lifecycle/transfers/transfer.service.ts:237 transfer selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/lifecycle/transfers/transfer.service.ts:253 approveTransferRequest updateTable write=status,approved_by,approved_at,updated_at indirect=False locks=[]
+backend/src/modules/lifecycle/transfers/transfer.service.ts:445 approveTransferRequest updateTable write=status,target_ecode,notified_at,updated_at indirect=True locks=[]
+backend/src/modules/lifecycle/transfers/transfer.service.ts:516 submitTransferForApproval updateTable write=workflow_request_id indirect=False locks=[]
+backend/src/modules/lifecycle/transfers/transfer.service.ts:564 rejectTransferRequest updateTable write=status,remarks,approved_by,approved_at,updated_at indirect=False locks=[]
+
+## core.user_roles
+id: bigint NOT NULL | 
+user_id: bigint NOT NULL | 
+role_id: bigint NOT NULL | 
+scope_org_unit_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (role_id) REFERENCES core.roles(id) ON DELETE CASCADE", "FOREIGN KEY (scope_org_unit_id) REFERENCES core.org_units(id)", "FOREIGN KEY (user_id) REFERENCES core.users(id) ON DELETE CASCADE", "PRIMARY KEY (id)"]
+backend/src/modules/auth/auth.passwords.ts:222 createUser insertInto write=user_id,role_id,scope_org_unit_id indirect=False locks=[]
+backend/src/modules/rbac/rbac.repository.ts:64 assignRoleToUser insertInto write=user_id,role_id,scope_org_unit_id indirect=False locks=[]
+backend/src/modules/rbac/rbac.repository.ts:72 res deleteFrom write= indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:576 <module> deleteFrom write= indirect=False locks=[]
+backend/src/modules/lifecycle/separation/separation.service.ts:577 <module> insertInto write=user_id,role_id,scope_org_unit_id indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/rbac/effective-role-grants.ts:5 effectiveRoleGrants raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## core.users
+id: bigint NOT NULL | 
+employee_id: bigint NULL | 
+email: citext NOT NULL | 
+password_hash: text NOT NULL | 
+is_active: boolean NOT NULL | 
+last_login_at: timestamp with time zone NULL | 
+failed_attempts: smallint NOT NULL | 
+locked_until: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+must_change_password: boolean NOT NULL | 
+password_changed_at: timestamp with time zone NULL | 
+deactivated_at: timestamp with time zone NULL | 
+Constraints: ["FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)", "UNIQUE (email)"]
+backend/src/modules/employees/import.service.ts:123 importEmsSeed insertInto write=email,password_hash,employee_id indirect=False locks=[]
+backend/src/modules/auth/auth.repository.ts:31 recordLoginSuccess updateTable write=failed_attempts,locked_until,last_login_at indirect=False locks=[]
+backend/src/modules/auth/auth.repository.ts:57 recordLoginFailure updateTable write=failed_attempts,locked_until indirect=False locks=[]
+backend/src/modules/auth/auth.step-up.ts:51 verifyStepUp updateTable write=failed_attempts,locked_until indirect=False locks=[]
+backend/src/modules/auth/auth.passwords.ts:62 storeNewPassword updateTable write=password_hash,must_change_password,password_changed_at,failed_attempts,locked_until indirect=False locks=[]
+backend/src/modules/auth/auth.passwords.ts:81 user selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/auth/auth.passwords.ts:139 user selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/auth/auth.passwords.ts:167 user selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/auth/auth.passwords.ts:182 user selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/auth/auth.passwords.ts:184 setUserActive updateTable write=is_active,deactivated_at indirect=True locks=[]
+backend/src/modules/auth/auth.passwords.ts:194 res updateTable write=failed_attempts,locked_until indirect=False locks=[]
+backend/src/modules/auth/auth.passwords.ts:217 row insertInto write=email,password_hash,employee_id,must_change_password indirect=False locks=[]
+backend/src/modules/sso/service.ts:38 user selectFrom write= indirect=False locks=['forShare']
+backend/src/modules/sso/service.ts:113 user selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/workflows/workflow.service.ts:313 inbox raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/workflows/workflow-access.ts:49 employeePermissionSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/workflows/workflow-access.ts:78 workflowRoleSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/rbac/effective-role-grants.ts:5 effectiveRoleGrants raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/auth/step-up.ts:13 user selectFrom write= indirect=False locks=['forShare']
+backend/src/modules/lifecycle/onboarding/onboarding.service.ts:317 convert insertInto write=email,password_hash,employee_id,is_active indirect=False locks=[]

@@ -58,6 +58,8 @@ Regenerated on 14 Oct from all 176 original scored rows. IDs below are physical 
 ---
 
 ## Stage 2.2 — Run pipeline + compute engine (Card P02) — repairs in progress
+**19 October audit/repair increment (PAY-03/07/18, CORE-06/10, D3):** [current journey audit and evidence](../outputs/deep-flow-audit-2026-10-19/REVIEW.md). Test-first native regressions reproduced balanced-but-incomplete payroll and non-India payroll entry. Local guards now compare employee identities (including omissions/equal-count substitutions, employment dates, process holds and existing F&F ownership) and refuse India payroll creation/compute/approval/finalization for disabled legal entities. Six focused suites initially passed18/18; latest rerun17/18 because the concurrent bank repair expects an unapplied `superseded_at` column. Country/population regressions pass. Full verification is RED: concurrent joining-pack schema/import, lint, boundary/knip and runtime/coverage failures are recorded in the linked audit. Payroll-core human review, remaining money defects, integration/parallel-run/UAT evidence and this stage's exit criteria remain open; no phase gate advances.
+
 **Goal:** the 8-state run state machine and the deterministic compute core with independent reconciliation.
 **Depends on:** Stage 2.1; attendance month lock (Gate G1).
 **Tasks:**

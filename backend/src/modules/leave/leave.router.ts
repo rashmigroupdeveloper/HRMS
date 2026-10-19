@@ -9,11 +9,13 @@ import { ORPCError } from '@orpc/server';
 import { sql } from 'kysely';
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
+import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
 import { employeeScopeSql } from '../../core/rbac/employee-scope.js';
-import { adjustBalance, getBalances, runCompOffExpiry, runMonthlyAccrual, runYearEndCarryForward } from './leave-core.service.js';
+import { adjustBalance, genderCode, getBalances, runCompOffExpiry, runMonthlyAccrual, runYearEndCarryForward } from './leave-core.service.js';
 import { applyForLeave, requestCancellation, requestEncashment, selectRestrictedHoliday } from './leave-apply.service.js';
+import { previewLeaveApply } from './leave-preview.service.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
 
@@ -47,7 +49,12 @@ const listTypes = withPermission('leave.own')
   .output(z.array(typeShape))
   .handler(async ({ context }) => {
     const rows = await context.db.selectFrom('lv.leave_types').selectAll().where('is_active', '=', true).orderBy('code').execute();
-    return rows.map((t) => ({
+    let caller: string | null = null;
+    if (context.user.employee_id !== null) {
+      const employee = await context.db.selectFrom('core.employees').select('gender').where('id', '=', context.user.employee_id).executeTakeFirst();
+      caller = genderCode(employee?.gender ?? null);
+    }
+    return rows.filter((t) => t.applicable_gender === null || genderCode(t.applicable_gender) === caller).map((t) => ({
       code: t.code,
       name: t.name,
       isPaid: t.is_paid,
@@ -132,6 +139,43 @@ const employeeBalances = withPermission('leave.admin')
       [input.employeeId],
     );
     return balancesDto(context.db, input.employeeId);
+  });
+
+const preview = withPermission('leave.own')
+  .route({ method: 'GET', path: '/leave/preview', summary: 'Live apply math — sandwich, blackout, coverage (LV-03, SHF-08)' })
+  .input(
+    z.object({
+      leaveType: z.string().min(1),
+      from: isoDate,
+      to: isoDate,
+      fromHalf: booleanQuery().optional(),
+      toHalf: booleanQuery().optional(),
+    }),
+  )
+  .output(
+    z.object({
+      days: z.number(),
+      available: z.number(),
+      remaining: z.number(),
+      skipped: z.array(z.object({ date: isoDate, reason: z.enum(['holiday', 'week_off']) })),
+      blackouts: z.array(z.object({ date: isoDate, name: z.string() })),
+      coverage: z.object({ blocked: z.boolean(), warnings: z.array(z.string()) }),
+      blocked: z.boolean(),
+    }),
+  )
+  .handler(async ({ input, context }) => {
+    try {
+      return await previewLeaveApply(context.db, {
+        employeeId: requireEmployeeId(context.user),
+        leaveTypeCode: input.leaveType,
+        from: input.from,
+        to: input.to,
+        fromHalf: input.fromHalf,
+        toHalf: input.toHalf,
+      });
+    } catch (err) {
+      asBadRequest(err);
+    }
   });
 
 const apply = withPermission('leave.own')
@@ -419,6 +463,7 @@ export const leaveRouter = {
   upsertType,
   myBalances,
   employeeBalances,
+  preview,
   apply,
   myApplications,
   myLedger,

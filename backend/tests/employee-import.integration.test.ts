@@ -43,7 +43,13 @@ run('employee master + two-source import (live Postgres)', () => {
     // Users with audit history can never be hard-deleted (append-only FK — by
     // design); detach + delete audit-free ones; survivors relink via upsert.
     const fixtureEcodes = (loadFixture('ems-users.sample.json') as { userid: string }[]).map((r) => r.userid);
-    const fixtureEmployees = db.selectFrom('core.employees').select('id').where('ecode', 'in', fixtureEcodes);
+    const fixtureEmails = (loadFixture('ems-users.sample.json') as { email?: string }[])
+      .map((r) => r.email)
+      .filter((e): e is string => Boolean(e));
+    const fixtureEmployees = db
+      .selectFrom('core.employees')
+      .select('id')
+      .where((eb) => eb.or([eb('ecode', 'in', fixtureEcodes), eb('work_email', 'in', fixtureEmails)]));
     await db.updateTable('core.users').set({ employee_id: null }).where('employee_id', 'in', fixtureEmployees).execute();
     // Skip users referenced by audit (append-only) OR notifications (workflow/leave
     // receipts) — hard-delete is impossible for both by design.
@@ -53,7 +59,11 @@ run('employee master + two-source import (live Postgres)', () => {
         AND NOT EXISTS (SELECT 1 FROM core.audit_log a WHERE a.actor_user_id = u.id)
         AND NOT EXISTS (SELECT 1 FROM wf.notifications n WHERE n.recipient_user_id = u.id)
     `.execute(db);
-    const existing = await db.selectFrom('core.employees').select('id').where('ecode', 'in', fixtureEcodes).execute();
+    const existing = await db
+      .selectFrom('core.employees')
+      .select('id')
+      .where((eb) => eb.or([eb('ecode', 'in', fixtureEcodes), eb('work_email', 'in', fixtureEmails)]))
+      .execute();
     const ids = existing.map((e) => e.id);
     if (ids.length > 0) {
       // Domain FKs that accumulate from later Phase-1 suites (workflows/leave/OT)
@@ -87,7 +97,16 @@ run('employee master + two-source import (live Postgres)', () => {
         await db.deleteFrom('core.employees').where('id', 'in', deletable).execute();
       }
       if (withLedger.length > 0) {
-        await db.updateTable('core.employees').set({ status: 'exited' }).where('id', 'in', withLedger).execute();
+        await db
+          .updateTable('core.employees')
+          .set({
+            status: 'exited',
+            dol: new Date(),
+            ecode: sql`concat('OLD_', id, '_', substr(ecode, 1, 15))`,
+            work_email: sql`case when work_email is not null then concat('old_', id, '_', work_email) else null end`,
+          })
+          .where('id', 'in', withLedger)
+          .execute();
       }
     }
 

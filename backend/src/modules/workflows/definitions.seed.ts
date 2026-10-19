@@ -41,6 +41,7 @@ export const WORKFLOW_DEFINITIONS: readonly DefinitionSeed[] = [
     steps: [{ step: 1, approver: 'reporting_manager', slaHours: 48, onBreach: 'auto_approve' }],
   },
   { code: 'regularization', name: 'Regularization & Permission', steps: [rm()] },
+  { code: 'shift_swap', name: 'Shift swap / bid', steps: [rm()] },
   { code: 'od', name: 'On Duty', steps: [rm()] },
   {
     code: 'overtime',
@@ -148,8 +149,9 @@ export const WORKFLOW_DEFINITIONS: readonly DefinitionSeed[] = [
     code: 'offer_approval',
     name: 'Offer / LOI Approval',
     steps: [
-      { step: 1, approver: 'role:hr_head', slaHours: 48, onBreach: 'escalate' },
-      { step: 2, approver: 'role:ceo_cell', slaHours: 72, onBreach: 'escalate' },
+      { step: 1, approver: 'role:plant_head', slaHours: 48, onBreach: 'escalate' },
+      { step: 2, approver: 'role:hr_head', slaHours: 48, onBreach: 'escalate' },
+      { step: 3, approver: 'role:ceo_cell', slaHours: 72, onBreach: 'escalate' },
     ],
   },
 ] as const;

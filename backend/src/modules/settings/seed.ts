@@ -22,13 +22,24 @@ import { logger } from '../../core/logger.js';
 
 interface PolicySeed {
   key: string;
-  value: number | string | boolean;
-  valueType: 'number' | 'string' | 'boolean';
+  value: number | string | boolean | readonly number[];
+  valueType: 'number' | 'string' | 'boolean' | 'json';
   description: string;
 }
 
 /** Keys + defaults mirrored from the `getTypedSetting` call sites (docs/04 §8). */
 export const POLICY_SETTINGS: readonly PolicySeed[] = [
+  { key: 'doc.max_upload_bytes', value: 8_000_000, valueType: 'number', description: 'DOC-02: maximum PDF/image document upload size within the API body limit' },
+  { key: 'doc.compensation_types', value: 'payslip', valueType: 'string', description: 'CORE-08: catalog document types requiring compensation field authority for non-owner downloads' },
+  { key: 'doc.identity_types', value: 'pan,aadhaar,uan,esic,bank', valueType: 'string', description: 'CORE-08: document types whose contents need statutory identity field authority beyond vault scope' },
+  { key: 'cmp.calendar_lookahead_days', value: 60, valueType: 'number', description: 'CMP-17: default forward calendar window in days; matches the existing service fallback' },
+  { key: 'cmp.licence_alert_stages', value: '90,30,15,7', valueType: 'string', description: 'DOC-03/CMP-16: expiry alert thresholds in calendar days; recovered branch policy' },
+  { key: 'prv.rights_sla_days', value: 15, valueType: 'number', description: 'PRV-04: statutory SLA in days for DPDP data principal rights requests' },
+  { key: 'auth.sso_code_ttl_seconds', value: 120, valueType: 'number', description: 'NFR-03: one-use linked sign-in code lifetime; mirrors migration 1752340000100' },
+  { key: 'integration.ats.assertion_max_seconds', value: 120, valueType: 'number', description: 'NFR-03: maximum signed ATS assertion lifetime; mirrors migration 1752340000000' },
+  { key: 'integration.ats.service_user_id', value: 0, valueType: 'number', description: 'NFR-03: explicitly assigned active integration account; zero is unconfigured and refuses imports' },
+  { key: 'integration.ats.company_ids', value: [], valueType: 'json', description: 'LC-01: authorized ATS target company IDs; empty is unconfigured and refuses imports' },
+  { key: 'sec.stepup_window_minutes', value: 10, valueType: 'number', description: 'SEC-04: minutes of password verification before access changes, bounded by session expiry' },
   { key: 'lifecycle.prejoin_token_hours', value: 72, valueType: 'number', description: 'LC-01: prejoin link validity in hours; retains the previous implementation lifetime, subject to HR policy acceptance' },
   { key: 'probation.default_months', value: 6, valueType: 'number', description: 'LC-01: default probation period in months for newly onboarded employees' },
   { key: 'auth.failure_threshold', value: 5, valueType: 'number', description: 'NFR-03: consecutive failures before lockout' },
@@ -186,6 +197,44 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
     value: true,
     valueType: 'boolean',
     description: 'ATT-12: managers must approve team attendance before month lock',
+  },
+
+  // ── Attendance: shift micro / scheduling (Stage 1.11 · SHF-01..08) ──────
+  {
+    key: 'att.weekly_hours_cap',
+    value: 48,
+    valueType: 'number',
+    description: 'SHF-03 / CMP-06: weekly planned-hours cap at roster save (until Labour Codes sign-off)',
+  },
+  {
+    key: 'att.quarterly_hours_cap',
+    value: 624,
+    valueType: 'number',
+    description: 'SHF-03 / CMP-06: quarterly planned-hours cap at roster save (48h × 13 weeks)',
+  },
+  {
+    key: 'att.roster_refuse_over_cap',
+    value: true,
+    valueType: 'boolean',
+    description: 'SHF-03: refuse a roster save that would breach weekly/quarterly hours',
+  },
+  {
+    key: 'att.min_rest_hours',
+    value: 11,
+    valueType: 'number',
+    description: 'SHF-03 / FAT-01 lite: minimum rest hours between consecutive rostered shifts',
+  },
+  {
+    key: 'att.coverage_min_headcount',
+    value: 1,
+    valueType: 'number',
+    description: 'SHF-06: default sanctioned headcount per shift when no coverage target row exists',
+  },
+  {
+    key: 'att.leave_coverage_hard_block',
+    value: false,
+    valueType: 'boolean',
+    description: 'SHF-08: when true, leave that would create a coverage shortfall is refused (warning-only when false)',
   },
 
   // ── Reporting / CEO dashboard (RPT-03, docs/06 §4) ────────────────────────

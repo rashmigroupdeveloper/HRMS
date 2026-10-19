@@ -17,6 +17,8 @@ export interface GratuityCalculationInput {
   doj: Date | string; // Date of Joining
   lastWorkingDay: Date | string; // Approved LWD / Date of Leaving
   statutoryCapPaise?: number; // defaults to 20,00,000 * 100 paise
+  /** Payment of Gratuity Act s.4 proviso: death does not need five years. */
+  waiveMinimumService?: boolean | undefined;
 }
 
 export interface GratuityCalculationResult {
@@ -95,8 +97,9 @@ export function calculateGratuity(input: GratuityCalculationInput): GratuityCalc
   const capPaise = input.statutoryCapPaise ?? STATUTORY_GRATUITY_CAP_PAISE;
 
   const tenure = calculateServiceTenure(input.doj, input.lastWorkingDay);
+  const eligible = tenure.isEligible || input.waiveMinimumService === true;
 
-  if (!tenure.isEligible) {
+  if (!eligible) {
     return {
       isEligible: false,
       serviceYearsExact: tenure.exactYears,
@@ -133,6 +136,6 @@ export function calculateGratuity(input: GratuityCalculationInput): GratuityCalc
     cappedAtCeiling,
     calcNote: cappedAtCeiling
       ? `Gratuity capped at statutory ceiling of ₹${(capPaise / 100).toLocaleString('en-IN')}`
-      : `Gratuity calculated: (15 × ₹${(wageBasePaise / 100).toLocaleString('en-IN')} × ${tenure.completedYearsForGratuity} years) / 26 = ₹${finalRupees.toLocaleString('en-IN')}`,
+      : `Gratuity calculated: (15 × ₹${(wageBasePaise / 100).toLocaleString('en-IN')} × ${tenure.completedYearsForGratuity} years) / 26 = ₹${finalRupees.toLocaleString('en-IN')}${input.waiveMinimumService === true && !tenure.isEligible ? ' (five-year rule waived on death)' : ''}`,
   };
 }

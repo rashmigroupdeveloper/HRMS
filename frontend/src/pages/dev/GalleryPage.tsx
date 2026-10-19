@@ -440,6 +440,7 @@ export function GalleryPage() {
             code: 'CL',
             name: 'Casual Leave',
             available: 4,
+            isPaid: true,
             allowHalfDay: true,
             maxPerRequest: null,
             sandwichRule: 'exclude',

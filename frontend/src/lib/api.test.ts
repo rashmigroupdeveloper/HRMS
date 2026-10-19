@@ -28,6 +28,11 @@ describe('apiFetch', () => {
     clearAccessToken();
   });
 
+  it('retains the structured password-confirmation code from oRPC', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ message: 'Re-enter password', data: { code: 'STEP_UP_REQUIRED' } }, 403)));
+    await expect(apiFetch('/api/rbac/grants')).rejects.toMatchObject({ status: 403, code: 'STEP_UP_REQUIRED' });
+  });
+
   it('sends the bearer token and parses the JSON body', async () => {
     setAccessToken('tok-1');
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }));

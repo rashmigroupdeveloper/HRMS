@@ -42,6 +42,7 @@ import {
   StatTile,
 } from '../../ui';
 import { apiFetch } from '../../lib/api';
+import { FnfCycleCalendar } from './FnfCycleCalendar';
 
 /**
  * The list endpoint names people fields `employeeName` / `departmentName` /
@@ -820,6 +821,7 @@ export function SeparationBoardPage() {
       {/* TAB 3: F&F SETTLEMENT ENGINE */}
       {activeTab === 'fnf' && (
         <div className="space-y-6">
+          <FnfCycleCalendar />
           <Card>
             <CardHeader
               title="Full & Final (F&F) Settlement Workbench"

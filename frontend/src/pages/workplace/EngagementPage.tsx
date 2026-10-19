@@ -101,6 +101,7 @@ interface SurveyResult {
   title: string;
   isAnonymous: boolean;
   totalResponses: number;
+  recommendations: string[];
   questionResults: {
     questionId: string;
     prompt: string;
@@ -989,10 +990,42 @@ function SurveysTab({
 
   const viewResults = async (surveyId: number) => {
     try {
-      const res = await apiFetch<SurveyResult>(
-        `/api/engagement/surveys/${String(surveyId)}/results`,
-      );
-      setActiveResult(res);
+      const res = await apiFetch<{
+        surveyId: number;
+        title: string;
+        isAnonymous: boolean;
+        totalResponses: number;
+        recommendations?: string[];
+        questions: {
+          questionId: string;
+          prompt: string;
+          type: 'rating' | 'choice' | 'text';
+          avgRating?: number | null;
+          ratingDistribution?: Record<string, number>;
+          choiceDistribution?: Record<string, number>;
+          textAnswers?: { answer: string }[];
+        }[];
+      }>(`/api/engagement/surveys/${String(surveyId)}/results`);
+      setActiveResult({
+        surveyId: res.surveyId,
+        title: res.title,
+        isAnonymous: res.isAnonymous,
+        totalResponses: res.totalResponses,
+        recommendations: res.recommendations ?? [],
+        questionResults: res.questions.map((question) => ({
+          questionId: question.questionId,
+          prompt: question.prompt,
+          type: question.type,
+          ...(question.avgRating != null ? { averageRating: question.avgRating } : {}),
+          ...(question.ratingDistribution
+            ? { distribution: Object.entries(question.ratingDistribution).map(([stars, count]) => ({ stars: Number(stars), count })) }
+            : {}),
+          ...(question.choiceDistribution
+            ? { options: Object.entries(question.choiceDistribution).map(([label, votes]) => ({ label, votes })) }
+            : {}),
+          ...(question.textAnswers ? { textSamples: question.textAnswers.map((row) => row.answer) } : {}),
+        })),
+      });
     } catch (cause) {
       toast.error('Could not load survey results', {
         description: cause instanceof Error ? cause.message : 'Unknown error',
@@ -1222,6 +1255,14 @@ function SurveysTab({
       >
         {activeResult && (
           <div className="space-y-6">
+            {activeResult.recommendations.length > 0 && (
+              <div className="rounded-row bg-surface-2 px-4 py-3">
+                <p className="text-sm font-semibold text-ink">What to do with this</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink">
+                  {activeResult.recommendations.map((note) => <li key={note}>{note}</li>)}
+                </ul>
+              </div>
+            )}
             {activeResult.questionResults.map((qr, idx) => (
               <div key={qr.questionId} className="rounded-row bg-surface-2 p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">

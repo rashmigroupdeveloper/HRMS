@@ -1,0 +1,15 @@
+
+## doc.types
+code: text NOT NULL | 
+name: text NOT NULL | 
+typically_expires: boolean NOT NULL | 
+retention_class: text NULL | 
+mandatory_for: text NOT NULL | Comma-separated employment categories; empty = never mandatory by category.
+sort_order: smallint NOT NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+joining_checklist: boolean NOT NULL | Shown on the joining document checklist (REQ-004).
+max_files: smallint NOT NULL | 
+Constraints: ["CHECK (((max_files >= 1) AND (max_files <= 20)))", "CHECK ((length(btrim(code)) > 0))", "CHECK ((length(btrim(name)) > 0))", "PRIMARY KEY (code)"]
+backend/src/modules/documents/download.service.ts:37 doc selectFrom write= indirect=False locks=['forShare']

@@ -8,6 +8,36 @@ export interface EmployeeScope extends PermissionAccess {
   actorEmployeeId: number | null;
 }
 
+/** Own-record holders still see colleagues in the same company on the directory. */
+export function isColleagueDirectoryScope(
+  scope: EmployeeScope | undefined,
+): scope is EmployeeScope & { actorEmployeeId: number } {
+  return (
+    scope !== undefined &&
+    scope.own &&
+    !scope.all &&
+    !scope.subtree &&
+    scope.department !== true &&
+    scope.orgUnitIds.length === 0 &&
+    scope.actorEmployeeId !== null
+  );
+}
+
+/** Directory list: own scope also includes the caller's company. Profiles stay stricter. */
+export function directoryScopeSql(
+  scope: EmployeeScope | undefined,
+  employeeAlias = 'e',
+): RawBuilder<boolean> {
+  const actorId = scope?.actorEmployeeId ?? null;
+  if (!isColleagueDirectoryScope(scope) || actorId === null) {
+    return employeeScopeSql(scope, employeeAlias);
+  }
+  const companyId = sql.ref(`${employeeAlias}.company_id`);
+  return sql<boolean>`(${employeeScopeSql(scope, employeeAlias)} OR ${companyId} = (
+    SELECT self.company_id FROM core.employees self WHERE self.id = ${actorId}
+  ))`;
+}
+
 export function employeeScopeSql(
   scope: EmployeeScope | undefined,
   employeeAlias = 'e',
@@ -33,7 +63,12 @@ export function employeeScopeSql(
     conditions.push(departmentHeadSql(sql.ref(employeeAlias), scope.actorEmployeeId));
   }
   if (scope.orgUnitIds.length > 0) {
-    conditions.push(sql`${orgUnitId} IN (${sql.join(scope.orgUnitIds)})`);
+    // E2E-045: an org unit only covers employees of that unit's own company.
+    // A mismatched company_id on the employee row cannot widen the grant.
+    const companyId = sql.ref(`${employeeAlias}.company_id`);
+    conditions.push(sql`(${orgUnitId} IN (${sql.join(scope.orgUnitIds)}) AND ${companyId} = (
+      SELECT ou.company_id FROM core.org_units ou WHERE ou.id = ${orgUnitId}
+    ))`);
   }
   return conditions.length > 0
     ? sql<boolean>`(${sql.join(conditions, sql` OR `)})`

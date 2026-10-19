@@ -91,7 +91,7 @@ function formatINR(amount: number): string {
   return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export function LoansPage() {
+export function LoansPage({ registry = false }: { registry?: boolean }) {
   const [tab, setTab] = useState<Tab>('my');
   const [myLoans, setMyLoans] = useState<LoanSummary[]>([]);
   const [allLoans, setAllLoans] = useState<LoanSummary[]>([]);
@@ -374,15 +374,17 @@ export function LoansPage() {
               >
                 Apply
               </Button>
-              <Button
-                size="sm"
-                variant={tab === 'admin' ? 'primary' : 'ghost'}
-                onClick={() => { setTab('admin'); }}
-              >
-                Company Loans
-              </Button>
+              {registry && (
+                <Button
+                  size="sm"
+                  variant={tab === 'admin' ? 'primary' : 'ghost'}
+                  onClick={() => { setTab('admin'); }}
+                >
+                  Company Loans
+                </Button>
+              )}
             </div>
-            {tab === 'admin' && (
+            {registry && tab === 'admin' && (
               <Button
                 size="sm"
                 variant="secondary"

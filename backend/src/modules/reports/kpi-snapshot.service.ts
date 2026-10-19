@@ -380,54 +380,29 @@ export async function buildKpiSnapshot(
   });
 
   // ── Plant-level metrics per company ───────────────────────────────────────
-  const companies = await db.selectFrom('core.companies').select(['id']).execute();
-  for (const comp of companies) {
-    const compHeadcount = await db
-      .selectFrom('core.employees')
-      .select((eb) => eb.fn.countAll<string>().as('n'))
-      .where('company_id', '=', comp.id)
-      .where('status', 'in', ['active', 'on_notice'])
-      .executeTakeFirst();
-    const compTotal = Number(compHeadcount?.n ?? 0);
-    rows.push({
-      companyId: comp.id,
-      category: 'total',
-      metric: 'manpower_count',
-      value: compTotal,
-    });
-
-    const compAbsence = await db
-      .selectFrom('att.day_records as d')
-      .innerJoin('core.employees as e', 'e.id', 'd.employee_id')
-      .select(sql<string>`COUNT(*) FILTER (WHERE d.status IN ('A','UAB'))`.as('absent'))
-      .select(sql<string>`COUNT(*) FILTER (WHERE d.status NOT IN ('WO','H'))`.as('scheduled'))
-      .where('e.company_id', '=', comp.id)
-      .where('d.work_date', '>=', sql<Date>`${monthStart}::date`)
-      .where('d.work_date', '<=', sql<Date>`${date}::date`)
-      .executeTakeFirst();
-    const compSched = Number(compAbsence?.scheduled ?? 0);
-    rows.push({
-      companyId: comp.id,
-      category: 'total',
-      metric: 'absenteeism_pct',
-      value: compSched === 0 ? null : (Number(compAbsence?.absent ?? 0) / compSched) * 100,
-      unavailableReason: compSched === 0 ? 'No processed attendance in this period' : null,
-    });
-
-    const compOt = await db
-      .selectFrom('att.day_records as d')
-      .innerJoin('core.employees as e', 'e.id', 'd.employee_id')
-      .select(sql<string>`COALESCE(SUM(d.ot_minutes), 0)`.as('minutes'))
-      .where('e.company_id', '=', comp.id)
-      .where('d.work_date', '>=', sql<Date>`${monthStart}::date`)
-      .where('d.work_date', '<=', sql<Date>`${date}::date`)
-      .executeTakeFirst();
-    rows.push({
-      companyId: comp.id,
-      category: 'total',
-      metric: 'overtime_hours',
-      value: Number(compOt?.minutes ?? 0) / 60,
-    });
+  const companies = await db.selectFrom('core.companies').select('id').execute();
+  // One grouped read per fact set, independent of entity count. Repeatedly
+  // scanning attendance per company made a full snapshot exceed the test gate.
+  const companyHeadcounts = await db.selectFrom('core.employees').select('company_id')
+    .select(eb => eb.fn.countAll<string>().as('n')).where('status', 'in', ['active', 'on_notice'])
+    .groupBy('company_id').execute();
+  const companyAttendance = await db.selectFrom('att.day_records as d')
+    .innerJoin('core.employees as e', 'e.id', 'd.employee_id').select('e.company_id')
+    .select(sql<string>`COUNT(*) FILTER (WHERE d.status IN ('A','UAB'))`.as('absent'))
+    .select(sql<string>`COUNT(*) FILTER (WHERE d.status NOT IN ('WO','H'))`.as('scheduled'))
+    .select(sql<string>`COALESCE(SUM(d.ot_minutes), 0)`.as('minutes'))
+    .where('d.work_date', '>=', sql<Date>`${monthStart}::date`)
+    .where('d.work_date', '<=', sql<Date>`${date}::date`).groupBy('e.company_id').execute();
+  const headcountByCompany = new Map(companyHeadcounts.map(row => [row.company_id, Number(row.n)]));
+  const attendanceByCompany = new Map(companyAttendance.map(row => [row.company_id, row]));
+  for (const company of companies) {
+    const attendance = attendanceByCompany.get(company.id);
+    const scheduledDays = Number(attendance?.scheduled ?? 0);
+    rows.push({ companyId: company.id, category: 'total', metric: 'manpower_count', value: headcountByCompany.get(company.id) ?? 0 });
+    rows.push({ companyId: company.id, category: 'total', metric: 'absenteeism_pct',
+      value: scheduledDays === 0 ? null : Number(attendance?.absent ?? 0) / scheduledDays * 100,
+      unavailableReason: scheduledDays === 0 ? 'No processed attendance in this period' : null });
+    rows.push({ companyId: company.id, category: 'total', metric: 'overtime_hours', value: Number(attendance?.minutes ?? 0) / 60 });
   }
 
   // Replace the day's rows atomically — a half-written snapshot would be read

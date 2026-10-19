@@ -1,0 +1,96 @@
+
+## lv.applications
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+leave_type_id: bigint NOT NULL | 
+from_date: date NOT NULL | 
+to_date: date NOT NULL | 
+from_half: boolean NOT NULL | 
+to_half: boolean NOT NULL | 
+days: numeric(4,1) NOT NULL | 
+reason: text NULL | 
+status: text NOT NULL | 
+workflow_request_id: bigint NOT NULL | 
+cancel_workflow_request_id: bigint NULL | 
+ledger_txn_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((days > (0)::numeric))", "CHECK ((from_date <= to_date))", "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'cancelled'::text])))", "FOREIGN KEY (cancel_workflow_request_id) REFERENCES wf.requests(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (leave_type_id) REFERENCES lv.leave_types(id)", "FOREIGN KEY (ledger_txn_id) REFERENCES lv.ledger(id)", "FOREIGN KEY (workflow_request_id) REFERENCES wf.requests(id)", "PRIMARY KEY (id)"]
+backend/src/modules/leave/leave-resubmit.service.ts:16 application selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/leave/leave-resubmit.service.ts:31 resubmitLeave updateTable write=leave_type_id,from_date,to_date,from_half,to_half,days,reason indirect=False locks=[]
+backend/src/modules/leave/leave-apply.service.ts:45 inserted insertInto write=employee_id,leave_type_id,from_date,to_date,from_half,to_half,days,reason,workflow_request_id indirect=False locks=[]
+backend/src/modules/leave/leave-apply.service.ts:79 applyLeaveOnFinal updateTable write=status indirect=False locks=[]
+backend/src/modules/leave/leave-apply.service.ts:103 applyLeaveOnFinal updateTable write=status,ledger_txn_id indirect=False locks=[]
+backend/src/modules/leave/leave-apply.service.ts:181 requestCancellation updateTable write=cancel_workflow_request_id indirect=False locks=[]
+backend/src/modules/leave/leave-apply.service.ts:214 applyCancelOnFinal updateTable write=status indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## lv.leave_types
+id: bigint NOT NULL | 
+code: text NOT NULL | 
+name: text NOT NULL | 
+is_paid: boolean NOT NULL | 
+accrual_per_month: numeric(5,2) NOT NULL | 
+accrual_requires_service_months: smallint NOT NULL | 
+max_carry_forward: numeric(5,2) NULL | 
+encashable: boolean NOT NULL | 
+max_per_request: numeric(4,1) NULL | 
+allow_half_day: boolean NOT NULL | 
+sandwich_rule: text NOT NULL | 
+applicable_categories: core.employment_category[] NULL | 
+applicable_gender: text NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((sandwich_rule = ANY (ARRAY['include'::text, 'exclude'::text])))", "PRIMARY KEY (id)", "UNIQUE (code)"]
+backend/src/modules/leave/leave.router.ts:91 upsertType insertInto write=code,name,is_paid,accrual_per_month,accrual_requires_service_months,max_carry_forward,encashable,max_per_request,allow_half_day,sandwich_rule,applicable_gender,is_active indirect=False locks=[]
+backend/src/modules/leave/leave-core.service.ts:76 inserted raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/attendance/close-readiness.ts:11 rows raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/core/db/attendance-period.ts:45 result raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## lv.ledger
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+leave_type_id: bigint NOT NULL | 
+txn_type: text NOT NULL | 
+delta: numeric(5,2) NOT NULL | 
+effective_date: date NOT NULL | 
+expiry_date: date NULL | 
+reference_id: bigint NULL | 
+note: text NULL | 
+created_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((txn_type <> 'adjustment'::text) OR (note IS NOT NULL)))", "CHECK ((delta <> (0)::numeric))", "CHECK ((txn_type = ANY (ARRAY['accrual'::text, 'grant'::text, 'application'::text, 'cancel'::text, 'lapse'::text, 'encash'::text, 'comp_off_earn'::text, 'adjustment'::text])))", "FOREIGN KEY (created_by) REFERENCES core.users(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (leave_type_id) REFERENCES lv.leave_types(id)", "PRIMARY KEY (id)"]
+backend/src/modules/leave/leave-apply.service.ts:88 debit insertInto write=employee_id,leave_type_id,txn_type,delta,effective_date,reference_id,note indirect=False locks=[]
+backend/src/modules/leave/leave-apply.service.ts:201 applyCancelOnFinal insertInto write=employee_id,leave_type_id,txn_type,delta,effective_date,reference_id,note indirect=False locks=[]
+backend/src/modules/leave/leave-apply.service.ts:276 applyEncashmentOnFinal insertInto write=employee_id,leave_type_id,txn_type,delta,effective_date,reference_id,note indirect=False locks=[]
+backend/src/modules/leave/leave-core.service.ts:76 inserted raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/leave/leave-core.service.ts:137 credit insertInto write=employee_id,leave_type_id,txn_type,delta,effective_date,expiry_date,reference_id,note,created_by indirect=False locks=[]
+backend/src/modules/leave/leave-core.service.ts:167 rows raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/leave/leave-core.service.ts:181 runCompOffExpiry insertInto write=employee_id,leave_type_id,txn_type,delta,effective_date,note indirect=False locks=[]
+backend/src/modules/leave/leave-core.service.ts:212 rows raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/leave/leave-core.service.ts:221 runYearEndCarryForward insertInto write=employee_id,leave_type_id,txn_type,delta,effective_date,note indirect=False locks=[]
+backend/src/modules/leave/leave-core.service.ts:245 row insertInto write=employee_id,leave_type_id,txn_type,delta,effective_date,note,created_by indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## lv.restricted_holidays
+id: bigint NOT NULL | 
+holiday_date: date NOT NULL | 
+name: text NOT NULL | 
+location_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (location_id) REFERENCES core.locations(id)", "PRIMARY KEY (id)", "UNIQUE (holiday_date, name)"]
+backend/src/modules/leave/leave.router.ts:343 publishRestrictedHoliday insertInto write=holiday_date,name,location_id indirect=False locks=[]
+
+## lv.rh_selections
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+restricted_holiday_id: bigint NOT NULL | 
+workflow_request_id: bigint NOT NULL | 
+applied: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (restricted_holiday_id) REFERENCES lv.restricted_holidays(id)", "FOREIGN KEY (workflow_request_id) REFERENCES wf.requests(id)", "PRIMARY KEY (id)", "UNIQUE (employee_id, restricted_holiday_id)"]
+backend/src/modules/leave/leave-apply.service.ts:337 selectRestrictedHoliday insertInto write=employee_id,restricted_holiday_id,workflow_request_id indirect=False locks=[]
+backend/src/modules/leave/leave-apply.service.ts:371 applyRhOnFinal updateTable write=applied indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]

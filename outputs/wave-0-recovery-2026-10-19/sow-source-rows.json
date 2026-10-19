@@ -1,0 +1,1187 @@
+[
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 1,
+    "text": "MODULES | Status according to Protiviti | Status according to RML | Target Date | Remarks from RML | Remarks from Protiviti | NET_PROGRESS | Tasks Completed | Total Tasks"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 2,
+    "text": "1.One Time setup | 0.9314285714285714 | 1.5182285714285715 | 163"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 3,
+    "text": "1 | perform changes on software as per client policies and requirements. | 0.5 | 0.5 | The required changes have not been fully implemented. | 154"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 4,
+    "text": "2 | Setup of client, employees and compensation master | 1 | 1 | 0.9447852760736196 | 355"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 5,
+    "text": "3 | Transfer of data for the previous months of the current financial year, the previous financial year any prior financial year before that as required in good faith. | 1 | 1 | complete data transfer done from adrenalin"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 6,
+    "text": "2. CORE HR Module"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 7,
+    "text": "2.1Employee Data Management"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 8,
+    "text": "a | Management of centralized repository for employee master data, including personal, employment,  and financial details. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 9,
+    "text": "b | Providing secure access controls based on roles and permissions | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 10,
+    "text": "c | Integration with other Systems, as necessary. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 11,
+    "text": "2.2Compensation Structuring on Tool"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 12,
+    "text": "a | Defining multiple pay structures based on grades, job levels, and locations. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 13,
+    "text": "b | handling basic pay, allowances, deductions, reimbursements, and performance-linked incentives. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 14,
+    "text": "c | customization for CTC breakup, flexi-benefits, and perquisites | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 15,
+    "text": "3 | 2.3Policy Enforcement & Compliance Tracking"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 16,
+    "text": "a | Platform automated policy updates on portal and employee communication | 1 | 1 | policy adherence is active , as per ready RML policies"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 17,
+    "text": "b | Platform real-time tracking of policy adherence | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 18,
+    "text": "c | Real-Time Policy Acknowledgement Tracking and automated alerts for non-compliance . | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 19,
+    "text": "d | Platform Dashboard for HR and management reporting. | 0 | 0 | 2025-08-31 00:00:00 | not ready "
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 20,
+    "text": "3. WORKFORCE Module"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 21,
+    "text": "1 | 3.1Offer Management"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 22,
+    "text": "a | Generation of offer letter and approvals. | 0.7 | 0.7 | Once the ATS get implemented it will get solved"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 23,
+    "text": "b | Tracking appointment letters. | 1 | 1 | Letter is geting generated and is available on ESS portal"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 24,
+    "text": "2 | 3.2Onboarding & Employee Engagement"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 25,
+    "text": "a | Updation of candidate information by capturing through personal email. | 1 | 1 | It has been observed that a few candidates are not receiving the pre-joining link required to fill in their details."
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 26,
+    "text": "b | Platform auto CTC structuring based on predefined templates. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 27,
+    "text": "c | Management of flexi-basket benefits and reimbursements. | 1 | 1 | RML to propose policy"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 28,
+    "text": "d | Employee investment declarations for tax planning. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 29,
+    "text": "e | Employee loan processing on ESS portal and approval workflow . | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 30,
+    "text": "f | Payslip and tax sheet generation for onboarding employees. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 31,
+    "text": "g | capturing previous employment details. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 32,
+    "text": "3 | 3.3Employee Confirmation Process"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 33,
+    "text": "a | Probation review tracking and automated reminders | 0.7 | 0.7 | 2025-08-13 00:00:00 | Change of Approval flow & Team is working on it."
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 34,
+    "text": "b | Updating multi-level approval workflows for employee confirmation | 0.7 | 0.7 | RML will know once probation is complete"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 35,
+    "text": "4 | 3.4Employee Transfers"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 36,
+    "text": "a | Platform automated workflow for internal department/location transfers. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 37,
+    "text": "b | Platform-driven approvals and documentation updates. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 38,
+    "text": "c | compensation and role change updates in HRMS. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 39,
+    "text": "5 | 3.5Employee Separation & Exit Management"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 40,
+    "text": "a | \u2022 Resignation initiation, tracking, and approval workflows. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 41,
+    "text": "b | \u2022 Digital clearance process across departments (IT, Admin, Finance) | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 42,
+    "text": "c | \u2022 Final settlement and compliance with statutory requirements. | 0.7 | 0.7 | 2025-08-18 00:00:00 | FnF to run for 1st time in Aug 25"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 43,
+    "text": "6 | 3.6Employee Letters Management"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 44,
+    "text": "a | \u2022 Generation of various employee-related letters, including:\n o Experience letters\n o Relieving letters\n o Salary certificates | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 45,
+    "text": "4. Leave& Attendance Management Module"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 46,
+    "text": "1 | Shift Management"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 47,
+    "text": "a | Defining and configuring multiple shift types (fixed, rotational, flexible, night shifts, etc.). | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 48,
+    "text": "b | Platform automated shift scheduling and roster management. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 49,
+    "text": "c | Integration with biometric systems. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 50,
+    "text": "2 | Attendance Tracking"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 51,
+    "text": "a | management of real-time biometric attendance integration in system. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 52,
+    "text": "b | integration with access control systems for seamless tracking. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 53,
+    "text": "c | Platform automated late coming and early leaving reports. | 1 | 1 | policy adhered"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 54,
+    "text": "d | Platform alerts for absenteeism, regularization requests, and policy violations | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 55,
+    "text": "3 | Leave Management"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 56,
+    "text": "a | Configuration of leave types (annual, sick, maternity, casual, etc.). | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 57,
+    "text": "b | holiday calendar configuration by location and department. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 58,
+    "text": "c | \u2022 leave request and approval workflows with multi-level authorizations. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 59,
+    "text": "d | Platform automated leave balance tracking and accruals. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 60,
+    "text": "e | Leave encashment and carry-forward policies | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 61,
+    "text": "4 | Overtime & Comp-Offs Management | Comm-off is working but OT module is not working"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 62,
+    "text": "a | \u2022 overtime tracking based on pre-approved policies. | 0.5 | 0.5 | OT module implemented , automated application is not possible , manual done by Pro"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 63,
+    "text": "b | Platform auto-calculation of compensatory offs and extra working hours. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 64,
+    "text": "c | approval workflows for overtime requests. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 65,
+    "text": "d | integration with payroll for overtime | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 66,
+    "text": "5 | Attendance Policy & Compliance"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 67,
+    "text": "a | enforcement of attendance policies (minimum working hours, grace period, break time tracking). | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 68,
+    "text": "b | Platform automated deductions and penalties for attendance violations. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 69,
+    "text": "c | Preparation of reports and dashboards for HR and management monitoring. | 0 | only leave dash board NA"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 70,
+    "text": "5. Monthly payroll processing & Statutory Compliances"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 71,
+    "text": "5.1 Payroll Processing"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 72,
+    "text": "1 | Payroll Inputs Collection & Validation: Protiviti manages payroll inputs (new joiners, salary revisions, variable pay, deductions, loss of pay, etc.) in a predefined format. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 73,
+    "text": "2 | Investment & flexi declarations: Tax computation based on employee declarations via ESS portal | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 74,
+    "text": "3 | \u2022 Payroll processing & review:\n o Salary calculations with deductions and allowances.\n o Draft payroll reports for approval.\n o Final payroll processing after client confirmation | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 75,
+    "text": "4 | Performing Payroll deliverables:\n o Final Pay Register.\n o Bank Transfer File.\n o Journal Voucher Report.\n o Payslip & Tax computation slip via ESS.\n o Reimbursement & variance reports. | 1 | 1 | Working day logic corrected as per RML which will reflected from Aug payroll"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 76,
+    "text": "5 | Preparation of standard & customized Reports:\n o Standard: TDS report, PF report, PT report, ESIC report, LWF report, Variance report, CTC report.\n o Customized: Cost Centre, Location, Department-wise reports. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 77,
+    "text": "6 | \u2022 Calculation of OT(Over Time) charges and cross verifying with the attendance system and validate the OT charge | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 78,
+    "text": "7 | \u2022 Protiviti should Handle the payroll Queries | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 79,
+    "text": "8 | Protiviti should Validate attendance by verifying data or biometric records | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 80,
+    "text": "5.2 Verification of Inputs"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 81,
+    "text": "9 | \u2022 The Protiviti should handle the end-to-end payroll process, from collecting inputs to preparing the final register | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 82,
+    "text": "1 | Effective date of salary revision. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 83,
+    "text": "2 | Duplication of Employee Code / Number / ID. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 84,
+    "text": "3 | Whether any employees are minor based on the date of birth. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 85,
+    "text": "4 | Length of bank account. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 86,
+    "text": "5 | IFSC code. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 87,
+    "text": "6 | Permanent Account Number (PAN). | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 88,
+    "text": "7 | Aadhaar number. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 89,
+    "text": "8 | Duplication of ESI number. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 90,
+    "text": "9 | Check that the CTC matches with break up shared by the Rashmi Metaliks Limited | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 91,
+    "text": "10 | Identification of duplicate inputs. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 92,
+    "text": "11 | Special Character for designation, Department - like\" & \" , ' \". These are not accepted and would be removed. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 93,
+    "text": "12 | Check whether an employee is in Active or Inactive statusfor variable inputs. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 94,
+    "text": "5.3 Entity Transfer of Employes"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 95,
+    "text": "1 | Payroll Input | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 96,
+    "text": "2 | Draft Pay sheet | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 97,
+    "text": "3 | Observations if any | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 98,
+    "text": "4 | Finaly pay Register | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 99,
+    "text": "5 | Bank Transfer File | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 100,
+    "text": "6 | Payslip and Tax planner | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 101,
+    "text": "7 | JV report, Standard report and Customised Reports | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 102,
+    "text": "1 | 5.4 Pro rating Salary / Calculation of Arrears:"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 103,
+    "text": "a | Mid-month new joiner | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 104,
+    "text": "b | Mid-month leaver | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 105,
+    "text": "c | Loss of Pay calculations | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 106,
+    "text": "d | Loss of Pay reversals | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 107,
+    "text": "e | Previous month Loss of Pay | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 108,
+    "text": "2 | 5.4 Pro rating Salary / Calculation of Arrears:"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 109,
+    "text": "a | Actual calendar days in the month | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 110,
+    "text": "b | Actual calendar days in the month less weekends | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 111,
+    "text": "c | Fixed days like 30, 31 (this cannot change between months) without decimals. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 112,
+    "text": "3 | Pro rating the salary based on the following factors is not possible:"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 113,
+    "text": "a | Actual calendar days less alternate weekends | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 114,
+    "text": "b | Actual calendar days less holidays | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 115,
+    "text": "c | Fixed days that vary month on month. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 116,
+    "text": "3 | If the period for which salary is pro rated pertains to the period prior to go live with vendor, then the client would need provide arrear break up component wise to enable vendor to include in the current month payroll. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 117,
+    "text": "1 | 5.5 Loans and Advances"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 118,
+    "text": "2 | Vendor would handle the Loan scheduler with the following options: | 0.7 | 0.7 | Loan / Advances before May 25 need to be integrated from SAP "
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 119,
+    "text": "a. | Diminishing | 1 | 1 | 2025-08-31 00:00:00 | Loan eligibility is being calc to Basic "
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 120,
+    "text": "b. | Flat | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 121,
+    "text": "c. | Only EMI without Interest | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 122,
+    "text": "3 | vendor would calculate perquisites as per SBI lending rates. This is applicable only if the client provides the loan input to be recovered using vendor loan scheduler. If the client is giving the loan recovery amount month on month, then the client should provide the perquisite value. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 123,
+    "text": "4 | In order to claim tax exemption for Home Loan & Interest employees would need to submit relevant proof to claim under Section 24 during end of year process. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 124,
+    "text": "5 | Deductions against Salary advance should be provided as monthly inputs. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 125,
+    "text": "6 | Vendor will not liaise with any third parties to deduct or remit loans and advances. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 126,
+    "text": "1 | 5.6 Process for New Joiners:"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 127,
+    "text": "a. | Throughout the month through Client portal | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 128,
+    "text": "b. | As part of monthly input through the excel format | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 129,
+    "text": "c. | Through HR connector if integration is in scope | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 130,
+    "text": "2 | New joiner details for the purpose of ESI IP generation need to be provided by the client once in a week. Flexi would be activated for new joiners after the first month payroll is processed. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 131,
+    "text": "3 | ESS portal would be activated for new joiners"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 132,
+    "text": "a. | When client approves new joiner inputs via client portal | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 133,
+    "text": "b. | After first month payroll is processed if inputs are provided through excel format | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 134,
+    "text": "4 | At agreed interval if new joiner information is provided via HR connector | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 135,
+    "text": "5.7\u2013 Process for Salary hold and release"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 136,
+    "text": "1 | Scenario 1 (Payment hold) - To hold payment of any specific salary(s) vendor will process salary as instructed by the Rashmi Metaliks Limited. The salary transfer details in bank file will be removed. All statutory payments (PF, PT, ESI, LWF) would be remitted normally. In order to release the salary, Protiviti implant should add the net pay value of the employee as part of respective month's input | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 137,
+    "text": "2 | Scenario 2 (Process hold) - To hold processing of any specific salary(s) for absconding employees, etc., the Protiviti should include full month LOP input for this employee until the defined date. If the defined date is not known, Protiviti to give LOP input month on month. In order to release the salary, Protiviti should provide LOP reversal inputs in the respective month of release. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 138,
+    "text": "1 | 5.8 Additional General Scope:"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 139,
+    "text": "2 | Vendor would provide documentation support for any internal Audits and third-party requirements | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 140,
+    "text": "3 | Any data / reports requirement to support audit needs to be shared in advance with vendor and turnaround time to deliver will be mutually agreed. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 141,
+    "text": "4 | Payroll processing for Interns / Trainees and apply statutory contributions (including tax) as applicable. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 142,
+    "text": "5 | Payroll processing for Apprentice as per the Apprenticeship act without any statutory deduction. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 143,
+    "text": "6 | Additional ad hoc/On Demand reports can be provided by vendor subject to feasibility. Timeline to build the report and commercials to be mutually agreed. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 144,
+    "text": "5.9 Payroll Compliance & Statutory Reporting        "
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 145,
+    "text": "1 | Monthly Income TDS deductions and tax reporting | 1 | 1 | Handling only white collars"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 146,
+    "text": "2 | Quarterly filings (Form 24Q) & Annual Form 16 generation | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 147,
+    "text": "3 | Reconciliation of tax deductions vs. paid challans | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 148,
+    "text": "5.10 Provident Fund \u2013 In Scope"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 149,
+    "text": "1 | UAN generation & KYC updating. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 150,
+    "text": "2 | PF challan & return filing | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 151,
+    "text": "3 | Inspection support & statutory queries resolution.is received in the mobile number registered in the EPFO Portal | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 152,
+    "text": "4 | EDLI Returns (Form 7IF)  | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 153,
+    "text": "5 | Date of Leaving updating \u2013 Date of leaving and the reason for leaving will be updated in the EPFO portal by Protiviti | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 154,
+    "text": "6 | Form 5A updating (Ownership Details) | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 155,
+    "text": "7 | Modify Establishment Details | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 156,
+    "text": "8 | Joint Declaration Submission | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 157,
+    "text": "9 | Death Claim Submission | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 158,
+    "text": "10 | Support in case of claim rejection by the EPFO | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 159,
+    "text": "11 | Inspection Assistance / Response to the Notices | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 160,
+    "text": "12 | Legislative Notification / Amendments | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 161,
+    "text": "5.10 Employee State Insurance (ESIC) Compliance:"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 162,
+    "text": "1 | IP number generation, e-Pehchan card issuance. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 163,
+    "text": "2 | ESIC contributions reporting & challan generation | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 164,
+    "text": "3 | ESIC half-yearly submission & compliance audits | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 165,
+    "text": "4 | Updating of family members details | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 166,
+    "text": "5 | Sharing ESIC Remitted Challan \u2013 Once the payment is made, Rashmi Metaliks Limited to download the paid challan from the ESIC Portal. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 167,
+    "text": "6 | Documents Submission to ESIC Office for Employee Name, DOJ & Gender Correction (Protiviti Presence location) | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 168,
+    "text": "7 | Updating of Employer Details (Company Name, Address) | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 169,
+    "text": "5.10 Professional Tax (PT) Compliance:"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 170,
+    "text": "1 | PT computation, reporting & online remittance support | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 171,
+    "text": "2 | PT enrollment & renewal processing | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 172,
+    "text": "3 | PT - Enrolment Certificate - Remittance | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 173,
+    "text": "4 | PT - Enrolment Certificate - Returns | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 174,
+    "text": "5 | Company Tax Remittance | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 175,
+    "text": "6 | Sharing remitted /acknowledged challans | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 176,
+    "text": "7 | Inspection Assistance / Response to the Notices | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 177,
+    "text": "5.11 Labor Welfare Fund (LWF) Compliance"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 178,
+    "text": "1 | LWF data upload, challan generation & payment facilitation | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 179,
+    "text": "2 | LWF inspection assistance & compliance reporting | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 180,
+    "text": "5.13 Employee Self-Service (ESS) & Support"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 181,
+    "text": "1 | providing Employee Access:\n  Payslips, tax computation slips, Form 16.\n  Investment declarations & reimbursement claims.\n  Tax calculator & helpdesk ticketing | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 182,
+    "text": "2 | providing HR & Payroll SPOC Access:\n  Bulk download of payroll & compliance reports.\n  Employee onboarding & document management.\n Payroll discrepancy tracking & query resolution | 1 | 1 | We can make mandatory data for old employee fill by employee before using ESS portal"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 183,
+    "text": "5.14 Annual Processing & Compliance"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 184,
+    "text": "1 | Annual Bonus & Increment Processing: | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 185,
+    "text": "2 | Tax Deduction & Year-End Adjustments | 0.5 | 0.5 | tax deductions being done / yr end adjustment no use case came"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 186,
+    "text": "6.Salary related reimbursement processing"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 187,
+    "text": "1 | Protiviti team should provide the following:\n> Reimbursement bank transfer\n> Reimbursement Register\n> Submission of reimbursement pay slip to employees via the Platform.\n> Calculation of TDS on the unclaimed entitlement at the year end or as per the Client policy\n> Assistance for management and resolution of desk queries raised by employees. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 188,
+    "text": "7.Engagement Module"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 189,
+    "text": "7.1Employee Engagement Initiatives"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 190,
+    "text": "1 | Broadcasting company news and updates in an engaging format. | 1 | 1 | module ready "
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 191,
+    "text": "2 | Enabling HR teams to share information and conduct opinion polls. | 0 | 0 | 2025-08-12 00:00:00 | protiviti satisfaction poll to be initiated "
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 192,
+    "text": "7.2 Employee Feedback & Pulse Surveys"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 193,
+    "text": "1 | Conducting structured surveys for feedback collection. | 0 | 0 | protiviti satisfaction feedback to be initiated "
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 194,
+    "text": "2 | HR receives data-driven recommendations for improvements. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 195,
+    "text": "8. Asset Management"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 196,
+    "text": "8.1 Asset Allocation & Tracking"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 197,
+    "text": "1 | Platform for Asset Assignment | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 198,
+    "text": "2 | Platform for management of Employee Asset Directory | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 199,
+    "text": "8.2 Asset Maintenance & Compliance"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 200,
+    "text": "1 | Platform for Asset Maintenance Scheduling | 0.5 | 0.5 | actual demo to be done in ESS"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 201,
+    "text": "2 | Platform for Incident & Damage Reporting | 0.5 | 0.5"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 202,
+    "text": "8.3 Asset Retrieval & Exit Clearance"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 203,
+    "text": "1 | Platform for Asset Return Process | 0.5 | 0.5"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 204,
+    "text": "2 | Platform for Clearance Workflows | 0.5 | 0.5"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 205,
+    "text": "3 | Platform for Lost or Unreturned Assets Management | 0.5 | 0.5"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 206,
+    "text": "9. Helpdesk"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 207,
+    "text": "9.1 Ticketing System & Query Management"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 208,
+    "text": "1 | Ticket Categories: Categorization of queries | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 209,
+    "text": "2 | Platform Auto-Acknowledgment & Assignment:  | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 210,
+    "text": "9.2 Escalation & Resolution Workflow"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 211,
+    "text": "1 | Escalation Matrix: Automated escalation of unresolved tickets based on pre-set SLAs | 1 | 1 | this has to be tested "
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 212,
+    "text": "9.3 Helpdesk Reporting & Analytics"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 213,
+    "text": "1 | Real-time tracking of open, pending, and resolved tickets. | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 214,
+    "text": "2 | Monthly Performance Reports | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 215,
+    "text": "9.4 Compliance & Audit Support"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 216,
+    "text": "1 | Helpdesk Query Logs | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 217,
+    "text": "2 | Regulatory Query Handling | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 218,
+    "text": "3 | Employee & Case Management | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 219,
+    "text": "10. Process Related to Final Settlement Processing"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 220,
+    "text": "10.1 Process Related to Final settlement Process:"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 221,
+    "text": "1 | Settlement Input in Excel Format as shared by Protiviti viz \u2013 Number of days payable, Salary hold release, Leave Encashment days/Notice Pay recovery, Other Payments& Deductions, Gratuity, LTA claimed in previous employment | 0.5 | 0.5 | 2025-08-31 00:00:00 | 1st FnF will be process in AUg 25 "
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 222,
+    "text": "2 | Communication Protocol: SFTP/ Protiviti\u2019s CRM/ Rashmi Metaliks Limited Portal | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 223,
+    "text": "3 | Rashmi Metaliks Limited Employees to update investment proofs in ESS portal and submit any pending reimbursement claims | 1 | 1"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 224,
+    "text": "4 | Protiviti should process payroll based on clarifications received (post verification of investment proofs and reimbursement claims submitted) and share the Final Settlement workings for confirmation | 0.5 | 0.5 | 1st FnF will be process in AUg 25 "
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 225,
+    "text": "5 | On receipt of confirmation, the following deliverables to be shared with the Rashmi Metaliks Limited SPOC | 0.5 | 0.5"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 226,
+    "text": "10.2 Full and Final Settlement Process-General"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 227,
+    "text": "1 | Protiviti should offers 2 Full and Final cycle. | 0.5 | 0.5 | 1st FnF will be process in AUg 25 "
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 228,
+    "text": "2 | The turnaround time to process Full and Final is 3 working days. | 0.5 | 0.5"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 229,
+    "text": "3 | Protiviti would not interact with resigned employees and details\nwould be shared only to SPOC. | 0.5 | 0.5"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 230,
+    "text": "4 | \u201cAlumni portal\u201d access to exit employees need to be\nconfirmedly Rashmi Metaliks Limited for RML to download | 0.5 | 0.5"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 232,
+    "text": "Total percentage completed | 0.9314285714285714 | 0.9314285714285714"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 234,
+    "text": "176 | 175"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 235,
+    "text": "163 | 163"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 236,
+    "text": "0.9261363636363636 | 0.9314285714285714"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 251,
+    "text": "164"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 252,
+    "text": "154.5"
+  },
+  {
+    "sheet": "PROTIVITI SOW",
+    "row": 253,
+    "text": "0.9261363636363636"
+  }
+]

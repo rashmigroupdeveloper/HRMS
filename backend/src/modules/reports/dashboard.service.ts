@@ -9,7 +9,7 @@ import { companyScopeSql } from '../../core/rbac/company-scope.js';
 import { getTypedSetting } from '../settings/index.js';
 import { policyAckStatus } from '../policies/index.js';
 import { getBalances } from '../leave/index.js';
-import { readSessionStatuses } from '../attendance/index.js';
+import { readSessionStatuses, readPenaltyEvaluation } from '../attendance/index.js';
 
 export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number, scope?: EmployeeScope) {
   const today = istDateString();
@@ -192,8 +192,8 @@ export async function myAttendanceMonth(
   const rows = await db
     .selectFrom('att.day_records as day')
     .leftJoin('lv.leave_types as leave', 'leave.id', 'day.leave_type_id')
-    .select(['day.work_date', 'day.status', 'day.session_statuses', 'day.first_in', 'day.last_out', 'day.ot_minutes', 'day.late_minutes',
-      'day.source', 'day.is_locked', 'leave.code as leave_code', 'leave.name as leave_name', 'leave.is_paid as leave_is_paid'])
+    .select(['day.work_date', 'day.status', 'day.session_statuses', 'day.first_in', 'day.last_out', 'day.worked_minutes', 'day.ot_minutes', 'day.late_minutes',
+      'day.source', 'day.is_locked', 'day.penalty_flag', 'day.penalty_evaluation', 'leave.code as leave_code', 'leave.name as leave_name', 'leave.is_paid as leave_is_paid'])
     .where('day.employee_id', '=', employeeId)
     .where('day.work_date', '>=', sql<Date>`${m}::date`)
     .where('day.work_date', '<', sql<Date>`${mEnd}::date`)
@@ -210,8 +210,11 @@ export async function myAttendanceMonth(
     leaveIsPaid: r.leave_is_paid,
     firstIn: r.first_in?.toISOString() ?? null,
     lastOut: r.last_out?.toISOString() ?? null,
+    workedMinutes: r.worked_minutes,
     otMinutes: r.ot_minutes,
     lateMinutes: r.late_minutes,
+    penaltyFlag: r.penalty_flag,
+    penaltyEvaluation: readPenaltyEvaluation(r.penalty_evaluation),
   }));
 }
 
@@ -244,6 +247,20 @@ export async function teamMonthGrid(
       .execute();
     teamIds = directs.map((d) => d.id);
   }
+  // E2E-037: a head of department with no direct reports still owns the department.
+  const headed = await db
+    .selectFrom('core.employees as e')
+    .select('e.id')
+    .where('e.status', 'in', ['active', 'on_notice'])
+    .where('e.id', '!=', managerEmployeeId)
+    .where(sql<boolean>`(e.hod_employee_id = ${managerEmployeeId} OR EXISTS (
+      SELECT 1 FROM core.department_heads dh
+       WHERE dh.employee_id = ${managerEmployeeId}
+         AND dh.department_id = e.department_id
+         AND (dh.company_id IS NULL OR dh.company_id = e.company_id)
+    ))`)
+    .execute();
+  teamIds = [...new Set([...teamIds, ...headed.map((row) => row.id)])];
   if (teamIds.length === 0) return [];
 
   const emps = await db
@@ -322,6 +339,16 @@ export async function businessUnitDashboard(
   const monthStart = `${today.slice(0, 7)}-01`;
   const isRestricted = scope.all !== true && scope.all !== undefined;
   const orgUnitIds = scope.orgUnitIds ?? [];
+  // An entity grant with no org unit still covers the holder's own company.
+  let fallbackCompanyId: number | null = null;
+  if (isRestricted && orgUnitIds.length === 0 && scope.actorEmployeeId) {
+    const actor = await db
+      .selectFrom('core.employees')
+      .select('company_id')
+      .where('id', '=', scope.actorEmployeeId)
+      .executeTakeFirst();
+    fallbackCompanyId = actor?.company_id ?? null;
+  }
 
   // ── C01 Scope Security Enforcement ────────────────────────────────────────
   // A plant/BU head can never inspect another plant's numbers.
@@ -358,7 +385,8 @@ export async function businessUnitDashboard(
     .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
     .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
     .$if(isRestricted && orgUnitIds.length > 0, (qb) => qb.where('e.org_unit_id', 'in', orgUnitIds))
-    .$if(isRestricted && orgUnitIds.length === 0, (qb) => qb.where(sql<boolean>`false`))
+    .$if(isRestricted && orgUnitIds.length === 0 && fallbackCompanyId === null, (qb) => qb.where(sql<boolean>`false`))
+    .$if(isRestricted && orgUnitIds.length === 0 && fallbackCompanyId !== null, (qb) => qb.where('e.company_id', '=', fallbackCompanyId ?? 0))
     .groupBy('e.category')
     .orderBy('e.category')
     .execute();
@@ -378,7 +406,8 @@ export async function businessUnitDashboard(
     .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
     .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
     .$if(isRestricted && orgUnitIds.length > 0, (qb) => qb.where('e.org_unit_id', 'in', orgUnitIds))
-    .$if(isRestricted && orgUnitIds.length === 0, (qb) => qb.where(sql<boolean>`false`))
+    .$if(isRestricted && orgUnitIds.length === 0 && fallbackCompanyId === null, (qb) => qb.where(sql<boolean>`false`))
+    .$if(isRestricted && orgUnitIds.length === 0 && fallbackCompanyId !== null, (qb) => qb.where('e.company_id', '=', fallbackCompanyId ?? 0))
     .executeTakeFirst();
 
   const absentToday = Number(dayRow?.absent ?? 0);
@@ -393,7 +422,8 @@ export async function businessUnitDashboard(
     .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
     .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
     .$if(isRestricted && orgUnitIds.length > 0, (qb) => qb.where('e.org_unit_id', 'in', orgUnitIds))
-    .$if(isRestricted && orgUnitIds.length === 0, (qb) => qb.where(sql<boolean>`false`))
+    .$if(isRestricted && orgUnitIds.length === 0 && fallbackCompanyId === null, (qb) => qb.where(sql<boolean>`false`))
+    .$if(isRestricted && orgUnitIds.length === 0 && fallbackCompanyId !== null, (qb) => qb.where('e.company_id', '=', fallbackCompanyId ?? 0))
     .executeTakeFirst();
 
   const movement = await db
@@ -411,7 +441,8 @@ export async function businessUnitDashboard(
     .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
     .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
     .$if(isRestricted && orgUnitIds.length > 0, (qb) => qb.where('e.org_unit_id', 'in', orgUnitIds))
-    .$if(isRestricted && orgUnitIds.length === 0, (qb) => qb.where(sql<boolean>`false`))
+    .$if(isRestricted && orgUnitIds.length === 0 && fallbackCompanyId === null, (qb) => qb.where(sql<boolean>`false`))
+    .$if(isRestricted && orgUnitIds.length === 0 && fallbackCompanyId !== null, (qb) => qb.where('e.company_id', '=', fallbackCompanyId ?? 0))
     .executeTakeFirst();
 
   const cases = await db
@@ -422,7 +453,8 @@ export async function businessUnitDashboard(
     .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
     .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
     .$if(isRestricted && orgUnitIds.length > 0, (qb) => qb.where('e.org_unit_id', 'in', orgUnitIds))
-    .$if(isRestricted && orgUnitIds.length === 0, (qb) => qb.where(sql<boolean>`false`))
+    .$if(isRestricted && orgUnitIds.length === 0 && fallbackCompanyId === null, (qb) => qb.where(sql<boolean>`false`))
+    .$if(isRestricted && orgUnitIds.length === 0 && fallbackCompanyId !== null, (qb) => qb.where('e.company_id', '=', fallbackCompanyId ?? 0))
     .groupBy('c.stage')
     .execute();
 
@@ -435,7 +467,8 @@ export async function businessUnitDashboard(
     .$if(scope.companyId !== undefined, (qb) => qb.where('e.company_id', '=', scope.companyId ?? 0))
     .$if(scope.locationId !== undefined, (qb) => qb.where('e.location_id', '=', scope.locationId ?? 0))
     .$if(isRestricted && orgUnitIds.length > 0, (qb) => qb.where('e.org_unit_id', 'in', orgUnitIds))
-    .$if(isRestricted && orgUnitIds.length === 0, (qb) => qb.where(sql<boolean>`false`))
+    .$if(isRestricted && orgUnitIds.length === 0 && fallbackCompanyId === null, (qb) => qb.where(sql<boolean>`false`))
+    .$if(isRestricted && orgUnitIds.length === 0 && fallbackCompanyId !== null, (qb) => qb.where('e.company_id', '=', fallbackCompanyId ?? 0))
     .executeTakeFirst();
   const pendingApprovalsCount = Number(pendingApprovalsRow?.n ?? 0);
 
@@ -446,7 +479,9 @@ export async function businessUnitDashboard(
         ? `Entity #${String(scope.companyId)}`
         : isRestricted && orgUnitIds.length > 0
           ? `Org Unit (${orgUnitIds.join(', ')})`
-          : 'All entities';
+          : isRestricted && fallbackCompanyId !== null
+            ? `Entity #${String(fallbackCompanyId)}`
+            : 'All entities';
 
   const otHoursMtd = Number(otRow?.minutes ?? 0) / 60;
   const presenceTodayPct =

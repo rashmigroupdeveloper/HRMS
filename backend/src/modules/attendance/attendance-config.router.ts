@@ -34,62 +34,19 @@ import { AttendanceMutationError } from './attendance-mutation.js';
 import { readSessionStatuses, sessionStatusesSchema, validateSessionSummary } from './session-status.js';
 
 const isoDate = z.string().date('YYYY-MM-DD');
+import { penaltyEvaluationSchema, readPenaltyEvaluation } from './penalty-evaluation.js';
+import { shiftInput, shiftOutput, mapShiftRow } from './shift-config.js';
+import { inTransaction } from '../../core/db/database.js';
 
 function attendanceError(error: unknown): never {
   if (error instanceof AttendanceMutationError) throw new ORPCError(error.code, { message: error.message });
   throw error;
 }
 
-const shiftShape = z.object({
-  code: z.string().min(1),
-  name: z.string().min(1),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/),
-  crossesMidnight: z.boolean().default(false),
-  sessionSplit: z.string().regex(/^\d{2}:\d{2}$/).nullish(),
-  graceInMinutes: z.number().int().min(0).max(120).default(0),
-  graceOutMinutes: z.number().int().min(0).max(120).default(0),
-  minHalfDayHours: z.number().min(0).max(12),
-  minFullDayHours: z.number().min(0).max(16),
-  breakMinutes: z.number().int().min(0).max(180).default(0),
-  isActive: z.boolean().default(true),
-});
-
-function mapShiftRow(r: {
-  id: number;
-  code: string;
-  name: string;
-  start_time: string;
-  end_time: string;
-  crosses_midnight: boolean;
-  session_split: string | null;
-  grace_in_minutes: number;
-  grace_out_minutes: number;
-  min_half_day_hours: string;
-  min_full_day_hours: string;
-  break_minutes: number;
-  is_active: boolean;
-}) {
-  return {
-    id: r.id,
-    code: r.code,
-    name: r.name,
-    startTime: r.start_time.slice(0, 5),
-    endTime: r.end_time.slice(0, 5),
-    crossesMidnight: r.crosses_midnight,
-    sessionSplit: r.session_split?.slice(0, 5) ?? null,
-    graceInMinutes: r.grace_in_minutes,
-    graceOutMinutes: r.grace_out_minutes,
-    minHalfDayHours: Number(r.min_half_day_hours),
-    minFullDayHours: Number(r.min_full_day_hours),
-    breakMinutes: r.break_minutes,
-    isActive: r.is_active,
-  };
-}
-
 const listShifts = withPermission('admin.settings')
   .route({ method: 'GET', path: '/attendance/config/shifts', summary: 'Shift catalog (admin full)' })
-  .output(z.array(shiftShape.extend({ id: z.number() })))
+  .input(z.object({}).optional())
+  .output(z.array(shiftOutput.extend({ id: z.number() })))
   .handler(async ({ context }) => {
     const rows = await context.db.selectFrom('att.shifts').selectAll().orderBy('code').execute();
     return rows.map(mapShiftRow);
@@ -102,6 +59,7 @@ const listShiftsForRoster = withPermission('attendance.roster.write')
     path: '/attendance/config/shifts/active',
     summary: 'Active shifts for roster editors (ATT-04 manager surface)',
   })
+  .input(z.object({}).optional())
   .output(
     z.array(
       z.object({
@@ -131,16 +89,30 @@ const listShiftsForRoster = withPermission('attendance.roster.write')
 
 const upsertShift = withPermission('admin.settings')
   .route({ method: 'PUT', path: '/attendance/config/shifts/{code}', summary: 'Create/update a shift (audited)' })
-  .input(shiftShape)
+  .input(shiftInput)
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
+    if (!context.permissionAccess.all) throw new ORPCError('FORBIDDEN', { message: 'Shared shift configuration requires group-wide settings authority' });
+    if (input.allowanceComponentCode) throw new ORPCError('BAD_REQUEST', { message: 'Shift allowance payroll consumption is not configured yet' });
+    return inTransaction(context.db, async db => {
+    await sql`SELECT pg_advisory_xact_lock(hashtext('att.shift_catalog'), hashtext(${input.code}))`.execute(db);
+    const previous = await db.selectFrom('att.shifts').selectAll().where('code', '=', input.code).forUpdate().executeTakeFirst();
+    // Validate the effective merged windows without clearing omitted fields.
+    shiftInput.parse({ ...(previous ? mapShiftRow(previous) : {}), ...input });
     const values = {
       code: input.code,
       name: input.name,
       start_time: input.startTime,
       end_time: input.endTime,
       crosses_midnight: input.crossesMidnight,
-      session_split: input.sessionSplit ?? null,
+      ...(input.sessionSplit !== undefined ? { session_split: input.sessionSplit } : {}),
+      ...(input.session2Start !== undefined ? { session2_start: input.session2Start } : {}),
+      ...(input.session2End !== undefined ? { session2_end: input.session2End } : {}),
+      ...(input.breakPaid !== undefined ? { break_paid: input.breakPaid } : {}),
+      ...(input.otStartOffsetMinutes !== undefined ? { ot_start_offset_minutes: input.otStartOffsetMinutes } : {}),
+      ...(input.lateSlabs !== undefined ? { late_slabs: JSON.stringify(input.lateSlabs) } : {}),
+      ...(input.earlyExitSlabs !== undefined ? { early_exit_slabs: JSON.stringify(input.earlyExitSlabs) } : {}),
+      ...(input.allowanceComponentCode !== undefined ? { allowance_component_code: input.allowanceComponentCode } : {}),
       grace_in_minutes: input.graceInMinutes,
       grace_out_minutes: input.graceOutMinutes,
       min_half_day_hours: String(input.minHalfDayHours),
@@ -148,12 +120,15 @@ const upsertShift = withPermission('admin.settings')
       break_minutes: input.breakMinutes,
       is_active: input.isActive,
     };
-    await context.db
+    const saved = await db
       .insertInto('att.shifts')
       .values(values)
       .onConflict((oc) => oc.column('code').doUpdateSet(values))
-      .execute();
-    await writeAudit(context.db, {
+      .returning('id').executeTakeFirstOrThrow();
+    await sql`INSERT INTO att.recompute_queue(employee_id, work_date)
+      SELECT employee_id,work_date FROM att.day_records WHERE shift_id=${saved.id} AND source='auto' AND NOT is_locked
+      ON CONFLICT(employee_id,work_date) DO NOTHING`.execute(db);
+    await writeAudit(db, {
       actorUserId: context.user.id,
       action: 'update',
       entity: 'att.shifts',
@@ -162,6 +137,7 @@ const upsertShift = withPermission('admin.settings')
       ip: context.req.ip ?? null,
     });
     return { ok: true as const };
+    });
   });
 
 const holidayRow = z.object({
@@ -435,6 +411,8 @@ const dayRecords = withPermission('attendance.team.read')
         workedMinutes: z.number().nullable(),
         lateMinutes: z.number(),
         earlyExitMinutes: z.number(),
+        penaltyFlag: z.boolean(),
+        penaltyEvaluation: penaltyEvaluationSchema,
         sessionStatuses: sessionStatusesSchema.nullable(),
         weekoffPaid: z.boolean().nullable(),
         source: z.string(),
@@ -463,6 +441,8 @@ const dayRecords = withPermission('attendance.team.read')
       workedMinutes: r.worked_minutes,
       lateMinutes: r.late_minutes,
       earlyExitMinutes: r.early_exit_minutes,
+      penaltyFlag: r.penalty_flag,
+      penaltyEvaluation: readPenaltyEvaluation(r.penalty_evaluation),
       sessionStatuses: readSessionStatuses(r.session_statuses),
       weekoffPaid: r.weekoff_paid,
       source: r.source,

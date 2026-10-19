@@ -340,7 +340,7 @@ export function ProfilePage({ self = false, user }: { self?: boolean; user?: Ses
             icon={<FileText />}
             title="Documents & letters"
             description={self ? 'Appointment, confirmation and other letters issued to you are on My Letters.' : 'Letters issued to this employee are listed under Letters.'}
-            action={<LinkButton to={self ? '/my/letters' : '/letters'}>{self ? 'Open My Letters' : 'Open Letters'}</LinkButton>}
+            action={<div className="flex flex-wrap gap-2"><LinkButton to={self ? '/my/letters' : '/letters'}>{self ? 'Open My Letters' : 'Open Letters'}</LinkButton>{user && ((self && hasPermission(user, 'doc.vault.own')) || hasPermission(user, 'doc.vault.manage')) ? <LinkButton to={self ? '/my/documents' : `/documents?employeeCode=${encodeURIComponent(profile.ecode)}`}>Open documents</LinkButton> : null}</div>}
           />
         </Card>
       )}

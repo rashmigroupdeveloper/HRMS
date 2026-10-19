@@ -12,8 +12,10 @@ const resolved: ResolvedShift = {
     id: 1, code: 'TEST', name: 'Test split', start_time: '09:00', end_time: '18:00',
     crosses_midnight: false, session_split: '13:30', grace_in_minutes: 0, grace_out_minutes: 0,
     min_half_day_hours: '4', min_full_day_hours: '8', break_minutes: 0, is_active: true,
+    break_paid: false, ot_start_offset_minutes: 0, late_slabs: [], early_exit_slabs: [],
+    allowance_component_code: null, session2_start: null, session2_end: null,
     created_at: new Date(0), updated_at: new Date(0),
-  } as unknown as NonNullable<ResolvedShift['shift']>,
+  },
 };
 const policy: AttendancePolicy = {
   earlyMarginMs: 0, lateMarginMs: 0, sessionPresentFraction: 0.5, otMinMinutes: 30, otDecisionHours: 48,

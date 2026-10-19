@@ -10,9 +10,12 @@
  */
 
 import { z } from 'zod';
+import { sql } from 'kysely';
 import { authed, withAnyPermission, withPermission } from '../../../api/orpc.js';
+import { istDateString } from '../../../core/dates.js';
+import { fnfCycleForDate, fnfCycles, fnfTatState } from '../../payroll-core/index.js';
 import { getUserPermissionAccess, getUserPermissions } from '../../../core/rbac/permissions.service.js';
-import { assertEmployeesInScope, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
+import { assertEmployeesInScope, employeeScopeSql, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
 import { DomainError, ForbiddenError, NotFoundError } from '../../../core/errors/index.js';
 import { SeparationService, myNoticePolicy } from './separation.service.js';
 import { ClearanceService, type ClearanceDepartment } from './clearance.service.js';
@@ -59,6 +62,7 @@ const separationItemSchema = z.object({
   companyId: z.number().optional(),
   initiatedAt: z.union([z.date(), z.string()]),
   initiatedBy: z.enum(['employee', 'hr']),
+  exitType: z.enum(['resignation', 'retirement', 'death', 'contract_end', 'termination']),
   reason: z.string(),
   resignationDate: z.string(),
   noticePeriodDays: z.number(),
@@ -116,7 +120,7 @@ export const separationRouter = {
     .route({ method: 'GET', path: '/lifecycle/alumni/me', summary: 'My exit record: profile, F&F settlement, relieving documents (UI-01)' })
     .output(z.object({
       profile: z.object({ ecode: z.string(), name: z.string(), designation: z.string().nullable(), department: z.string().nullable(), companyName: z.string(), doj: z.string().nullable(), dol: z.string().nullable() }),
-      settlement: z.object({ status: z.string(), netPayableRupees: z.number(), gratuityRupees: z.number(), leaveEncashRupees: z.number(), noticeRecoveryRupees: z.number(), paidAt: z.string().nullable(), relievingLetterId: z.number().nullable(), serviceCertificateId: z.number().nullable() }).nullable(),
+      settlement: z.object({ status: z.string(), daysPayable: z.number(), netPayableRupees: z.number(), gratuityRupees: z.number(), leaveEncashRupees: z.number(), noticeRecoveryRupees: z.number(), paidAt: z.string().nullable(), relievingLetterId: z.number().nullable(), serviceCertificateId: z.number().nullable() }).nullable(),
     }))
     .handler(async ({ context }) => {
       const id = context.user.employee_id;
@@ -129,7 +133,7 @@ export const separationRouter = {
       const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
       return {
         profile: { ecode: e.ecode, name: `${e.first_name} ${e.last_name ?? ''}`.trim(), designation: e.designation, department: e.department, companyName: e.companyName, doj: day(e.doj), dol: day(e.dol) },
-        settlement: f ? { status: f.status, netPayableRupees: Number(f.net_payable), gratuityRupees: Number(f.gratuity_amount), leaveEncashRupees: Number(f.leave_encash_amount), noticeRecoveryRupees: Number(f.notice_recovery_amount), paidAt: f.paid_at ? f.paid_at.toISOString() : null, relievingLetterId: f.relieving_letter_id, serviceCertificateId: f.service_certificate_id } : null,
+        settlement: f ? { status: f.status, daysPayable: Number(f.days_payable), netPayableRupees: Number(f.net_payable), gratuityRupees: Number(f.gratuity_amount), leaveEncashRupees: Number(f.leave_encash_amount), noticeRecoveryRupees: Number(f.notice_recovery_amount), paidAt: f.paid_at ? f.paid_at.toISOString() : null, relievingLetterId: f.relieving_letter_id, serviceCertificateId: f.service_certificate_id } : null,
       };
     }),
 
@@ -199,6 +203,7 @@ export const separationRouter = {
         ecode: z.string().trim().min(3).max(32).optional(),
         reason: z.string().trim().min(5),
         lastWorkingDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Last working day must be a date'),
+        exitType: z.enum(['termination', 'retirement', 'death', 'contract_end']).default('termination'),
         absenceCaseId: z.number().optional(),
       }).refine((v) => v.employeeId !== undefined || v.ecode !== undefined, { message: 'Employee e-code is required' })
     )
@@ -216,6 +221,7 @@ export const separationRouter = {
         employeeId,
         reason: input.reason,
         lastWorkingDay: input.lastWorkingDay,
+        exitType: input.exitType,
         absenceCaseId: input.absenceCaseId,
         hrUserId: context.user.id,
       });
@@ -364,6 +370,61 @@ export const separationRouter = {
         paymentReference: input.paymentReference,
         paidByUserId: context.user.id,
       });
+    }),
+
+  calendar: withAnyPermission('lifecycle.separation.approve', 'payroll.run.manage')
+    .route({ method: 'GET', path: '/lifecycle/fnf/calendar', summary: 'Two F&F cycles in a month and each settlement turnaround (SOW 10.2)' })
+    .input(z.object({ month: z.string().regex(/^\d{4}-\d{2}$/) }))
+    .output(z.object({
+      month: z.string(),
+      cycles: z.array(z.object({ cycle: z.union([z.literal(1), z.literal(2)]), opens: z.string(), closes: z.string() })),
+      settlements: z.array(z.object({
+        id: z.number(),
+        ecode: z.string(),
+        name: z.string(),
+        status: z.string(),
+        lastWorkingDay: z.string(),
+        tatDue: z.string().nullable(),
+        cycle: z.union([z.literal(1), z.literal(2)]),
+        tat: z.enum(['on_track', 'due_today', 'overdue', 'closed']),
+      })),
+    }))
+    .handler(async ({ input, context }) => {
+      const cycles = fnfCycles(input.month);
+      const today = istDateString();
+      const scope: EmployeeScope = { ...context.permissionAccess, actorEmployeeId: context.user.employee_id };
+      const rows = await context.db
+        .selectFrom('pay.fnf_settlements as f')
+        .innerJoin('core.employees as e', 'e.id', 'f.employee_id')
+        .select(['f.id', 'f.status', 'f.last_working_day', 'f.tat_due_date', 'e.ecode', 'e.first_name', 'e.last_name'])
+        .where(employeeScopeSql(scope, 'e'))
+        .where(sql<boolean>`f.last_working_day >= ${cycles[0]?.opens ?? input.month + '-01'}::date`)
+        .where(sql<boolean>`f.last_working_day <= ${cycles[1]?.closes ?? input.month + '-28'}::date`)
+        .orderBy('f.last_working_day')
+        .execute();
+      const day = (value: Date | string | null) => {
+        if (value === null) return null;
+        if (value instanceof Date) return value.toISOString().slice(0, 10);
+        return value.slice(0, 10);
+      };
+      return {
+        month: input.month,
+        cycles,
+        settlements: rows.map((row) => {
+          const lastWorkingDay = day(row.last_working_day) ?? today;
+          const tatDue = day(row.tat_due_date);
+          return {
+            id: row.id,
+            ecode: row.ecode,
+            name: [row.first_name, row.last_name].filter(Boolean).join(' '),
+            status: row.status,
+            lastWorkingDay,
+            tatDue,
+            cycle: fnfCycleForDate(lastWorkingDay),
+            tat: fnfTatState(tatDue, today, row.status),
+          };
+        }),
+      };
     }),
 
   ceoReview: withPermission('reports.ceo')

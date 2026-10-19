@@ -11,6 +11,7 @@
 import type { Database } from '../../../core/db/types.js';
 import type { Kysely } from 'kysely';
 import { sql } from 'kysely';
+import { reconcilePopulation } from './population-reconciliation.js';
 
 export interface ReconciliationReport {
   runId: number;
@@ -33,6 +34,8 @@ export class ReconciliationService {
    */
   async reconcileRun(runId: number): Promise<ReconciliationReport> {
     const anomalies: string[] = [];
+    const populationAnomalies = await reconcilePopulation(this.db, runId);
+    anomalies.push(...populationAnomalies);
 
     // 1. Fetch item-level aggregates via independent SQL
     const itemAggregate = await this.db
@@ -138,6 +141,7 @@ export class ReconciliationService {
 
     const isReconciled =
       itemCount > 0 &&
+      populationAnomalies.length === 0 &&
       discrepancyPaise === 0 &&
       itemConservationViolations.length === 0 &&
       lineMismatchCount === 0 &&

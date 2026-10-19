@@ -338,3 +338,54 @@ export async function inbox(db: Kysely<Database>, userId: number) {
 export async function timeline(db: Kysely<Database>, requestId: number) {
   return db.selectFrom('wf.request_steps').selectAll().where('request_id', '=', requestId).orderBy('id').execute();
 }
+
+export interface ChainPreviewStep {
+  step: number;
+  approverSpec: string;
+  slaHours: number;
+  vacant: boolean;
+  userId: number | null;
+  displayName: string | null;
+  delegatedFromUserId: number | null;
+  delegatedFromName: string | null;
+}
+
+async function userDisplayName(db: Db, userId: number): Promise<string | null> {
+  const row = await db
+    .selectFrom('core.users as u')
+    .leftJoin('core.employees as e', 'e.id', 'u.employee_id')
+    .select(['u.email', 'e.first_name', 'e.last_name'])
+    .where('u.id', '=', userId)
+    .executeTakeFirst();
+  if (!row) return null;
+  const name = [row.first_name, row.last_name].filter((part): part is string => Boolean(part)).join(' ');
+  return name !== '' ? name : row.email;
+}
+
+/** SHF-16: the same resolver the engine uses, without opening a request. */
+export async function previewChain(
+  db: Kysely<Database>,
+  params: { definitionCode: string; subjectEmployeeId: number },
+): Promise<ChainPreviewStep[]> {
+  const steps = await getSteps(db, params.definitionCode);
+  const out: ChainPreviewStep[] = [];
+  for (const spec of [...steps].sort((a, b) => a.step - b.step)) {
+    const approver = await resolveApprover(db, spec.approver, params.subjectEmployeeId, params.definitionCode);
+    const displayName = approver ? await userDisplayName(db, approver.userId) : null;
+    const delegatedFromName =
+      approver?.delegatedFrom !== null && approver?.delegatedFrom !== undefined
+        ? await userDisplayName(db, approver.delegatedFrom)
+        : null;
+    out.push({
+      step: spec.step,
+      approverSpec: spec.approver,
+      slaHours: spec.slaHours,
+      vacant: approver === null,
+      userId: approver?.userId ?? null,
+      displayName,
+      delegatedFromUserId: approver?.delegatedFrom ?? null,
+      delegatedFromName,
+    });
+  }
+  return out;
+}

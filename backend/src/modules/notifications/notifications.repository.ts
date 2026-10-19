@@ -29,16 +29,18 @@ export async function insertNotification(db: Kysely<Database>, input: EnqueueInp
 }
 
 /** Claim a batch of deliverable rows — FOR UPDATE SKIP LOCKED so concurrent drains never double-send. */
-export async function claimDeliverable(db: Kysely<Database>, limit: number): Promise<NotificationRow[]> {
-  return db
+export async function claimDeliverable(db: Kysely<Database>, limit: number, onlyId?: number): Promise<NotificationRow[]> {
+  let query = db
     .selectFrom('wf.notifications')
     .selectAll()
     .where('status', 'in', ['queued', 'failed'])
     .orderBy('created_at')
+    .orderBy('id')
     .limit(limit)
     .forUpdate()
-    .skipLocked()
-    .execute();
+    .skipLocked();
+  if (onlyId !== undefined) query = query.where('id', '=', onlyId);
+  return query.execute();
 }
 
 export async function markSent(db: Kysely<Database>, id: number): Promise<void> {

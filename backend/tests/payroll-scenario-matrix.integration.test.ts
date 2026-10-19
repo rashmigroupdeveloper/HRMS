@@ -187,7 +187,7 @@ async function runKentCase(db: Kysely<Database>, c: KentCase) {
       // Isolate from devices other suites left behind (rolled back with the case).
       await trx.updateTable('att.devices').set({ is_active: false }).where('door_code', 'not like', `${tag}-%`).where('is_active', '=', true).execute();
 
-      const cfg = kentConfigFromEnv({ KENT_BASE_URL: `http://127.0.0.1:${String(port)}`, KENT_API_KEY: 'matrix-key', KENT_PAGE_SIZE: '50', KENT_DEVICE_MAP: JSON.stringify(doors) });
+      const cfg = kentConfigFromEnv({ KENT_BASE_URL: `http://127.0.0.1:${String(port)}`, KENT_API_KEY: 'matrix-key', KENT_PAGE_SIZE: '50', KENT_DEVICES_PATH: '/devices', KENT_DEVICE_MAP: JSON.stringify(doors) });
       if (!cfg) throw new Error('kent config');
       const connector = new KentHttpConnector(cfg, undefined, noSleep); // simulator fails every 4th call → retries
       const source = `kent-${tag.toLowerCase()}`;

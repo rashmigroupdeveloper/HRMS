@@ -197,17 +197,17 @@ async function main(): Promise<void> {
   });
 
   // Week-off eligibility for the JUST-FINISHED week, Monday 02:00 IST (ATT-09).
-  await boss.schedule(WEEK_CLOSE_QUEUE, '0 2 * * 1');
+  await boss.schedule(WEEK_CLOSE_QUEUE, '0 2 * * 1', {}, { tz: 'Asia/Kolkata' });
   await boss.work(WEEK_CLOSE_QUEUE, async () => {
     await closeWeek(db, previousWeekStartIso(new Date()));
   });
 
   // Monthly roster deadline nag on the 5th, 09:00 (ATT-04 / Agreement 4.1a) —
   // recipients live in wf.event_subscriptions ('attendance.roster_deadline').
-  await boss.schedule(ROSTER_REMINDER_QUEUE, '0 9 5 * *');
+  await boss.schedule(ROSTER_REMINDER_QUEUE, '0 9 5 * *', {}, { tz: 'Asia/Kolkata' });
   await boss.work(ROSTER_REMINDER_QUEUE, async () => {
     await enqueueEvent(db, 'attendance.roster_deadline', 'roster_deadline', {
-      month: new Date().toISOString().slice(0, 7),
+      month: istDateString().slice(0, 7),
     });
   });
 

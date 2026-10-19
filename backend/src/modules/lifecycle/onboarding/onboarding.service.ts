@@ -28,6 +28,7 @@ import {
 } from '../../payroll-core/index.js';
 import { PrejoinService, PrejoinConfigurationError } from './prejoin.service.js';
 import { lockOnboardingIdentities } from './onboarding-locks.js';
+import { applyPrejoinPack } from './joining-pack.js';
 import { readCompletedApplication, validateJoiningAssignments } from './joining-validation.js';
 import { TaskFanoutService } from './task-fanout.service.js';
 import { inTransaction } from '../../../core/db/database.js';
@@ -213,6 +214,7 @@ export const OnboardingService = {
     actor?: ConversionActor,
   ): Promise<{ employeeId: number; ecode: string }> {
     if (!actor || !Number.isSafeInteger(actor.userId) || actor.userId <= 0) throw new Error('An authenticated HR actor is required for conversion');
+    const actorUserId = actor.userId;
     if (!z.literal(true).safeParse(input.joiningConfirmed).success) throw new Error('HR must explicitly confirm actual joining before creating an employee');
     const actualDoj = z.string().date().safeParse(input.doj);
     if (!actualDoj.success) throw new Error('Actual joining date must be a valid calendar date');
@@ -288,6 +290,9 @@ export const OnboardingService = {
         emergency_contact_name: prejoinData.emergencyContactName,
         emergency_contact_phone: prejoinData.emergencyContactPhone,
         blood_group: prejoinData.bloodGroup ?? null,
+        gender: prejoinData.gender === 'male' ? 'Male' : prejoinData.gender === 'female' ? 'Female' : prejoinData.gender === 'transgender' ? 'Transgender' : null,
+        father_name: prejoinData.fatherName ?? null,
+        passport_no: prejoinData.passportNo ?? null,
         category: candidate.category,
         contract_type: 'probationary',
         doj: new Date(input.doj),
@@ -312,6 +317,16 @@ export const OnboardingService = {
       .executeTakeFirstOrThrow();
 
     const employeeId = empInsert.id;
+    const gender = prejoinData.gender === 'male' ? 'Male' as const : prejoinData.gender === 'female' ? 'Female' as const : prejoinData.gender === 'transgender' ? 'Transgender' as const : undefined;
+    await applyPrejoinPack(db, employeeId, candidate.id, {
+      ...(gender ? { gender } : {}),
+      ...(prejoinData.fatherName ? { fatherName: prejoinData.fatherName } : {}),
+      ...(prejoinData.presentStructured ? { present: prejoinData.presentStructured } : {}),
+      ...(prejoinData.permanentStructured ? { permanent: prejoinData.permanentStructured } : {}),
+      education: prejoinData.educationRows ?? (prejoinData.education ?? []).map((row) => ({ qualification: row.label, institute: row.detail ?? 'Not stated' })),
+      family: prejoinData.familyRows ?? (prejoinData.family ?? []).map((row) => ({ name: row.label, relation: row.detail ?? 'family' })),
+      nominations: prejoinData.nominations ?? (prejoinData.nomineeName ? [{ scheme: 'gratuity' as const, nomineeName: prejoinData.nomineeName, relation: prejoinData.nomineeRelation ?? 'nominee', sharePct: 100, address: prejoinData.permanentAddress }] : []),
+    }, actorUserId);
 
     // 2. Create core.users login record
     if (workEmail !== null) await db

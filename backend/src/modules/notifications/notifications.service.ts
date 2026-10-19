@@ -88,13 +88,19 @@ export function formatEmailText(templateCode: string, payload: Record<string, un
   );
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[character] ?? character);
+}
+
 export function formatEmailHtml(templateCode: string, payload: Record<string, unknown>): string {
   const rows = Object.entries(payload)
     .filter(([, v]) => v !== undefined && v !== null && typeof v !== 'object')
     .map(
       ([k, v]) =>
-        `<tr><td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: 600; color: #475569;">${formatTitle(k)}</td>` +
-        `<td style="padding: 8px; border: 1px solid #e2e8f0; color: #1e293b;">${String(v)}</td></tr>`,
+        `<tr><td style="padding: 8px; border: 1px solid #e2e8f0; font-weight: 600; color: #475569;">${escapeHtml(formatTitle(k))}</td>` +
+        `<td style="padding: 8px; border: 1px solid #e2e8f0; color: #1e293b;">${escapeHtml(String(v))}</td></tr>`,
     )
     .join('');
 
@@ -103,7 +109,7 @@ export function formatEmailHtml(templateCode: string, payload: Record<string, un
       <div style="border-bottom: 2px solid #e11d48; padding-bottom: 12px; margin-bottom: 20px;">
         <h2 style="margin: 0; color: #0f172a; font-size: 20px;">Rashmi Group HRMS</h2>
       </div>
-      <h3 style="color: #334155; margin-top: 0; font-size: 16px;">${formatTitle(templateCode)}</h3>
+      <h3 style="color: #334155; margin-top: 0; font-size: 16px;">${escapeHtml(formatTitle(templateCode))}</h3>
       ${
         rows
           ? `<table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;"><tbody>${rows}</tbody></table>`
@@ -185,9 +191,10 @@ export class SmtpNotificationTransport implements NotificationTransport {
   }
 }
 
-/** Factory resolving configured transport (SMTP if host configured, dev log otherwise). */
+/** SMTP in production; development logging must never acknowledge production email. */
 export function createNotificationTransport(
   config: {
+    NODE_ENV?: 'development' | 'test' | 'production' | undefined;
     SMTP_HOST?: string | undefined;
     SMTP_PORT?: number | undefined;
     SMTP_SECURE?: boolean | undefined;
@@ -209,6 +216,15 @@ export function createNotificationTransport(
       from: config.SMTP_FROM,
       db,
     });
+  }
+  if (config.NODE_ENV === 'production') {
+    return {
+      send(notification) {
+        return notification.channel === 'email'
+          ? Promise.reject(new Error('SMTP is not configured; email was not delivered'))
+          : Promise.resolve();
+      },
+    };
   }
   return devLogTransport;
 }
@@ -274,20 +290,29 @@ export async function processQueue(
 ): Promise<{ sent: number; failed: number }> {
   let sent = 0;
   let failed = 0;
-
-  await inTransaction(db, async (trx) => {
-    const batch = await claimDeliverable(trx, batchSize);
-    for (const notification of batch) {
+  if (db.isTransaction) throw new Error('Notification delivery requires a root database for durable per-message receipts');
+  // Snapshot a bounded, unlocked-after-selection batch. Every item is claimed
+  // again under its own transaction; concurrent drains skip locked/sent rows.
+  // No external send happens in the selection transaction.
+  const batch = await inTransaction(db, trx => claimDeliverable(trx, batchSize));
+  for (const candidate of batch) {
+    const outcome = await inTransaction(db, async trx => {
+      const notification = (await claimDeliverable(trx, 1, candidate.id))[0];
+      if (!notification) return 'skipped';
       try {
         await transport.send(notification);
-        await markSent(trx, notification.id);
-        sent += 1;
       } catch (err) {
         await markFailed(trx, notification.id, err instanceof Error ? err.message : String(err), MAX_ATTEMPTS);
-        failed += 1;
+        return 'failed';
       }
-    }
-  });
+      // A persistence failure must escape, never be mislabelled as SMTP
+      // failure. Earlier messages have already committed independently.
+      await markSent(trx, notification.id);
+      return 'sent';
+    });
+    if (outcome === 'sent') sent += 1;
+    if (outcome === 'failed') failed += 1;
+  }
 
   return { sent, failed };
 }

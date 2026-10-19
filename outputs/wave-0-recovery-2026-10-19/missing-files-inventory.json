@@ -1,0 +1,131 @@
+{
+  "attendance": [
+    "backend/src/modules/attendance/coverage.service.ts",
+    "backend/src/modules/attendance/roster-guard.service.ts",
+    "backend/src/modules/attendance/scheduling.router.ts",
+    "backend/src/modules/attendance/shift-pattern.service.ts",
+    "backend/src/modules/attendance/shift-swap.service.ts",
+    "backend/src/modules/attendance/shift-windows.ts",
+    "backend/src/modules/attendance/team-calendar.service.ts",
+    "frontend/src/pages/attendance/AttendanceHolidayCard.tsx",
+    "frontend/src/pages/attendance/attendance-display.test.ts",
+    "frontend/src/pages/attendance/attendance-display.ts"
+  ],
+  "auth": [
+    "backend/src/modules/auth/auth.password-reset.ts",
+    "frontend/src/pages/auth/ForgotPasswordPanel.tsx",
+    "frontend/src/pages/auth/ResetPasswordPage.tsx"
+  ],
+  "claims": [
+    "backend/src/modules/claims/approval-chain.ts",
+    "backend/src/modules/claims/category-caps.ts",
+    "backend/src/modules/claims/ledger.service.ts",
+    "backend/src/modules/claims/reservation.ts",
+    "backend/src/modules/claims/settlement.ts",
+    "backend/src/modules/claims/workflow-hooks.ts"
+  ],
+  "compliance": [
+    "backend/src/modules/compliance/calendar.service.ts",
+    "backend/src/modules/compliance/compliance.router.ts",
+    "backend/src/modules/compliance/expiry.ts",
+    "backend/src/modules/compliance/index.ts",
+    "backend/src/modules/compliance/registers.router.ts",
+    "backend/src/modules/compliance/registers.service.ts",
+    "backend/src/modules/compliance/registrations.service.ts",
+    "backend/src/modules/compliance/wage-definition.ts",
+    "backend/src/modules/compliance/wage.router.ts",
+    "frontend/src/pages/compliance/CompliancePage.tsx",
+    "frontend/src/pages/compliance/IrdCompliancePanels.tsx",
+    "frontend/src/pages/compliance/RegistersTab.tsx",
+    "frontend/src/pages/compliance/wage-check.test.ts",
+    "frontend/src/pages/compliance/wage-check.ts"
+  ],
+  "documents": [
+    "backend/src/modules/documents/documents.router.ts",
+    "backend/src/modules/documents/esign.ts",
+    "backend/src/modules/documents/expiry.ts",
+    "backend/src/modules/documents/index.ts",
+    "backend/src/modules/documents/vault.service.ts",
+    "frontend/src/pages/documents/DocumentsPage.tsx"
+  ],
+  "ird": [
+    "backend/src/modules/ird/index.ts",
+    "backend/src/modules/ird/ird.router.ts",
+    "backend/src/modules/ird/ird.service.ts"
+  ],
+  "leave": [
+    "backend/src/modules/leave/coverage-check.service.ts",
+    "backend/src/modules/leave/leave-blackout.ts",
+    "backend/src/modules/leave/leave-preview.service.ts",
+    "frontend/src/pages/leave/leave-preview.test.ts",
+    "frontend/src/pages/leave/leave-preview.ts"
+  ],
+  "notifications": [
+    "backend/src/modules/notifications/smtp.transport.ts",
+    "backend/src/modules/notifications/transport.ts"
+  ],
+  "org": [
+    "backend/src/modules/org/index.ts",
+    "backend/src/modules/org/org-mappings.service.ts",
+    "backend/src/modules/org/org.router.ts",
+    "backend/src/modules/org/org.service.ts",
+    "backend/src/modules/org/scope-sql.ts"
+  ],
+  "privacy": [
+    "backend/src/modules/privacy/consents.service.ts",
+    "backend/src/modules/privacy/export.service.ts",
+    "backend/src/modules/privacy/index.ts",
+    "backend/src/modules/privacy/notices.service.ts",
+    "backend/src/modules/privacy/privacy.router.ts",
+    "backend/src/modules/privacy/processors.service.ts",
+    "backend/src/modules/privacy/retention.service.ts",
+    "backend/src/modules/privacy/rights.service.ts",
+    "backend/src/modules/privacy/would-purge.ts",
+    "frontend/src/pages/privacy/PrivacyOpsPage.tsx"
+  ],
+  "security": [
+    "backend/src/modules/security/access-log.service.ts",
+    "backend/src/modules/security/index.ts",
+    "backend/src/modules/security/mfa.service.ts",
+    "backend/src/modules/security/security.router.ts",
+    "backend/src/modules/security/security.service.ts"
+  ],
+  "_shared": [
+    "frontend/src/pages/_shared/CompanySelect.tsx"
+  ],
+  "admin": [
+    "frontend/src/pages/admin/DepartmentsPanel.tsx",
+    "frontend/src/pages/admin/OrgMastersPage.test.tsx",
+    "frontend/src/pages/admin/OrgMisCostCenterPanels.tsx",
+    "frontend/src/pages/admin/SecurityPage.tsx",
+    "frontend/src/pages/admin/ShiftEditor.tsx",
+    "frontend/src/pages/admin/shift-slabs.test.ts",
+    "frontend/src/pages/admin/shift-slabs.ts"
+  ],
+  "home": [
+    "frontend/src/pages/home/EssDashboard.test.tsx",
+    "frontend/src/pages/home/RoleHomePage.test.tsx",
+    "frontend/src/pages/home/ess-today.tsx"
+  ],
+  "my": [
+    "frontend/src/pages/my/MyDocumentsPage.tsx",
+    "frontend/src/pages/my/PrivacyEssSections.tsx",
+    "frontend/src/pages/my/PrivacyPage.tsx",
+    "frontend/src/pages/my/privacy-labels.test.ts",
+    "frontend/src/pages/my/privacy-labels.ts"
+  ],
+  "payroll": [
+    "frontend/src/pages/payroll/MyClaimsPage.tsx"
+  ],
+  "team": [
+    "frontend/src/pages/team/TeamCalendarTab.tsx",
+    "frontend/src/pages/team/TeamRosterEditor.tsx",
+    "frontend/src/pages/team/roster-coverage.test.ts",
+    "frontend/src/pages/team/roster-coverage.ts",
+    "frontend/src/pages/team/team-month.ts"
+  ],
+  "workflows": [
+    "frontend/src/pages/workflows/ChainPreview.test.ts",
+    "frontend/src/pages/workflows/ChainPreview.tsx"
+  ]
+}

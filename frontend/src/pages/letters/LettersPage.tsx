@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FileSignature, FileText, Search } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
-import { Button, Card, CardHeader, DataTable, Drawer, EmptyState, PageHeader, Select, StatusBadge, TextField, toast } from '../../ui';
+import { Button, Card, CardHeader, DarkCard, DataTable, Drawer, EmptyState, PageHeader, Select, StatusBadge, TextField, toast } from '../../ui';
 import type { Column } from '../../ui';
 
 interface Template {
@@ -27,6 +27,20 @@ interface LetterRow {
 /** Fields the backend resolves from the employee record — everything else the
  *  issuer must type in (validated server-side at render time). */
 const AUTO_FIELDS = new Set(['employee_name', 'ecode', 'company', 'designation', 'department', 'doj', 'dol', 'confirmation_date']);
+
+/** Blueprint §16. A kind lights up when a live template code contains the word. */
+const LETTER_KINDS = [
+  'Appointment',
+  'Offer',
+  'Confirmation',
+  'Experience',
+  'Relieving',
+  'Salary certificate',
+  'Promotion',
+  'Transfer',
+  'Increment',
+  'Warning',
+] as const;
 
 export function LettersPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -121,6 +135,26 @@ export function LettersPage() {
           </Button>
         }
       />
+
+      <DarkCard padded={false} className="p-8">
+        <p className="text-sm text-hero-muted">What this desk can issue</p>
+        <h2 className="mt-2 text-3xl font-light text-hero-ink">A letter leaves only after the signature chain approves it.</h2>
+        <div className="mt-6 flex flex-wrap gap-2">
+          {LETTER_KINDS.map((kind) => {
+            const live = templates.some((item) => item.name.toLowerCase().includes(kind.toLowerCase()) || item.code.toLowerCase().includes(kind.toLowerCase().split(' ')[0] ?? ''));
+            return (
+              <span
+                key={kind}
+                className={live
+                  ? 'rounded-full bg-accent px-3 py-1 text-xs font-semibold text-accent-ink'
+                  : 'rounded-full bg-[color-mix(in_srgb,var(--hero-ink)_12%,transparent)] px-3 py-1 text-xs text-hero-muted'}
+              >
+                {kind}
+              </span>
+            );
+          })}
+        </div>
+      </DarkCard>
 
       <Card>
         <div className="flex flex-wrap items-end gap-4">

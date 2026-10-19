@@ -10,6 +10,7 @@
 import { createHash, randomBytes } from 'crypto';
 import type { Kysely } from 'kysely';
 import { writeAudit } from '../../../core/audit/audit.service.js';
+import { storeCandidateDocuments } from './joining-pack.js';
 import { PrejoinSubmissionSchema } from './prejoin-schema.js';
 import type { Database } from '../../../core/db/types.js';
 import { inTransaction } from '../../../core/db/database.js';
@@ -29,8 +30,8 @@ export interface PrejoinSubmissionData {
   emergencyContactName: string;
   emergencyContactPhone: string;
   emergencyContactRelation: string;
-  pan: string;
-  aadhaar: string;
+  pan?: string | undefined;
+  aadhaar?: string | undefined;
   uan?: string | undefined;
   bankName: string;
   bankAccount: string;
@@ -123,11 +124,12 @@ export const PrejoinService = {
         throw new PrejoinInputError(validation.error ?? 'Prejoin token is unavailable');
       const now = new Date(Date.now());
       // The predicate, not the preceding read, enforces single use under racing requests.
+      const { documents, ...stored } = application.data;
       const candidate = await db
         .updateTable('core.onboarding_candidates')
         .set({
           prejoin_completed_at: now,
-          prejoin_submitted_data: JSON.stringify(application.data),
+          prejoin_submitted_data: JSON.stringify(stored),
           prejoin_link_token: null,
           status: 'prejoin_done',
           updated_at: now,
@@ -143,6 +145,14 @@ export const PrejoinService = {
         throw new PrejoinInputError(
           'Prejoin link was already used, expired or is no longer available',
         );
+      const person = await db.selectFrom('core.onboarding_candidates').select('full_name').where('id', '=', candidate.id).executeTakeFirst();
+      await storeCandidateDocuments(
+        db,
+        candidate.id,
+        person?.full_name ?? 'Candidate',
+        documents,
+        stored.formKind === 'overseas' ? undefined : stored.medicalNotes,
+      );
       await writeAudit(db, {
         actorUserId: null,
         subjectEmployeeId: null,

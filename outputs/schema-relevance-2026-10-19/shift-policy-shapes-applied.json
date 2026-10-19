@@ -1,0 +1,10 @@
+{
+  "migrations_table": "public.pgmigrations",
+  "selected": [
+    "1753000000700_shift-policy-array-shapes"
+  ],
+  "applied": [
+    "1753000000700_shift-policy-array-shapes"
+  ],
+  "target": "authorized loopback /hrms TEST only"
+}

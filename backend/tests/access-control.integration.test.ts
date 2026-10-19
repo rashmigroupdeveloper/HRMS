@@ -16,7 +16,7 @@ import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { httpRequest } from './http-client.js';
 import type { Express } from 'express';
-import type { Kysely } from 'kysely';
+import type { ControlledTransaction, Kysely } from 'kysely';
 import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
@@ -63,14 +63,16 @@ run('central access control (live Postgres)', () => {
     await db
       .insertInto('core.user_roles')
       .values({ user_id: userId, role_id: role.id, scope_org_unit_id: null })
-      .onConflict((oc) => oc.columns(['user_id', 'role_id', 'scope_org_unit_id']).doNothing())
+      .onConflict((oc) => oc.doNothing())
       .execute();
   }
 
   async function loginToken(email: string): Promise<string> {
     const res = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
     expect(res.status).toBe(200);
-    return (res.body as { accessToken: string }).accessToken;
+    const token = (res.body as { accessToken: string }).accessToken;
+    if (email === adminEmail) expect((await (await httpRequest(app)).post('/api/auth/step-up').set('Authorization', `Bearer ${token}`).send({ password })).status).toBe(200);
+    return token;
   }
 
   async function putSetting(token: string) {
@@ -127,6 +129,8 @@ run('central access control (live Postgres)', () => {
     // E2E-010: entity-scoped roles need an org unit; a duplicate NULL-scope grant is a no-op (E2E-018).
     const unscoped = await (await httpRequest(app)).post('/api/rbac/user-roles').set('Authorization', `Bearer ${adminToken}`).send({ userId: opsId, role: 'payroll_admin' });
     expect(unscoped.status).toBe(400);
+    const groupPayroll = await (await httpRequest(app)).post('/api/rbac/user-roles').set('Authorization', `Bearer ${adminToken}`).send({ userId: opsId, role: 'payroll_admin', coverage: 'group' });
+    expect(groupPayroll.status).toBe(200);
     expect((await (await httpRequest(app)).post('/api/rbac/user-roles').set('Authorization', `Bearer ${adminToken}`).send({ userId: opsId, role: 'it_admin' })).status).toBe(200);
 
     const opsToken = await loginToken(opsEmail);
@@ -179,30 +183,24 @@ run('central access control (live Postgres)', () => {
 });
 run('notifications skeleton (live Postgres)', () => {
   let db: Kysely<Database>;
+  let held: ControlledTransaction<Database>;
   const stamp = Date.now();
   const eventCode = `test.event_${stamp}`;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     db = createDatabase(DB_URL ?? '');
+    held = await db.startTransaction().execute();
+    await held.selectFrom('wf.notifications').select('id').where('status', 'in', ['queued', 'failed']).forUpdate().execute();
   });
 
   afterAll(async () => {
     await db.deleteFrom('wf.notifications').where('template_code', '=', `tpl_${stamp}`).execute();
     await db.deleteFrom('wf.event_subscriptions').where('event_code', '=', eventCode).execute();
+    if (!held.isRolledBack) await held.rollback().execute();
     await db.destroy();
   });
 
-  /** Drain backlog so this suite is not starved by Stage 1.6 boarding/UAB fan-out. */
-  async function drainQueue(transport: NotificationTransport = devLogTransport): Promise<void> {
-    for (let i = 0; i < 200; i++) {
-      const r = await processQueue(db, transport, 100);
-      if (r.sent + r.failed === 0) break;
-    }
-  }
-
   it('fans an event out to an email subscriber and delivers via the transport', async () => {
-    await drainQueue();
-
     await db
       .insertInto('wf.event_subscriptions')
       .values({ event_code: eventCode, recipient_kind: 'email', recipient_ref: 'hr@rashmi.test' })
@@ -225,8 +223,6 @@ run('notifications skeleton (live Postgres)', () => {
   });
 
   it('a permanently failing transport retries then parks the row in dead-letter — never silently dropped', async () => {
-    await drainQueue();
-
     const failing: NotificationTransport = {
       send: () => Promise.reject(new Error('SMTP down (test)')),
     };

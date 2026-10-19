@@ -1,3 +1,4 @@
+import { AttendancePenalties } from './AttendancePenalties';
 import { AttendanceHalfDetails } from './AttendanceHalfDetails';
 import { dayPortionLabel } from './attendance-portion';
 import { useMemo, useState } from 'react';
@@ -287,6 +288,7 @@ export function MyAttendancePage() {
                 {selected.leaveIsPaid === false ? ' · Unpaid leave' : ''}
               </p>}
               <AttendanceHalfDetails date={selected.date} row={selected} />
+              <AttendancePenalties row={selected} />
               <p className="mt-4 text-3xl font-light">{formatDateIN(selected.date)}</p>
               <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
                 <div>
@@ -296,6 +298,14 @@ export function MyAttendancePage() {
                 <div>
                   <dt className="text-hero-muted">Last out</dt>
                   <dd className="mt-1 tabular-nums">{formatTime(selected.lastOut)}</dd>
+                </div>
+                <div>
+                  <dt className="text-hero-muted">Hours worked</dt>
+                  <dd className="mt-1 tabular-nums">
+                    {selected.workedMinutes === null || selected.workedMinutes === undefined
+                      ? '—'
+                      : `${String(Math.floor(selected.workedMinutes / 60))}h ${String(selected.workedMinutes % 60)}m`}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-hero-muted">Late</dt>

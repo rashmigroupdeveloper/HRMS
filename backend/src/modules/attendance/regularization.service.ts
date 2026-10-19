@@ -15,6 +15,7 @@
  * request. Whole-day rows stay protected; approved half coverage is reapplied
  * during swipe recomputation so the other half can still become present.
  */
+import { shiftSessions } from './shift-windows.js';
 import { z } from 'zod';
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import type { AttRegularizationsTable, Database, DayStatus } from '../../core/db/types.js';
@@ -101,7 +102,7 @@ async function validateRegularization(db: Db, params: CreateRegularizationParams
     if (leave) throw new Error('Approved leave covers this date; contact HR to reconcile attendance halves');
     for (let iso = params.fromDate; iso <= params.toDate; iso = addDaysIso(iso, 1)) {
       const resolved = await resolveDay(db, params.employeeId, iso);
-      if (!resolved.isHoliday && !resolved.isWeekOff && !resolved.shift?.session_split) {
+      if (!resolved.isHoliday && !resolved.isWeekOff && (!resolved.shift || !shiftSessions(resolved.shift, iso))) {
         throw new Error('Configure first/second-half shift boundaries before requesting a half day');
       }
     }
@@ -217,6 +218,7 @@ export async function applyRegularizationOnFinal(db: Db, request: RequestRow, st
   }
   const row = {
     status: reg.requested_status,
+    late_minutes: 0, early_exit_minutes: 0, penalty_flag: false, penalty_evaluation: null,
     leave_type_id: null,
     session_statuses: null,
     source: 'regularized' as const,

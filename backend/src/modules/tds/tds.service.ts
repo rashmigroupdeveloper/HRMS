@@ -24,6 +24,7 @@ export const DECLARATION_SECTIONS: Record<string, { label: string; capRupees: nu
   '80TTA': { label: '80TTA — savings interest', capRupees: 10000 },
   '80E': { label: '80E — education-loan interest', capRupees: null },
   '80G': { label: '80G — donations (eligible amount)', capRupees: null },
+  '24B': { label: 'Section 24(b) — home-loan interest (proof required at year end)', capRupees: 200000 },
 };
 
 export function fyLabel(isoDate: string): string {

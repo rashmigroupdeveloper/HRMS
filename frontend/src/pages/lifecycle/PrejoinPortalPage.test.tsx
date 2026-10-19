@@ -36,20 +36,28 @@ async function open() {
   );
   await screen.findByLabelText('Present Address (Current Residence)');
 }
+function fill(pairs: [string, string][]) {
+  for (const [label, value] of pairs) fireEvent.change(screen.getByLabelText(label), { target: { value } });
+}
 function complete() {
-  for (const [label, value] of [
+  fill([
     ['Present Address (Current Residence)', 'Submitted current address'],
     ['Permanent Address (As per Aadhaar)', 'Submitted permanent address'],
     ['Emergency Contact Name', 'Synthetic contact'],
     ['Emergency Contact Phone', '9000000001'],
     ['Relationship', 'Parent'],
+  ]);
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  fill([
     ['PAN Number (10 characters)', 'ABCDE1234F'],
     ['Aadhaar Number (12 numeric digits)', '123456789012'],
     ['Bank Name', 'Synthetic bank'],
     ['IFSC Code (11 alphanumeric characters)', 'ABCD0123456'],
     ['Savings Bank Account Number', '12345678'],
-  ])
-    fireEvent.change(screen.getByLabelText(label ?? ''), { target: { value } });
+  ]);
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  fireEvent.click(screen.getByRole('checkbox'));
 }
 const submissions = () => request.mock.calls.filter(([, options]) => options?.method === 'POST');
 it('leaves blood group and emergency relationship blank until the candidate supplies them', async () => {
@@ -59,6 +67,7 @@ it('leaves blood group and emergency relationship blank until the candidate supp
 });
 it('uses an actual submit button so the completed form can be sent', async () => {
   await open();
+  complete();
   expect(screen.getByRole('button', { name: 'Submit Onboarding Information' })).toHaveAttribute(
     'type',
     'submit',
@@ -104,6 +113,7 @@ it('preserves supplied values after rejection and does not show a success receip
   complete();
   fireEvent.click(screen.getByRole('button', { name: 'Submit Onboarding Information' }));
   expect(await screen.findByText('The link was already used')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Statutory and bank' }));
   expect(screen.getByLabelText('Bank Name')).toHaveValue('Synthetic bank');
   expect(screen.queryByText('Details Submitted!')).not.toBeInTheDocument();
 });

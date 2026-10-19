@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { boardingExitExcel, boardingExitReport, sendBoardingExitEmail } from './boarding-exit.service.js';
+import { joiningPackRouter } from './onboarding/joining-pack.router.js';
 import { onboardingRouter } from './onboarding/onboarding.router.js';
 import { probationRouter } from './probation/probation.router.js';
 import { separationRouter } from './separation/separation.router.js';
@@ -62,6 +63,7 @@ export const lifecycleRouter = {
   send,
   excel,
   ...onboardingRouter,
+  ...joiningPackRouter,
   ...probationRouter,
   separations: separationRouter,
   transfers: transferRouter,

@@ -11,7 +11,7 @@ function snapshot(row: Selectable<AttDayRecordsTable>) {
   return { status: row.status, sessionStatuses: row.session_statuses, source: row.source,
     firstIn: row.first_in?.toISOString() ?? null, lastOut: row.last_out?.toISOString() ?? null,
     workedMinutes: row.worked_minutes, lateMinutes: row.late_minutes, earlyExitMinutes: row.early_exit_minutes,
-    otMinutes: row.ot_minutes, penaltyFlag: row.penalty_flag, leaveTypeId: row.leave_type_id,
+    otMinutes: row.ot_minutes, penaltyFlag: row.penalty_flag, penaltyEvaluation: row.penalty_evaluation, leaveTypeId: row.leave_type_id,
     weekoffPaid: row.weekoff_paid, reason: row.override_reason };
 }
 export async function setManualStatus(db: Kysely<Database>, params: {
@@ -43,12 +43,12 @@ export async function setManualStatus(db: Kysely<Database>, params: {
       employee_id: params.employeeId, work_date: sql<Date>`${params.isoDate}::date`,
       status: params.status, source: 'manual', override_reason: reason,
       first_in: null, last_out: null, worked_minutes: null, late_minutes: 0, early_exit_minutes: 0,
-      ot_minutes: 0, penalty_flag: false, leave_type_id: null, weekoff_paid: null,
+      ot_minutes: 0, penalty_flag: false, penalty_evaluation: null, leave_type_id: null, weekoff_paid: null,
       session_statuses: sessions ? JSON.stringify(sessions) : null, computed_at: new Date(),
     }).onConflict(oc => oc.columns(['employee_id', 'work_date']).doUpdateSet({
       status: params.status, source: 'manual', override_reason: reason,
       first_in: null, last_out: null, worked_minutes: null, late_minutes: 0, early_exit_minutes: 0,
-      ot_minutes: 0, penalty_flag: false, leave_type_id: null, weekoff_paid: null,
+      ot_minutes: 0, penalty_flag: false, penalty_evaluation: null, leave_type_id: null, weekoff_paid: null,
       session_statuses: sessions ? JSON.stringify(sessions) : null, computed_at: new Date(),
     }).where('att.day_records.is_locked', '=', false)).returningAll().executeTakeFirst();
     if (!posted) throw new AttendanceMutationError('CONFLICT', 'Attendance changed or became locked; refresh before correcting');

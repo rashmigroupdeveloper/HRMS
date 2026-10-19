@@ -14,6 +14,7 @@ import {
   getUserRoleCodes,
 } from '../../core/rbac/permissions.service.js';
 import { revokeSession } from './auth.sessions.js';
+import { verifyStepUp } from './auth.step-up.js';
 import { login, refresh } from './auth.service.js';
 import {
   adminResetPassword,
@@ -244,7 +245,18 @@ const unlockProcedure = withPermission('admin.users')
     return { ok: true as const };
   });
 
+const stepUp = withPermission('admin.roles')
+  .route({ method: 'POST', path: '/auth/step-up', summary: 'Re-enter password before changing roles or permissions (SEC-04)' })
+  .input(z.object({ password: z.string().min(1).max(128) }))
+  .output(z.object({ steppedUpUntil: z.string() }))
+  .handler(async ({ input, context }) => {
+    const result = await verifyStepUp(context.db, context.user.id, context.sessionSid, input.password, context.req.ip ?? null);
+    if (!result.ok) throw new ORPCError('BAD_REQUEST', { message: 'Password verification failed. Try again or unlock your account.' });
+    return { steppedUpUntil: result.steppedUpUntil };
+  });
+
 export const authRouter = {
+  stepUp,
   login: loginProcedure,
   refresh: refreshProcedure,
   logout: logoutProcedure,

@@ -13,9 +13,20 @@ export function up(pgm: MigrationBuilder): void {
       ADD COLUMN company_id BIGINT REFERENCES core.companies(id),
       ADD COLUMN plant_id BIGINT REFERENCES core.plants(id);
     UPDATE att.holidays h SET company_id = l.company_id FROM core.locations l WHERE l.id = h.location_id;
-    ALTER TABLE att.holidays DROP CONSTRAINT holidays_location_date_uq;
+    ALTER TABLE att.holidays DROP CONSTRAINT IF EXISTS holidays_location_date_uq;
+    DROP INDEX IF EXISTS att.holidays_location_date_uq;
+    DO $$
+    DECLARE
+      v_num integer;
+    BEGIN
+      SELECT current_setting('server_version_num')::integer INTO v_num;
+      IF v_num >= 150000 THEN
+        EXECUTE 'ALTER TABLE att.holidays ADD CONSTRAINT holidays_scope_date_uq UNIQUE NULLS NOT DISTINCT (company_id, plant_id, location_id, holiday_date)';
+      ELSE
+        CREATE UNIQUE INDEX IF NOT EXISTS holidays_scope_date_uq ON att.holidays (COALESCE(company_id, 0), COALESCE(plant_id, 0), COALESCE(location_id, 0), holiday_date);
+      END IF;
+    END $$;
     ALTER TABLE att.holidays
-      ADD CONSTRAINT holidays_scope_date_uq UNIQUE NULLS NOT DISTINCT (company_id, plant_id, location_id, holiday_date),
       ADD CONSTRAINT holidays_scope_needs_company CHECK ((plant_id IS NULL AND location_id IS NULL) OR company_id IS NOT NULL),
       ADD CONSTRAINT holidays_location_company_fk FOREIGN KEY (location_id, company_id) REFERENCES core.locations(id, company_id),
       ADD CONSTRAINT holidays_plant_company_fk FOREIGN KEY (plant_id, company_id) REFERENCES core.plants(id, company_id);
@@ -37,10 +48,21 @@ export function down(pgm: MigrationBuilder): void {
     ALTER TABLE att.holidays
       DROP CONSTRAINT holidays_plant_company_fk,
       DROP CONSTRAINT holidays_location_company_fk,
-      DROP CONSTRAINT holidays_scope_needs_company,
-      DROP CONSTRAINT holidays_scope_date_uq;
+      DROP CONSTRAINT holidays_scope_needs_company;
+    DROP INDEX IF EXISTS att.holidays_scope_date_uq;
+    ALTER TABLE att.holidays DROP CONSTRAINT IF EXISTS holidays_scope_date_uq;
     DELETE FROM att.holidays WHERE plant_id IS NOT NULL OR (company_id IS NOT NULL AND location_id IS NULL);
-    ALTER TABLE att.holidays ADD CONSTRAINT holidays_location_date_uq UNIQUE NULLS NOT DISTINCT (location_id, holiday_date);
+    DO $$
+    DECLARE
+      v_num integer;
+    BEGIN
+      SELECT current_setting('server_version_num')::integer INTO v_num;
+      IF v_num >= 150000 THEN
+        EXECUTE 'ALTER TABLE att.holidays ADD CONSTRAINT holidays_location_date_uq UNIQUE NULLS NOT DISTINCT (location_id, holiday_date)';
+      ELSE
+        CREATE UNIQUE INDEX IF NOT EXISTS holidays_location_date_uq ON att.holidays (COALESCE(location_id, 0), holiday_date);
+      END IF;
+    END $$;
     ALTER TABLE att.holidays DROP COLUMN plant_id, DROP COLUMN company_id;
   `);
 }

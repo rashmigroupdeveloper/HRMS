@@ -23,7 +23,7 @@
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { httpRequest } from './http-client.js';
-import { sql, type Kysely } from 'kysely';
+import { sql, type ControlledTransaction, type Kysely } from 'kysely';
 import type { Express } from 'express';
 import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/core/db/database.js';
@@ -58,7 +58,8 @@ const JWT_SECRET = process.env['JWT_SECRET'] ?? 'integration-test-secret-at-leas
 const run = describe.skipIf(!DB_URL);
 
 run('Stage 3.5 — Executive Analytics & BU Dashboards (live Postgres)', () => {
-  let db: Kysely<Database>;
+  let root: Kysely<Database>;
+  let db: ControlledTransaction<Database>;
   let app: Express;
   const stamp = Date.now();
   const password = 'stage35-test-pw-1!';
@@ -80,7 +81,8 @@ run('Stage 3.5 — Executive Analytics & BU Dashboards (live Postgres)', () => {
 
   beforeAll(async () => {
     if (!DB_URL) throw new Error('Missing DB_URL');
-    db = createDatabase(DB_URL);
+    root = createDatabase(DB_URL);
+    db = await root.startTransaction().execute();
     app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false });
 
     // 1. Create company
@@ -151,7 +153,7 @@ run('Stage 3.5 — Executive Analytics & BU Dashboards (live Postgres)', () => {
         location_id: locKharagpurId,
         org_unit_id: orgUnitKgpId,
         category: 'white_collar',
-        gender: 'female',
+        gender: 'Female',
         status: 'active',
         doj: sql<Date>`'2024-01-15'::date`,
       })
@@ -169,7 +171,7 @@ run('Stage 3.5 — Executive Analytics & BU Dashboards (live Postgres)', () => {
         location_id: locDurgapurId,
         org_unit_id: orgUnitDgpId,
         category: 'blue_collar',
-        gender: 'male',
+        gender: 'Male',
         status: 'active',
         doj: sql<Date>`'2023-05-10'::date`,
       })
@@ -188,7 +190,7 @@ run('Stage 3.5 — Executive Analytics & BU Dashboards (live Postgres)', () => {
         location_id: locKharagpurId,
         org_unit_id: orgUnitKgpId,
         category: 'white_collar',
-        gender: 'male',
+        gender: 'Male',
         status: 'active',
         doj: sql<Date>`'2022-01-01'::date`,
       })
@@ -246,7 +248,8 @@ run('Stage 3.5 — Executive Analytics & BU Dashboards (live Postgres)', () => {
   });
 
   afterAll(async () => {
-    await db.destroy();
+    try { if (!db.isRolledBack) await db.rollback().execute(); }
+    finally { await root.destroy(); }
   });
 
   it('1. Executive KPI snapshot computation is idempotent and computes 6 Core CEO Metrics', async () => {
@@ -268,6 +271,12 @@ run('Stage 3.5 — Executive Analytics & BU Dashboards (live Postgres)', () => {
     expect(read?.snapshotDate).toBe(today);
 
     const metricsMap = new Map(read?.metrics.map((m) => [m.metric, m]));
+
+    const ownCompany = new Map(read?.metrics.filter(metric => metric.companyId === testCompanyId).map(metric => [metric.metric, metric]));
+    expect(ownCompany.get('manpower_count')?.value).toBe(3);
+    expect(ownCompany.get('overtime_hours')?.value).toBe(0);
+    expect(ownCompany.get('absenteeism_pct')?.value).toBeNull();
+    expect(ownCompany.get('absenteeism_pct')?.unavailableReason).toBe('No processed attendance in this period');
 
     // Check Core CEO Metrics:
     expect(metricsMap.has('manpower_count')).toBe(true);

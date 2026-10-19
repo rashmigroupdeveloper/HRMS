@@ -25,7 +25,10 @@ export {
   listManagersWithReports,
 } from './manager-approval.service.js';
 export { registerAttendanceWorkflowHooks } from './workflow-hooks.js';
-export { applyRosterEntries, type RosterPersistenceEntry } from './roster.service.js';
+export { applyRosterEntries, type RosterPersistenceEntry, type ApplyRosterEntriesOptions } from './roster.service.js';
+export { RosterRuleError } from './shift-windows.js';
+export { coverageView, rosterMeters } from './coverage.service.js';
+export { schedulingRouter } from './scheduling.router.js';
 export { attendanceGlyph, readSessionStatuses, sessionStatusesSchema } from './session-status.js';
 export { createRegularization, listRegularizations } from './regularization.service.js';
 export {
@@ -51,3 +54,5 @@ export {
   type FinalizationHold,
   type FinalizationHoldReason,
 } from './day-status.service.js';
+
+export { penaltyEvaluationSchema, readPenaltyEvaluation } from './penalty-evaluation.js';

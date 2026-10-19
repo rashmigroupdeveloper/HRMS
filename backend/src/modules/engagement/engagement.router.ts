@@ -282,6 +282,7 @@ const surveyResultShape = z.object({
   isAnonymous: z.boolean(),
   totalResponses: z.number(),
   questions: z.array(surveyQuestionResultShape),
+  recommendations: z.array(z.string()),
 });
 
 const mySurveys = authed

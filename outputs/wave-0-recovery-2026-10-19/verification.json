@@ -1,0 +1,108 @@
+{
+  "date": "2026-10-19",
+  "environment": "Authorized loopback /hrms TEST DB; native PG14, Node24; backend DB suites serial. PG16/fresh-clone/staging not verified.",
+  "scope": "Scheduling and field-relevance checkpoint, including concurrent recovered modules; not deployment acceptance.",
+  "source_tip": "940e23f2051f371e2e16bc394d500d2d444a9fc2",
+  "gates": [
+    {
+      "project": "backend",
+      "command": "npm run verify",
+      "exit_code": 0,
+      "test_files_passed": 132,
+      "tests_passed": 971,
+      "log_path": "/private/tmp/hrms-scheduling-backend-verify-final.log",
+      "log_sha256": "e0258bc2fa2bdc1794957eba4258fcc792a70435b9e59516fda4868385fc76f9"
+    },
+    {
+      "project": "frontend",
+      "command": "npm run verify",
+      "exit_code": 0,
+      "test_files_passed": 51,
+      "tests_passed": 365,
+      "log_path": "/private/tmp/hrms-shift-editor-frontend-verify-final2.log",
+      "log_sha256": "d38d40df82c3350c991f8e84a525809565c09246a457261f988a3f2aa33ba4c1"
+    }
+  ],
+  "backend_coverage_percent": {
+    "statements": 86.28,
+    "lines": 86.28,
+    "branches": 81.44,
+    "functions": 90.55
+  },
+  "field_audit": {
+    "application_tables": 162,
+    "application_fields": 1813,
+    "manual_field_purpose_reviews": 147,
+    "presence_drift_detected": false,
+    "full_semantic_review_complete": false
+  },
+  "react_doctor": {
+    "whole_app_clean": false,
+    "focused_new_penalty_component_errors": 0,
+    "focused_shift_editor_maintainability_warnings": 3,
+    "existing_attendance_page_warnings": 2,
+    "scope_warning": "Changed-ref scan excludes untracked files; explicit file scan covered the new penalty and edited shift component. No suppression."
+  },
+  "deployment_ready": false,
+  "branch_deleted": false,
+  "mfa_enabled": false,
+  "business_schema_changes_this_checkpoint": [
+    "att.day_records.penalty_evaluation: frozen rule provenance, not presence or payable-day quantity; see migration0800."
+  ],
+  "limits": [
+    "Working tree contains uncommitted/untracked recovery and concurrent edits; later edits invalidate this checkpoint.",
+    "Field inventory checks declaration presence, not complete type/nullability/runtime or semantic compatibility.",
+    "Privacy recovery and full semantic branch-retirement classification/durable preservation remain open.",
+    "No authenticated browser/UAT or independent opposing-swap connection proof.",
+    "No automatic penalty deduction or shift-allowance payroll consumption contract.",
+    "Real Kent, SMTP, SeaweedFS, staging/fresh-clone/PG16, payroll human acceptance and signed UAT unproven."
+  ],
+  "historical_checkpoints": [
+    {
+      "date": "2026-10-19",
+      "environment": "authorized loopback /hrms TEST DB; Node24; native test execution serial",
+      "gates": [
+        {
+          "project": "backend",
+          "command": "npm run verify",
+          "exit_code": 0,
+          "test_files_passed": 121,
+          "tests_passed": 881,
+          "log_path": "/private/tmp/hrms-vault-backend-lock-final.log",
+          "log_sha256": "ff645f65370c08e3edd415ef40f9b786bdfcf83c2b6da5db404f470e4d87697b"
+        },
+        {
+          "project": "frontend",
+          "command": "npm run verify",
+          "exit_code": 0,
+          "test_files_passed": 43,
+          "tests_passed": 331,
+          "log_path": "/private/tmp/hrms-vault-frontend-split-final.log",
+          "log_sha256": "99ab1c0e1715978b09074dc7b2b9451090a4b39ab7133ba89c14a8e34520d4b2"
+        }
+      ],
+      "backend_coverage_percent": {
+        "statements": 86.8,
+        "lines": 86.8,
+        "branches": 81.84,
+        "functions": 90.75
+      },
+      "react_doctor": {
+        "full_scan_clean": false,
+        "findings": 142,
+        "errors": 1,
+        "new_vault_diagnostic": "Loading reset false positive; reset is inside finally guarded against unmount. No suppression."
+      },
+      "deployment_ready": false,
+      "branch_deleted": false,
+      "mfa_enabled": false,
+      "new_business_db_fields": 0,
+      "limits": [
+        "Working tree includes uncommitted/untracked recovery and concurrent edits.",
+        "No authenticated browser/UAT proof.",
+        "Real Kent, SMTP, SeaweedFS, staging/fresh-clone/PG16, payroll acceptance and signed UAT unproven.",
+        "Scheduling, confidential cases, compliance and privacy recovery still outstanding."
+      ]
+    }
+  ]
+}

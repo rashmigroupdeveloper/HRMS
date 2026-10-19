@@ -179,9 +179,17 @@ export function createApp(deps?: Partial<AppDeps> & { kentWebhook?: KentWebhookC
     limiter(60_000, limits.authPerIdentifier, 'Too many attempts for this account. Try again shortly.', identifierKey),
     limiter(15 * 60_000, limits.authPerAddress, 'Too many attempts from this address. Try again shortly.'),
   ];
-  for (const path of ['/api/auth/login', '/api/auth/forgot-password', '/api/auth/reset-password', '/api/auth/change-password']) {
+  for (const path of ['/api/auth/login', '/api/auth/forgot-password', '/api/auth/reset-password', '/api/auth/change-password', '/api/auth/step-up']) {
     app.use(path, ...credentialLimiters);
   }
+  app.use(
+    '/api/ird/posh/file-anonymous',
+    limiter(60 * 60_000, limits.intakePerAddress ?? 10, 'Too many submissions from this address. Try again later.'),
+  );
+  app.use(
+    '/api/ird/whistle/file',
+    limiter(60 * 60_000, limits.intakePerAddress ?? 10, 'Too many submissions from this address. Try again later.'),
+  );
   app.use(requestIdMiddleware);
   app.use('/api', limiter(60_000, limits.globalPerAddress, 'Too many requests. Slow down and try again.', async (req) => {
     const header = req.headers.authorization;

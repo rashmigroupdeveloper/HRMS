@@ -18,6 +18,7 @@ import {
   getMonthLockChecklist,
   lockMonth,
   sessionStatusesSchema,
+  penaltyEvaluationSchema,
 } from '../attendance/index.js';
 import { buildMusterMonth, exportMusterExcel, listMuster } from './muster.service.js';
 import { buildKpiSnapshot, kpiTrend, readKpiSnapshot } from './kpi-snapshot.service.js';
@@ -716,8 +717,11 @@ const myAttendance = withPermission('attendance.own')
     leaveIsPaid: z.boolean().nullable(),
     firstIn: z.string().nullable(),
     lastOut: z.string().nullable(),
+    workedMinutes: z.number().nullable(),
     otMinutes: z.number(),
     lateMinutes: z.number(),
+    penaltyFlag: z.boolean(),
+    penaltyEvaluation: penaltyEvaluationSchema,
   })))
   .handler(async ({ input, context }) =>
     myAttendanceMonth(context.db, requireEmployeeId(context.user), input.month),

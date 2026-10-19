@@ -11,7 +11,10 @@ export {
   onWorkflowFinal,
   onWorkflowResubmit,
   clearWorkflowFinalHooks,
+  previewChain,
   type WorkflowFinalStatus,
   type RequestRow,
+  type ChainPreviewStep,
 } from './workflow.service.js';
 export { WORKFLOW_DEFINITIONS } from './definitions.seed.js';
+export { onWorkflowLockSubjects } from './workflow-hooks.js';

@@ -1,0 +1,47 @@
+
+## reporting.kpi_daily
+id: bigint NOT NULL | 
+snapshot_date: date NOT NULL | 
+company_id: bigint NULL | 
+category: text NOT NULL | 
+metric: text NOT NULL | 
+value: numeric(18,4) NULL | NULL means NOT COMPUTABLE — never conflate with zero.
+unavailable_reason: text NULL | 
+computed_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (company_id) REFERENCES core.companies(id)", "PRIMARY KEY (id)", "UNIQUE (snapshot_date, company_id, category, metric)"]
+backend/src/modules/reports/kpi-snapshot.service.ts:411 buildKpiSnapshot deleteFrom write= indirect=False locks=[]
+backend/src/modules/reports/kpi-snapshot.service.ts:415 buildKpiSnapshot insertInto write=snapshot_date,company_id,category,metric,value,unavailable_reason indirect=False locks=[]
+backend/src/modules/reports/kpi-snapshot.service.ts:486 rows raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## reporting.muster_month
+id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+month: date NOT NULL | 
+employee_id: bigint NOT NULL | 
+ecode: text NOT NULL | 
+employee_name: text NOT NULL | 
+reporting_manager: text NULL | 
+functional_manager: text NULL | 
+department: text NULL | 
+designation: text NULL | 
+org_unit: text NULL | 
+cost_center: text NULL | 
+contact: text NULL | 
+category: text NULL | 
+day_statuses: jsonb NOT NULL | 
+present: smallint NOT NULL | 
+absent: smallint NOT NULL | 
+half_days: smallint NOT NULL | 
+weekoffs: smallint NOT NULL | 
+weekoffs_unpaid: smallint NOT NULL | 
+holidays: smallint NOT NULL | 
+leave_days: numeric(5,1) NOT NULL | 
+od_days: smallint NOT NULL | 
+co_days: smallint NOT NULL | 
+uab_days: smallint NOT NULL | 
+lop_days: numeric(5,1) NOT NULL | 
+ot_hours: numeric(8,2) NOT NULL | 
+built_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)", "UNIQUE (company_id, month, employee_id)"]
+backend/src/modules/reports/muster.service.ts:248 saveSnapshot deleteFrom write= indirect=False locks=[]
+backend/src/modules/reports/muster.service.ts:256 saveSnapshot insertInto write= indirect=True locks=[]

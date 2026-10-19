@@ -1,0 +1,91 @@
+{
+  "read_only": true,
+  "counts": [
+    {
+      "table_name": "sec.mfa_enrolments",
+      "rows": 32
+    },
+    {
+      "table_name": "sec.mfa_recovery_codes",
+      "rows": 320
+    }
+  ],
+  "dependencies": [
+    {
+      "object": "constraint mfa_enrolments_disabled_by_user_id_fkey on table sec.mfa_enrolments",
+      "deptype": "a"
+    },
+    {
+      "object": "constraint mfa_enrolments_pkey on table sec.mfa_enrolments",
+      "deptype": "a"
+    },
+    {
+      "object": "constraint mfa_enrolments_user_id_fkey on table sec.mfa_enrolments",
+      "deptype": "a"
+    },
+    {
+      "object": "constraint mfa_recovery_codes_enrolment_id_fkey on table sec.mfa_recovery_codes",
+      "deptype": "a"
+    },
+    {
+      "object": "constraint mfa_recovery_codes_enrolment_id_fkey on table sec.mfa_recovery_codes",
+      "deptype": "n"
+    },
+    {
+      "object": "constraint mfa_recovery_codes_pkey on table sec.mfa_recovery_codes",
+      "deptype": "a"
+    },
+    {
+      "object": "default value for column created_at of table sec.mfa_enrolments",
+      "deptype": "a"
+    },
+    {
+      "object": "default value for column created_at of table sec.mfa_recovery_codes",
+      "deptype": "a"
+    },
+    {
+      "object": "default value for column updated_at of table sec.mfa_enrolments",
+      "deptype": "a"
+    },
+    {
+      "object": "index sec.mfa_one_active_per_user",
+      "deptype": "a"
+    },
+    {
+      "object": "index sec.mfa_one_active_per_user",
+      "deptype": "a"
+    },
+    {
+      "object": "index sec.mfa_recovery_enrolment_idx",
+      "deptype": "a"
+    },
+    {
+      "object": "sequence sec.mfa_enrolments_id_seq",
+      "deptype": "i"
+    },
+    {
+      "object": "sequence sec.mfa_recovery_codes_id_seq",
+      "deptype": "i"
+    },
+    {
+      "object": "toast table pg_toast.pg_toast_72238",
+      "deptype": "i"
+    },
+    {
+      "object": "toast table pg_toast.pg_toast_72260",
+      "deptype": "i"
+    },
+    {
+      "object": "trigger mfa_enrolments_updated_at on table sec.mfa_enrolments",
+      "deptype": "a"
+    },
+    {
+      "object": "type sec.mfa_enrolments",
+      "deptype": "i"
+    },
+    {
+      "object": "type sec.mfa_recovery_codes",
+      "deptype": "i"
+    }
+  ]
+}

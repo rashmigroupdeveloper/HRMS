@@ -25,6 +25,10 @@ interface ConfirmModalProps {
   danger?: boolean;
   /** if set, the user must type this exact string to enable confirm */
   typedConfirmation?: string;
+  /** Keep confirmation open while an asynchronous proof is checked. */
+  closeOnConfirm?: boolean;
+  confirmDisabled?: boolean;
+  loading?: boolean;
 }
 
 export function ConfirmModal({
@@ -37,6 +41,9 @@ export function ConfirmModal({
   cancelLabel = 'Cancel',
   danger = false,
   typedConfirmation,
+  closeOnConfirm = true,
+  confirmDisabled = false,
+  loading = false,
 }: ConfirmModalProps) {
   const [mounted, setMounted] = useState(open);
   const [entered, setEntered] = useState(false);
@@ -75,7 +82,7 @@ export function ConfirmModal({
 
   if (!mounted) return null;
 
-  const confirmDisabled = typedConfirmation !== undefined && typed !== typedConfirmation;
+  const disabled = confirmDisabled || (typedConfirmation !== undefined && typed !== typedConfirmation);
 
   return createPortal(
     <div
@@ -136,10 +143,11 @@ export function ConfirmModal({
           </Button>
           <Button
             variant={danger ? 'danger' : 'primary'}
-            disabled={confirmDisabled}
+            disabled={disabled}
+            loading={loading}
             onClick={() => {
               onConfirm();
-              onClose();
+              if (closeOnConfirm) onClose();
             }}
           >
             {confirmLabel}

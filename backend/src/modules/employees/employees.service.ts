@@ -7,7 +7,7 @@ import { formatDbDate } from '../../core/dates.js';
 import type { Kysely } from 'kysely';
 import type { Selectable } from 'kysely';
 import type { Database, EmploymentCategory, UsersTable } from '../../core/db/types.js';
-import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
+import { directoryScopeSql, isColleagueDirectoryScope, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import {
   countDirectory,
   findByEcode,
@@ -239,8 +239,47 @@ export async function getEmployeeByEcode(
   permissions: ReadonlySet<string>,
   scope?: EmployeeScope,
 ): Promise<EmployeeProfile | null> {
-  const row = await findByEcode(db, ecode, scope);
+  let row = await findByEcode(db, ecode, scope);
+  let colleague = false;
+  if (!row && isColleagueDirectoryScope(scope)) {
+    const self = await db
+      .selectFrom('core.employees as e')
+      .innerJoin('core.companies as c', 'c.id', 'e.company_id')
+      .select('c.code as company_code')
+      .where('e.id', '=', scope.actorEmployeeId)
+      .executeTakeFirst();
+    const candidate = await findByEcode(db, ecode);
+    if (
+      self !== undefined &&
+      candidate !== undefined &&
+      candidate.company_code === self.company_code &&
+      candidate.id !== scope.actorEmployeeId
+    ) {
+      row = candidate;
+      colleague = true;
+    }
+  }
   if (!row) return null;
+
+  if (colleague) {
+    return toProfile(
+      {
+        ...row,
+        personal_email: null,
+        mobile: null,
+        present_address: null,
+        permanent_address: null,
+        emergency_contact_name: null,
+        emergency_contact_phone: null,
+        pan: null,
+        aadhaar: null,
+        uan: null,
+        bank_account: null,
+        bank_ifsc: null,
+      },
+      { statutoryMasked: true, canViewCompensation: false },
+    );
+  }
 
   const unmask = canViewStatutoryIds(user, permissions, row.id);
   return toProfile(row, {
@@ -314,7 +353,7 @@ export async function listDirectoryFacets(
   const base = db
     .selectFrom('core.employees as e')
     .$if(activeOnly, (qb) => qb.where('e.status', 'in', ['active', 'on_notice']))
-    .$if(scope !== undefined && !scope.all, (qb) => qb.where(employeeScopeSql(scope, 'e')));
+    .$if(scope !== undefined && !scope.all, (qb) => qb.where(directoryScopeSql(scope, 'e')));
 
   const [entities, departments, categories, locations, statuses, totalRow] = await Promise.all([
     base
@@ -350,7 +389,7 @@ export async function listDirectoryFacets(
     // never be discovered from a directory that defaults to active-only.
     db
       .selectFrom('core.employees as e')
-      .$if(scope !== undefined && !scope.all, (qb) => qb.where(employeeScopeSql(scope, 'e')))
+      .$if(scope !== undefined && !scope.all, (qb) => qb.where(directoryScopeSql(scope, 'e')))
       .select('status as code')
       .select((eb) => eb.fn.countAll<string>().as('count'))
       .groupBy('status')

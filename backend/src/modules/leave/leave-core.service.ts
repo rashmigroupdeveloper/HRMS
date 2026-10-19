@@ -50,14 +50,26 @@ export async function getBalance(db: Db, employeeId: number, leaveTypeId: number
     .executeTakeFirstOrThrow();
   const balance = Number(ledger.total);
   const pending = Number(pendingApps.total) + Number(pendingEncash.total);
-  return { balance, pending, available: balance - pending };
+  const type = await db.selectFrom('lv.leave_types').select('is_paid').where('id', '=', leaveTypeId).executeTakeFirst();
+  // Unpaid leave (LWP) has no ledger to draw on. Reserving it must not show a negative balance.
+  const available = type?.is_paid === false ? balance : balance - pending;
+  return { balance, pending, available };
+}
+
+/** 'Female' / 'F' / 'female' → 'F'. Shared by the catalog filter and apply validation. */
+export function genderCode(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed.charAt(0).toUpperCase() : null;
 }
 
 /** Every active type with the employee's balance/pending/available (ESS tiles). */
 export async function getBalances(db: Db, employeeId: number) {
+  const employee = await db.selectFrom('core.employees').select('gender').where('id', '=', employeeId).executeTakeFirst();
+  const caller = genderCode(employee?.gender ?? null);
   const types = await db.selectFrom('lv.leave_types').selectAll().where('is_active', '=', true).orderBy('code').execute();
   const out = [];
   for (const t of types) {
+    if (t.applicable_gender !== null && genderCode(t.applicable_gender) !== caller) continue;
     out.push({ type: t, ...(await getBalance(db, employeeId, t.id)) });
   }
   return out;

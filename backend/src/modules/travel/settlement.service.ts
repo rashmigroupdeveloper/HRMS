@@ -70,7 +70,7 @@ type Db = Kysely<Database> | Transaction<Database>;
 /** Enforces closed travel month rule (EMS Parity: travel month <= te.closed_travel_month cannot be claimed). */
 async function assertNotClosedTravelMonth(db: Db, dateInput: string | Date, label: string): Promise<void> {
   const closedMonth = await getTypedSetting<string | null>(db, 'te.closed_travel_month', 'string', '2026-06');
-  if (!closedMonth || !closedMonth.trim()) return;
+  if (!closedMonth?.trim()) return;
   const d = typeof dateInput === 'string' ? dateInput.slice(0, 10) : dateInput.toISOString().slice(0, 10);
   const month = d.slice(0, 7);
   if (month <= closedMonth.trim()) {
@@ -100,15 +100,15 @@ export async function getTripBudgetHeadroom(db: Db, tripId: number): Promise<{
 
   let reservedBudgetPaise = 0;
   for (const r of reservations) {
-    if (r.movement === 'reserve') reservedBudgetPaise += Number(r.amount_paise);
-    else if (r.movement === 'release') reservedBudgetPaise -= Number(r.amount_paise);
+    if (r.movement === 'reserve') reservedBudgetPaise += r.amount_paise;
+    else reservedBudgetPaise -= r.amount_paise;
   }
   if (reservedBudgetPaise < 0) reservedBudgetPaise = 0;
 
-  const approved = Number(trip.approved_budget_paise || 0);
+  const approved = trip.approved_budget_paise || 0;
   const availableBudgetPaise = Math.max(0, approved - reservedBudgetPaise);
   return {
-    estimatedBudgetPaise: Number(trip.estimated_budget_paise || 0),
+    estimatedBudgetPaise: trip.estimated_budget_paise || 0,
     approvedBudgetPaise: approved,
     reservedBudgetPaise,
     availableBudgetPaise,
@@ -134,8 +134,8 @@ export async function applyTravelClaimOnFinal(db: Db, request: { id: number }, s
       .execute();
     let netReserved = 0;
     for (const r of reservations) {
-      if (r.movement === 'reserve') netReserved += Number(r.amount_paise);
-      else if (r.movement === 'release') netReserved -= Number(r.amount_paise);
+      if (r.movement === 'reserve') netReserved += r.amount_paise;
+      else netReserved -= r.amount_paise;
     }
     if (netReserved > 0) {
       await db
@@ -180,7 +180,7 @@ export class SettlementService {
     if (!['approved', 'in_progress', 'completed'].includes(trip.status)) {
       throw new ConflictError(`Expenses can only be claimed on an approved trip (this trip is ${trip.status})`);
     }
-    if ((trip.approved_budget_paise ?? 0) <= 0) {
+    if (trip.approved_budget_paise <= 0) {
       throw new ConflictError('Cannot claim expenses against a trip without an approved budget');
     }
 
@@ -234,7 +234,7 @@ export class SettlementService {
     }
 
     // Receipt is mandatory on every line
-    if (!input.receiptDocumentId && (!input.receiptUrl || !input.receiptUrl.trim())) {
+    if (!input.receiptDocumentId && !input.receiptUrl?.trim()) {
       throw new DomainError('Receipt attachment (document ID or URL) is mandatory for every expense line');
     }
 
@@ -353,13 +353,13 @@ export class SettlementService {
 
     const summaryId = params.summaryDocumentId ?? claim.summary_document_id;
     const summaryUrl = params.summaryDocumentUrl ?? claim.summary_document_url;
-    if (!summaryId && (!summaryUrl || !summaryUrl.trim())) {
+    if (!summaryId && !summaryUrl?.trim()) {
       throw new DomainError('Summary document attachment is mandatory before submitting a claim');
     }
 
     const items = await this.db.selectFrom('te.claim_items').selectAll().where('claim_id', '=', claim.id).execute();
     for (const it of items) {
-      if (!it.receipt_document_id && (!it.receipt_url || !it.receipt_url.trim())) {
+      if (!it.receipt_document_id && !it.receipt_url?.trim()) {
         throw new DomainError(`Receipt attachment is missing for expense line #${it.id} (${it.category})`);
       }
     }
@@ -385,7 +385,7 @@ export class SettlementService {
         .executeTakeFirst();
       if (overlapping) {
         throw new ConflictError(
-          `Claim travel dates (${claimFrom} to ${claimTo}) overlap with active claim #${overlapping.id} (${isoDay(overlapping.period_from!)} to ${isoDay(overlapping.period_to!)}) on this trip budget`
+          `Claim travel dates (${claimFrom} to ${claimTo}) overlap with active claim #${overlapping.id} (${overlapping.period_from ? isoDay(overlapping.period_from) : '?'} to ${overlapping.period_to ? isoDay(overlapping.period_to) : '?'}) on this trip budget`
         );
       }
     }

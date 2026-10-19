@@ -1,0 +1,29 @@
+940e23f docs: record Gate W0 — Wave 0 complete, with the exploit ledger
+1faeadf fix: guard the mock biometric feed and harden the HTTP surface
+5ff2956 fix: WF-02 deliver notifications and start the worker that was never running
+51f3e91 fix: D3 bound admin.roles — no self-escalation, no lockout, step-up on writes
+89d65fb fix: WF-01 workflow subject authorization and the vacant-chain floor
+dce278d fix: CORE-10 enforce data scope in every module, not just compute it
+b0df7e1 fix: green the build — narrow report unions, DayStatus, and two date/format test defects
+9bf5a17 chore: remaining frontend wiring for the Phase-5 and Stage-1.11 surfaces
+fefc100 feat: compliance, document vault, privacy-ops and claims UI
+a729c28 feat: SHF-01..16 shift editor, roster editor and leave-preview UI
+a4c6b63 feat: ORG-01..05 unified org masters UI (company, plant, MIS, cost centre)
+f0903da feat: SEC-03/04 and ESS-01 identity UI — step-up, MFA, privacy gate, reset
+a197d76 chore: wire the Phase-5 and Stage-1.11 modules into the API surface
+7229369 feat: core.settings typed reads — config over code
+5c16de6 feat: CORE-03 HOD link and ATT-05 day-record integrity constraints
+62c50eb fix: CORE-11 serialize the audit hash chain by chain_seq, not id
+c3a768c feat: SHF-01..16 shift micro-controls, scheduling and chain preview
+b8e1022 feat: CLM-01..07 claims budget ledger, reservations and settlement
+ed038ca feat: CMP statutory registrations, licences and compliance calendar
+6a1d346 feat: IRD POSH, grievance and whistleblower intake (skeleton)
+cdd998c feat: DOC-01..03 employee document vault
+00bd153 feat: PRV DPDP baseline — notice, consent, rights, retention, purge
+81b4037 feat: ESS-01 self-service password reset with single-use tokens
+c915a38 feat: SEC-01..11 identity hardening — sessions, MFA, step-up, password policy
+babe6d1 feat: ORG-01..05 company, plant, MIS and department spine
+efc5c13 docs: production-readiness audit — 83 findings, NO-GO verdict
+350701f docs: phases 5-8 execution plans, amendments and coverage closeout
+d7c380a docs: gap audit, micro-feature inventory, recon findings and spec updates
+1403baa chore: remove committed agent-tool session token (audit W0-T03)

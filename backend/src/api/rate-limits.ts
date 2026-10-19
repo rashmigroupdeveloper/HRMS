@@ -2,6 +2,7 @@
 export interface RateLimits {
   authPerIdentifier: number;
   authPerAddress: number;
+  intakePerAddress?: number;
   globalPerAddress: number;
 }
 
@@ -15,9 +16,13 @@ export function rateLimitsFromEnv(env: NodeJS.ProcessEnv = process.env): RateLim
     }
     return parsed;
   };
-  return {
+  const res: RateLimits = {
     authPerIdentifier: num('RATE_LIMIT_AUTH_PER_IDENTIFIER', 5),
     authPerAddress: num('RATE_LIMIT_AUTH_PER_ADDRESS', 300),
     globalPerAddress: num('RATE_LIMIT_GLOBAL_PER_ADDRESS', 100),
   };
+  if (env['RATE_LIMIT_INTAKE_PER_ADDRESS'] !== undefined) {
+    res.intakePerAddress = num('RATE_LIMIT_INTAKE_PER_ADDRESS', 10);
+  }
+  return res;
 }

@@ -20,6 +20,9 @@ export type SettingType = SettingsTable['value_type'];
 
 /** Enumerated / ranged policy values that the engines would otherwise reject at run time (item 4). */
 const POLICY_VALUES: Record<string, (value: unknown) => boolean> = {
+  'doc.max_upload_bytes': v => typeof v === 'number' && Number.isInteger(v) && v > 0 && v <= 8_000_000,
+  'cmp.licence_alert_stages': v => typeof v === 'string' && /^\d+(,\d+)*$/.test(v) && v.split(',').every(part => Number(part) > 0),
+  'sec.stepup_window_minutes': (v) => typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 60,
   'pay.lop_divisor': (v) => typeof v === 'string' && ['CALENDAR', 'FIXED_30', 'FIXED_26', 'WORKING_DAYS'].includes(v),
   'att.cycle_start_day': (v) => typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 28,
   'att.sandwich_rule': (v) => typeof v === 'boolean',

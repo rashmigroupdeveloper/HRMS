@@ -64,7 +64,7 @@ export async function assignRoleToUser(
   await db
     .insertInto('core.user_roles')
     .values({ user_id: userId, role_id: roleId, scope_org_unit_id: scopeOrgUnitId })
-    .onConflict((oc) => oc.columns(['user_id', 'role_id', 'scope_org_unit_id']).doNothing())
+    .onConflict((oc) => oc.doNothing())
     .execute();
 }
 
@@ -103,6 +103,17 @@ export async function searchUsersWithRoles(
         .select((inner) => inner.fn.jsonAgg('r.code').as('codes'))
         .whereRef('ur.user_id', '=', 'u.id')
         .as('role_codes'),
+      sql<{ code: string; scopeOrgUnitId: number | null; scopeName: string | null }[]>`(
+        SELECT coalesce(json_agg(json_build_object(
+          'code', r.code,
+          'scopeOrgUnitId', ur.scope_org_unit_id,
+          'scopeName', ou.name
+        ) ORDER BY r.code), '[]'::json)
+        FROM core.user_roles ur
+        INNER JOIN core.roles r ON r.id = ur.role_id
+        LEFT JOIN core.org_units ou ON ou.id = ur.scope_org_unit_id
+        WHERE ur.user_id = u.id
+      )`.as('assignments'),
     ])
     .where('u.is_active', '=', true);
 

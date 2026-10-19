@@ -112,6 +112,7 @@ export async function applyLeaveOnFinal(db: Db, request: RequestRow, status: Wor
     // half is paid alongside the leave half (item 4); a full day clears them.
     const row = {
       status: day.isHalf ? ('HD' as const) : fullStatus,
+      penalty_flag: false, penalty_evaluation: null,
       ...(day.isHalf ? {} : { session_statuses: null }),
       leave_type_id: app.leave_type_id,
       source: 'regularized' as const,
@@ -218,7 +219,7 @@ export async function applyCancelOnFinal(db: Db, request: RequestRow, status: Wo
       // Reset to the ABSENT floor (never leave a cancelled leave showing as a
       // paid 'L'/'HD' — that would over-pay if the month locks before the
       // queued recompute re-derives the day from swipes).
-      .set({ status: 'A', source: 'auto', leave_type_id: null, session_statuses: null })
+      .set({ status: 'A', source: 'auto', leave_type_id: null, session_statuses: null, penalty_flag: false, penalty_evaluation: null })
       .where('employee_id', '=', app.employee_id)
       .where('work_date', '=', sql<Date>`${iso}::date`)
       .where('source', '=', 'regularized')
@@ -354,7 +355,7 @@ export async function applyRhOnFinal(db: Db, request: RequestRow, status: Workfl
 
   const rh = await db.selectFrom('lv.restricted_holidays').selectAll().where('id', '=', selection.restricted_holiday_id).executeTakeFirstOrThrow();
   await assertApprovalSpanWritable(db, selection.employee_id, formatDbDate(rh.holiday_date), formatDbDate(rh.holiday_date));
-  const row = { status: 'H' as const, source: 'regularized' as const, leave_type_id: null, session_statuses: null, computed_at: new Date() };
+  const row = { penalty_flag: false, penalty_evaluation: null, status: 'H' as const, source: 'regularized' as const, leave_type_id: null, session_statuses: null, computed_at: new Date() };
   const applied = await db
     .insertInto('att.day_records')
     .values({ employee_id: selection.employee_id, work_date: rh.holiday_date, ...row })

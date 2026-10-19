@@ -1,0 +1,51 @@
+
+## hd.categories
+id: bigint NOT NULL | 
+code: text NOT NULL | 
+name: text NOT NULL | 
+assignee_role_code: text NULL | 
+sla_hours: integer NOT NULL | 
+escalate_after_hours: integer NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+escalate_to_role_code: text NULL | 
+Constraints: ["CHECK (((escalate_after_hours IS NULL) OR (escalate_after_hours > 0)))", "CHECK ((sla_hours > 0))", "PRIMARY KEY (id)", "UNIQUE (code)"]
+
+## hd.ticket_messages
+id: bigint NOT NULL | 
+ticket_id: bigint NOT NULL | 
+author_user_id: bigint NOT NULL | 
+body: text NOT NULL | 
+is_internal: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (author_user_id) REFERENCES core.users(id)", "FOREIGN KEY (ticket_id) REFERENCES hd.tickets(id)", "PRIMARY KEY (id)"]
+backend/src/modules/helpdesk/helpdesk.service.ts:319 inserted insertInto write=ticket_id,author_user_id,body,is_internal indirect=False locks=[]
+
+## hd.tickets
+id: bigint NOT NULL | 
+ticket_no: text NOT NULL | 
+raised_by: bigint NOT NULL | 
+category_id: bigint NOT NULL | 
+subject: text NOT NULL | 
+body: text NOT NULL | 
+assignee_user_id: bigint NULL | 
+status: text NOT NULL | 
+priority: text NOT NULL | 
+sla_due_at: timestamp with time zone NOT NULL | 
+escalated_level: smallint NOT NULL | 
+escalated_at: timestamp with time zone NULL | 
+acknowledged_at: timestamp with time zone NULL | 
+resolved_at: timestamp with time zone NULL | 
+resolution: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+first_response_at: timestamp with time zone NULL | 
+reopen_count: integer NOT NULL | 
+escalated_to_user_id: bigint NULL | 
+Constraints: ["CHECK (((status <> ALL (ARRAY['resolved'::text, 'closed'::text])) OR ((resolved_at IS NOT NULL) AND (resolution IS NOT NULL))))", "CHECK ((escalated_level >= 0))", "CHECK ((priority = ANY (ARRAY['low'::text, 'normal'::text, 'high'::text, 'urgent'::text])))", "CHECK ((status = ANY (ARRAY['open'::text, 'pending'::text, 'resolved'::text, 'closed'::text])))", "FOREIGN KEY (assignee_user_id) REFERENCES core.users(id)", "FOREIGN KEY (category_id) REFERENCES hd.categories(id)", "FOREIGN KEY (escalated_to_user_id) REFERENCES core.users(id)", "FOREIGN KEY (raised_by) REFERENCES core.users(id)", "PRIMARY KEY (id)", "UNIQUE (ticket_no)"]
+backend/src/modules/helpdesk/helpdesk.service.ts:134 inserted insertInto write=ticket_no,raised_by,category_id,subject,body,priority,assignee_user_id,sla_due_at,acknowledged_at indirect=False locks=[]
+backend/src/modules/helpdesk/helpdesk.service.ts:340 replyToTicket updateTable write= indirect=False locks=[]
+backend/src/modules/helpdesk/helpdesk.service.ts:394 setTicketStatus updateTable write=status,resolution,resolved_at,reopen_count,updated_at indirect=False locks=[]
+backend/src/modules/helpdesk/helpdesk.service.ts:479 escalateBreachedTickets updateTable write=escalated_level,escalated_at,escalated_to_user_id,updated_at indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]

@@ -16,6 +16,7 @@ import {
   type ImportException,
 } from './import.schemas.js';
 import { inTransaction } from '../../core/db/database.js';
+import { cleanMasterLabel } from '../../core/validation/master-text.js';
 
 export interface EmsImportSummary {
   imported: number;
@@ -34,8 +35,9 @@ async function getOrCreateByName(
   table: 'core.departments' | 'core.designations',
   raw: string,
   cache: Map<string, number>,
-): Promise<number> {
-  const name = normalizeName(raw);
+): Promise<number | null> {
+  const name = cleanMasterLabel(normalizeName(raw));
+  if (!name) return null;
   const key = name.toLowerCase();
   const hit = cache.get(key);
   if (hit !== undefined) return hit;

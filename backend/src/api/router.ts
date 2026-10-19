@@ -2,6 +2,7 @@
  * The application router — every module's procedures assembled in one tree.
  * This object's shape IS the API; the OpenAPI spec is generated from it.
  */
+import { documentsRouter } from '../modules/documents/index.js';
 import { atsBridgeRouter } from '../modules/ats-bridge/index.js';
 import {ssoRouter} from '../modules/sso/index.js';
 import { systemRouter } from '../modules/system/index.js';
@@ -13,6 +14,7 @@ import {
   attendanceConfigRouter,
   attendanceRequestsRouter,
   absenceRouter,
+  schedulingRouter,
 } from '../modules/attendance/index.js';
 import { workflowsRouter } from '../modules/workflows/index.js';
 import { employeesRouter, familyRouter } from '../modules/employees/index.js';
@@ -33,8 +35,15 @@ import { travelRouter } from '../modules/travel/index.js';
 import { coreRouter, mastersRouter } from '../modules/core/index.js';
 import { bulkRouter, employeeMasterRouter } from '../modules/bulk/index.js';
 import { tdsRouter } from '../modules/tds/index.js';
+import { irdRouter } from '../modules/ird/index.js';
+import { complianceRouter } from '../modules/compliance/index.js';
+import { privacyRouter } from '../modules/privacy/index.js';
 
 export const appRouter = {
+  compliance: complianceRouter,
+  privacy: privacyRouter,
+  ird: irdRouter,
+  documents: documentsRouter,
   atsBridge: atsBridgeRouter,
   sso:ssoRouter,
   system: systemRouter,
@@ -48,7 +57,8 @@ export const appRouter = {
     ...attendanceRouter,
     ...attendanceConfigRouter,
     ...attendanceRequestsRouter,
-    ...absenceRouter
+    ...absenceRouter,
+    ...schedulingRouter,
   },
   workflows: workflowsRouter,
   employees: employeesRouter,

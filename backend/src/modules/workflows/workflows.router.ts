@@ -20,6 +20,7 @@ import {
   act,
   createRequest,
   inbox,
+  previewChain,
   resubmit,
   runEscalations,
   stepsSchema,
@@ -356,8 +357,32 @@ const escalateNow = withPermission('admin.integrations')
     return { handled: await runEscalations(db) };
   });
 
+const preview = authed
+  .route({ method: 'GET', path: '/workflows/preview', summary: 'Who will approve this request for the caller (SHF-16)' })
+  .input(z.object({ definitionCode: z.string().min(1) }))
+  .output(z.array(z.object({
+    step: z.number(),
+    approverSpec: z.string(),
+    slaHours: z.number(),
+    vacant: z.boolean(),
+    userId: z.number().nullable(),
+    displayName: z.string().nullable(),
+    delegatedFromUserId: z.number().nullable(),
+    delegatedFromName: z.string().nullable(),
+  })))
+  .handler(async ({ input, context }) => {
+    if (context.user.employee_id === null) {
+      throw new ORPCError('BAD_REQUEST', { message: 'Your account has no employee profile linked' });
+    }
+    return previewChain(context.db, {
+      definitionCode: input.definitionCode,
+      subjectEmployeeId: context.user.employee_id,
+    });
+  });
+
 export const workflowsRouter = {
   create: createProcedure,
+  preview,
   inbox: inboxProcedure,
   act: actProcedure,
   resubmit: resubmitProcedure,

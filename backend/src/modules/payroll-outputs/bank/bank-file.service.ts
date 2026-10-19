@@ -64,6 +64,9 @@ export class BankFileService {
     if (!run) {
       throw new Error(`Payroll run #${String(runId)} not found.`);
     }
+    if (run.status !== 'finalized') {
+      throw new Error('Generate the bank file only for a finalized run. A new finalization is required after a reopen.');
+    }
 
     const monthStr = new Date(run.month).toISOString().slice(0, 7);
 
@@ -164,7 +167,8 @@ export class BankFileService {
       uploadedBy: actorUserId,
     });
 
-    // 4. Register in pay.bank_batches
+    // 4. One active file per finalized run: the previous file for this run stops being the payable file.
+    await this.db.updateTable('pay.bank_batches').set({ superseded_at: new Date() }).where('run_id', '=', runId).where('superseded_at', 'is', null).execute();
     const batchRow = await this.db
       .insertInto('pay.bank_batches')
       .values({

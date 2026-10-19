@@ -26,6 +26,22 @@ async function main(): Promise<void> {
     await db.insertInto('wf.event_subscriptions').values({ event_code: 'workflow.routing_held',
       recipient_kind: 'role', recipient_ref: 'hr_head' })
       .onConflict(oc => oc.columns(['event_code', 'recipient_kind', 'recipient_ref']).doNothing()).execute();
+    const offer = WORKFLOW_DEFINITIONS.find((def) => def.code === 'offer_approval');
+    const stored = await db.selectFrom('wf.definitions').select('steps').where('code', '=', 'offer_approval').executeTakeFirst();
+    const approvers = Array.isArray(stored?.steps)
+      ? (stored.steps as unknown[]).map((step) =>
+          step && typeof step === 'object' && 'approver' in step
+            ? String((step as { approver?: unknown }).approver)
+            : '',
+        )
+      : [];
+    // Only the original two-step seed is upgraded. A chain HR has edited is left alone.
+    if (offer && approvers.join(',') === 'role:hr_head,role:ceo_cell') {
+      await db.updateTable('wf.definitions')
+        .set({ name: offer.name, steps: JSON.stringify(offer.steps) })
+        .where('code', '=', 'offer_approval')
+        .execute();
+    }
     logger.info({ total: WORKFLOW_DEFINITIONS.length, inserted }, 'workflow catalog seeded');
   } finally {
     await db.destroy();

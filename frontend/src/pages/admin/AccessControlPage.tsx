@@ -13,6 +13,7 @@
  * silently grants the wrong person a role, which is exactly the failure this
  * console exists to prevent.
  */
+import { useStepUpAction } from '../../app/useStepUpAction';
 import { ConnectedAccountsPanel } from './ConnectedAccountsPanel';
 import { SessionsPanel } from './SessionsPanel';
 import { LoginAccountsPanel } from './LoginAccountsPanel';
@@ -24,6 +25,7 @@ import { apiFetch } from '../../lib/api';
 import {
   Button,
   Card,
+  DarkCard,
   CardHeader,
   Checkbox,
   EmptyState,
@@ -43,17 +45,33 @@ interface AccessMatrix {
   grants: { role: string; permission: string }[];
 }
 
+interface RoleAssignment {
+  code: string;
+  scopeOrgUnitId: number | null;
+  scopeName: string | null;
+}
+
 interface DirectoryUser {
   userId: number;
   email: string;
   ecode: string | null;
   name: string | null;
   roles: string[];
+  assignments: RoleAssignment[];
 }
 
 /** `attendance.roster.write` → "attendance" — the module the permission guards. */
-/** Mirrors the API rule (E2E-010): these roles must name the entity they cover. */
-const ENTITY_SCOPED_ROLES = new Set(['hr_ops', 'payroll_admin', 'plant_head']);
+/** HR operations and plant head must name one entity. Payroll chooses entity or whole group. */
+const ENTITY_SCOPED_ROLES = new Set(['hr_ops', 'plant_head']);
+
+function assignmentLabel(assignment: RoleAssignment): string {
+  if (assignment.code === 'payroll_admin') {
+    return assignment.scopeOrgUnitId === null
+      ? 'payroll_admin · whole group'
+      : `payroll_admin · ${assignment.scopeName ?? 'entity'}`;
+  }
+  return assignment.scopeName ? `${assignment.code} · ${assignment.scopeName}` : assignment.code;
+}
 
 function domainOf(permission: string): string {
   const dot = permission.indexOf('.');
@@ -106,6 +124,7 @@ export function AccessControlPage({ user }: { user: SessionUser }) {
 }
 
 function PermissionGrid({ readOnly }: { readOnly: boolean }) {
+  const stepUp = useStepUpAction();
   const matrix = useDashboardResource<AccessMatrix>('/api/rbac/matrix');
   const [pending, setPending] = useState<string | null>(null);
   const [domain, setDomain] = useState('all');
@@ -142,10 +161,10 @@ function PermissionGrid({ readOnly }: { readOnly: boolean }) {
       return base;
     });
     try {
-      await apiFetch('/api/rbac/grants', {
+      await stepUp.run(() => apiFetch('/api/rbac/grants', {
         method: next ? 'POST' : 'DELETE',
         body: JSON.stringify({ role, permission, scope: 'all' }),
-      });
+      }), `${next ? 'Grant' : 'Revoke'} ${permission} for ${role}.`);
       toast.success(next ? 'Permission granted' : 'Permission revoked', {
         description: `${role} → ${permission}. Effective next request; audited.`,
       });
@@ -167,6 +186,7 @@ function PermissionGrid({ readOnly }: { readOnly: boolean }) {
 
   return (
     <>
+      {stepUp.dialog}
       <Card>
         <div className="flex flex-wrap items-center gap-1.5">
           {domains.map((d) => (
@@ -258,6 +278,7 @@ function PermissionGrid({ readOnly }: { readOnly: boolean }) {
 }
 
 function PeoplePanel() {
+  const stepUp = useStepUpAction();
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState<DirectoryUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -299,6 +320,7 @@ function PeoplePanel() {
 
   const [orgUnits, setOrgUnits] = useState<SelectOption[]>([]);
   const [addScope, setAddScope] = useState<Record<number, string>>({});
+  const [payrollCoverage, setPayrollCoverage] = useState<Record<number, 'group' | 'entity' | ''>>({});
   useEffect(() => {
     apiFetch<{ orgUnits: { id: number; name: string; companyCode: string }[] }>('/api/core/org-units')
       .then((r) => { setOrgUnits(r.orgUnits.map((o) => ({ value: String(o.id), label: `${o.companyCode} · ${o.name}` }))); })
@@ -307,11 +329,28 @@ function PeoplePanel() {
 
   const mutate = async (user: DirectoryUser, role: string, add: boolean) => {
     setBusy(user.userId);
+    const coverage = payrollCoverage[user.userId] ?? '';
+    const body = !add
+      ? { userId: user.userId, role }
+      : role === 'payroll_admin'
+        ? {
+            userId: user.userId,
+            role,
+            coverage,
+            ...(coverage === 'entity' && addScope[user.userId] ? { scopeOrgUnitId: Number(addScope[user.userId]) } : {}),
+          }
+        : {
+            userId: user.userId,
+            role,
+            ...(ENTITY_SCOPED_ROLES.has(role) && addScope[user.userId]
+              ? { scopeOrgUnitId: Number(addScope[user.userId]) }
+              : {}),
+          };
     try {
-      await apiFetch('/api/rbac/user-roles', {
+      await stepUp.run(() => apiFetch('/api/rbac/user-roles', {
         method: add ? 'POST' : 'DELETE',
-        body: JSON.stringify(add ? { userId: user.userId, role, ...(addScope[user.userId] ? { scopeOrgUnitId: Number(addScope[user.userId]) } : {}) } : { userId: user.userId, role }),
-      });
+        body: JSON.stringify(body),
+      }), `${add ? 'Assign' : 'Remove'} ${role} ${add ? 'to' : 'from'} ${user.name ?? user.email}.`);
       toast.success(add ? 'Role assigned' : 'Role removed', {
         description: `${user.name ?? user.email} · ${role}. Effective next request; audited.`,
       });
@@ -325,8 +364,23 @@ function PeoplePanel() {
     }
   };
 
+  const chosenRole = (userId: number) => addRole[userId] ?? '';
+  const payrollReady = (userId: number) => {
+    const coverage = payrollCoverage[userId] ?? '';
+    if (coverage === 'group') return true;
+    return coverage === 'entity' && Boolean(addScope[userId]);
+  };
+
   return (
     <>
+      {stepUp.dialog}
+      <DarkCard padded={false} className="p-8">
+        <p className="text-sm text-hero-muted">Who payroll can see</p>
+        <h2 className="mt-2 text-3xl font-light text-hero-ink">A payroll grant names its reach.</h2>
+        <p className="mt-2 max-w-xl text-sm text-hero-muted">
+          Payroll can be the whole group or one company. Admin, HR head, IT and CEO cell are always the whole group. HR operations and a plant head stay on one entity.
+        </p>
+      </DarkCard>
       <Card>
         <TextField
           label="Find a person"
@@ -369,12 +423,27 @@ function PeoplePanel() {
                       label="Add role"
                       value={addRole[user.userId] ?? ''}
                       placeholder="Choose…"
-                      options={roleOptions.filter((r) => !user.roles.includes(r.value))}
+                      options={roleOptions.filter((r) => r.value === 'payroll_admin' || !user.roles.includes(r.value))}
                       onChange={(value) => {
                         setAddRole((prev) => ({ ...prev, [user.userId]: value }));
                       }}
                     />
-                    {ENTITY_SCOPED_ROLES.has(addRole[user.userId] ?? '') && (
+                    {chosenRole(user.userId) === 'payroll_admin' && (
+                      <div className="flex gap-1 rounded-full bg-surface-2 p-1" role="group" aria-label="Payroll coverage">
+                        {(['group', 'entity'] as const).map((coverage) => (
+                          <Button
+                            key={coverage}
+                            type="button"
+                            size="sm"
+                            variant={(payrollCoverage[user.userId] ?? '') === coverage ? 'primary' : 'ghost'}
+                            onClick={() => { setPayrollCoverage((prev) => ({ ...prev, [user.userId]: coverage })); }}
+                          >
+                            {coverage === 'group' ? 'Whole group' : 'One entity'}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                    {(ENTITY_SCOPED_ROLES.has(chosenRole(user.userId)) || (chosenRole(user.userId) === 'payroll_admin' && payrollCoverage[user.userId] === 'entity')) && (
                       <Select
                         label="Entity (org unit)"
                         required
@@ -388,7 +457,7 @@ function PeoplePanel() {
                       size="sm"
                       variant="primary"
                       loading={busy === user.userId}
-                      disabled={(addRole[user.userId] ?? '') === '' || (ENTITY_SCOPED_ROLES.has(addRole[user.userId] ?? '') && !addScope[user.userId])}
+                      disabled={chosenRole(user.userId) === '' || (ENTITY_SCOPED_ROLES.has(chosenRole(user.userId)) && !addScope[user.userId]) || (chosenRole(user.userId) === 'payroll_admin' && !payrollReady(user.userId))}
                       onClick={() => {
                         void mutate(user, addRole[user.userId] ?? '', true);
                       }}
@@ -402,16 +471,16 @@ function PeoplePanel() {
                 {user.roles.length === 0 ? (
                   <StatusBadge tone="neutral">No roles — cannot sign in to any surface</StatusBadge>
                 ) : (
-                  user.roles.map((role) => (
-                    <span key={role} className="flex items-center gap-1">
-                      <Pill>{role}</Pill>
+                  (user.assignments.length > 0 ? user.assignments : user.roles.map((code) => ({ code, scopeOrgUnitId: null, scopeName: null }))).map((assignment) => (
+                    <span key={`${assignment.code}-${String(assignment.scopeOrgUnitId)}`} className="flex items-center gap-1">
+                      <Pill>{assignmentLabel(assignment)}</Pill>
                       <Button
                         size="sm"
                         variant="ghost"
                         disabled={busy === user.userId}
-                        aria-label={`Remove role ${role} from ${user.name ?? user.email}`}
+                        aria-label={`Remove role ${assignment.code} from ${user.name ?? user.email}`}
                         onClick={() => {
-                          void mutate(user, role, false);
+                          void mutate(user, assignment.code, false);
                         }}
                       >
                         Remove

@@ -37,12 +37,15 @@ export interface ResignationApplicationInput {
   userId: number;
 }
 
+export type ExitType = 'resignation' | 'retirement' | 'death' | 'contract_end' | 'termination';
+
 export interface AbscondingTerminationInput {
   employeeId: number;
   reason: string;
   lastWorkingDay: string;
   absenceCaseId?: number | undefined;
   hrUserId: number;
+  exitType?: ExitType | undefined;
 }
 
 export interface SeparationItem {
@@ -55,6 +58,7 @@ export interface SeparationItem {
   companyId?: number;
   initiatedAt: Date | string;
   initiatedBy: 'employee' | 'hr';
+  exitType: ExitType;
   reason: string;
   resignationDate: string;
   noticePeriodDays: number;
@@ -170,6 +174,7 @@ export class SeparationService {
           .values({
             employee_id: employee.id,
             initiated_by: 'employee',
+            exit_type: 'resignation',
             reason: input.reason,
             resignation_date: sql<Date>`${today}::date`,
             notice_period_days: noticePeriodDays,
@@ -191,7 +196,7 @@ export class SeparationService {
     return this.getOne(separationId);
   }
 
-  /** HR-initiated termination / absconding (ATT-10 / SOW-5.7.2), decided by HR. */
+  /** HR-initiated exit (termination, retirement, death, contract end), decided by HR. */
   async initiateAbscondingTermination(input: AbscondingTerminationInput): Promise<SeparationItem> {
     assertIsoDate(input.lastWorkingDay, 'Last working day');
     const employee = await this.db.selectFrom('core.employees').selectAll().where('id', '=', input.employeeId).executeTakeFirst();
@@ -208,7 +213,8 @@ export class SeparationService {
         .values({
           employee_id: employee.id,
           initiated_by: 'hr',
-          reason: `HR Termination / Absconding: ${input.reason}`,
+          exit_type: input.exitType ?? 'termination',
+          reason: input.reason,
           resignation_date: sql<Date>`${today}::date`,
           notice_period_days: 0,
           requested_lwd: sql<Date>`${input.lastWorkingDay}::date`,
@@ -461,6 +467,7 @@ export class SeparationService {
       grossMonthlyPaise,
       elBalanceDays,
       shortfallDays: Number(separation.shortfall_days),
+      gratuityWaivesMinimumService: separation.exit_type === 'death',
       noticeAlreadyRecoveredPaise,
       unreturnedAssetRecoveryPaise,
       loanOutstandingPaise,
@@ -642,6 +649,7 @@ export class SeparationService {
       employeeId: row.employee_id,
       initiatedAt: row.initiated_at,
       initiatedBy: row.initiated_by,
+      exitType: row.exit_type,
       reason: row.reason,
       resignationDate: formatDbDate(row.resignation_date),
       noticePeriodDays: row.notice_period_days,

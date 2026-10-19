@@ -62,7 +62,7 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     await db
       .insertInto('core.user_roles')
       .values({ user_id: userId, role_id: role.id, scope_org_unit_id: null })
-      .onConflict((oc) => oc.columns(['user_id', 'role_id', 'scope_org_unit_id']).doNothing())
+      .onConflict((oc) => oc.doNothing())
       .execute();
   }
 

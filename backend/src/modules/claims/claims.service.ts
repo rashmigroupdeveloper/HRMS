@@ -10,6 +10,7 @@
  */
 import type { Kysely } from 'kysely';
 import type { Database, ClaimStatus } from '../../core/db/types.js';
+import { NotFoundError } from '../../core/errors/index.js';
 import { EntitlementService } from './entitlement.service.js';
 import { inTransaction } from '../../core/db/database.js';
 
@@ -411,7 +412,8 @@ export class ClaimsService {
         'pay.claims.created_at',
       ])
       .where('pay.claims.id', '=', claimId)
-      .executeTakeFirstOrThrow();
+      .executeTakeFirst();
+    if (!row) throw new NotFoundError('Claim not found');
 
     const bills = await this.db
       .selectFrom('pay.claim_bills')
@@ -482,7 +484,7 @@ export class ClaimsService {
    * Lists claims waiting for verification or approval.
    */
   async listPendingVerification(statusFilter?: ClaimStatus): Promise<ClaimWithBills[]> {
-    let query = this.db.selectFrom('pay.claims').select(['id']);
+    let query = this.db.selectFrom('pay.claims').select(['id', 'claim_type_id']);
 
     if (statusFilter) {
       query = query.where('status', '=', statusFilter);
@@ -493,7 +495,14 @@ export class ClaimsService {
     const rows = await query.orderBy('id', 'desc').execute();
     const result: ClaimWithBills[] = [];
     for (const r of rows) {
-      result.push(await this.getClaimDetails(r.id));
+      // A claim with no type cannot be verified; one bad row must not 500 the queue.
+      if (r.claim_type_id === null) continue;
+      try {
+        result.push(await this.getClaimDetails(r.id));
+      } catch (err) {
+        if (err instanceof NotFoundError) continue;
+        throw err;
+      }
     }
     return result;
   }

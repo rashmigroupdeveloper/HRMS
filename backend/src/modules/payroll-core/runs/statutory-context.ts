@@ -83,7 +83,7 @@ export function financialYear(monthStr: string): string {
   return `${String(start)}-${String((start + 1) % 100).padStart(2, '0')}`;
 }
 
-const OLD_REGIME_CAPS: Record<string, number> = { '80C': 150000, '80CCD1B': 50000, '80D': 25000, '80TTA': 10000 };
+const OLD_REGIME_CAPS: Record<string, number> = { '80C': 150000, '80CCD1B': 50000, '80D': 25000, '80TTA': 10000, '24B': 200000 };
 
 /**
  * Annual tax on the projected annual salary (contracted monthly gross × 12):

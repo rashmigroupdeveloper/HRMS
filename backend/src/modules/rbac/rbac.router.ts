@@ -10,7 +10,7 @@
 import { assertDelegationCeiling, assertRoleDelegation } from './rbac.guard.js';
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { withAnyPermission, withPermission } from '../../api/orpc.js';
+import { withAnyPermission, withPermission, withStepUp } from '../../api/orpc.js';
 import { rowsToExcelBuffer } from '../../core/excel/workbook.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import {
@@ -27,7 +27,7 @@ import {
 } from './rbac.repository.js';
 import { inTransaction } from '../../core/db/database.js';
 
-const guard = () => withPermission('admin.roles');
+const guard = () => withStepUp('admin.roles');
 
 /** E2E-005 (RQ-RBAC-008): hr_head reviews the matrix read-only (admin.rbac.read); editing stays admin.roles. */
 const readGuard = () => withAnyPermission('admin.roles', 'admin.rbac.read');
@@ -136,8 +136,71 @@ const revokeProcedure = guard()
     });
   });
 
-/** Roles whose authority is one entity (docs/08 §2 owner rule); a grant must name the org unit. */
-const ENTITY_SCOPED_ROLES = new Set(['hr_ops', 'payroll_admin', 'plant_head']);
+/** Roles whose authority is one entity (docs/08 §2); a grant must name the org unit.
+ *  payroll_admin is not in this set: a super admin chooses one entity or the whole group. */
+const ENTITY_SCOPED_ROLES = new Set(['hr_ops', 'plant_head']);
+/** These roles always cover the whole group. An org unit must not narrow them. */
+const GROUP_ROLES = new Set(['super_admin', 'it_admin', 'hr_head', 'ceo_cell']);
+
+/** Payroll is not locked to one entity. Omitting the choice stays a 400 so a blank form never becomes group-wide. */
+function resolveAssignmentScope(
+  role: string,
+  coverage: 'group' | 'entity' | undefined,
+  scopeOrgUnitId: number | null,
+): number | null {
+  if (GROUP_ROLES.has(role)) {
+    if (scopeOrgUnitId !== null) {
+      throw new ORPCError('BAD_REQUEST', { message: `${role} covers the whole group. Do not attach an entity.` });
+    }
+    return null;
+  }
+  if (role === 'payroll_admin') {
+    if (coverage === 'group') {
+      if (scopeOrgUnitId !== null) {
+        throw new ORPCError('BAD_REQUEST', { message: 'Whole-group payroll does not take an entity' });
+      }
+      return null;
+    }
+    if (coverage === 'entity') {
+      if (scopeOrgUnitId === null) {
+        throw new ORPCError('BAD_REQUEST', { message: 'Choose the entity this payroll grant covers' });
+      }
+      return scopeOrgUnitId;
+    }
+    throw new ORPCError('BAD_REQUEST', { message: 'Choose whole group or one entity for payroll_admin' });
+  }
+  if (ENTITY_SCOPED_ROLES.has(role) && scopeOrgUnitId === null) {
+    throw new ORPCError('BAD_REQUEST', { message: `${role} is entity-scoped: choose the org unit (company) this grant covers` });
+  }
+  return scopeOrgUnitId;
+}
+
+function readAssignments(value: unknown): { code: string; scopeOrgUnitId: number | null; scopeName: string | null }[] {
+  let parsed = value;
+  if (typeof parsed === 'string') {
+    try {
+      parsed = JSON.parse(parsed) as unknown;
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(parsed)) return [];
+  const assignments: { code: string; scopeOrgUnitId: number | null; scopeName: string | null }[] = [];
+  for (const row of parsed) {
+    if (typeof row !== 'object' || row === null || !('code' in row)) continue;
+    const code = row.code;
+    if (typeof code !== 'string') continue;
+    const rawId = 'scopeOrgUnitId' in row ? row.scopeOrgUnitId : null;
+    const asNumber = rawId === null || rawId === undefined ? null : Number(rawId);
+    const rawName = 'scopeName' in row ? row.scopeName : null;
+    assignments.push({
+      code,
+      scopeOrgUnitId: asNumber !== null && Number.isFinite(asNumber) ? asNumber : null,
+      scopeName: typeof rawName === 'string' ? rawName : null,
+    });
+  }
+  return assignments;
+}
 
 const assignRoleProcedure = guard()
   .route({ method: 'POST', path: '/rbac/user-roles', summary: 'Assign a role to a user (runtime, audited)' })
@@ -146,6 +209,7 @@ const assignRoleProcedure = guard()
       userId: z.number().int().positive(),
       role: z.string().min(1),
       scopeOrgUnitId: z.number().int().positive().nullish(),
+      coverage: z.enum(['group', 'entity']).optional(),
     }),
   )
   .output(z.object({ ok: z.literal(true) }))
@@ -156,18 +220,15 @@ const assignRoleProcedure = guard()
     if (!role) throw new ORPCError('NOT_FOUND', { message: `Unknown role: ${input.role}` });
 
     await assertRoleDelegation(db, context.user.id, input.userId, role.id);
-    // E2E-010 (RQ-RBAC-004): entity-scoped roles never silently become group-wide.
-    if (ENTITY_SCOPED_ROLES.has(input.role) && (input.scopeOrgUnitId ?? null) === null) {
-      throw new ORPCError('BAD_REQUEST', { message: `${input.role} is entity-scoped: choose the org unit (company) this grant covers` });
-    }
-    await assignRoleToUser(db, input.userId, role.id, input.scopeOrgUnitId ?? null);
+    const scopeOrgUnitId = resolveAssignmentScope(input.role, input.coverage, input.scopeOrgUnitId ?? null);
+    await assignRoleToUser(db, input.userId, role.id, scopeOrgUnitId);
     await writeAudit(db, {
       actorUserId: context.user.id,
       action: 'grant',
       entity: 'core.user_roles',
       entityId: input.userId,
       field: input.role,
-      newValue: 'assigned',
+      newValue: scopeOrgUnitId === null ? 'assigned:group' : `assigned:org-unit:${String(scopeOrgUnitId)}`,
       ip: context.req.ip ?? null,
     });
     return { ok: true as const };
@@ -203,7 +264,7 @@ const removeRoleProcedure = guard()
   });
 
 /** Who can be given a role — the picker behind the access console. */
-const usersProcedure = guard()
+const usersProcedure = withPermission('admin.roles')
   .route({ method: 'GET', path: '/rbac/users', summary: 'Search users (with their current roles)' })
   .input(z.object({ q: z.string().optional(), limit: z.coerce.number().int().min(1).max(100).default(25) }))
   .output(
@@ -214,6 +275,11 @@ const usersProcedure = guard()
         ecode: z.string().nullable(),
         name: z.string().nullable(),
         roles: z.array(z.string()),
+        assignments: z.array(z.object({
+          code: z.string(),
+          scopeOrgUnitId: z.number().nullable(),
+          scopeName: z.string().nullable(),
+        })),
       }),
     ),
   )
@@ -227,6 +293,7 @@ const usersProcedure = guard()
         ecode: r.ecode,
         name: full === '' ? null : full,
         roles: Array.isArray(r.role_codes) ? r.role_codes : [],
+        assignments: readAssignments(r.assignments),
       };
     });
   });

@@ -1,0 +1,10 @@
+{
+  "migrations_table": "public.pgmigrations",
+  "selected": [
+    "1753000000800_attendance-penalty-evaluation"
+  ],
+  "applied": [
+    "1753000000800_attendance-penalty-evaluation"
+  ],
+  "target": "authorized loopback /hrms TEST only"
+}

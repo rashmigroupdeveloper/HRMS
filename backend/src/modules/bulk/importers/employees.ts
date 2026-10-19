@@ -74,7 +74,7 @@ export const employeesImporter: BulkImporter<NoCtx> = {
     { key: 'company', header: 'Company', aliases: ['company code', 'entity'], type: 'string', required: true, help: 'Company code (RML, RGH…).' },
     { key: 'first_name', header: 'First name', aliases: ['first name', 'name'], type: 'string', maxLength: 80, help: 'Required for new employees.' },
     { key: 'last_name', header: 'Last name', aliases: ['surname'], type: 'string', maxLength: 80, help: 'Optional.' },
-    { key: 'gender', header: 'Gender', type: 'enum', options: ['Male', 'Female', 'Other'], help: 'Optional.' },
+    { key: 'gender', header: 'Gender', type: 'enum', options: ['Male', 'Female', 'Transgender'], help: 'Optional.' },
     { key: 'dob', header: 'Date of birth', aliases: ['dob', 'birth date'], type: 'date', help: 'Must be 18+ on the joining date.' },
     { key: 'doj', header: 'Date of joining', aliases: ['doj', 'join date', 'joining date'], type: 'date', help: 'Required for new employees.' },
     { key: 'org_unit', header: 'Org unit', aliases: ['ou', 'unit', 'org unit'], type: 'string', help: 'Required for new employees (e.g. RML Kharagpur).' },

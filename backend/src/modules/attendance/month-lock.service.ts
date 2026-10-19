@@ -95,11 +95,18 @@ export async function getMonthLockChecklist(
     .executeTakeFirstOrThrow();
 
   // Unmatched swipes in the month window
+  // PAY-013: only an unknown card at a door mapped to this company blocks the lock.
   const unmatched = await db
-    .selectFrom('att.swipe_events')
-    .where('employee_id', 'is', null)
-    .where('swipe_ts', '>=', sql<Date>`${wFrom}::date::timestamp AT TIME ZONE 'Asia/Kolkata'`)
-    .where('swipe_ts', '<', sql<Date>`${mEnd}::date::timestamp AT TIME ZONE 'Asia/Kolkata'`)
+    .selectFrom('att.swipe_events as swipe')
+    .where('swipe.employee_id', 'is', null)
+    .where('swipe.swipe_ts', '>=', sql<Date>`${wFrom}::date::timestamp AT TIME ZONE 'Asia/Kolkata'`)
+    .where('swipe.swipe_ts', '<', sql<Date>`${mEnd}::date::timestamp AT TIME ZONE 'Asia/Kolkata'`)
+    .where(sql<boolean>`EXISTS (
+      SELECT 1 FROM att.devices device
+      INNER JOIN core.locations location ON location.id = device.location_id
+      WHERE device.door_code = swipe.door_code
+        AND location.company_id = ${companyId}
+    )`)
     .select(({ fn }) => fn.countAll<number>().as('n'))
     .executeTakeFirstOrThrow();
 

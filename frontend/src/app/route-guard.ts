@@ -9,6 +9,8 @@ import { hasAnyPermission, hasRole, type SessionUser } from '../lib/session';
 import { navForUser } from './nav-config';
 
 const RULES: readonly [prefix: string, anyOf: readonly string[]][] = [
+  ['/my/documents', ['doc.vault.own']],
+  ['/documents', ['doc.vault.manage']],
   ['/payroll/structures', ['salary.write', 'payroll.run.view']],
   ['/admin/salary-structures', ['salary.write', 'payroll.run.view']],
   ['/payroll/revisions', ['salary.write', 'payroll.run.manage']],
@@ -17,6 +19,7 @@ const RULES: readonly [prefix: string, anyOf: readonly string[]][] = [
   ['/payroll/settings', ['payroll.run.manage', 'payroll.run.view']],
   ['/payroll', ['payroll.run.view', 'payroll.run.manage']],
   ['/executive', ['reports.ceo']],
+  ['/claims', ['claims.approve', 'payroll.run.manage', 'payroll.reports']],
   ['/attendance/month-lock', ['attendance.month_lock']],
   ['/attendance/devices', ['admin.devices']],
   ['/attendance/muster', ['attendance.muster.export', 'attendance.team.read']],
@@ -29,7 +32,7 @@ const RULES: readonly [prefix: string, anyOf: readonly string[]][] = [
   ['/lifecycle/probation', ['lifecycle.probation.view']],
 ];
 
-const SELF_SERVICE = ['/', '/me', '/approvals', '/policies', '/my/attendance', '/my/leave', '/my/pay', '/my/tax', '/my/claims', '/my/letters', '/my/resignation', '/helpdesk', '/travel', '/onboard/prejoin', '/alumni', '/people', '/lifecycle/separation'];
+const SELF_SERVICE = ['/', '/me', '/approvals', '/policies', '/compliance', '/my/attendance', '/my/leave', '/my/pay', '/my/tax', '/my/claims', '/my/loans', '/my/letters', '/my/resignation', '/helpdesk', '/travel', '/onboard/prejoin', '/alumni', '/people', '/lifecycle/separation'];
 
 const under = (path: string, prefix: string) => (prefix === '/' ? path === '/' : path === prefix || path.startsWith(`${prefix}/`));
 

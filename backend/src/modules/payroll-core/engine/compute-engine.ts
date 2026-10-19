@@ -302,7 +302,7 @@ export function computeEmployeePayroll(
   const pt = computeProfessionalTax(grossPaise, contractedGrossPaise, ptSlabs);
   stat('PT', pt, `${stateCode} professional tax`, 120);
   stat('LWF_EE', lwfPaise, `${stateCode} labour welfare fund`, 130);
-  if (!apprentice) stat('TDS', roundMonthlyTds(monthlyTdsPaise), 'Monthly TDS u/s 192 (annual projection ÷ 12)', 140);
+  stat('TDS', roundMonthlyTds(monthlyTdsPaise), apprentice ? 'Monthly TDS u/s 192 on stipend (PF, ESIC and bonus do not apply)' : 'Monthly TDS u/s 192 (annual projection ÷ 12)', 140);
 
   // 6. Other recoveries (loan EMI, carried-forward balances).
   for (const od of otherDeductions) {

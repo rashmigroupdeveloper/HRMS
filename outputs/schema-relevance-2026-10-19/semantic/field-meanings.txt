@@ -1,0 +1,661 @@
+# Reviewer-authored business meanings; shared identity/FK/timestamp meanings are grounded separately in catalog constraints.
+[ast.assets]
+asset_no=Unique human asset tag used by search and allocation
+category=Asset class used by register filters
+description=Human description of the physical asset
+serial_no=Manufacturer serial used by search
+purchase_date=Acquisition calendar date
+warranty_till=Warranty expiry date; legitimately may be in the past
+status=Registry availability/loss/maintenance state; must agree with custody
+[ast.assignments]
+holder_kind=Employee versus third-party custody discriminator
+third_party_name=Named non-employee holder; mutually exclusive with employee FK
+third_party_org=External holder's organization
+assigned_at=Physical custody issuance instant
+returned_at=Physical return/closure instant; must not claim return for missing property
+return_condition=Condition or non-return outcome requiring stock/clearance reconciliation
+notes=Issuance/return context retained with custody
+[ast.maintenance]
+kind=Scheduled service, incident, damage or loss category
+scheduled_for=Planned service calendar date
+description=Reported service/incident details
+resolved_at=Service resolution instant; resolution action is not implemented
+resolution=Closure explanation; no current writer found
+cost=Recorded service cost in rupees NUMERIC; not a payable ledger
+[att.absence_cases]
+start_date=First date in the continuous absence case
+days_absent=Derived streak length for case progression, not a leave/pay balance
+stage=Configured disciplinary monitoring stage
+resolution=Case closure cause: returned, regularized or exited
+closed_at=Case closure instant
+[att.coverage_targets]
+weekday=Day-of-week selector for sanctioned staffing
+sanctioned=Configured required headcount for location/department/shift coverage
+[att.holidays]
+holiday_date=Calendar date subject to holiday scope
+name=Holiday display label
+[att.kent_unknown_faces]
+event_ts=Unmatched biometric capture instant
+device_id=External Kent device identifier, not HRMS internal device FK
+device_name=Source device display label
+location_name=Source location label for investigation
+image_url=Source face-image reference; sensitive, not proof bytes are locally archived
+raw=Original unmatched source record for reconciliation; restricted sensitive payload
+[att.kent_webhook_batches]
+received_at=HRMS webhook receipt instant
+remote_ip=Source network provenance
+raw_body=Original webhook payload retained for replay/audit; may contain personal data
+records=Source batch record count
+accepted=Accepted/rejected processing gate for batch
+inserted=Successfully persisted swipe count
+unknown_faces=Count routed to unmatched-face evidence
+rejected=Invalid source-record count
+processed_at=Completed batch-processing instant
+error=Bounded processing error explanation; must not contain payload secrets
+[att.leave_blackouts]
+blackout_date=Calendar date on which leave policy blocks/flags requests
+name=Reason/name of the blackout
+[att.manager_month_approvals]
+month=Payroll attendance period key
+approved_at=Attestation event instant
+note=Approval/invalidation explanation
+event_type=Append-only approve/invalidate event; latest event determines current attestation
+[att.month_locks]
+month=Company payroll period key, not arbitrary work-date month
+locked_at=Attendance freeze instant
+checklist=Readiness facts captured at lock
+period_from=Frozen attendance-cycle inclusive beginning
+period_until=Frozen attendance-cycle upper boundary; inspect consuming code for inclusive convention
+[att.overtime_entries]
+work_date=Attendance date supplying the OT obligation
+detected_minutes=Processor's observed overtime before claim/approval
+claimed_minutes=Configured rounded duration submitted for decision
+approved_minutes=Manager-authorized duration; not merely detected time
+status=Pending/approved/rejected/lapsed/comp-off obligation state
+decided_at=Decision receipt instant
+deadline_at=Configured hard decision deadline
+payroll_item_id=Intended consuming payslip header; link lacks a live FK and requires exactly-once consumption proof
+[att.quarantined_swipes]
+employee_no=Original source e-code for quarantined event
+swipe_ts=Implausible source punch instant
+door_code=Source door identity
+direction=Source IN/OUT direction when supplied
+swipe_type=Source biometric technology tag
+received_at=Trusted source receipt used to measure drift
+source=Connector stream provenance
+reason=Why the event was quarantined
+reviewed=Exception-review marker; review/replay workflow must establish evidence
+[att.recompute_queue]
+employee_id=Dirty attendance subject; live FK absent
+work_date=Dirty attendance day needing recomputation
+queued_at=Earliest eligible recompute instant, including future-half hold
+[att.regularizations]
+kind=AR, official duty or short permission request type
+from_date=Inclusive first requested date
+to_date=Inclusive last requested date
+from_time=Requested/configured start clock time, distinct from raw swipe
+ to_time=Requested/configured end clock time, distinct from raw swipe
+reason=Employee justification
+requested_status=Requested approved coverage result, never automatic consent
+applied=Domain write-back marker after approved workflow effects
+day_portion=Full day, first half or second half coverage owner
+[att.roster_publications]
+period_from=Published roster interval beginning
+period_to=Published roster interval ending
+published_at=Publication receipt instant
+revision=Publication revision number, not an employee counter
+reason=Reason for publishing/revising
+[att.roster_revisions]
+work_date=Roster day changed after publication
+old_week_off=Before-image off-day assignment
+new_week_off=After-image off-day assignment
+reason=Mandatory post-publication change reason
+changed_at=Revision receipt instant
+[att.rosters]
+work_date=Employee's roster calendar date
+is_week_off=Explicit off-day assignment; not inference from missing shift
+[att.shift_patterns]
+code=Reusable rotation identity
+name=Rotation display label
+cycle=Ordered shift/off-day cycle used by pattern application; must validate every referenced shift
+[cmp.calendar_items]
+obligation_code=Configured obligation identity, not evidence law was verified
+title=Filing task label
+frequency=Recurrence category; rows do not themselves generate subsequent periods
+period_label=Human filing-period label
+due_on=Required filing calendar deadline
+status=Due/filed/waived state; overdue is derived
+filed_at=Recorded filing instant; must agree with evidence and status
+waived_reason=Explicit reason an obligation was waived
+waived_at=Waiver receipt instant
+[cmp.filing_evidence]
+reference=External filing acknowledgement/reference
+document_path=Optional evidence-object reference; not validated document ownership by FK
+remark=Filing explanation
+recorded_at=Append-only evidence receipt instant
+[cmp.registrations]
+kind=Registration/licence class
+registration_no=Establishment registration identifier
+issuing_authority=Source authority label
+valid_from=Registration validity beginning
+valid_to=Expiry date; NULL means perpetual
+document_path=Licence document reference; storage integrity/ownership not proven by this text
+notes=Renewal/operator context
+is_active=Retired-versus-current registration flag
+[eng.announcements]
+title=Publication headline
+body=Announcement content
+audience=Employee-category/department/location targeting rule
+published_at=Publication instant; currently defaults at creation
+expires_at=Optional visibility end instant
+is_active=Withdrawal flag preserving the original publication
+[eng.poll_responses]
+option_index=Zero-based selected option; upper bound relies on poll validation
+comment=Optional respondent feedback; content can self-identify even when account identity is removed
+respondent_hash=Purpose-separated HMAC dedupe identity for anonymous poll; never a recoverable user FK
+[eng.polls]
+question=Poll question text
+options=Ordered choice labels defining option-index meaning
+kind=Poll or pulse classification
+is_anonymous=Creation-time promise controlling identity storage and reporting
+audience=Target employee population
+opens_at=First participation instant; currently database default
+closes_at=Optional participation cutoff
+is_active=Closure flag
+[eng.survey_responses]
+respondent_hash=Purpose-separated anonymous survey HMAC used for deduplication
+answers=Question-ID keyed answer collection requiring validation against that survey's question definitions
+[eng.surveys]
+title=Survey headline
+description=Survey instructions
+questions=Version-sensitive rating/choice/text question definitions
+audience=Target employee population
+open_from=Participation opening instant
+open_till=Optional response deadline
+is_anonymous=Creation-time respondent-identity promise
+is_active=Survey closure flag
+[hd.categories]
+code=Stable helpdesk routing category
+name=Category display label
+assignee_role_code=Configured initial agent role name; no FK to role code
+sla_hours=Category response/resolution deadline baseline
+escalate_after_hours=Interval between subsequent escalation attempts
+is_active=Category available for new tickets
+escalate_to_role_code=Configured higher escalation role; no FK to role code
+[hd.ticket_messages]
+body=Immutable reply/internal note content
+is_internal=Agent-only note discriminator; requester must not read internal notes
+[hd.tickets]
+ticket_no=Human sequence-generated reference
+subject=Ticket summary
+body=Original issue description
+status=Open/pending/resolved/closed state
+priority=Urgency classification currently feeding hardcoded SLA multipliers
+sla_due_at=Persisted deadline from category/priority policy
+escalated_level=Escalation progression marker, not permission authority
+escalated_at=Last escalation attempt instant
+acknowledged_at=Ticket acknowledgement enqueue instant; not proof of SMTP delivery
+resolved_at=Resolution/closure instant
+resolution=Required resolution explanation
+first_response_at=First agent response instant for SLA reporting
+reopen_count=Count of recorded reopen transitions; event/audit must agree
+[ird.grievances]
+case_ref=Human grievance reference derived from inserted identity
+status=Grievance lifecycle; current implementation primarily intake/list
+filed_at=Grievance filing instant
+summary=Restricted grievance content
+[ird.ic_members]
+role=Presiding officer/member/external membership designation
+active=Current membership flag
+appointed_on=Appointment calendar date
+[ird.posh_case_access_log]
+opened_at=Append-only access-attempt instant
+ip=Attempt network provenance
+outcome=Opened versus refused result
+[ird.posh_case_assignments]
+role=Assigned case-handling role
+assigned_at=Case assignment creation instant
+active=Current case-access grant flag
+[ird.posh_cases]
+case_ref=Human confidential case reference
+status=Confidential case lifecycle; investigation/status actions remain incomplete
+filed_at=Case submission instant
+is_anonymous=Whether a filer account may be retained
+summary_encrypted_or_text=Restricted complaint text; current implementation is plaintext, not encryption
+anonymous_token_hash=Hash of opaque bearer receipt used for anonymous status lookup
+[ird.whistleblower_reports]
+anonymous_token_hash=Opaque receipt hash; never store plaintext receipt token
+status=Anonymous report lifecycle; handler progression remains incomplete
+filed_at=Report receipt instant
+summary=Restricted whistleblower report content
+[lv.leave_types]
+code=Stable leave type used by requests and reports
+name=Leave display label
+is_paid=Whether approved leave supplies a paid half/day
+accrual_per_month=Configured monthly immutable-ledger credit amount
+accrual_requires_service_months=Minimum service before accrual begins
+max_carry_forward=Year-end permitted carry amount; NULL means unlimited
+encashable=Eligibility for encashment processes
+max_per_request=Configured request-duration ceiling
+allow_half_day=Whether partial-day applications are permitted
+sandwich_rule=Include/exclude holidays and off-days in request duration
+applicable_categories=Allowed employment categories
+applicable_gender=Allowed gender population for type-specific eligibility
+is_active=Availability for new requests/accrual; do not destroy history
+[lv.ledger]
+txn_type=Immutable movement reason determining debit/credit purpose
+delta=Signed leave quantity; balance is a SUM of movements
+effective_date=Business date at which movement affects entitlement
+expiry_date=Optional credit expiry used for comp-off consumption
+reference_id=Polymorphic application/OT/accrual reference; intended non-FK needs type/context discipline
+note=Movement explanation, mandatory for manual adjustment
+[lv.restricted_holidays]
+holiday_date=Optional holiday calendar date
+name=Employee-facing optional holiday label
+[lv.rh_selections]
+applied=Approved optional holiday written to attendance
+[core.ats_acceptance_receipts]
+event_id=External immutable event UUID used for replay identity
+ats_offer_id=External accepted-offer identity, distinct from candidate/account ID
+source_digest=Digest of accepted offer snapshot detecting changed retries
+accepted_at=Candidate acceptance instant reported by ATS
+accepted_by_subject=External HR actor identifier; intentionally not HRMS user FK
+evidence_ref=Acceptance evidence/reference supplied by ATS HR
+received_at=HRMS receipt commit-time provenance
+[core.audit_log]
+action=Operation category recorded in immutable audit
+entity=Audited table/domain name
+entity_id=Polymorphic target identifier; no single table FK is appropriate
+field=Changed field or bounded operation label
+old_value=Masked before-image; caller must never include raw statutory credentials
+new_value=Masked after-image/explanation; caller masking is load-bearing
+ip=Operation source network address
+at=Audit event instant
+prev_hash=Prior row-chain hash for tamper evidence
+row_hash=Database-computed current content hash
+hash_version=Hash-content format version, including scope in version2
+chain_seq=Database serialization order for hash-chain validation, distinct from allocated row ID
+[core.bulk_jobs]
+importer=Registered importer type defining row semantics
+context=Validated import target/options snapshot; can include sensitive context
+context_key=Normalized target identity used for duplicate/commit coordination
+filename=Original workbook provenance
+file_sha256=Uploaded byte digest for retry identity
+status=Preview/commit/failure lifecycle
+ total_rows=Previewed row count
+error_rows=Rejected row count
+warning_rows=Rows with nonfatal validation warnings
+processed_rows=Committed/processed progress count, not authoritative financial amount
+rows=Staged normalized row data; may contain personal/statutory/pay values
+report=Per-row validation report
+result=Import completion summary
+error=Bounded job failure explanation
+committed_at=Successful commit receipt instant
+[core.clearances]
+department=IT/Admin/Finance/HR clearance responsibility
+status=Pending/cleared/flagged clearance state
+remarks=Clearance explanation
+unreturned_assets=Captured unresolved asset details supporting exit review, not replacement custody authority
+recovery_amount=Proposed clearance-related recovery amount; requires approved downstream consumption
+cleared_at=Department sign-off instant
+[core.companies]
+code=Canonical legal-entity code
+name=Legal entity display/letterhead name
+ecode_prefix=Configured entity employee-code prefix; differs from removed doc ecode_format description
+ecode_next_seq=Locked allocation sequence, not employee count
+is_india_payroll=Explicit India statutory-engine eligibility gate
+gstin=Entity GST registration printed on documents where required
+pan=Legal entity PAN, distinct from individual employee PAN
+pf_establishment_code=Legal establishment PF filing identifier
+esic_code=Employer ESIC registration identifier
+pt_registration_no=Employer professional-tax registration identifier
+tan=TDS deductor identity
+address=Legal letterhead/return address
+sap_company_code=External SAP payer mapping
+pf_wage_basis=Entity default PF wage-base policy; employee override precedence must be explicit
+country_code=Entity jurisdiction
+currency_code=Entity reporting/pay currency; India money engine is still INR-scoped
+timezone=Entity local time context; not permission to ignore locked IST business rules
+locale=Entity display localization
+[core.cost_centers]
+code=External payroll/SAP cost-center code scoped by company
+name=Cost-center display label
+[core.departments]
+name=Department display label; current master is globally named
+[core.designations]
+name=Validated designation label used by employee master
+[core.employee_addresses]
+kind=Present/permanent address authority discriminator
+house=House/flat/address line
+locality=Local area or village
+city=City/village name
+post_office=Postal administrative office
+police_station=Thana/police administrative area
+sub_division=Administrative sub-division
+district=Administrative district
+state_code=Structured state code; tax jurisdiction still needs approved work/residence precedence
+country_code=Address country jurisdiction
+pin=Postal code validated for declared country/policy
+[core.employee_certifications]
+name=Certificate/qualification title
+issuer=Issuing organization
+issued_on=Certificate issue date
+expires_on=Certificate expiry for validity/reminder work
+specialization=Certificate specialization
+grade=Reported certificate grade
+sort_order=Presentation order within employee qualifications
+[core.employee_education]
+qualification=Degree/qualification label
+institute=Educational institution name
+year_of_passing=Completion year
+specialization=Subject/specialization
+score=Reported percentage or CGPA numeric value
+score_type=Units/interpretation of score
+sort_order=Stable education-grid order
+[core.employee_experience]
+employer=Former employing organization
+designation=Prior job designation
+from_date=Prior employment beginning
+to_date=Prior employment ending; NULL while unspecified/current per validated form
+reason_for_leaving=Candidate-supplied prior separation reason
+last_ctc=Prior-employer CTC, not current payroll entitlement
+sort_order=Stable employment-history presentation order
+[core.employee_family]
+name=Family member name
+relation=Relationship to employee
+dob=Family member birth date
+aadhaar=Restricted family member statutory identifier
+is_esic_dependent=ESIC declaration eligibility flag
+is_nominee=Legacy generic nomination flag; cannot replace scheme/version-specific nomination
+nominee_share_pct=Legacy generic nomination share; reconcile with scheme-specific share authority
+gender=Family member gender for statutory declaration
+address=Family member residential address
+residing_with_employee=Whether member shares employee residence
+residing_town=Separate residing town when applicable
+residing_state_code=Separate residence state
+occupation=Family member occupation
+is_dependent=General dependency flag, distinct from ESIC scheme eligibility
+[core.employee_history]
+effective_date=Business effective date of recorded master movement
+change_type=Transfer/promotion/confirmation/change category
+field=Historical master field name
+old_value=Historical before-image; restricted fields must be masked appropriately
+new_value=Historical after-image; not a second editable master
+reference_id=Polymorphic originating workflow/reference
+[core.employee_nominations]
+scheme=PF/EPS/gratuity/ESIC/insurance nomination context
+version=Whole nomination-set version, not individual edit counter
+status=Active versus superseded nomination set member
+nominee_name=Nominee name snapshot supporting signed form history
+relation=Nominee relationship snapshot
+dob=Nominee birth date snapshot
+gender=Nominee gender snapshot
+address=Nominee address snapshot
+share_pct=Scheme/version-specific allocation percentage
+guardian_name=Minor nominee's guardian name
+guardian_relation=Guardian relationship
+guardian_address=Guardian address snapshot
+[core.employee_statutory_profile]
+epf_prev_member=Joining declaration of prior EPF membership
+eps_prev_member=Joining declaration of prior EPS membership
+prev_pf_number=Previous employer PF member identifier
+prev_exit_date=Previous employment exit date for transfer declaration
+scheme_certificate_no=Existing EPS scheme certificate reference
+ppo_no=Pension payment-order reference
+epf_withdrawn=Prior EPF withdrawal declaration
+eps_withdrawn=Prior EPS withdrawal declaration
+eps_withdrawn_after_sep2014=Timing-sensitive EPS withdrawal fact for eligibility review
+kyc_status=Statutory-profile verification workflow status
+transfer_request_status=Prior PF transfer application progress
+esic_prev_ip_number=Prior ESIC insured-person identifier; reconcile with current retained IP
+esic_prev_employer_code=Previous ESIC employer registration code
+esic_prev_employer_name=Previous employer declaration name
+esic_prev_employer_address=Previous employer declaration address
+esic_branch_office=Designated ESIC office
+esic_dispensary=Designated ESIC medical dispensary
+[core.employees]
+ecode=Permanent entity-series employee code allocated only on actual-joining confirmation
+first_name=Employee given/display first name
+last_name=Employee family/remaining name; may be absent for single-token names
+photo_path=Employee portrait object reference
+gender=Recorded gender for HR/statutory/demographic outputs
+dob=Birth date for age/eligibility checks and reporting
+marital_status=Declared marital classification for forms
+blood_group=Safety/identity-card blood-group data
+personal_email=Personal/prejoin/alumni communication address
+work_email=Work communication/login identity reference
+mobile=Employee contact telephone
+emergency_contact_name=Emergency contact person
+emergency_contact_phone=Primary emergency telephone
+present_address=Legacy formatted present address; specified derived copy once structured address authority is implemented
+permanent_address=Legacy formatted permanent address; not a second editable structured authority
+category=Employment category controlling population and permitted payroll rules
+contract_type=Employment terms classification; distinct from employee category
+contract_end_date=Fixed-term/consultant contract end date
+doj=Confirmed actual joining date for service/attendance/pay
+dol=Employment exit date; required when exited
+status=Employment lifecycle, distinct from login/session activity
+exit_reason=Recorded separation cause; restricted HR information
+probation_months=Agreed probation duration
+probation_salary_pct=Agreed probation pay percentage; source must match effective salary assignment
+probation_due_date=Derived/current probation review deadline
+confirmation_date=Effective confirmation date used by salary/probation lifecycle
+pan=Restricted employee income-tax identifier
+aadhaar=Restricted employee identity number
+uan=Restricted EPF universal account number
+pf_number=Restricted PF member number
+esic_ip_number=Restricted current insured-person number
+pf_applicable=Master PF coverage fact; run-specific approved freeze is separate work
+esic_applicable=Master ESIC coverage fact; contribution-period freeze must govern pay
+pt_applicable=Master PT applicability flag
+lwf_applicable=Master welfare-fund applicability flag
+tax_regime=Current old/new tax election; effective fiscal-year history remains required
+bank_name=Salary beneficiary bank name
+bank_account=Restricted salary beneficiary account number
+bank_ifsc=Restricted beneficiary routing code
+payment_mode=Bank/cheque/payment-hold routing selection
+access_card_no=Current source card mapping; does not rewrite immutable external events
+biometric_registered=Confirmed enrollment fact; cannot be inferred from ordinary checklist completion
+attendance_mode=Biometric/mobile/manual attendance source expectation
+pf_wage_basis=Employee-specific PF wage-base policy override
+ epf_member_before_sep2014=Approved historical EPF membership fact for EPS eligibility
+ epf_first_enrolled_on=First EPF enrollment date
+ epf_first_wages=Historical first enrollment wage fact for EPS review
+international_worker=International-worker PF eligibility fact, not nationality inference
+eps_eligible=Approved EPS membership eligibility fact; requires effective/frozen source ownership
+father_name=Joining-form paternal identity
+spouse_name=Joining-form spouse identity
+form11_relative=Father/spouse selection for statutory relative field
+marriage_date=Declared marriage calendar date
+nationality=Declared nationality
+country_of_origin=Declared origin country, distinct from payroll company jurisdiction
+religion=Optional restricted joining-form demographic data
+caste=Optional restricted joining-form demographic data
+height_cm=Joining/master physical measurement; distinguish from dated medical examination
+weight_kg=Joining/master physical measurement; distinguish from dated medical examination
+is_pwd=Declared disability status
+disability_type=Declared disability classification
+disability_pct=Declared assessed disability percentage
+identification_mark=Physical identification description
+passport_no=Restricted passport identity
+passport_valid_until=Passport expiry calendar date
+driving_licence_no=Restricted driving-licence identity
+driving_licence_valid_until=Licence expiry calendar date
+name_as_per_aadhaar=Statutory identity-matching name
+aadhaar_linked_mobile=Whether Aadhaar has a linked mobile; not a second stored phone number
+emergency_contact_relation=Emergency person's relationship
+emergency_contact_alt_phone=Alternate emergency telephone
+emergency_contact_address=Emergency person's address
+bank_branch=Beneficiary bank branch descriptor
+bank_account_holder=Verified account beneficiary name; bank output must choose this rather than infer employee name
+bank_account_type=Savings/current beneficiary account classification
+joining_form_date=Joining application execution date
+bgv_status=Background-verification process status
+induction_date=Completed induction calendar date
+joining_signed_off_at=HR joining-form sign-off receipt, distinct from actual DOJ
+[core.grades]
+code=Stable grade/pay-band code
+name=Grade display name
+rank=Grade ordering for leadership/eligibility thresholds
+[core.letter_templates]
+code=Stable letter type/template identity
+name=HR-facing template name
+body_template=Text merge template, alternative representation to stored DOCX source requiring renderer selection
+merge_fields=Declared allowed merge-field contract
+is_active=Template availability for new issuance
+[core.letters]
+template_code=Letter template identity used at rendering; historical rendered body must remain frozen
+issued_at=Formal issuance instant
+body_rendered=Rendered letter content snapshot; distinct from reusable template and exported object
+status=Draft/issued/withdrawn lifecycle controlling ESS visibility
+[core.locations]
+name=Physical site label
+state_code=Work-location state selecting configured state statutory rules
+timezone=Location timezone metadata; current attendance business-date contract is IST
+[core.mis_codes]
+code=Company-scoped MIS reporting code
+name=MIS rollup label
+is_active=Master availability without deleting historical references
+[core.nomination_declarations]
+scheme=Scheme to which signed declaration applies
+version=Nomination-set version bound to declaration
+status=Active/superseded signed declaration version
+statements=Scheme-specific signed assertions snapshot
+witness1_name=First witness identity snapshot
+witness1_address=First witness address snapshot
+witness2_name=Second witness identity snapshot
+witness2_address=Second witness address snapshot
+declared_at=Declaration execution instant
+employer_verified_at=Employer verification receipt instant
+employer_reference_no=Employer declaration/form reference
+employer_signatory_designation=Authorized signatory's title snapshot
+employee_acknowledged_at=Employee acknowledgement receipt
+[core.onboarding_candidates]
+ats_candidate_id=External ATS candidate identity, intentionally not cross-database FK
+loi_reference=Source offer/LOI reference
+full_name=Accepted-offer candidate name before employee creation
+personal_email=Prejoin delivery/contact address
+mobile=Candidate contact telephone
+dob=Candidate birth date for validated conversion
+address=Candidate contact address snapshot
+total_experience_years=Declared experience used in offer report
+previous_company=Prior employer offer-history snapshot
+current_salary=Candidate's prior/current offered-against salary, not HRMS pay authority
+expected_salary=Candidate expectation, not approved payroll entitlement
+position_title=Requisition/offer title
+department=Prejoin department label requiring canonical master resolution
+org_unit=Prejoin organization label requiring canonical resolution
+designation=Prejoin designation label requiring canonical resolution
+category=Offered employment category
+replacement_of_ecode=Replaced employee's source code/reference
+offered_ctc=Accepted annual offer CTC used to establish approved joining salary
+probation_months=Offer probation duration
+probation_salary_pct=Offer probation pay ratio
+proposed_doj=Planned joining date; does not authorize permanent employee creation
+offer_date=Offer issuance calendar date
+work_location=Source offered location label
+prejoin_link_token=Legacy column constrained NULL; plaintext bearer credentials forbidden
+prejoin_token_hash=SHA256 authorization digest for finite-lived prejoin link
+prejoin_token_expires_at=Configured link expiration
+prejoin_link_sent_at=Actual delivery receipt; generation/enqueue alone must not imply delivery
+prejoin_completed_at=Accepted one-time form submission instant
+prejoin_submitted_data=Submitted application snapshot awaiting HR acceptance/actual joining
+status=Separate preboarding/waiting/submitted/converted/no-show state
+prejoin_draft_data=Autosaved mutable candidate form before submission; not current employee master
+gender=Candidate gender to preserve on conversion
+[core.onboarding_tasks]
+task_code=Stable checklist obligation identity
+task_name=Stakeholder-readable obligation label
+department=Responsible stakeholder function
+owner_role=Configured routing role name; not a stored resolved assignee
+ due_date=Obligation deadline calendar date
+sla_hours=Configured escalation duration
+status=Open/done/escalated checklist state
+escalated_at=Escalation attempt instant
+ done_at=Task-completion receipt
+notes=Stakeholder execution explanation
+[core.org_units]
+name=Company organization hierarchy label
+[core.password_reset_tokens]
+token_hash=Digest of opaque one-time reset credential, never its plaintext
+expires_at=Reset credential cutoff
+used_at=One-way redemption marker
+[core.permissions]
+code=Runtime business capability identity
+[core.plants]
+plant_code=Company plant identity, distinct from cost-center code
+name=Plant display label
+is_active=Plant availability for assignment
+[core.policies]
+title=Policy publication headline
+effective_date=Policy applicability date
+requires_acknowledgment=Whether audience members owe a receipt
+audience=Configured policy population selection
+is_active=Publication withdrawal flag
+body_summary=Human-readable summary, not replacement for signed/stored policy document
+[core.policy_acknowledgments]
+acknowledged_at=Employee receipt of this exact policy record
+[core.probation_reviews]
+due_date=Review due date
+manager_recommendation=Manager's proposed confirm/extend/terminate outcome
+extension_months=Recommended/approved extension duration
+review_notes=Review explanation
+ratings=Review assessment payload; require a defined validation schema
+status=Review workflow state
+outcome=Final confirmed/extended/separated decision
+ decided_at=Decision receipt instant
+confirmation_date=Chosen effective confirmation date, distinct from decision time
+[core.profile_change_requests]
+field=Master change category, currently family requests
+old_value=Before-image if captured; current family submission leaves it NULL
+new_value=Requested master change JSON/text; may contain raw sensitive identifiers
+status=Pending/approved/rejected change disposition
+ decided_at=HR decision receipt
+[core.reporting_tree]
+manager_id=Derived ancestor manager identity; no live FK
+employee_id=Derived descendant identity; no live FK
+depth=Number of reporting hops; self depth0 versus direct depth1 distinguishes scope
+[core.role_permissions]
+scope=Grant population/mutability class: all/org/subtree/own/readonly; central read/write resolution owns interpretation
+[core.roles]
+code=Stable configurable role identity
+name=Administration display label
+[core.separations]
+initiated_at=Separation request receipt instant
+initiated_by=Employee/HR initiation mode, not a user FK
+reason=Employee/HR separation explanation
+resignation_date=Business resignation date
+notice_period_days=Configured/agreed notice requirement
+requested_lwd=Requested last working date
+approved_lwd=Approved last working date controlling exit effect
+shortfall_days=Notice shortfall quantity requiring approved recovery policy
+workflow_request_id=Approval instance link; live FK absent
+status=Pending/approved/completed/withdrawn/rejected lifecycle
+fnf_id=Settlement link; cyclic domain reference lacks live FK
+[core.settings]
+key=Stable runtime configuration identity
+value=Typed policy/configuration value serialized as text
+value_type=Discriminator for runtime parsing
+ description=Operator-facing purpose of setting; not enforcement
+[core.transfers]
+transfer_type=Promotion/department/location/entity movement class
+effective_date=Business effective date, distinct from approval instant
+status=Pending/approved/applied/rejected/cancelled progression
+current_ecode=Before-movement code snapshot
+target_ecode=After-movement allocated entity code snapshot
+salary_revision_amount=Proposed compensation revision requiring approved effective salary transaction
+leave_treatment=Policy selection for carrying or settling leave in entity move
+reason=Movement justification
+remarks=Additional movement context
+approved_at=Workflow approval instant
+notified_at=Transfer notification enqueue/receipt marker, must not imply external delivery without proof
+[core.users]
+email=Unique login principal identifier
+password_hash=Bcrypt authentication secret digest
+is_active=Login authorization availability, distinct from employee/alumni lifecycle
+last_login_at=Last successful login instant
+failed_attempts=Serialized authentication failure count
+locked_until=Authentication backoff cutoff
+must_change_password=Mandatory password-change gate
+password_changed_at=Current password version/effective instant
+deactivated_at=Account disable provenance; reactivation semantics need consistency with is_active

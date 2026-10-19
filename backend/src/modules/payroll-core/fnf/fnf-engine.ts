@@ -33,6 +33,8 @@ export interface FnfComputeParams {
   travelAdvanceDebitPaise?: number;
   heldSalaryPaise?: number;
   tdsPaise?: number;
+  /** Death exit: gratuity does not wait for five years (Payment of Gratuity Act s.4). */
+  gratuityWaivesMinimumService?: boolean | undefined;
 }
 
 export interface FnfBreakdownLine {
@@ -142,6 +144,7 @@ export function computeFnfSettlement(params: FnfComputeParams): FnfSettlementCal
     daMonthlyPaise: daPaise,
     doj: params.doj,
     lastWorkingDay: params.approvedLwd,
+    waiveMinimumService: params.gratuityWaivesMinimumService,
   });
   const gratuityPaise = gratuityDetail.gratuityPaise;
 

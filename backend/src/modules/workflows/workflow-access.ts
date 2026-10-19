@@ -11,7 +11,7 @@ type Text = string | RawBuilder<string>;
 // assignments remain authoritative until their per-stage contract is specified.
 const DOMAIN_PERMISSION = {
   regularization: 'ar.approve', od: 'od.approve', overtime: 'ot.approve',
-  leave: 'leave.approve', comp_off: 'leave.approve',
+  leave: 'leave.approve', comp_off: 'leave.approve', shift_swap: 'attendance.roster.write',
   leave_cancel: 'leave.approve', restricted_holiday: 'leave.approve',
   // C-16: lifecycle chains are bounded by the approver's data scope too, so an
   // RML-scoped hr_ops can never act on an RGH resignation.

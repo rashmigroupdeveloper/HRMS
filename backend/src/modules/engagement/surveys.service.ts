@@ -17,6 +17,7 @@ import {
   type Db,
   type EngagementAudience,
 } from './audience.js';
+import { surveyRecommendations } from './survey-recommendations.js';
 
 export interface SurveyQuestion {
   id: string;
@@ -61,6 +62,7 @@ export interface SurveyResultRow {
   isAnonymous: boolean;
   totalResponses: number;
   questions: SurveyQuestionResult[];
+  recommendations: string[];
 }
 
 function surveyAnonymousHash(appSecret: string, surveyId: number, userId: number): string {
@@ -370,6 +372,7 @@ export async function surveyResults(db: Db, surveyId: number): Promise<SurveyRes
     isAnonymous: survey.is_anonymous,
     totalResponses,
     questions: questionResults,
+    recommendations: surveyRecommendations(questionResults),
   };
 }
 

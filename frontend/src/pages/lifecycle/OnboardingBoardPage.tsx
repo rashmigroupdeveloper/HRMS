@@ -14,6 +14,7 @@ import { useState, useEffect, useId, useCallback, useRef } from 'react';
 import { UserPlus, Copy, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Button, Card, CardHeader, DataTable, PageHeader, StatGrid, StatTile, toast, type SelectOption } from '../../ui';
 import { OnboardingDrawers } from './OnboardingDrawers';
+import { OfferComposer } from './OfferComposer';
 import { OnboardingTasks } from './OnboardingBoardViews';
 import { onboardingColumns } from './onboarding-columns';
 import type { CandidateItem, StakeholderTaskItem, SelectOptionSource } from './onboarding-types';
@@ -279,13 +280,16 @@ export function OnboardingBoardPage() {
         title="Onboarding"
         description="Keep accepted candidates separate from employee MIS while they complete onboarding. A permanent company-prefix ID is issued only after HR confirms actual joining."
         actions={
-          <Button
-            variant="primary"
-            leadingIcon={<UserPlus className="h-4 w-4" />}
-            onClick={() => { setIngestOpen(true); }}
-          >
-            Add candidate
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <OfferComposer />
+            <Button
+              variant="primary"
+              leadingIcon={<UserPlus className="h-4 w-4" />}
+              onClick={() => { setIngestOpen(true); }}
+            >
+              Add candidate
+            </Button>
+          </div>
         }
       />
 

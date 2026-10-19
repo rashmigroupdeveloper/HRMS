@@ -15,6 +15,7 @@
  * day. All window margins + the session-presence fraction are POLICY read from
  * core.settings (review F10), never hardcoded.
  */
+import { evaluateAttendancePenalties } from './penalty-evaluation.js';
 import { logger } from '../../core/logger.js';
 import { closeWeekOffs } from '../../core/db/attendance-period.js';
 import { findHoliday, loadHolidaySubject } from '../../core/db/holiday-calendar.js';
@@ -27,6 +28,7 @@ import { recordDetectedOvertime } from './overtime.service.js';
 import { approvedHalfRequests, overlayHalfRequests } from './half-requests.js';
 import { readSessionStatuses } from './session-status.js';
 import { inTransaction } from '../../core/db/database.js';
+import { scheduledShiftIntervals, shiftSessions, selectFilo, swipePoints, type AttendanceSwipe, type ShiftInterval, type SwipePoint } from './shift-windows.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 type ShiftRow = Selectable<AttShiftsTable>;
@@ -119,11 +121,6 @@ export async function resolveDay(db: Db, employeeId: number, isoDate: string): P
   return { shift: shift ?? null, isWeekOff: false, isHoliday: false };
 }
 
-interface ShiftInterval {
-  start: number;
-  end: number;
-}
-
 export type FinalizationHoldReason =
   | 'location_not_mapped'
   | 'no_active_devices'
@@ -149,10 +146,8 @@ export interface FinalizationHold {
 /** The working [start, end] instants (ms) for a resolved shift, or null (WO/holiday). */
 function shiftInterval(resolved: ResolvedShift, isoDate: string): ShiftInterval | null {
   if (resolved.isHoliday || resolved.isWeekOff || !resolved.shift) return null;
-  const s = resolved.shift;
-  const start = istDateTime(isoDate, s.start_time).getTime();
-  const end = istDateTime(isoDate, s.end_time).getTime() + (s.crosses_midnight ? 86_400_000 : 0);
-  return { start, end };
+  const intervals = scheduledShiftIntervals(resolved.shift, isoDate);
+  return { start: Math.min(...intervals.map(iv => iv.start)), end: Math.max(...intervals.map(iv => iv.end)) };
 }
 
 /**
@@ -236,14 +231,14 @@ async function attributeOwnedSwipes(
   employeeId: number,
   isoDate: string,
   cur: ShiftInterval,
-  swipeTimes: Date[],
-): Promise<Date[]> {
+  swipes: SwipePoint[],
+): Promise<SwipePoint[]> {
   let prevIv: ShiftInterval | null | undefined;
   let nextIv: ShiftInterval | null | undefined;
-  const owned: Date[] = [];
+  const owned: SwipePoint[] = [];
 
-  for (const swipe of swipeTimes) {
-    const t = swipe.getTime();
+  for (const swipe of swipes) {
+    const t = swipe.swipeTs.getTime();
     if (t >= cur.start && t <= cur.end) {
       owned.push(swipe); // inside the core interval → unambiguously ours
       continue;
@@ -293,15 +288,14 @@ export interface ComputedDay {
 export function computeDayStatus(
   resolved: ResolvedShift,
   isoDate: string,
-  swipeTimes: Date[],
+  swipeTimes: AttendanceSwipe[],
   policy: AttendancePolicy,
 ): ComputedDay {
-  if (resolved.isHoliday || resolved.isWeekOff || !resolved.shift) {
+  const swipes = swipePoints(swipeTimes);
+  if (resolved.isHoliday || resolved.isWeekOff) {
     // WO/H day: no shift interval, but swipes still mean WORK — FILO minutes
     // become detected OT (docs/04 §1.4: week-off/holiday work is OT-eligible).
-    const sorted = [...swipeTimes].sort((a, b) => a.getTime() - b.getTime());
-    const firstIn = sorted[0] ?? null;
-    const lastOut = sorted.length > 1 ? (sorted[sorted.length - 1] ?? null) : null;
+    const { firstIn, lastOut } = selectFilo(swipes);
     const worked = firstIn && lastOut ? Math.floor((lastOut.getTime() - firstIn.getTime()) / 60_000) : null;
     return {
       status: resolved.isHoliday ? 'H' : 'WO',
@@ -317,32 +311,38 @@ export function computeDayStatus(
     };
   }
 
+  if (!resolved.shift) throw new Error('No shift configured for this working day');
   const shift = resolved.shift;
-  const start = istDateTime(isoDate, shift.start_time);
-  const end = new Date(istDateTime(isoDate, shift.end_time).getTime() + (shift.crosses_midnight ? 86_400_000 : 0));
+  const intervals = scheduledShiftIntervals(shift, isoDate);
+  const sessions = shiftSessions(shift, isoDate, intervals);
+  const start = new Date(Math.min(...intervals.map(iv => iv.start)));
+  const end = new Date(Math.max(...intervals.map(iv => iv.end)));
   const windowStart = new Date(start.getTime() - policy.earlyMarginMs);
   const windowEnd = new Date(end.getTime() + policy.lateMarginMs);
 
-  const inWindow = swipeTimes.filter((t) => t >= windowStart && t <= windowEnd).sort((a, b) => a.getTime() - b.getTime());
+  const inWindow = swipes.filter(swipe => swipe.swipeTs >= windowStart && swipe.swipeTs <= windowEnd);
   const base = { schemeCode: shift.code, shiftId: shift.id };
 
   if (inWindow.length === 0) {
-    return { ...base, status: 'A', firstIn: null, lastOut: null, workedMinutes: 0, lateMinutes: 0, earlyExitMinutes: 0, sessionStatuses: shift.session_split === null ? null : [{ session: 1, status: 'A' }, { session: 2, status: 'A' }], otMinutes: 0 };
+    return { ...base, status: 'A', firstIn: null, lastOut: null, workedMinutes: 0, lateMinutes: 0, earlyExitMinutes: 0, sessionStatuses: sessions === null ? null : [{ session: 1, status: 'A' }, { session: 2, status: 'A' }], otMinutes: 0 };
   }
 
   // FILO — first in, last out (ATT-18, PP-v2-2).
-  const firstIn = inWindow[0] ?? null;
-  const lastOut = inWindow.length > 1 ? (inWindow[inWindow.length - 1] ?? null) : null;
+  const { firstIn, lastOut } = selectFilo(inWindow);
 
-  const rawMinutes = firstIn && lastOut ? Math.floor((lastOut.getTime() - firstIn.getTime()) / 60_000) : 0;
-  const workedMinutes = Math.max(0, rawMinutes - shift.break_minutes);
+  const rawMinutes = firstIn && lastOut
+    ? intervals.length === 2
+      ? intervals.reduce((sum, iv) => sum + Math.floor(Math.max(0, Math.min(lastOut.getTime(), iv.end) - Math.max(firstIn.getTime(), iv.start)) / 60000), 0)
+      : Math.floor((lastOut.getTime() - firstIn.getTime()) / 60000)
+    : 0;
+  const workedMinutes = Math.max(0, rawMinutes - (shift.break_paid ? 0 : shift.break_minutes));
 
   const graceIn = shift.grace_in_minutes * 60_000;
   const graceOut = shift.grace_out_minutes * 60_000;
   const lateMinutes =
-    firstIn && firstIn.getTime() > start.getTime() + graceIn ? Math.floor((firstIn.getTime() - start.getTime()) / 60_000) : 0;
+    firstIn && firstIn.getTime() > start.getTime() + graceIn ? Math.floor((firstIn.getTime() - start.getTime() - graceIn) / 60_000) : 0;
   const earlyExitMinutes =
-    lastOut && lastOut.getTime() < end.getTime() - graceOut ? Math.floor((end.getTime() - lastOut.getTime()) / 60_000) : 0;
+    lastOut && lastOut.getTime() < end.getTime() - graceOut ? Math.floor((end.getTime() - graceOut - lastOut.getTime()) / 60_000) : 0;
 
   const fullMin = Number(shift.min_full_day_hours) * 60;
   const halfMin = Number(shift.min_half_day_hours) * 60;
@@ -350,17 +350,11 @@ export function computeDayStatus(
   let status: DayStatus;
   let sessionStatuses: SessionStatus[] | null = null;
 
-  if (shift.session_split !== null) {
-    // Two-session day (09 §4): a session is Present when coverage ≥ the policy fraction.
-    const split = istDateTime(isoDate, shift.session_split);
-    const sessions: [Date, Date][] = [
-      [start, split],
-      [split, end],
-    ];
-    sessionStatuses = sessions.map(([s, e], i): SessionStatus => {
-      const overlap = firstIn && lastOut ? Math.min(lastOut.getTime(), e.getTime()) - Math.max(firstIn.getTime(), s.getTime()) : 0;
-      const need = (e.getTime() - s.getTime()) * policy.sessionPresentFraction;
-      return { session: i + 1, status: overlap >= need ? 'P' : 'A' };
+  if (sessions !== null) {
+    sessionStatuses = sessions.map((session, i): SessionStatus => {
+      const overlap = firstIn && lastOut ? Math.max(0, Math.min(lastOut.getTime(), session.end) - Math.max(firstIn.getTime(), session.start)) : 0;
+      const need = (session.end - session.start) * policy.sessionPresentFraction;
+      return { session: i + 1, status: firstIn && lastOut && overlap >= need ? 'P' : 'A' };
     });
     const present = sessionStatuses.filter((s) => s.status === 'P').length;
     status = present === 2 ? 'P' : present === 1 ? 'HD' : 'A';
@@ -370,7 +364,8 @@ export function computeDayStatus(
 
   // OT = time past shift end (ATT-08); grace-out is a penalty concept, not an
   // OT one, so it does not shave detected minutes.
-  const otMinutes = lastOut && lastOut.getTime() > end.getTime() ? Math.floor((lastOut.getTime() - end.getTime()) / 60_000) : 0;
+  const otStart = end.getTime() + shift.ot_start_offset_minutes * 60_000;
+  const otMinutes = lastOut && lastOut.getTime() > otStart ? Math.floor((lastOut.getTime() - otStart) / 60_000) : 0;
 
   return { ...base, status, firstIn, lastOut, workedMinutes, lateMinutes, earlyExitMinutes, sessionStatuses, otMinutes };
 }
@@ -432,39 +427,39 @@ export async function recomputeDay(
   const resolved = await resolveDay(db, employeeId, isoDate);
   const cur = shiftInterval(resolved, isoDate);
 
-  let owned: Date[] = [];
+  let owned: SwipePoint[] = [];
   if (cur) {
     const from = new Date(cur.start - pol.earlyMarginMs);
     const to = new Date(cur.end + pol.lateMarginMs);
     const swipes = await db
       .selectFrom('att.swipe_events')
-      .select('swipe_ts')
+      .select(['swipe_ts', 'direction'])
       .where('employee_id', '=', employeeId)
       .where('swipe_ts', '>=', from)
       .where('swipe_ts', '<=', to)
       .orderBy('swipe_ts')
       .execute();
-    owned = await attributeOwnedSwipes(db, employeeId, isoDate, cur, swipes.map((s) => s.swipe_ts));
+    owned = await attributeOwnedSwipes(db, employeeId, isoDate, cur, swipes.map((s) => ({ swipeTs: s.swipe_ts, direction: s.direction })));
   } else {
     // WO/holiday: no shift interval — any swipe inside the IST calendar day is
     // week-off/holiday WORK and feeds OT detection (docs/04 §1.4).
     const dayStart = istDateTime(isoDate, '00:00');
     const swipes = await db
       .selectFrom('att.swipe_events')
-      .select('swipe_ts')
+      .select(['swipe_ts', 'direction'])
       .where('employee_id', '=', employeeId)
       .where('swipe_ts', '>=', dayStart)
       .where('swipe_ts', '<', new Date(dayStart.getTime() + 86_400_000))
       .orderBy('swipe_ts')
       .execute();
-    owned = swipes.map((s) => s.swipe_ts);
+    owned = swipes.map((s) => ({ swipeTs: s.swipe_ts, direction: s.direction }));
   }
 
   let computed = computeDayStatus(resolved, isoDate, owned, pol);
   if (halfLeave) {
     await db.updateTable('att.day_records')
       .set({ shift_id: computed.shiftId, first_in: computed.firstIn, last_out: computed.lastOut,
-        worked_minutes: computed.workedMinutes,
+        worked_minutes: computed.workedMinutes, penalty_flag: false, penalty_evaluation: null,
         session_statuses: computed.sessionStatuses ? JSON.stringify(computed.sessionStatuses) : null, computed_at: new Date() })
       .where('employee_id', '=', employeeId).where('work_date', '=', sql<Date>`${isoDate}::date`)
       .where('is_locked', '=', false).where('status', '=', 'HD').execute();
@@ -505,7 +500,14 @@ export async function recomputeDay(
       return 'held';
     }
   }
+  // Evaluate AFTER approved half overlays remove their covered deviation.
+  // This snapshot never feeds status, sessions, OT or a payroll day quantity.
+  const penalties = resolved.shift && computed.firstIn !== null
+    ? evaluateAttendancePenalties(computed.lateMinutes, computed.earlyExitMinutes,
+      resolved.shift.late_slabs, resolved.shift.early_exit_slabs) : [];
   const row = {
+    penalty_flag: penalties.length > 0,
+    penalty_evaluation: JSON.stringify(penalties),
     shift_id: computed.shiftId,
     status: computed.status,
     first_in: computed.firstIn,

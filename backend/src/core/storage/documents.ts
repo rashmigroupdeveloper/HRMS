@@ -2,7 +2,7 @@
  * core.documents — the single file registry (docs/03 §3): every stored file is
  * one row (metadata) + one object (bytes) behind the StorageAdapter.
  */
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import type { Kysely, Transaction } from 'kysely';
 import type { Database } from '../db/types.js';
@@ -17,6 +17,10 @@ export interface CreateDocumentInput {
   mime: string;
   content: Buffer | string;
   uploadedBy: number | null;
+  /** Catalog classification, separate from the generic storage/document kind. */
+  documentType?: string | null;
+  expiresOn?: Date | null;
+  status?: 'active' | 'superseded' | 'withdrawn';
 }
 
 /** Store bytes + register the row; returns the document id. */
@@ -33,11 +37,15 @@ export async function createDocument(db: Db, input: CreateDocumentInput): Promis
     .values({
       owner_employee_id: input.ownerEmployeeId,
       kind: input.kind,
+      doc_type: input.documentType ?? null,
       path: key,
       original_name: input.originalName,
       mime: input.mime,
       size_bytes: Buffer.byteLength(input.content),
+      sha256: createHash('sha256').update(input.content).digest('hex'),
       uploaded_by: input.uploadedBy,
+      expires_on: input.expiresOn ?? null,
+      status: input.status ?? 'active',
     })
     .returning('id')
     .executeTakeFirstOrThrow();

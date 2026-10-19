@@ -1,3 +1,9 @@
+export interface AttendancePenaltyFinding {
+  cause: 'late_arrival' | 'early_exit';
+  minutes: number;
+  rule: { fromMin: number; toMin: number | null; effect: 'late' | 'half_day' };
+}
+
 export interface AttendanceSession {
   session: number;
   status: 'P' | 'A' | 'O' | 'OD';
@@ -9,8 +15,11 @@ export interface AttendanceMonthRow {
   sessionStatuses: AttendanceSession[] | null;
   firstIn: string | null;
   lastOut: string | null;
+  workedMinutes?: number | null;
   otMinutes: number;
   lateMinutes: number;
+  penaltyFlag?: boolean;
+  penaltyEvaluation?: AttendancePenaltyFinding[] | null;
   source?: 'auto' | 'regularized' | 'manual';
   isLocked?: boolean;
   leaveTypeCode?: string | null;

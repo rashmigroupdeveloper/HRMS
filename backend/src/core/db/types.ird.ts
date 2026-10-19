@@ -38,6 +38,19 @@ export interface IrdPoshCasesTable {
   created_at: DefaultedTimestamp;
 }
 
+export type PoshCaseAssignmentRole = 'presiding_officer' | 'investigator' | 'member';
+
+/** ird.posh_case_assignments — assigned-case isolation for confidential POSH inquiries. */
+export interface IrdPoshCaseAssignmentsTable {
+  id: Generated<number>;
+  case_id: number;
+  user_id: number;
+  role: Generated<PoshCaseAssignmentRole>;
+  assigned_by_user_id: number | null;
+  assigned_at: DefaultedTimestamp;
+  active: Generated<boolean>;
+}
+
 export type PoshAccessOutcome = 'opened' | 'refused';
 
 /** ird.posh_case_access_log — append-only; every case open is recorded. */

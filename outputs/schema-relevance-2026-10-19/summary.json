@@ -1,0 +1,28 @@
+{
+  "captured_at": "2026-10-19T08:03:31.489Z",
+  "read_only": true,
+  "limits": [
+    "No business rows read. No field dropped or migration applied.",
+    "Code/spec references are lexical candidates, not proof of a particular read/write, correctness, authorization or necessity.",
+    "selectAll, JSON, computed SQL, triggers and future approved scope may justify a field without an explicit application mention.",
+    "Relationship constraints prove a link, not the full business purpose. Every unresolved purpose still needs semantic review.",
+    "Application field count excludes migration bookkeeping and physical child partitions. Repository and DB snapshots are not one atomic snapshot."
+  ],
+  "manually_reviewed_field_purposes": 147,
+  "application_tables": 162,
+  "application_columns": 1813,
+  "counts_by_status": {
+    "typed_with_candidate_code_references": 1314,
+    "typed_table_consumed_field_usage_unproven": 166,
+    "typed_without_current_direct_table_consumer_review": 319,
+    "migration_infrastructure": 3,
+    "sponsor_excluded_mfa_retained_for_compatibility_review": 14
+  },
+  "counts_by_purpose_basis": {
+    "relationship_or_identity_constraint": 532,
+    "not_yet_semantically_documented": 1116,
+    "manual_review_trace": 147,
+    "explicit_comment": 21
+  },
+  "typed_fields_missing_from_live_schema": []
+}

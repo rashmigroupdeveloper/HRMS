@@ -1,0 +1,7 @@
+{
+  "migrations_table": "public.pgmigrations",
+  "applied": [
+    "1753000000400_duplicate-migration-bookkeeping"
+  ],
+  "target": "authorized loopback /hrms TEST only"
+}

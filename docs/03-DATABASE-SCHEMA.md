@@ -343,7 +343,8 @@ CREATE TABLE att.day_records (      -- PROCESSED attendance; recomputable from r
   is_locked BOOLEAN NOT NULL DEFAULT false,        -- month lock (ATT-15); locked rows immutable by trigger
   session_statuses JSONB,                          -- ordered sessions 1/2 with P/A/O; A:P, P:A, P:O (09-RECON §4); NULL = single-status day. Daily status remains the explicit summary; O is off, not absent.
   scheme_code TEXT,                                -- effective attendance scheme that day (e.g. 'GCS' Saturday scheme vs weekday 'G5')
-  penalty_flag BOOLEAN NOT NULL DEFAULT false,     -- attendance-penalty policy outcome ("Penalty Days" live metric)
+  penalty_flag BOOLEAN NOT NULL DEFAULT false,     -- compatibility indicator; never a penalty-day quantity
+  penalty_evaluation JSONB,                        -- SHF-01: frozen late/early findings {cause,minutes,rule}; [] evaluated none, NULL historical/not evaluated. Does not change P/A or payroll. DB validates shape/rule match/unique causes and indicator consistency.
   computed_at TIMESTAMPTZ,
   UNIQUE(employee_id, work_date)
 );
@@ -875,3 +876,27 @@ Authorized ATS HR records acceptance date/evidence after candidate consent. `cor
 
 
 CORE-10 ATS machine authority amendment19 Oct: reuse an existing dedicated `core.users` principal, configured by audited numeric setting `integration.ats.service_user_id`. It is validated against an active real user on every request; no invented/fallback user or new user/identity column is created. The dedicated `integration.ats.receive` permission lives in the existing role-permission table, can be revoked at runtime, and gates both scoped catalog read and accepted-offer write after client proof. Group authority plus explicit allowed company IDs are both required. No default principal is seeded; absent configuration fails closed. The technical client resolver is an option of the central `withPermission` gate, never a local handler role check.
+
+
+## Recovery clarification — document vault (19 October 2026)
+
+No new business column is introduced by vault recovery. Existing `core.documents.owner_employee_id` identifies the employee; `kind` is the generic file category and existing `doc_type` joins `doc.types.code` (legacy kind-only classifications remain readable); `path` is the private storage key; original name/MIME/size describe stored bytes; existing `sha256` stores their digest and supports identical-upload retry without duplicate registry rows/objects; uploader and timestamps establish provenance. `expires_on` is a calendar DATE (NULL means perpetual); `status` distinguishes active/superseded/withdrawn registry entries. The existing joining-form `candidate_id`, verification and document-number columns retain pre-boarding provenance. The vault reuses `doc_type` for the same canonical document class after conversion, without fabricating verification or statutory values.
+
+`doc.types` is the existing active catalog: code/name, typical expiry, retention class, mandatory employment categories, display order and joining-checklist/max-files settings. The recovered service reuses this catalog and registry rather than creating a parallel employee-document table. `1753000000100_document-vault-permissions` adds only permissions/default grants. The forward holiday-scope migration `1753000000000` repairs null-aware uniqueness and rejects duplicate facts rather than discarding rows.
+
+
+### SHF-01 recovered shift-field connections —19 October 2026
+
+These existing `att.shifts` fields extend the earlier abbreviated DDL above; they are not speculative new columns. Full purpose/connection annotations are in `outputs/schema-relevance-2026-10-19/field-purposes-reviewed.json`.
+
+| Field | Meaning and connection |
+|---|---|
+| `session_split` | Explicit first/second-half boundary within a continuous same-day shift; used by attendance and AR/OD configured-time selection. |
+| `session2_start`, `session2_end` | Explicit second working interval after the primary first interval. Both required together; gaps excluded; cannot combine with session_split. Final interval end governs absence completeness and OT boundary. |
+| `break_paid` | Determines whether configured break minutes reduce a continuous worked span; separate interval gaps already represent non-working time. |
+| `ot_start_offset_minutes` | Moves detection start after the final working interval; detected minutes still require the existing OT approval workflow. |
+| `late_slabs`, `early_exit_slabs` | Runtime-configured, ordered non-overlapping inclusive integer-minute ranges after grace; strict array validation. Matching non-none rules become separate day snapshots, never P/A rewrites. Empty arrays mean no configured findings. |
+| `allowance_component_code` | Approved shift-allowance component reference model. Consumption by payroll is incomplete; API refuses enabling a non-null code rather than pretending payment is connected. |
+| `is_active` | Shift-catalog availability for assignment; retirement is not deletion of historical roster/day references. |
+
+`att.day_records.penalty_evaluation` is the only business column introduced by this penalty change. Snapshot validation and boolean consistency live at the DB; existing generic locked-row protection and manager-attestation invalidation apply to it. Locked historical rows are not backfilled from current mutable rules. No separate payable-day counter or duplicate penalty total is added.

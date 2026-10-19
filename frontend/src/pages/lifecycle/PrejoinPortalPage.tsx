@@ -7,8 +7,28 @@
  * - Single-use token invalidation upon successful submission.
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { EMPTY_PREJOIN_FORM, validatePrejoinForm } from './prejoin-form';
+import { useState, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
+import { EMPTY_PREJOIN_FORM, educationRows, familyRows, nominationRows, stepError, structured, validatePrejoinForm, type JoiningFormKind, type PrejoinForm } from './prejoin-form';
+
+function patchRow<K extends 'educationRows' | 'familyRows' | 'nominations'>(form: PrejoinForm, key: K, index: number, patch: Partial<PrejoinForm[K][number]>): PrejoinForm {
+  const rows = form[key].map((row, i) => (i === index ? { ...row, ...patch } : row));
+  return { ...form, [key]: rows };
+}
+
+async function readJoiningFile(
+  file: File | undefined,
+  documentType: 'photo' | 'id_proof',
+  setFiles: Dispatch<SetStateAction<{ documentType: 'photo' | 'id_proof'; fileName: string; mime: 'application/pdf' | 'image/png' | 'image/jpeg'; content: string }[]>>,
+): Promise<void> {
+  if (!file) return;
+  if (file.type !== 'application/pdf' && file.type !== 'image/png' && file.type !== 'image/jpeg') return;
+  const mime = file.type;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  const content = btoa(binary);
+  setFiles((current) => [...current.filter((item) => item.documentType !== documentType), { documentType, fileName: file.name, mime, content }]);
+}
 import { useSearchParams } from 'react-router-dom';
 import { CheckCircle2, AlertCircle, Building2, Send, Lock } from 'lucide-react';
 import { Button, Card, CardHeader, DarkCard, TextField, Select, type SelectOption } from '../../ui';
@@ -34,13 +54,16 @@ export function PrejoinPortalPage() {
   const [candidateInfo, setCandidateInfo] = useState<{
     candidateId?: number;
     candidateName?: string;
-    positionTitle?: string;
-  } | null>(null);
+          positionTitle?: string;
+          category?: string;
+        } | null>(null);
 
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   const [form, setForm] = useState({ ...EMPTY_PREJOIN_FORM });
+  const [step, setStep] = useState(0);
+  const [files, setFiles] = useState<{ documentType: 'photo' | 'id_proof'; fileName: string; mime: 'application/pdf' | 'image/png' | 'image/jpeg'; content: string }[]>([]);
   const submittingRef = useRef(false);
   const tokenVersion = useRef(0);
 
@@ -75,12 +98,16 @@ export function PrejoinPortalPage() {
           candidateId?: number;
           candidateName?: string;
           positionTitle?: string;
+          category?: string;
           error?: string;
         };
         if (cancelled) return;
         if (data.isValid && typeof data.candidateId === 'number') {
           setTokenValid(true);
           setCandidateInfo(data);
+          if (data.category === 'consultant') {
+            setForm((current) => ({ ...current, formKind: 'consultant' }));
+          }
         } else
           setTokenError(
             data.error ??
@@ -128,12 +155,33 @@ export function PrejoinPortalPage() {
             emergencyContactPhone: form.emergencyContactPhone,
             emergencyContactRelation: form.emergencyContactRelation,
             bloodGroup: form.bloodGroup.trim() ? form.bloodGroup.trim() : undefined,
-            pan: form.pan.toUpperCase().trim(),
-            aadhaar: form.aadhaar.trim(),
-            uan: form.uan ? form.uan.trim() : undefined,
+            pan: form.formKind === 'overseas' ? undefined : form.pan.toUpperCase().trim(),
+            aadhaar: form.formKind === 'overseas' ? undefined : form.aadhaar.trim(),
+            uan: form.formKind === 'regular' && form.uan ? form.uan.trim() : undefined,
             bankName: form.bankName.trim(),
             bankAccount: form.bankAccount.trim(),
             bankIfsc: form.bankIfsc.toUpperCase().trim(),
+            formKind: form.formKind,
+            declarationAccepted: true,
+            ...(form.fatherName.trim() ? { fatherName: form.fatherName.trim() } : {}),
+            ...(form.passportNo.trim() ? { passportNo: form.passportNo.trim() } : {}),
+            ...(form.nomineeName.trim() ? { nomineeName: form.nomineeName.trim(), nomineeRelation: form.nomineeRelation.trim() } : {}),
+            ...(form.gender === 'Male' || form.gender === 'Female' || form.gender === 'Transgender'
+              ? { gender: form.gender === 'Male' ? 'male' : form.gender === 'Female' ? 'female' : 'transgender' }
+              : {}),
+            ...(structured(form.presentHouse, form.presentCity, form.presentDistrict, form.presentState, form.presentPin)
+              ? { presentStructured: structured(form.presentHouse, form.presentCity, form.presentDistrict, form.presentState, form.presentPin) }
+              : {}),
+            ...(form.sameAsPresent
+              ? {}
+              : structured(form.permanentHouse, form.permanentCity, form.permanentDistrict, form.permanentState, form.permanentPin)
+                ? { permanentStructured: structured(form.permanentHouse, form.permanentCity, form.permanentDistrict, form.permanentState, form.permanentPin) }
+                : {}),
+            ...(educationRows(form).length ? { educationRows: educationRows(form) } : {}),
+            ...(familyRows(form).length ? { familyRows: familyRows(form) } : {}),
+            ...(nominationRows(form).length ? { nominations: nominationRows(form) } : {}),
+            ...(files.length ? { documents: files } : {}),
+            ...(form.formKind !== 'overseas' && form.medicalNotes.trim() ? { medicalNotes: form.medicalNotes.trim() } : {}),
           },
         }),
       });
@@ -163,7 +211,7 @@ export function PrejoinPortalPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-surface-1 p-6">
+      <div className="flex min-h-dvh items-center justify-center bg-canvas p-6">
         <div className="text-center">
           <p className="text-sm font-medium text-ink">Verifying secure pre-join link token…</p>
         </div>
@@ -173,7 +221,7 @@ export function PrejoinPortalPage() {
 
   if (!tokenValid) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-surface-1 p-6">
+      <div className="flex min-h-dvh items-center justify-center bg-canvas p-6">
         <Card className="max-w-md p-8 text-center space-y-4">
           <AlertCircle className="mx-auto h-12 w-12 text-warning-ink" />
           <h2 className="text-xl font-light text-ink">Pre-join Link Invalid</h2>
@@ -188,7 +236,7 @@ export function PrejoinPortalPage() {
 
   if (submitted) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-surface-1 p-6">
+      <div className="flex min-h-dvh items-center justify-center bg-canvas p-6">
         <Card className="max-w-md p-8 text-center space-y-4 border-line">
           <CheckCircle2 className="mx-auto h-12 w-12 text-positive-ink" />
           <h2 className="text-2xl font-light text-ink">Details Submitted!</h2>
@@ -206,7 +254,7 @@ export function PrejoinPortalPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-surface-1 py-10 px-4 md:px-8">
+    <div className="min-h-dvh bg-canvas py-10 px-4 md:px-8">
       <div className="mx-auto max-w-3xl space-y-8">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-2">
@@ -219,24 +267,32 @@ export function PrejoinPortalPage() {
         </div>
 
         <DarkCard padded={false} className="p-8">
-          <p className="text-sm font-medium text-hero-muted">
-            Welcome to Rashmi Group
-          </p>
-          <h2 className="mt-2 text-3xl font-light text-hero-ink">
-            {candidateInfo?.candidateName ?? 'Candidate'}
+          <p className="text-sm font-medium text-hero-muted">Rashmi Group · joining form</p>
+          <h2 className="mt-2 text-4xl font-light tracking-tight text-hero-ink">
+            Hello, {candidateInfo?.candidateName ?? 'there'}
           </h2>
-          <p className="mt-1 text-sm text-hero-muted">
-            Position:{' '}
-            <span className="text-hero-ink font-medium">
-              {candidateInfo?.positionTitle ?? 'Joining Member'}
-            </span>
-          </p>
-          <p className="mt-4 text-xs leading-relaxed text-hero-muted">
-            Please provide your verified statutory identifiers (PAN, Aadhaar) and bank account
-            details for payroll setup. This link accepts one completed submission. Review your
-            details before submitting.
+          <p className="mt-2 text-sm text-hero-muted">
+            {candidateInfo?.positionTitle ?? 'Your role'} · one submission on this link
           </p>
         </DarkCard>
+
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Joining form">
+          {([
+            ['regular', 'Regular'],
+            ['consultant', 'Consultant & intern'],
+            ['overseas', 'Overseas'],
+          ] as const).map(([kind, label]) => (
+            <Button
+              key={kind}
+              type="button"
+              size="sm"
+              variant={form.formKind === kind ? 'primary' : 'ghost'}
+              onClick={() => { setForm({ ...form, formKind: kind satisfies JoiningFormKind }); }}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
 
         {error && (
           <Card className="border-line bg-surface-2 p-4">
@@ -247,16 +303,43 @@ export function PrejoinPortalPage() {
           </Card>
         )}
 
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Joining steps">
+          {['You and address', 'Statutory and bank', 'Education and family', 'Documents and declaration'].map((label, index) => (
+            <Button key={label} type="button" size="sm" variant={step === index ? 'primary' : 'ghost'} onClick={() => { setStep(index); }}>
+              {label}
+            </Button>
+          ))}
+        </div>
+
         <form
           onSubmit={(e) => {
+            if (step < 3) {
+              e.preventDefault();
+              const problem = stepError(form, step);
+              setError(problem);
+              if (!problem) setStep(step + 1);
+              return;
+            }
             void handleSubmit(e);
           }}
           className="space-y-6"
         >
-          <Card className="p-6 space-y-4">
+          {step === 0 && <Card className="p-6 space-y-4">
             <CardHeader
               title="1. Residential Address Details"
               subtitle="Required for statutory PF/ESIC records and official communication."
+            />
+            <Select label="Gender" value={form.gender} onChange={(val) => { setForm({ ...form, gender: val }); }} placeholder="Choose…" options={['Male', 'Female', 'Transgender'].map((g) => ({ value: g, label: g }))} />
+            <TextField
+              label="Father's name"
+              value={form.fatherName}
+              onChange={(e) => { setForm({ ...form, fatherName: e.target.value }); }}
+            />
+            <TextField
+              label="Passport number"
+              value={form.passportNo}
+              onChange={(e) => { setForm({ ...form, passportNo: e.target.value.toUpperCase() }); }}
+              hint={form.formKind === 'overseas' ? 'Required for overseas joining' : 'Optional'}
             />
             <TextField
               label="Present Address (Current Residence)"
@@ -266,6 +349,13 @@ export function PrejoinPortalPage() {
               }}
               placeholder="House/Flat No, Street, City, State, PIN Code"
             />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <TextField label="Present house" value={form.presentHouse} onChange={(e) => { setForm({ ...form, presentHouse: e.target.value }); }} />
+              <TextField label="Present city" value={form.presentCity} onChange={(e) => { setForm({ ...form, presentCity: e.target.value }); }} />
+              <TextField label="Present district" value={form.presentDistrict} onChange={(e) => { setForm({ ...form, presentDistrict: e.target.value }); }} />
+              <TextField label="Present state" value={form.presentState} onChange={(e) => { setForm({ ...form, presentState: e.target.value.toUpperCase() }); }} hint="Two letters, such as WB" />
+              <TextField label="Present PIN" value={form.presentPin} onChange={(e) => { setForm({ ...form, presentPin: e.target.value }); }} hint="6 digits" />
+            </div>
             <TextField
               label="Permanent Address (As per Aadhaar)"
               value={form.permanentAddress}
@@ -274,11 +364,11 @@ export function PrejoinPortalPage() {
               }}
               placeholder="Permanent native address"
             />
-          </Card>
+          </Card>}
 
-          <Card className="p-6 space-y-4">
+          {step === 0 && <Card className="p-6 space-y-4">
             <CardHeader
-              title="2. Emergency Contact & Medical"
+              title="2. Emergency Contact"
               subtitle="Contact in case of workplace emergency or plant safety alerts."
             />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -315,9 +405,9 @@ export function PrejoinPortalPage() {
                 options={BLOOD_GROUPS}
               />
             </div>
-          </Card>
+          </Card>}
 
-          <Card className="p-6 space-y-4">
+          {step === 1 && <Card className="p-6 space-y-4">
             <CardHeader
               title="3. Statutory Identifiers (Government Compliance)"
               subtitle="Mandatory for Income Tax TDS, EPFO provident fund, and statutory gratuity."
@@ -348,9 +438,9 @@ export function PrejoinPortalPage() {
               }}
               placeholder="Leave blank if this is your first formal employment"
             />
-          </Card>
+          </Card>}
 
-          <Card className="p-6 space-y-4">
+          {step === 1 && <Card className="p-6 space-y-4">
             <CardHeader
               title="4. Direct Bank Account for Salary Credit"
               subtitle="Monthly net salary is disbursed directly into this savings account."
@@ -381,7 +471,76 @@ export function PrejoinPortalPage() {
               }}
               placeholder="Account number as printed on bank passbook / cheque"
             />
-          </Card>
+          </Card>}
+
+          {step === 2 && (
+            <Card className="p-6 space-y-4">
+              <CardHeader title="Education" subtitle="One row per qualification." />
+              {form.educationRows.map((row, index) => (
+                <div key={index} className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <TextField label="Qualification" value={row.qualification} onChange={(e) => { setForm(patchRow(form, 'educationRows', index, { qualification: e.target.value })); }} />
+                  <TextField label="Institute" value={row.institute} onChange={(e) => { setForm(patchRow(form, 'educationRows', index, { institute: e.target.value })); }} />
+                  <TextField label="Year" value={row.year} onChange={(e) => { setForm(patchRow(form, 'educationRows', index, { year: e.target.value })); }} />
+                </div>
+              ))}
+              <Button type="button" variant="ghost" onClick={() => { setForm({ ...form, educationRows: [...form.educationRows, { qualification: '', institute: '', year: '' }] }); }}>Add education</Button>
+            </Card>
+          )}
+
+          {step === 2 && (
+            <Card className="p-6 space-y-4">
+              <CardHeader title="Family" subtitle="Name, relationship and gender." />
+              {form.familyRows.map((row, index) => (
+                <div key={index} className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <TextField label="Family member" value={row.name} onChange={(e) => { setForm(patchRow(form, 'familyRows', index, { name: e.target.value })); }} />
+                  <TextField label="Family relationship" value={row.relation} onChange={(e) => { setForm(patchRow(form, 'familyRows', index, { relation: e.target.value })); }} />
+                  <Select label="Family gender" value={row.gender} onChange={(val) => { setForm(patchRow(form, 'familyRows', index, { gender: val })); }} placeholder="Choose…" options={['Male', 'Female', 'Transgender'].map((g) => ({ value: g, label: g }))} />
+                </div>
+              ))}
+              <Button type="button" variant="ghost" onClick={() => { setForm({ ...form, familyRows: [...form.familyRows, { name: '', relation: '', gender: '' }] }); }}>Add family member</Button>
+            </Card>
+          )}
+
+          {step === 2 && form.formKind === 'regular' && (
+            <Card className="p-6 space-y-4">
+              <CardHeader title="Scheme nominations" subtitle="PF, gratuity and ESIC are separate. Shares of one scheme total 100." />
+              {form.nominations.map((row, index) => (
+                <div key={index} className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <Select label="Scheme" value={row.scheme} onChange={(val) => { setForm(patchRow(form, 'nominations', index, { scheme: val })); }} options={['pf', 'eps', 'gratuity', 'esic', 'gpa'].map((s) => ({ value: s, label: s.toUpperCase() }))} />
+                  <TextField label="Nominee name" value={row.name} onChange={(e) => { setForm(patchRow(form, 'nominations', index, { name: e.target.value })); }} />
+                  <TextField label="Nominee relationship" value={row.relation} onChange={(e) => { setForm(patchRow(form, 'nominations', index, { relation: e.target.value })); }} />
+                  <TextField label="Share percent" value={row.share} onChange={(e) => { setForm(patchRow(form, 'nominations', index, { share: e.target.value })); }} />
+                  <TextField label="Nominee address" value={row.address} onChange={(e) => { setForm(patchRow(form, 'nominations', index, { address: e.target.value })); }} />
+                </div>
+              ))}
+              <Button type="button" variant="ghost" onClick={() => { setForm({ ...form, nominations: [...form.nominations, { scheme: 'pf', name: '', relation: '', share: '', address: '' }] }); }}>Add nominee</Button>
+            </Card>
+          )}
+
+          {step === 3 && (
+            <Card className="p-6 space-y-4">
+              <CardHeader title="Documents" subtitle="Photo and an identity proof. PDF, PNG or JPEG." />
+              <TextField label="Photo file" type="file" onChange={(e) => { void readJoiningFile(e.target.files?.[0], 'photo', setFiles); }} />
+              <TextField label="Identity proof" type="file" onChange={(e) => { void readJoiningFile(e.target.files?.[0], 'id_proof', setFiles); }} />
+            </Card>
+          )}
+
+          {step === 3 && form.formKind !== 'overseas' && (
+            <Card className="p-6 space-y-4">
+              <CardHeader title="Medical notes" subtitle="Stored for HR medical review. A manager cannot open this section." />
+              <TextField label="Medical notes" value={form.medicalNotes} onChange={(e) => { setForm({ ...form, medicalNotes: e.target.value }); }} />
+            </Card>
+          )}
+
+          {step === 3 && <label className="flex items-start gap-3 text-sm text-ink">
+            <input
+              type="checkbox"
+              className="mt-1 size-4"
+              checked={form.declarationAccepted}
+              onChange={(e) => { setForm({ ...form, declarationAccepted: e.target.checked }); }}
+            />
+            <span>I declare that this information is true, and I consent to verification for employment and statutory compliance.</span>
+          </label>}
 
           <div className="flex items-center justify-between pt-4">
             <div className="flex items-center gap-2 text-xs text-ink-subtle">
@@ -395,7 +554,7 @@ export function PrejoinPortalPage() {
               leadingIcon={<Send className="h-4 w-4" />}
               disabled={submitting}
             >
-              {submitting ? 'Submitting…' : 'Submit Onboarding Information'}
+              {step < 3 ? 'Continue' : submitting ? 'Submitting…' : 'Submit Onboarding Information'}
             </Button>
           </div>
         </form>

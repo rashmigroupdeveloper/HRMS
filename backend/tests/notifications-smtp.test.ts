@@ -1,10 +1,11 @@
 /**
  * WF-02 / C16: SMTP notification transport, email template formatting, and queue delivery tests.
  */
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Transporter } from 'nodemailer';
 import type { Kysely } from 'kysely';
 import type { Database } from '../src/core/db/types.js';
+import * as repository from '../src/modules/notifications/notifications.repository.js';
 import type { NotificationRow } from '../src/modules/notifications/notifications.repository.js';
 import {
   createNotificationTransport,
@@ -18,6 +19,7 @@ import {
 } from '../src/modules/notifications/notifications.service.js';
 
 describe('Notification formatting and SMTP delivery transport', () => {
+  afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
   it('formats custom email subjects per template code', () => {
     expect(formatEmailSubject('roster_deadline', { month: '2026-11' })).toBe(
       '[Rashmi HRMS] Roster Submission Deadline for 2026-11',
@@ -208,6 +210,27 @@ describe('Notification formatting and SMTP delivery transport', () => {
     expect(smtpSecure).toBeInstanceOf(SmtpNotificationTransport);
   });
 
+  it('never acknowledges an email as delivered without SMTP in production', async () => {
+    const transport = createNotificationTransport({ NODE_ENV: 'production' });
+    const row: NotificationRow = {
+      id: 106, recipient_user_id: null, recipient_email: 'test@hrms.invalid',
+      channel: 'email', template_code: 'test', payload: {}, status: 'queued',
+      attempts: 0, sent_at: null, read_at: null, last_error: null,
+      created_at: new Date(), updated_at: new Date(),
+    };
+    await expect(transport.send(row)).rejects.toThrow('SMTP is not configured');
+    await expect(transport.send({ ...row, channel: 'in_app' })).resolves.toBeUndefined();
+  });
+
+  it('escapes untrusted values, keys and event names in HTML emails', () => {
+    const html = formatEmailHtml('<img src=x>', { '<script>': '<a href="evil">&click</a>' });
+    expect(html).not.toContain('<img');
+    expect(html).not.toContain('<script');
+    expect(html).not.toContain('<a href');
+    expect(html).toContain('&lt;');
+    expect(html).toContain('&amp;click');
+  });
+
   it('covers devLogTransport logger branch for recipient_user_id and recipient_email', async () => {
     await devLogTransport.send({
       id: 1,
@@ -308,30 +331,13 @@ describe('Notification formatting and SMTP delivery transport', () => {
       },
     ];
 
-    const mockTrx = {
-      selectFrom: vi.fn().mockReturnValue({
-        selectAll: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            orderBy: vi.fn().mockReturnValue({
-              limit: vi.fn().mockReturnValue({
-                forUpdate: vi.fn().mockReturnValue({
-                  skipLocked: vi.fn().mockReturnValue({
-                    execute: vi.fn().mockResolvedValue(fakeItems),
-                  }),
-                }),
-              }),
-            }),
-          }),
-        }),
-      }),
-      updateTable: vi.fn().mockReturnValue({
-        set: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            execute: vi.fn().mockResolvedValue({ numUpdatedRows: 1n }),
-          }),
-        }),
-      }),
-    };
+    const mockTrx = {};
+    vi.spyOn(repository, 'claimDeliverable')
+      .mockResolvedValueOnce(fakeItems)
+      .mockResolvedValueOnce(fakeItems.slice(0, 1))
+      .mockResolvedValueOnce(fakeItems.slice(1));
+    const markSent = vi.spyOn(repository, 'markSent').mockResolvedValue(undefined);
+    const markFailed = vi.spyOn(repository, 'markFailed').mockResolvedValue(undefined);
 
     const mockDb = {
       transaction: vi.fn().mockReturnValue({
@@ -350,5 +356,8 @@ describe('Notification formatting and SMTP delivery transport', () => {
 
     const res = await processQueue(mockDb as unknown as Kysely<Database>, mockTransport);
     expect(res).toEqual({ sent: 1, failed: 1 });
+    expect(markSent).toHaveBeenCalledWith(mockTrx, 201);
+    expect(markFailed).toHaveBeenCalledWith(mockTrx, 202, 'Simulated SMTP connection error', 5);
+    expect(mockDb.transaction).toHaveBeenCalledTimes(3);
   });
 });

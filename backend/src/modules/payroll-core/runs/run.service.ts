@@ -27,6 +27,7 @@ import { formatDbDate } from '../../../core/dates.js';
 import { DomainError, ForbiddenError, NotFoundError } from '../../../core/errors/index.js';
 import { decimalRupees, paise, parseRupees } from '../../../core/money/index.js';
 import { loanInstalment } from './run-compute.service.js';
+import { assertIndiaPayroll } from './run-country.js';
 
 export interface CreateRunInput {
   companyId: number;
@@ -51,6 +52,7 @@ export class PayrollRunService {
    */
   async createRun(input: CreateRunInput): Promise<number> {
     return this.withTransaction(async (trx) => {
+      await assertIndiaPayroll(trx, input.companyId);
       const runType = input.runType ?? 'regular';
 
       const existing = await trx
@@ -181,6 +183,7 @@ export class PayrollRunService {
    */
   async approveRun(runId: number, actorUserId: number): Promise<void> {
     return this.withLockedRun(runId, async (trx, run) => {
+      await assertIndiaPayroll(trx, run.company_id);
       // The latest successful computation identifies the maker of these results.
       const computationAudit = await trx
         .selectFrom('core.audit_log')
@@ -248,6 +251,7 @@ export class PayrollRunService {
    */
   async finalizeRun(runId: number, actorUserId: number): Promise<void> {
     return this.withLockedRun(runId, async (trx, run) => {
+      await assertIndiaPayroll(trx, run.company_id);
       // Run independent secondary reconciliation
       const recon = await new ReconciliationService(trx).reconcileRun(runId);
       if (!recon.isReconciled) {
@@ -357,6 +361,7 @@ export class PayrollRunService {
       if (!validation.valid) throw new DomainError(validation.error ?? 'Only a finalized run can be marked paid', 'CONFLICT');
       // Only a bank file generated from THIS finalization counts (a reopen makes older files stale).
       const batch = await trx.selectFrom('pay.bank_batches').select('id').where('run_id', '=', runId)
+        .where('superseded_at', 'is', null)
         .where('created_at', '>=', run.finalized_at ?? new Date()).orderBy('id', 'desc').executeTakeFirst();
       if (!batch) throw new DomainError('Generate the bank file for this finalized run before marking it paid', 'CONFLICT');
       await trx.updateTable('pay.payroll_runs').set({ status: 'paid', notes: `Paid: ${paymentReference}` }).where('id', '=', runId).execute();

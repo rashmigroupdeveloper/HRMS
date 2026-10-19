@@ -1,9 +1,11 @@
 /**
  * Roster persistence for manager-maintained employee-day assignments.
  *
- * ATT-03/04/12: only a semantic roster change may enqueue recomputation or
- * invalidate a manager's month approval. Replaying the same assignment is a
- * no-op, which also makes retrying a partially completed client batch safe.
+ * ATT-03/04/12 + SHF-02/03/05: only a semantic roster change may enqueue
+ * recomputation or invalidate a manager's month approval. Replaying the same
+ * assignment is a no-op, which also makes retrying a partially completed
+ * client batch safe. Roster guards check fatigue, rest, overlap, and publish
+ * revisions before writing.
  */
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
@@ -14,6 +16,11 @@ import {
   lockAttendanceEmployee,
   assertAttendanceMonthOpen,
 } from './attendance-mutation.js';
+import {
+  assertRosterSaveAllowed,
+  recordPublishedRevisions,
+  type RosterGuardEntry,
+} from './roster-guard.service.js';
 
 export interface RosterPersistenceEntry {
   employeeId: number;
@@ -22,11 +29,12 @@ export interface RosterPersistenceEntry {
   weekOff: boolean;
 }
 
-interface ApplyRosterEntriesOptions {
+export interface ApplyRosterEntriesOptions {
   actorUserId: number;
   entries: RosterPersistenceEntry[];
   ip: string | null;
   scope?: EmployeeScope;
+  reason?: string | null;
 }
 
 export async function applyRosterEntries(
@@ -39,6 +47,26 @@ export async function applyRosterEntries(
       const employee = await lockAttendanceEmployee(trx, id, options.scope);
       people.set(id, employee.company_id);
     }
+
+    const reason = paramsReason(options.reason);
+    const guardEntries: RosterGuardEntry[] = options.entries.map((e) => ({
+      employeeId: e.employeeId,
+      date: e.date,
+      shiftId: e.shiftId,
+      weekOff: e.weekOff,
+    }));
+
+    await assertRosterSaveAllowed(trx, {
+      actorUserId: options.actorUserId,
+      entries: guardEntries,
+      reason,
+    });
+    await recordPublishedRevisions(trx, {
+      actorUserId: options.actorUserId,
+      entries: guardEntries,
+      reason,
+    });
+
     let changed = 0;
 
     for (const entry of [...options.entries].sort(
@@ -106,4 +134,10 @@ export async function applyRosterEntries(
 
     return changed;
   });
+}
+
+function paramsReason(reason: string | null | undefined): string | null {
+  if (reason === undefined || reason === null) return null;
+  const trimmed = reason.trim();
+  return trimmed.length === 0 ? null : trimmed;
 }

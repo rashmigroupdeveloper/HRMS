@@ -18,7 +18,7 @@ import { employeesImporter } from './importers/employees.js';
 const fields = z.object({
   firstName: z.string().trim().max(80).optional(),
   lastName: z.string().trim().max(80).optional(),
-  gender: z.enum(['Male', 'Female', 'Other']).optional(),
+  gender: z.enum(['Male', 'Female', 'Transgender']).optional(),
   dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   doj: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   orgUnit: z.string().trim().max(120).optional(),

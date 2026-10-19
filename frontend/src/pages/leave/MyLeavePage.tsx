@@ -138,6 +138,7 @@ export function MyLeavePage() {
     code: type.code,
     name: type.name,
     available: rows.find((balance) => balance.leaveType === type.code)?.available ?? 0,
+    isPaid: type.isPaid,
     allowHalfDay: type.allowHalfDay,
     maxPerRequest: type.maxPerRequest,
     sandwichRule: type.sandwichRule,

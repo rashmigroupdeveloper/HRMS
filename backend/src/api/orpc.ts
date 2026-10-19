@@ -15,6 +15,8 @@ import { verifyToken } from '../core/auth/jwt.js';
 import { getUserPermissionAccess, getUserPermissions, type PermissionAction } from '../core/rbac/permissions.service.js';
 import type { PermissionCode } from '../core/rbac/seed-data.js';
 import { mapError } from '../core/errors/index.js';
+import { inTransaction } from '../core/db/database.js';
+import { assertStepUp } from '../core/auth/step-up.js';
 import { logger } from '../core/logger.js';
 
 /** Per-request context assembled by the Express middleware (handler.ts). */
@@ -182,4 +184,14 @@ export function withPermission(
     }
     return next({ context: { permissions, permissionAccess } });
   });
+}
+
+/** SEC-04: ordinary runtime permission plus password proof, atomic with mutation. */
+export function withStepUp(permission: PermissionCode) {
+  return withPermission(permission).use(async ({ context, next }) =>
+    inTransaction(context.db, async db => {
+      await assertStepUp(db, context.user.id, context.sessionSid);
+      return next({ context: { db } });
+    }),
+  );
 }

@@ -1,0 +1,134 @@
+[
+  {
+    "id": "DB-01",
+    "status": "fixed_local_test",
+    "subject": "public.undefined duplicate migration tracking",
+    "evidence": [
+      "migration-tracking-review.json",
+      "bookkeeping-cleanup-applied.json"
+    ],
+    "decision": "Removed only the two known records duplicated in canonical public.pgmigrations, with no CASCADE. Guard refuses unknown columns/records. No HR rows removed. Programmatic migration runner must explicitly set migrationsTable=pgmigrations."
+  },
+  {
+    "id": "DB-02",
+    "status": "fixed_code_tested",
+    "subject": "core.documents.kind / doc_type",
+    "references": [
+      "backend/src/modules/documents/vault.service.ts",
+      "backend/src/modules/documents/download.service.ts",
+      "backend/tests/document-vault.integration.test.ts"
+    ],
+    "decision": "kind identifies generic file category; doc_type is the existing catalog FK. New employee uploads use kind=employee_document and doc_type=class. Joining files are recognized by doc_type, and legacy branch rows fall back to kind. Reuse SHA256 for retry identity, expiry/status/ownership for lifecycle; no new business columns."
+  },
+  {
+    "id": "DB-03",
+    "status": "fixed_code_tested",
+    "subject": "doc.types.retention_class and field-class authority",
+    "references": [
+      "backend/src/modules/documents/download.service.ts",
+      "backend/migrations/1753000000500_document-class-authority.ts"
+    ],
+    "decision": "statutory_id class requires employee.statutory_ids.read; health requires explicit employee.medical.read; configured compensation classes require employee.compensation.read, in addition to vault/employee scope. Default medical authority goes only to the existing super-admin catch-all. Existing identity aliases remain supported."
+  },
+  {
+    "id": "DB-04",
+    "status": "fixed_core_tests_passed_final_gate_pending",
+    "subject": "att.shifts.session2_start/end, break_paid, ot_start_offset_minutes, att.swipe_events.direction",
+    "references": [
+      "backend/src/modules/attendance/shift-windows.ts",
+      "backend/src/modules/attendance/day-status.service.ts",
+      "backend/src/modules/attendance/request-schedule.ts",
+      "backend/tests/shift-recovery.integration.test.ts"
+    ],
+    "decision": "Shared windows connect these existing fields to actual day computation, AR/OD halves and final biometric completeness. Separate-session gaps are excluded. Explicit IN/OUT outrank unknown-direction fallback. No configured shift on a working day fails closed. Attendance presence fractions/payable policy unchanged. Correct net late/early minutes to docs04 grace formula; tests hand-check 09:25 minus 09:00 minus10 grace=15 minutes. Catalog API now preserves/persists micro-fields and rejects conflicting windows; rule validation rejects overlapping ranges."
+  },
+  {
+    "id": "DB-05",
+    "status": "fixed_core_tests_passed_final_gate_pending",
+    "subject": "att.shift_swaps snapshot and workflow transaction",
+    "references": [
+      "backend/src/modules/attendance/shift-swap.service.ts",
+      "backend/src/modules/workflows/workflow-locks.ts",
+      "backend/tests/shift-swap-safety.integration.test.ts"
+    ],
+    "decision": "Both employee locks are acquired in order before request locks. Existing workflow payload stores authoritative shift/week-off snapshots; no added table columns. Approval rechecks current roster, active approver and roster-write scope for both people. Generic forged creation is reserved. Old requests without a snapshot fail closed and need withdrawal/recreation. Independent-connection concurrency/UAT proof is still required."
+  },
+  {
+    "id": "DB-06",
+    "status": "open_release_blocker",
+    "subject": "pay.it_slabs has no current direct application consumer; tax engine embeds slab arrays",
+    "references": [
+      "backend/src/modules/payroll-core/statutory/tds.ts:131",
+      "backend/src/modules/payroll-core/statutory/tds.ts:219",
+      "backend/src/modules/payroll-core/runs/statutory-context.ts:94",
+      "docs/14-TECH-STACK-AND-RELIABILITY.md"
+    ],
+    "decision": "Keep the fiscal-year/regime table as a required configuration model, not as proof it is connected. Decide the canonical effective tax-rule source, freeze it per run, connect calculation and configuration consistently, verify all statutory facts and add hand-computed goldens before any money edit. Mandatory independent payroll human review. No money formula was edited in this increment."
+  },
+  {
+    "id": "DB-07",
+    "status": "open_implementation_gap",
+    "subject": "schema-only joining master/declaration/medical tables",
+    "references": [
+      "backend/migrations/1752900000100_joining-master-record.ts",
+      "backend/migrations/1752900000200_joining-documents-declarations-medical.ts",
+      "docs/qa-handover/requirements/REQUIREMENTS.md:3559"
+    ],
+    "decision": "Addresses, education, certifications, experience, statutory profile, nominations/declarations and medical records have documented joining-form purposes. Current production-table references are missing beyond type declarations in this snapshot. Complete approved form validation, atomic conversion, scoped read/write, correction/versioning and export paths; do not claim these complete or delete them as unused."
+  },
+  {
+    "id": "DB-08",
+    "status": "open_canonical_ownership_gap",
+    "subject": "structured addresses versus legacy text; physical attributes versus medical snapshot",
+    "references": [
+      "backend/migrations/1752900000100_joining-master-record.ts:10",
+      "backend/migrations/1752900000200_joining-documents-declarations-medical.ts:12"
+    ],
+    "decision": "Migration defines legacy address text as derived read copies. Implement one authoritative write path; never two editable sources. Clarify master personal fields versus medical questionnaire measurements and their restricted purpose before collection; do not silently synchronize/duplicate sensitive values."
+  },
+  {
+    "id": "DB-09",
+    "status": "retained_pending_data_retirement_review",
+    "subject": "14 excluded MFA fields with existing records",
+    "evidence": [
+      "excluded-mfa-review.json"
+    ],
+    "decision": "MFA remains disabled and excluded. Two legacy tables contain 32 enrollment rows and 320 recovery-code rows. No secret/hash values were read. Do not drop nonempty credential/history data based on absence of code references. Establish provenance and permitted retirement/archive before a destructive migration."
+  },
+  {
+    "id": "DB-10",
+    "status": "open_recovery",
+    "subject": "privacy tables and purpose-stamped access events",
+    "references": [
+      "docs/15-WAVE-0-RECOVERY-SCOPE.md",
+      "backend/src/core/db/types.prv.ts"
+    ],
+    "decision": "Approved added scope gives these tables a purpose. Schema presence is not implementation: recover scoped handlers, immutable consent/access events, employee history and retention/rights workflows. A current consent projection may coexist with immutable events only with atomic updates and a tested rebuild; do not introduce another mutable source of truth."
+  },
+  {
+    "id": "DB-11",
+    "status": "implemented_focused_tests_passed_full_gate_pending",
+    "subject": "Separate penalty snapshot preserves actual first/second-half attendance",
+    "references": [
+      "docs/04-MODULE-SPECS.md",
+      "backend/migrations/1753000000800_attendance-penalty-evaluation.ts",
+      "backend/src/modules/attendance/penalty-evaluation.ts",
+      "backend/tests/shift-recovery.integration.test.ts",
+      "frontend/src/pages/attendance/AttendancePenalties.tsx"
+    ],
+    "decision": "Sponsor confirmed preserving attendance facts. One justified snapshot column holds exact matched rules and observed net minutes; compatibility boolean is constrained, not another editable authority or quantity. NULL historical/not evaluated does not fabricate old rule data. DB validators and existing lock triggers protect findings. Configurable rule arrays reject ambiguity. No payroll stacking/cap/consumption formula is inferred."
+  },
+  {
+    "id": "DB-12",
+    "status": "open_integration_and_catalog_gaps",
+    "subject": "Documented raw source attributes and document checklist limits are not fully consumed",
+    "references": [
+      "backend/src/modules/attendance/kent-connector.ts",
+      "backend/src/modules/attendance/ingest.service.ts",
+      "backend/src/core/db/types.doc.ts",
+      "backend/src/modules/documents/vault.service.ts",
+      "docs/03-DATABASE-SCHEMA.md"
+    ],
+    "decision": "Keep specified Kent shift_label/remarks/permission_reason/signed_by and ATT-14 location/device evidence, but current RawSwipe does not transport them. Real source contract and tests remain required. Device expected_hourly_swipes has no current service consumer. Document mandatory_for/joining_checklist/max_files model requirements; current vault does not prove collection coverage or enforce checklist file limits. Do not delete required planned fields or claim these flows complete."
+  }
+]

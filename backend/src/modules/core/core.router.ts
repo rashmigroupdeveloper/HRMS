@@ -195,7 +195,7 @@ export const coreRouter = {
       if (!['active', 'on_notice'].includes(emp.status)) throw new DomainError('The head of department must be an active employee');
       const row = await context.db.insertInto('core.department_heads')
         .values({ department_id: input.departmentId, company_id: input.companyId, employee_id: emp.id, created_by: context.user.id })
-        .onConflict((oc) => oc.constraint('department_heads_uq').doNothing())
+        .onConflict((oc) => oc.doNothing())
         .returning('id').executeTakeFirst();
       if (!row) throw new DomainError('That employee is already head of this department');
       await writeAudit(context.db, {

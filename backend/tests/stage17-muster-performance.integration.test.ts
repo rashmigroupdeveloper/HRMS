@@ -5,7 +5,7 @@
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import ExcelJS from 'exceljs';
-import { sql, type Insertable, type Kysely } from 'kysely';
+import { sql, type Insertable, type ControlledTransaction, type Kysely } from 'kysely';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { exportMusterExcel } from '../src/modules/reports/index.js';
@@ -14,14 +14,16 @@ const DB_URL = process.env['DATABASE_URL'];
 const run = describe.skipIf(!DB_URL);
 
 run('Stage 1.7 — 3,000 × 31 muster export performance', () => {
-  let db: Kysely<Database>;
+  let root: Kysely<Database>;
+  let db: ControlledTransaction<Database>;
   let companyId: number | undefined;
   const stamp = Date.now();
   const month = '2099-01-01';
   const employeeCount = 3_000;
 
   beforeAll(async () => {
-    db = createDatabase(DB_URL ?? '');
+    root = createDatabase(DB_URL ?? '');
+    db = await root.startTransaction().execute();
     const code = `P${stamp.toString(36).toUpperCase()}`;
     const createdCompanyId = (await db
       .insertInto('core.companies')
@@ -88,12 +90,8 @@ run('Stage 1.7 — 3,000 × 31 muster export performance', () => {
   }, 30_000);
 
   afterAll(async () => {
-    if (companyId !== undefined) {
-      await db.deleteFrom('reporting.muster_month').where('company_id', '=', companyId).execute();
-      await db.deleteFrom('core.employees').where('company_id', '=', companyId).execute();
-      await db.deleteFrom('core.companies').where('id', '=', companyId).execute();
-    }
-    await db.destroy();
+    try { if (!db.isRolledBack) await db.rollback().execute(); }
+    finally { await root.destroy(); }
   });
 
   it('exports the full matrix in under ten seconds', async () => {

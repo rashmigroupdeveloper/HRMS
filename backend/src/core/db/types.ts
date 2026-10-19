@@ -37,6 +37,7 @@ import type {
   IrdGrievancesTable,
   IrdIcMembersTable,
   IrdPoshCaseAccessLogTable,
+  IrdPoshCaseAssignmentsTable,
   IrdPoshCasesTable,
   IrdWhistleblowerReportsTable,
 } from './types.ird.js';
@@ -604,6 +605,7 @@ export interface SeparationsTable {
   shortfall_days: Generated<string>;
   workflow_request_id: number | null;
   status: Generated<'pending' | 'approved' | 'withdrawn' | 'rejected' | 'completed'>;
+  exit_type: Generated<'resignation' | 'retirement' | 'death' | 'contract_end' | 'termination'>;
   fnf_id: number | null;
   created_at: DefaultedTimestamp;
   updated_at: DefaultedTimestamp;
@@ -775,6 +777,8 @@ export interface AttDayRecordsTable {
   session_statuses: unknown; // JSONB: ordered sessions 1/2 with P, A, O or OD; boundary-validated (ATT-05).
   scheme_code: string | null;
   penalty_flag: Generated<boolean>;
+  /** SHF-01: frozen rule findings, separate from attendance/pay. NULL = not evaluated. */
+  penalty_evaluation: unknown;
   source: Generated<'auto' | 'regularized' | 'manual'>;
   override_reason: string | null;
   is_locked: Generated<boolean>;
@@ -1386,6 +1390,8 @@ export interface Database {
 
   'ird.posh_cases': IrdPoshCasesTable;
 
+  'ird.posh_case_assignments': IrdPoshCaseAssignmentsTable;
+
   'ird.posh_case_access_log': IrdPoshCaseAccessLogTable;
 
   'ird.grievances': IrdGrievancesTable;
@@ -1692,6 +1698,8 @@ export interface BankBatchesTable {
   record_count: number;
   generated_by: number;
   created_at: DefaultedTimestamp;
+  /** Null while this is the one active file for the run. A later file supersedes it. */
+  superseded_at: ColumnType<Date | null, never, Date | string | null>;
 }
 
 export interface FnfSettlementsTable {

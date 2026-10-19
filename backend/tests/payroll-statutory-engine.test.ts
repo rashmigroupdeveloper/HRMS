@@ -100,10 +100,11 @@ describe('statutory rules', () => {
     expect(r.grossPaise / 100).toBe(56058);
   });
 
-  it('exempts apprentices from PF, ESIC, bonus and TDS (P-18)', () => {
+  it('exempts apprentices from PF, ESIC and bonus; PT and TDS still apply (PAY-14, docs/10 §9)', () => {
     const r = computeEmployeePayroll({ employeeId: 6, salaryComponentsPaise: { STIPEND: rupees(15000), STATUTORY_BONUS: rupees(1249) }, daysInMonth: 30, payableDays: 30, apprentice: true, esicCovered: true, monthlyTdsPaise: rupees(500) }, catalog);
     expect(r.grossPaise / 100).toBe(15000);
-    expect(line(r, 'PF_EE') + line(r, 'ESI_EE') + line(r, 'TDS')).toBe(0);
+    expect(line(r, 'PF_EE') + line(r, 'ESI_EE')).toBe(0);
+    expect(line(r, 'TDS')).toBe(500);
     expect(line(r, 'PT')).toBe(110);
   });
 

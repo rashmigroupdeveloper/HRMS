@@ -133,3 +133,8 @@
 - [x] Scale-spike numbers acceptable; partitioning frozen *(docs/recon/scale-spike.md — re-run on prod box at sign-off)*
 - [ ] Stage 0.1 external dependencies resolved (or escalated with dates)
 - [ ] Sponsor + IT sign-off recorded
+
+
+## 19 October — wave-0 recovery repairs
+
+See [branch recovery tracker](wave-0-recovery.md) for the current source, sponsor scope amendment (MFA excluded), worker/IST/letter/notification/password-confirmation fixes and regression evidence. These locally tested repairs do not close staging, real SMTP/Kent/storage, migration-rehearsal or UAT gates. Full verification status is maintained in that tracker.

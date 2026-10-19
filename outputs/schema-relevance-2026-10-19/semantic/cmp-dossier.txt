@@ -1,0 +1,55 @@
+
+## cmp.calendar_items
+id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+obligation_code: text NOT NULL | 
+title: text NOT NULL | 
+frequency: text NOT NULL | 
+period_label: text NOT NULL | 
+due_on: date NOT NULL | 
+owner_user_id: bigint NULL | 
+status: text NOT NULL | 
+registration_id: bigint NULL | 
+filed_at: timestamp with time zone NULL | 
+filed_by_user_id: bigint NULL | 
+waived_reason: text NULL | 
+waived_by_user_id: bigint NULL | 
+waived_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((status <> 'filed'::text) OR ((filed_at IS NOT NULL) AND (filed_by_user_id IS NOT NULL))))", "CHECK (((status <> 'waived'::text) OR ((waived_at IS NOT NULL) AND (waived_by_user_id IS NOT NULL) AND (waived_reason IS NOT NULL) AND (length(btrim(waived_reason)) >= 3))))", "CHECK ((frequency = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'half_yearly'::text, 'annual'::text, 'one_off'::text])))", "CHECK ((status = ANY (ARRAY['due'::text, 'filed'::text, 'waived'::text])))", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (filed_by_user_id) REFERENCES core.users(id)", "FOREIGN KEY (owner_user_id) REFERENCES core.users(id)", "FOREIGN KEY (registration_id) REFERENCES cmp.registrations(id)", "FOREIGN KEY (waived_by_user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/compliance/calendar.service.ts:160 created insertInto write=company_id,obligation_code,title,frequency,period_label,due_on,owner_user_id,registration_id indirect=False locks=[]
+backend/src/modules/compliance/calendar.service.ts:175 upsertCalendarItem updateTable write=company_id,obligation_code,title,frequency,period_label,due_on,owner_user_id,registration_id indirect=False locks=[]
+backend/src/modules/compliance/calendar.service.ts:217 recordFiling updateTable write=status,filed_at,filed_by_user_id indirect=False locks=[]
+backend/src/modules/compliance/calendar.service.ts:251 waiveItem updateTable write=status,waived_reason,waived_by_user_id,waived_at indirect=False locks=[]
+
+## cmp.filing_evidence
+id: bigint NOT NULL | 
+calendar_item_id: bigint NOT NULL | 
+reference: text NOT NULL | 
+document_path: text NULL | 
+remark: text NULL | 
+filed_by_user_id: bigint NOT NULL | 
+recorded_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((length(btrim(reference)) >= 2))", "FOREIGN KEY (calendar_item_id) REFERENCES cmp.calendar_items(id)", "FOREIGN KEY (filed_by_user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/compliance/calendar.service.ts:207 recordFiling insertInto write=calendar_item_id,reference,document_path,remark,filed_by_user_id indirect=False locks=[]
+
+## cmp.registrations
+id: bigint NOT NULL | 
+company_id: bigint NOT NULL | 
+location_id: bigint NULL | NULL = held at entity level (a PF code); set = belongs to one plant.
+kind: text NOT NULL | 
+registration_no: text NOT NULL | 
+issuing_authority: text NULL | 
+valid_from: date NOT NULL | 
+valid_to: date NULL | NULL = perpetual. Never measure a perpetual registration against a threshold.
+renewal_owner_user_id: bigint NULL | 
+document_path: text NULL | 
+notes: text NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((valid_to IS NULL) OR (valid_to > valid_from)))", "CHECK ((kind = ANY (ARRAY['pf'::text, 'esic'::text, 'pt'::text, 'lwf'::text, 'factory_licence'::text, 'clra_licence'::text, 'shops'::text, 'single_registration'::text, 'other'::text])))", "CHECK ((length(btrim(registration_no)) > 0))", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (location_id) REFERENCES core.locations(id)", "FOREIGN KEY (renewal_owner_user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/compliance/registrations.service.ts:145 created insertInto write=company_id,location_id,kind,registration_no,issuing_authority,valid_from,valid_to,renewal_owner_user_id,document_path,notes indirect=False locks=[]
+backend/src/modules/compliance/registrations.service.ts:166 upsertRegistration updateTable write=company_id,location_id,kind,registration_no,issuing_authority,valid_from,valid_to,renewal_owner_user_id,document_path,notes indirect=False locks=[]
+backend/src/modules/compliance/registrations.service.ts:188 retireRegistration updateTable write=is_active indirect=False locks=[]

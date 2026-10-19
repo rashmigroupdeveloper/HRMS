@@ -1,0 +1,102 @@
+
+## wf.definitions
+code: text NOT NULL | 
+name: text NOT NULL | 
+steps: jsonb NOT NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["PRIMARY KEY (code)"]
+backend/src/modules/workflows/seed.ts:18 result insertInto write=code,name,steps indirect=False locks=[]
+backend/src/modules/workflows/workflows.router.ts:332 upsertDefinition insertInto write=code,name,steps,is_active indirect=False locks=[]
+
+## wf.delegations
+id: bigint NOT NULL | 
+from_user_id: bigint NOT NULL | 
+to_user_id: bigint NOT NULL | 
+from_date: date NOT NULL | 
+to_date: date NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((from_date <= to_date))", "CHECK ((from_user_id <> to_user_id))", "FOREIGN KEY (from_user_id) REFERENCES core.users(id)", "FOREIGN KEY (to_user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/workflows/workflows.router.ts:265 setDelegation insertInto write=from_user_id,to_user_id,from_date,to_date indirect=False locks=[]
+backend/src/modules/workflows/workflows.router.ts:304 revokeDelegation deleteFrom write= indirect=False locks=[]
+
+## wf.event_subscriptions
+id: bigint NOT NULL | 
+event_code: text NOT NULL | 
+recipient_kind: text NOT NULL | 
+recipient_ref: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((recipient_kind = ANY (ARRAY['role'::text, 'user'::text, 'email'::text])))", "PRIMARY KEY (id)", "UNIQUE (event_code, recipient_kind, recipient_ref)"]
+backend/src/modules/workflows/seed.ts:26 main insertInto write=event_code,recipient_kind,recipient_ref indirect=False locks=[]
+
+## wf.notifications
+id: bigint NOT NULL | 
+recipient_user_id: bigint NULL | 
+recipient_email: text NULL | 
+channel: text NOT NULL | 
+template_code: text NOT NULL | 
+payload: jsonb NOT NULL | 
+status: text NOT NULL | 
+attempts: smallint NOT NULL | 
+last_error: text NULL | 
+sent_at: timestamp with time zone NULL | 
+read_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((recipient_user_id IS NOT NULL) OR (recipient_email IS NOT NULL)))", "CHECK ((channel = ANY (ARRAY['in_app'::text, 'email'::text])))", "CHECK ((status = ANY (ARRAY['queued'::text, 'sent'::text, 'failed'::text, 'dead'::text])))", "FOREIGN KEY (recipient_user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/notifications/notifications.repository.ts:17 row insertInto write=recipient_user_id,recipient_email,channel,template_code,payload indirect=False locks=[]
+backend/src/modules/notifications/notifications.repository.ts:33 query selectFrom write= indirect=False locks=['forUpdate', 'skipLocked']
+backend/src/modules/notifications/notifications.repository.ts:47 markSent updateTable write=status,sent_at,last_error indirect=False locks=[]
+backend/src/modules/notifications/notifications.repository.ts:60 markFailed updateTable write= indirect=True locks=[]
+
+## wf.request_steps
+id: bigint NOT NULL | 
+request_id: bigint NOT NULL | 
+step_no: smallint NOT NULL | 
+approver_user_id: bigint NOT NULL | 
+delegated_from: bigint NULL | 
+action: text NULL | 
+comment: text NULL | 
+notified_at: timestamp with time zone NOT NULL | 
+acted_at: timestamp with time zone NULL | 
+sla_due_at: timestamp with time zone NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+approver_spec: text NULL | 
+Constraints: ["CHECK ((action = ANY (ARRAY['approved'::text, 'rejected'::text, 'sent_back'::text, 'escalated'::text, 'skipped'::text])))", "FOREIGN KEY (approver_user_id) REFERENCES core.users(id)", "FOREIGN KEY (delegated_from) REFERENCES core.users(id)", "FOREIGN KEY (request_id) REFERENCES wf.requests(id)", "PRIMARY KEY (id)"]
+backend/src/modules/workflows/workflow-routing.ts:46 openStep insertInto write=request_id,step_no,approver_user_id,approver_spec,delegated_from,notified_at,sla_due_at indirect=False locks=[]
+backend/src/modules/workflows/workflow.service.ts:83 step selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/workflows/workflow.service.ts:103 act updateTable write=action,comment,acted_at,approver_user_id indirect=False locks=[]
+backend/src/modules/workflows/workflow.service.ts:153 cancelRequest updateTable write=action,comment,acted_at indirect=False locks=[]
+backend/src/modules/workflows/workflow.service.ts:229 still selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/workflows/workflow.service.ts:238 runEscalations updateTable write=action,acted_at,comment indirect=False locks=[]
+backend/src/modules/workflows/workflow-holds.service.ts:18 routingHeldSql raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## wf.requests
+id: bigint NOT NULL | 
+definition_code: text NOT NULL | 
+subject_employee_id: bigint NOT NULL | 
+requested_by: bigint NOT NULL | 
+payload: jsonb NOT NULL | 
+current_step: smallint NOT NULL | 
+status: text NOT NULL | 
+decided_at: timestamp with time zone NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'cancelled'::text, 'lapsed'::text, 'sent_back'::text])))", "FOREIGN KEY (definition_code) REFERENCES wf.definitions(code)", "FOREIGN KEY (requested_by) REFERENCES core.users(id)", "FOREIGN KEY (subject_employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)"]
+backend/src/modules/leave/leave-apply.service.ts:41 workflowRequestId updateTable write=payload indirect=False locks=[]
+backend/src/modules/workflows/workflow-routing.ts:79 advance updateTable write=status,decided_at indirect=False locks=[]
+backend/src/modules/workflows/workflow-routing.ts:125 advance updateTable write=current_step indirect=False locks=[]
+backend/src/modules/workflows/workflow-routing.ts:137 advance updateTable write=status,decided_at indirect=False locks=[]
+backend/src/modules/workflows/workflow-routing.ts:154 advance updateTable write=status,decided_at indirect=False locks=[]
+backend/src/modules/workflows/workflow.service.ts:52 request insertInto write=definition_code,subject_employee_id,requested_by,payload indirect=False locks=[]
+backend/src/modules/workflows/workflow.service.ts:126 act updateTable write=status,decided_at indirect=False locks=[]
+backend/src/modules/workflows/workflow.service.ts:159 cancelRequest updateTable write=status,decided_at indirect=False locks=[]
+backend/src/modules/workflows/workflow.service.ts:186 resubmit updateTable write=payload,status,current_step indirect=False locks=[]
+backend/src/modules/workflows/workflow.service.ts:253 runEscalations updateTable write=status,decided_at indirect=False locks=[]
+backend/src/modules/workflows/workflow-locks.ts:24 request selectFrom write= indirect=False locks=['forUpdate']
+backend/src/modules/workflows/workflow-holds.service.ts:18 routingHeldSql raw_sql_requires_manual_review write= indirect=True locks=[]
+backend/src/modules/workflows/workflow-holds.service.ts:36 expireHeldRequest updateTable write=status,decided_at indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]

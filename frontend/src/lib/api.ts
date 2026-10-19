@@ -8,6 +8,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: string,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -44,8 +45,8 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const res = await authFetch(path, init);
   if (!res.ok) {
-    const body = (await res.json().catch(() => null)) as { message?: string } | null;
-    throw new ApiError(body?.message ?? `Request failed (${String(res.status)})`, res.status);
+    const body = (await res.json().catch(() => null)) as { message?: string; data?: { code?: string } } | null;
+    throw new ApiError(body?.message ?? `Request failed (${String(res.status)})`, res.status, body?.data?.code);
   }
 
   if (res.status === 204) return undefined as T;

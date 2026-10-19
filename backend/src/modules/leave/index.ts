@@ -19,3 +19,5 @@ export {
   requestEncashment,
   selectRestrictedHoliday,
 } from './leave-apply.service.js';
+export { evaluateLeaveCoverage } from './coverage-check.service.js';
+export { previewLeaveApply } from './leave-preview.service.js';

@@ -4,6 +4,7 @@
  * Step 2 source: greytHR export (DOB/DOJ/statutory/bank — what EMS lacks).
  */
 import { z } from 'zod';
+import { genderSchema } from '../../core/validation/gender.js';
 
 /** Raw company strings → canonical company NAME (as seeded in core.companies). */
 export const COMPANY_ALIASES: Readonly<Record<string, string>> = {
@@ -32,7 +33,7 @@ export const emsUserSchema = z.object({
   username: z.string().min(1),
   email: z.string().email().nullish(),
   phone: z.string().nullish(),
-  gender: z.string().nullish(),
+  gender: genderSchema,
   company: z.string().min(1),
   department: z.string().nullish(),
   designation: z.string().nullish(),
@@ -49,7 +50,7 @@ export const greythrRowSchema = z.object({
   userid: z.string().min(4),
   dob: z.string().date().nullish(),
   doj: z.string().date().nullish(),
-  gender: z.string().nullish(),
+  gender: genderSchema,
   category: z.enum(['white_collar', 'blue_collar', 'trainee', 'consultant', 'contract']).nullish(),
   pan: z.string().nullish(),
   aadhaar: z.string().nullish(),

@@ -1,0 +1,55 @@
+
+## ast.assets
+id: bigint NOT NULL | 
+asset_no: text NOT NULL | 
+category: text NOT NULL | 
+description: text NULL | 
+serial_no: text NULL | 
+purchase_date: date NULL | 
+warranty_till: date NULL | 
+status: text NOT NULL | 
+location_id: bigint NULL | 
+company_id: bigint NOT NULL | 
+created_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((status = ANY (ARRAY['in_stock'::text, 'assigned'::text, 'maintenance'::text, 'lost'::text, 'scrapped'::text])))", "FOREIGN KEY (company_id) REFERENCES core.companies(id)", "FOREIGN KEY (created_by) REFERENCES core.users(id)", "FOREIGN KEY (location_id) REFERENCES core.locations(id)", "PRIMARY KEY (id)", "UNIQUE (asset_no)"]
+backend/src/modules/assets/assets.service.ts:218 upsertAsset updateTable write=asset_no,category,description,serial_no,purchase_date,warranty_till,company_id,location_id,updated_at indirect=False locks=[]
+backend/src/modules/assets/assets.service.ts:224 upsertAsset insertInto write=asset_no,category,description,serial_no,purchase_date,warranty_till,company_id,location_id,created_by indirect=False locks=[]
+backend/src/modules/assets/assets.service.ts:308 assignAsset updateTable write=status,updated_at indirect=False locks=[]
+backend/src/modules/assets/assets.service.ts:370 returnAsset updateTable write=status,updated_at indirect=False locks=[]
+backend/src/modules/assets/assets.service.ts:488 logMaintenance updateTable write=status,updated_at indirect=False locks=[]
+
+## ast.assignments
+id: bigint NOT NULL | 
+asset_id: bigint NOT NULL | 
+holder_kind: text NOT NULL | 
+employee_id: bigint NULL | 
+third_party_name: text NULL | 
+third_party_org: text NULL | 
+assigned_at: timestamp with time zone NOT NULL | 
+returned_at: timestamp with time zone NULL | 
+return_condition: text NULL | 
+notes: text NULL | 
+assigned_by: bigint NOT NULL | 
+returned_by: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((((holder_kind = 'employee'::text) AND (employee_id IS NOT NULL) AND (third_party_name IS NULL)) OR ((holder_kind = 'third_party'::text) AND (employee_id IS NULL) AND (third_party_name IS NOT NULL))))", "CHECK ((((returned_at IS NULL) AND (return_condition IS NULL)) OR ((returned_at IS NOT NULL) AND (return_condition IS NOT NULL))))", "CHECK ((holder_kind = ANY (ARRAY['employee'::text, 'third_party'::text])))", "CHECK ((return_condition = ANY (ARRAY['ok'::text, 'damaged'::text, 'not_returned'::text])))", "FOREIGN KEY (asset_id) REFERENCES ast.assets(id)", "FOREIGN KEY (assigned_by) REFERENCES core.users(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (returned_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/assets/assets.service.ts:294 inserted insertInto write=asset_id,holder_kind,employee_id,third_party_name,third_party_org,notes,assigned_by indirect=False locks=[]
+backend/src/modules/assets/assets.service.ts:356 returnAsset updateTable write=returned_at,return_condition,returned_by,notes indirect=False locks=[]
+backend/src/core/audit/audit.service.ts:56 result raw_sql_requires_manual_review write= indirect=True locks=[]
+
+## ast.maintenance
+id: bigint NOT NULL | 
+asset_id: bigint NOT NULL | 
+kind: text NOT NULL | 
+scheduled_for: date NULL | 
+reported_by: bigint NULL | 
+description: text NOT NULL | 
+resolved_at: timestamp with time zone NULL | 
+resolution: text NULL | 
+cost: numeric(12,2) NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((cost IS NULL) OR (cost >= (0)::numeric)))", "CHECK ((kind = ANY (ARRAY['scheduled'::text, 'incident'::text, 'damage'::text, 'lost'::text])))", "FOREIGN KEY (asset_id) REFERENCES ast.assets(id)", "FOREIGN KEY (reported_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/assets/assets.service.ts:377 returnAsset insertInto write=asset_id,kind,reported_by,description indirect=False locks=[]
+backend/src/modules/assets/assets.service.ts:470 inserted insertInto write=asset_id,kind,description,scheduled_for,cost,reported_by indirect=False locks=[]

@@ -1,0 +1,28 @@
+
+## med.access_log
+id: bigint NOT NULL | 
+questionnaire_id: bigint NULL | 
+employee_id: bigint NULL | 
+actor_user_id: bigint NULL | 
+action: text NOT NULL | 
+reason: text NULL | 
+ip: text NULL | 
+occurred_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((action = ANY (ARRAY['read'::text, 'write'::text, 'withdraw'::text, 'denied'::text])))", "FOREIGN KEY (actor_user_id) REFERENCES core.users(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (questionnaire_id) REFERENCES med.questionnaires(id)", "PRIMARY KEY (id)"]
+
+## med.questionnaires
+id: bigint NOT NULL | 
+employee_id: bigint NULL | 
+candidate_id: bigint NULL | 
+consent_declaration_id: bigint NOT NULL | 
+answers: jsonb NOT NULL | 
+height_cm: numeric(5,1) NULL | 
+weight_kg: numeric(5,1) NULL | 
+bmi: numeric(5,1) NULL | 
+retention_class: text NOT NULL | 
+status: text NOT NULL | 
+withdrawn_at: timestamp with time zone NULL | 
+submitted_by_user_id: bigint NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((candidate_id IS NOT NULL) OR (employee_id IS NOT NULL)))", "CHECK (((height_cm IS NULL) OR ((height_cm >= (50)::numeric) AND (height_cm <= (250)::numeric))))", "CHECK (((status <> 'withdrawn'::text) OR ((answers = '{}'::jsonb) AND (height_cm IS NULL) AND (weight_kg IS NULL))))", "CHECK (((weight_kg IS NULL) OR ((weight_kg >= (20)::numeric) AND (weight_kg <= (300)::numeric))))", "CHECK ((status = ANY (ARRAY['active'::text, 'withdrawn'::text])))", "FOREIGN KEY (candidate_id) REFERENCES core.onboarding_candidates(id) ON DELETE SET NULL", "FOREIGN KEY (consent_declaration_id) REFERENCES prv.declarations(id)", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "FOREIGN KEY (submitted_by_user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)"]

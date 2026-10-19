@@ -1,0 +1,69 @@
+
+## eng.announcements
+id: bigint NOT NULL | 
+title: text NOT NULL | 
+body: text NOT NULL | 
+audience: jsonb NOT NULL | 
+published_by: bigint NOT NULL | 
+published_at: timestamp with time zone NOT NULL | 
+expires_at: timestamp with time zone NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+attachment_document_id: bigint NULL | 
+Constraints: ["FOREIGN KEY (attachment_document_id) REFERENCES core.documents(id)", "FOREIGN KEY (published_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/engagement/announcements.service.ts:40 row insertInto write=title,body,attachment_document_id,audience,published_by,expires_at indirect=False locks=[]
+backend/src/modules/engagement/announcements.service.ts:123 updated updateTable write=is_active indirect=False locks=[]
+
+## eng.poll_responses
+id: bigint NOT NULL | 
+poll_id: bigint NOT NULL | 
+respondent_user_id: bigint NULL | 
+option_index: smallint NOT NULL | 
+comment: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+respondent_hash: text NULL | EN-02/03 salted HMAC of (poll, user) — dedupes anonymous responses without storing identity (docs/03 §9)
+Constraints: ["CHECK (((respondent_user_id IS NULL) <> (respondent_hash IS NULL)))", "CHECK ((option_index >= 0))", "FOREIGN KEY (poll_id) REFERENCES eng.polls(id)", "FOREIGN KEY (respondent_user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/engagement/polls.service.ts:192 respondToPoll insertInto write=poll_id,respondent_user_id,respondent_hash,option_index,comment indirect=False locks=[]
+
+## eng.polls
+id: bigint NOT NULL | 
+question: text NOT NULL | 
+options: jsonb NOT NULL | 
+kind: text NOT NULL | 
+is_anonymous: boolean NOT NULL | 
+audience: jsonb NOT NULL | 
+created_by: bigint NOT NULL | 
+opens_at: timestamp with time zone NOT NULL | 
+closes_at: timestamp with time zone NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((kind = ANY (ARRAY['poll'::text, 'pulse'::text])))", "FOREIGN KEY (created_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/engagement/polls.service.ts:79 row insertInto write=question,options,kind,is_anonymous,audience,created_by,closes_at indirect=False locks=[]
+backend/src/modules/engagement/polls.service.ts:267 updated updateTable write=is_active indirect=False locks=[]
+
+## eng.survey_responses
+id: bigint NOT NULL | 
+survey_id: bigint NOT NULL | 
+respondent_user_id: bigint NULL | 
+respondent_hash: text NULL | 
+answers: jsonb NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK (((respondent_user_id IS NULL) <> (respondent_hash IS NULL)))", "FOREIGN KEY (respondent_user_id) REFERENCES core.users(id)", "FOREIGN KEY (survey_id) REFERENCES eng.surveys(id) ON DELETE CASCADE", "PRIMARY KEY (id)"]
+backend/src/modules/engagement/surveys.service.ts:256 respondToSurvey insertInto write=survey_id,respondent_user_id,respondent_hash,answers indirect=False locks=[]
+
+## eng.surveys
+id: bigint NOT NULL | 
+title: text NOT NULL | 
+description: text NULL | 
+questions: jsonb NOT NULL | 
+audience: jsonb NOT NULL | 
+created_by: bigint NOT NULL | 
+open_from: timestamp with time zone NOT NULL | 
+open_till: timestamp with time zone NULL | 
+is_anonymous: boolean NOT NULL | 
+is_active: boolean NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+updated_at: timestamp with time zone NOT NULL | 
+Constraints: ["FOREIGN KEY (created_by) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/engagement/surveys.service.ts:120 row insertInto write=title,description,questions,is_anonymous,audience,created_by,open_till indirect=False locks=[]
+backend/src/modules/engagement/surveys.service.ts:381 updated updateTable write=is_active indirect=False locks=[]

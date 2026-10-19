@@ -27,16 +27,18 @@ import { act } from '../src/modules/workflows/index.js';
 const DB_URL = process.env['DATABASE_URL'];
 const JWT_SECRET = process.env['JWT_SECRET'] ?? 'synthetic-jwt-test-secret-at-least-32-characters-long';
 
+interface TravelHeadroomBody {
+  tripId: number;
+  estimatedBudgetPaise: number;
+  approvedBudgetPaise: number;
+  reservedBudgetPaise: number;
+  availableBudgetPaise: number;
+}
+
 interface TravelBody {
   trip: { id: number; status: string; approvedBudgetPaise: number };
   claim: { id: number; status: string; totalAmountPaise: number };
   item: { id: number; amountPaise: number; inrAmountPaise: number };
-  headroom: {
-    tripId: number;
-    approvedBudgetPaise: number;
-    reservedPaise: number;
-    availableHeadroomPaise: number;
-  };
 }
 
 describe.skipIf(!DB_URL)('Phase 3.5 Stage B — Claims against Approved Budget & Commitment Ledger', () => {
@@ -188,7 +190,7 @@ describe.skipIf(!DB_URL)('Phase 3.5 Stage B — Claims against Approved Budget &
       .where('id', '=', tripId)
       .executeTakeFirstOrThrow();
     expect(approvedTrip.status).toBe('approved');
-    expect(Number(approvedTrip.approved_budget_paise)).toBe(3000000);
+    expect(approvedTrip.approved_budget_paise).toBe(3000000);
 
     // Now claim creation succeeds
     const claimRes = await client
@@ -261,16 +263,16 @@ describe.skipIf(!DB_URL)('Phase 3.5 Stage B — Claims against Approved Budget &
       .get(`/api/travel/trips/${tripId}/budget-headroom`)
       .auth(as('admin').token, { type: 'bearer' });
     expect(headroomRes1.status).toBe(200);
-    const h1 = (headroomRes1.body as TravelBody).headroom;
+    const h1 = headroomRes1.body as TravelHeadroomBody;
     expect(h1.approvedBudgetPaise).toBe(5000000);
-    expect(h1.reservedPaise).toBe(0);
-    expect(h1.availableHeadroomPaise).toBe(5000000);
+    expect(h1.reservedBudgetPaise).toBe(0);
+    expect(h1.availableBudgetPaise).toBe(5000000);
 
-    // 3. Create a claim
+    // 3. Create a claim covering 2026-07-20 to 2026-07-22
     const claimRes = await client
       .post('/api/travel/claims')
       .auth(as('admin').token, { type: 'bearer' })
-      .send({ tripId });
+      .send({ tripId, periodFrom: '2026-07-20', periodTo: '2026-07-22' });
     expect(claimRes.status).toBe(200);
     const claimId = (claimRes.body as TravelBody).claim.id;
 
@@ -357,10 +359,10 @@ describe.skipIf(!DB_URL)('Phase 3.5 Stage B — Claims against Approved Budget &
       .get(`/api/travel/trips/${tripId}/budget-headroom`)
       .auth(as('admin').token, { type: 'bearer' });
     expect(headroomRes2.status).toBe(200);
-    const h2 = (headroomRes2.body as TravelBody).headroom;
+    const h2 = headroomRes2.body as TravelHeadroomBody;
     expect(h2.approvedBudgetPaise).toBe(5000000);
-    expect(h2.reservedPaise).toBe(2250000);
-    expect(h2.availableHeadroomPaise).toBe(2750000);
+    expect(h2.reservedBudgetPaise).toBe(2250000);
+    expect(h2.availableBudgetPaise).toBe(2750000);
 
     // Verify reservation row in te.budget_reservations
     const resRow = await tx
@@ -369,28 +371,29 @@ describe.skipIf(!DB_URL)('Phase 3.5 Stage B — Claims against Approved Budget &
       .where('claim_id', '=', claimId)
       .where('movement', '=', 'reserve')
       .executeTakeFirstOrThrow();
-    expect(Number(resRow.amount_paise)).toBe(2250000);
+    expect(resRow.amount_paise).toBe(2250000);
     expect(resRow.trip_id).toBe(tripId);
 
     // 11. Overlapping claim check:
-    // Create second claim covering 2026-07-21 (overlaps with 2026-07-21..2026-07-22)
+    // Create second claim covering 2026-07-21..2026-07-23 (overlaps with 2026-07-20..2026-07-22)
     const claim2Res = await client
       .post('/api/travel/claims')
       .auth(as('admin').token, { type: 'bearer' })
-      .send({ tripId });
+      .send({ tripId, periodFrom: '2026-07-21', periodTo: '2026-07-23' });
     expect(claim2Res.status).toBe(200);
     const claimId2 = (claim2Res.body as TravelBody).claim.id;
 
-    await client
+    const addItem2Res = await client
       .post(`/api/travel/claims/${claimId2}/items`)
       .auth(as('admin').token, { type: 'bearer' })
       .send({
         claimId: claimId2,
-        category: 'taxi',
+        category: 'local_travel',
         itemDate: '2026-07-21',
         amountPaise: 50000,
         receiptUrl: 'https://storage.hrms/receipts/taxi.pdf',
       });
+    expect(addItem2Res.status).toBe(200);
 
     // Submitting overlapping claim on same trip budget must fail with 409 Conflict
     const overlapSubmit = await client
@@ -403,24 +406,25 @@ describe.skipIf(!DB_URL)('Phase 3.5 Stage B — Claims against Approved Budget &
     expect(overlapSubmit.status).toBe(409);
 
     // 12. Headroom overflow check:
-    // Non-overlapping date 2026-07-24 with amount ₹30,000 (exceeds ₹27,500 headroom)
+    // Non-overlapping date window 2026-07-23..2026-07-25 with amount ₹30,000 (exceeds ₹27,500 headroom)
     const claim3Res = await client
       .post('/api/travel/claims')
       .auth(as('admin').token, { type: 'bearer' })
-      .send({ tripId });
+      .send({ tripId, periodFrom: '2026-07-23', periodTo: '2026-07-25' });
     expect(claim3Res.status).toBe(200);
     const claimId3 = (claim3Res.body as TravelBody).claim.id;
 
-    await client
+    const addItem3Res = await client
       .post(`/api/travel/claims/${claimId3}/items`)
       .auth(as('admin').token, { type: 'bearer' })
       .send({
         claimId: claimId3,
-        category: 'transport',
+        category: 'local_travel',
         itemDate: '2026-07-24',
         amountPaise: 3000000, // ₹30,000 > ₹27,500 available
         receiptUrl: 'https://storage.hrms/receipts/transport.pdf',
       });
+    expect(addItem3Res.status).toBe(200);
 
     const headroomExceededRes = await client
       .post(`/api/travel/claims/${claimId3}/submit`)
@@ -429,7 +433,7 @@ describe.skipIf(!DB_URL)('Phase 3.5 Stage B — Claims against Approved Budget &
         claimId: claimId3,
         summaryDocumentUrl: 'https://storage.hrms/reports/summary-3.pdf',
       });
-    expect(headroomExceededRes.status).toBe(400);
+    expect(headroomExceededRes.status).toBe(409);
     expect(JSON.stringify(headroomExceededRes.body)).toContain('exceeds available trip budget headroom');
   });
 
@@ -490,7 +494,7 @@ describe.skipIf(!DB_URL)('Phase 3.5 Stage B — Claims against Approved Budget &
     const headroomBefore = await client
       .get(`/api/travel/trips/${tripId}/budget-headroom`)
       .auth(as('employee').token, { type: 'bearer' });
-    expect((headroomBefore.body as TravelBody).headroom.availableHeadroomPaise).toBe(1200000);
+    expect((headroomBefore.body as TravelHeadroomBody).availableBudgetPaise).toBe(1200000);
 
     // 3. Manager rejects the claim in workflow
     const claimRow = await tx
@@ -512,13 +516,13 @@ describe.skipIf(!DB_URL)('Phase 3.5 Stage B — Claims against Approved Budget &
       .where('claim_id', '=', claimId)
       .where('movement', '=', 'release')
       .executeTakeFirstOrThrow();
-    expect(Number(releaseRow.amount_paise)).toBe(800000);
+    expect(releaseRow.amount_paise).toBe(800000);
 
     const headroomAfter = await client
       .get(`/api/travel/trips/${tripId}/budget-headroom`)
       .auth(as('employee').token, { type: 'bearer' });
-    expect((headroomAfter.body as TravelBody).headroom.availableHeadroomPaise).toBe(2000000);
-    expect((headroomAfter.body as TravelBody).headroom.reservedPaise).toBe(0);
+    expect((headroomAfter.body as TravelHeadroomBody).availableBudgetPaise).toBe(2000000);
+    expect((headroomAfter.body as TravelHeadroomBody).reservedBudgetPaise).toBe(0);
   });
 
   it('rejects direct UPDATE or DELETE on te.budget_reservations via database trigger', async () => {

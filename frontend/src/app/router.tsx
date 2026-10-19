@@ -15,6 +15,7 @@ import { hasRole } from '../lib/session';
 import { AppShell } from './AppShell';
 import { RouteGuard } from './RouteGuard';
 import { RoleHomePage } from '../pages/home/RoleHomePage';
+const DocumentsPage = lazy(() => import('../pages/documents/DocumentsPage').then(m => ({ default: m.DocumentsPage })));
 const DirectoryPage = lazy(() => import('../pages/people/DirectoryPage').then((m) => ({ default: m.DirectoryPage })));
 const ProfilePage = lazy(() => import('../pages/people/ProfilePage').then((m) => ({ default: m.ProfilePage })));
 const GalleryPage = lazy(() => import('../pages/dev/GalleryPage').then((m) => ({ default: m.GalleryPage })));
@@ -77,6 +78,7 @@ const ExecutivePage = lazy(() => import('../pages/executive/ExecutivePage').then
 const TravelPage = lazy(() => import('../pages/travel/TravelPage').then((m) => ({ default: m.TravelPage })));
 const RecruitmentPage = lazy(() => import('../pages/recruitment/RecruitmentPage').then((m) => ({ default: m.RecruitmentPage })));
 const DataImportsPage = lazy(() => import('../pages/imports/DataImportsPage').then((m) => ({ default: m.DataImportsPage })));
+const CompliancePage = lazy(() => import('../pages/compliance/CompliancePage').then((m) => ({ default: m.CompliancePage })));
 
 interface AppRouterProps {
   user: SessionUser;
@@ -103,6 +105,8 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="my/claims" element={<ClaimsPage />} />
         <Route path="my/team" element={<TeamPage user={user} />} />
         <Route path="my/team/overtime" element={<OtDecisionsPage />} />
+        <Route path="my/documents" element={<DocumentsPage />} />
+        <Route path="documents" element={<DocumentsPage managed />} />
         <Route path="my/letters" element={<MyLettersPage />} />
         <Route path="my/resignation" element={<MyResignationPage />} />
         <Route path="policies" element={<PoliciesPage user={user} />} />
@@ -123,7 +127,8 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="payroll/revisions" element={<SalaryRevisionsPage />} />
         <Route path="payroll/parallel-run" element={<ParallelRunPage />} />
         <Route path="admin/salary-structures" element={<SalaryStructuresPage />} />
-        <Route path="loans" element={<LoansPage />} />
+        <Route path="my/loans" element={<LoansPage />} />
+        <Route path="loans" element={<LoansPage registry />} />
         <Route path="claims" element={<ClaimsPage />} />
         <Route path="lifecycle/*" element={<LifecyclePage user={user} />} />
         <Route path="onboard/prejoin" element={<PrejoinPortalPage />} />
@@ -131,6 +136,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="assets" element={<AssetsPage />} />
         <Route path="helpdesk" element={<HelpdeskPage user={user} />} />
         <Route path="engagement" element={<EngagementPage user={user} />} />
+        <Route path="compliance" element={<CompliancePage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="reports/r2-swipes" element={<R2SwipesPage />} />
         <Route path="reports/r3-regularizations" element={<R3RegularizationsPage />} />

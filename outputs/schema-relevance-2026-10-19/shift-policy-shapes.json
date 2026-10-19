@@ -1,0 +1,19 @@
+{
+  "read_only": true,
+  "shapes": [
+    {
+      "late_type": "array",
+      "early_type": "array",
+      "rows": 210,
+      "empty_late_objects": 0,
+      "empty_early_objects": 0
+    },
+    {
+      "late_type": "object",
+      "early_type": "object",
+      "rows": 2,
+      "empty_late_objects": 2,
+      "empty_early_objects": 2
+    }
+  ]
+}

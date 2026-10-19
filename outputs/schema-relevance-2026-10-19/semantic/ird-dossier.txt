@@ -1,0 +1,69 @@
+
+## ird.grievances
+id: bigint NOT NULL | 
+case_ref: text NOT NULL | 
+status: text NOT NULL | 
+filed_at: timestamp with time zone NOT NULL | 
+filed_by_user_id: bigint NOT NULL | 
+summary: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((length(btrim(case_ref)) > 0))", "CHECK ((length(btrim(summary)) >= 10))", "CHECK ((status = ANY (ARRAY['submitted'::text, 'under_review'::text, 'escalated'::text, 'resolved'::text, 'closed'::text])))", "FOREIGN KEY (filed_by_user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/ird/ird.service.ts:493 inserted insertInto write=case_ref,filed_by_user_id,summary indirect=False locks=[]
+backend/src/modules/ird/ird.service.ts:504 fileGrievance updateTable write=case_ref indirect=False locks=[]
+
+## ird.ic_members
+id: bigint NOT NULL | 
+employee_id: bigint NOT NULL | 
+role: text NOT NULL | 
+active: boolean NOT NULL | 
+appointed_on: date NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((role = ANY (ARRAY['presiding_officer'::text, 'member'::text, 'external'::text])))", "FOREIGN KEY (employee_id) REFERENCES core.employees(id)", "PRIMARY KEY (id)"]
+
+## ird.posh_case_access_log
+id: bigint NOT NULL | 
+case_id: bigint NOT NULL | 
+actor_user_id: bigint NOT NULL | 
+opened_at: timestamp with time zone NOT NULL | 
+ip: text NULL | 
+outcome: text NOT NULL | 
+Constraints: ["CHECK ((outcome = ANY (ARRAY['opened'::text, 'refused'::text])))", "FOREIGN KEY (actor_user_id) REFERENCES core.users(id)", "FOREIGN KEY (case_id) REFERENCES ird.posh_cases(id)", "PRIMARY KEY (id)"]
+backend/src/modules/ird/ird.service.ts:391 openPoshCase insertInto write=case_id,actor_user_id,ip,outcome indirect=False locks=[]
+backend/src/modules/ird/ird.service.ts:417 openPoshCase insertInto write=case_id,actor_user_id,ip,outcome indirect=False locks=[]
+
+## ird.posh_case_assignments
+id: bigint NOT NULL | 
+case_id: bigint NOT NULL | 
+user_id: bigint NOT NULL | 
+role: text NOT NULL | 
+assigned_by_user_id: bigint NULL | 
+assigned_at: timestamp with time zone NOT NULL | 
+active: boolean NOT NULL | 
+Constraints: ["CHECK ((role = ANY (ARRAY['presiding_officer'::text, 'investigator'::text, 'member'::text])))", "FOREIGN KEY (assigned_by_user_id) REFERENCES core.users(id)", "FOREIGN KEY (case_id) REFERENCES ird.posh_cases(id) ON DELETE CASCADE", "FOREIGN KEY (user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)", "UNIQUE (case_id, user_id)"]
+backend/src/modules/ird/ird.service.ts:327 assignPoshCase insertInto write=case_id,user_id,role,assigned_by_user_id,active indirect=False locks=[]
+
+## ird.posh_cases
+id: bigint NOT NULL | 
+case_ref: text NOT NULL | 
+status: text NOT NULL | 
+filed_at: timestamp with time zone NOT NULL | 
+filed_by_user_id: bigint NULL | 
+is_anonymous: boolean NOT NULL | 
+summary_encrypted_or_text: text NOT NULL | v1: plain text. Encryption at rest is a Phase 5 follow-up — do not log this column.
+anonymous_token_hash: text NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((((is_anonymous = false) AND (filed_by_user_id IS NOT NULL)) OR ((is_anonymous = true) AND (filed_by_user_id IS NULL) AND (anonymous_token_hash IS NOT NULL))))", "CHECK ((length(btrim(case_ref)) > 0))", "CHECK ((length(btrim(summary_encrypted_or_text)) >= 10))", "CHECK ((status = ANY (ARRAY['submitted'::text, 'under_inquiry'::text, 'closed'::text, 'withdrawn'::text])))", "FOREIGN KEY (filed_by_user_id) REFERENCES core.users(id)", "PRIMARY KEY (id)"]
+backend/src/modules/ird/ird.service.ts:208 inserted insertInto write=case_ref,filed_by_user_id,is_anonymous,summary_encrypted_or_text,anonymous_token_hash indirect=False locks=[]
+backend/src/modules/ird/ird.service.ts:221 filePoshAuthenticated updateTable write=case_ref indirect=False locks=[]
+backend/src/modules/ird/ird.service.ts:247 inserted insertInto write=case_ref,filed_by_user_id,is_anonymous,summary_encrypted_or_text,anonymous_token_hash indirect=False locks=[]
+backend/src/modules/ird/ird.service.ts:260 filePoshAnonymous updateTable write=case_ref indirect=False locks=[]
+
+## ird.whistleblower_reports
+id: bigint NOT NULL | 
+anonymous_token_hash: text NOT NULL | 
+status: text NOT NULL | 
+filed_at: timestamp with time zone NOT NULL | 
+summary: text NOT NULL | 
+created_at: timestamp with time zone NOT NULL | 
+Constraints: ["CHECK ((length(btrim(anonymous_token_hash)) = 64))", "CHECK ((length(btrim(summary)) >= 10))", "CHECK ((status = ANY (ARRAY['submitted'::text, 'triaged'::text, 'investigating'::text, 'closed'::text])))", "PRIMARY KEY (id)"]
+backend/src/modules/ird/ird.service.ts:527 inserted insertInto write=anonymous_token_hash,summary indirect=False locks=[]

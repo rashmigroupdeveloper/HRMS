@@ -63,6 +63,7 @@ run('admin.roles ceiling (finding D3)', () => {
     const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: email, password });
     expect(login.status).toBe(200);
     const token = (login.body as LoginBody).accessToken;
+    expect((await (await httpRequest(app)).post('/api/auth/step-up').set(auth(token)).send({ password })).status).toBe(200);
     return token;
   }
 

@@ -150,7 +150,7 @@ run('Stage 1.1 — productionized ingestion (live Postgres)', () => {
       await db
         .insertInto('core.user_roles')
         .values({ user_id: opsId, role_id: r.id, scope_org_unit_id: null })
-        .onConflict((oc) => oc.columns(['user_id', 'role_id', 'scope_org_unit_id']).doNothing())
+        .onConflict((oc) => oc.doNothing())
         .execute();
     }
 
