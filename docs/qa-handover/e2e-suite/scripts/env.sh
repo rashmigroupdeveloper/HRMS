@@ -19,3 +19,6 @@ export E2E_API_URL=${E2E_API_URL:-http://localhost:$E2E_BACKEND_PORT}
 export E2E_OUT=${E2E_OUT:-$E2E_ROOT/reports/results}
 export E2E_LOGS=$E2E_ROOT/.logs
 mkdir -p "$E2E_LOGS"
+
+# Kent simulator port for the production-readiness pass (start-servers.sh E2E_KENT_SIM=1).
+export E2E_KENT_PORT=${E2E_KENT_PORT:-5194}

@@ -6,6 +6,12 @@ bash "$(dirname "$0")/stop-servers.sh" >/dev/null 2>&1
 # Run through a symlink so other jobs' `pkill -f "<repo>/backend…"` restarts never hit this instance.
 ln -sfn "$APP_REPO" "$E2E_ROOT/.app"
 cd "$E2E_ROOT/.app/backend"
+# E2E_KENT_SIM=1: start the Kent simulator (docs/integrations/KENT.md) and point backend + worker at it, as production will point at Kent.
+if [ "${E2E_KENT_SIM:-0}" = 1 ]; then
+  export KENT_BASE_URL=http://127.0.0.1:$E2E_KENT_PORT KENT_API_KEY=e2e-sim KENT_DEVICE_MAP='{"KGP-G1":"RML-KGP-MAIN-GATE"}'
+  KENT_API_KEY=e2e-sim KENT_SIM_PORT=$E2E_KENT_PORT nohup node --import tsx ./scripts/kent-simulator.ts > $E2E_LOGS/kentsim.log 2>&1 &
+  echo $! > $E2E_LOGS/kentsim.pid
+fi
 PORT=$E2E_BACKEND_PORT DATABASE_URL=$E2E_DATABASE_URL CORS_ORIGIN=http://localhost:$E2E_FRONTEND_PORT \
   STORAGE_DIR=$E2E_ROOT/.storage E2E_INSTANCE=1 \
   RATE_LIMIT_AUTH_PER_IDENTIFIER=${RATE_LIMIT_AUTH_PER_IDENTIFIER:-10000} RATE_LIMIT_AUTH_PER_ADDRESS=100000 RATE_LIMIT_GLOBAL_PER_ADDRESS=1000000 \

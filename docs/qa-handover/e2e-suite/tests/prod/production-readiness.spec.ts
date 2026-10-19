@@ -171,25 +171,45 @@ test('[payroll_admin] PR-06 salary structure and assignment', async () => {
   }
 });
 
-test('[it_admin] PR-07 Kent feed: "Sync now" pulls punches through a configured adapter / simulator', async () => {
-  const sa = await as(ADMIN.email, ADMIN.password);
-  const r = await sa.post('/api/attendance/sync', {});
-  S.kentSync = `${r.status()} ${(await r.text()).slice(0, 200)}`;
-  test.info().annotations.push({ type: 'kent-sync', description: S.kentSync });
-  expect(r.status(), `Kent sync must work against the simulator before go-live: ${S.kentSync}`).toBe(200);
-});
-
-test('[hr_ops] PR-08 September punches (Kent EmployeeSwipeDetails layout) land as day records', async () => {
-  const h = await as(S.emp.hrops.email);
-  const rows: string[] = [];
+/** September punches for employee + manager (employee: absent on ABSENT days, no punch on the leave day). */
+function septemberPunches(): { ecode: string; k: string; d: string; hm: string; dir: 'in' | 'out' }[] {
+  const out: { ecode: string; k: string; d: string; hm: string; dir: 'in' | 'out' }[] = [];
   for (const k of ['employee', 'manager']) for (const d of workdays()) {
     if (d === HOLIDAY.date || (k === 'employee' && (ABSENT.includes(d) || d === LEAVE_DAY))) continue;
-    rows.push(`${S.emp[k].ecode},${k},${label(d, '09:02:00')},${DOOR},IN`, `${S.emp[k].ecode},${k},${label(d, '18:05:00')},${DOOR},OUT`);
+    out.push({ ecode: S.emp[k].ecode, k, d, hm: '09:02:00', dir: 'in' }, { ecode: S.emp[k].ecode, k, d, hm: '18:05:00', dir: 'out' });
   }
-  const csv = `Employee No,Employee Name,Swipe Date,Door/Address,Swipe Type\n${rows.join('\n')}\n`;
-  const pv = await must(await h.post('/api/bulk/punches/preview', { filename: 'EmployeeSwipeDetails-Sep-2026.csv', base64: b64(csv) }), 'punch preview');
-  expect(pv.errorRows, JSON.stringify(pv.issues).slice(0, 500)).toBe(0);
-  await must(await h.post(`/api/bulk/punches/jobs/${pv.jobId}/commit`, {}), 'punch commit');
+  return out;
+}
+const KENT_SIM = `http://127.0.0.1:${process.env.E2E_KENT_PORT ?? '5194'}`;
+const swipeCount = async () => (await q<{ n: number }>("SELECT count(*)::int n FROM att.swipe_events WHERE employee_no=$1 AND swipe_ts >= '2026-09-01' AND swipe_ts < '2026-10-01'", [S.emp.employee.ecode]))[0].n;
+
+test('[it_admin] PR-07 Kent feed: simulator punches pulled by "Sync now" (the adapter production will use)', async () => {
+  // Device KGP-G1 is mapped to door RML-KGP-MAIN-GATE via KENT_DEVICE_MAP (start-servers.sh E2E_KENT_SIM=1).
+  // The device uploads its September buffer on 1 Oct, so its completeThrough covers the whole month.
+  const punches = septemberPunches().map((p) => ({ employeeNo: p.ecode, punchTime: `${p.d} ${p.hm}`, deviceId: 'KGP-G1', direction: p.dir, receivedAt: '2026-10-01T02:00:00Z' }));
+  const sim = await fetch(`${KENT_SIM}/_sim/punches`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(punches) }).catch((e) => ({ ok: false, status: 0, text: async () => String(e) }) as const);
+  expect(sim.ok, `Kent simulator reachable at ${KENT_SIM}: ${sim.status} ${await sim.text()}`).toBe(true);
+  const sa = await as(ADMIN.email, ADMIN.password);
+  const r = await sa.post('/api/attendance/sync', {});
+  S.kentSync = `${r.status()} ${(await r.text()).slice(0, 300)}`;
+  test.info().annotations.push({ type: 'kent-sync', description: S.kentSync });
+  expect(r.status(), `Kent "Sync now" must pull from the configured adapter: ${S.kentSync}`).toBe(200);
+  await expect.poll(swipeCount, { timeout: 20_000, message: 'simulator punches stored as swipes for the employee' }).toBeGreaterThan(20);
+  S.kentIngested = await swipeCount();
+});
+
+test('[hr_ops] PR-08 Kent punches become September day records (worker recompute)', async () => {
+  if (!S.kentIngested) {
+    // Kent path unavailable: load the same punches through the manual importer so later steps still run, and say so.
+    const h = await as(S.emp.hrops.email);
+    const rows = septemberPunches().map((p) => `${p.ecode},${p.k},${label(p.d, p.hm)},${DOOR},${p.dir.toUpperCase()}`);
+    const csv = `Employee No,Employee Name,Swipe Date,Door/Address,Swipe Type\n${rows.join('\n')}\n`;
+    fs.appendFileSync(path.join(LOGS, 'prod-gaps.txt'), `WORKAROUND PR-08: Kent sync ingested nothing (${S.kentSync}); punches loaded via /api/bulk/punches instead\n`);
+    test.info().annotations.push({ type: 'WORKAROUND importer', description: 'Kent ingest failed; manual punch import used' });
+    const pv = await must(await h.post('/api/bulk/punches/preview', { filename: 'EmployeeSwipeDetails-Sep-2026.csv', base64: b64(csv) }), 'punch preview');
+    expect(pv.errorRows, JSON.stringify(pv.issues).slice(0, 500)).toBe(0);
+    await must(await h.post(`/api/bulk/punches/jobs/${pv.jobId}/commit`, {}), 'punch commit');
+  }
   // Day records are recomputed from swipes by the worker (each minute). If nothing arrives, drain through the API and flag it.
   const present = async () => (await q<{ n: number }>("SELECT count(*)::int n FROM att.day_records WHERE employee_id=$1 AND work_date BETWEEN '2026-09-01' AND '2026-09-30' AND status='P'", [S.emp.employee.id]))[0].n;
   const t0 = Date.now();
@@ -197,7 +217,12 @@ test('[hr_ops] PR-08 September punches (Kent EmployeeSwipeDetails layout) land a
   const viaWorker = await present();
   expect.soft(viaWorker, 'background worker turned punches into day records within ~1 minute').toBeGreaterThan(15);
   if (viaWorker < 15) { const sa = await as(ADMIN.email, ADMIN.password); test.info().annotations.push({ type: 'WORKAROUND drain', description: JSON.stringify(await body(await sa.ctx.post('/api/attendance/recompute', { headers: { authorization: `Bearer ${sa.token}` } }))) }); }
-  await expect.poll(async () => (await q<{ n: number }>("SELECT count(*)::int n FROM att.day_records WHERE employee_id=$1 AND work_date BETWEEN '2026-09-01' AND '2026-09-30' AND status='P'", [S.emp.employee.id]))[0].n, { timeout: 30_000, message: 'present days computed from punches' }).toBeGreaterThan(15);
+  await expect.poll(present, { timeout: 30_000, message: 'present days computed from punches' }).toBeGreaterThan(15);
+  // Days with no swipe (absences, week-offs, the holiday) are materialised on demand for the month (PAY-010).
+  const sa = await as(ADMIN.email, ADMIN.password);
+  const mat = await sa.post('/api/attendance/recompute', { companyId: S.rml, from: '2026-09-01', until: '2026-09-30' });
+  test.info().annotations.push({ type: 'materialise', description: `${mat.status()} ${(await mat.text()).slice(0, 200)}` });
+  expect.soft(mat.status(), 'month materialise accepted').toBeLessThan(300);
   const e = await as(S.emp.employee.email);
   const cal = await e.get(`/api/attendance/days?employeeId=${S.emp.employee.id}&from=2026-09-01&to=2026-09-30`);
   test.info().annotations.push({ type: 'ess-attendance', description: `${cal.status()} ${(await cal.text()).slice(0, 200)}` });
