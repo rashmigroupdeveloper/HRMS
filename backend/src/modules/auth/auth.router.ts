@@ -8,7 +8,7 @@ import type { Response } from 'express';
 import { z } from 'zod';
 import { authed, base, withPermission } from '../../api/orpc.js';
 import { verifyToken } from '../../core/auth/jwt.js';
-import { ForbiddenError } from '../../core/errors/index.js';
+import { ForbiddenError, NotFoundError } from '../../core/errors/index.js';
 import {
   getUserPermissions,
   getUserRoleCodes,
@@ -201,9 +201,18 @@ const listUsersProcedure = withPermission('admin.users')
 
 const createUserProcedure = withPermission('admin.users')
   .route({ method: 'POST', path: '/auth/users', summary: 'Create a login (temporary password, forced change on first login)' })
-  .input(z.object({ email: z.string().email().max(254), employeeId: z.number().int().positive().nullable().default(null) }))
+  .input(z.object({ email: z.string().email().max(254), employeeId: z.number().int().positive().nullable().default(null), ecode: z.string().trim().min(1).max(32).optional() }))
   .output(z.object({ userId: z.number(), temporaryPassword: z.string() }))
-  .handler(async ({ input, context }) => createUser(context.db, { ...input, actorUserId: context.user.id, ip: context.req.ip ?? null }));
+  .handler(async ({ input, context }) => {
+    const { ecode, ...rest } = input;
+    let employeeId = rest.employeeId;
+    if (ecode !== undefined) {
+      const row = await context.db.selectFrom('core.employees').select('id').where('ecode', '=', ecode.toUpperCase()).executeTakeFirst();
+      if (!row) throw new NotFoundError(`No employee with e-code ${ecode}`);
+      employeeId = row.id;
+    }
+    return createUser(context.db, { ...rest, employeeId, actorUserId: context.user.id, ip: context.req.ip ?? null });
+  });
 
 const setActiveProcedure = withPermission('admin.users')
   .route({ method: 'POST', path: '/auth/users/{userId}/active', summary: 'Activate or deactivate a login (deactivation revokes sessions)' })

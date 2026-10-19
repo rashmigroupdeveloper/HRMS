@@ -97,6 +97,25 @@ function approverLabel(spec: string): string {
 }
 
 export function WorkflowsPage({ user }: { user: SessionUser }) {
+  // E2E-004: hr_ops repairs held routing without workflow-config rights.
+  if (!hasPermission(user, 'admin.settings')) {
+    return (
+      <div className="space-y-6">
+        <header>
+          <p className="text-sm text-ink-muted">Approvals</p>
+          <h1 className="mt-1 text-4xl font-light tracking-tight text-ink">Routing holds</h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            Requests whose approver could not be found. Fix the reporting line or department head, then retry routing with a note.
+          </p>
+        </header>
+        <RoutingHoldsPanel userId={user.id} />
+      </div>
+    );
+  }
+  return <WorkflowCatalog user={user} />;
+}
+
+function WorkflowCatalog({ user }: { user: SessionUser }) {
   const catalog = useDashboardResource<Definition[]>('/api/workflows/definitions');
   const canEdit = hasPermission(user, 'admin.settings');
   const [editing, setEditing] = useState<Definition | null>(null);

@@ -29,7 +29,7 @@ const RULES: readonly [prefix: string, anyOf: readonly string[]][] = [
   ['/lifecycle/probation', ['lifecycle.probation.view']],
 ];
 
-const SELF_SERVICE = ['/', '/me', '/approvals', '/policies', '/my/attendance', '/my/leave', '/my/pay', '/my/tax', '/my/claims', '/my/letters', '/helpdesk', '/travel', '/onboard/prejoin', '/alumni', '/people', '/lifecycle/separation'];
+const SELF_SERVICE = ['/', '/me', '/approvals', '/policies', '/my/attendance', '/my/leave', '/my/pay', '/my/tax', '/my/claims', '/my/letters', '/my/resignation', '/helpdesk', '/travel', '/onboard/prejoin', '/alumni', '/people', '/lifecycle/separation'];
 
 const under = (path: string, prefix: string) => (prefix === '/' ? path === '/' : path === prefix || path.startsWith(`${prefix}/`));
 

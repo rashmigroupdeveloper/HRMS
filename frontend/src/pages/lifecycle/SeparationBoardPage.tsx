@@ -787,19 +787,7 @@ export function SeparationBoardPage() {
                           </Button>
                         )}
 
-                        {item.department === 'Finance' && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => {
-                              toast.success('Finance Pre-Approval Granted', {
-                                description: 'Unreturned asset recovery ₹35,000 scheduled for F&F deduction.',
-                              });
-                            }}
-                          >
-                            Approve Asset Deduction
-                          </Button>
-                        )}
+                        {/* Asset deductions come from 'Flag unreturned assets' (real recovery amounts), not a fixed figure. */}
 
                         <div className="ml-auto flex items-center gap-2">
                           {item.status !== 'cleared' ? (

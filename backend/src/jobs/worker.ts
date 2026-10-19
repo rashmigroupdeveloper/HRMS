@@ -95,6 +95,8 @@ async function main(): Promise<void> {
     ABSENCE_SCAN_QUEUE,
     POLICY_NAG_QUEUE,
     NOTIFICATION_DRAIN_QUEUE,
+    KPI_SNAPSHOT_QUEUE, // E2E-027: schedule() needs the queue to exist on a fresh DB
+    HELPDESK_ESCALATION_QUEUE,
   ];
   for (const q of queues) {
     await boss.createQueue(q);
@@ -175,7 +177,7 @@ async function main(): Promise<void> {
   await boss.schedule(KENT_SYNC_QUEUE, '*/5 * * * *');
   await boss.work(KENT_SYNC_QUEUE, async () => {
     const connector = kentConnectorFromEnv();
-    if (!connector) { logger.warn('kent-sync skipped: KENT_BASE_URL not configured (docs/integrations/KENT.md)'); return; }
+    if (!connector) { logger.warn('kent-sync skipped: no Kent pull mode configured (KENT_MODE api|db|csv) (docs/integrations/KENT.md)'); return; }
     await runKentSync(db, connector);
   });
 

@@ -112,6 +112,27 @@ export const separationRouter = {
       return { separations, items: separations };
     }),
 
+  alumniMe: authed
+    .route({ method: 'GET', path: '/lifecycle/alumni/me', summary: 'My exit record: profile, F&F settlement, relieving documents (UI-01)' })
+    .output(z.object({
+      profile: z.object({ ecode: z.string(), name: z.string(), designation: z.string().nullable(), department: z.string().nullable(), companyName: z.string(), doj: z.string().nullable(), dol: z.string().nullable() }),
+      settlement: z.object({ status: z.string(), netPayableRupees: z.number(), gratuityRupees: z.number(), leaveEncashRupees: z.number(), noticeRecoveryRupees: z.number(), paidAt: z.string().nullable(), relievingLetterId: z.number().nullable(), serviceCertificateId: z.number().nullable() }).nullable(),
+    }))
+    .handler(async ({ context }) => {
+      const id = context.user.employee_id;
+      if (id === null) throw new NotFoundError('Your account is not linked to an employee record');
+      const e = await context.db.selectFrom('core.employees as e').innerJoin('core.companies as c', 'c.id', 'e.company_id')
+        .leftJoin('core.designations as g', 'g.id', 'e.designation_id').leftJoin('core.departments as d', 'd.id', 'e.department_id')
+        .select(['e.ecode', 'e.first_name', 'e.last_name', 'e.doj', 'e.dol', 'c.name as companyName', 'g.name as designation', 'd.name as department'])
+        .where('e.id', '=', id).executeTakeFirstOrThrow();
+      const f = await context.db.selectFrom('pay.fnf_settlements').selectAll().where('employee_id', '=', id).orderBy('id', 'desc').executeTakeFirst();
+      const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null);
+      return {
+        profile: { ecode: e.ecode, name: `${e.first_name} ${e.last_name ?? ''}`.trim(), designation: e.designation, department: e.department, companyName: e.companyName, doj: day(e.doj), dol: day(e.dol) },
+        settlement: f ? { status: f.status, netPayableRupees: Number(f.net_payable), gratuityRupees: Number(f.gratuity_amount), leaveEncashRupees: Number(f.leave_encash_amount), noticeRecoveryRupees: Number(f.notice_recovery_amount), paidAt: f.paid_at ? f.paid_at.toISOString() : null, relievingLetterId: f.relieving_letter_id, serviceCertificateId: f.service_certificate_id } : null,
+      };
+    }),
+
   myNotice: authed
     .route({ method: 'GET', path: '/lifecycle/separations/my-notice', summary: 'My notice-period policy (for the resignation form)' })
     .output(z.object({ noticePeriodDays: z.number(), category: z.string().nullable(), ecode: z.string(), name: z.string() }))

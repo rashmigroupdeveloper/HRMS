@@ -36,6 +36,7 @@ export async function runKentSync(
   // API/worker calls fail before touching data. Tests inject their own feed.
   if (!connector) throw new KentIntegrationUnavailable();
   const summary = await ingestOnce(db, connector, source);
+  await connector.afterIngest?.();
   const silentDoorsAlerted = await alertSilentDevices(db);
   // Fresh swipes dirty their days (DB trigger); recompute right away so
   // processed attendance stays ≤5 min behind raw truth (ATT-03).

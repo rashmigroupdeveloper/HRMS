@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
+import { employeeScopeSql } from '../../core/rbac/employee-scope.js';
 import { adjustBalance, getBalances, runCompOffExpiry, runMonthlyAccrual, runYearEndCarryForward } from './leave-core.service.js';
 import { applyForLeave, requestCancellation, requestEncashment, selectRestrictedHoliday } from './leave-apply.service.js';
 
@@ -375,7 +376,45 @@ const yearEndRun = withPermission('admin.integrations')
   .output(z.object({ employeesLapsed: z.number() }))
   .handler(async ({ input, context }) => ({ employeesLapsed: await runYearEndCarryForward(context.db, input.yearEnd) }));
 
+/** E2E-039: HR leave register — balances per type and who is on leave on a date, scoped to the caller. */
+const register = withPermission('leave.admin')
+  .route({ method: 'GET', path: '/leave/register', summary: 'Company leave register: balances by type + on-leave status (scoped)' })
+  .input(z.object({ q: z.string().trim().max(80).optional(), onDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), onLeaveOnly: z.coerce.boolean().default(false), limit: z.coerce.number().int().min(1).max(500).default(200) }))
+  .output(z.object({
+    onDate: z.string(),
+    types: z.array(z.object({ code: z.string(), name: z.string() })),
+    rows: z.array(z.object({ employeeId: z.number(), ecode: z.string(), name: z.string(), balances: z.record(z.string(), z.number()), onLeave: z.object({ type: z.string(), fromDate: z.string(), toDate: z.string(), status: z.string() }).nullable() })),
+  }))
+  .handler(async ({ input, context }) => {
+    const db = context.db;
+    const onDate = input.onDate ?? new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
+    const scope = { ...context.permissionAccess, actorEmployeeId: context.user.employee_id };
+    const types = await db.selectFrom('lv.leave_types').select(['id', 'code', 'name']).orderBy('code').execute();
+    let q = db.selectFrom('core.employees as e').select(['e.id', 'e.ecode', 'e.first_name', 'e.last_name'])
+      .where('e.status', 'in', ['active', 'on_notice']).where(employeeScopeSql(scope, 'e'));
+    if (input.q) { const like = `%${input.q}%`; q = q.where((eb) => eb.or([eb('e.ecode', 'ilike', like), eb('e.first_name', 'ilike', like), eb('e.last_name', 'ilike', like)])); }
+    const leaves = await db.selectFrom('lv.applications as a').innerJoin('lv.leave_types as t', 't.id', 'a.leave_type_id')
+      .select(['a.employee_id', 't.code', 'a.from_date', 'a.to_date', 'a.status'])
+      .where('a.status', 'in', ['approved', 'pending']).where('a.from_date', '<=', new Date(`${onDate}T00:00:00Z`)).where('a.to_date', '>=', new Date(`${onDate}T00:00:00Z`)).execute();
+    const onLeave = new Map(leaves.map((l) => [l.employee_id, { type: l.code, fromDate: formatDbDate(l.from_date), toDate: formatDbDate(l.to_date), status: l.status }]));
+    if (input.onLeaveOnly) q = onLeave.size > 0 ? q.where('e.id', 'in', [...onLeave.keys()]) : q.where(sql<boolean>`false`);
+    const emps = await q.orderBy('e.ecode').limit(input.limit).execute();
+    const ids = emps.map((e) => e.id);
+    const sums = ids.length === 0 ? [] : await db.selectFrom('lv.ledger as l').innerJoin('lv.leave_types as t', 't.id', 'l.leave_type_id')
+      .select(['l.employee_id', 't.code', sql<string>`SUM(l.delta)`.as('bal')]).where('l.employee_id', 'in', ids)
+      .where((eb) => eb.or([eb('l.expiry_date', 'is', null), eb('l.expiry_date', '>=', new Date(`${onDate}T00:00:00Z`))]))
+      .groupBy(['l.employee_id', 't.code']).execute();
+    const bal = new Map<number, Record<string, number>>();
+    for (const r of sums) { const m = bal.get(r.employee_id) ?? {}; m[r.code] = Math.round(Number(r.bal) * 100) / 100; bal.set(r.employee_id, m); }
+    return {
+      onDate,
+      types: types.map((t) => ({ code: t.code, name: t.name })),
+      rows: emps.map((e) => ({ employeeId: e.id, ecode: e.ecode, name: `${e.first_name} ${e.last_name ?? ''}`.trim(), balances: bal.get(e.id) ?? {}, onLeave: onLeave.get(e.id) ?? null })),
+    };
+  });
+
 export const leaveRouter = {
+  register,
   listTypes,
   upsertType,
   myBalances,

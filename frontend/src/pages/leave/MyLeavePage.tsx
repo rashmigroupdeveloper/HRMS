@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardHeader,
+  ConfirmModal,
   DarkCard,
   EmptyState,
   KpiNumber,
@@ -104,6 +105,27 @@ export function MyLeavePage() {
   const applications = useDashboardResource<LeaveApplication[]>('/api/leave/applications/mine');
   const ledger = useDashboardResource<LedgerRow[]>('/api/leave/ledger');
   const floating = useDashboardResource<RestrictedHoliday[]>('/api/leave/restricted-holidays');
+  const [cancelling, setCancelling] = useState<LeaveApplication | null>(null);
+  const encashable = (types.data ?? []).filter((t) => t.encashable);
+  const [encashType, setEncashType] = useState('');
+  const [encashDays, setEncashDays] = useState('');
+  const cancelLeave = async () => {
+    if (!cancelling) return;
+    try {
+      await apiFetch(`/api/leave/applications/${String(cancelling.id)}/cancel`, { method: 'POST' });
+      toast.success('Cancellation requested', { description: 'Your approver has been notified.' });
+      applications.reload();
+    } catch (e) { toast.error('Could not cancel', { description: e instanceof Error ? e.message : 'Try again.' }); }
+    setCancelling(null);
+  };
+  const requestEncash = async () => {
+    const code = encashType === '' ? (encashable[0]?.code ?? '') : encashType;
+    try {
+      await apiFetch('/api/leave/encashments', { method: 'POST', body: JSON.stringify({ leaveType: code, days: Number(encashDays) }) });
+      toast.success('Encashment requested', { description: `${encashDays} day(s) of ${code} sent for approval.` });
+      setEncashDays('');
+    } catch (e) { toast.error('Could not request encashment', { description: e instanceof Error ? e.message : 'Try again.' }); }
+  };
 
   if (balances.loading || types.loading) return <DashboardSkeleton />;
   if (balances.error) return <DashboardError message={balances.error} onRetry={balances.reload} />;
@@ -289,7 +311,20 @@ export function MyLeavePage() {
           />
           {applications.error ? <DashboardError message={applications.error} onRetry={applications.reload} />
             : applications.loading ? <p role="status" className="text-sm text-ink-muted">Loading applications…</p> : timeline.length ? (
-            <Timeline steps={timeline} />
+            <>
+              <Timeline steps={timeline} />
+              {/* E2E-012: approved leave can be cancelled (routes for re-approval). */}
+              {(applications.data ?? []).filter((a) => a.status === 'approved').slice(0, 6).length > 0 && (
+                <ul className="mt-4 space-y-2" aria-label="Approved leave you can cancel">
+                  {(applications.data ?? []).filter((a) => a.status === 'approved').slice(0, 6).map((a) => (
+                    <li key={a.id} className="flex items-center justify-between rounded-row bg-surface-2 px-4 py-2 text-sm">
+                      <span>{a.leaveType} · {formatDateIN(a.fromDate)} – {formatDateIN(a.toDate)} · {String(a.days)} d</span>
+                      <Button size="sm" variant="ghost" onClick={() => { setCancelling(a); }}>Cancel leave</Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           ) : (
             <EmptyState
               icon={<Palmtree />}
@@ -336,6 +371,29 @@ export function MyLeavePage() {
           )}
         </Card>
       </div>
+
+      {encashable.length > 0 && (
+        <Card>
+          <CardHeader title="Leave encashment" subtitle="Turn encashable leave into pay. The request goes through approval; payroll pays it." />
+          <div className="mt-3 flex flex-wrap items-end gap-3">
+            <label className="text-sm">
+              <span className="mb-1 block text-ink-muted">Leave type</span>
+              <select className="rounded-field border border-line bg-surface px-3 py-2" value={encashType} onChange={(e) => { setEncashType(e.target.value); }}>
+                {encashable.map((t) => <option key={t.code} value={t.code}>{t.name}</option>)}
+              </select>
+            </label>
+            <label className="text-sm">
+              <span className="mb-1 block text-ink-muted">Days</span>
+              <input className="w-24 rounded-field border border-line bg-surface px-3 py-2" type="number" min={0.5} step={0.5} value={encashDays} onChange={(e) => { setEncashDays(e.target.value); }} />
+            </label>
+            <Button variant="secondary" disabled={!(Number(encashDays) > 0)} onClick={() => void requestEncash()}>Request encashment</Button>
+          </div>
+        </Card>
+      )}
+
+      <ConfirmModal open={cancelling !== null} onClose={() => { setCancelling(null); }} title="Cancel this leave?"
+        description={cancelling ? `${cancelling.leaveType} ${formatDateIN(cancelling.fromDate)} – ${formatDateIN(cancelling.toDate)}. The cancellation goes to your approver; the days return to your balance once approved.` : ''}
+        confirmLabel="Request cancellation" onConfirm={() => void cancelLeave()} />
 
       <LeaveApplyDrawer
         open={drawerOpen}

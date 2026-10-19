@@ -968,6 +968,34 @@ export interface AttQuarantinedSwipesTable {
   created_at: DefaultedTimestamp;
 }
 
+/** att.kent_webhook_batches — raw Kent webhook POSTs (KENT_RESEARCH §5.1). */
+export interface AttKentWebhookBatchesTable {
+  id: Generated<number>;
+  received_at: DefaultedTimestamp;
+  remote_ip: string | null;
+  raw_body: string;
+  records: Generated<number>;
+  accepted: Generated<number>;
+  inserted: Generated<number>;
+  unknown_faces: Generated<number>;
+  rejected: Generated<number>;
+  processed_at: Timestamp | null;
+  error: string | null;
+}
+
+/** att.kent_unknown_faces — webhook type:0 events, never swipes. */
+export interface AttKentUnknownFacesTable {
+  id: Generated<number>;
+  batch_id: number;
+  event_ts: Timestamp | null;
+  device_id: string | null;
+  device_name: string | null;
+  location_name: string | null;
+  image_url: string | null;
+  raw: unknown;
+  created_at: DefaultedTimestamp;
+}
+
 /** att.swipe_events — RAW immutable swipes, monthly-partitioned (ATT-01). */
 export interface AttSwipeEventsTable {
   id: Generated<number>;
@@ -1236,6 +1264,8 @@ export interface Database {
   'att.device_watermarks': AttDeviceWatermarksTable;
   'att.swipe_events': AttSwipeEventsTable;
   'att.quarantined_swipes': AttQuarantinedSwipesTable;
+  'att.kent_webhook_batches': AttKentWebhookBatchesTable;
+  'att.kent_unknown_faces': AttKentUnknownFacesTable;
   'att.shifts': AttShiftsTable;
   'att.employee_shifts': AttEmployeeShiftsTable;
   'att.rosters': AttRostersTable;

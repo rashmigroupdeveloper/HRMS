@@ -207,14 +207,27 @@ const setDelegation = authed
   .route({ method: 'PUT', path: '/workflows/delegations', summary: 'Delegate YOUR approvals for a date window' })
   .input(
     z.object({
-      toUserId: z.number().int().positive(),
+      // E2E-013: the UI picks a colleague by work email or e-code; toUserId stays for API clients.
+      toUserId: z.number().int().positive().optional(),
+      to: z.string().trim().min(2).max(254).optional(),
       fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     }),
   )
   .output(z.object({ ok: z.literal(true) }))
-  .handler(async ({ input, context }) => {
+  .handler(async ({ input: raw, context }) => {
     const db = context.db;
+    let toUserId = raw.toUserId;
+    if (toUserId === undefined) {
+      const key = (raw.to ?? '').trim();
+      if (!key) throw new ORPCError('BAD_REQUEST', { message: 'Choose who to delegate to' });
+      const hit = await db.selectFrom('core.users as u').leftJoin('core.employees as e', 'e.id', 'u.employee_id').select('u.id')
+        .where('u.is_active', '=', true)
+        .where((eb) => eb.or([eb(sql`lower(u.email)`, '=', key.toLowerCase()), eb('e.ecode', '=', key.toUpperCase())])).executeTakeFirst();
+      if (!hit) throw new ORPCError('NOT_FOUND', { message: `No active user with email or e-code ${key}` });
+      toUserId = hit.id;
+    }
+    const input = { ...raw, toUserId };
     if (input.toUserId === context.user.id) throw new ORPCError('BAD_REQUEST', { message: 'Cannot delegate to yourself' });
     if (input.fromDate > input.toDate) throw new ORPCError('BAD_REQUEST', { message: 'fromDate must be on or before toDate' });
     if (input.toDate < istDateString()) throw new ORPCError('BAD_REQUEST', { message: 'The delegation window has already ended' });
@@ -282,7 +295,7 @@ const listDelegations = authed
 
 const revokeDelegation = authed
   .route({ method: 'DELETE', path: '/workflows/delegations/{id}', summary: 'End one of my delegations today' })
-  .input(z.object({ id: z.number().int().positive() }))
+  .input(z.object({ id: z.coerce.number().int().positive() }))
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
     const row = await context.db.selectFrom('wf.delegations').select(['id', 'from_user_id'])

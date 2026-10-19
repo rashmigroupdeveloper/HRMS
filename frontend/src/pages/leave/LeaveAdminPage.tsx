@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { CalendarSync, History, ShieldCheck } from 'lucide-react';
+import { CalendarSync, History, SlidersHorizontal } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
-import { Button, Card, CardHeader, DarkCard, EmptyState, toast } from '../../ui';
+import { Button, Card, CardHeader, DarkCard, DataTable, Drawer, StatusBadge, TextField, toast, type Column } from '../../ui';
+import { useCallback, useEffect } from 'react';
 
 export function LeaveAdminPage() {
   const [loading, setLoading] = useState<'accrual' | 'lapse' | null>(null);
@@ -33,7 +34,7 @@ export function LeaveAdminPage() {
           Leave operations
         </h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Policy-driven ledger operations available in the current backend.
+          Who is on leave, every balance, and audited corrections for the employees in your scope.
         </p>
       </header>
       <DarkCard>
@@ -75,13 +76,67 @@ export function LeaveAdminPage() {
           </Button>
         </Card>
       </div>
-      <Card>
-        <EmptyState
-          icon={<ShieldCheck />}
-          title="HR leave register needs a read contract"
-          description="The current backend supports employee histories and HR ledger mutations, but not a permission-scoped company leave-register query. No synthetic register is rendered."
-        />
-      </Card>
+      <LeaveRegister />
     </div>
+  );
+}
+
+interface RegisterRow { employeeId: number; ecode: string; name: string; balances: Record<string, number>; onLeave: { type: string; fromDate: string; toDate: string; status: string } | null }
+interface Register { onDate: string; types: { code: string; name: string }[]; rows: RegisterRow[] }
+
+/** E2E-039: the HR leave register; E2E-012/GUIDE-02: balance adjustment with a mandatory note. */
+function LeaveRegister() {
+  const [q, setQ] = useState('');
+  const [onDate, setOnDate] = useState('');
+  const [onlyOnLeave, setOnlyOnLeave] = useState(false);
+  const [data, setData] = useState<Register | null>(null);
+  const [adjust, setAdjust] = useState<{ row: RegisterRow; type: string; delta: string; note: string } | null>(null);
+  const load = useCallback(() => {
+    const p = new URLSearchParams();
+    if (q) p.set('q', q);
+    if (onDate) p.set('onDate', onDate);
+    if (onlyOnLeave) p.set('onLeaveOnly', 'true');
+    apiFetch<Register>(`/api/leave/register?${p.toString()}`).then(setData).catch((e: unknown) => { toast.error('Could not load the register', { description: e instanceof Error ? e.message : '' }); });
+  }, [q, onDate, onlyOnLeave]);
+  useEffect(() => { const t = setTimeout(load, 250); return () => { clearTimeout(t); }; }, [load]);
+  const types = data?.types ?? [];
+  const cols: Column<RegisterRow>[] = [
+    { key: 'emp', header: 'Employee', render: (r) => <div><div className="font-medium">{r.name}</div><div className="text-xs text-ink-muted">{r.ecode}</div></div>, sortValue: (r) => r.ecode, exportValue: (r) => `${r.ecode} ${r.name}` },
+    { key: 'today', header: data ? `On ${data.onDate}` : 'Today', render: (r) => r.onLeave ? <StatusBadge tone={r.onLeave.status === 'approved' ? 'warning' : 'neutral'}>{r.onLeave.type} {r.onLeave.status === 'pending' ? '(pending)' : ''}</StatusBadge> : <span className="text-ink-subtle">—</span>, exportValue: (r) => r.onLeave ? `${r.onLeave.type} ${r.onLeave.status}` : '' },
+    ...types.map((t): Column<RegisterRow> => ({ key: t.code, header: t.code, label: t.name, render: (r) => <span className="tabular-nums">{r.balances[t.code] ?? 0}</span>, sortValue: (r) => r.balances[t.code] ?? 0, exportValue: (r) => String(r.balances[t.code] ?? 0) })),
+    { key: 'x', header: '', label: 'Actions', render: (r) => <Button size="sm" variant="ghost" leadingIcon={<SlidersHorizontal />} onClick={() => { setAdjust({ row: r, type: types[0]?.code ?? '', delta: '', note: '' }); }}>Adjust</Button> },
+  ];
+  const save = async () => {
+    if (!adjust) return;
+    try {
+      await apiFetch('/api/leave/adjustments', { method: 'POST', body: JSON.stringify({ employeeId: adjust.row.employeeId, leaveType: adjust.type, delta: Number(adjust.delta), note: adjust.note.trim() }) });
+      toast.success('Balance adjusted', { description: `${adjust.row.ecode} ${adjust.type} ${Number(adjust.delta) > 0 ? '+' : ''}${adjust.delta}. Audited.` });
+      setAdjust(null); load();
+    } catch (e) { toast.error('Adjustment failed', { description: e instanceof Error ? e.message : 'Try again.' }); }
+  };
+  return (
+    <Card>
+      <CardHeader title="Leave register" subtitle="Balances are the sum of the ledger; on-leave reflects approved and pending applications." />
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <div className="w-64"><TextField label="Find an employee" value={q} onChange={(e) => { setQ(e.target.value); }} /></div>
+        <div className="w-44"><TextField label="On date" type="date" value={onDate} onChange={(e) => { setOnDate(e.target.value); }} /></div>
+        <label className="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" checked={onlyOnLeave} onChange={(e) => { setOnlyOnLeave(e.target.checked); }} /> Only people on leave</label>
+      </div>
+      <div className="mt-4"><DataTable tableId="leave-register" columns={cols} rows={data?.rows ?? []} rowKey={(r) => String(r.employeeId)} exportName="leave-register" caption="Leave register" empty="No employees match." /></div>
+      <Drawer open={adjust !== null} onClose={() => { setAdjust(null); }} title={adjust ? `Adjust balance · ${adjust.row.ecode}` : ''}
+        footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => { setAdjust(null); }}>Cancel</Button><Button variant="primary" disabled={!adjust || !Number(adjust.delta) || adjust.note.trim().length < 5} onClick={() => void save()}>Save adjustment</Button></div>}>
+        {adjust && (
+          <div className="grid gap-4">
+            <label className="text-sm"><span className="mb-1 block text-ink-muted">Leave type</span>
+              <select className="w-full rounded-field border border-line bg-surface px-3 py-2" value={adjust.type} onChange={(e) => { const v = e.target.value; setAdjust((a) => (a ? { ...a, type: v } : a)); }}>
+                {types.map((t) => <option key={t.code} value={t.code}>{t.code} · {t.name} (now {adjust.row.balances[t.code] ?? 0})</option>)}
+              </select>
+            </label>
+            <TextField label="Days (+ credit / − debit) *" type="number" value={adjust.delta} onChange={(e) => { const v = e.target.value; setAdjust((a) => (a ? { ...a, delta: v } : a)); }} />
+            <TextField label="Note (why) *" value={adjust.note} onChange={(e) => { const v = e.target.value; setAdjust((a) => (a ? { ...a, note: v } : a)); }} />
+          </div>
+        )}
+      </Drawer>
+    </Card>
   );
 }

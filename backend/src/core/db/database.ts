@@ -1,5 +1,6 @@
 import { Kysely, PostgresDialect, type Transaction } from 'kysely';
 import pg from 'pg';
+import { logger } from '../logger.js';
 import type { Database } from './types.js';
 
 // BIGINT (int8) comes back as string by default; our identity ids stay far
@@ -19,6 +20,9 @@ export function createDatabase(connectionString: string): Kysely<Database> {
     connectionString,
     max: 10,
   });
+  // PAY-005: an idle client that loses its connection (DB restart, PgBouncer recycle) emits
+  // 'error' on the pool; unhandled, that kills the process. Log it; the pool replaces the client.
+  pool.on('error', (err) => { logger.error({ err }, 'postgres idle client error (connection dropped; pool will reconnect)'); });
 
   return new Kysely<Database>({
     dialect: new PostgresDialect({ pool }),

@@ -11,6 +11,7 @@ import rateLimit, { ipKeyGenerator, type Options as RateLimitOptions } from 'exp
 import { verifyToken } from './core/auth/jwt.js';
 import { logger } from './core/logger.js';
 import { rateLimitsFromEnv } from './api/rate-limits.js';
+import { kentWebhookConfigFromEnv, kentWebhookRouter, type KentWebhookConfig } from './modules/attendance/kent-webhook.js';
 import { getOpenApiSpec, orpcMiddleware, requestIdMiddleware, type AppDeps } from './api/handler.js';
 import { registerAttendanceWorkflowHooks } from './modules/attendance/index.js';
 import { registerLeaveWorkflowHooks } from './modules/leave/index.js';
@@ -74,7 +75,7 @@ function identifierKey(req: Request): string {
   return `${ipKeyGenerator(req.ip ?? 'unknown')}|${identifier}`;
 }
 
-export function createApp(deps?: Partial<AppDeps>): Express {
+export function createApp(deps?: Partial<AppDeps> & { kentWebhook?: KentWebhookConfig | null }): Express {
   const isProduction = process.env['NODE_ENV'] === 'production';
   if (isProduction && deps?.jwtSecret === undefined) {
     // W0-T42 — the fallback below is a PUBLISHED constant. Reaching it in
@@ -157,6 +158,8 @@ export function createApp(deps?: Partial<AppDeps>): Express {
    * any real file — a scanned PAN is 200 kB-2 MB. Raised deliberately here; the
    * per-document-type cap belongs in the validator (W1.4), not the parser.
    */
+  // Kent webhook needs the raw body and its own auth (secret URL token), so it sits before the JSON parser.
+  if (resolved.db) app.use(kentWebhookRouter(resolved.db, deps?.kentWebhook !== undefined ? deps.kentWebhook : kentWebhookConfigFromEnv()));
   app.use(express.json({ limit: '12mb' }));
   app.use(cookieParser());
 

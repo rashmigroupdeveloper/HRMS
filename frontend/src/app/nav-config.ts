@@ -46,6 +46,7 @@ import {
   UserSearch,
   UsersRound,
   Wallet,
+  LogOut,
 } from 'lucide-react';
 import type { SessionUser } from '../lib/session';
 import { hasAnyPermission, hasPermission, hasRole } from '../lib/session';
@@ -111,6 +112,10 @@ export function navForUser(user: SessionUser): NavItem[] {
   if (hasPermission(user, 'attendance.own') && !isOps && !isCeo) {
     push({ label: 'My Attendance', to: '/my/attendance', icon: CalendarCheck });
     push({ label: 'My Leave', to: '/my/leave', icon: Palmtree });
+  } else if (user.employeeId !== null) {
+    // GUIDE-03: HR, payroll, plant and CEO-cell users are employees too; self-service sits in a "Me" group.
+    push(grouped('Me', { label: 'My Attendance', to: '/my/attendance', icon: CalendarCheck }));
+    push(grouped('Me', { label: 'My Leave', to: '/my/leave', icon: Palmtree }));
   }
   if (hasPermission(user, 'employee.compensation.read') && !isOps) {
     push({ label: 'My Pay', to: '/my/pay', icon: Wallet });
@@ -126,7 +131,8 @@ export function navForUser(user: SessionUser): NavItem[] {
       push({ label: 'My Team', to: '/my/team', match: '/my/team', icon: UsersRound });
     }
   }
-  if (hasAnyPermission(user, APPROVAL_PERMS)) {
+  // GUIDE-04: the CEO cell holds named approval steps (offers, senior exits) without domain approve permissions.
+  if (hasAnyPermission(user, APPROVAL_PERMS) || isCeo) {
     push({ label: 'Approvals', to: '/approvals', icon: CheckCheck });
   }
   if (hasPermission(user, 'ot.approve') && !isOps) {
@@ -143,6 +149,9 @@ export function navForUser(user: SessionUser): NavItem[] {
         icon: isOps || isIt ? Users : Contact,
       }),
     );
+  }
+  if (user.employeeId !== null) {
+    push(grouped('Me', { label: 'Resignation', to: '/my/resignation', icon: LogOut })); // GUIDE-01
   }
   if (hasPermission(user, 'letters.issue')) {
     push(grouped('People', { label: 'Letters', to: '/letters', icon: Mail }));
@@ -241,13 +250,18 @@ export function navForUser(user: SessionUser): NavItem[] {
   }
 
   // Admin
-  if (hasPermission(user, 'admin.users') || hasPermission(user, 'admin.roles')) {
+  if (hasPermission(user, 'admin.users') || hasPermission(user, 'admin.roles') || hasPermission(user, 'admin.rbac.read')) {
     push(grouped('Admin', { label: 'Users & Roles', to: '/admin/users', icon: ShieldCheck }));
   }
   if (hasPermission(user, 'admin.settings')) {
     push(
       grouped('Admin', { label: 'Approval chains', to: '/admin/workflows', icon: GitBranch }),
     );
+  }
+  if (!hasPermission(user, 'admin.settings') && hasPermission(user, 'workflow.routing_holds')) {
+    push(grouped('Admin', { label: 'Routing holds', to: '/admin/workflows', icon: GitBranch }));
+  }
+  if (hasPermission(user, 'admin.settings') || hasPermission(user, 'attendance.holidays.manage')) {
     push(
       grouped('Admin', {
         label: 'Attendance masters',

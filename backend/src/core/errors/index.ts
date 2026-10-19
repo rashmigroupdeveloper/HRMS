@@ -112,6 +112,8 @@ function mapPgError(err: PgLikeError): MappedError {
     case '23505':
       return mapped('CONFLICT', 'This record already exists');
     case '23503':
+      // E2E-030: our triggers raise 23503 with an authored message (no constraint name): show it.
+      if (!err.constraint && /^Unknown [a-z_]+/i.test(err.message)) return mapped('BAD_REQUEST', err.message);
       return mapped('BAD_REQUEST', 'A referenced record does not exist or is still in use');
     case '23502':
       return mapped('BAD_REQUEST', `A required value is missing${err.column ? ` (${err.column})` : ''}`);

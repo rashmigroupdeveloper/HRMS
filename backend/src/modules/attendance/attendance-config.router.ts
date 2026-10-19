@@ -11,9 +11,10 @@
  *   day records read  → attendance.team.read
  */
 import { ORPCError } from '@orpc/server';
-import { sql } from 'kysely';
+import { sql, type Kysely } from 'kysely';
+import type { Database } from '../../core/db/types.js';
 import { z } from 'zod';
-import { withPermission } from '../../api/orpc.js';
+import { withAnyPermission, withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
@@ -206,7 +207,7 @@ const listHolidays = withPermission('attendance.own')
     }));
   });
 
-const upsertHoliday = withPermission('admin.settings')
+const upsertHoliday = withAnyPermission('admin.settings', 'attendance.holidays.manage')
   .route({ method: 'PUT', path: '/attendance/config/holidays', summary: 'Add/update a holiday for the group, a company, a plant or a location (audited)' })
   .input(z.object({
     date: isoDate,
@@ -468,11 +469,20 @@ const dayRecords = withPermission('attendance.team.read')
     }));
   });
 
+async function resolveEmployeeRef(db: Kysely<Database>, employeeId: number | undefined, ecode: string | undefined): Promise<number> {
+  if (employeeId !== undefined) return employeeId;
+  if (ecode === undefined) throw new ORPCError('BAD_REQUEST', { message: 'Give employeeId or ecode' });
+  const row = await db.selectFrom('core.employees').select('id').where('ecode', '=', ecode.toUpperCase()).executeTakeFirst();
+  if (!row) throw new ORPCError('NOT_FOUND', { message: `No employee ${ecode.toUpperCase()}` });
+  return row.id;
+}
+
 const overrideDay = withPermission('attendance.manual_override')
   .route({ method: 'PUT', path: '/attendance/days/override', summary: 'HR manual override — reason mandatory, audited (ATT-17)' })
   .input(
     z.object({
-      employeeId: z.number().int().positive(),
+      employeeId: z.number().int().positive().optional(),
+      ecode: z.string().trim().min(1).max(32).optional(), // E2E-007: the UI corrects by e-code
       date: isoDate,
       status: z.enum(['P', 'A', 'HD', 'WO', 'H', 'UAB']),
       sessionStatuses: sessionStatusesSchema.nullish(),
@@ -486,9 +496,10 @@ const overrideDay = withPermission('attendance.manual_override')
     } catch (error) {
       throw new ORPCError('BAD_REQUEST', { message: error instanceof Error ? error.message : 'Invalid session results' });
     }
+    const employeeId = await resolveEmployeeRef(context.db, input.employeeId, input.ecode);
     try {
       await setManualStatus(context.db, {
-        employeeId: input.employeeId, isoDate: input.date, status: input.status,
+        employeeId, isoDate: input.date, status: input.status,
         sessionStatuses: input.sessionStatuses ?? null, reason: input.reason, actorUserId: context.user.id,
         scope: { ...context.permissionAccess, actorEmployeeId: context.user.employee_id },
       });
@@ -498,10 +509,13 @@ const overrideDay = withPermission('attendance.manual_override')
 
 const recompute = withPermission('admin.integrations')
   .route({ method: 'POST', path: '/attendance/recompute', summary: 'Recompute a day, materialise a company period, or drain the dirty queue' })
+  // E2E-033: `{}` (or no body) means "drain the queue"; a partial body is still a 400.
   .input(z.union([
     z.object({ employeeId: z.number().int().positive(), date: isoDate }),
+    z.object({ ecode: z.string().trim().min(1).max(32), date: isoDate }),
     // Materialise: queue every employment day of [from, until) without a day record, then drain.
     z.object({ companyId: z.number().int().positive(), from: isoDate, until: isoDate }),
+    z.object({}).strict(),
   ]).optional())
   .output(
     z.object({
@@ -510,11 +524,12 @@ const recompute = withPermission('admin.integrations')
     }),
   )
   .handler(async ({ input, context }) => {
-    if (input && 'employeeId' in input) {
-      const outcome = await recomputeDay(context.db, input.employeeId, input.date);
+    if (input && 'date' in input) {
+      const id = await resolveEmployeeRef(context.db, 'employeeId' in input ? input.employeeId : undefined, 'ecode' in input ? input.ecode : undefined);
+      const outcome = await recomputeDay(context.db, id, input.date);
       return { processed: 1, outcome };
     }
-    if (input) {
+    if (input && 'companyId' in input) {
       const span = (Date.parse(input.until) - Date.parse(input.from)) / 86_400_000;
       if (span <= 0 || span > 62) throw new ORPCError('BAD_REQUEST', { message: 'from must be before until, at most 62 days' });
       await assertCompanyInScope(context.db, { ...context.permissionAccess, actorEmployeeId: context.user.employee_id }, input.companyId);
