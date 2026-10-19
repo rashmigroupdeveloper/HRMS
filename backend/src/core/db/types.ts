@@ -1237,6 +1237,9 @@ export interface KpiDailyTable {
 }
 
 export interface Database {
+  'sec.app_links': AppLinksTable;
+  'sec.sso_grants': SsoGrantsTable;
+  'core.ats_acceptance_receipts': AtsAcceptanceReceiptsTable;
   'core.users': UsersTable;
   'core.roles': RolesTable;
   'core.permissions': PermissionsTable;
@@ -1993,6 +1996,7 @@ export interface TeTripsTable {
   travel_type: 'domestic' | 'international';
   purpose: string;
   destination_country: ColumnType<string, string | undefined, string>;
+  destination_region: ColumnType<'domestic' | 'sea' | 'africa' | 'middle_east' | 'europe' | 'americas' | 'other', string | undefined, string>;
   destination_city: string;
   start_date: ColumnType<Date, Date | string, Date | string>;
   end_date: ColumnType<Date, Date | string, Date | string>;
@@ -2115,3 +2119,15 @@ export interface TeSettlementsTable {
   settled_at: DefaultedTimestamp;
   status: ColumnType<'pending' | 'settled' | 'payroll_posted', string | undefined, string>;
 }
+
+/** LC-01: immutable accepted-offer receipt; external subject is not a local user ID. */
+export interface AtsAcceptanceReceiptsTable {
+  event_id:string; ats_offer_id:number; candidate_id:number; source_digest:string;
+  accepted_at:Date; accepted_by_subject:string; evidence_ref:string;
+  received_at:Generated<Date>;
+}
+
+/** D4/NFR-03: identities are immutable; nonce rotates to prevent relink resurrecting old sessions. */
+export interface AppLinksTable {id:Generated<number>;user_id:number;client_id:string;external_subject:string;is_active:Generated<boolean>;link_nonce:Generated<string>;created_by:number;created_at:Generated<Date>}
+/** One-use authorization credential; plaintext code/verifier/tokens never persist. */
+export interface SsoGrantsTable {id:Generated<number>;code_hash:string;link_id:number;link_nonce:string;session_sid:string;redirect_uri:string;challenge:string;expires_at:Date;consumed_at:Date|null;created_at:Generated<Date>}

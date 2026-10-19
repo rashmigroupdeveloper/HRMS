@@ -24,7 +24,7 @@ const DB_URL = process.env['DATABASE_URL'];
 const JWT_SECRET = process.env['JWT_SECRET'] ?? 'synthetic-jwt-test-secret-at-least-32-characters-long';
 
 interface TravelBody {
-  budgets:unknown[];trip:{id:number;status:string};trips:unknown[];
+  budgets:unknown[];trip:{id:number;status:string;approvedBudgetPaise?:number};trips:unknown[];
   itinerary:{estimatedCostPaise:number};itineraries:unknown[];
   advance:{id:number;status:string};advances:unknown[];claim:{id:number};claims:unknown[];
   item:{amountPaise:number};settlementId:number;advanceAdjustedPaise:number;netRecoverablePaise:number;
@@ -35,8 +35,8 @@ describe.skipIf(!DB_URL)('Travel & Expense Router Endpoints (TE-01..12, C-02, P-
   let db:Kysely<Database>;
   let transaction:ControlledTransaction<Database>|undefined;
   let app:ReturnType<typeof createApp>;
-  const ids = { employee: 0, employeeUser: 0, manager: 0, managerUser: 0, outsider: 0, payrollUser: 0 };
-  const tokens = { employee: '', manager: '', outsider: '', payroll: '' };
+  const ids = { employee: 0, employeeUser: 0, manager: 0, managerUser: 0, outsider: 0, payrollUser: 0, adminUser: 0 };
+  const tokens = { employee: '', manager: '', outsider: '', payroll: '', admin: '' };
   beforeAll(async()=>{
     db=createDatabase(DB_URL??'');
     transaction=await db.startTransaction().execute();
@@ -55,8 +55,9 @@ describe.skipIf(!DB_URL)('Travel & Expense Router Endpoints (TE-01..12, C-02, P-
     const employee=await person('emp',manager.employeeId,null);
     const outsider=await person('out',null,null);
     const payroll=await person('pay',null,'payroll_admin');
-    Object.assign(ids,{employee:employee.employeeId,employeeUser:employee.userId,manager:manager.employeeId,managerUser:manager.userId,outsider:outsider.employeeId,payrollUser:payroll.userId});
-    Object.assign(tokens,{employee:employee.token,manager:manager.token,outsider:outsider.token,payroll:payroll.token});
+    const admin=await person('adm',null,'super_admin');
+    Object.assign(ids,{employee:employee.employeeId,employeeUser:employee.userId,manager:manager.employeeId,managerUser:manager.userId,outsider:outsider.employeeId,payrollUser:payroll.userId,adminUser:admin.userId});
+    Object.assign(tokens,{employee:employee.token,manager:manager.token,outsider:outsider.token,payroll:payroll.token,admin:admin.token});
     app=createApp({db:tx,jwtSecret:JWT_SECRET,secureCookies:false});
   });
   afterAll(async()=>{
@@ -68,7 +69,12 @@ describe.skipIf(!DB_URL)('Travel & Expense Router Endpoints (TE-01..12, C-02, P-
     const tx = txn();
     const row = await tx.selectFrom(table).select('workflow_request_id').where('id','=',id).executeTakeFirstOrThrow();
     expect(row.workflow_request_id).not.toBeNull();
-    return act(tx, { requestId: Number(row.workflow_request_id), actorUserId: userId, action: 'approve' });
+    const reqId = Number(row.workflow_request_id);
+    let outcome = await act(tx, { requestId: reqId, actorUserId: userId, action: 'approve' });
+    if (outcome === 'advanced' && ids.adminUser) {
+      outcome = await act(tx, { requestId: reqId, actorUserId: ids.adminUser, action: 'approve' });
+    }
+    return outcome;
   };
 
   it('GET /api/travel/budgets returns active grade allowances', async () => {
@@ -149,5 +155,68 @@ describe.skipIf(!DB_URL)('Travel & Expense Router Endpoints (TE-01..12, C-02, P-
     expect((ledgerRes.body as TravelBody).transactions).toHaveLength(2);
     // Payroll (travel desk) may read the employee's wallet; a user without an employee gets a clean 400.
     expect((await get(`/api/travel/wallet?employeeId=${ids.employee}`,'payroll')).status).toBe(200);
+  });
+
+  it('Phase 3.5 Stage A — EMS routing parity: duplicate collapse, self-approval prevention, and admin auto-approval', async () => {
+    const client = await httpRequest(app);
+    const as = (who: keyof typeof tokens) => ({ type: 'bearer' as const, token: tokens[who] });
+    const post = (path:string, who: keyof typeof tokens, body:object={}) => client.post(path).auth(as(who).token,{type:'bearer'}).send(body);
+
+    // 1. Admin self-approval: Admin raises a trip -> auto-approves immediately on submit
+    const adminTripRes = await post('/api/travel/trips', 'admin', {
+      tripName: 'Executive Strategy Summit',
+      travelType: 'domestic',
+      purpose: 'Board review and plant expansion planning',
+      destinationCity: 'Mumbai',
+      startDate: '2026-08-01',
+      endDate: '2026-08-03',
+      estimatedBudgetPaise: 5000000,
+    });
+    expect(adminTripRes.status).toBe(200);
+    const adminTrip = (adminTripRes.body as TravelBody).trip;
+    expect(adminTrip.status).toBe('approved');
+    expect(adminTrip.approvedBudgetPaise).toBe(5000000);
+
+    // 2. Duplicate collapse: employee where RM is also HOD
+    const tx = txn();
+    await tx.updateTable('core.employees').set({ hod_employee_id: ids.manager }).where('id', '=', ids.employee).execute();
+
+    const empTripRes = await post('/api/travel/trips', 'employee', {
+      tripName: 'Vendor Quality Audit',
+      travelType: 'domestic',
+      purpose: 'Raw material procurement inspection',
+      destinationCity: 'Rourkela',
+      startDate: '2026-09-01',
+      endDate: '2026-09-04',
+      estimatedBudgetPaise: 2500000,
+    });
+    expect(empTripRes.status).toBe(200);
+    const empTripId = (empTripRes.body as TravelBody).trip.id;
+    expect((empTripRes.body as TravelBody).trip.status).toBe('submitted');
+
+    // Manager approves step 2 (RM)
+    const row = await tx.selectFrom('te.trips').select('workflow_request_id').where('id', '=', empTripId).executeTakeFirstOrThrow();
+    const reqId = Number(row.workflow_request_id);
+
+    // Manager approves step 2 (RM). Step 3 (HOD) collapses because manager was already approved!
+    const outcome1 = await act(tx, { requestId: reqId, actorUserId: ids.managerUser, action: 'approve' });
+    expect(outcome1).toBe('advanced');
+
+    // Verify audit contains the collapsed step
+    const collapseAudit = await tx.selectFrom('core.audit_log')
+      .selectAll()
+      .where('entity', '=', 'wf.requests')
+      .where('entity_id', '=', reqId)
+      .where('new_value', 'like', '%collapsed%')
+      .executeTakeFirst();
+    expect(collapseAudit).toBeDefined();
+
+    // Now Admin approves Step 5 -> becomes approved
+    const outcome2 = await act(tx, { requestId: reqId, actorUserId: ids.adminUser, action: 'approve' });
+    expect(outcome2).toBe('approved');
+
+    const finalizedTrip = await tx.selectFrom('te.trips').selectAll().where('id', '=', empTripId).executeTakeFirstOrThrow();
+    expect(finalizedTrip.status).toBe('approved');
+    expect(finalizedTrip.approved_budget_paise).toBe(2500000);
   });
 });

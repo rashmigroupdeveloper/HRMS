@@ -26,12 +26,14 @@ export interface CreateTripInput {
   companyId: number;
   tripName: string;
   travelType: 'domestic' | 'international';
+  destinationRegion?: 'domestic' | 'sea' | 'africa' | 'middle_east' | 'europe' | 'americas' | 'other' | undefined;
   purpose: string;
   destinationCountry?: string | undefined;
   destinationCity: string;
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
   visaRequired?: boolean | undefined;
+  estimatedBudgetPaise?: number | undefined;
   requestedByUserId: number;
 }
 
@@ -130,12 +132,24 @@ export class TravelService {
     return { trip, itineraries, advances };
   }
 
-  /** Raises a trip and routes it to the reporting manager ('travel_trip'). */
+  /** Raises a trip and routes it through the travel approval chain ('travel_trip'). */
   async createTrip(input: CreateTripInput): Promise<TripRow> {
     const start = assertDate(input.startDate, 'Start date');
     const end = assertDate(input.endDate, 'End date');
     if (end < start) throw new DomainError('End date cannot be before the start date');
     const referenceNo = `TRIP-${start.slice(0, 4)}-${String(Date.now()).slice(-6)}${String(Math.floor(Math.random() * 90 + 10))}`;
+    const country = input.destinationCountry ?? (input.travelType === 'domestic' ? 'India' : 'International');
+    const region: 'domestic' | 'sea' | 'africa' | 'middle_east' | 'europe' | 'americas' | 'other' =
+      input.travelType === 'domestic'
+        ? 'domestic'
+        : input.destinationRegion ?? (
+            ['singapore', 'malaysia', 'thailand', 'vietnam', 'indonesia', 'philippines', 'sea'].some((c) => country.toLowerCase().includes(c))
+              ? 'sea'
+              : ['tanzania', 'nigeria', 'kenya', 'south africa', 'egypt', 'ghana', 'africa'].some((c) => country.toLowerCase().includes(c))
+                ? 'africa'
+                : 'other'
+          );
+    const estimatedPaise = input.estimatedBudgetPaise ?? 0;
     let tripId = 0;
     await createRequest(
       this.db,
@@ -143,7 +157,16 @@ export class TravelService {
         definitionCode: 'travel_trip',
         subjectEmployeeId: input.employeeId,
         requestedByUserId: input.requestedByUserId,
-        payload: { tripName: input.tripName, destinationCity: input.destinationCity, startDate: start, endDate: end },
+        payload: {
+          tripName: input.tripName,
+          destinationCity: input.destinationCity,
+          destinationCountry: country,
+          travelType: input.travelType,
+          destinationRegion: region,
+          estimatedBudgetPaise: estimatedPaise,
+          startDate: start,
+          endDate: end,
+        },
       },
       async (trx, requestId) => {
         const row = await trx
@@ -154,15 +177,16 @@ export class TravelService {
             company_id: input.companyId,
             trip_name: input.tripName,
             travel_type: input.travelType,
+            destination_region: region,
             purpose: input.purpose,
-            destination_country: input.destinationCountry ?? 'India',
+            destination_country: country,
             destination_city: input.destinationCity,
             start_date: sql<Date>`${start}::date`,
             end_date: sql<Date>`${end}::date`,
             visa_required: input.visaRequired ?? false,
             visa_status: input.visaRequired ? 'applied' : 'not_applicable',
             status: 'submitted',
-            estimated_budget_paise: 0,
+            estimated_budget_paise: estimatedPaise,
             approved_budget_paise: 0,
             workflow_request_id: requestId,
           })

@@ -23,6 +23,7 @@ const tripItemSchema = z.object({
   companyId: z.number(),
   tripName: z.string(),
   travelType: z.enum(['domestic', 'international']),
+  destinationRegion: z.enum(['domestic', 'sea', 'africa', 'middle_east', 'europe', 'americas', 'other']).optional(),
   purpose: z.string(),
   destinationCountry: z.string(),
   destinationCity: z.string(),
@@ -139,6 +140,7 @@ export const travelRouter = {
         companyId: t.company_id,
         tripName: t.trip_name,
         travelType: t.travel_type,
+        destinationRegion: t.destination_region,
         purpose: t.purpose,
         destinationCountry: t.destination_country,
         destinationCity: t.destination_city,
@@ -228,12 +230,14 @@ export const travelRouter = {
       z.object({
         tripName: z.string().min(3),
         travelType: z.enum(['domestic', 'international']),
+        destinationRegion: z.enum(['domestic', 'sea', 'africa', 'middle_east', 'europe', 'americas', 'other']).optional(),
         purpose: z.string().min(5),
         destinationCountry: z.string().optional(),
         destinationCity: z.string().min(2),
         startDate: z.string(),
         endDate: z.string(),
         visaRequired: z.boolean().optional(),
+        estimatedBudgetPaise: z.number().int().nonnegative().optional(),
       })
     )
     .output(z.object({ trip: tripItemSchema }))
@@ -247,12 +251,14 @@ export const travelRouter = {
         requestedByUserId: context.user.id,
         tripName: input.tripName,
         travelType: input.travelType,
+        destinationRegion: input.destinationRegion,
         purpose: input.purpose,
         destinationCountry: input.destinationCountry,
         destinationCity: input.destinationCity,
         startDate: input.startDate,
         endDate: input.endDate,
         visaRequired: input.visaRequired,
+        estimatedBudgetPaise: input.estimatedBudgetPaise,
       });
       return {
         trip: {
@@ -262,6 +268,7 @@ export const travelRouter = {
           companyId: trip.company_id,
           tripName: trip.trip_name,
           travelType: trip.travel_type,
+          destinationRegion: trip.destination_region,
           purpose: trip.purpose,
           destinationCountry: trip.destination_country,
           destinationCity: trip.destination_city,

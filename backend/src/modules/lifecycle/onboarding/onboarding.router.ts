@@ -9,6 +9,7 @@
  */
 
 import { z } from 'zod';
+import { prejoinLinkRouter } from './prejoin-link.router.js';
 import { ORPCError } from '@orpc/server';
 import { base, withPermission } from '../../../api/orpc.js';
 import { OnboardingService } from './onboarding.service.js';
@@ -26,6 +27,7 @@ import { TaskFanoutService, KentEnrollmentUnavailable } from './task-fanout.serv
 const referenceOption = z.object({id:z.number(),name:z.string()});
 export const onboardingRouter = {
   ...onboardingApplicationRouter,
+  ...prejoinLinkRouter,
   referenceData: withPermission('lifecycle.onboard.convert')
     .route({method:'GET',path:'/lifecycle/onboarding-reference-data',summary:'Scoped legal-entity prefixes and real onboarding master choices'})
     .input(z.object({companyId:z.number().int().positive().optional()}).optional())

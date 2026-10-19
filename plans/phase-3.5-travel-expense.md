@@ -38,6 +38,32 @@
 **Tests required:** connector contract tests against recorded MMT responses; component states ×7; axe checks both themes.
 **Exit criteria:** a booking round-trips through the connector on staging · design review confirms no foreign UI language. *(Rebuilt in `frontend/src/pages/travel/TravelPage.tsx` using Warm Editorial tokens, PageHeader, KpiNumber, DarkCard, DataTable, Drawer, Select, StatusBadge)*
 
+## Stage T2.5 — Live EMS Routing Parity & Unified Claims (19 Oct 2026)
+**Goal:** Align local M13 (Travel & Expense) and M12 (General Reimbursements) to the live 16-Oct deployed EMS routing engine, commitment ledger, and dynamic settlement architecture.
+**Scope decision:** Unified EMS claim & settlement workflow applies to **both** M13 Travel Expense and M12 General Reimbursement.
+
+- [x] **Stage A — Budget as an approval workflow:**
+  - Employee submits travel budget (Domestic/International, destination, dates, purpose, travel modes, estimated costs)
+  - Chain constructed dynamically: RM → HOD → (SEA manager if SEA / Africa reviewer if Africa) → Travel Admin
+  - Dynamic resolution via `core.settings` (`te.admin_employee_id`, `te.sea_manager_employee_id`, `te.africa_reviewer_employee_id`)
+  - Deduplication: RM == HOD collapses to single step; applicant never self-approves; Admin budget auto-approves
+  - Approved budget sets `approved_budget_paise` and unlocks claim/advance creation *(Verified in `tests/travel-router.test.ts`)*
+- [ ] **Stage B — Claims against an approved budget & commitment ledger:**
+  - Claims raised strictly against approved budget
+  - Budget reservation at submit, refund on reject/send-back, release at settlement
+  - Strict validation: line dates within travel dates, receipts mandatory on lines + summary doc, closed travel month checks, FX rate capture
+- [ ] **Stage C — Claims/Advances approval chain & approver adjustments:**
+  - RM → HOD → (Regional reviewer) → Admin settlement chain for claims and advances
+  - Approvers can edit line amounts; audit entries created with discrepancy notes
+  - Send-back preserves prior audit trail and appends a fresh approval chain
+- [ ] **Stage D — Admin settlement engine & invoice transition:**
+  - AUTO or MANUAL settlement netting against wallet / advance balance
+  - Net payable (reimbursement) or net recoverable (payroll deduction) calculation
+  - Domestic claims transition directly to `approved`/`settled`
+  - International claims transition to `invoice_pending` until commercial invoice is signed
+- [ ] **Stage E — Warm Editorial UI pass:**
+  - Budget request wizard, live reservation bars, approver line-edit modal, and settlement dashboard
+
 ## Stage T4 — Migration, parallel run, decommission   `[ ☐ ]`
 **Goal:** Yatra Avedan's data in, parity proven, old system retired.
 **Depends on:** T2, T3.

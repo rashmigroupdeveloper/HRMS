@@ -13,6 +13,7 @@
  * silently grants the wrong person a role, which is exactly the failure this
  * console exists to prevent.
  */
+import { ConnectedAccountsPanel } from './ConnectedAccountsPanel';
 import { SessionsPanel } from './SessionsPanel';
 import { LoginAccountsPanel } from './LoginAccountsPanel';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -59,7 +60,7 @@ function domainOf(permission: string): string {
   return dot === -1 ? 'general' : permission.slice(0, dot);
 }
 
-type Tab = 'permissions' | 'people' | 'accounts' | 'sessions';
+type Tab = 'permissions' | 'people' | 'accounts' | 'sessions' | 'connected';
 
 export function AccessControlPage({ user }: { user: SessionUser }) {
   const canEditRoles = hasPermission(user, 'admin.roles');
@@ -71,6 +72,7 @@ export function AccessControlPage({ user }: { user: SessionUser }) {
     ['people', 'People', canEditRoles],
     ['accounts', 'Login accounts', canUsers],
     ['sessions', 'Sessions', canUsers],
+    ['connected', 'Connected accounts', canUsers],
   ] as [Tab, string, boolean][]).filter((t) => t[2]).map(([k, l]) => [k, l]);
   const [picked, setTab] = useState<Tab | null>(null);
   // IT's daily job (unlock / reset / activate) opens first for account admins.
@@ -98,7 +100,7 @@ export function AccessControlPage({ user }: { user: SessionUser }) {
         </div>
       </header>
 
-      {tab === 'permissions' ? <PermissionGrid readOnly={!canEditRoles} /> : tab === 'people' ? <PeoplePanel /> : tab === 'accounts' ? <LoginAccountsPanel /> : <SessionsPanel />}
+      {tab === 'permissions' ? <PermissionGrid readOnly={!canEditRoles} /> : tab === 'people' ? <PeoplePanel /> : tab === 'accounts' ? <LoginAccountsPanel /> : tab === 'sessions' ? <SessionsPanel /> : <ConnectedAccountsPanel />}
     </div>
   );
 }

@@ -50,7 +50,7 @@ export interface IngestCandidateInput {
   designation?: string | null | undefined;
   companyId?: number | null | undefined;
   category?: EmploymentCategory | undefined;
-  offeredCtc: number;
+  offeredCtc: number | string;
   probationMonths?: number | undefined;
   probationSalaryPct?: number | undefined;
   proposedDoj: string;

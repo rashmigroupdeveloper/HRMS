@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql, type Kysely, type Transaction } from 'kysely';
 import type { Database } from '../src/core/db/types.js';
 import { createDatabase } from '../src/core/db/database.js';
-import { OnboardingService, TaskFanoutService } from '../src/modules/lifecycle/index.js';
+import { OnboardingService, TaskFanoutService, PrejoinService } from '../src/modules/lifecycle/index.js';
 import { createApp } from '../src/app.js';
 import { signAccessToken } from '../src/core/auth/jwt.js';
 import { httpRequest } from './http-client.js';
@@ -67,6 +67,24 @@ describe.skipIf(!url)('Actual joining boundary (native PostgreSQL)', () => {
     for(const field of ['pan','aadhaar','uan','bankName','bankAccount','bankIfsc','prejoin_token_hash','prejoin_link_token']) expect(applicationBody.profile).not.toHaveProperty(field);
 
     expect((await onboardingReferenceData(tx,{...actor(user).scope,all:false},undefined)).companies).toEqual([]);
+  }));
+  it('lets scoped HR rotate an unsubmitted prejoin link without asserting delivery or exposing it to foreign scope',async()=>fixture(async(tx,id,company,user)=>{
+    const original=PrejoinService.generateToken(1);
+    await tx.updateTable('core.onboarding_candidates').set({status:'awaiting_prejoin',prejoin_completed_at:null,prejoin_submitted_data:null,prejoin_token_hash:original.tokenHash,prejoin_token_expires_at:original.expiresAt}).where('id','=',id).execute();
+    const {request,token}=await client(tx,user);
+    const endpoint=`/api/lifecycle/candidates/${id}/prejoin-link`;
+    expect((await request.post(endpoint).send({candidateId:id})).status).toBe(401);
+    const response=await request.post(endpoint).auth(token,{type:'bearer'}).send({candidateId:id});
+    expect(response.status).toBe(200);expect(response.headers['cache-control']).toBe('no-store');
+    const issued=response.body as {rawToken:string;expiresAt:string};expect(issued.rawToken).toBeTruthy();
+    expect((await PrejoinService.validateToken(tx,original.rawToken)).isValid).toBe(false);
+    expect((await PrejoinService.validateToken(tx,issued.rawToken)).isValid).toBe(true);
+    const candidate=await tx.selectFrom('core.onboarding_candidates').select(['prejoin_link_token','prejoin_link_sent_at','status']).where('id','=',id).executeTakeFirstOrThrow();
+    expect(candidate).toEqual({prejoin_link_token:null,prejoin_link_sent_at:null,status:'awaiting_prejoin'});
+    const foreignUser=await tx.insertInto('core.users').values({email:randomUUID()+'@hrms.invalid',password_hash:'!disabled!'}).returning('id').executeTakeFirstOrThrow();
+    const foreign=await client(tx,foreignUser.id,'org_unit');
+    expect((await foreign.request.post(endpoint).auth(foreign.token,{type:'bearer'}).send({candidateId:id})).status).toBe(404);
+    await unchanged(tx,company);
   }));
   it('enforces the actual joining confirmation and input types at the HTTP boundary',async()=>fixture(async(tx,id,company,user)=>{
     const {request,token}=await client(tx,user);
