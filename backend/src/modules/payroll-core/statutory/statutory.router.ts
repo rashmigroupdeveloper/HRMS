@@ -31,6 +31,8 @@ export const statutoryRouter = {
           regime: z.enum(['new', 'old']).default('new'),
           month: z.number().int().min(1).max(12).default(1),
           pfWageBaseMode: z.enum(['ACTUAL', 'CEILING_15000']).default('ACTUAL'),
+          epsEligible: z.boolean().default(true),
+          internationalWorker: z.boolean().default(false),
         })
       )
       .output(
@@ -74,6 +76,8 @@ export const statutoryRouter = {
         const pf = computePf({
           pfWagesPaise: paise(input.basicPaise),
           wageBaseMode: input.pfWageBaseMode,
+          epsEligible: input.epsEligible,
+          internationalWorker: input.internationalWorker,
         });
 
         const isEsicEligible = isEsicEligibleAtPeriodStart(paise(input.grossPaise));

@@ -7,6 +7,7 @@ import { fromRupees, toRupees, type Paise } from '../src/core/money/index.js';
 import {
   buildAndValidateDag,
   resolveSalaryStructure,
+  structureLineNode,
   validateCtcBreakup,
   type ComponentFormulaNode,
 } from '../src/modules/payroll-core/structures/dag-evaluator.js';
@@ -212,7 +213,7 @@ describe('Payroll DAG Evaluator', () => {
     const nodeUnknown: ComponentFormulaNode[] = [
       { code: 'TEST', kind: 'earning', formula: 'NONEXISTENT_VAR * 2' },
     ];
-    expect(() => resolveSalaryStructure({ nodes: nodeUnknown })).toThrow(/Unknown variable/);
+    expect(() => resolveSalaryStructure({ nodes: nodeUnknown })).toThrow(/uses NONEXISTENT_VAR/);
 
     // 2. Invalid characters
     const nodeBadChar: ComponentFormulaNode[] = [
@@ -231,5 +232,32 @@ describe('Payroll DAG Evaluator', () => {
       { code: 'TEST', kind: 'earning', formula: '(100 +' },
     ];
     expect(() => resolveSalaryStructure({ nodes: nodeSyntax })).toThrow(/Error evaluating formula/);
+  });
+
+  it('E2E-029: one CTC template serves every salary (CTC variables, amount_rule, balance)', () => {
+    const meta = (code: string, kind: ComponentFormulaNode['kind'] = 'earning', formula: string | null = null) =>
+      ({ code, kind, formula, rounding: 'round' as const, part_of_gross: kind === 'earning', part_of_pf_wages: code === 'BASIC' });
+    const nodes = [
+      structureLineNode({ component_code: 'BASIC', amount_rule: 'CTC_MONTHLY * 0.40' }, meta('BASIC')),
+      structureLineNode({ component_code: 'HRA', formula_override: null }, meta('HRA', 'earning', 'BASIC * 0.50')),
+      structureLineNode({ component_code: 'PF_ER', formula_override: 'PF_WAGES_CAPPED * 0.12' }, meta('PF_ER', 'employer_contribution')),
+      structureLineNode({ component_code: 'SPECIAL_ALLOW' }, meta('SPECIAL_ALLOW')),
+    ];
+    for (const ctc of [600000, 1234567]) {
+      const r = resolveSalaryStructure({ nodes, annualCtcPaise: fromRupees(ctc) });
+      const monthly = Math.round(ctc / 12 * 100) / 100;
+      const basic = Math.round(monthly * 0.4);
+      expect(toRupees(getMonthlyPaise(r.monthly, 'BASIC'))).toBe(basic);
+      expect(toRupees(getMonthlyPaise(r.monthly, 'HRA'))).toBe(Math.round(basic * 0.5));
+      expect(toRupees(getMonthlyPaise(r.monthly, 'PF_ER'))).toBe(Math.round(Math.min(basic, 15000) * 0.12));
+      expect(toRupees(r.monthlyCtc)).toBe(monthly);
+    }
+    // CTC_ANNUAL works too; CTC without a target is a clear error, not a crash.
+    const annual = [structureLineNode({ component_code: 'BASIC', formula_override: 'CTC_ANNUAL / 12 * 0.5' }, meta('BASIC'))];
+    expect(toRupees(getMonthlyPaise(resolveSalaryStructure({ nodes: annual, annualCtcPaise: fromRupees(240000) }).monthly, 'BASIC'))).toBe(10000);
+    expect(() => resolveSalaryStructure({ nodes: annual })).toThrow(/no CTC was given/);
+    // A rule depending on a component without any rule names the gap.
+    const gap = [structureLineNode({ component_code: 'BASIC' }, meta('BASIC')), structureLineNode({ component_code: 'HRA' }, meta('HRA', 'earning', 'BASIC * 0.50'))];
+    expect(() => resolveSalaryStructure({ nodes: gap, annualCtcPaise: fromRupees(600000) })).toThrow(/needs BASIC, which has no formula or amount rule/);
   });
 });

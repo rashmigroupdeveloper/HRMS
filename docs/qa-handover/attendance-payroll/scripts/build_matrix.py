@@ -69,7 +69,7 @@ def payroll(case):
         ot = r(D(s['BASIC']) * case['otMinutes'] * 2 / (208 * 60)); gross += ot
     basic = earned.get('BASIC', 0)
     pfb = case['employee'].get('pfBasis', 'ACTUAL')
-    pf_base = min(basic, 15000) if pfb == 'CEILING_15000' else basic
+    pf_base = min(basic, 15000) if pfb == 'CEILING_15000' and not case['employee'].get('iw') else basic  # REQ-003: no ceiling for international workers
     pf = r(D(pf_base) * 12 / 100) if basic > 0 else 0
     esi = 0
     if case['employee'].get('esic'):
@@ -88,6 +88,7 @@ def payroll(case):
     return dict(gross=gross, PF_EE=pf, ESI_EE=esi, PT=p, TDS=tds, net=net)
 
 S30 = {'BASIC': 15000, 'HRA': 7500, 'SPECIAL_ALLOW': 7500}
+S25 = {'BASIC': 25000, 'HRA': 12500, 'SPECIAL_ALLOW': 12500}
 
 def P(cid, title, derivation, payable, div=30, month='2026-06-01', salary=S30, settings=None, employee=None, days=None, **extra):
     c = dict(id=cid, kind='payroll', title=title, derivation=derivation, month=month, settings=settings or {},
@@ -136,6 +137,16 @@ cases = [
  P('M37', 'TDS old regime with 80C capped', 'Old regime: 12L − 50k SD − PT 2400 − 80C 1.5L (declared 2L) = 9,97,600 → 112020 + cess = 116500.80 → 9708/month', 30, salary={'BASIC': 50000, 'HRA': 25000, 'SPECIAL_ALLOW': 25000}, employee={'regime': 'old'}, declarations=[{'section': '80C', 'amount': 200000}]),
  P('M38', 'TDS old regime surcharge above ₹50L', 'Old regime: 60L − 50k − 2400 = 59,47,600 → slab 1596780 + 10% surcharge 159678 + 4% cess → 1826716.32 → 152226/month', 30, salary={'BASIC': 250000, 'HRA': 125000, 'SPECIAL_ALLOW': 125000}, employee={'regime': 'old'}),
  P('M39', 'Approved overtime (Basic/208 × 2)', '240 approved minutes: 15000/208 × 2 × 4 h = 576.92 → 577; PF on BASIC only', 30, otMinutes=240),
+ # REQ-003 / RQ-JF-014 EPS membership (Form 11). Pay 25000/12500/12500 → gross 50000, PT 200, TDS 0 (87A).
+ # EPS is a split of the employer 12%, so net pay never moves: PF_ER + EPS_ER = 12% of the employer PF base.
+ P('M41', 'EPS: fresh member after Sep-2014 above ₹15,000', 'Form 11 "not an earlier member", joined 2020 on BASIC 25000 > 15000 → no EPS; ER EPF 12% × 25000 = 3000; net 46800 as M29', 30, salary=S25, employee={'pfBasis': 'ACTUAL', 'memberBefore2014': False}, extraExpect={'EPS_ER': 0, 'PF_ER': 3000}),
+ P('M42', 'EPS: member before Sep-2014 keeps EPS', 'Form 11 "member before 01-09-2014" = Y, same pay → EPS 8.33% × 15000 = 1250; ER EPF 3000 − 1250 = 1750', 30, salary=S25, employee={'pfBasis': 'ACTUAL', 'memberBefore2014': True}, extraExpect={'EPS_ER': 1250, 'PF_ER': 1750}),
+ P('M43', 'EPS: first enrolled within the ceiling, raised later', 'Form 11 first enrolment 2019-04-01 on PF wages 12000 ≤ 15000 → EPS member for life; EPS wages capped 15000 → 1250; ER EPF 1750', 30, salary=S25, employee={'pfBasis': 'ACTUAL', 'memberBefore2014': False, 'firstEnrolledOn': '2019-04-01', 'firstWages': 12000}, extraExpect={'EPS_ER': 1250, 'PF_ER': 1750}),
+ P('M44', 'EPS: turns 58 during the pay month', 'DOB 15-06-1968 → 58 on 15 Jun 2026, after 1 Jun → June is the last EPS month (CD-P8) → 1250', 30, salary=S25, employee={'pfBasis': 'ACTUAL', 'dob': '1968-06-15'}, extraExpect={'EPS_ER': 1250, 'PF_ER': 1750}),
+ P('M45', 'EPS: stops after 58', 'DOB 20-05-1968 → 58 before 1 Jun 2026 → no EPS; whole ER 12% = 3000 to EPF; employee PF continues 3000', 30, salary=S25, employee={'pfBasis': 'ACTUAL', 'dob': '1968-05-20'}, extraExpect={'EPS_ER': 0, 'PF_ER': 3000}),
+ P('M46', 'International worker: no PF wage ceiling', 'Company basis CEILING_15000 but international worker → PF on full 25000: EE 3000; EPS wages still capped 15000 → 1250; ER EPF 1750; net 46800', 30, salary=S25, employee={'pfBasis': 'CEILING_15000', 'iw': True}, extraExpect={'EPS_ER': 1250, 'PF_ER': 1750}),
+ P('M47', 'EPS: HR decision overrides (no EPS within ceiling)', 'eps_eligible = false (e.g. EPS withdrawn / pensioner): BASIC 15000 → EPS 0, ER EPF 1800', 30, employee={'epsEligible': False}, extraExpect={'EPS_ER': 0, 'PF_ER': 1800}),
+ P('M48', 'EPS: no Form 11 data keeps EPS', 'Joined 2021 on BASIC 25000 but Form 11 not captured → EPS kept (existing cohort default) → 1250 / 1750', 30, salary=S25, employee={'pfBasis': 'ACTUAL', 'doj': '2021-03-01'}, extraExpect={'EPS_ER': 1250, 'PF_ER': 1750}),
  P('M40', 'TDS prorated for LOP', 'New regime 15L case with 2 A: TDS 97500/12 × 28/30 = 7583.33 → 7583', 28, salary={'BASIC': 62500, 'HRA': 31250, 'SPECIAL_ALLOW': 31250}, days={'2026-06-02': 'A', '2026-06-03': 'A'}),
 ]
 for c in cases:

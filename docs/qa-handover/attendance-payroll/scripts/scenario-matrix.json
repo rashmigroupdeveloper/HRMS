@@ -1125,6 +1125,247 @@
    "otMinutes": 240
   },
   {
+   "id": "M41",
+   "kind": "payroll",
+   "title": "EPS: fresh member after Sep-2014 above ₹15,000",
+   "derivation": "Form 11 \"not an earlier member\", joined 2020 on BASIC 25000 > 15000 → no EPS; ER EPF 12% × 25000 = 3000; net 46800 as M29",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "pfBasis": "ACTUAL",
+    "memberBefore2014": false
+   },
+   "salary": {
+    "BASIC": 25000,
+    "HRA": 12500,
+    "SPECIAL_ALLOW": 12500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 50000,
+    "PF_EE": 3000,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 0,
+    "net": 46800,
+    "EPS_ER": 0,
+    "PF_ER": 3000
+   }
+  },
+  {
+   "id": "M42",
+   "kind": "payroll",
+   "title": "EPS: member before Sep-2014 keeps EPS",
+   "derivation": "Form 11 \"member before 01-09-2014\" = Y, same pay → EPS 8.33% × 15000 = 1250; ER EPF 3000 − 1250 = 1750",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "pfBasis": "ACTUAL",
+    "memberBefore2014": true
+   },
+   "salary": {
+    "BASIC": 25000,
+    "HRA": 12500,
+    "SPECIAL_ALLOW": 12500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 50000,
+    "PF_EE": 3000,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 0,
+    "net": 46800,
+    "EPS_ER": 1250,
+    "PF_ER": 1750
+   }
+  },
+  {
+   "id": "M43",
+   "kind": "payroll",
+   "title": "EPS: first enrolled within the ceiling, raised later",
+   "derivation": "Form 11 first enrolment 2019-04-01 on PF wages 12000 ≤ 15000 → EPS member for life; EPS wages capped 15000 → 1250; ER EPF 1750",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "pfBasis": "ACTUAL",
+    "memberBefore2014": false,
+    "firstEnrolledOn": "2019-04-01",
+    "firstWages": 12000
+   },
+   "salary": {
+    "BASIC": 25000,
+    "HRA": 12500,
+    "SPECIAL_ALLOW": 12500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 50000,
+    "PF_EE": 3000,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 0,
+    "net": 46800,
+    "EPS_ER": 1250,
+    "PF_ER": 1750
+   }
+  },
+  {
+   "id": "M44",
+   "kind": "payroll",
+   "title": "EPS: turns 58 during the pay month",
+   "derivation": "DOB 15-06-1968 → 58 on 15 Jun 2026, after 1 Jun → June is the last EPS month (CD-P8) → 1250",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "pfBasis": "ACTUAL",
+    "dob": "1968-06-15"
+   },
+   "salary": {
+    "BASIC": 25000,
+    "HRA": 12500,
+    "SPECIAL_ALLOW": 12500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 50000,
+    "PF_EE": 3000,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 0,
+    "net": 46800,
+    "EPS_ER": 1250,
+    "PF_ER": 1750
+   }
+  },
+  {
+   "id": "M45",
+   "kind": "payroll",
+   "title": "EPS: stops after 58",
+   "derivation": "DOB 20-05-1968 → 58 before 1 Jun 2026 → no EPS; whole ER 12% = 3000 to EPF; employee PF continues 3000",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "pfBasis": "ACTUAL",
+    "dob": "1968-05-20"
+   },
+   "salary": {
+    "BASIC": 25000,
+    "HRA": 12500,
+    "SPECIAL_ALLOW": 12500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 50000,
+    "PF_EE": 3000,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 0,
+    "net": 46800,
+    "EPS_ER": 0,
+    "PF_ER": 3000
+   }
+  },
+  {
+   "id": "M46",
+   "kind": "payroll",
+   "title": "International worker: no PF wage ceiling",
+   "derivation": "Company basis CEILING_15000 but international worker → PF on full 25000: EE 3000; EPS wages still capped 15000 → 1250; ER EPF 1750; net 46800",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "pfBasis": "CEILING_15000",
+    "iw": true
+   },
+   "salary": {
+    "BASIC": 25000,
+    "HRA": 12500,
+    "SPECIAL_ALLOW": 12500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 50000,
+    "PF_EE": 3000,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 0,
+    "net": 46800,
+    "EPS_ER": 1250,
+    "PF_ER": 1750
+   }
+  },
+  {
+   "id": "M47",
+   "kind": "payroll",
+   "title": "EPS: HR decision overrides (no EPS within ceiling)",
+   "derivation": "eps_eligible = false (e.g. EPS withdrawn / pensioner): BASIC 15000 → EPS 0, ER EPF 1800",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "epsEligible": false
+   },
+   "salary": {
+    "BASIC": 15000,
+    "HRA": 7500,
+    "SPECIAL_ALLOW": 7500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 30000,
+    "PF_EE": 1800,
+    "ESI_EE": 0,
+    "PT": 150,
+    "TDS": 0,
+    "net": 28050,
+    "EPS_ER": 0,
+    "PF_ER": 1800
+   }
+  },
+  {
+   "id": "M48",
+   "kind": "payroll",
+   "title": "EPS: no Form 11 data keeps EPS",
+   "derivation": "Joined 2021 on BASIC 25000 but Form 11 not captured → EPS kept (existing cohort default) → 1250 / 1750",
+   "month": "2026-06-01",
+   "settings": {},
+   "employee": {
+    "pfBasis": "ACTUAL",
+    "doj": "2021-03-01"
+   },
+   "salary": {
+    "BASIC": 25000,
+    "HRA": 12500,
+    "SPECIAL_ALLOW": 12500
+   },
+   "days": {},
+   "expect": {
+    "days_in_month": 30,
+    "payable_days": 30,
+    "gross": 50000,
+    "PF_EE": 3000,
+    "ESI_EE": 0,
+    "PT": 200,
+    "TDS": 0,
+    "net": 46800,
+    "EPS_ER": 1250,
+    "PF_ER": 1750
+   }
+  },
+  {
    "id": "M40",
    "kind": "payroll",
    "title": "TDS prorated for LOP",

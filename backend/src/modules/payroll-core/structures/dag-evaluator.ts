@@ -15,7 +15,37 @@ import {
   add,
   subtract,
 } from '../../../core/money/index.js';
-import type { SalaryRoundingMode } from '../../../core/db/types.js';
+import type { SalaryComponentItem, SalaryRoundingMode } from '../../../core/db/types.js';
+
+/**
+ * Variables every formula may use besides the structure's own component codes (E2E-029 / C-19):
+ * CTC = CTC_MONTHLY = annual CTC / 12 (all component amounts are monthly), CTC_ANNUAL, GROSS (earnings
+ * resolved so far), PF_WAGES (= BASIC) and PF_WAGES_CAPPED (min(BASIC, 15000)). Amounts in rupees.
+ * Example template for a grade: BASIC "CTC * 0.40", HRA "BASIC * 0.50", PF_ER "PF_WAGES_CAPPED * 0.12",
+ * SPECIAL_ALLOW = balance to CTC.
+ */
+const BUILTIN_VARIABLES = new Set(['CTC', 'CTC_MONTHLY', 'CTC_ANNUAL', 'GROSS', 'PF_WAGES', 'PF_WAGES_CAPPED']);
+
+/**
+ * One assembler for preview, assignment and onboarding: the rule of a structure line is its
+ * formula_override, else its amount_rule (same expression grammar), else the catalog formula.
+ */
+export function structureLineNode(
+  item: SalaryComponentItem,
+  meta: { code: string; kind: ComponentFormulaNode['kind']; formula?: string | null | undefined; rounding: SalaryRoundingMode;
+    part_of_gross: boolean; part_of_pf_wages: boolean; prorate_on_lop?: boolean | undefined },
+): ComponentFormulaNode {
+  const pick = (v: string | null | undefined) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : undefined);
+  return {
+    code: meta.code,
+    kind: meta.kind,
+    formula: pick(item.formula_override) ?? pick(item.amount_rule) ?? pick(meta.formula),
+    rounding: meta.rounding,
+    part_of_gross: meta.part_of_gross,
+    part_of_pf_wages: meta.part_of_pf_wages,
+    prorate_on_lop: meta.prorate_on_lop,
+  };
+}
 
 export interface ComponentFormulaNode {
   code: string;
@@ -86,6 +116,10 @@ export function buildAndValidateDag(nodes: ComponentFormulaNode[]): {
     let deps: string[] = [];
     if (node.formula) {
       deps = extractFormulaVariables(node.formula);
+      const unknown = deps.filter((v) => !nodeMap.has(v) && !BUILTIN_VARIABLES.has(v));
+      if (unknown.length > 0) {
+        throw new Error(`Formula of ${node.code} ('${node.formula}') uses ${unknown.join(', ')}: use component codes of this structure or ${[...BUILTIN_VARIABLES].join(', ')}`);
+      }
     }
     dependencies[node.code] = deps;
     graph.set(node.code, deps);
@@ -216,6 +250,12 @@ export function resolveSalaryStructure(params: {
 
   // Context for formula evaluation (stores amounts in Rupees for standard formulas, e.g. BASIC * 0.5)
   const evalContext: Record<string, number> = {};
+  const targetMonthlyCtc = params.monthlyCtcPaise ?? (params.annualCtcPaise ? paise(Math.round(params.annualCtcPaise / 12)) : undefined);
+  if (targetMonthlyCtc !== undefined) {
+    evalContext['CTC'] = toRupees(targetMonthlyCtc);
+    evalContext['CTC_MONTHLY'] = toRupees(targetMonthlyCtc);
+    evalContext['CTC_ANNUAL'] = toRupees(params.annualCtcPaise ?? paise(targetMonthlyCtc * 12));
+  }
 
   // First pass: resolve basic and fixed components
   for (const code of order) {
@@ -252,6 +292,13 @@ export function resolveSalaryStructure(params: {
       evalContext['PF_WAGES'] = toRupees(basicPaise);
       evalContext['PF_WAGES_CAPPED'] = Math.min(toRupees(basicPaise), 15000);
 
+      const missing = extractFormulaVariables(node.formula).filter((v) => nodeMap.has(v) && evalContext[v] === undefined);
+      if (missing.length > 0) {
+        throw new Error(`${code} = '${node.formula}' needs ${missing.join(', ')}, which has no formula or amount rule in this structure (e.g. BASIC "CTC * 0.40")`);
+      }
+      if (evalContext['CTC'] === undefined && /\bCTC(_MONTHLY|_ANNUAL)?\b/.test(node.formula)) {
+        throw new Error(`${code} = '${node.formula}' needs the CTC, but no CTC was given`);
+      }
       const computedRupees = evaluateExpression(node.formula, evalContext);
       const computedPaise = Math.round(computedRupees * 100);
       const rounded = applyRounding(computedPaise, node.rounding ?? 'round');
@@ -262,7 +309,6 @@ export function resolveSalaryStructure(params: {
   }
 
   // Handle balancing component (typically SPECIAL_ALLOW) if target monthly CTC is given
-  const targetMonthlyCtc = params.monthlyCtcPaise ?? (params.annualCtcPaise ? paise(Math.round(params.annualCtcPaise / 12)) : undefined);
 
   if (targetMonthlyCtc && nodeMap.has('SPECIAL_ALLOW') && !fixedOverrides['SPECIAL_ALLOW']) {
     // Current total of other earnings + employer costs

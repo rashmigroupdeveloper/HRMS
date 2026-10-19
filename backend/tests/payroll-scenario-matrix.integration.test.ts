@@ -28,7 +28,11 @@ import { buildMusterMonth } from '../src/modules/reports/muster.service.js';
 interface PayrollCase {
   id: string; kind: 'payroll'; title: string; month: string;
   settings: Record<string, string | number | boolean>;
-  employee: { doj?: string; dol?: string; status?: string; esic?: boolean; regime?: 'old' | 'new'; pfBasis?: 'ACTUAL' | 'CEILING_15000' };
+  employee: {
+    doj?: string; dol?: string; status?: string; esic?: boolean; regime?: 'old' | 'new'; pfBasis?: 'ACTUAL' | 'CEILING_15000';
+    /** REQ-003 Form 11 facts. */
+    dob?: string; memberBefore2014?: boolean; firstEnrolledOn?: string; firstWages?: number; iw?: boolean; epsEligible?: boolean;
+  };
   salary: Record<string, number>; salaryAtPeriodStart?: Record<string, number>;
   days: Record<string, string>; afterCutoff?: Record<string, string>;
   holidays?: { date: string; scope: string }[]; declarations?: { section: string; amount: number }[]; otMinutes?: number;
@@ -97,6 +101,9 @@ async function runPayrollCase(db: Kysely<Database>, c: PayrollCase): Promise<Rec
       company_id: o.companyId, ecode: `${tag}E`, first_name: c.id, status: (c.employee.status ?? 'active') as never, doj: doj as never,
       dol: (c.employee.dol ?? null) as never, location_id: o.locationId, plant_id: o.plantId, pf_applicable: true,
       esic_applicable: c.employee.esic ?? false, tax_regime: c.employee.regime ?? 'new', pf_wage_basis: c.employee.pfBasis ?? null,
+      dob: (c.employee.dob ?? null) as never, epf_member_before_sep2014: c.employee.memberBefore2014 ?? null,
+      epf_first_enrolled_on: (c.employee.firstEnrolledOn ?? null) as never, epf_first_wages: c.employee.firstWages?.toFixed(2) ?? null,
+      international_worker: c.employee.iw ?? false, eps_eligible: c.employee.epsEligible ?? null,
     }).returning('id').executeTakeFirstOrThrow();
     const paise = (amounts: Record<string, number>) => Object.fromEntries(Object.entries(amounts).map(([k, v]) => [k, v * 100]));
     const revision = (from: string, amounts: Record<string, number>) => insertSalaryRevision(trx, { employee_id: emp.id, structure_id: structure.id, effective_from: from, annual_ctc: '1.00', phase: 'confirmed', component_amounts: paise(amounts), revision_reason: 'joining', approved_by: user.id });

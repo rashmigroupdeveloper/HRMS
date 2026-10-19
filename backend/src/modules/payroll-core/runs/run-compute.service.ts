@@ -1,4 +1,5 @@
 /** PAY-03/04/08/16: compute results inside the caller's locked run transaction. */
+import { epsEligibility } from '../statutory/eps-eligibility.js';
 import type { Kysely, Selectable } from 'kysely';
 import { sql } from 'kysely';
 import type { Database, PayrollRunsTable } from '../../../core/db/types.js';
@@ -86,7 +87,8 @@ export async function computeLockedRun(
   const employees = await trx
     .selectFrom('core.employees as e')
     .leftJoin('core.locations as l', 'l.id', 'e.location_id')
-    .select(['e.id', 'e.ecode', 'e.doj', 'e.dol', 'e.status', 'e.category', 'e.contract_type', 'e.pf_applicable', 'e.esic_applicable', 'e.pf_wage_basis', 'e.tax_regime', 'l.state_code'])
+    .select(['e.id', 'e.ecode', 'e.doj', 'e.dol', 'e.status', 'e.category', 'e.contract_type', 'e.pf_applicable', 'e.esic_applicable', 'e.pf_wage_basis', 'e.tax_regime', 'l.state_code',
+      'e.dob', 'e.eps_eligible', 'e.epf_member_before_sep2014', 'e.epf_first_enrolled_on', 'e.epf_first_wages', 'e.international_worker'])
     .where('e.company_id', '=', run.company_id)
     .where('e.status', 'in', ['active', 'on_notice', 'exited'])
     .where((eb) => eb.or([eb('e.doj', 'is', null), eb('e.doj', '<', sql<Date>`${monthUntil}::date`)]))
@@ -98,6 +100,16 @@ export async function computeLockedRun(
   const catalog = new Map<string, ComponentMetadata>();
   for (const c of rawComponents) {
     catalog.set(c.code, { code: c.code, name: c.name, kind: c.kind, partOfGross: c.part_of_gross, partOfPfWages: c.part_of_pf_wages, prorateOnLop: c.prorate_on_lop, displayOrder: c.display_order });
+  }
+
+  // REQ-003: PF wages at joining (earliest revision) stand in for Form 11 "first EPF wages" when not captured.
+  const firstRevisions = employees.length === 0 ? [] : await trx.selectFrom('pay.employee_salaries')
+    .distinctOn('employee_id').select(['employee_id', 'component_amounts'])
+    .where('employee_id', 'in', employees.map((e) => e.id)).orderBy('employee_id').orderBy('effective_from').execute();
+  const joiningPfWages = new Map<number, number>();
+  for (const rev of firstRevisions) {
+    const amounts = salarySnapshotToPaise(rev.component_amounts);
+    joiningPfWages.set(rev.employee_id, Object.entries(amounts).reduce((s, [code, v]) => (catalog.get(code)?.partOfPfWages ? s + Number(v) : s), 0));
   }
 
   const variableInputs = await trx.selectFrom('pay.inputs').selectAll().where('run_id', '=', runId).execute();
@@ -282,7 +294,18 @@ export async function computeLockedRun(
         otherDeductions: recoveries,
         hold,
         rates,
-        pf: { applicable: emp.pf_applicable, wageBasis: resolvePfWageBasis(pfSetting, company.pf_wage_basis, emp.pf_wage_basis) },
+        pf: {
+          applicable: emp.pf_applicable,
+          wageBasis: resolvePfWageBasis(pfSetting, company.pf_wage_basis, emp.pf_wage_basis),
+          internationalWorker: emp.international_worker,
+          epsEligible: epsEligibility({
+            monthStart: monthStr, dob: emp.dob ? formatDbDate(emp.dob) : null, doj: formatDbDate(emp.doj),
+            epsEligible: emp.eps_eligible, memberBeforeSep2014: emp.epf_member_before_sep2014,
+            firstEnrolledOn: emp.epf_first_enrolled_on ? formatDbDate(emp.epf_first_enrolled_on) : null,
+            firstEnrolmentPfWagesPaise: emp.epf_first_wages !== null ? Math.round(Number(emp.epf_first_wages) * 100) : null,
+            joiningPfWagesPaise: joiningPfWages.get(emp.id) ?? null,
+          }).eligible,
+        },
         esicCovered,
         ptSlabs,
         stateCode,
