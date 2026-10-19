@@ -16,6 +16,9 @@ export interface DocTypesTable {
   mandatory_for: Generated<string>;
   sort_order: Generated<number>;
   is_active: Generated<boolean>;
+  /** Shown on the joining document checklist (REQ-004). */
+  joining_checklist: Generated<boolean>;
+  max_files: Generated<number>;
   created_at: DefaultedTimestamp;
   updated_at: DefaultedTimestamp;
 }
