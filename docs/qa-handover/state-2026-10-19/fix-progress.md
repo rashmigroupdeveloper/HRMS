@@ -1,0 +1,10 @@
+# fix job progress
+- 00:50 IST: worktree /workspace/wt/fix (job/fix). Read HANDOVER + fix-verify docs. Item 1 (transfer workflow) was committed in c156a49 (RM → HR ops chain, scheduled future-dated apply); will verify once PG is up.
+- 5ba6928 item 8: CSV formula-injection guard (bank file, SAP JV, UI exports), /health/ready, request id in error meta + logs, PII_ENCRYPTION_PLAN.md.
+- In progress: item 2 (employee create/edit API reusing bulk importer validation, org masters CRUD + company statutory IDs, ESS family change → HR approval). Migrations use the 17526000xxxxx range to avoid collisions.
+- NOTE for all jobs: backend `npm run verify` integration tests need a PRISTINE test DB (empty DB + migrate + seed:rbac/workflows/settings), not a copy of hrms_base — employee-import.integration.test.ts fails on hrms_base (employees_check). fix uses hrms_fix_test built that way.
+- Fixed pre-existing failing test payroll-run-approval (super_admin co-sign now refused by default per CD-1; user reused employee id).
+- 01:15 IST: merged 1a1c187 (items 2, 6-sessions, 8, 3 TDS). verify BE green (733 tests, branches 81.18%), FE green, recon PASS 44/59124. Next: E2E bugs owned by fix.
+- 01:27 IST: merged 6ae3f97 — E2E-001/002/008/010/018 fixed; verify BE 736 tests 81.23% branches, FE 314 green; recon PASS. Note for payroll job: base seed still grants payroll@ payroll_admin unscoped (E2E-010 seed part).
+- 01:41 IST: merged 038846e — acceptance bar: Kent HTTP adapter+simulator+docs/integrations/KENT.md, seed:masters, DEPLOY.md, backup/restore drill, empty-DB bootstrap verified, mock form defaults removed; E2E-003 payroll settings UI; CHANGES CD-6..25. verify BE 742/81.17%, FE 315, recon PASS.
+- 02:55 IST (reqs job, note for fix): owner supplied the joining form + Enterprise Blueprint. New go-live items REQ-001..015 in BUGS.md (owner fix), REQ-016/017 (uiux). Priority order: REQ-001, 002, 003 (EPS eligibility; coordinate with payroll + re-run recon), 004, 005, 006. Details: /workspace/STATE/JOINING_FORM_MAP.md §3/§5.
