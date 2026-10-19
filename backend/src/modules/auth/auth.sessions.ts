@@ -37,15 +37,12 @@ export async function rotateSession(db: Kysely<Database>, secret: string, token:
       .where('user_id', '=', user.id).where('revoked_at', 'is', null).where('expires_at', '>', new Date())
       .where('refresh_token_hash', '=', digest(token)).forUpdate().executeTakeFirst();
     if (!session) {
-      // Reuse detection (A-27): a correctly signed refresh token for a live
-      // session whose stored hash has already rotated means the token was
-      // replayed — revoke the whole session family.
+      // Sponsor amendment docs02/NFR-03 takes precedence over QA A-27's
+      // suggested family revocation: reject and audit replay, preserving the
+      // newer valid token and any ATS session bound to this canonical login.
       const live = await tx.selectFrom('sec.sessions').select(['id']).where('sid', '=', claims.sid ?? '')
         .where('user_id', '=', user.id).where('revoked_at', 'is', null).forUpdate().executeTakeFirst();
       if (live) {
-        await tx.updateTable('sec.sessions')
-          .set({ revoked_at: new Date(), revoked_by_user_id: user.id, revoke_reason: 'refresh_reuse' })
-          .where('id', '=', live.id).execute();
         await writeAudit(tx, { actorUserId: user.id, action: 'refresh_reuse_detected', entity: 'sec.sessions', entityId: live.id, ip });
         return { ok: false as const, reused: true as const };
       }

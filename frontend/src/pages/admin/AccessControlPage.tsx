@@ -14,6 +14,7 @@
  * console exists to prevent.
  */
 import { SessionsPanel } from './SessionsPanel';
+import { ConnectedAccountsPanel } from './ConnectedAccountsPanel';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { KeyRound, Search, ShieldCheck, UserRoundCog } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
@@ -57,7 +58,7 @@ function domainOf(permission: string): string {
 }
 
 export function AccessControlPage() {
-  const [tab, setTab] = useState<'permissions' | 'people' | 'sessions'>('permissions');
+  const [tab, setTab] = useState<'permissions' | 'people' | 'sessions' | 'connected'>('permissions');
 
   return (
     <div className="space-y-6">
@@ -82,6 +83,7 @@ export function AccessControlPage() {
           >
             Permissions
           </Button>
+          <Button size="sm" variant={tab === 'connected' ? 'primary' : 'ghost'} onClick={() => {setTab('connected');}}>Connected accounts</Button>
           <Button
             size="sm"
             variant={tab === 'people' ? 'primary' : 'ghost'}
@@ -103,7 +105,7 @@ export function AccessControlPage() {
         </div>
       </header>
 
-      {tab === 'permissions' ? <PermissionGrid /> : tab === 'people' ? <PeoplePanel /> : <SessionsPanel />}
+      {tab === 'connected' ? <ConnectedAccountsPanel /> : tab === 'permissions' ? <PermissionGrid /> : tab === 'people' ? <PeoplePanel /> : <SessionsPanel />}
     </div>
   );
 }

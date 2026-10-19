@@ -9,6 +9,7 @@ import { LoginPage } from './pages/auth/LoginPage';
 // The signed-in app and the candidate portal are separate chunks: the login
 // screen (the first paint on every phone) ships only what it needs.
 const AppRouter = lazy(() => import('./app/router').then((m) => ({ default: m.AppRouter })));
+const SsoAuthorizePage=lazy(()=>import('./pages/auth/SsoAuthorizePage').then(m=>({default:m.SsoAuthorizePage})));
 const PrejoinPortalPage = lazy(() =>
   import('./pages/lifecycle/PrejoinPortalPage').then((m) => ({ default: m.PrejoinPortalPage })),
 );
@@ -47,6 +48,8 @@ export function App() {
       />
     );
   }
+
+  if(window.location.pathname.endsWith('/connect/ats'))return <Suspense fallback={<Splash />}><SsoAuthorizePage /></Suspense>;
 
   return (
     <BrowserRouter>

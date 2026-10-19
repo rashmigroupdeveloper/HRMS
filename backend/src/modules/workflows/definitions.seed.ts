@@ -70,8 +70,8 @@ export const WORKFLOW_DEFINITIONS: readonly DefinitionSeed[] = [
     name: 'Travel Advance (Domestic)',
     steps: [
       { step: 1, approver: 'reporting_manager', slaHours: 48, onBreach: 'escalate' },
-      // docs/01 TE-07: RM → HOD (C-02; was the functional-manager stand-in).
       { step: 2, approver: 'department_head', slaHours: 48, onBreach: 'escalate' },
+      { step: 3, approver: 'travel_admin', slaHours: 48, onBreach: 'escalate' },
     ],
   },
   {
@@ -115,13 +115,25 @@ export const WORKFLOW_DEFINITIONS: readonly DefinitionSeed[] = [
   },
   {
     code: 'travel_trip',
-    name: 'Travel Trip Approval',
-    steps: [{ step: 1, approver: 'reporting_manager', slaHours: 48, onBreach: 'escalate' }],
+    name: 'Travel Trip & Budget Approval',
+    steps: [
+      { step: 1, approver: 'travel_sea_manager', slaHours: 48, onBreach: 'escalate' },
+      { step: 2, approver: 'reporting_manager', slaHours: 48, onBreach: 'escalate' },
+      { step: 3, approver: 'department_head', slaHours: 48, onBreach: 'escalate' },
+      { step: 4, approver: 'travel_africa_reviewer', slaHours: 48, onBreach: 'escalate' },
+      { step: 5, approver: 'travel_admin', slaHours: 48, onBreach: 'escalate' },
+    ],
   },
   {
     code: 'travel_claim',
     name: 'Travel Expense Claim',
-    steps: [{ step: 1, approver: 'reporting_manager', slaHours: 72, onBreach: 'escalate' }],
+    steps: [
+      { step: 1, approver: 'travel_sea_manager', slaHours: 48, onBreach: 'escalate' },
+      { step: 2, approver: 'reporting_manager', slaHours: 48, onBreach: 'escalate' },
+      { step: 3, approver: 'department_head', slaHours: 48, onBreach: 'escalate' },
+      { step: 4, approver: 'travel_africa_reviewer', slaHours: 48, onBreach: 'escalate' },
+      { step: 5, approver: 'travel_admin', slaHours: 48, onBreach: 'escalate' },
+    ],
   },
   {
     code: 'requisition_approval',

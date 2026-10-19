@@ -1,0 +1,63 @@
+{
+  "date": "2026-10-19",
+  "releaseReady": false,
+  "nativeFocused": {
+    "passed": 43,
+    "files": 4
+  },
+  "hrmsFrontendVerify": {
+    "passed": true,
+    "tests": 321,
+    "files": 41
+  },
+  "atsFrontend": {
+    "testsPassed": 62,
+    "files": 10,
+    "buildPassed": true
+  },
+  "atsBackendFocused": {
+    "passed": 25,
+    "files": 3
+  },
+  "fullHrmsBackendVerify": {
+    "passed": false,
+    "typecheckPassed": true,
+    "lastObservedBlocker": "18 lint errors in travel settlement service and travel budget reservation tests, authored concurrently; financial claims/budgets remain deferred/unaccepted",
+    "coverageReached": false,
+    "buildReached": false
+  },
+  "reactDoctor": {
+    "selectedHrmsFiles": 4,
+    "hrmsScore": 100,
+    "selectedAtsFiles": 2,
+    "atsScore": 81,
+    "atsWarnings": [
+      "legacy ATS JWT web storage",
+      "acceptance component complexity",
+      "acceptance component size"
+    ]
+  },
+  "fullAtsBackendSuiteRun": false,
+  "productionAcceptance": false,
+  "stageGatesPromoted": false,
+  "schemaPurposeScope": "new integration fields only; not a whole-schema no-slop certification",
+  "cleanupProof": "cleanup-proof.json",
+  "ownedBackendLintPassed": true,
+  "allConflictMarkersResolved": true,
+  "machinePrincipalRuntimePermissionProved": true,
+  "linkedProfileRestoreMarkerNativeHttpProved": true,
+  "separateBackendChecks": {
+    "dependencyCheckPassed": true,
+    "productionBuildPassedBeforeFinalVisibilityOnlyCleanup": true,
+    "knipStatus": "four unused exports found and visibility-only cleanup applied; final process result checked separately",
+    "fullVerifyRemainsRed": true
+  },
+  "machineAuditActorVerified": true,
+  "deferredFinancialCodeReviewFindings": [
+    "hardcoded closed-month fallback",
+    "claim status/overlap checked outside transaction",
+    "shared headroom/reservation without trip/claim serialization",
+    "calendar validator only checks shape",
+    "period date-pair/order constraints missing in pending migration"
+  ]
+}

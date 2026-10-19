@@ -14,7 +14,55 @@ This is literally the **"Travel Advance" module** from pain point PP-1 (the "Cha
 
 ---
 
-## 0. UPDATE — 2026-07-06 live database read (as-built has moved on)
+## 0. UPDATE — 2026-10-19 live EMS server & deployed code recon (as-built current state)
+
+A comprehensive read-only audit of the production EMS server (`rashmimetaliks.com`) and running backend (`backend_github_actions`, redeployed 16 Oct 2026) establishes the live volume and actual workflow routing.
+
+### 0.0 Live data volumes (19 Oct 2026 vs 6 Jul 2026)
+
+| Collection / Entity | 6 Jul 2026 | 19 Oct 2026 (Live Now) | Growth & Operating State |
+|---|---|---|---|
+| **users** | 1,066 | **1,471** | +405 employees; primary ecode join key |
+| **budgets** | 9–10 | **1,590** | Active primary vehicle for all travel & expense requests |
+| **claims** | 2 | **1,041** | 913 approved, 34 pending RM, 32 pending Admin, 17 sent back |
+| **advances** | 1 | **71** | Active travel advance requests |
+| **wallets / txs** | 0 / 0 | **36 / 152** | Active advance netting and ledger settlements |
+| **trips** | 0 | **0** | **Unused.** Budget document carries the entire travel itinerary |
+
+### 0.0b Live routing & approval engine rules (from deployed `backend_github_actions`)
+
+1. **Budget-first lifecycle:** The employee submits a Travel Budget document, which holds the travel type, destination, dates, and itemized allowances. Claims and advances are raised strictly against an approved (or auto-approved) budget owned by the claimant.
+2. **Chain constructed up-front on submit:**
+   - **Standard Chain:** Reporting Manager (RM) → Head of Department (HOD) → Org/Travel Admin (legacy `RML000435`).
+   - **International SEA:** South-East Asia destinations insert an SEA Regional Manager before HOD.
+   - **International Africa:** Africa destinations insert an Africa Reviewer between HOD and Admin.
+   - **Deduplication:** If RM and HOD are the same person, the step collapses into one.
+   - **Self-approval guard:** An applicant is never their own approver. The Admin's own submission auto-approves.
+3. **Commitment & reservation ledger:** Budget is reserved at claim submission, refunded on rejection or send-back, and finalized at settlement.
+4. **Validation rules:**
+   - Every line item requires a receipt attachment, and a summary attachment is mandatory on submit.
+   - Line dates must fall within travel dates.
+   - Travel dates cannot overlap another active claim on the same budget.
+   - Multi-currency capture records original currency and exchange rate to INR.
+   - Closed travel months (e.g. `2026-06`) cause draft claims to expire.
+5. **Approver actions:** Approvers can **Accept**, **Reject**, or **Send Back**.
+   - Current pending approvers can edit line amounts; changes are logged in the audit trail alongside bill discrepancy notes.
+   - Sent-back claims return to the employee with stage attribution (e.g., "Sent back by HOD"). Resubmission retains the full prior audit history and appends a fresh approval chain.
+6. **Admin settlement step (not a plain approve):**
+   - Org/Travel Admin selects **AUTO** or **MANUAL** settlement.
+   - Claim is reconciled against wallet balance / outstanding advances to calculate settlement amount, net payable, and net recoverable.
+   - International travel claims transition to `INVOICE_PENDING` until the commercial invoice is signed.
+   - Domestic travel claims transition directly to `APPROVED`.
+
+### 0.0c Architectural scope resolution (Sponsor decision, 19 Oct 2026)
+
+- **Unified Claim Workflow:** The EMS workflow (budget/entitlement linkage, reservation/refund ledger, RM → HOD → Admin settlement, line edits, discrepancies, receipts, and send-back) applies to **both** M13 Travel & Expense Claims and M12 General Reimbursement Claims.
+- **Config-over-code approver mapping:** Hardcoded IDs from EMS (`RML000435`, SEA manager, Africa reviewer) must NOT be hardcoded in HRMS; they are stored in `core.settings` and resolved dynamically.
+- **Credential security:** Live production credentials shared in prior session transcripts must be rotated immediately per §7 and AGENTS.md §5.
+
+---
+
+## 0. UPDATE — 2026-07-06 live database read (historic context)
 
 A second read-only pass (SSH + `mongosh` against the live Atlas cluster `yatra-avedan.fbkxpf1.mongodb.net`) shows the app was **rebuilt** since the 5 Jul pass. The live `pm2` process `ems-backend` now runs from `~/backend/backend` — a **cleaner TypeScript/Mongoose 9.5/Express 5 rewrite** (not the old `yatra-avedan-mdb` tree, which is now retired to `.trash`). Deps confirm the stack: `mongoose`, `zod 4`, `@aws-sdk/client-s3` (MinIO), `twilio`, `resend`, `nodemailer`, `xlsx`, `fuse.js`, `helmet`, `express-rate-limit`. Storage is MinIO (`STORAGE_PROVIDER=minio`, bucket `ems-uploads`).
 

@@ -14,6 +14,7 @@ import { hasAnyPermission, hasPermission, hasRole } from '../lib/session';
 import { IconButton, ThemeToggle, Toaster, Tooltip, cn } from '../ui';
 import type { NavItem } from './nav-config';
 import { isNavActive, navForUser, splitNav } from './nav-config';
+import {ConnectedAtsButton} from './ConnectedAtsButton';
 import { AccountMenu } from './AccountMenu';
 import { BottomBar } from './BottomBar';
 import { bottomTabs } from './bottom-tabs';
@@ -261,6 +262,7 @@ export function AppShell({ user, onSignedOut }: AppShellProps) {
             <span className="hidden sm:contents">
               <ThemeToggle />
             </span>
+            <ConnectedAtsButton userId={user.id} />
             <AccountMenu user={user} onSignedOut={onSignedOut} />
           </div>
         </div>

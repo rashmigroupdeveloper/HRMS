@@ -144,8 +144,24 @@ export function withAnyPermission(...permissions: PermissionCode[]) {
   });
 }
 
-export function withPermission(permission: PermissionCode, declaredAction?: PermissionAction) {
-  return authed.use(async ({ context, next, procedure }) => {
+export function withPermission(
+  permission: PermissionCode,
+  declaredAction?: PermissionAction,
+  authenticateClient?: (context: AppContext) => Promise<number>,
+) {
+  // Confidential clients prove possession separately, then use the SAME active
+  // account and runtime permission gate. They never supply human role claims.
+  const principal = authenticateClient
+    ? base.use(async ({ context, next }) => {
+        if (!context.db) throw new ORPCError('SERVICE_UNAVAILABLE', { message: 'Database unavailable' });
+        const userId = await authenticateClient(context);
+        const user = await context.db.selectFrom('core.users').selectAll()
+          .where('id', '=', userId).where('is_active', '=', true).executeTakeFirst();
+        if (!user) throw new ORPCError('UNAUTHORIZED', { message: 'Integration account unavailable' });
+        return next({ context: { user, db: context.db, sessionSid: null as string | null } });
+      })
+    : authed;
+  return principal.use(async ({ context, next, procedure }) => {
     // Use the server's procedure contract, never the incoming request verb.
     // Unspecified methods default to POST in oRPC and require write authority.
     // A POST query must explicitly declare 'read' after its handler is audited.

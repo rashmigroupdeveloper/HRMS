@@ -106,10 +106,11 @@ The workflow **catalog** below is confirmed from RML's live greytHR manager Revi
 | **Regularization & Permission** (AR + short Permission) | RM | 48h | escalate |
 | **OD** | RM → HR ops (optional per settings) | 48h | escalate |
 | **Overtime** | RM only | **48h hard** | **lapse** (Protiviti Status rule) |
-| **Claim (expense/reimbursement)** | RM → HR ops verify → payroll pay-batch | 72h | escalate |
+| **Travel Budget Request** (TE-02/05) | RM → HOD → (SEA/Africa reviewer if international) → Travel Admin | 48h | escalate |
+| **Travel Expense Claim (M13)** (TE-10) | RM → HOD → (SEA/Africa reviewer if international) → Travel Admin Settlement | 48h | escalate |
+| **Claim (General Reimbursement M12)** | RM → HOD → HR Ops / Admin Settlement → payroll pay-batch | 72h | escalate |
 | **Loan / advance** | RM → HR head → payroll (eligibility auto-checked) | 72h | escalate |
-| Travel advance (domestic) | RM → dept head | 48h | escalate |
-| Travel advance (global) | RM → dept head → **CHRO (George)** | 48h | escalate |
+| **Travel Advance (domestic/global)** (TE-07) | RM → HOD → Travel Admin (credits employee wallet on approval) | 48h | escalate |
 | **Confirmation** | RM review → HR head | 7d | escalate |
 | **Resignation** | RM → HR head → HR ops (admin closure) — every step gets `notified_at` receipts | 72h | escalate to next + HR alert |
 | Transfer | current RM → receiving RM → HR ops | 72h | escalate |
@@ -117,8 +118,21 @@ The workflow **catalog** below is confirmed from RML's live greytHR manager Revi
 | **Helpdesk** (ticket routing/closure) | category assignee → escalation matrix | per SLA | escalate |
 | Offer/LOI (Phase 4, from LOI flowchart) | Initiator → Plant Head/GM → HR Head → CEO → issue | 48h | reminder + escalate |
 
-All chains editable by hr_head via UI (WF-01 configurability); these are the shipped defaults matching **current live RML practice** (09-RECON §10.2). Note: chains and the reporting tree may **span entities** — a manager (e.g. an RPL DGM) can approve for reports in another company (RDL) — so `core.reporting_tree` and chain resolution are company-agnostic.
+All chains editable by hr_head via UI (WF-01 configurability); these are the shipped defaults matching **current live RML practice** (09-RECON §10.2, 11-EMS §0). Note: chains and the reporting tree may **span entities** — a manager (e.g. an RPL DGM) can approve for reports in another company (RDL) — so `core.reporting_tree` and chain resolution are company-agnostic.
+
+**Travel & Claims Routing Doctrine (19 Oct 2026 alignment):**
+1. **Dynamic Chain Construction:** The approval chain is constructed up-front upon submission: RM → HOD → (Regional reviewer if international SEA/Africa) → Org/Travel Admin. If RM and HOD are the same person, the duplicate step collapses. Applicants never approve their own requests; Admin's own requests auto-approve.
+2. **Config-over-Code Approvers:** Specific approver positions (Org/Travel Admin, South-East Asia Regional Manager, Africa Reviewer) are configured in `core.settings` (`te.admin_employee_id`, `te.sea_manager_employee_id`, `te.africa_reviewer_employee_id`) or resolved via RBAC permissions, never hardcoded.
+3. **Settlement Milestone:** The Admin step on travel and reimbursement claims is a Settlement action (AUTO or MANUAL mode netting against advances and wallet balances) rather than a simple boolean approval.
+4. **Line-item Edits & Discrepancies:** Pending approvers possess authority to adjust line amounts with mandatory audit logging and discrepancy notes. Resubmissions after send-back append a fresh chain while preserving the full historical audit trail.
 
 **Workflow vacancy amendment — sponsor, 16 Oct 2026:** an all-vacant new/resubmitted approval round remains pending for HR routing repair (docs04 §5). `admin.settings` authorizes scoped hold-list/retry administration just as it authorizes chain edits; it does not grant domain approval. The event audience is configurable data (`workflow.routing_held`, seeded to HR Head). The requester is also notified. Held requests retain applicable configured lapse deadlines; they never auto-approve because nobody was assigned.
 
 **CORE-10 readonly enforcement (16 Oct 2026):** permission membership and population are resolved separately for reads and writes. A `readonly` role-permission row authorizes reads only; an assigned organizational unit bounds those reads, while an unbound readonly grant retains global read access. A separate writable grant never inherits population from readonly rows. Central oRPC gates use the server-declared procedure method (GET = read; other/default POST = write). Audited POST queries explicitly use `withPermission(code, 'read')`; do not annotate a mutating handler as read. Secondary permission checks in a write context contain writable grants only. Runtime revocation applies on the next request. This enforces the existing §2 read-only matrix; it does not replace each handler's obligation to apply employee scope.
+
+### Connected ATS sign-in permission —19 Oct2026 (D4/NFR-03)
+
+`auth.sso` permits only the caller's own explicit connected-account handoff. Seed to all existing roles as a self-service technical permission; it grants no HRMS/ATS business role. Revocation denies subsequent exchange/introspection. `admin.users` with full group scope verifies and provisions/unlinks identities with a reason after confirming matching active emails and employee e-codes (when the HRMS account has an employee). Cross-application numeric user IDs never establish a link. External code redemption/introspection uses the registered confidential client, separately from human permissions.
+
+
+`integration.ats.receive` is the sole business permission for the ATS machine's configured company catalog/accepted-offer intake. It is required in the same central `withPermission` gate as human APIs; a dedicated client proof resolves the explicitly configured active service principal, never ATS role claims. Group scope and `integration.ats.company_ids` both restrict access. Only the normal super-admin catch-all receives this new permission by seed; provisioning a dedicated service principal and its role grants is an explicit deployment-admin task. No new principal is created or silently granted access. Revocation/account disable takes effect on the next request even if the signing key remains valid.

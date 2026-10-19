@@ -14,7 +14,8 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { ConflictError, DomainError, ForbiddenError, NotFoundError } from '../../core/errors/index.js';
 import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { createRequest } from '../workflows/index.js';
-import { assertWithinTrip } from './travel.service.js';
+import { getTypedSetting } from '../settings/index.js';
+import { assertDate, assertWithinTrip, isoDay } from './travel-utils.js';
 import { WalletService } from './wallet.service.js';
 import { inTransaction } from '../../core/db/database.js';
 
@@ -25,6 +26,8 @@ export type SettlementRow = Selectable<TeSettlementsTable>;
 export interface CreateClaimInput {
   tripId: number;
   employeeId: number;
+  periodFrom?: string | undefined;
+  periodTo?: string | undefined;
 }
 
 export interface AddClaimItemInput {
@@ -64,17 +67,95 @@ export interface SettlementResult {
 
 type Db = Kysely<Database> | Transaction<Database>;
 
-/** 'travel_claim' final hook: approved claims become settleable. */
+/** Enforces closed travel month rule (EMS Parity: travel month <= te.closed_travel_month cannot be claimed). */
+async function assertNotClosedTravelMonth(db: Db, dateInput: string | Date, label: string): Promise<void> {
+  const closedMonth = await getTypedSetting<string | null>(db, 'te.closed_travel_month', 'string', '2026-06');
+  if (!closedMonth || !closedMonth.trim()) return;
+  const d = typeof dateInput === 'string' ? dateInput.slice(0, 10) : dateInput.toISOString().slice(0, 10);
+  const month = d.slice(0, 7);
+  if (month <= closedMonth.trim()) {
+    throw new DomainError(`${label} (${d}) falls within closed travel month (${month} <= ${closedMonth.trim()}); claims cannot be raised or submitted`);
+  }
+}
+
+/** Computes real-time commitment ledger headroom (SUM(reserve) - SUM(release)). */
+export async function getTripBudgetHeadroom(db: Db, tripId: number): Promise<{
+  estimatedBudgetPaise: number;
+  approvedBudgetPaise: number;
+  reservedBudgetPaise: number;
+  availableBudgetPaise: number;
+}> {
+  const trip = await db
+    .selectFrom('te.trips')
+    .select(['estimated_budget_paise', 'approved_budget_paise', 'status'])
+    .where('id', '=', tripId)
+    .executeTakeFirst();
+  if (!trip) throw new NotFoundError(`Trip #${tripId} not found`);
+
+  const reservations = await db
+    .selectFrom('te.budget_reservations')
+    .select(['movement', 'amount_paise'])
+    .where('trip_id', '=', tripId)
+    .execute();
+
+  let reservedBudgetPaise = 0;
+  for (const r of reservations) {
+    if (r.movement === 'reserve') reservedBudgetPaise += Number(r.amount_paise);
+    else if (r.movement === 'release') reservedBudgetPaise -= Number(r.amount_paise);
+  }
+  if (reservedBudgetPaise < 0) reservedBudgetPaise = 0;
+
+  const approved = Number(trip.approved_budget_paise || 0);
+  const availableBudgetPaise = Math.max(0, approved - reservedBudgetPaise);
+  return {
+    estimatedBudgetPaise: Number(trip.estimated_budget_paise || 0),
+    approvedBudgetPaise: approved,
+    reservedBudgetPaise,
+    availableBudgetPaise,
+  };
+}
+
+/** 'travel_claim' final hook: approved claims become settleable; rejected/lapsed claims release reservation. */
 export async function applyTravelClaimOnFinal(db: Db, request: { id: number }, status: 'approved' | 'rejected' | 'lapsed'): Promise<void> {
   const claim = await db.selectFrom('te.claims').selectAll().where('workflow_request_id', '=', request.id).executeTakeFirst();
   if (claim?.status !== 'submitted') return;
-  await db
-    .updateTable('te.claims')
-    .set(status === 'approved'
-      ? { status: 'approved', approved_amount_paise: claim.total_claimed_paise, updated_at: new Date() }
-      : { status: 'rejected', updated_at: new Date() })
-    .where('id', '=', claim.id)
-    .execute();
+  if (status === 'approved') {
+    await db
+      .updateTable('te.claims')
+      .set({ status: 'approved', approved_amount_paise: claim.total_claimed_paise, updated_at: new Date() })
+      .where('id', '=', claim.id)
+      .execute();
+  } else {
+    // Release budget reservation on rejection / lapse
+    const reservations = await db
+      .selectFrom('te.budget_reservations')
+      .select(['movement', 'amount_paise'])
+      .where('claim_id', '=', claim.id)
+      .execute();
+    let netReserved = 0;
+    for (const r of reservations) {
+      if (r.movement === 'reserve') netReserved += Number(r.amount_paise);
+      else if (r.movement === 'release') netReserved -= Number(r.amount_paise);
+    }
+    if (netReserved > 0) {
+      await db
+        .insertInto('te.budget_reservations')
+        .values({
+          trip_id: claim.trip_id,
+          claim_id: claim.id,
+          movement: 'release',
+          amount_paise: netReserved,
+          reason: `Claim #${claim.id} ${status} refund`,
+          actor_user_id: null,
+        })
+        .execute();
+    }
+    await db
+      .updateTable('te.claims')
+      .set({ status: 'rejected', updated_at: new Date() })
+      .where('id', '=', claim.id)
+      .execute();
+  }
 }
 
 export class SettlementService {
@@ -85,7 +166,7 @@ export class SettlementService {
   }
 
   /**
-   * Creates a new draft claim for a trip.
+   * Creates a new draft claim for a trip strictly against an approved budget.
    */
   async createClaim(input: CreateClaimInput): Promise<ClaimRow> {
     const trip = await this.db
@@ -99,6 +180,20 @@ export class SettlementService {
     if (!['approved', 'in_progress', 'completed'].includes(trip.status)) {
       throw new ConflictError(`Expenses can only be claimed on an approved trip (this trip is ${trip.status})`);
     }
+    if ((trip.approved_budget_paise ?? 0) <= 0) {
+      throw new ConflictError('Cannot claim expenses against a trip without an approved budget');
+    }
+
+    const tripStart = isoDay(trip.start_date);
+    const tripEnd = isoDay(trip.end_date);
+    await assertNotClosedTravelMonth(this.db, tripStart, 'Trip start date');
+    await assertNotClosedTravelMonth(this.db, tripEnd, 'Trip end date');
+
+    const fromDate = input.periodFrom ? assertDate(input.periodFrom, 'Claim period from') : tripStart;
+    const toDate = input.periodTo ? assertDate(input.periodTo, 'Claim period to') : tripEnd;
+    if (toDate < fromDate) throw new DomainError('Claim end date cannot be before start date');
+    assertWithinTrip(trip, fromDate, 'Claim start date');
+    assertWithinTrip(trip, toDate, 'Claim end date');
 
     const referenceNo = `CLM-${new Date().getFullYear()}-${String(Math.floor(1000 + Math.random() * 9000))}`;
 
@@ -115,13 +210,15 @@ export class SettlementService {
         net_recoverable_paise: 0,
         status: 'draft',
         settlement_status: 'unsettled',
+        period_from: sql<Date>`${fromDate}::date`,
+        period_to: sql<Date>`${toDate}::date`,
       })
       .returningAll()
       .executeTakeFirstOrThrow();
   }
 
   /**
-   * Adds an itemized expense receipt to a claim.
+   * Adds an itemized expense receipt to a claim. Receipt attachment is mandatory.
    */
   async addClaimItem(input: AddClaimItemInput): Promise<ClaimItemRow> {
     const claim = await this.db
@@ -135,10 +232,18 @@ export class SettlementService {
     if (claim.status !== 'draft' && claim.status !== 'sent_back') {
       throw new ConflictError(`Cannot add items to a ${claim.status} claim`);
     }
+
+    // Receipt is mandatory on every line
+    if (!input.receiptDocumentId && (!input.receiptUrl || !input.receiptUrl.trim())) {
+      throw new DomainError('Receipt attachment (document ID or URL) is mandatory for every expense line');
+    }
+
     const trip = await this.db.selectFrom('te.trips').select(['start_date', 'end_date']).where('id', '=', claim.trip_id).executeTakeFirstOrThrow();
     const itemDay = input.itemDate.slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(itemDay)) throw new DomainError('Item date must be a valid date (YYYY-MM-DD)');
     assertWithinTrip(trip, itemDay, 'Expense date');
+    await assertNotClosedTravelMonth(this.db, itemDay, 'Expense date');
+
     if (!Number.isInteger(input.amountPaise) || input.amountPaise <= 0) throw new DomainError('Amount must be a positive whole number of paise');
 
     const fxRate = input.fxRateToInr ?? 1.0;
@@ -162,11 +267,18 @@ export class SettlementService {
       .returningAll()
       .executeTakeFirstOrThrow();
 
-    // Recompute total claimed
+    // Recompute total claimed and expand period bounds if needed
+    const currentFrom = claim.period_from ? isoDay(claim.period_from) : itemDay;
+    const currentTo = claim.period_to ? isoDay(claim.period_to) : itemDay;
+    const newFrom = itemDay < currentFrom ? itemDay : currentFrom;
+    const newTo = itemDay > currentTo ? itemDay : currentTo;
+
     await this.db
       .updateTable('te.claims')
       .set({
         total_claimed_paise: sql<number>`total_claimed_paise + ${inrAmountPaise}`,
+        period_from: sql<Date>`${newFrom}::date`,
+        period_to: sql<Date>`${newTo}::date`,
         updated_at: new Date(),
       })
       .where('id', '=', claim.id)
@@ -225,27 +337,113 @@ export class SettlementService {
     return { claim, items, settlement: settlement ?? null };
   }
 
-  /** Submits the caller's own draft claim to the reporting manager ('travel_claim'). */
-  async submitClaim(params: { claimId: number; actorEmployeeId: number | null; actorUserId: number }): Promise<ClaimRow> {
+  /** Submits the caller's own draft claim to the reporting manager ('travel_claim'). Enforces receipts, summary doc, non-overlapping claims, and commitment reservation. */
+  async submitClaim(params: {
+    claimId: number;
+    actorEmployeeId: number | null;
+    actorUserId: number;
+    summaryDocumentId?: number | undefined;
+    summaryDocumentUrl?: string | undefined;
+  }): Promise<ClaimRow> {
     const claim = await this.db.selectFrom('te.claims').selectAll().where('id', '=', params.claimId).executeTakeFirst();
     if (!claim) throw new NotFoundError(`Claim #${String(params.claimId)} not found`);
     if (claim.employee_id !== params.actorEmployeeId) throw new ForbiddenError('You can only submit your own claims');
     if (claim.status !== 'draft' && claim.status !== 'sent_back') throw new ConflictError(`Claim is already ${claim.status}`);
     if (claim.total_claimed_paise <= 0) throw new DomainError('Add at least one expense item before submitting');
-    await createRequest(
-      this.db,
-      {
-        definitionCode: 'travel_claim',
-        subjectEmployeeId: claim.employee_id,
-        requestedByUserId: params.actorUserId,
-        payload: { claimId: claim.id, totalClaimedPaise: claim.total_claimed_paise },
-      },
-      async (trx, requestId) => {
-        await trx.updateTable('te.claims').set({ status: 'submitted', workflow_request_id: requestId, updated_at: new Date() }).where('id', '=', claim.id).execute();
-        await writeAudit(trx, { actorUserId: params.actorUserId, action: 'submit', entity: 'te.claims', entityId: claim.id, newValue: String(claim.total_claimed_paise) });
-      },
-    );
-    return this.db.selectFrom('te.claims').selectAll().where('id', '=', claim.id).executeTakeFirstOrThrow();
+
+    const summaryId = params.summaryDocumentId ?? claim.summary_document_id;
+    const summaryUrl = params.summaryDocumentUrl ?? claim.summary_document_url;
+    if (!summaryId && (!summaryUrl || !summaryUrl.trim())) {
+      throw new DomainError('Summary document attachment is mandatory before submitting a claim');
+    }
+
+    const items = await this.db.selectFrom('te.claim_items').selectAll().where('claim_id', '=', claim.id).execute();
+    for (const it of items) {
+      if (!it.receipt_document_id && (!it.receipt_url || !it.receipt_url.trim())) {
+        throw new DomainError(`Receipt attachment is missing for expense line #${it.id} (${it.category})`);
+      }
+    }
+
+    // Overlapping active claim check on the same trip budget
+    const claimFrom = claim.period_from ? isoDay(claim.period_from) : null;
+    const claimTo = claim.period_to ? isoDay(claim.period_to) : null;
+    if (claimFrom && claimTo) {
+      const overlapping = await this.db
+        .selectFrom('te.claims')
+        .selectAll()
+        .where('trip_id', '=', claim.trip_id)
+        .where('id', '!=', claim.id)
+        .where('status', 'in', ['submitted', 'approved', 'settled'])
+        .where('period_from', 'is not', null)
+        .where('period_to', 'is not', null)
+        .where((eb) =>
+          eb.and([
+            eb('period_from', '<=', sql<Date>`${claimTo}::date`),
+            eb('period_to', '>=', sql<Date>`${claimFrom}::date`),
+          ])
+        )
+        .executeTakeFirst();
+      if (overlapping) {
+        throw new ConflictError(
+          `Claim travel dates (${claimFrom} to ${claimTo}) overlap with active claim #${overlapping.id} (${isoDay(overlapping.period_from!)} to ${isoDay(overlapping.period_to!)}) on this trip budget`
+        );
+      }
+    }
+
+    return inTransaction(this.db, async (trx) => {
+      // Commitment headroom check
+      const { availableBudgetPaise } = await getTripBudgetHeadroom(trx, claim.trip_id);
+      if (claim.total_claimed_paise > availableBudgetPaise) {
+        throw new ConflictError(
+          `Claim total (₹${(claim.total_claimed_paise / 100).toFixed(2)}) exceeds available trip budget headroom (₹${(availableBudgetPaise / 100).toFixed(2)})`
+        );
+      }
+
+      // Reserve in commitment ledger
+      await trx
+        .insertInto('te.budget_reservations')
+        .values({
+          trip_id: claim.trip_id,
+          claim_id: claim.id,
+          movement: 'reserve',
+          amount_paise: claim.total_claimed_paise,
+          reason: `Claim #${claim.id} submission reservation`,
+          actor_user_id: params.actorUserId,
+        })
+        .execute();
+
+      await createRequest(
+        trx,
+        {
+          definitionCode: 'travel_claim',
+          subjectEmployeeId: claim.employee_id,
+          requestedByUserId: params.actorUserId,
+          payload: { claimId: claim.id, totalClaimedPaise: claim.total_claimed_paise },
+        },
+        async (t, requestId) => {
+          await t
+            .updateTable('te.claims')
+            .set({
+              status: 'submitted',
+              workflow_request_id: requestId,
+              summary_document_id: summaryId ?? null,
+              summary_document_url: summaryUrl ?? null,
+              updated_at: new Date(),
+            })
+            .where('id', '=', claim.id)
+            .execute();
+          await writeAudit(t, {
+            actorUserId: params.actorUserId,
+            action: 'submit',
+            entity: 'te.claims',
+            entityId: claim.id,
+            newValue: String(claim.total_claimed_paise),
+          });
+        }
+      );
+
+      return trx.selectFrom('te.claims').selectAll().where('id', '=', claim.id).executeTakeFirstOrThrow();
+    });
   }
 
   /**

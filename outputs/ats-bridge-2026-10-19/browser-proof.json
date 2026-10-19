@@ -1,0 +1,22 @@
+{
+  "syntheticOnly": true,
+  "origins": [
+    "http://localhost:5175",
+    "http://localhost:5176"
+  ],
+  "actualFrontendsAndBackends": true,
+  "normalHrmsLoginUsed": true,
+  "signInCodeCallbackReachedAts": true,
+  "atsOwnPermissionsPreserved": true,
+  "acceptedCandidateStatusVisible": true,
+  "employeeIdNotCreatedMessageVisible": true,
+  "bothThemesInspected": true,
+  "linkedLogoutReturnedAtsToLogin": true,
+  "hrmsReturnedToLoginAfterAtsLogout": true,
+  "missingReadViewsDiscoveredAndRestored": true,
+  "realConsentRecordingThroughFormTested": false,
+  "acceptanceWasRecordedByNativeHttpFixture": true,
+  "productionAcceptance": false,
+  "cleanup": "signed out, proof tab closed, both native fixture connections ended/rolled back; cleanup-proof.json confirms zero fixture people/candidates and no private credential file",
+  "laterRefreshBrowserAttempt": "Bounded synthetic fixture expired; no additional browser refresh-logout acceptance claimed. Actual native profile endpoint and three unit regressions pass."
+}

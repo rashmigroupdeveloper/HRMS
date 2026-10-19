@@ -42,15 +42,21 @@ describe.skipIf(!url)('NFR-03 native authentication safety', () => {
     const rotated = await refresh(db, secret, signed.refreshToken);
     expect(rotated.ok).toBe(true);
     expect((await refresh(db, secret, signed.refreshToken)).ok).toBe(false);
-    // Replaying a consumed token revokes the whole session family (reuse detection),
-    // so even the legitimately rotated token stops working.
-    if (rotated.ok) expect((await refresh(db, secret, rotated.refreshToken)).ok).toBe(false);
+    // Sponsor amendment docs02: reject stale replay without revoking the winner.
+    if (rotated.ok) {
+      const app = createApp({ db, jwtSecret: secret, secureCookies: false });
+      expect((await (await httpRequest(app)).get('/api/auth/me').auth(rotated.accessToken, { type: 'bearer' })).status).toBe(200);
+      expect((await refresh(db, secret, rotated.refreshToken)).ok).toBe(true);
+    }
   }));
   it('allows exactly one winner when the same refresh token is redeemed concurrently', async () => fixture(async (_id, email) => {
     const signed = await login(db, secret, email, password, null);
     if (!signed.ok) throw new Error('Fixture login failed');
     const attempts = await Promise.all([refresh(db, secret, signed.refreshToken), refresh(db, secret, signed.refreshToken)]);
     expect(attempts.filter(result => result.ok)).toHaveLength(1);
+    const winner = attempts.find(result => result.ok);
+    if (!winner?.ok) throw new Error('Missing winning refresh');
+    expect((await refresh(db, secret, winner.refreshToken)).ok).toBe(true);
   }));
   it('logout immediately revokes access and refresh for this session while preserving another login', async () => fixture(async (_id, email) => {
     const first = await login(db, secret, email, password, null);

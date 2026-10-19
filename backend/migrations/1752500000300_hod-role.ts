@@ -33,9 +33,11 @@ export function up(pgm: MigrationBuilder): void {
       employee_id BIGINT NOT NULL REFERENCES core.employees(id) ON DELETE CASCADE,
       created_by BIGINT REFERENCES core.users(id),
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      CONSTRAINT department_heads_uq UNIQUE NULLS NOT DISTINCT (department_id, company_id, employee_id)
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     );
+    -- Equivalent NULL uniqueness on target16 and the authorized local14 test DB.
+    CREATE UNIQUE INDEX department_heads_entity_uq ON core.department_heads(department_id, company_id, employee_id) WHERE company_id IS NOT NULL;
+    CREATE UNIQUE INDEX department_heads_group_uq ON core.department_heads(department_id, employee_id) WHERE company_id IS NULL;
     CREATE INDEX department_heads_employee_idx ON core.department_heads (employee_id);
     CREATE TRIGGER department_heads_updated_at BEFORE UPDATE ON core.department_heads
       FOR EACH ROW EXECUTE FUNCTION core.set_updated_at();
@@ -63,6 +65,7 @@ export function up(pgm: MigrationBuilder): void {
 }
 
 export function down(pgm: MigrationBuilder): void {
+  pgm.sql(`SET lock_timeout = '5s';`);
   pgm.sql(`
     UPDATE wf.definitions SET steps = '${OLD_TRAVEL}'::jsonb
      WHERE code = 'travel_advance_domestic' AND steps = '${NEW_TRAVEL}'::jsonb;

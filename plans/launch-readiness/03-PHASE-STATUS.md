@@ -26,6 +26,10 @@ This reconciles the sponsor's phase checklist with current source and retained e
 |3.5 /T4 |OPEN | Real EMS migration/mirror/reconciliation, parallel trip/settlement, signed decommission not established; do not retire EMS |
 |4 /4A–C |DETAILED SCOPE/ABSORPTION OPEN | ATS full frontend/data absorption and contract-worker PRD remain future scope. Mobile/geo has earlier schema/path scaffolding, not an accepted rollout. Secure ATS account connection/acceptance handoff is an earlier core need and cannot be dismissed as future absorption |
 
+## 19 Oct connection increment
+
+Pack34 implements ATS HR acceptance/evidence, source receipt/outbox, signed separate HRMS prejoining, verified account links, PKCE sign-in/live parent checks/logout and prejoin-link issuing UI. Local tests/browser proof establish a subset of0.4/3.1. Production/staging acceptance, full scope/quality gates and all other rows remain OPEN. See [pack34](../sow-completion/34-ATS-ACCEPTANCE-AND-CONNECTED-SIGNIN.md).
+
 ## Evidence and limits
 
 Read [pack33](../sow-completion/33-ACTUAL-JOINING-AND-DEPLOYMENT-AUDIT.md), [deployment audit](../../outputs/deployment-audit-2026-10-18/REVIEW.md), [pack28 role cases and original SOW inventory](../sow-completion/28-ROLE-FLOW-AND-SOW-REVIEW.md), [pack30](../sow-completion/30-MONTH-CLOSE-AND-REPORT-SCOPE.md), [pack31](../sow-completion/31-KENT-SYNC-SAFETY.md), [pack32](../sow-completion/32-HR-ROUTING-RECOVERY-UI.md) and [handoff](HANDOFF.md). All176 original scored SOW rows remain tracked; this table does not replace their conditions, manual/service duties or exclusions.

@@ -1,0 +1,22 @@
+{
+  "syntheticOnly": true,
+  "explicitAdminLinkVerifiedThroughAts": true,
+  "canonicalHrmsRole": "employee",
+  "atsRole": "hr",
+  "rolesCopied": false,
+  "pkceAndStateRoundTrip": true,
+  "authorizationCodeReplayStatus": 401,
+  "atsInactiveAccountStatus": 401,
+  "linkedLogoutStatus": 200,
+  "atsAfterCanonicalLogoutStatus": 401,
+  "hrmsAfterLinkedLogoutStatus": 401,
+  "otherCanonicalSessionPreserved": true,
+  "returnDestinationPreserved": true,
+  "rawTokensInNavigation": false,
+  "sourceTransactions": "savepoints inside a real PostgreSQL rollback-only fixture",
+  "hrmsTransaction": "real PostgreSQL rollback-only fixture",
+  "cleanup": "both outer transactions rolled back; no persistent linked account or user",
+  "productionAcceptance": false,
+  "profileMarkerVerifiedThroughActualAtsEndpoint": true,
+  "machinePermissionGuardUsedForCandidateTransport": true
+}

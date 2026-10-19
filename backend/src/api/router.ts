@@ -2,6 +2,8 @@
  * The application router — every module's procedures assembled in one tree.
  * This object's shape IS the API; the OpenAPI spec is generated from it.
  */
+import { atsBridgeRouter } from '../modules/ats-bridge/index.js';
+import {ssoRouter} from '../modules/sso/index.js';
 import { systemRouter } from '../modules/system/index.js';
 import { authRouter, sessionsRouter } from '../modules/auth/index.js';
 import { settingsRouter } from '../modules/settings/index.js';
@@ -33,6 +35,8 @@ import { bulkRouter, employeeMasterRouter } from '../modules/bulk/index.js';
 import { tdsRouter } from '../modules/tds/index.js';
 
 export const appRouter = {
+  atsBridge: atsBridgeRouter,
+  sso:ssoRouter,
   system: systemRouter,
   core: coreRouter,
   masters: mastersRouter,
