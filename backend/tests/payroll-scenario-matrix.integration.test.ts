@@ -191,11 +191,11 @@ async function runKentCase(db: Kysely<Database>, c: KentCase) {
       if (!cfg) throw new Error('kent config');
       const connector = new KentHttpConnector(cfg, undefined, noSleep); // simulator fails every 4th call → retries
       const source = `kent-${tag.toLowerCase()}`;
-      const self = (p: KentPunch) => ({ ...p, employeeNo: p.employeeNo === 'SELF' ? ecode.toLowerCase() : p.employeeNo });
+      const self = (p: KentPunch) => ({ empId: p.employeeNo === 'SELF' ? ecode.toLowerCase() : p.employeeNo, time: p.punchTime, type: 1 as const, deviceId: p.deviceId, direction: p.direction, receivedAt: p.receivedAt });
       sim.add(c.punches.map(self));
       const first = await runKentSync(trx, connector, source);
       const now = Date.now();
-      const beat = (deviceId: string) => ({ employeeNo: 'KENTHB01', deviceId, punchTime: new Date(now - 60_000).toISOString(), direction: 'in' as const, receivedAt: new Date(now).toISOString() });
+      const beat = (deviceId: string) => ({ empId: 'KENTHB01', deviceId, time: new Date(now - 60_000).toISOString(), type: 1 as const, direction: 'in' as const, receivedAt: new Date(now).toISOString() });
       sim.add([...c.backfill.map(self), beat('G1'), beat('G2')]); // buffered punches + live doors today
       const second = await runKentSync(trx, connector, source);
       const third = await runKentSync(trx, connector, source);

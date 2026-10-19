@@ -44,11 +44,6 @@ export interface EmployeesJoiningColumns {
   induction_date: DateCol;
   joining_signed_off_by: number | null;
   joining_signed_off_at: ColumnType<Date | null, Date | string | null | undefined, Date | string | null>;
-  epf_member_before_sep2014: boolean | null;
-  epf_first_enrolled_on: DateCol;
-  epf_first_wages: Num;
-  international_worker: Generated<boolean>;
-  eps_eligible: boolean | null;
 }
 
 export interface FamilyJoiningColumns {
