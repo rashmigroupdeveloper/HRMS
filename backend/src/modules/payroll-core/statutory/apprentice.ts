@@ -6,7 +6,8 @@
  *  - Total exemption from Employees' Provident Fund (EPF).
  *  - Total exemption from Employees' State Insurance (ESIC).
  *  - Excluded from Payment of Bonus Act, 1965 (stipend is not wages).
- *  - Professional Tax applies per state slabs on monthly stipend.
+ *  - Professional tax applies per state slabs, and TDS applies when the stipend is taxable (docs/10 §9).
+ *    PF, ESIC and bonus do not. That is the whole statutory exclusion.
  *
  * Authoritative source: docs/10 §9, Golden G9.
  */

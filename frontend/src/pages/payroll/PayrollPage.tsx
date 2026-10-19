@@ -291,7 +291,8 @@ export function PayrollPage({ user }: { user: SessionUser }) {
                   {status !== 'finalized' && status !== 'paid' ? <EmptyState title="Outputs unlock after finalize" description="Payslips, the bank file and the SAP JV are generated from the finalized register." /> : (
                     <div className="flex flex-wrap gap-2">
                       {canManage && <Button loading={busy === 'payslips'} onClick={() => void generate('payslips')}>Generate payslips</Button>}
-                      {canManage && <Button loading={busy === 'bank'} onClick={() => void generate('bank')}>Bank file (CSV)</Button>}
+                      {canManage && <Button loading={busy === 'bank'} onClick={() => void generate('bank')}>Bank file (replaces the active file)</Button>}
+                      <Link to="/payroll/tds" className="inline-flex items-center text-sm text-ink underline">Form 24Q and Form 16</Link>
                       {canManage && <Button loading={busy === 'jv'} onClick={() => void generate('jv')}>SAP JV (CSV)</Button>}
                     </div>
                   )}

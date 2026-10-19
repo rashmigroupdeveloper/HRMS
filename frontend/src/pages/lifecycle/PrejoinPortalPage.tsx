@@ -303,7 +303,7 @@ export function PrejoinPortalPage() {
           </Card>
         )}
 
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Joining steps">
+        <div className="flex flex-wrap gap-2" aria-label="Joining steps">
           {['You and address', 'Statutory and bank', 'Education and family', 'Documents and declaration'].map((label, index) => (
             <Button key={label} type="button" size="sm" variant={step === index ? 'primary' : 'ghost'} onClick={() => { setStep(index); }}>
               {label}

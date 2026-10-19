@@ -172,6 +172,7 @@ export function SeparationBoardPage() {
   const [abscondingEmpId, setAbscondingEmpId] = useState('');
   const [abscondingLwd, setAbscondingLwd] = useState(new Date().toISOString().slice(0, 10));
   const [abscondingReason, setAbscondingReason] = useState('');
+  const [abscondingExit, setAbscondingExit] = useState('termination');
 
   // Approve Form State
   const [approveLwd, setApproveLwd] = useState('');
@@ -289,6 +290,7 @@ export function SeparationBoardPage() {
           ecode: abscondingEmpId.trim(),
           reason: abscondingReason,
           lastWorkingDay: abscondingLwd,
+          exitType: abscondingExit,
         }),
       });
       toast.success('Absconding Termination Logged', {
@@ -832,7 +834,7 @@ export function SeparationBoardPage() {
                 <Card className="p-4 bg-surface-2 border border-line">
                   <div className="text-xs font-medium text-ink-muted">Gratuity rule</div>
                   <div className="mt-2 text-sm text-ink space-y-1">
-                    <div>• Eligible after 5 years of continuous service</div>
+                    <div>• Eligible after 5 years, or on death without that wait</div>
                     <div>• Part year of 6 months or more rounds up</div>
                     <div>• Formula: (15 × last Basic+DA × years) / 26</div>
                     <div className="font-bold text-accent-ink mt-1">Capped at the statutory ceiling</div>
@@ -956,8 +958,8 @@ export function SeparationBoardPage() {
       <Drawer
         open={showAbscondingDrawer}
         onClose={() => { setShowAbscondingDrawer(false); }}
-        title="Initiate Termination / Absconding"
-        subtitle="Direct HR termination for long unapproved absence. Waives notice and fans out clearances immediately."
+        title="HR-initiated exit"
+        subtitle="Retirement, death, contract end or termination. Death pays gratuity without the five-year wait."
       >
         <div className="space-y-4">
           <TextField
@@ -972,6 +974,12 @@ export function SeparationBoardPage() {
             value={abscondingLwd}
             onChange={(e) => { setAbscondingLwd(e.target.value); }}
           />
+          <Select label="Exit type" value={abscondingExit} onChange={setAbscondingExit} options={[
+            { value: 'termination', label: 'Termination' },
+            { value: 'retirement', label: 'Retirement' },
+            { value: 'death', label: 'Death' },
+            { value: 'contract_end', label: 'Contract end' },
+          ]} />
           <TextField
             label="Termination Grounds & Justification"
             value={abscondingReason}

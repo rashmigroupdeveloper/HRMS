@@ -12,7 +12,7 @@ import { currentFy } from '../tax/tax-utils';
 
 interface AlumniMe {
   profile: { ecode: string; name: string; designation: string | null; department: string | null; companyName: string; doj: string | null; dol: string | null };
-  settlement: { status: string; netPayableRupees: number; gratuityRupees: number; leaveEncashRupees: number; noticeRecoveryRupees: number; paidAt: string | null; relievingLetterId: number | null; serviceCertificateId: number | null } | null;
+  settlement: { status: string; daysPayable: number; netPayableRupees: number; gratuityRupees: number; leaveEncashRupees: number; noticeRecoveryRupees: number; paidAt: string | null; relievingLetterId: number | null; serviceCertificateId: number | null } | null;
 }
 
 const inr = (n: number) => `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -55,6 +55,7 @@ export function AlumniPortalPage() {
           <CardHeader title="Full & final settlement" />
           {s ? (
             <dl className="space-y-2 text-sm">
+              <div className="flex justify-between"><dt>Payable days</dt><dd>{s.daysPayable}</dd></div>
               <div className="flex justify-between"><dt>Gratuity</dt><dd>{inr(s.gratuityRupees)}</dd></div>
               <div className="flex justify-between"><dt>Leave encashment</dt><dd>{inr(s.leaveEncashRupees)}</dd></div>
               <div className="flex justify-between"><dt>Notice recovery</dt><dd>−{inr(s.noticeRecoveryRupees)}</dd></div>
@@ -68,6 +69,14 @@ export function AlumniPortalPage() {
           <div className="flex flex-col gap-2">
             <Link to="/my/letters"><Button variant="secondary" leadingIcon={<FileText />} disabled={!s?.relievingLetterId}>Relieving letter & service certificate</Button></Link>
             <Button variant="secondary" leadingIcon={<Download />} onClick={() => void form16()}>Form 16 (PDF)</Button>
+            <Button variant="secondary" leadingIcon={<Download />} disabled={!s} onClick={() => {
+              if (!s) return;
+              const csv = `Payable days,${String(s.daysPayable)}\nGratuity,${s.gratuityRupees.toFixed(2)}\nLeave encashment,${s.leaveEncashRupees.toFixed(2)}\nNotice recovery,${s.noticeRecoveryRupees.toFixed(2)}\nNet payable,${s.netPayableRupees.toFixed(2)}\n`;
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+              a.download = `fnf-${p.ecode}.csv`;
+              a.click();
+            }}>Settlement sheet</Button>
           </div>
           {!s?.relievingLetterId && <p className="mt-2 text-xs text-ink-muted">Letters are issued when the F&F is paid.</p>}
         </Card>

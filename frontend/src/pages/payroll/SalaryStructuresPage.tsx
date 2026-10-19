@@ -100,6 +100,10 @@ export function SalaryStructuresPage() {
     'PF_ADMIN',
   ]);
   const [savingStructure, setSavingStructure] = useState(false);
+  const [gradeOpen, setGradeOpen] = useState(false);
+  const [gradeName, setGradeName] = useState('');
+  const [basicPct, setBasicPct] = useState('40');
+  const [hraPct, setHraPct] = useState('50');
 
   // Simulator State
   const [simCtcRupees, setSimCtcRupees] = useState<number>(600000);
@@ -158,6 +162,35 @@ export function SalaryStructuresPage() {
     } finally {
       setSimulating(false);
     }
+  }
+
+  async function createPercentStructure() {
+    const basic = Number(basicPct);
+    const hra = Number(hraPct);
+    if (!gradeName.trim() || !(basic > 0 && basic < 100) || !(hra > 0 && hra <= 100)) {
+      toast.warning('Name the grade and give Basic and HRA as percents.');
+      return;
+    }
+    const companies = await apiFetch<{ rows: { id: number }[] }>('/api/core/masters/companies').catch(() => ({ rows: [] }));
+    const companyId = structures[0]?.company_id ?? companies.rows[0]?.id;
+    if (!companyId) { toast.error('Add a company before saving a grade structure.'); return; }
+    await apiFetch('/api/payroll/structures', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: gradeName.trim(),
+        company_id: companyId,
+        description: `Basic ${String(basic)}% of CTC, HRA ${String(hra)}% of Basic, Special Allowance balances to CTC`,
+        components: [
+          { component_code: 'BASIC', formula_override: `CTC * ${(basic / 100).toFixed(4)}` },
+          { component_code: 'HRA', formula_override: `BASIC * ${(hra / 100).toFixed(4)}` },
+          { component_code: 'SPECIAL_ALLOW', formula_override: '0' },
+        ],
+        is_active: true,
+      }),
+    });
+    toast.success('Grade structure saved. Assign it with an annual CTC.');
+    setGradeOpen(false);
+    void loadData();
   }
 
   async function handleCreateStructure() {
@@ -374,8 +407,17 @@ export function SalaryStructuresPage() {
         <Card>
           <CardHeader
             title="Standard Salary Templates"
-            subtitle="Configured per grade, employment category, and plant location. Evaluated in topological DAG order."
+            subtitle="A grade structure is a percent of CTC: Basic, then HRA as a percent of Basic, with Special Allowance making up the rest."
+            action={<Button variant="secondary" onClick={() => { setGradeOpen(true); }}>Percent of CTC for a grade</Button>}
           />
+          {gradeOpen && (
+            <div className="grid gap-3 p-4 sm:grid-cols-4 sm:items-end">
+              <TextField label="Grade structure name" value={gradeName} onChange={(e) => { setGradeName(e.target.value); }} />
+              <TextField label="Basic % of CTC" value={basicPct} onChange={(e) => { setBasicPct(e.target.value); }} />
+              <TextField label="HRA % of Basic" value={hraPct} onChange={(e) => { setHraPct(e.target.value); }} />
+              <Button onClick={() => { void createPercentStructure(); }}>Save grade structure</Button>
+            </div>
+          )}
           <div className="p-4">
             {structures.length === 0 && !loading ? (
               <EmptyState

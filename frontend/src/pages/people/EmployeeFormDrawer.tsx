@@ -57,6 +57,7 @@ export function EmployeeFormDrawer({ open, onClose, ecode, initial, onSaved }: {
   initial?: Partial<EmployeeFormValues> | undefined; onSaved: (ecode: string) => void;
 }) {
   const creating = ecode === undefined;
+  const [pack, setPack] = useState({ qualification: '', institute: '', familyName: '', familyRelation: '', scheme: 'gratuity', nominee: '', nomineeRelation: '', share: '100', nomineeAddress: '', medicalNotes: '' });
   const [v, setV] = useState<EmployeeFormValues>({ ...EMPTY, ...initial });
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
@@ -65,6 +66,7 @@ export function EmployeeFormDrawer({ open, onClose, ecode, initial, onSaved }: {
   useEffect(() => {
     if (!open) return;
     setV({ ...EMPTY, ...initial });
+    setPack({ qualification: '', institute: '', familyName: '', familyRelation: '', scheme: 'gratuity', nominee: '', nomineeRelation: '', share: '100', nomineeAddress: '', medicalNotes: '' });
     setTouched(false);
     for (const kind of ['companies', 'org_units', 'locations', 'departments', 'designations', 'grades']) {
       apiFetch<{ rows: Row[] }>(`/api/core/masters/${kind}`).then((r) => { setM((p) => ({ ...p, [kind]: r.rows })); }).catch(() => { /* optional list */ });
@@ -89,6 +91,20 @@ export function EmployeeFormDrawer({ open, onClose, ecode, initial, onSaved }: {
       const r = await apiFetch<{ ecode: string; warnings: { message: string }[] }>(creating ? '/api/employees' : `/api/employees/${encodeURIComponent(ecode)}`, {
         method: creating ? 'POST' : 'PATCH', body: JSON.stringify(body),
       });
+      const education = pack.qualification.trim() && pack.institute.trim() ? [{ qualification: pack.qualification.trim(), institute: pack.institute.trim() }] : undefined;
+      const family = pack.familyName.trim() && pack.familyRelation.trim() ? [{ name: pack.familyName.trim(), relation: pack.familyRelation.trim() }] : undefined;
+      const nominations = pack.nominee.trim() ? [{ scheme: pack.scheme, nomineeName: pack.nominee.trim(), relation: pack.nomineeRelation.trim() || 'nominee', sharePct: Number(pack.share) || 100, address: pack.nomineeAddress.trim() || 'Address with HR' }] : undefined;
+      if (education || family || nominations || pack.medicalNotes.trim()) {
+        await apiFetch(`/api/employees/${encodeURIComponent(r.ecode)}/joining-pack`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            ...(education ? { education } : {}),
+            ...(family ? { family } : {}),
+            ...(nominations ? { nominations } : {}),
+            ...(pack.medicalNotes.trim() ? { medicalNotes: pack.medicalNotes.trim() } : {}),
+          }),
+        });
+      }
       toast.success(creating ? `Employee ${r.ecode} created.` : `${r.ecode} saved.`);
       for (const w of r.warnings) toast.warning(w.message);
       onSaved(r.ecode);
@@ -143,6 +159,19 @@ export function EmployeeFormDrawer({ open, onClose, ecode, initial, onSaved }: {
           {text('bankName', 'Bank name')}
           {text('bankAccount', 'Bank account')}
           {text('bankIfsc', 'IFSC')}
+        </section>
+        <section className="grid gap-4 sm:grid-cols-2" aria-label="Joining pack">
+          <p className="sm:col-span-2 text-sm text-ink-muted">Education, family and a scheme nomination. Medical notes are stored apart from the profile a manager can open.</p>
+          <TextField label="Qualification" value={pack.qualification} onChange={(e) => { setPack({ ...pack, qualification: e.target.value }); }} />
+          <TextField label="Institute" value={pack.institute} onChange={(e) => { setPack({ ...pack, institute: e.target.value }); }} />
+          <TextField label="Family member" value={pack.familyName} onChange={(e) => { setPack({ ...pack, familyName: e.target.value }); }} />
+          <TextField label="Family relationship" value={pack.familyRelation} onChange={(e) => { setPack({ ...pack, familyRelation: e.target.value }); }} />
+          <Select label="Nomination scheme" value={pack.scheme} onChange={(val) => { setPack({ ...pack, scheme: val }); }} options={['pf', 'gratuity', 'esic', 'gpa'].map((s) => ({ value: s, label: s.toUpperCase() }))} />
+          <TextField label="Nominee name" value={pack.nominee} onChange={(e) => { setPack({ ...pack, nominee: e.target.value }); }} />
+          <TextField label="Nominee relationship" value={pack.nomineeRelation} onChange={(e) => { setPack({ ...pack, nomineeRelation: e.target.value }); }} />
+          <TextField label="Share percent" value={pack.share} onChange={(e) => { setPack({ ...pack, share: e.target.value }); }} />
+          <TextField label="Nominee address" value={pack.nomineeAddress} onChange={(e) => { setPack({ ...pack, nomineeAddress: e.target.value }); }} />
+          <TextField label="Medical notes" value={pack.medicalNotes} onChange={(e) => { setPack({ ...pack, medicalNotes: e.target.value }); }} hint="HR medical only" />
         </section>
       </div>
     </Drawer>
