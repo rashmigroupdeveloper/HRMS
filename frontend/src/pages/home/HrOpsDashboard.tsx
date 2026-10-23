@@ -122,9 +122,9 @@ export function HrOpsDashboard({
             <KpiNumber value={data.absentToday} />
           </h2>
           <p className="mt-1 text-sm text-hero-muted">
-            {data.absentToday === 0
-              ? `No one marked absent so far today — all ${headcount.toLocaleString('en-IN')} people on rolls accounted for.`
-              : `marked absent or unauthorised absent, of ${headcount.toLocaleString('en-IN')} people on rolls.`}
+            {data.absentToday === 0 ? 'No absences recorded so far today.' : 'Marked absent or unauthorised absent today.'}
+            {' '}{data.processedToday.toLocaleString('en-IN')} of {data.expectedToday.toLocaleString('en-IN')} expected attendance records processed;
+            {' '}{data.awaitingToday.toLocaleString('en-IN')} awaiting attendance.
           </p>
           {data.silentDevices > 0 && (
             <p className="mt-3 max-w-xl text-sm leading-6 text-hero-muted">

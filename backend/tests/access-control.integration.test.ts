@@ -131,6 +131,11 @@ run('central access control (live Postgres)', () => {
     expect(unscoped.status).toBe(400);
     const groupPayroll = await (await httpRequest(app)).post('/api/rbac/user-roles').set('Authorization', `Bearer ${adminToken}`).send({ userId: opsId, role: 'payroll_admin', coverage: 'group' });
     expect(groupPayroll.status).toBe(200);
+    // This assignment only probes the explicit payroll coverage choice. Remove
+    // it before testing revocation of the IT role: payroll_admin independently
+    // holds admin.settings, so leaving both roles would invalidate that probe.
+    expect((await (await httpRequest(app)).delete('/api/rbac/user-roles').set('Authorization', `Bearer ${adminToken}`)
+      .send({ userId: opsId, role: 'payroll_admin' })).status).toBe(200);
     expect((await (await httpRequest(app)).post('/api/rbac/user-roles').set('Authorization', `Bearer ${adminToken}`).send({ userId: opsId, role: 'it_admin' })).status).toBe(200);
 
     const opsToken = await loginToken(opsEmail);

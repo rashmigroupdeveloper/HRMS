@@ -10,6 +10,16 @@
  * 5. Fixture G8 test: Basic ₹32,286, DA ₹0, 8y 7m service -> 9 years:
  *    (32,286 * 15 * 9) / 26 = 1,67,638.846... -> rounds to ₹1,67,639.
  */
+import { addMonthsIso } from '../../../core/dates.js';
+import { paise } from '../../../core/money/index.js';
+
+function calendarDate(value: Date | string): { iso: string; date: Date } {
+  const iso = value instanceof Date ? value.toISOString().slice(0, 10) : value;
+  const date = new Date(`${iso}T00:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso) || !Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== iso)
+    throw new RangeError('Invalid gratuity calendar date');
+  return { iso, date };
+}
 
 export interface GratuityCalculationInput {
   basicMonthlyPaise: number; // in paise
@@ -43,8 +53,10 @@ export function calculateServiceTenure(dojInput: Date | string, lwdInput: Date |
   completedYearsForGratuity: number;
   isEligible: boolean;
 } {
-  const doj = new Date(dojInput);
-  const lwd = new Date(lwdInput);
+  const joined = calendarDate(dojInput);
+  const leaving = calendarDate(lwdInput);
+  const doj = joined.date;
+  const lwd = leaving.date;
 
   if (lwd < doj) {
     throw new Error('Last working day cannot be before date of joining');
@@ -53,20 +65,12 @@ export function calculateServiceTenure(dojInput: Date | string, lwdInput: Date |
   const diffTime = lwd.getTime() - doj.getTime();
   const totalDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // inclusive of both ends
 
-  let years = lwd.getFullYear() - doj.getFullYear();
-  let months = lwd.getMonth() - doj.getMonth();
-  let days = lwd.getDate() - doj.getDate();
-
-  if (days < 0) {
-    months -= 1;
-    // previous month days
-    const prevMonth = new Date(lwd.getFullYear(), lwd.getMonth(), 0);
-    days += prevMonth.getDate();
-  }
-  if (months < 0) {
-    years -= 1;
-    months += 12;
-  }
+  let wholeMonths = (lwd.getUTCFullYear() - doj.getUTCFullYear()) * 12 + lwd.getUTCMonth() - doj.getUTCMonth();
+  if (addMonthsIso(joined.iso, wholeMonths) > leaving.iso) wholeMonths--;
+  const anniversary = new Date(`${addMonthsIso(joined.iso, wholeMonths)}T00:00:00Z`);
+  const years = Math.floor(wholeMonths / 12);
+  const months = wholeMonths % 12;
+  const days = Math.round((lwd.getTime() - anniversary.getTime()) / 86_400_000);
 
   const exactYears = Number((totalDays / 365.25).toFixed(2));
 
@@ -91,10 +95,11 @@ export function calculateServiceTenure(dojInput: Date | string, lwdInput: Date |
 }
 
 export function calculateGratuity(input: GratuityCalculationInput): GratuityCalculationResult {
-  const basicPaise = input.basicMonthlyPaise;
-  const daPaise = input.daMonthlyPaise ?? 0;
-  const wageBasePaise = basicPaise + daPaise;
-  const capPaise = input.statutoryCapPaise ?? STATUTORY_GRATUITY_CAP_PAISE;
+  const basicPaise = paise(input.basicMonthlyPaise);
+  const daPaise = paise(input.daMonthlyPaise ?? 0);
+  const wageBasePaise = paise(basicPaise + daPaise);
+  const capPaise = paise(input.statutoryCapPaise ?? STATUTORY_GRATUITY_CAP_PAISE);
+  if (basicPaise < 0 || daPaise < 0 || capPaise <= 0) throw new RangeError('Invalid gratuity wages or cap');
 
   const tenure = calculateServiceTenure(input.doj, input.lastWorkingDay);
   const eligible = tenure.isEligible || input.waiveMinimumService === true;
@@ -123,6 +128,7 @@ export function calculateGratuity(input: GratuityCalculationInput): GratuityCalc
     finalPaise = capPaise;
     cappedAtCeiling = true;
   }
+  paise(finalPaise);
 
   const finalRupees = Math.round(finalPaise / 100);
 

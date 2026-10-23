@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { CalendarSync, History, SlidersHorizontal } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { Button, Card, CardHeader, DarkCard, DataTable, Drawer, StatusBadge, TextField, toast, type Column } from '../../ui';
 import { useCallback, useEffect } from 'react';
+import { useDashboardResource } from '../home/useDashboardResource';
+import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
+import { LeaveTypesPanel, type LeaveCatalog } from './LeaveTypesPanel';
 
 export function LeaveAdminPage() {
+  const catalog = useDashboardResource<LeaveCatalog>('/api/leave/admin/types');
+  const [registerVersion, setRegisterVersion] = useState(0);
+  const refresh = () => { catalog.reload(); setRegisterVersion(value => value + 1); };
   const [loading, setLoading] = useState<'accrual' | 'lapse' | null>(null);
   const run = async (kind: 'accrual' | 'lapse') => {
     setLoading(kind);
@@ -13,6 +19,7 @@ export function LeaveAdminPage() {
         kind === 'accrual' ? '/api/leave/accrual/run' : '/api/leave/comp-off/expire',
         { method: 'POST' },
       );
+      refresh();
       toast.success(kind === 'accrual' ? 'Accrual run completed' : 'Expired comp-off lapsed', {
         description: Object.entries(result)
           .map(([key, value]) => `${key}: ${String(value)}`)
@@ -47,7 +54,7 @@ export function LeaveAdminPage() {
           change. A balance is simply their total.
         </p>
       </DarkCard>
-      <div className="grid gap-4 md:grid-cols-2">
+      {catalog.data?.canRunJobs && <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader
             title="Monthly accrual"
@@ -75,8 +82,10 @@ export function LeaveAdminPage() {
             Run expiry sweep
           </Button>
         </Card>
-      </div>
-      <LeaveRegister />
+      </div>}
+      {catalog.loading ? <DashboardSkeleton /> : catalog.error ? <DashboardError message={catalog.error} onRetry={catalog.reload} />
+        : catalog.data ? <LeaveTypesPanel catalog={catalog.data} onSaved={refresh} /> : null}
+      <LeaveRegister version={registerVersion} />
     </div>
   );
 }
@@ -85,20 +94,25 @@ interface RegisterRow { employeeId: number; ecode: string; name: string; balance
 interface Register { onDate: string; types: { code: string; name: string }[]; rows: RegisterRow[] }
 
 /** E2E-039: the HR leave register; E2E-012/GUIDE-02: balance adjustment with a mandatory note. */
-function LeaveRegister() {
+function LeaveRegister({ version }: { version: number }) {
   const [q, setQ] = useState('');
   const [onDate, setOnDate] = useState('');
   const [onlyOnLeave, setOnlyOnLeave] = useState(false);
   const [data, setData] = useState<Register | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const requestVersion = useRef(0);
   const [adjust, setAdjust] = useState<{ row: RegisterRow; type: string; delta: string; note: string } | null>(null);
   const load = useCallback(() => {
+    const id = ++requestVersion.current;
+    setLoading(true); setError(null);
     const p = new URLSearchParams();
     if (q) p.set('q', q);
     if (onDate) p.set('onDate', onDate);
     if (onlyOnLeave) p.set('onLeaveOnly', 'true');
-    apiFetch<Register>(`/api/leave/register?${p.toString()}`).then(setData).catch((e: unknown) => { toast.error('Could not load the register', { description: e instanceof Error ? e.message : '' }); });
-  }, [q, onDate, onlyOnLeave]);
-  useEffect(() => { const t = setTimeout(load, 250); return () => { clearTimeout(t); }; }, [load]);
+    void apiFetch<Register>(`/api/leave/register?${p.toString()}`).then(result => { if (id === requestVersion.current) setData(result); }).catch((cause: unknown) => { if (id === requestVersion.current) setError(cause instanceof Error ? cause.message : 'Could not load the register'); }).finally(() => { if (id === requestVersion.current) setLoading(false); });
+  }, [q, onDate, onlyOnLeave, version]);
+  useEffect(() => { const t = setTimeout(load, 250); return () => { clearTimeout(t); ++requestVersion.current; }; }, [load]);
   const types = data?.types ?? [];
   const cols: Column<RegisterRow>[] = [
     { key: 'emp', header: 'Employee', render: (r) => <div><div className="font-medium">{r.name}</div><div className="text-xs text-ink-muted">{r.ecode}</div></div>, sortValue: (r) => r.ecode, exportValue: (r) => `${r.ecode} ${r.name}` },
@@ -122,7 +136,8 @@ function LeaveRegister() {
         <div className="w-44"><TextField label="On date" type="date" value={onDate} onChange={(e) => { setOnDate(e.target.value); }} /></div>
         <label className="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" checked={onlyOnLeave} onChange={(e) => { setOnlyOnLeave(e.target.checked); }} /> Only people on leave</label>
       </div>
-      <div className="mt-4"><DataTable tableId="leave-register" columns={cols} rows={data?.rows ?? []} rowKey={(r) => String(r.employeeId)} exportName="leave-register" caption="Leave register" empty="No employees match." /></div>
+      {error && <DashboardError message={error} onRetry={load} />}
+      {loading ? <DashboardSkeleton /> : !error && <div className="mt-4"><DataTable tableId="leave-register" columns={cols} rows={data?.rows ?? []} rowKey={(r) => String(r.employeeId)} exportName="leave-register" caption="Leave register" empty="No employees match." /></div>}
       <Drawer open={adjust !== null} onClose={() => { setAdjust(null); }} title={adjust ? `Adjust balance · ${adjust.row.ecode}` : ''}
         footer={<div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => { setAdjust(null); }}>Cancel</Button><Button variant="primary" disabled={!adjust || !Number(adjust.delta) || adjust.note.trim().length < 5} onClick={() => void save()}>Save adjustment</Button></div>}>
         {adjust && (

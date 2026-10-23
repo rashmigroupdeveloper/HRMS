@@ -12,6 +12,7 @@ import { createDatabase } from '../src/core/db/database.js';
 import { PayrollRunService } from '../src/modules/payroll-core/runs/run.service.js';
 import { insertSalaryRevision } from '../src/modules/payroll-core/salaries/assignment.repository.js';
 import { PayslipGeneratorService } from '../src/modules/payroll-outputs/payslip/payslip-generator.js';
+import { BankFileService } from '../src/modules/payroll-outputs/bank/bank-file.service.js';
 import { addDaysIso } from '../src/core/dates.js';
 
 const url = process.env['DATABASE_URL'];
@@ -27,7 +28,7 @@ describe.skipIf(!url)('Payroll run lifecycle with OT, loans, payslips and paid s
       await db.transaction().execute(async (trx) => {
         const stamp = `LC${String(Date.now())}`;
         const company = await trx.insertInto('core.companies').values({ code: stamp, name: 'Synthetic lifecycle', ecode_prefix: 'LC' }).returning('id').executeTakeFirstOrThrow();
-        const employee = await trx.insertInto('core.employees').values({ company_id: company.id, ecode: stamp, first_name: 'Synthetic', status: 'active', doj: '2020-01-01' }).returning('id').executeTakeFirstOrThrow();
+        const employee = await trx.insertInto('core.employees').values({ company_id: company.id, ecode: stamp, first_name: 'Synthetic', status: 'active', doj: '2020-01-01', bank_name: 'Synthetic bank', bank_account: '000000000000', bank_ifsc: 'TEST0000001', payment_mode: 'bank' }).returning('id').executeTakeFirstOrThrow();
         const mk = async (suffix: string, role: string) => {
           const u = await trx.insertInto('core.users').values({ email: `${stamp}-${suffix}@hrms.invalid`, password_hash: '!disabled!' }).returning('id').executeTakeFirstOrThrow();
           const r = await trx.selectFrom('core.roles').select('id').where('code', '=', role).executeTakeFirstOrThrow();
@@ -50,7 +51,10 @@ describe.skipIf(!url)('Payroll run lifecycle with OT, loans, payslips and paid s
         const runId = await service.createRun({ companyId: company.id, month: '2025-07-01', actorUserId: maker, attendanceLockId: lock.id });
         await expect(service.createRun({ companyId: company.id, month: '2025-07-01', actorUserId: maker })).rejects.toThrow(/already exists/);
         await service.lockInputs(runId, maker);
+        // Legacy runs could reach inputs_locked before attendance was closed.
+        await trx.updateTable('pay.payroll_runs').set({ attendance_lock_id: null }).where('id', '=', runId).execute();
         const computed = await service.computeRun(runId, maker);
+        expect((await service.getRun(runId))?.attendanceLockId).toBe(lock.id);
         expect(computed.exceptions).toEqual([]);
         const lines = await trx.selectFrom('pay.payroll_item_lines as l').innerJoin('pay.payroll_items as i', 'i.id', 'l.item_id')
           .select(['l.component_code', 'l.amount', 'l.loan_id']).where('i.run_id', '=', runId).execute();
@@ -81,8 +85,8 @@ describe.skipIf(!url)('Payroll run lifecycle with OT, loans, payslips and paid s
         expect(await slips.generateRunPayslips(runId, maker)).toEqual({ totalItems: 0, generatedCount: 0 });  // idempotent
 
         await expect(service.markPaid(runId, checker, 'UTR-1')).rejects.toThrow(/bank file/);
-        const doc = await trx.selectFrom('core.documents').select('id').orderBy('id', 'desc').executeTakeFirstOrThrow();
-        await trx.insertInto('pay.bank_batches').values({ run_id: runId, file_document_id: doc.id, total_amount: '1.00', record_count: 1, generated_by: maker, created_at: sql<Date>`clock_timestamp()` }).execute();
+        const bank = new BankFileService(trx);
+        expect((await bank.generateBankBatch(runId, maker)).recordCount).toBe(1);
         // Reopen (super_admin) reverses the posting; finalize again re-posts.
         await service.reopenRun(runId, 'Correction needed after review', admin);
         expect((await trx.selectFrom('pay.loans').select('outstanding').where('id', '=', loan.id).executeTakeFirstOrThrow()).outstanding).toBe('12000.00');
@@ -91,7 +95,8 @@ describe.skipIf(!url)('Payroll run lifecycle with OT, loans, payslips and paid s
         await service.approveRun(runId, checker);
         await service.finalizeRun(runId, checker);
         await expect(service.markPaid(runId, checker, 'UTR-1')).rejects.toThrow(/bank file/);   // the old file is stale
-        await trx.insertInto('pay.bank_batches').values({ run_id: runId, file_document_id: doc.id, total_amount: '1.00', record_count: 1, generated_by: maker, created_at: sql<Date>`clock_timestamp()` }).execute();
+        expect((await bank.generateBankBatch(runId, maker)).recordCount).toBe(1);
+        expect(await trx.selectFrom('pay.bank_batches').select('id').where('run_id', '=', runId).where('superseded_at', 'is', null).execute()).toHaveLength(1);
         await service.markPaid(runId, checker, 'UTR-2');
         expect((await trx.selectFrom('pay.payroll_runs').select('status').where('id', '=', runId).executeTakeFirstOrThrow()).status).toBe('paid');
         await expect(service.reopenRun(runId, 'Too late to reopen this', admin)).rejects.toThrow();

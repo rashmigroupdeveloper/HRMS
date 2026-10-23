@@ -4,7 +4,12 @@ import { config } from 'dotenv';
 import { testDatabaseTarget } from './test-database-target.js';
 
 export default async function setup(): Promise<void> {
+  const declaredTestUrl = process.env['TEST_DATABASE_URL'] ?? '';
+  const declaredLocalName = process.env['LOCAL_TEST_DATABASE_NAME'] ?? '';
   config();
+  // Application .env values do not authorize running integration jobs.
+  process.env['TEST_DATABASE_URL'] = declaredTestUrl;
+  process.env['LOCAL_TEST_DATABASE_NAME'] = declaredLocalName;
   const url = testDatabaseTarget(process.env);
   if (!url) return;
   const pool = new pg.Pool({ connectionString: url });

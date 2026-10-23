@@ -39,7 +39,9 @@ export function epsEligibility(i: EpsEligibilityInput): { eligible: boolean; rea
     if (fiftyEight <= i.monthStart) return { eligible: false, reason: 'age_58' };
   }
   if (i.epsEligible !== null) return { eligible: i.epsEligible, reason: 'hr_decision' };
-  const enrolled = i.firstEnrolledOn ?? i.doj;
+  // A recorded Form 11 "not an earlier member" must not be replaced by
+  // employment DOJ, which is not necessarily the EPF enrollment date.
+  const enrolled = i.firstEnrolledOn ?? (i.memberBeforeSep2014 === false ? null : i.doj);
   if (i.memberBeforeSep2014 === true || (enrolled !== null && enrolled < EPS_CUTOFF_DATE)) return { eligible: true, reason: 'member_before_sep_2014' };
   const wages = i.firstEnrolmentPfWagesPaise ?? (i.memberBeforeSep2014 === false ? (i.joiningPfWagesPaise ?? null) : null);
   if (wages === null) return { eligible: true, reason: 'wages_unknown' };

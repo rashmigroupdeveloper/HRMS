@@ -1,3 +1,4 @@
+import { z } from 'zod';
 /** LV-03 / WF-01: application and revision use the same authoritative rules. */
 import { DomainError } from '../../core/errors/index.js';
 import { sql, type Kysely } from 'kysely';
@@ -79,7 +80,8 @@ export interface ApplyLeaveParams {
   reason?: string | undefined;
 }
 
-export async function validateLeaveApplication(db: Db, params: ApplyLeaveParams, excludeApplicationId?: number) {
+export async function validateLeaveApplication(db: Db, params: ApplyLeaveParams, excludeApplicationId?: number, preview = false) {
+  z.string().date().parse(params.fromDate); z.string().date().parse(params.toDate);
   if (params.fromDate > params.toDate) throw new DomainError('fromDate must be on or before toDate');
   const type = await getLeaveType(db, params.leaveTypeCode);
   const fromHalf = params.fromHalf ?? false;
@@ -121,12 +123,19 @@ export async function validateLeaveApplication(db: Db, params: ApplyLeaveParams,
     .executeTakeFirst();
   if (overlap) throw new DomainError('An open or approved leave already covers these dates');
 
+  const attendance = await db.selectFrom('att.regularizations as reg').innerJoin('wf.requests as request', 'request.id', 'reg.workflow_request_id')
+    .select('reg.id').where('reg.employee_id', '=', params.employeeId)
+    .where('request.status', 'in', ['pending', 'sent_back', 'approved'])
+    .where('reg.from_date', '<=', sql<Date>`${params.toDate}::date`)
+    .where('reg.to_date', '>=', sql<Date>`${params.fromDate}::date`).executeTakeFirst();
+  if (attendance) throw new DomainError('An attendance request already covers these dates. Ask HR to reconcile it before applying for leave.');
+
   const { days } = await computeLeaveSpan(db, employee, type, params.fromDate, params.toDate, fromHalf, toHalf);
   if (days <= 0) throw new DomainError('The requested span contains no countable leave days');
   if (type.max_per_request !== null && days > Number(type.max_per_request)) {
     throw new DomainError(`${type.code} allows at most ${Number(type.max_per_request)} days per request`);
   }
-  if (type.is_paid) {
+  if (type.is_paid && !preview) {
     const { available } = await getBalance(db, params.employeeId, type.id);
     const previous = excludeApplicationId === undefined ? undefined : await db.selectFrom('lv.applications')
       .select(['days', 'leave_type_id']).where('id', '=', excludeApplicationId).executeTakeFirst();
@@ -134,7 +143,7 @@ export async function validateLeaveApplication(db: Db, params: ApplyLeaveParams,
     if (available + reservation < days) throw new DomainError(`Insufficient ${type.code} balance: ${available} available, ${days} requested`);
   }
 
-  await assertNoLeaveBlackout(db, {
+  if (!preview) await assertNoLeaveBlackout(db, {
     locationId: employee.location_id,
     from: params.fromDate,
     to: params.toDate,
@@ -147,7 +156,7 @@ export async function validateLeaveApplication(db: Db, params: ApplyLeaveParams,
     fromHalf,
     toHalf,
   });
-  if (coverage.blocked) {
+  if (coverage.blocked && !preview) {
     throw new DomainError(coverage.warnings[0] ?? 'Leave blocked by team coverage (SHF-08)');
   }
 

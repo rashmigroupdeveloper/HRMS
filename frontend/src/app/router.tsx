@@ -98,8 +98,8 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="approvals" element={<ApprovalsPage />} />
         <Route path="approvals/:id" element={<ApprovalsPage />} />
 
-        <Route path="my/attendance" element={<MyAttendancePage />} />
-        <Route path="my/leave" element={<MyLeavePage />} />
+        <Route path="my/attendance" element={<MyAttendancePage ownerId={user.id} />} />
+        <Route path="my/leave" element={<MyLeavePage ownerId={user.id} />} />
         <Route path="my/pay" element={<MyPayPage />} />
         <Route path="my/tax" element={<TaxDeclarationPage />} />
         <Route path="my/claims" element={<ClaimsPage />} />

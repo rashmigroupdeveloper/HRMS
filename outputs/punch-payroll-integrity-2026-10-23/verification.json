@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-23",
+  "stage": "Phase 1 Stage 1.8",
+  "command": "backend npm run verify",
+  "target": "explicitly declared loopback PostgreSQL test target",
+  "exitCode": 0,
+  "testFiles": 149,
+  "tests": 1072,
+  "coverage": {
+    "statements": 86.48,
+    "lines": 86.48,
+    "branches": 80.98,
+    "functions": 90.82
+  },
+  "checks": [
+    "typecheck",
+    "lint",
+    "knip",
+    "dependency-cruiser",
+    "test:coverage",
+    "build"
+  ],
+  "focusedTests": 106,
+  "confirmedFindings": 9,
+  "productionDeployment": false,
+  "realPayrollPosted": false
+}

@@ -1,10 +1,11 @@
+import { ownedDraftKey } from '../../lib/draft-storage';
 import { useAttendanceSchedule, windowTiming, schedulePortionOptions } from './attendance-schedule';
 import { useEffect, useRef, useState } from 'react';
 import { readDayPortion, dayPortionLabel, type DayPortion } from './attendance-portion';
 import { apiFetch } from '../../lib/api';
 import { Button, DatePicker, Drawer, Select, Textarea, TextField, formatDateIN, toast, todayISOIST } from '../../ui';
+import { ChainPreview } from '../workflows/ChainPreview';
 
-const AR_DRAFT_KEY = 'rashmi.draft.ar';
 const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 interface AttendanceRequestDraft {
@@ -22,9 +23,10 @@ function isIsoDate(value: unknown): value is string {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-function readArDraft(): AttendanceRequestDraft | null {
+function readArDraft(key: string | null): AttendanceRequestDraft | null {
   try {
-    const raw = window.localStorage.getItem(AR_DRAFT_KEY);
+    if (key === null) return null;
+    const raw = window.localStorage.getItem(key);
     if (raw === null) return null;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null) return null;
@@ -32,7 +34,7 @@ function readArDraft(): AttendanceRequestDraft | null {
     const savedAt = record['savedAt'];
     if (typeof savedAt !== 'number' || !Number.isFinite(savedAt)) return null;
     if (Date.now() - savedAt >= DRAFT_MAX_AGE_MS) {
-      window.localStorage.removeItem(AR_DRAFT_KEY);
+      window.localStorage.removeItem(key);
       return null;
     }
     const kind = record['kind'];
@@ -51,46 +53,74 @@ function readArDraft(): AttendanceRequestDraft | null {
   }
 }
 
-function writeArDraft(draft: Omit<AttendanceRequestDraft, 'savedAt'>): void {
+function writeArDraft(key: string | null, draft: Omit<AttendanceRequestDraft, 'savedAt'>): void {
+  if (key === null) return;
   try {
     const payload: AttendanceRequestDraft = { ...draft, savedAt: Date.now() };
-    window.localStorage.setItem(AR_DRAFT_KEY, JSON.stringify(payload));
+    window.localStorage.setItem(key, JSON.stringify(payload));
   } catch {
     /* persistence is best-effort */
   }
 }
 
-function clearArDraft(): void {
+function clearArDraft(key: string | null): void {
+  if (key === null) return;
   try {
-    window.localStorage.removeItem(AR_DRAFT_KEY);
+    window.localStorage.removeItem(key);
   } catch {
     /* persistence is best-effort */
   }
 }
 
-const KIND_COPY: Record<string, { title: string; help: string; inaction: string }> = {
+const KIND_COPY: Record<string, { title: string; help: string; definitionCode: string }> = {
   AR: {
     title: 'Request regularisation',
     help: 'Correct a day so the muster matches when you were actually at work.',
-    inaction: 'Without this, a missing swipe stays as unauthorised absence on the muster.',
+    definitionCode: 'regularization',
   },
   OD: {
     title: 'Record official duty',
     help: 'Keep a company-duty day from being treated as absence.',
-    inaction: 'Without this, a duty day away from the plant can still read as absent.',
+    definitionCode: 'od',
   },
   PERMISSION: {
     title: 'Ask for short permission',
     help: 'A short, approved gap — your manager sees the reason before it hits payroll.',
-    inaction: 'Without this, a short gap has no approved record.',
+    definitionCode: 'regularization',
   },
 };
 
 const KIND_FALLBACK = {
   title: 'Request regularisation',
   help: 'Correct a day so the muster matches when you were actually at work.',
-  inaction: 'Without this, a missing swipe stays as unauthorised absence on the muster.',
+  definitionCode: 'regularization',
 };
+
+function eachIso(from: string, to: string): string[] {
+  const days: string[] = [];
+  for (let iso = from; iso <= to; iso = nextIso(iso)) days.push(iso);
+  return days;
+}
+
+function nextIso(iso: string): string {
+  const [year = 0, month = 1, day = 1] = iso.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + 1));
+  return `${String(date.getUTCFullYear())}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** A blank day is not an absence. Only a posted missing swipe becomes one. */
+function requestInaction(kind: string, from: string, to: string, postedDates: readonly string[], loadedMonth?: string): string {
+  if (kind === 'OD') return 'Without this, a duty day away from the plant can still read as absent.';
+  if (kind === 'PERMISSION') return 'Without this, a short gap has no approved record.';
+  const posted = new Set(postedDates);
+  const coversPosted = eachIso(from, to).some((iso) => posted.has(iso));
+  if (!coversPosted && (from.slice(0, 7) !== loadedMonth || to.slice(0, 7) !== loadedMonth)) {
+    return 'Attendance for this period is not loaded in this view. Open that month to check its records before requesting a correction.';
+  }
+  return coversPosted
+    ? 'Without this, a missing swipe on a posted day stays as unauthorised absence on the muster.'
+    : 'No attendance is posted for these dates yet, so they are not absences. Send this only if you were at work and the swipe will not arrive.';
+}
 
 function kindCopy(kind: string): typeof KIND_FALLBACK {
   return KIND_COPY[kind] ?? KIND_FALLBACK;
@@ -103,17 +133,24 @@ function inclusiveDays(from: string, to: string): number {
   return Math.round((end - start) / 86_400_000) + 1;
 }
 
-export function AttendanceRequestDrawer({
+function OwnedAttendanceRequestDrawer({
+  ownerId,
+  loadedMonth,
   open,
   initialDate,
+  postedDates = [],
   onClose,
   onSubmitted,
 }: {
+  ownerId?: number | undefined;
+  loadedMonth?: string;
   open: boolean;
   initialDate: string | null;
+  postedDates?: readonly string[];
   onClose: () => void;
   onSubmitted: () => void;
 }) {
+  const draftKey = ownedDraftKey('ar', ownerId);
   const [kind, setKind] = useState('AR');
   const [dayPortion, setDayPortion] = useState<DayPortion>('full_day');
   const [fromDate, setFromDate] = useState<string | null>(null);
@@ -125,7 +162,8 @@ export function AttendanceRequestDrawer({
   const [error, setError] = useState<string | null>(null);
   const skipPersistRef = useRef(true);
   const copy = kindCopy(kind);
-  const schedule = useAttendanceSchedule(fromDate, open && kind !== 'PERMISSION', toDate);
+  const scheduleEnabled = open && kind !== 'PERMISSION';
+  const schedule = useAttendanceSchedule(fromDate, scheduleEnabled, toDate);
   const selectedWindow = schedule.data?.windows.find(window => window.dayPortion === dayPortion);
   const portionOptions = schedulePortionOptions(schedule.data);
   const days = fromDate && toDate ? inclusiveDays(fromDate, toDate) : 0;
@@ -136,7 +174,7 @@ export function AttendanceRequestDrawer({
       return;
     }
     skipPersistRef.current = true;
-    const draft = readArDraft();
+    const draft = readArDraft(draftKey);
     if (draft !== null) {
       setKind(draft.kind);
       setDayPortion(draft.dayPortion ?? 'full_day');
@@ -155,7 +193,7 @@ export function AttendanceRequestDrawer({
     }
     setFromDate((value) => value ?? fallback);
     setToDate((value) => value ?? fallback);
-  }, [open, initialDate]);
+  }, [open, initialDate, draftKey]);
 
   useEffect(() => {
     if (!open) return;
@@ -163,8 +201,8 @@ export function AttendanceRequestDrawer({
       skipPersistRef.current = false;
       return;
     }
-    writeArDraft({ kind, dayPortion, fromDate, toDate, reason, fromTime, toTime });
-  }, [open, kind, dayPortion, fromDate, toDate, reason, fromTime, toTime]);
+    writeArDraft(draftKey, { kind, dayPortion, fromDate, toDate, reason, fromTime, toTime });
+  }, [open, kind, dayPortion, fromDate, toDate, reason, fromTime, toTime, draftKey]);
 
   const submit = async () => {
     if (!fromDate || !toDate || fromDate > toDate || reason.trim().length < 5) {
@@ -180,17 +218,19 @@ export function AttendanceRequestDrawer({
     setLoading(true);
     setError(null);
     try {
-      await apiFetch('/api/attendance/requests', {
+      const result = await apiFetch<{ routingHeld: boolean }>('/api/attendance/requests', {
         method: 'POST',
         body: JSON.stringify({ kind, fromDate, toDate, reason: reason.trim(),
           ...(kind === 'PERMISSION' ? { fromTime, toTime } : { dayPortion }),
         }),
       });
-      toast.success(`${copy.title} sent`, {
-        description: 'Track the request and its decisions in My attendance.',
+      toast.success(result.routingHeld ? 'Waiting for HR' : `${copy.title} sent`, {
+        description: result.routingHeld
+          ? 'Your manager cannot approve this yet, so it is held for HR. Attendance and pay are unchanged.'
+          : 'Track the request and its decisions in My attendance.',
       });
       skipPersistRef.current = true;
-      clearArDraft();
+      clearArDraft(draftKey);
       setReason('');
       setDayPortion('full_day');
       setFromTime(''); setToTime('');
@@ -253,10 +293,10 @@ export function AttendanceRequestDrawer({
             onChange={setToDate}
           />
         </div>
-        {kind !== 'PERMISSION' && <Select label="Which part of each day?" value={dayPortion}
+        {scheduleEnabled && <Select label="Which part of each day?" value={dayPortion}
           onChange={value => { setDayPortion(readDayPortion(value)); }} options={portionOptions}
           disabled={schedule.loading || portionOptions.length === 0} hint={schedule.loading ? 'Loading your assigned shift…' : schedule.data?.shiftName ?? undefined} />}
-        {kind !== 'PERMISSION' && <div className="rounded-row bg-surface-2 px-4 py-3 text-sm" aria-live="polite">
+        {scheduleEnabled && <div className="rounded-row bg-surface-2 px-4 py-3 text-sm" aria-live="polite">
           {schedule.error ? <p role="alert" className="text-negative-ink">{schedule.error}</p> : schedule.loading
             ? <p className="text-ink-muted">Loading shift timings…</p>
             : selectedWindow ? <>
@@ -283,7 +323,7 @@ export function AttendanceRequestDrawer({
               {formatDateIN(fromDate)}
               {fromDate === toDate ? '' : ` – ${formatDateIN(toDate)}`}
               {' · '}
-              {copy.inaction}
+              {requestInaction(kind, fromDate, toDate, postedDates, loadedMonth)}
             </p>
           </div>
         )}
@@ -298,7 +338,12 @@ export function AttendanceRequestDrawer({
           hint="Your manager reads this — a short, specific why is enough."
           error={error ?? undefined}
         />
+        {open && <ChainPreview definitionCode={copy.definitionCode} />}
       </div>
     </Drawer>
   );
+}
+
+export function AttendanceRequestDrawer(props: Parameters<typeof OwnedAttendanceRequestDrawer>[0]) {
+  return <OwnedAttendanceRequestDrawer key={props.ownerId ?? 'unowned'} {...props} />;
 }

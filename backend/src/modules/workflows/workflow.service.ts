@@ -25,7 +25,7 @@ import { resolveApprover, canActOnStep, type ResolvedApprover } from './workflow
 import { DEFAULT_STEP_SLA_HOURS, getSteps, type StepSpec } from './workflow-definition.js';
 import { advance, openStep } from './workflow-routing.js';
 import { lockWorkflowRequest, lockWorkflowSubject } from './workflow-locks.js';
-import { expireRoutingHolds } from './workflow-holds.service.js';
+import { expireRoutingHolds, routingHeldSql } from './workflow-holds.service.js';
 export { stepsSchema } from './workflow-definition.js';
 export type { StepSpec } from './workflow-definition.js';
 import { fireFinalHooks, prepareResubmission } from './workflow-hooks.js';
@@ -37,6 +37,15 @@ type Db = Kysely<Database> | Transaction<Database>;
 
 export type RequestRow = Selectable<WfRequestsTable>;
 export type StepRow = Selectable<WfRequestStepsTable>;
+
+/** True when the request is pending with no open step and a routing-hold audit. */
+export async function requestIsRoutingHeld(db: Kysely<Database>, requestId: number): Promise<boolean> {
+  const row = await db.selectFrom('wf.requests as r').select('r.id')
+    .where('r.id', '=', requestId)
+    .where(routingHeldSql())
+    .executeTakeFirst();
+  return row !== undefined;
+}
 
 export async function createRequest(
   db: Kysely<Database>,

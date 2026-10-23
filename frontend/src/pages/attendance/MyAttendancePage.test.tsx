@@ -42,7 +42,7 @@ describe('ATT-05 employee session drill-down', () => {
     renderRouted(<MyAttendancePage />, theme);
     await screen.findByText('09:00 – 13:30 IST');
     expect(screen.getByRole('button', { name: /Official duty · In/ })).toHaveTextContent('OD');
-    expect(screen.getByText('Official duty')).toBeInTheDocument();
+    expect(screen.getAllByText('Official duty').length).toBeGreaterThan(0);
     expect(screen.queryByText('Week off')).not.toBeInTheDocument();
     expect(screen.getByText('From an approved request')).toBeInTheDocument();
   });
@@ -54,7 +54,7 @@ describe('ATT-05 employee session drill-down', () => {
     renderRouted(<MyAttendancePage />, theme);
     await screen.findByText('09:00 – 13:30 IST');
     expect(screen.getByRole('button', { name: /Sick leave · In/ })).toHaveTextContent('SL');
-    expect(screen.getByText('Sick leave')).toBeInTheDocument();
+    expect(screen.getAllByText('Sick leave').length).toBeGreaterThan(0);
   });
   it('preserves the half-day summary alongside the sick-leave type', async () => {
     fixtures.rows = [{ date: todayISOIST(), status: 'HD', sessionStatuses: null,

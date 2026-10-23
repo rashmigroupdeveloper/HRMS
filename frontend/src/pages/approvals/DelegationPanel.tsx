@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { UserRoundCheck } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
-import { Button, Card, CardHeader, TextField, formatDateIN, todayISOIST, toast } from '../../ui';
+import { Button, Card, CardHeader, DatePicker, TextField, formatDateIN, todayISOIST, toast } from '../../ui';
 
 interface Delegation { id: number; toUserId: number; toEmail: string; fromDate: string; toDate: string }
 
@@ -41,8 +41,8 @@ export function DelegationPanel() {
       )}
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <div className="w-64"><TextField label="Delegate to (work email or e-code)" value={to} onChange={(e) => { setTo(e.target.value); }} /></div>
-        <div className="w-40"><TextField label="From" type="date" value={from} onChange={(e) => { setFrom(e.target.value); }} /></div>
-        <div className="w-40"><TextField label="Until" type="date" value={until} min={from} onChange={(e) => { setUntil(e.target.value); }} /></div>
+        <div className="w-44"><DatePicker label="From" required value={from || null} onChange={setFrom} /></div>
+        <div className="w-44"><DatePicker label="Until" required value={until || null} min={from || undefined} onChange={setUntil} /></div>
         <Button variant="secondary" disabled={busy || to.trim().length < 2 || !until} onClick={() => void save()}>Delegate</Button>
       </div>
     </Card>

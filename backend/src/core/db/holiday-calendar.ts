@@ -70,6 +70,67 @@ export interface HolidayScope {
   location_id: number | null;
 }
 
+export interface HolidayWriter {
+  all: boolean;
+  orgUnitIds: readonly number[];
+  actorEmployeeId: number | null;
+}
+
+export interface HolidayWriteCompany {
+  id: number;
+  name: string;
+  code: string;
+}
+
+/**
+ * Companies this person may attach a holiday to.
+ * Group-wide (`all`) may also save a holiday with no company.
+ * An org-unit HR role may save for the companies of those units and for
+ * their own employing company. Full org-unit coverage is the payroll-run
+ * rule; it must not block a calendar when some employees are still unmapped.
+ */
+export async function holidayWriteTargets(
+  db: Kysely<Database>,
+  writer: HolidayWriter,
+): Promise<{
+  groupWide: boolean;
+  companies: HolidayWriteCompany[];
+  plants: { id: number; companyId: number; name: string; plantCode: string }[];
+  locations: { id: number; companyId: number; name: string }[];
+}> {
+  const listed = () => db.selectFrom('core.companies').select(['id', 'name', 'code']).orderBy('name');
+  const withPlaces = async (groupWide: boolean, companies: HolidayWriteCompany[]) => {
+    if (companies.length === 0) return { groupWide, companies, plants: [], locations: [] };
+    const ids = companies.map((company) => company.id);
+    const [plants, locations] = await Promise.all([
+      db.selectFrom('core.plants').select(['id', 'company_id', 'name', 'plant_code'])
+        .where('company_id', 'in', ids).orderBy('name').execute(),
+      db.selectFrom('core.locations').select(['id', 'company_id', 'name'])
+        .where('company_id', 'in', ids).orderBy('name').execute(),
+    ]);
+    return {
+      groupWide,
+      companies,
+      plants: plants.map((plant) => ({ id: plant.id, companyId: plant.company_id, name: plant.name, plantCode: plant.plant_code })),
+      locations: locations.map((location) => ({ id: location.id, companyId: location.company_id, name: location.name })),
+    };
+  };
+  if (writer.all) return withPlaces(true, await listed().execute());
+  const ids = new Set<number>();
+  if (writer.orgUnitIds.length > 0) {
+    const units = await db.selectFrom('core.org_units').select('company_id')
+      .where('id', 'in', [...writer.orgUnitIds]).execute();
+    for (const unit of units) ids.add(unit.company_id);
+  }
+  if (writer.actorEmployeeId !== null) {
+    const self = await db.selectFrom('core.employees').select('company_id')
+      .where('id', '=', writer.actorEmployeeId).executeTakeFirst();
+    if (self) ids.add(self.company_id);
+  }
+  if (ids.size === 0) return { groupWide: false, companies: [], plants: [], locations: [] };
+  return withPlaces(false, await listed().where('id', 'in', [...ids]).execute());
+}
+
 /** Normalise a holiday scope: plant/location imply (and must match) their company. */
 export async function resolveHolidayScope(db: Kysely<Database>, input: HolidayScopeInput): Promise<HolidayScope> {
   let companyId = input.companyId ?? null;

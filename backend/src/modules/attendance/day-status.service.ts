@@ -17,7 +17,7 @@
  */
 import { evaluateAttendancePenalties } from './penalty-evaluation.js';
 import { logger } from '../../core/logger.js';
-import { closeWeekOffs } from '../../core/db/attendance-period.js';
+import { closeWeekOffs, recloseDecidedWeekOffs } from '../../core/db/attendance-period.js';
 import { findHoliday, loadHolidaySubject } from '../../core/db/holiday-calendar.js';
 import { loadCycleStartDay, periodMonthOf } from '../../core/db/attendance-cycle.js';
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
@@ -28,6 +28,7 @@ import { recordDetectedOvertime } from './overtime.service.js';
 import { approvedHalfRequests, overlayHalfRequests } from './half-requests.js';
 import { readSessionStatuses } from './session-status.js';
 import { inTransaction } from '../../core/db/database.js';
+import { dayFinalizationAt, loadFinalizationTime } from './day-finalization.js';
 import { scheduledShiftIntervals, shiftSessions, selectFilo, swipePoints, type AttendanceSwipe, type ShiftInterval, type SwipePoint } from './shift-windows.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
@@ -122,6 +123,7 @@ export async function resolveDay(db: Db, employeeId: number, isoDate: string): P
 }
 
 export type FinalizationHoldReason =
+  | 'day_cutoff_pending'
   | 'location_not_mapped'
   | 'no_active_devices'
   | 'device_watermark_pending';
@@ -130,6 +132,7 @@ export interface AbsenceFinalizationReadiness {
   ready: boolean;
   reason: FinalizationHoldReason | null;
   shiftEndAt: Date | null;
+  finalizeAfterAt?: Date | null;
   pendingDoors: string[];
 }
 
@@ -139,6 +142,7 @@ export interface FinalizationHold {
   employeeName: string;
   workDate: string;
   shiftEndAt: string | null;
+  finalizeAfterAt: string | null;
   reason: FinalizationHoldReason;
   pendingDoors: string[];
 }
@@ -174,16 +178,18 @@ export async function getAbsenceFinalizationReadiness(
 
   const resolved = resolvedDay ?? (await resolveDay(db, employeeId, isoDate));
   const interval = shiftInterval(resolved, isoDate);
-  if (!interval) {
-    return { ready: true, reason: null, shiftEndAt: null, pendingDoors: [] };
+  const shiftEndAt = interval ? new Date(interval.end) : null;
+  const finalizeAfterAt = dayFinalizationAt(isoDate, await loadFinalizationTime(db), interval?.end);
+  if (Date.now() < finalizeAfterAt.getTime()) {
+    return { ready: false, reason: 'day_cutoff_pending', shiftEndAt, finalizeAfterAt, pendingDoors: [] };
   }
-  const shiftEndAt = new Date(interval.end);
 
   if (employee.location_id === null) {
     return {
       ready: false,
       reason: 'location_not_mapped',
       shiftEndAt,
+      finalizeAfterAt,
       pendingDoors: [],
     };
   }
@@ -202,16 +208,17 @@ export async function getAbsenceFinalizationReadiness(
       ready: false,
       reason: 'no_active_devices',
       shiftEndAt,
+      finalizeAfterAt,
       pendingDoors: [],
     };
   }
 
   const pendingDoors = devices
-    .filter((device) => !device.watermark_ts || device.watermark_ts < shiftEndAt)
+    .filter((device) => !device.watermark_ts || device.watermark_ts < finalizeAfterAt)
     .map((device) => device.door_code);
   return pendingDoors.length === 0
-    ? { ready: true, reason: null, shiftEndAt, pendingDoors: [] }
-    : { ready: false, reason: 'device_watermark_pending', shiftEndAt, pendingDoors };
+    ? { ready: true, reason: null, shiftEndAt, finalizeAfterAt, pendingDoors: [] }
+    : { ready: false, reason: 'device_watermark_pending', shiftEndAt, finalizeAfterAt, pendingDoors };
 }
 
 /** Distance (ms) from an instant to a shift interval; 0 if inside. */
@@ -232,6 +239,7 @@ async function attributeOwnedSwipes(
   isoDate: string,
   cur: ShiftInterval,
   swipes: SwipePoint[],
+  finalizationTime: string,
 ): Promise<SwipePoint[]> {
   let prevIv: ShiftInterval | null | undefined;
   let nextIv: ShiftInterval | null | undefined;
@@ -247,12 +255,19 @@ async function attributeOwnedSwipes(
       if (prevIv === undefined) {
         prevIv = shiftInterval(await resolveDay(db, employeeId, addDaysIso(isoDate, -1)), addDaysIso(isoDate, -1));
       }
+      // An explicit pre-cutoff OUT after yesterday's shift is not today's IN,
+      // even when today's early shift is temporally nearer.
+      if (swipe.direction?.toLowerCase() === 'out' && prevIv && t > prevIv.end
+        && t <= dayFinalizationAt(addDaysIso(isoDate, -1), finalizationTime, prevIv.end).getTime()) continue;
       // Early margin: keep unless the previous day's shift is strictly nearer.
       if (prevIv === null || distanceTo(t, cur) < distanceTo(t, prevIv)) owned.push(swipe);
     } else {
       if (nextIv === undefined) {
         nextIv = shiftInterval(await resolveDay(db, employeeId, addDaysIso(isoDate, 1)), addDaysIso(isoDate, 1));
       }
+      if (swipe.direction?.toLowerCase() === 'out'
+        && t <= dayFinalizationAt(isoDate, finalizationTime, cur.end).getTime()
+        && (nextIv === null || t < nextIv.start)) { owned.push(swipe); continue; }
       // Late margin: keep on ties (cur is the earlier day) — see F1 proof.
       if (nextIv === null || distanceTo(t, cur) <= distanceTo(t, nextIv)) owned.push(swipe);
     }
@@ -290,6 +305,7 @@ export function computeDayStatus(
   isoDate: string,
   swipeTimes: AttendanceSwipe[],
   policy: AttendancePolicy,
+  finalizationTime?: string,
 ): ComputedDay {
   const swipes = swipePoints(swipeTimes);
   if (resolved.isHoliday || resolved.isWeekOff) {
@@ -318,7 +334,8 @@ export function computeDayStatus(
   const start = new Date(Math.min(...intervals.map(iv => iv.start)));
   const end = new Date(Math.max(...intervals.map(iv => iv.end)));
   const windowStart = new Date(start.getTime() - policy.earlyMarginMs);
-  const windowEnd = new Date(end.getTime() + policy.lateMarginMs);
+  const windowEnd = new Date(Math.max(end.getTime() + policy.lateMarginMs,
+    finalizationTime ? dayFinalizationAt(isoDate, finalizationTime, end.getTime()).getTime() : end.getTime()));
 
   const inWindow = swipes.filter(swipe => swipe.swipeTs >= windowStart && swipe.swipeTs <= windowEnd);
   const base = { schemeCode: shift.code, shiftId: shift.id };
@@ -426,11 +443,12 @@ export async function recomputeDay(
 
   const resolved = await resolveDay(db, employeeId, isoDate);
   const cur = shiftInterval(resolved, isoDate);
+  const finalizationTime = await loadFinalizationTime(db);
 
   let owned: SwipePoint[] = [];
   if (cur) {
     const from = new Date(cur.start - pol.earlyMarginMs);
-    const to = new Date(cur.end + pol.lateMarginMs);
+    const to = new Date(Math.max(cur.end + pol.lateMarginMs, dayFinalizationAt(isoDate, finalizationTime, cur.end).getTime()));
     const swipes = await db
       .selectFrom('att.swipe_events')
       .select(['swipe_ts', 'direction'])
@@ -439,7 +457,7 @@ export async function recomputeDay(
       .where('swipe_ts', '<=', to)
       .orderBy('swipe_ts')
       .execute();
-    owned = await attributeOwnedSwipes(db, employeeId, isoDate, cur, swipes.map((s) => ({ swipeTs: s.swipe_ts, direction: s.direction })));
+    owned = await attributeOwnedSwipes(db, employeeId, isoDate, cur, swipes.map((s) => ({ swipeTs: s.swipe_ts, direction: s.direction })), finalizationTime);
   } else {
     // WO/holiday: no shift interval — any swipe inside the IST calendar day is
     // week-off/holiday WORK and feeds OT detection (docs/04 §1.4).
@@ -455,7 +473,7 @@ export async function recomputeDay(
     owned = swipes.map((s) => ({ swipeTs: s.swipe_ts, direction: s.direction }));
   }
 
-  let computed = computeDayStatus(resolved, isoDate, owned, pol);
+  let computed = computeDayStatus(resolved, isoDate, owned, pol, finalizationTime);
   if (halfLeave) {
     await db.updateTable('att.day_records')
       .set({ shift_id: computed.shiftId, first_in: computed.firstIn, last_out: computed.lastOut,
@@ -490,13 +508,8 @@ export async function recomputeDay(
         .where('source', '=', 'auto')
         .where('is_locked', '=', false)
         .execute();
-      await db
-        .insertInto('att.recompute_queue')
-        .values({ employee_id: employeeId, work_date: sql<Date>`${isoDate}::date` })
-        .onConflict((oc) =>
-          oc.columns(['employee_id', 'work_date']).doUpdateSet({ queued_at: new Date() }),
-        )
-        .execute();
+      await queueHalfRecompute(db, employeeId, isoDate,
+        readiness.reason === 'day_cutoff_pending' && readiness.finalizeAfterAt ? readiness.finalizeAfterAt : new Date());
       return 'held';
     }
   }
@@ -537,6 +550,16 @@ export async function recomputeDay(
     )
     .execute();
 
+  // Live presence remains visible. A provisional KENT result is queued again
+  // at the cutoff, and stays queued if source completeness is still missing.
+  const finalization = await getAbsenceFinalizationReadiness(db, employeeId, isoDate, resolved);
+  if (!finalization.ready) {
+    await queueHalfRecompute(db, employeeId, isoDate,
+      finalization.reason === 'day_cutoff_pending' && finalization.finalizeAfterAt ? finalization.finalizeAfterAt : new Date());
+  }
+  await recloseDecidedWeekOffs(db, employeeId, [isoDate],
+    await getTypedSetting(db, 'att.weekoff_min_worked_days', 'number', 1));
+
   return computed.status;
 }
 
@@ -575,6 +598,7 @@ export async function listFinalizationHolds(
         : employee.first_name,
       workDate: isoDate,
       shiftEndAt: readiness.shiftEndAt?.toISOString() ?? null,
+      finalizeAfterAt: readiness.finalizeAfterAt?.toISOString() ?? null,
       reason: readiness.reason,
       pendingDoors: readiness.pendingDoors,
     });

@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-23",
+  "command": "backend npm run verify",
+  "target": "explicitly declared loopback PostgreSQL test target",
+  "exitCode": 0,
+  "testFiles": 147,
+  "tests": 1065,
+  "statementsPercent": 86.46,
+  "branchesPercent": 80.94,
+  "functionsPercent": 90.82,
+  "linesPercent": 86.46,
+  "checks": [
+    "typecheck",
+    "lint",
+    "knip",
+    "dependency-cruiser",
+    "test:coverage",
+    "build"
+  ],
+  "notes": [
+    "Unchanged rerun after one unrelated privacy-export timeout passed.",
+    "Read-only source mapping exercised all 41936 Recognition Logs rows in per-date groups; 2638 missing-device errors.",
+    "No production deployment or real payroll inputs posted."
+  ]
+}

@@ -9,8 +9,13 @@ import { AttendanceRequestDrawer } from './AttendanceRequestDrawer';
 vi.mock('../../lib/api', async original => ({
   ...await original<typeof import('../../lib/api')>(), apiFetch: vi.fn(),
 }));
-beforeEach(() => { localStorage.clear(); vi.mocked(apiFetch).mockReset().mockImplementation(path => Promise.resolve(path.startsWith('/api/attendance/requests/schedule')
-  ? scheduleFixture(new URL(path, 'http://hrms.invalid').searchParams.get('date') ?? todayISOIST()) : { id: 1, workflowRequestId: 2 })); });
+beforeEach(() => { localStorage.clear(); vi.mocked(apiFetch).mockReset().mockImplementation(path => Promise.resolve(
+  path.startsWith('/api/attendance/requests/schedule')
+    ? scheduleFixture(new URL(path, 'http://hrms.invalid').searchParams.get('date') ?? todayISOIST())
+    : path.startsWith('/api/workflows/preview')
+      ? []
+      : { id: 1, workflowRequestId: 2, routingHeld: false },
+)); });
 
 describe('ATT-07 short permission form', () => {
   it('submits both bounded times and one date through the real attendance contract', async () => {
@@ -51,4 +56,21 @@ describe('ATT-06/07 half-wise requests', () => {
       const payload = JSON.parse(body) as { kind: string; dayPortion: string };
       expect(payload).toMatchObject({ kind, dayPortion: portion });
     });
+});
+
+it('keeps a saved reason with its owner across account transitions', () => {
+  const props = { open: true, initialDate: todayISOIST(), onClose: vi.fn(), onSubmitted: vi.fn() };
+  const view = renderRouted(<AttendanceRequestDrawer {...props} ownerId={101} />);
+  fireEvent.change(screen.getByLabelText(/Why should this be approved/), { target: { value: 'Private missing punch reason' } });
+  view.rerender(<AttendanceRequestDrawer {...props} ownerId={202} />);
+  expect(screen.getByLabelText(/Why should this be approved/)).toHaveValue('');
+  view.rerender(<AttendanceRequestDrawer {...props} ownerId={101} />);
+  expect(screen.getByLabelText(/Why should this be approved/)).toHaveValue('Private missing punch reason');
+});
+
+it('does not claim a different month has no posted attendance', async () => {
+  renderRouted(<AttendanceRequestDrawer open initialDate="2026-09-24" loadedMonth="2026-10" postedDates={[]} onClose={vi.fn()} onSubmitted={vi.fn()} />);
+  expect(screen.getByText(/Attendance for this period is not loaded/)).toBeInTheDocument();
+  expect(screen.queryByText(/No attendance is posted for these dates yet/)).not.toBeInTheDocument();
+  await screen.findByText(/Assigned shift timings/);
 });

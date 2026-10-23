@@ -38,6 +38,8 @@ compute(emp, date):
 
 Unmatched swipes (`employee_id IS NULL`) land in an HR exception queue — never silently dropped (the PP-9 lesson).
 
+**HRMS next-morning finalization — sponsor clarification, 23 Oct 2026 (ATT-01/03/18):** automatic biometric attendance remains provisional until the following calendar day's configured `att.day_finalize_after_time` (default `04:00` IST), or the scheduled shift end when that is later. This is the sponsor's HRMS safety delay, not a KENT report-finalization promise, forced OUT time or replacement attendance-day boundary. Preserve actual punch timestamps and shift work dates; an explicit post-midnight OUT before the cutoff belongs to the preceding shift when it precedes the next shift, with exclusive attribution. Present results may be visible provisionally; queue them for recomputation at the cutoff. Automatic whole-day/session absence remains held until the cutoff and mapped active devices' completeness watermarks cover it. The clock alone never proves completeness. Delayed uploads continue recomputing unlocked days; approved/manual coverage and month-lock immutability remain authoritative. Shifts ending after 04:00 wait through their end. Mobile/manual and employees not yet biometrically registered retain their existing processing rules.
+
 Cross-plant swipes (ATT-16): any door counts toward attendance — an employee mapped to cost center 1701 who punches at DIP-6 is still Present. The door's location is recorded on the day (first/last door in drill-down); a weekly reconciliation flag lists employees whose majority swipe location ≠ their mapped location, for HR to correct mappings — the *mapping* gets fixed, never the attendance.
 
 Manual override (ATT-17): `day_records.source='manual'` writes require the `attendance.manual_override` permission (HR ops+, never managers), a mandatory reason, and an audit row. Managers influence attendance only by approving employee-initiated requests.
@@ -55,6 +57,8 @@ At each week close (per employee, Mon–Sun or roster week):
 - If **zero** such days (entire week absent/UAB) → each WO day in that week gets `weekoff_paid=false` → adds to `lop_days` at payroll.
 - Month rule: employee absent the entire month → **all** week-offs unpaid.
 - Config flag `weekoff_min_worked_days` (default 1) implements "must work at least one day in that week" (RT).
+
+**Dependency repair, 23 Oct 2026 (ATT-03/09/15):** a week crossing a month boundary counts qualifying locked facts from its earlier month; only open week-off rows may change. Late punch recomputation, manual corrections, approved whole/half AR/OD, leave and RH refresh an already-decided week's open week-offs under the employee lock. Undecided weeks remain with the weekly close job. A cancelled leave's queued recomputation uses the same refresh, so old paid/unpaid eligibility cannot survive into payroll after the underlying presence changes.
 
 ### 1.3 Regularization (AR) & On-Duty (OD) (ATT-06/07)
 
@@ -98,6 +102,8 @@ Pre-lock checklist (all must pass, shown as a checklist UI): pending AR/OD/OT ol
 - **Encashment (LV-06):** F&F encashes EL balance at `(Basic [+DA]) / 30 × days` (policy-configurable base); annual encashment window optional.
 - **Year-end job:** carry-forward up to `max_carry_forward`, lapse the rest — every movement a ledger row.
 
+**Leave/attendance boundary repair, 23 Oct 2026 (LV-03/08, ATT-03/08):** full-day leave approval clears derived first/last/worked/late/early/OT facts and session penalties while preserving immutable raw swipes. An existing live, approved, paid or converted OT/comp-off obligation on a full-leave date requires explicit reconciliation before approval; workflow status, leave debit and attendance change remain atomic. Half-leave keeps its existing worked-half semantics. Cancellation clears stale derived clocks while handing the day back to the queued raw recomputation; month close remains blocked by that queue.
+
 ## 3. Payroll engine (M4) — calculation order
 
 **Preconditions:** attendance month locked; all runs keyed to it. Pipeline states per `pay.payroll_runs.status`.
@@ -128,6 +134,8 @@ H. Persist payroll_items + payroll_item_lines with calc_note per line (explainab
 ```
 
 **Draft → review:** variance report vs previous month auto-generated (Δ > threshold highlighted with reason drill-down). **Finalize:** immutable; renders payslips (PDF, RML fixed template — PAY-06), bank batch (excluding `hold_payment`), JV per GL mapping, statutory registers. **Reopen** requires permission + reason; all downstream artifacts regenerate and are re-versioned.
+
+**Recovery provenance repair, 23 Oct 2026 (PAY-03/04/08):** recoveries carried to another run must originate in an earlier finalized/paid run of the same company. Provisional, same-month and later-month results cannot become settled recovery balances. Computation holds shared locks on eligible origin runs and claims open recovery rows under row locks; unchanged recomputation releases/rebuilds its own claims. Returning to draft releases recovery reservations. Reopening a finalized source is refused while a dependent run consumes its recovery balance; reconcile/reopen that dependent run and return it to draft first. This applies to approved CANTEEN inputs under the existing recovery/rounding policy and does not authorize deductions directly from meal bookings.
 
 ### 6.1 PF (PAY-09)
 

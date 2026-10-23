@@ -19,6 +19,8 @@ export interface MappedUpload {
 
 /** A layout may attach a warning to a mapped row under this key. */
 export const LAYOUT_WARNING = '__warning';
+/** A source-specific required-field failure remains a blocking row error. */
+export const LAYOUT_ERROR = '__error';
 
 const SKIP_SHEETS = /^(instructions?|readme|examples?|lists?|_lists)$/i;
 const TOTAL_ROW = /^(grand\s*total|sub\s*total|total)s?:?$/i;
@@ -143,6 +145,8 @@ export function mapUpload(
       const issues: RowIssue[] = [];
       const note = source[LAYOUT_WARNING];
       if (typeof note === 'string' && note !== '') issues.push({ column: null, severity: 'warning', message: note });
+      const error = source[LAYOUT_ERROR];
+      if (typeof error === 'string' && error !== '') issues.push({ column: null, severity: 'error', message: error });
       for (const c of columns) {
         const { value, issue } = coerceCell(c, source[c.key] ?? null);
         values[c.key] = value;

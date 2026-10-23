@@ -4,10 +4,11 @@
  * finalized yet, the page says so.
  */
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Download, FileText, Printer, Wallet } from 'lucide-react';
 import { ApiError, apiFetch } from '../../lib/api';
 import { downloadBase64 } from '../../lib/files';
-import { Button, Card, CardHeader, EmptyState, PageHeader, Skeleton, TextField, toast } from '../../ui';
+import { Button, Card, CardHeader, EmptyState, KpiNumber, PageHeader, Skeleton, TextField, toast } from '../../ui';
 import { currentFy } from '../tax/tax-utils';
 
 interface Line { code: string; name: string; amountRupees: number; calcNote?: string | null }
@@ -32,6 +33,8 @@ export function MyPayPage() {
   const [data, setData] = useState<Response | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [regime, setRegime] = useState<'old' | 'new' | null>(null);
+  const fy = currentFy();
 
   useEffect(() => {
     let cancelled = false;
@@ -42,6 +45,14 @@ export function MyPayPage() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [month]);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch<{ regime: 'old' | 'new' | null }>(`/api/tax/me/declarations?fy=${fy}`)
+      .then((tax) => { if (!cancelled) setRegime(tax.regime); })
+      .catch(() => { if (!cancelled) setRegime(null); });
+    return () => { cancelled = true; };
+  }, [fy]);
 
   function printSlip() {
     if (!data) return;
@@ -62,7 +73,7 @@ export function MyPayPage() {
   const slip = data?.payslip;
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="My pay" title="Payslips" description="Your finalized monthly payslips. Pick a month to see an older one."
+      <PageHeader title="Payslips" description="Your finalized monthly payslips. Pick a month to see an older one."
         actions={<div className="flex items-end gap-2"><TextField label="Month" type="month" value={month || ''} max={previousMonth()} onChange={(e) => { setMonth(e.target.value); }} hint="Latest finalized month is shown by default" /><Button variant="secondary" leadingIcon={<Download size={14} />} onClick={() => {
           void apiFetch<{ filename: string; base64: string }>(`/api/tax/me/form16?fy=${currentFy()}&format=pdf`).then((f) => { downloadBase64(f.filename, f.base64, 'application/pdf'); }).catch((e: unknown) => { toast.error(e instanceof ApiError ? e.message : 'Form 16 is not available for this year yet.'); });
         }}>Form 16</Button></div>} />
@@ -73,11 +84,38 @@ export function MyPayPage() {
       )}
       {!loading && slip && (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Card><p className="text-xs text-ink-muted">Net pay · {slip.monthName}</p><p className="text-2xl font-semibold">{inr(slip.netPayRupees)}</p><p className="text-xs text-ink-muted">{slip.netPayInWords}</p></Card>
-            <Card><p className="text-xs text-ink-muted">Gross earnings</p><p className="text-2xl font-semibold">{inr(slip.grossRupees)}</p></Card>
-            <Card><p className="text-xs text-ink-muted">Deductions</p><p className="text-2xl font-semibold">{inr(slip.totalDeductionsRupees)}</p><p className="text-xs text-ink-muted">{slip.attendance.payableDays} of {slip.attendance.daysInMonth} days paid{slip.attendance.lopDays > 0 ? ` · ${String(slip.attendance.lopDays)} LOP` : ''}</p></Card>
-          </div>
+          <Card>
+            <p className="text-sm text-ink-muted">Net pay · {slip.monthName}</p>
+            <p className="mt-2 text-5xl font-light leading-none tracking-tight text-ink">
+              <KpiNumber value={slip.netPayRupees} prefix="₹" precision={2} duration={800} />
+            </p>
+            <span aria-hidden className="mt-3 block h-0.5 w-16 rounded-full bg-accent" />
+            <p className="mt-3 max-w-xl text-sm leading-6 text-ink-muted">{slip.netPayInWords}</p>
+            <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-3 text-sm">
+              <div>
+                <dt className="text-ink-muted">Gross</dt>
+                <dd className="mt-1 text-lg font-light tabular-nums text-ink">{inr(slip.grossRupees)}</dd>
+              </div>
+              <div>
+                <dt className="text-ink-muted">Deductions</dt>
+                <dd className="mt-1 text-lg font-light tabular-nums text-ink">{inr(slip.totalDeductionsRupees)}</dd>
+              </div>
+              <div>
+                <dt className="text-ink-muted">Paid days</dt>
+                <dd className="mt-1 text-lg font-light tabular-nums text-ink">
+                  {slip.attendance.payableDays} of {slip.attendance.daysInMonth}
+                  {slip.attendance.lopDays > 0 ? ` · ${String(slip.attendance.lopDays)} LOP` : ''}
+                </dd>
+              </div>
+            </dl>
+          </Card>
+          <Card>
+            <CardHeader
+              title={`Tax · ${fy}`}
+              subtitle={regime === null ? 'Regime is chosen on your declaration' : regime === 'new' ? 'New tax regime' : 'Old tax regime'}
+              action={<Link className="rounded-control text-sm font-semibold underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-focus" to="/my/tax">Open declaration</Link>}
+            />
+          </Card>
           <Card>
             <CardHeader title={`${slip.companyName} — ${slip.monthName}`} subtitle={`${slip.employee.name} (${slip.employee.ecode})${slip.employee.designation ? ` · ${slip.employee.designation}` : ''}`}
               action={<div className="flex gap-2"><Button variant="secondary" size="sm" leadingIcon={<Printer size={14} />} onClick={printSlip}>Print / PDF</Button><Button variant="secondary" size="sm" leadingIcon={<Download size={14} />} onClick={downloadSlip}>Download</Button></div>} />

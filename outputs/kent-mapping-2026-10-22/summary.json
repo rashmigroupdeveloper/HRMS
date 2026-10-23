@@ -1,0 +1,177 @@
+{
+  "files": {
+    "canteen": {
+      "path": "/Users/anooppratapsingh/Downloads/Canteen Report_1792671694077.xlsx",
+      "sha256": "9fe60473f1ef7e36f8c4296a013a975783565efa898b6f5f19079e0fa166cbd1",
+      "physical_rows": 886
+    },
+    "muster": {
+      "path": "/Users/anooppratapsingh/Downloads/Muster_Roll_faa94fc1-288c-47e7-9c73-ef8a90348c281792671454354.xlsx",
+      "sha256": "8d42cee411ecf2ec9fb412c7b534da4cf5d18b86cd795ad5b90ef71682a4278a",
+      "physical_rows": 3466
+    },
+    "employee_later": {
+      "path": "/Users/anooppratapsingh/Downloads/Employee_Wise_Detailb5f377d2-e929-4f21-a5b4-39f84de4823d1792671404475.xlsx",
+      "sha256": "60a73b968d0383debca6bb40e02b2e86a341cce6d06dd9148538f43f1173f414",
+      "physical_rows": 3466
+    },
+    "attendance": {
+      "path": "/Users/anooppratapsingh/Downloads/Attendance_Detail_By_Date_web_8da8bf2d-b94c-4d97-ba51-545fc93026621792671340048.xlsx",
+      "sha256": "68f58914f1f04051a20c5e4772387a044169e53ace55a75aa86d076ef72319c1",
+      "physical_rows": 6925
+    },
+    "employee_earlier": {
+      "path": "/Users/anooppratapsingh/Downloads/Employee_Wise_Detail0ff31091-debb-426f-b76d-19d8bf5435631792671292075.xlsx",
+      "sha256": "e63212f61a8d67e8a100464ebc145cc4aabb83ca631c4fc7b5c7c138483b63f8",
+      "physical_rows": 3466
+    }
+  },
+  "record_counts": {
+    "canteen": 885,
+    "attendance": 6920,
+    "muster": 3460,
+    "employee_later": 3460,
+    "employee_earlier": 3460
+  },
+  "unique_employees": {
+    "canteen": 470,
+    "attendance": 3460,
+    "muster": 3460
+  },
+  "duplicate_attendance_keys": 0,
+  "duplicate_muster_codes": 0,
+  "canteen_exact_duplicate_business_rows": 0,
+  "meal_totals": [
+    {
+      "date": "21/10/2026",
+      "meal": "Breakfast",
+      "bookings": 102,
+      "quantity": "102.0",
+      "actual_rupees": "2550.0",
+      "item_charge_rupees": "102.0"
+    },
+    {
+      "date": "21/10/2026",
+      "meal": "Dinner",
+      "bookings": 85,
+      "quantity": "85.0",
+      "actual_rupees": "1530.0",
+      "item_charge_rupees": "85.0"
+    },
+    {
+      "date": "21/10/2026",
+      "meal": "LUNCH",
+      "bookings": 167,
+      "quantity": "167.0",
+      "actual_rupees": "9185.0",
+      "item_charge_rupees": "167.0"
+    },
+    {
+      "date": "22/10/2026",
+      "meal": "Breakfast",
+      "bookings": 133,
+      "quantity": "133.0",
+      "actual_rupees": "3325.0",
+      "item_charge_rupees": "133.0"
+    },
+    {
+      "date": "22/10/2026",
+      "meal": "LUNCH",
+      "bookings": 398,
+      "quantity": "398.0",
+      "actual_rupees": "21890.0",
+      "item_charge_rupees": "398.0"
+    }
+  ],
+  "canteen_status_counts": {
+    "P": 356,
+    "HLF": 93,
+    "MIS": 350,
+    "A": 86
+  },
+  "canteen_interval_counts": {
+    "before reported in": 70,
+    "within reported interval": 361,
+    "no complete interval": 401,
+    "after reported out minute": 53
+  },
+  "canteen_flags": {
+    "before reported in": 70,
+    "attendance MIS": 350,
+    "attendance A": 86,
+    "after reported out minute": 53
+  },
+  "canteen_dates": {
+    "21/10/2026": 354,
+    "22/10/2026": 531
+  },
+  "attendance_statuses_by_date": {
+    "21/10/2026": {
+      "P": 724,
+      "HLF": 377,
+      "A": 2291,
+      "MIS": 66,
+      "": 2
+    },
+    "22/10/2026": {
+      "P": 66,
+      "MIS": 1118,
+      "HLF": 169,
+      "A": 2105,
+      "": 2
+    }
+  },
+  "status_cross_report_differences": 2,
+  "employee_snapshot_changed_cells": 0,
+  "employee_snapshot_changed_employees": 0,
+  "canteen_devices": [
+    [
+      "HA151K40",
+      "RML1 DIP Canteen2",
+      "RML1"
+    ],
+    [
+      "HGR5GEDS",
+      " SEAMLESS_CANTEEN2",
+      "canteen"
+    ],
+    [
+      "HGR5HHBX",
+      "SEAMLESS_CANTEEN1",
+      "canteen"
+    ],
+    [
+      "HGR5L099",
+      "Fittings Canteen2",
+      "RML6"
+    ],
+    [
+      "HGR5L318",
+      "Fittings Canteen1",
+      "RML6"
+    ],
+    [
+      "HGR5L4F5",
+      "Labour House Canteen2",
+      "RML6"
+    ],
+    [
+      "HGR5LG39",
+      "Labour House Canteen1",
+      "RML6"
+    ]
+  ],
+  "price_combinations": {
+    "('Breakfast', '25.0', '1.0', 1.0)": 235,
+    "('LUNCH', '55.0', '1.0', 1.0)": 565,
+    "('Dinner', '18.0', '1.0', 1.0)": 85
+  },
+  "blank_balance_rows": 885,
+  "company_label_pairs": {
+    "('Rashmi Metaliks ltd', 'Rashmi Metaliks ltd')": 592,
+    "('Rashmi Green Hydrozen Steel Pvt Ltd', 'Rashmi Green Hydrozen Steel Pvt Ltd')": 224,
+    "('Rashmi Metaliks Ltd Fittings', 'Rashmi Metaliks Ltd Fittings')": 36,
+    "('Rashmi 6 Paradigm Limited', 'Rashmi 6 Paradigm Limited')": 32,
+    "('Reach Dredging Ltd', 'Reach Dredging Ltd')": 1
+  }
+}

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, CalendarPlus, Palmtree } from 'lucide-react';
+import { BookOpen, CalendarPlus, ChevronLeft, ChevronRight, Palmtree } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import {
   Button,
@@ -9,16 +9,18 @@ import {
   ConfirmModal,
   DarkCard,
   EmptyState,
+  IconButton,
   KpiNumber,
+  MonthCalendar,
   PageHeader,
-  Pill,
+  SegmentedProgress,
   StatusBadge,
   Timeline,
   formatDateIN,
   todayISOIST,
   toast,
 } from '../../ui';
-import type { StatusTone, TimelineStep } from '../../ui';
+import type { AttendanceDay, CalendarSpan, StatusTone, TimelineStep } from '../../ui';
 import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
 import { useDashboardResource } from '../home/useDashboardResource';
 import { LeaveApplyDrawer } from './LeaveApplyDrawer';
@@ -88,6 +90,35 @@ function isOpenPick(row: RestrictedHoliday, today: string): boolean {
   return row.myStatus === null && row.date >= today;
 }
 
+function shiftMonth(month: string, delta: number): string {
+  const [year = 0, value = 1] = month.split('-').map(Number);
+  const date = new Date(Date.UTC(year, value - 1 + delta, 1));
+  return `${String(date.getUTCFullYear())}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function monthTitle(month: string): string {
+  const [year = 0, value = 1] = month.split('-').map(Number);
+  return new Intl.DateTimeFormat('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(year, value - 1, 1)),
+  );
+}
+
+const LEDGER_MOVEMENT: Record<string, string> = {
+  grant: 'Opening credit',
+  accrual: 'Monthly credit',
+  application: 'Leave taken',
+  cancel: 'Cancellation credit',
+  encash: 'Encashed',
+  lapse: 'Lapsed',
+  adjustment: 'Adjustment',
+  comp_off_earn: 'Comp-off earned',
+};
+
+function ledgerWhen(value: string): string {
+  const iso = /^(\d{4}-\d{2}-\d{2})/.exec(value)?.[1];
+  return iso === undefined ? value : formatDateIN(iso);
+}
+
 function orderFloating(rows: RestrictedHoliday[], today: string): RestrictedHoliday[] {
   return [...rows].sort((left, right) => {
     const leftOpen = isOpenPick(left, today) ? 0 : 1;
@@ -97,8 +128,9 @@ function orderFloating(rows: RestrictedHoliday[], today: string): RestrictedHoli
   });
 }
 
-export function MyLeavePage() {
+export function MyLeavePage({ ownerId }: { ownerId?: number }) {
   const [drawerOpen, setDrawerOpen] = useState(() => takeActionParam('apply'));
+  const [leaveMonth, setLeaveMonth] = useState(() => todayISOIST().slice(0, 7));
   const [pickingId, setPickingId] = useState<number | null>(null);
   const balances = useDashboardResource<LeaveBalance[]>('/api/leave/balances');
   const types = useDashboardResource<LeaveType[]>('/api/leave/types');
@@ -126,6 +158,36 @@ export function MyLeavePage() {
       setEncashDays('');
     } catch (e) { toast.error('Could not request encashment', { description: e instanceof Error ? e.message : 'Try again.' }); }
   };
+
+  const leaveSpans = useMemo(() => {
+    const spans: CalendarSpan[] = [];
+    for (const application of applications.data ?? []) {
+      if (application.status === 'rejected' || application.status === 'cancelled') continue;
+      if (application.toDate < `${leaveMonth}-01` || application.fromDate > `${leaveMonth}-31`) continue;
+      const name = (types.data ?? []).find((type) => type.code === application.leaveType)?.name ?? application.leaveType;
+      spans.push({
+        id: `leave-${String(application.id)}`,
+        from: application.fromDate,
+        to: application.toDate,
+        label: application.status === 'pending' ? `${name} · pending` : name,
+        tone: 'leave',
+      });
+    }
+    for (const holiday of floating.data ?? []) {
+      if (!holiday.date.startsWith(leaveMonth)) continue;
+      spans.push({ id: `rh-${String(holiday.id)}`, from: holiday.date, to: holiday.date, label: holiday.name, tone: 'holiday' });
+    }
+    return spans;
+  }, [applications.data, floating.data, leaveMonth, types.data]);
+
+  const leaveDays = useMemo(() => {
+    const value: Partial<Record<number, AttendanceDay>> = {};
+    for (const span of leaveSpans) {
+      if (span.tone !== 'holiday' || !span.from.startsWith(leaveMonth)) continue;
+      value[Number(span.from.slice(-2))] = { state: 'holiday', note: span.label };
+    }
+    return value;
+  }, [leaveMonth, leaveSpans]);
 
   if (balances.loading || types.loading) return <DashboardSkeleton />;
   if (balances.error) return <DashboardError message={balances.error} onRetry={balances.reload} />;
@@ -182,7 +244,6 @@ export function MyLeavePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Time you have already earned"
         title="My leave"
         description={
           rows.length > 0
@@ -230,25 +291,48 @@ export function MyLeavePage() {
           />
         </Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {rows.map((balance) => (
-            <Card key={balance.leaveType}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-ink">{balance.name}</p>
-                  <p className="mt-0.5 text-xs text-ink-muted">
-                    {balance.available.toLocaleString('en-IN')} of {balance.balance.toLocaleString('en-IN')} ready
-                  </p>
+        <Card>
+          <CardHeader title="By type" subtitle="Gold is ready to take, charcoal is reserved, hatch is the rest of the ledger" />
+          <div className="space-y-5">
+            {rows.map((balance) => (
+              balance.balance <= 0 && balance.available <= 0 && balance.pending <= 0 ? (
+                <div key={balance.leaveType} className="flex items-baseline justify-between gap-4">
+                  <span className="text-sm font-medium text-ink">{balance.name}</span>
+                  <span className="text-sm text-ink-muted">Nothing credited yet</span>
                 </div>
-                <Pill>{balance.pending.toLocaleString('en-IN')} reserved</Pill>
-              </div>
-              <p className="mt-8 text-4xl font-light tabular-nums text-ink">
-                {balance.available.toLocaleString('en-IN')}
-              </p>
-            </Card>
-          ))}
-        </div>
+              ) : (
+                <SegmentedProgress
+                  key={balance.leaveType}
+                  label={balance.name}
+                  primary={balance.available}
+                  secondary={balance.pending}
+                  total={Math.max(balance.balance, balance.available + balance.pending)}
+                />
+              )
+            ))}
+          </div>
+        </Card>
       )}
+
+      <Card>
+        <CardHeader
+          headingLevel={2}
+          title={monthTitle(leaveMonth)}
+          subtitle="Leave you have asked for, and floating holidays you can pick"
+          action={
+            <div className="flex gap-1">
+              <IconButton label="Previous month" icon={<ChevronLeft />} size="sm" onClick={() => { setLeaveMonth(shiftMonth(leaveMonth, -1)); }} />
+              <IconButton label="Next month" icon={<ChevronRight />} size="sm" onClick={() => { setLeaveMonth(shiftMonth(leaveMonth, 1)); }} />
+            </div>
+          }
+        />
+        <MonthCalendar
+          year={Number(leaveMonth.slice(0, 4))}
+          month={Number(leaveMonth.slice(5, 7))}
+          days={leaveDays}
+          spans={leaveSpans}
+        />
+      </Card>
 
       {floating.error || floating.loading ? null : (
         <Card>
@@ -350,10 +434,13 @@ export function MyLeavePage() {
                 >
                   <div>
                     <p className="text-sm font-semibold text-ink">
-                      {row.txnType.replaceAll('_', ' ')}
+                      {(types.data ?? []).find((type) => type.code === row.leaveType)?.name ?? row.leaveType}
+                      {' · '}
+                      {LEDGER_MOVEMENT[row.txnType] ?? row.txnType.replaceAll('_', ' ')}
                     </p>
                     <p className="mt-0.5 text-xs text-ink-muted">
-                      {row.effectiveDate} · {row.note ?? 'Policy transaction'}
+                      {ledgerWhen(row.effectiveDate)}
+                      {row.note ? ` · ${row.note}` : ''}
                     </p>
                   </div>
                   <StatusBadge tone={row.delta >= 0 ? 'positive' : 'warning'}>
@@ -397,6 +484,7 @@ export function MyLeavePage() {
         confirmLabel="Request cancellation" onConfirm={() => void cancelLeave()} />
 
       <LeaveApplyDrawer
+        ownerId={ownerId}
         open={drawerOpen}
         leaveTypes={options}
         onClose={() => {

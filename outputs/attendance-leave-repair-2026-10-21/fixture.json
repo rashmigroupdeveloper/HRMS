@@ -1,0 +1,37 @@
+{
+  "tag": "QA218638895",
+  "users": {
+    "manager": {
+      "id": 18832,
+      "email": "qa218638895-manager@hrms.invalid"
+    },
+    "employee": {
+      "id": 18833,
+      "email": "qa218638895-employee@hrms.invalid"
+    },
+    "hrops": {
+      "id": 18834,
+      "email": "qa218638895-hrops@hrms.invalid"
+    },
+    "payroll": {
+      "id": 18835,
+      "email": "qa218638895-payroll@hrms.invalid"
+    },
+    "hrhead": {
+      "id": 18836,
+      "email": "qa218638895-hrhead@hrms.invalid"
+    }
+  },
+  "employees": [
+    371319,
+    371320
+  ],
+  "month": "2026-09-01",
+  "companyId": 8945,
+  "orgId": 4949,
+  "locationId": 3605,
+  "managerId": 371319,
+  "employeeId": 371320,
+  "shiftId": 2,
+  "leaveTypeId": 1
+}

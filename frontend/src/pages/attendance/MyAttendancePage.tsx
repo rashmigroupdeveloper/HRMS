@@ -15,7 +15,9 @@ import {
   MonthCalendar,
   PageHeader,
   Pill,
+  Select,
   StatusBadge,
+  collapseDaySpans,
   formatDateIN,
   todayISOIST,
 } from '../../ui';
@@ -84,7 +86,8 @@ function needsLook(row: AttendanceMonthRow): boolean {
   return row.status === 'A' || row.status === 'UAB' || row.sessionStatuses?.some((s) => s.status === 'A') === true;
 }
 
-function statusCopy(status: string): string {
+function statusCopy(status: string, held = false): string {
+  if (held && status === 'pending') return 'Waiting for HR';
   if (status === 'approved') return 'Approved';
   if (status === 'pending') return 'Awaiting approval';
   if (status === 'rejected') return 'Not approved';
@@ -146,7 +149,7 @@ function HolidayYearCard({ year, today, rows }: { year: number; today: string; r
   );
 }
 
-export function MyAttendancePage() {
+export function MyAttendancePage({ ownerId }: { ownerId?: number }) {
   const [month, setMonth] = useState(() => currentMonthIST());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [requestOpen, setRequestOpen] = useState(() => takeActionParam('request'));
@@ -182,6 +185,26 @@ export function MyAttendancePage() {
     return value;
   }, [attendance.data]);
 
+  const spans = useMemo(() => {
+    const events: { iso: string; label: string; tone: 'holiday' | 'leave' | 'duty' }[] = [];
+    for (const row of attendance.data ?? []) {
+      if (row.status === 'L' || row.status === 'CO' || (row.status === 'HD' && row.leaveTypeName)) {
+        events.push({ iso: row.date, label: row.leaveTypeName ?? 'Leave', tone: 'leave' });
+      } else if (row.status === 'OD') {
+        events.push({ iso: row.date, label: 'Official duty', tone: 'duty' });
+      } else if (row.status === 'H') {
+        events.push({ iso: row.date, label: 'Holiday', tone: 'holiday' });
+      }
+    }
+    for (const holiday of holidays.data ?? []) {
+      if (!holiday.date.startsWith(month)) continue;
+      const named = events.find((event) => event.iso === holiday.date && event.tone === 'holiday');
+      if (named) named.label = holiday.name;
+      else events.push({ iso: holiday.date, label: holiday.name, tone: 'holiday' });
+    }
+    return collapseDaySpans(events);
+  }, [attendance.data, holidays.data, month]);
+
   if (attendance.loading) return <DashboardSkeleton />;
   if (attendance.error)
     return <DashboardError message={attendance.error} onRetry={attendance.reload} />;
@@ -200,7 +223,6 @@ export function MyAttendancePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Your month, already in motion"
         title="My attendance"
         description={
           processed > 0
@@ -224,11 +246,10 @@ export function MyAttendancePage() {
 
       <KpiPillRow
         pills={[
-          { label: 'Full days present / OD', value: present, state: 'outline' },
-          { label: 'Half-days', value: halfDays, state: 'outline' },
-          { label: 'Need a look', value: exceptions, state: 'hatched' },
-          { label: 'Requests sent', value: requests.data?.length ?? 0, state: 'outline' },
-          { label: 'Overtime rows', value: overtime.data?.length ?? 0, state: 'outline' },
+          { label: 'Present', value: present, state: 'filled' },
+          { label: 'Need a look', value: exceptions, state: 'accent' },
+          { label: 'Half-days', value: halfDays, state: 'hatched' },
+          { label: 'Requests', value: requests.data?.length ?? 0, state: 'outline' },
         ]}
       />
 
@@ -247,7 +268,20 @@ export function MyAttendancePage() {
                 : `${String(present)} full days · ${String(halfDays)} half-days · ${String(processed)} processed`
             }
             action={
-              <div className="flex gap-1">
+              <div className="flex items-end gap-1">
+                <div className="w-44">
+                  <Select
+                    label="Month"
+                    value={month}
+                    onChange={setMonth}
+                    options={Array.from({ length: 36 }, (_, index) => {
+                      const anchor = Number(today.slice(0, 4)) - 2;
+                      const cursor = new Date(Date.UTC(anchor, index, 1));
+                      const value = `${String(cursor.getUTCFullYear())}-${String(cursor.getUTCMonth() + 1).padStart(2, '0')}`;
+                      return { value, label: MONTH_TITLE_IST.format(new Date(`${value}-01T00:00:00+05:30`)) };
+                    })}
+                  />
+                </div>
                 <IconButton
                   label="Previous month"
                   icon={<ChevronLeft />}
@@ -267,11 +301,16 @@ export function MyAttendancePage() {
               </div>
             }
           />
-          <MonthCalendar year={year} month={monthNo} days={days} onSelectDay={setSelectedDate} />
+          <MonthCalendar
+            year={year}
+            month={monthNo}
+            days={days}
+            spans={spans}
+            selectedIso={activeDate}
+            onSelectDay={setSelectedDate}
+          />
           <p className="mt-4 text-xs leading-5 text-ink-muted">
-            P present · A absent · HD half day · OD official duty · WO week off · H holiday.
-            Leave uses its type code, such as SL for sick leave. A:P shows first half absent and second half present; P:A shows the reverse.
-            A blank day has no posted attendance; it is not an absence decision.
+            Bars name leave, holidays and official duty. A blank day has no posted attendance yet.
           </p>
         </Card>
 
@@ -370,7 +409,7 @@ export function MyAttendancePage() {
                   <StatusBadge
                     tone={request.workflowStatus === 'approved' ? 'positive' : 'warning'}
                   >
-                    {statusCopy(request.workflowStatus)}
+                    {statusCopy(request.workflowStatus, request.routingHeld)}
                   </StatusBadge>
                 </div>
               ))}
@@ -379,7 +418,9 @@ export function MyAttendancePage() {
             <EmptyState
               icon={<Clock3 />}
               title="No corrections in flight"
-              description="When a swipe is missing, send a regularisation so the day does not stay unauthorised."
+              description={processed === 0
+                ? 'A blank day is not an absence. Send a correction after a day is posted and the swipe does not match the day you worked.'
+                : 'When a posted day is missing a swipe, send a regularisation so it does not stay an unauthorised absence.'}
               action={
                 <Button size="sm" variant="secondary" onClick={() => { openRequest(yesterdayNeedsHelp ? yesterday : activeDate); }}>
                   {yesterdayNeedsHelp ? 'Request regularisation for yesterday' : 'Request a correction'}
@@ -410,6 +451,11 @@ export function MyAttendancePage() {
                 </div>
               ))}
             </div>
+          ) : selected !== null && selected.otMinutes > 0 ? (
+            <p className="text-sm leading-6 text-ink-muted" role="status">
+              {formatDateIN(selected.date)} already shows {String(selected.otMinutes)} overtime minutes on the day.
+              A claim row appears here once that day is in the overtime queue.
+            </p>
           ) : (
             <EmptyState
               icon={<Clock3 />}
@@ -421,8 +467,11 @@ export function MyAttendancePage() {
       </div>
 
       <AttendanceRequestDrawer
+        ownerId={ownerId}
+        loadedMonth={month}
         open={requestOpen}
         initialDate={selectedDate ?? activeDate}
+        postedDates={rows.map((row) => row.date)}
         onClose={() => {
           setRequestOpen(false);
         }}

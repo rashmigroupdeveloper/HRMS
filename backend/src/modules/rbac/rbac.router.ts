@@ -186,7 +186,7 @@ function readAssignments(value: unknown): { code: string; scopeOrgUnitId: number
   }
   if (!Array.isArray(parsed)) return [];
   const assignments: { code: string; scopeOrgUnitId: number | null; scopeName: string | null }[] = [];
-  for (const row of parsed) {
+  for (const row of parsed as unknown[]) {
     if (typeof row !== 'object' || row === null || !('code' in row)) continue;
     const code = row.code;
     if (typeof code !== 'string') continue;

@@ -26,9 +26,12 @@ function specLabel(spec: string): string {
 }
 
 export function stepsToTimeline(steps: ChainPreviewStep[]): TimelineStep[] {
+  const heldForHr = steps.length > 0 && steps.every((step) => step.vacant);
   return steps.map((step, index) => {
     const who = step.vacant
-      ? `${specLabel(step.approverSpec)} (vacant — will be skipped)`
+      ? heldForHr
+        ? `${specLabel(step.approverSpec)} cannot approve yet`
+        : `${specLabel(step.approverSpec)} (vacant — will be skipped)`
       : (step.displayName ?? specLabel(step.approverSpec));
     const delegated =
       step.delegatedFromName !== null
@@ -37,8 +40,10 @@ export function stepsToTimeline(steps: ChainPreviewStep[]): TimelineStep[] {
     return {
       id: `step-${String(step.step)}`,
       title: who,
-      timestamp: `${String(step.slaHours)}h SLA`,
-      description: step.vacant ? delegated : delegated,
+      timestamp: heldForHr ? 'Held for HR' : `${String(step.slaHours)}h SLA`,
+      description: heldForHr
+        ? 'Attendance and pay stay unchanged until HR restores someone who can approve.'
+        : delegated,
       state: index === 0 && !step.vacant ? 'current' : 'pending',
     };
   });

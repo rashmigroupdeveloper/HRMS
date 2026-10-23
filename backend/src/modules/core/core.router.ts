@@ -61,14 +61,17 @@ export const coreRouter = {
       summary: 'List canonical company legal entities',
     })
     .input(z.object({}).optional())
-    .output(z.object({ companies: z.array(companyItemSchema) }))
+    .output(z.object({ companies: z.array(companyItemSchema), homeCompanyId: z.number().nullable() }))
     .handler(async ({ context }) => {
       const rows = await context.db
         .selectFrom('core.companies')
         .select(['id', 'name', 'code', 'ecode_prefix'])
         .orderBy('name', 'asc')
         .execute();
-      return { companies: rows };
+      const home = context.user.employee_id === null
+        ? undefined
+        : await context.db.selectFrom('core.employees').select('company_id').where('id', '=', context.user.employee_id).executeTakeFirst();
+      return { companies: rows, homeCompanyId: home?.company_id ?? null };
     }),
 
   /** Org units (scope picker for entity-scoped role grants, E2E-010). */

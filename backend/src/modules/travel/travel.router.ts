@@ -16,6 +16,7 @@ import { TravelService } from './travel.service.js';
 import { WalletService } from './wallet.service.js';
 import { SettlementService, getTripBudgetHeadroom } from './settlement.service.js';
 import { assertTravelReadable, requireSelf, resolveListSubject } from './travel-access.js';
+import { tripView } from './trip-view.js';
 
 const tripItemSchema = z.object({
   id: z.number(),
@@ -28,6 +29,14 @@ const tripItemSchema = z.object({
   purpose: z.string(),
   destinationCountry: z.string(),
   destinationCity: z.string(),
+  travelMonth: z.string().nullable().optional(),
+  originCity: z.string().nullable().optional(),
+  airfarePaise: z.number().optional(),
+  hotelPerNightPaise: z.number().optional(),
+  hotelNights: z.number().optional(),
+  dailyAllowancePerDayPaise: z.number().optional(),
+  visaCostPaise: z.number().optional(),
+  overLimitJustification: z.string().nullable().optional(),
   startDate: z.union([z.date(), z.string()]),
   endDate: z.union([z.date(), z.string()]),
   visaRequired: z.boolean(),
@@ -139,29 +148,7 @@ export const travelRouter = {
       const subject = await resolveListSubject(context, input?.employeeId);
       if (subject.none) return { trips: [], items: [] };
       const trips = await service.getTrips({ employeeId: subject.employeeId, scope: subject.scope, status: input?.status });
-      const mapped = trips.map((t) => ({
-        id: t.id,
-        referenceNo: t.reference_no,
-        employeeId: t.employee_id,
-        companyId: t.company_id,
-        tripName: t.trip_name,
-        travelType: t.travel_type,
-        destinationRegion: t.destination_region,
-        purpose: t.purpose,
-        destinationCountry: t.destination_country,
-        destinationCity: t.destination_city,
-        startDate: t.start_date,
-        endDate: t.end_date,
-        visaRequired: t.visa_required,
-        visaStatus: t.visa_status,
-        status: t.status,
-        estimatedBudgetPaise: t.estimated_budget_paise,
-        approvedBudgetPaise: t.approved_budget_paise,
-        cancellationReason: t.cancellation_reason,
-        cancellationCostPaise: t.cancellation_cost_paise,
-        createdAt: t.created_at,
-        updatedAt: t.updated_at,
-      }));
+      const mapped = trips.map((t) => tripView(t));
       return { trips: mapped, items: mapped };
     }),
 
@@ -180,28 +167,7 @@ export const travelRouter = {
       const res = await service.getTripById(input.id);
       await assertTravelReadable(context, res.trip.employee_id, true);
       return {
-        trip: {
-          ...res.trip,
-          referenceNo: res.trip.reference_no,
-          employeeId: res.trip.employee_id,
-          companyId: res.trip.company_id,
-          tripName: res.trip.trip_name,
-          travelType: res.trip.travel_type,
-          purpose: res.trip.purpose,
-          destinationCountry: res.trip.destination_country,
-          destinationCity: res.trip.destination_city,
-          startDate: res.trip.start_date,
-          endDate: res.trip.end_date,
-          visaRequired: res.trip.visa_required,
-          visaStatus: res.trip.visa_status,
-          status: res.trip.status,
-          estimatedBudgetPaise: res.trip.estimated_budget_paise,
-          approvedBudgetPaise: res.trip.approved_budget_paise,
-          cancellationReason: res.trip.cancellation_reason,
-          cancellationCostPaise: res.trip.cancellation_cost_paise,
-          createdAt: res.trip.created_at,
-          updatedAt: res.trip.updated_at,
-        },
+        trip: tripView(res.trip),
         itineraries: res.itineraries.map((i) => ({
           id: i.id,
           tripId: i.trip_id,
@@ -244,6 +210,15 @@ export const travelRouter = {
         endDate: z.string(),
         visaRequired: z.boolean().optional(),
         estimatedBudgetPaise: z.number().int().nonnegative().optional(),
+        travelMonth: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+        originCity: z.string().min(2).optional(),
+        airfarePaise: z.number().int().nonnegative().optional(),
+        hotelPerNightPaise: z.number().int().nonnegative().optional(),
+        hotelNights: z.number().int().nonnegative().optional(),
+        dailyAllowancePerDayPaise: z.number().int().nonnegative().optional(),
+        visaCostPaise: z.number().int().nonnegative().optional(),
+        overLimitJustification: z.string().max(500).optional(),
+        saveAs: z.enum(['draft', 'submit']).optional(),
       })
     )
     .output(z.object({ trip: tripItemSchema }))
@@ -255,42 +230,19 @@ export const travelRouter = {
         employeeId: empId,
         companyId: employee.company_id,
         requestedByUserId: context.user.id,
-        tripName: input.tripName,
-        travelType: input.travelType,
-        destinationRegion: input.destinationRegion,
-        purpose: input.purpose,
-        destinationCountry: input.destinationCountry,
-        destinationCity: input.destinationCity,
-        startDate: input.startDate,
-        endDate: input.endDate,
-        visaRequired: input.visaRequired,
-        estimatedBudgetPaise: input.estimatedBudgetPaise,
+        ...input,
       });
-      return {
-        trip: {
-          id: trip.id,
-          referenceNo: trip.reference_no,
-          employeeId: trip.employee_id,
-          companyId: trip.company_id,
-          tripName: trip.trip_name,
-          travelType: trip.travel_type,
-          destinationRegion: trip.destination_region,
-          purpose: trip.purpose,
-          destinationCountry: trip.destination_country,
-          destinationCity: trip.destination_city,
-          startDate: trip.start_date,
-          endDate: trip.end_date,
-          visaRequired: trip.visa_required,
-          visaStatus: trip.visa_status,
-          status: trip.status,
-          estimatedBudgetPaise: trip.estimated_budget_paise,
-          approvedBudgetPaise: trip.approved_budget_paise,
-          cancellationReason: trip.cancellation_reason,
-          cancellationCostPaise: trip.cancellation_cost_paise,
-          createdAt: trip.created_at,
-          updatedAt: trip.updated_at,
-        },
-      };
+      return { trip: tripView(trip) };
+    }),
+
+  submitBudget: authed
+    .route({ method: 'POST', path: '/travel/trips/{tripId}/submit', summary: 'Submit a draft travel budget for approval' })
+    .input(z.object({ tripId: z.coerce.number().int().positive() }))
+    .output(z.object({ trip: tripItemSchema }))
+    .handler(async ({ input, context }) => {
+      const empId = requireSelf(context);
+      const trip = await new TravelService(context.db).submitBudget(input.tripId, context.user.id, empId);
+      return { trip: tripView(trip) };
     }),
 
   addItinerary: authed

@@ -1,0 +1,9 @@
+Browser tab: 2, Title: "Rashmi HRMS", URL: "http://localhost:5173/my/attendance".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
++					146 container
++						147 text Assigned shift timings for  21 Oct 2026 .
+~					143 text Your manager reads this — a short, specific why is enough. Who will approve this
++					148 content list
++						149 container
++							150 text Reporting manager cannot approve yet Held for HR Attendance and pay stay unchanged until HR restores someone who can approve.
+The focused UI element is 122 container Request regularisation Correct a day so the muster matches when you were actually at work. Close What do you need? Attendance regularisation From date 21 Oct 2026 To date 21 Oct 2026 Which part of each day? Whole day General 09:00–18:00 Whole day · 09:00 – 18:00 IST Assigned shift timings for 21 Oct 2026. You are requesting 1 day 21 Oct 2026 · No attendance is posted for these dates yet, so they are not absences. Send this only if you were at work and the swipe will not arrive. Why should this be approved? Your manager reads this — a short, specific why is enough. Who will approve this Reporting manager cannot approve yet Held for HR Attendance and pay stay unchanged until HR restores someone who can approve. Keep draft Send to my manager

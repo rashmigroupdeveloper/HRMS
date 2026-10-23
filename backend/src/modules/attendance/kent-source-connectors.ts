@@ -26,6 +26,7 @@ export interface KentDbConfig {
   batchSize: number;
   defaultOffset: string;
   deviceMap: Record<string, string>;
+  attendanceDeviceIds?: readonly string[];
 }
 
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)?$/;
@@ -37,6 +38,7 @@ const quoteIdent = (s: string): string => {
 export class KentDbConnector implements KentConnector {
   constructor(private readonly client: KentDbClient, private readonly cfg: KentDbConfig, private readonly clock: () => Date = () => new Date()) {
     if (cfg.watermark === 'receivedAt' && !cfg.columns.receivedAt) throw new Error('KENT_DB_WATERMARK=receivedAt needs a receivedAt column');
+    if (!Number.isSafeInteger(cfg.batchSize) || cfg.batchSize < 1 || cfg.batchSize >= Number.MAX_SAFE_INTEGER) throw new Error('KENT_PAGE_SIZE must be a positive safe integer');
   }
 
   async fetchSince(since: Date): Promise<RawSwipe[]> {
@@ -51,16 +53,21 @@ export class KentDbConnector implements KentConnector {
     const pick: [keyof KentDbColumns, string][] = Object.entries(c).filter((e): e is [keyof KentDbColumns, string] => typeof e[1] === 'string' && e[1] !== '');
     const select = pick.map(([k, col]) => `${quoteIdent(col)} AS "${k}"`).join(', ');
     const { rows } = await this.client.query(
-      `SELECT ${select} FROM ${quoteIdent(this.cfg.table)} WHERE ${quoteIdent(wmCol)} > $1 ORDER BY ${quoteIdent(wmCol)} LIMIT ${String(Math.max(1, Math.trunc(this.cfg.batchSize)))}`,
+      `SELECT ${select} FROM ${quoteIdent(this.cfg.table)} WHERE ${quoteIdent(wmCol)} > $1 ORDER BY ${quoteIdent(wmCol)} LIMIT ${String(this.cfg.batchSize + 1)}`,
       [from],
     );
+    // No unique source cursor is known. Advancing a timestamp over a truncated
+    // batch can lose rows with the same timestamp; rereading may also starve
+    // newer rows forever. Refuse the whole batch until its bound is sufficient.
+    if (rows.length > this.cfg.batchSize) throw new KentFeedError('Kent DB batch exceeds KENT_PAGE_SIZE; increase the limit or provide a paginated source before retrying');
     const fields: KentFieldMap = { employeeNo: 'employeeNo', card: 'card', time: 'time', device: 'device', deviceName: '_none', direction: 'direction', receivedAt: 'receivedAt', type: '_none', deviceLastSeen: '_none', deviceWatermark: '_none' };
     const out: RawSwipe[] = [];
     for (const r of rows) {
       const norm: Row = { ...r };
       for (const k of ['time', 'receivedAt'] as const) { const v = norm[k]; if (v instanceof Date) norm[k] = v.toISOString(); }
-      const m = mapKentRecord(norm, { fields, deviceMap: this.cfg.deviceMap, defaultOffset: this.cfg.defaultOffset, now, swipeType: 'kent_db' });
+      const m = mapKentRecord(norm, { ...this.cfg, fields, now, swipeType: 'kent_db' });
       if (m.swipe) out.push(m.swipe);
+      else if (!m.excluded) throw new KentFeedError(`Kent DB record: ${m.reason ?? 'invalid recognition'}`);
     }
     return out;
   }
@@ -72,17 +79,19 @@ export class KentDbConnector implements KentConnector {
 export interface KentCsvConfig {
   dir: string;
   archiveDir: string;
-  aliases: Record<'employeeNo' | 'time' | 'device' | 'card' | 'direction' | 'receivedAt', string[]>;
+  aliases: Record<'employeeNo' | 'time' | 'device' | 'card' | 'direction' | 'receivedAt', string[]> & { date?: string[] };
   defaultOffset: string;
   deviceMap: Record<string, string>;
+  attendanceDeviceIds?: readonly string[];
 }
 const DEFAULT_CSV_ALIASES: KentCsvConfig['aliases'] = {
   employeeNo: ['employee no', 'employee code', 'empid', 'emp id', 'ecode', 'emp code', 'employee id'],
   time: ['swipe date', 'swipe time', 'punch time', 'time', 'date time', 'datetime', 'recognition time', 'log time'],
+  date: ['date', 'recognition date', 'punch date'],
   device: ['door/address', 'door', 'device id', 'deviceid', 'device name', 'device', 'location name'],
   card: ['access card', 'card no', 'card'],
-  direction: ['status', 'direction', 'in/out', 'in out'],
-  receivedAt: ['received on', 'received at', 'upload time', 'synced at'],
+  direction: ['status', 'direction', 'in/out', 'in out', 'attendance type'],
+  receivedAt: ['received on', 'received at', 'upload time', 'synced at', 'created on'],
 };
 
 /** RFC-4180-ish CSV parse (quotes, escaped quotes, CRLF); delimiter auto-detected from the header (`,` `;` or tab). */
@@ -105,6 +114,7 @@ export function parseCsv(text: string): string[][] {
       row = [];
     } else cell += ch;
   }
+  if (q) throw new KentFeedError('Unterminated CSV quoted field');
   row.push(cell);
   if (row.some((c) => c.trim() !== '')) rows.push(row);
   return rows;
@@ -119,20 +129,40 @@ export class KentCsvDropConnector implements KentConnector {
     const now = this.clock();
     const out: RawSwipe[] = [];
     this.pending = [];
+    const pending: string[] = [];
+    const nativeDirections = new Map<string, string>();
     for (const name of names) {
       const rows = parseCsv(await readFile(join(this.cfg.dir, name), 'utf8'));
       const header = (rows[0] ?? []).map((h) => h.trim().toLowerCase());
-      const col = (k: keyof KentCsvConfig['aliases']) => { for (const a of this.cfg.aliases[k]) { const i = header.indexOf(a); if (i >= 0) return i; } return -1; };
-      const idx = { employeeNo: col('employeeNo'), time: col('time'), device: col('device'), card: col('card'), direction: col('direction'), receivedAt: col('receivedAt') };
+      const col = (k: keyof KentCsvConfig['aliases']) => { for (const a of this.cfg.aliases[k] ?? []) { const i = header.indexOf(a); if (i >= 0) return i; } return -1; };
+      const idx = { employeeNo: col('employeeNo'), time: col('time'), date: col('date'), device: col('device'), card: col('card'), direction: col('direction'), receivedAt: col('receivedAt') };
+      const nativeRecognition = ['date', 'time', 'attendance type', 'created on'].every(h => header.includes(h));
+      const requireDevice = nativeRecognition || Boolean(this.cfg.attendanceDeviceIds?.length);
       if (idx.employeeNo < 0 || idx.time < 0) throw new KentFeedError(`${name}: no employee or time column (header: ${header.join(', ')})`);
-      for (const r of rows.slice(1)) {
+      if (requireDevice && idx.device < 0) throw new KentFeedError(`${name}: a source device column is required`);
+      for (const [offset, r] of rows.slice(1).entries()) {
         const get = (i: number) => (i >= 0 ? (r[i] ?? '').trim() : '');
-        const rec: Row = { employeeNo: get(idx.employeeNo), time: get(idx.time), device: get(idx.device) || 'CSV-DROP', card: get(idx.card), direction: get(idx.direction), receivedAt: get(idx.receivedAt) || null };
-        const m = mapKentRecord(rec, { fields: { employeeNo: 'employeeNo', card: 'card', time: 'time', device: 'device', deviceName: '_none', direction: 'direction', receivedAt: 'receivedAt', type: '_none', deviceLastSeen: '_none', deviceWatermark: '_none' }, deviceMap: this.cfg.deviceMap, defaultOffset: this.cfg.defaultOffset, now, swipeType: 'kent_csv' });
-        if (m.swipe) out.push(m.swipe);
+        const rawTime = get(idx.time);
+        const time = idx.date >= 0 && /^\d{1,2}:\d{2}(:\d{2})?$/.test(rawTime) ? `${get(idx.date)} ${rawTime}` : rawTime;
+        const direction = get(idx.direction);
+        if (nativeRecognition && direction && !['in', 'out'].includes(direction.toLowerCase())) throw new KentFeedError(`${name}: record ${String(offset + 2)}: Attendance Type must be in, out or blank`);
+        const rec: Row = { employeeNo: get(idx.employeeNo), time, device: get(idx.device) || (requireDevice ? '' : 'CSV-DROP'), card: get(idx.card), direction, receivedAt: get(idx.receivedAt) || null };
+        const m = mapKentRecord(rec, { ...this.cfg, fields: { employeeNo: 'employeeNo', card: 'card', time: 'time', device: 'device', deviceName: '_none', direction: 'direction', receivedAt: 'receivedAt', type: '_none', deviceLastSeen: '_none', deviceWatermark: '_none' }, now, swipeType: 'kent_csv' });
+        if (m.swipe) {
+          if (nativeRecognition) {
+            const key = JSON.stringify([m.swipe.employeeNo, m.swipe.swipeTs.toISOString(), m.swipe.doorCode]);
+            const kind = m.swipe.direction ?? '';
+            const prior = nativeDirections.get(key);
+            if (prior !== undefined && prior !== kind) throw new KentFeedError(`${name}: record ${String(offset + 2)}: conflicting native directions for the same employee/time/device; obtain source precision before retrying`);
+            nativeDirections.set(key, kind);
+          }
+          out.push(m.swipe);
+        }
+        else if (!m.excluded) throw new KentFeedError(`${name}: record ${String(offset + 2)}: ${m.reason ?? 'invalid recognition'}`);
       }
-      this.pending.push(name);
+      pending.push(name);
     }
+    this.pending = pending;
     return out;
   }
 
@@ -174,7 +204,7 @@ export function kentConnectorFromEnv(env: Env = process.env, dbClient?: KentDbCl
     const watermark = env['KENT_DB_WATERMARK'] === 'receivedAt' ? 'receivedAt' : 'time';
     let client: KentDbClient | undefined = dbClient ?? dbPools.get(url);
     if (!client) { const pool = new pg.Pool({ connectionString: url, max: 2 }); pool.on('error', () => undefined); dbPools.set(url, pool); client = pool; }
-    return new KentDbConnector(client, { table, columns, watermark, rereadDays: Number(env['KENT_REREAD_DAYS'] ?? 3), batchSize: Number(env['KENT_PAGE_SIZE'] ?? 50000), defaultOffset: common.defaultOffset, deviceMap: common.deviceMap });
+    return new KentDbConnector(client, { ...common, table, columns, watermark, rereadDays: Number(env['KENT_REREAD_DAYS'] ?? 3), batchSize: Number(env['KENT_PAGE_SIZE'] ?? 50000) });
   }
   if (mode === 'csv') {
     const dir = env['KENT_CSV_DIR']?.trim();
@@ -182,8 +212,8 @@ export function kentConnectorFromEnv(env: Env = process.env, dbClient?: KentDbCl
     let extra: Partial<KentCsvConfig['aliases']> = {};
     try { extra = JSON.parse(env['KENT_CSV_ALIASES'] ?? '{}') as Partial<KentCsvConfig['aliases']>; } catch { throw new Error('KENT_CSV_ALIASES must be valid JSON'); }
     const aliases = { ...DEFAULT_CSV_ALIASES };
-    for (const [k, v] of Object.entries(extra) as [keyof KentCsvConfig['aliases'], string[]][]) aliases[k] = [...v.map((x) => x.toLowerCase()), ...DEFAULT_CSV_ALIASES[k]];
-    return new KentCsvDropConnector({ dir, archiveDir: (env['KENT_CSV_ARCHIVE_DIR']?.trim() ?? '') === '' ? join(dir, 'processed') : (env['KENT_CSV_ARCHIVE_DIR'] ?? '').trim(), aliases, defaultOffset: common.defaultOffset, deviceMap: common.deviceMap });
+    for (const [k, v] of Object.entries(extra) as [keyof KentCsvConfig['aliases'], string[]][]) aliases[k] = [...v.map((x) => x.toLowerCase()), ...(DEFAULT_CSV_ALIASES[k] ?? [])];
+    return new KentCsvDropConnector({ ...common, dir, archiveDir: (env['KENT_CSV_ARCHIVE_DIR']?.trim() ?? '') === '' ? join(dir, 'processed') : (env['KENT_CSV_ARCHIVE_DIR'] ?? '').trim(), aliases });
   }
   return undefined;
 }

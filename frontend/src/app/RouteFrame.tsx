@@ -11,7 +11,7 @@
  */
 import { Component, Suspense, useEffect, useState } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
-import { RefreshCw, WifiOff } from 'lucide-react';
+import { AlertTriangle, RefreshCw, WifiOff } from 'lucide-react';
 import { Button, Card, EmptyState, Skeleton } from '../ui';
 
 function PageSkeleton() {
@@ -46,17 +46,24 @@ function PageSkeleton() {
 
 interface BoundaryState {
   failed: boolean;
+  chunk: boolean;
+}
+
+function isChunkLoad(error: Error): boolean {
+  const message = error.message;
+  return error.name === 'ChunkLoadError'
+    || /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Loading chunk|Loading CSS chunk/i.test(message);
 }
 
 class ChunkBoundary extends Component<{ children: ReactNode; resetKey: string }, BoundaryState> {
-  override state: BoundaryState = { failed: false };
+  override state: BoundaryState = { failed: false, chunk: false };
 
-  static getDerivedStateFromError(): BoundaryState {
-    return { failed: true };
+  static getDerivedStateFromError(error: Error): BoundaryState {
+    return { failed: true, chunk: isChunkLoad(error) };
   }
 
   override componentDidUpdate(previous: { resetKey: string }): void {
-    if (previous.resetKey !== this.props.resetKey && this.state.failed) this.setState({ failed: false });
+    if (previous.resetKey !== this.props.resetKey && this.state.failed) this.setState({ failed: false, chunk: false });
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
@@ -68,9 +75,11 @@ class ChunkBoundary extends Component<{ children: ReactNode; resetKey: string },
     return (
       <Card role="alert">
         <EmptyState
-          icon={<WifiOff />}
-          title="This page could not load"
-          description="The connection dropped or the app was updated while you were working. Reloading keeps your session and saved filters."
+          icon={this.state.chunk ? <WifiOff /> : <AlertTriangle />}
+          title={this.state.chunk ? 'This page could not load' : 'Something went wrong on this page'}
+          description={this.state.chunk
+            ? 'The connection dropped or the app was updated while you were working. Reloading keeps your session and saved filters.'
+            : 'This screen hit an error while drawing. Reloading usually clears it. If it comes back, tell support which page you were on.'}
           action={
             <Button
               variant="primary"

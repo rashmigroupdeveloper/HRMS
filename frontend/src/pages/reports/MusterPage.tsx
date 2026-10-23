@@ -20,6 +20,7 @@ import {
   PersonCell,
 } from '../../ui';
 import type { Column } from '../../ui';
+import { CompanyField } from '../../app/CompanyField';
 import { currentMonthIST } from '../home/dashboard-format';
 import { defaultCompanyId, qs, rememberCompanyId } from './report-utils';
 
@@ -329,11 +330,10 @@ export function MusterPage() {
 
       <Card>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 md:items-end">
-          <TextField
-            label="Company ID"
+          <CompanyField
             value={filters.companyId}
-            onChange={(event) => {
-              patch({ companyId: event.currentTarget.value });
+            onChange={(companyId) => {
+              patch({ companyId });
             }}
             error={error && !valid ? error : undefined}
           />

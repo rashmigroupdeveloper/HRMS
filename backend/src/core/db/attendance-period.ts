@@ -56,7 +56,6 @@ export async function closeWeekOffs(
              ) AS present
       FROM att.day_records dr
       WHERE dr.work_date >= ${weekStartIso}::date AND dr.work_date < ${weekStartIso}::date + 7
-        AND dr.is_locked = false
         AND (${employeeId ?? null}::bigint IS NULL OR dr.employee_id = ${employeeId ?? null}::bigint)
       GROUP BY dr.employee_id
     ) w
@@ -67,6 +66,22 @@ export async function closeWeekOffs(
     RETURNING d.id
   `.execute(db);
   return result.rows.length;
+}
+
+/** Late punches/approved corrections can change an already-decided week.
+ * Read locked facts as evidence but update only open week-off rows. A week
+ * not yet decided is left to the ordinary weekly close job.
+ */
+export async function recloseDecidedWeekOffs(
+  db: Kysely<Database>, employeeId: number, isoDays: readonly string[], minWorked: number,
+): Promise<void> {
+  for (const week of new Set(isoDays.map(weekStartOf))) {
+    const decided = await db.selectFrom('att.day_records').select('id')
+      .where('employee_id', '=', employeeId).where('status', '=', 'WO').where('weekoff_paid', 'is not', null)
+      .where('is_locked', '=', false).where('work_date', '>=', sql<Date>`${week}::date`)
+      .where('work_date', '<', sql<Date>`${week}::date + 7`).executeTakeFirst();
+    if (decided) await closeWeekOffs(db, week, minWorked, employeeId);
+  }
 }
 
 /** Monday of the IST week containing an ISO date. */

@@ -1,0 +1,49 @@
+{
+  "capturedAt": "2026-10-21T07:21:13.401Z",
+  "files": [
+    {
+      "path": "frontend/src/pages/attendance/AttendanceRequestDrawer.tsx",
+      "sha256": "eceaadcf622899af1a9d8fadfa859c1c7550e652b806ee6e199b19d233a13260"
+    },
+    {
+      "path": "frontend/src/pages/attendance/MyAttendancePage.tsx",
+      "sha256": "f89d922d3c7217f3e63e4a9ae9c5af701d01f85c16cde9c3bf54a9b3cb7a6d1a"
+    },
+    {
+      "path": "frontend/src/pages/leave/LeaveApplyDrawer.tsx",
+      "sha256": "27c809f4033aa4cf19d7ea8334f71b1c73b3a9b01e16bf471a5cf2d0074c4904"
+    },
+    {
+      "path": "frontend/src/pages/home/HrOpsDashboard.tsx",
+      "sha256": "7ce5d39ca646cf0be0a14da9f9c86e33da9d0c66b8ca1bf2b8639b10dc80a760"
+    },
+    {
+      "path": "frontend/src/pages/home/LeadershipInsights.tsx",
+      "sha256": "1677227065e5240892e5c6f0d101782a8b34bda899d53d1359d910c32e56eb0c"
+    },
+    {
+      "path": "frontend/src/pages/payroll/PayrollPage.tsx",
+      "sha256": "9fd6c2906a2c6daff23b872a5c499b0c8f450ee52f1d8cfde2e0370a014d1bbb"
+    },
+    {
+      "path": "frontend/src/ui/MonthCalendar.tsx",
+      "sha256": "e7e2ee582591f452b8513303ecc2064ace72f760fabf656c4f1f9f80922a886c"
+    },
+    {
+      "path": "frontend/src/lib/session.ts",
+      "sha256": "35211ab8beee7ea08fca232244d454da61739d5425a171d8670325954ce7ddbd"
+    },
+    {
+      "path": "backend/src/modules/leave/leave-apply.service.ts",
+      "sha256": "f9005fe0a1c9ade2c2a36ea97fa03225ccc7100c11c3e8dcffeafd9005b504e2"
+    },
+    {
+      "path": "backend/src/modules/payroll-core/runs/run.service.ts",
+      "sha256": "f2b09dafe7a7f58f38f7b0fcdcdb597a2fb22e742e7c2c48799eec51adc5b288"
+    },
+    {
+      "path": "backend/src/modules/payroll-outputs/bank/bank-file.service.ts",
+      "sha256": "3f4d9a5d701e1ea9baef071743666228fa89672a5ecb812261ebaed29fb829c8"
+    }
+  ]
+}

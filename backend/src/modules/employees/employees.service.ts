@@ -251,8 +251,7 @@ export async function getEmployeeByEcode(
     const candidate = await findByEcode(db, ecode);
     if (
       self !== undefined &&
-      candidate !== undefined &&
-      candidate.company_code === self.company_code &&
+      candidate?.company_code === self.company_code &&
       candidate.id !== scope.actorEmployeeId
     ) {
       row = candidate;

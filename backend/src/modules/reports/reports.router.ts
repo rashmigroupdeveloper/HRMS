@@ -579,7 +579,7 @@ const boardingRow = z.object({
 });
 
 const r24Input = z.object({
-  companyId: z.number().int().positive(),
+  companyId: z.number().int().positive().optional(),
   fromDate: isoDate,
   toDate: isoDate,
 }).refine((value) => value.fromDate <= value.toDate, {
@@ -666,6 +666,9 @@ const hrDashboard = withPermission('reports.hr')
     joinersMtd: z.number(),
     exitsMtd: z.number(),
     absentToday: z.number(),
+    expectedToday: z.number(),
+    processedToday: z.number(),
+    awaitingToday: z.number(),
     pendingApprovals: z.number(),
     openAbsenceByStage: z.array(z.object({ stage: z.string(), count: z.number() })),
     pendingOt: z.number(),

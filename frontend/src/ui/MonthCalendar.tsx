@@ -1,20 +1,18 @@
 import { useRef } from 'react';
 import { cn } from './cn';
 import { Tooltip } from './Tooltip';
-import { WEEKDAYS_MIN, monthLabel, monthMatrix, todayISOIST } from './calendar';
+import { placeSpans, WEEKDAYS_MIN, monthLabel, monthMatrix, todayISOIST } from './calendar';
+import type { CalendarSpan } from './calendar';
 
 /**
- * MonthCalendar — the attendance month surface (docs/05 §5). Read-oriented:
- * each in-month day carries an attendance state; weekends/week-offs use the
- * diagonal-hatch signature (docs/12 §7.2 "calendar weekend cells"), today is
- * ringed in gold (the view's one accent), and a day with a `note` grows a
- * charcoal-pill tooltip — the manager's "wait, he *was* there" answered on
- * hover (docs/05 §6, team month-grid signature).
+ * MonthCalendar — the attendance month surface (docs/05 §5, docs/12 §7).
+ * Each in-month day carries an attendance state. Weekends and week-offs use
+ * the diagonal hatch. The selected day is a solid gold cell — the one accent.
+ * Leave, holidays and duty draw as bars across the dates they cover.
  *
- * Color is never the only signal (§1 rule 6): every day cell carries an
- * aria-label naming its state, a state dot AND the legend row pairs swatch +
- * label. Keyboard: arrow keys walk the grid (roving tabindex), Enter/Space
- * select when `onSelectDay` is given.
+ * Color is never the only signal: every day cell names its state, a state dot
+ * pairs with the legend, and each bar carries its own label.
+ * Keyboard: arrow keys walk the grid (roving tabindex), Enter/Space select.
  */
 
 export type AttendanceDayState = 'present' | 'absent' | 'leave' | 'halfday' | 'holiday' | 'weekoff';
@@ -33,6 +31,10 @@ interface MonthCalendarProps {
   month: number;
   /** Day-of-month → attendance info. Days absent from the map render plain. */
   days?: Partial<Record<number, AttendanceDay>>;
+  /** Inclusive ranges drawn across the week (leave, holiday, duty). */
+  spans?: readonly CalendarSpan[];
+  /** `YYYY-MM-DD` drawn as the solid gold cell. */
+  selectedIso?: string | null;
   onSelectDay?: (iso: string) => void;
   showLegend?: boolean;
   className?: string;
@@ -57,10 +59,20 @@ const STATE_DOT: Record<AttendanceDayState, string> = {
   weekoff: '',
 };
 
+const SPAN_DOT: Record<CalendarSpan['tone'], string> = {
+  holiday: 'bg-accent',
+  leave: 'bg-hero',
+  duty: 'bg-ink',
+};
+
+const LANE = '1.75rem';
+
 export function MonthCalendar({
   year,
   month,
   days = {},
+  spans = [],
+  selectedIso = null,
   onSelectDay,
   showLegend = true,
   className,
@@ -69,7 +81,6 @@ export function MonthCalendar({
   const todayISO = todayISOIST();
   const gridRef = useRef<HTMLDivElement>(null);
 
-  // States actually present this month drive the legend — no dead entries.
   const usedStates = [
     ...new Set(
       Object.values(days)
@@ -78,7 +89,6 @@ export function MonthCalendar({
     ),
   ];
 
-  // Roving arrows over the in-month cells only.
   const onGridKeyDown = (e: React.KeyboardEvent) => {
     const step =
       e.key === 'ArrowRight'
@@ -117,71 +127,103 @@ export function MonthCalendar({
         role="grid"
         aria-label={monthLabel(year, month)}
         onKeyDown={onGridKeyDown}
-        className="mt-1 grid grid-cols-7 gap-1.5"
+        className="mt-1 space-y-1.5"
       >
-        {weeks.map((week) => (
-          <div key={week[0]?.iso} role="row" className="contents">
-            {week.map((cell) => {
-              if (!cell.inMonth) {
-                return <span key={cell.iso} role="gridcell" aria-hidden className="h-11" />;
-              }
-              const info = days[cell.day];
-              const isWeekOff = info?.state === 'weekoff';
-              const isHoliday = info?.state === 'holiday';
-              const isToday = cell.iso === todayISO;
-              const tabbable = !firstInMonthSeen;
-              firstInMonthSeen = true;
+        {weeks.map((week) => {
+          const placed = placeSpans(spans, week.map((cell) => cell.iso));
+          const lanes = placed.reduce((max, span) => Math.max(max, span.lane + 1), 0);
+          return (
+            <div key={week[0]?.iso} role="row" className="relative">
+              <div
+                className="grid grid-cols-7 gap-1.5"
+                style={lanes > 0 ? { paddingBottom: `calc(${String(lanes)} * ${LANE})` } : undefined}
+              >
+                {week.map((cell) => {
+                  if (!cell.inMonth) {
+                    return <span key={cell.iso} role="gridcell" aria-hidden className="h-11" />;
+                  }
+                  const info = days[cell.day];
+                  const covered = spans.some((span) => cell.iso >= span.from && cell.iso <= span.to);
+                  const isWeekOff = info?.state === 'weekoff';
+                  const isHoliday = info?.state === 'holiday';
+                  const isWeekend = cell.weekday >= 5;
+                  const isToday = cell.iso === todayISO;
+                  const isSelected = cell.iso === selectedIso;
+                  const tabbable = !firstInMonthSeen;
+                  firstInMonthSeen = true;
 
-              const dayButton = (
-                <button
-                  type="button"
-                  data-day={cell.day}
-                  tabIndex={tabbable ? 0 : -1}
-                  // Starts with the visible day number (WCAG 2.5.3 label-in-name).
-                  aria-label={`${String(cell.day)}${info?.label ? ` ${info.label},` : ''} ${monthLabel(year, month)}${info ? ` — ${info.note ?? STATE_LABEL[info.state]}` : ''}`}
-                  onClick={() => onSelectDay?.(cell.iso)}
-                  className={cn(
-                    'u-press relative grid h-11 w-full place-items-center rounded-[10px]',
-                    'text-sm tabular-nums transition-colors duration-[var(--motion-micro)] ease-[var(--ease-std)]',
-                    isWeekOff
-                      ? 'u-hatch bg-surface-2 text-ink-muted'
-                      : isHoliday
-                        ? 'bg-accent-soft text-accent-ink'
-                        : 'text-ink hover:bg-surface-2',
-                    isToday && 'font-semibold ring-1 ring-inset ring-accent',
-                    onSelectDay === undefined && 'cursor-default',
-                  )}
-                >
-                  <span>{cell.day}</span>{' '}
-                  {info?.label && (
-                    <span aria-hidden className="text-[10px] leading-none">
-                      {info.label}
-                    </span>
-                  )}
-                  {info && !isWeekOff && !info.label && (
-                    <span
-                      aria-hidden
+                  const dayButton = (
+                    <button
+                      type="button"
+                      data-day={cell.day}
+                      tabIndex={tabbable ? 0 : -1}
+                      aria-label={`${String(cell.day)}${info?.label ? ` ${info.label},` : ''} ${monthLabel(year, month)}${info ? ` — ${info.note ?? STATE_LABEL[info.state]}` : ''}${isSelected ? ', selected' : ''}`}
+                      aria-pressed={isSelected}
+                      onClick={() => onSelectDay?.(cell.iso)}
                       className={cn(
-                        'absolute bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full',
-                        STATE_DOT[info.state],
+                        'u-press relative grid h-11 w-full place-items-center rounded-[14px]',
+                        'text-sm tabular-nums transition-colors duration-[var(--motion-micro)] ease-[var(--ease-std)]',
+                        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+                        isSelected
+                          ? 'bg-accent font-semibold text-accent-ink'
+                          : isWeekOff || (isWeekend && info === undefined)
+                            ? 'u-hatch bg-surface-2 text-ink-muted'
+                            : isHoliday
+                              ? 'bg-accent-soft text-accent-ink'
+                              : 'text-ink hover:bg-surface-2',
+                        isToday && !isSelected && 'font-semibold ring-1 ring-inset ring-accent',
+                        onSelectDay === undefined && 'cursor-default',
                       )}
-                    />
-                  )}
-                </button>
-              );
+                    >
+                      <span>{cell.day}</span>
+                      {info?.label && (
+                        <span aria-hidden className="text-[10px] leading-none">
+                          {info.label}
+                        </span>
+                      )}
+                      {info && !isWeekOff && !info.label && !covered && !isSelected && (
+                        <span
+                          aria-hidden
+                          className={cn(
+                            'absolute bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full',
+                            STATE_DOT[info.state],
+                          )}
+                        />
+                      )}
+                    </button>
+                  );
 
-              return (
-                <div key={cell.iso} role="gridcell" className="contents">
-                  {info?.note !== undefined ? (
-                    <Tooltip label={info.note}>{dayButton}</Tooltip>
-                  ) : (
-                    dayButton
-                  )}
+                  return (
+                    <div key={cell.iso} role="gridcell" className="contents">
+                      {info?.note !== undefined ? (
+                        <Tooltip label={info.note}>{dayButton}</Tooltip>
+                      ) : (
+                        dayButton
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {placed.length > 0 && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 grid grid-cols-7 gap-1.5">
+                  {placed.map((span) => (
+                    <div
+                      key={`${span.id}:${String(span.start)}`}
+                      style={{
+                        gridColumn: `${String(span.start + 1)} / span ${String(span.length)}`,
+                        marginBottom: `calc(${String(lanes - 1 - span.lane)} * ${LANE})`,
+                      }}
+                      className="flex h-6 items-center gap-1.5 rounded-full bg-surface px-2 text-[11px] font-medium text-ink u-shadow-card ring-1 ring-inset ring-line"
+                    >
+                      <span aria-hidden className={cn('size-1.5 shrink-0 rounded-full', SPAN_DOT[span.tone])} />
+                      <span className="truncate">{span.label}</span>
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {showLegend && usedStates.length > 0 && (

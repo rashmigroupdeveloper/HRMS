@@ -42,12 +42,17 @@ const LABEL: Record<string, string> = {
   date: 'Date',
   workDate: 'Work date',
   days: 'Days',
+  fromHalf: 'First day',
+  toHalf: 'Last day',
   detectedMinutes: 'Detected',
   minutes: 'Minutes',
   fromTime: 'From time',
   toTime: 'To time',
   reason: 'Reason',
   site: 'Site',
+  destinationCity: 'Destination',
+  startDate: 'From',
+  endDate: 'To',
   name: 'Name',
   deadline: 'Decide by',
   templateCode: 'Template',
@@ -71,12 +76,17 @@ const KEY_ORDER = [
   'date',
   'workDate',
   'days',
+  'fromHalf',
+  'toHalf',
   'detectedMinutes',
   'minutes',
   'fromTime',
   'toTime',
   'reason',
   'site',
+  'destinationCity',
+  'startDate',
+  'endDate',
   'name',
   'deadline',
   'templateCode',
@@ -120,6 +130,16 @@ function formatInstant(iso: string): string {
   }).format(date);
 }
 
+function halfDayRow(key: 'fromHalf' | 'toHalf', record: Record<string, unknown>): SummaryRow | null {
+  if (record[key] !== true) return null;
+  const from = record['fromDate'] ?? record['from'];
+  const to = record['toDate'] ?? record['to'];
+  const sameDay = from === to;
+  if (key === 'toHalf' && sameDay && record['fromHalf'] === true) return null;
+  if (sameDay) return { label: 'Day length', value: 'Half day' };
+  return { label: key === 'fromHalf' ? 'First day' : 'Last day', value: 'Half day' };
+}
+
 function formatScalar(key: string, value: unknown): string | null {
   if (value === null || value === undefined || value === '') return null;
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
@@ -155,6 +175,11 @@ function rowsFromPayload(payload: unknown): SummaryRow[] {
   if (!isRecord(payload)) return [];
   const rows: SummaryRow[] = [];
   for (const key of orderedKeys(payload)) {
+    if (key === 'fromHalf' || key === 'toHalf') {
+      const half = halfDayRow(key, payload);
+      if (half !== null) rows.push(half);
+      continue;
+    }
     const value = formatScalar(key, payload[key]);
     if (value === null) continue;
     rows.push({ label: humanizeKey(key), value });
@@ -202,9 +227,19 @@ function consequence(type: string, payload: unknown): string {
   if (type === 'leave' || type === 'comp_off' || leave !== null) {
     const daysBit = days === null ? 'leave' : `${days} day${days === '1' ? '' : 's'}`;
     const typeBit = leave ?? 'leave';
+    const sameDay = span !== null && !span.includes(' to ');
+    const firstHalf = payload['fromHalf'] === true;
+    const lastHalf = payload['toHalf'] === true;
+    const halfNote = firstHalf && lastHalf
+      ? ', half day on the first and last dates'
+      : firstHalf
+        ? (sameDay ? ', half day' : ', half day on the first date')
+        : lastHalf
+          ? (sameDay ? ', half day' : ', half day on the last date')
+          : '';
     return span === null
-      ? `Final approval grants ${daysBit} of ${typeBit}.`
-      : `Final approval grants ${daysBit} of ${typeBit} (${span}).`;
+      ? `Final approval grants ${daysBit} of ${typeBit}${halfNote}.`
+      : `Final approval grants ${daysBit} of ${typeBit} (${span})${halfNote}.`;
   }
   if (type === 'leave_cancel') {
     return 'Final approval cancels the leave and returns the days to the ledger.';

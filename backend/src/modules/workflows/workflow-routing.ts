@@ -1,4 +1,5 @@
 /** WF-01/02: open, notify and advance a round without treating vacancy as consent. */
+import { sql } from 'kysely';
 import type { Kysely, Selectable, Transaction } from 'kysely';
 import type { Database, WfRequestsTable } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
@@ -98,6 +99,20 @@ export async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definiti
 
   const steps = await getSteps(db, request.definition_code);
 
+  // Duplicate collapse must only consider approvals from the CURRENT round.
+  // A send_back + resubmit starts a fresh approval chain (doc 11 §4b/§5), so
+  // approvals from a superseded round must NOT skip their approver this time —
+  // otherwise an edited request silently bypasses everyone who approved the
+  // previous version (e.g. RM approves ₹10k, HOD sends back, employee resubmits
+  // ₹100k, RM is never asked again). The last `sent_back` marks the boundary.
+  const boundaryRow = await db
+    .selectFrom('wf.request_steps')
+    .select(sql<number>`coalesce(max(id), 0)`.as('round_start'))
+    .where('request_id', '=', request.id)
+    .where('action', '=', 'sent_back')
+    .executeTakeFirst();
+  const roundStartId = boundaryRow?.round_start ?? 0;
+
   const vacant: StepSpec[] = [];
   const collapsed: { step: number; userId: number; approver: string }[] = [];
   const auditVacancies = async () => {
@@ -116,6 +131,7 @@ export async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definiti
         .select(['approver_user_id', 'action'])
         .where('request_id', '=', request.id)
         .where('action', '=', 'approved')
+        .where('id', '>', roundStartId)
         .execute();
       if (priorApproved.some((s) => s.approver_user_id === approver.userId)) {
         collapsed.push({ step: spec.step, userId: approver.userId, approver: spec.approver });
@@ -130,15 +146,19 @@ export async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definiti
     vacant.push(spec);
   }
 
-  if (fromStepNo === 0) {
+  // Vacancy is not consent. An all-vacant first round, and a later round whose
+  // remaining approvers are all missing, stay pending for HR. A round that only
+  // collapsed duplicate approvers (they already approved) may still complete.
+  if (vacant.length > 0) {
     await auditVacancies();
-    // Sponsor decision, 16 Oct 2026: an all-vacant round is not consent.
-    // No invented approver/receipt or domain finalization; HR repairs routing.
+    const heldBecause = fromStepNo === 0
+      ? 'Held for HR: all configured approvers are missing or inactive'
+      : 'Held for HR: every remaining approver is missing or inactive';
     await db.updateTable('wf.requests').set({ status: 'pending', decided_at: null })
       .where('id', '=', request.id).execute();
     await writeAudit(db, { action: 'update', entity: 'wf.requests', entityId: request.id,
       subjectEmployeeId: request.subject_employee_id, field: 'routing_hold',
-      newValue: 'Held for HR: all configured approvers are missing or inactive' });
+      newValue: heldBecause });
     await enqueueEvent(db, 'workflow.routing_held', 'workflow_routing_held', {
       requestId: request.id, definitionCode: request.definition_code,
       subjectEmployeeId: request.subject_employee_id,

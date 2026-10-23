@@ -59,6 +59,7 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
   { key: 'att.cycle_start_day', value: 1, valueType: 'number', description: 'C-17 / item 4: attendance cycle start day (1 = calendar month; 26 = 26th to 25th, days after the cut-off paid as present and trued up next month). Change only between payroll months' },
   { key: 'att.sandwich_rule', value: false, valueType: 'boolean', description: 'Item 4: week-offs/holidays between two full-day unpaid absences become LOP (calendar-type divisors only)' },
   { key: 'att.materialize_lookback_days', value: 45, valueType: 'number', description: 'Owner bar #2: hourly sweep queues days with no swipe (absence/WO/holiday) for this many past days so a Kent-fed month can close' },
+  { key: 'att.day_finalize_after_time', value: '04:00', valueType: 'string', description: 'ATT-03/18 sponsor 23 Oct 2026: earliest next-morning IST finalization time for automatic KENT days; later-ending shifts and incomplete devices remain pending' },
   { key: 'pay.negative_net_policy', value: 'carry_forward', valueType: 'string', description: 'P-14: carry_forward trims recoveries so net is never negative and recovers the rest next run; flag blocks finalize for review' },
   { key: 'loans.interest_rate_pct', value: 0, valueType: 'number', description: 'LN-02: policy annual interest % on interest-bearing staff loans (interest-free types always 0)' },
   { key: 'loans.max_emi_pct_of_gross', value: 30, valueType: 'number', description: 'LN-01: EMI cap as % of monthly gross for eligibility' },

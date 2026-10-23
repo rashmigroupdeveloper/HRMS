@@ -3,6 +3,7 @@ import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../../core/db/types.js';
 import { formatDbDate } from '../../../core/dates.js';
 import { unpaidWeight, type DayFact } from './payable-days.js';
+import { ConflictError } from '../../../core/errors/index.js';
 
 /**
  * Locked, complete and resolved day facts for [from, until). Throws when any day
@@ -32,11 +33,11 @@ export async function readLockedDayFacts(
     .execute();
   const expected = Math.round((Date.parse(`${until}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
   if (rows.length !== expected) {
-    throw new Error(`Employee #${String(employeeId)} has incomplete attendance for ${from} to ${until}.`);
+    throw new ConflictError(`Employee #${String(employeeId)} has incomplete attendance for ${from} to ${until}.`);
   }
   const unresolved = rows.some((r) => (r.status === 'L' && r.is_paid === null) || (r.status === 'WO' && r.weekoff_paid === null));
   if (rows.some((r) => !r.is_locked) || unresolved) {
-    throw new Error(`Employee #${String(employeeId)} has unlocked or unresolved payroll attendance.`);
+    throw new ConflictError(`Employee #${String(employeeId)} has unlocked or unresolved payroll attendance.`);
   }
   return rows.map((r) => ({
     iso: formatDbDate(r.work_date),
@@ -55,6 +56,6 @@ export async function readLockedPayableDays(
   until: string,
 ): Promise<number> {
   const facts = await readLockedDayFacts(db, employeeId, from, until);
-  if (facts.length === 0) throw new Error(`Employee #${String(employeeId)} has incomplete attendance for ${from} to ${until}.`);
+  if (facts.length === 0) throw new ConflictError(`Employee #${String(employeeId)} has incomplete attendance for ${from} to ${until}.`);
   return facts.reduce((s, f) => s + (1 - unpaidWeight(f)), 0);
 }

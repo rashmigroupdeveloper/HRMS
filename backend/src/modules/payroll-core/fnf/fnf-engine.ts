@@ -13,6 +13,7 @@
  */
 
 import { calculateGratuity, type GratuityCalculationResult } from './gratuity-calculator.js';
+import { paise, mulDiv } from '../../../core/money/index.js';
 
 export interface FnfComputeParams {
   employeeId: number;
@@ -125,18 +126,34 @@ export function calculateWorkingDaysElapsed(
  */
 export function computeFnfSettlement(params: FnfComputeParams): FnfSettlementCalculation {
   const daysInMonth = params.daysInMonth ?? 30;
+  if (!Number.isInteger(daysInMonth) || daysInMonth < 1 || daysInMonth > 31
+    || !Number.isFinite(params.daysPayable) || params.daysPayable < 0 || params.daysPayable > daysInMonth)
+    throw new RangeError('Invalid final-month payable days or divisor');
+  for (const value of [params.elBalanceDays, params.shortfallDays]) {
+    if (!Number.isFinite(value) || value < 0) throw new RangeError('Invalid settlement day quantity');
+  }
+  const dayUnits = (value: number): number => {
+    const units = Math.round(value * 100);
+    if (Math.abs(value * 100 - units) > 1e-7) throw new RangeError('Settlement day quantities support at most two decimals');
+    return units;
+  };
+  for (const value of [params.basicMonthlyPaise, params.daMonthlyPaise ?? 0, params.grossMonthlyPaise,
+    params.noticeAlreadyRecoveredPaise ?? 0, params.unreturnedAssetRecoveryPaise ?? 0,
+    params.loanOutstandingPaise ?? 0, params.travelAdvanceDebitPaise ?? 0, params.heldSalaryPaise ?? 0, params.tdsPaise ?? 0]) {
+    if (paise(value) < 0) throw new RangeError('Settlement money must be non-negative integer paise');
+  }
   const basicPaise = params.basicMonthlyPaise;
   const daPaise = params.daMonthlyPaise ?? 0;
   const wageBasePaise = basicPaise + daPaise;
 
   // 1. Partial-month prorated salary earnings through LWD
-  const proratedSalaryPaise = Math.round((params.grossMonthlyPaise / daysInMonth) * params.daysPayable);
+  const proratedSalaryPaise = mulDiv(paise(params.grossMonthlyPaise), dayUnits(params.daysPayable), daysInMonth * 100);
 
   // 2. Leave Encashment: (Basic + DA) / 30 × EL_balance
-  const leaveEncashmentPaise = Math.round((wageBasePaise / 30) * Math.max(0, params.elBalanceDays));
+  const leaveEncashmentPaise = mulDiv(paise(wageBasePaise), dayUnits(params.elBalanceDays), 30 * 100);
 
   // 3. Notice Period Shortfall Recovery: (Basic / 30) × shortfall_days
-  const noticeRecoveryPaise = Math.max(0, Math.round((basicPaise / 30) * Math.max(0, params.shortfallDays)) - (params.noticeAlreadyRecoveredPaise ?? 0));
+  const noticeRecoveryPaise = Math.max(0, mulDiv(paise(basicPaise), dayUnits(params.shortfallDays), 30 * 100) - (params.noticeAlreadyRecoveredPaise ?? 0));
 
   // 4. Gratuity Calculation (Golden Fixture G8)
   const gratuityDetail = calculateGratuity({
@@ -163,6 +180,7 @@ export function computeFnfSettlement(params: FnfComputeParams): FnfSettlementCal
     noticeRecoveryPaise + assetRecoveryPaise + loanRecoveryPaise + travelAdvanceRecoveryPaise + tdsPaise;
 
   const netPayablePaise = grossPayablePaise - totalDeductionsPaise;
+  paise(grossPayablePaise); paise(totalDeductionsPaise); paise(netPayablePaise);
   const netPayableRupees = Math.round(netPayablePaise / 100);
 
   // 7. TAT Due Date (3 working days)

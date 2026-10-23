@@ -6,6 +6,7 @@
  * and the audited manual adjustment.
  */
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
+import { inTransaction } from '../../core/db/database.js';
 import type { Database, LvLeaveTypesTable } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { addDaysIso, istDateString } from '../../core/dates.js';
@@ -64,12 +65,13 @@ export function genderCode(value: string | null | undefined): string | null {
 
 /** Every active type with the employee's balance/pending/available (ESS tiles). */
 export async function getBalances(db: Db, employeeId: number) {
-  const employee = await db.selectFrom('core.employees').select('gender').where('id', '=', employeeId).executeTakeFirst();
+  const employee = await db.selectFrom('core.employees').select(['gender', 'category']).where('id', '=', employeeId).executeTakeFirst();
   const caller = genderCode(employee?.gender ?? null);
   const types = await db.selectFrom('lv.leave_types').selectAll().where('is_active', '=', true).orderBy('code').execute();
   const out = [];
   for (const t of types) {
     if (t.applicable_gender !== null && genderCode(t.applicable_gender) !== caller) continue;
+    if (t.applicable_categories !== null && (!employee?.category || !t.applicable_categories.includes(employee.category))) continue;
     out.push({ type: t, ...(await getBalance(db, employeeId, t.id)) });
   }
   return out;
@@ -91,7 +93,9 @@ export async function runMonthlyAccrual(db: Kysely<Database>, monthStartIso?: st
     FROM core.employees e
     CROSS JOIN lv.leave_types t
     WHERE e.status IN ('active','on_notice')
-      AND t.is_active AND t.accrual_per_month > 0
+      AND t.is_active AND t.is_paid AND t.accrual_per_month > 0
+      AND e.doj IS NOT NULL AND e.doj <= ${monthStart}::date
+      AND (e.dol IS NULL OR e.dol >= ${monthStart}::date)
       AND (
         t.accrual_requires_service_months = 0
         OR (e.doj IS NOT NULL
@@ -252,7 +256,9 @@ export async function adjustBalance(
   db: Kysely<Database>,
   params: { employeeId: number; leaveTypeCode: string; delta: number; note: string; actorUserId: number },
 ): Promise<number> {
-  if (params.delta === 0) throw new Error('Adjustment delta cannot be zero');
+  return inTransaction(db, async db => {
+  if (!Number.isFinite(params.delta) || params.delta === 0) throw new Error('Adjustment delta must be a finite, non-zero number');
+  if (params.note.trim().length < 5) throw new Error('An adjustment note of at least five characters is required');
   const type = await getLeaveType(db, params.leaveTypeCode);
   const row = await db
     .insertInto('lv.ledger')
@@ -276,4 +282,5 @@ export async function adjustBalance(
     newValue: `${params.delta} — ${params.note}`,
   });
   return row.id;
+  });
 }

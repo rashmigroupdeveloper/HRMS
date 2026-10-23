@@ -17,6 +17,7 @@ import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import type { AttAbsenceCasesTable, Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { addDaysIso, formatDbDate, istDateString } from '../../core/dates.js';
+import { assertEmployeesInScope, employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { getTypedSetting } from '../settings/index.js';
 import { enqueue, enqueueEvent } from '../notifications/index.js';
 import { issueLetter } from '../letters/index.js';
@@ -190,10 +191,12 @@ export async function runAbsenceScan(db: Kysely<Database>, scanDateIso?: string)
 /** PP-7's human steps: HR escalates a case (forward-only), audited. */
 export async function setAbsenceCaseStage(
   db: Kysely<Database>,
-  params: { caseId: number; stage: 'warning' | 'termination_review'; actorUserId: number },
+  params: { caseId: number; stage: 'warning' | 'termination_review'; actorUserId: number; scope?: EmployeeScope },
 ): Promise<void> {
   const order = ['watch', 'show_cause', 'warning', 'termination_review'];
   const current = await db.selectFrom('att.absence_cases').selectAll().where('id', '=', params.caseId).executeTakeFirstOrThrow();
+  // CORE-10: the case subject must be inside the caller's permitted data scope.
+  if (params.scope) await assertEmployeesInScope(db, params.scope, [current.employee_id]);
   if (current.closed_at !== null) throw new Error('Case is closed');
   if (order.indexOf(params.stage) <= order.indexOf(current.stage)) {
     throw new Error(`Stage can only move forward (currently ${current.stage})`);
@@ -218,9 +221,11 @@ export async function setAbsenceCaseStage(
  *  routed through the signature chain, and linked back (docs/04 §1.5). */
 export async function issueAbsenceCaseLetter(
   db: Kysely<Database>,
-  params: { caseId: number; templateCode: 'show_cause' | 'warning'; actorUserId: number; responseDays?: number | undefined },
+  params: { caseId: number; templateCode: 'show_cause' | 'warning'; actorUserId: number; responseDays?: number | undefined; scope?: EmployeeScope },
 ): Promise<{ letterId: number; workflowRequestId: number | null }> {
   const absenceCase = await db.selectFrom('att.absence_cases').selectAll().where('id', '=', params.caseId).executeTakeFirstOrThrow();
+  // CORE-10: the case subject must be inside the caller's permitted data scope.
+  if (params.scope) await assertEmployeesInScope(db, params.scope, [absenceCase.employee_id]);
   if (absenceCase.closed_at !== null) throw new Error('Case is closed');
 
   const extraFields: Record<string, string> =
@@ -246,11 +251,13 @@ export async function issueAbsenceCaseLetter(
   return { letterId: issued.letterId, workflowRequestId: issued.workflowRequestId };
 }
 
-/** The HR case queue (open first, most days-absent on top). */
-export async function listAbsenceCases(db: Kysely<Database>, onlyOpen: boolean) {
+/** The HR case queue (open first, most days-absent on top), narrowed to the
+ *  caller's permitted data scope (CORE-10). */
+export async function listAbsenceCases(db: Kysely<Database>, onlyOpen: boolean, scope?: EmployeeScope) {
   let q = db
     .selectFrom('att.absence_cases as ac')
     .innerJoin('core.employees as e', 'e.id', 'ac.employee_id')
+    .where(employeeScopeSql(scope, 'e'))
     .select(['ac.id', 'ac.employee_id', 'e.ecode', 'e.first_name', 'e.last_name', 'ac.start_date', 'ac.days_absent', 'ac.stage', 'ac.letter_id', 'ac.resolution', 'ac.closed_at']);
   if (onlyOpen) q = q.where('ac.closed_at', 'is', null);
   return q.orderBy('ac.closed_at', 'asc').orderBy('ac.days_absent', 'desc').limit(500).execute();

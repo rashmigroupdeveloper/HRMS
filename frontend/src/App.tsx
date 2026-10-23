@@ -13,6 +13,7 @@ const SsoAuthorizePage=lazy(()=>import('./pages/auth/SsoAuthorizePage').then(m=>
 const PrejoinPortalPage = lazy(() =>
   import('./pages/lifecycle/PrejoinPortalPage').then((m) => ({ default: m.PrejoinPortalPage })),
 );
+import { loginLandingPath, pathAfterSignIn } from './lib/auth-landing';
 import {
   loadSession,
   restoreSession,
@@ -25,6 +26,15 @@ export function App() {
   useEffect(() => {
     void restoreSession().then(setSession);
   }, []);
+
+  useEffect(() => {
+    if (session !== null) return;
+    if (window.location.pathname.startsWith('/onboard/prejoin')) return;
+    const next = loginLandingPath(window.location.pathname, window.location.search);
+    if (`${window.location.pathname}${window.location.search}` !== next) {
+      window.history.replaceState(null, '', next);
+    }
+  }, [session]);
 
   if (session === 'checking') return <Splash />;
 
@@ -42,6 +52,10 @@ export function App() {
     return (
       <LoginPage
         onSuccess={(user) => {
+          const next = pathAfterSignIn();
+          if (`${window.location.pathname}${window.location.search}` !== next) {
+            window.history.replaceState(null, '', next);
+          }
           setSession(user);
         }}
         loadSession={loadSession}
@@ -69,7 +83,7 @@ function Splash() {
   return (
     <div role="status" aria-label="Loading Rashmi HRMS" className="grid min-h-screen place-items-center">
       <div className="flex items-center gap-2.5 opacity-70">
-        <span className="grid size-9 animate-pulse place-items-center rounded-full bg-hero text-sm font-bold text-hero-ink">
+        <span className="grid size-9 place-items-center rounded-full bg-hero text-sm font-bold text-hero-ink">
           R
         </span>
         <span className="text-sm font-semibold text-ink">Rashmi HRMS</span>

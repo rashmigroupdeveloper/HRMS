@@ -19,7 +19,6 @@ import {
   PageHeader,
   StatusBadge,
   Switch,
-  TextField,
   toast,
   todayISOIST,
 } from '../../ui';
@@ -27,6 +26,7 @@ import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
 import { attendanceLabel, currentMonthIST, formatTime } from '../home/dashboard-format';
 import type { TeamMemberMonth } from '../home/dashboard-types';
 import { useDashboardResource } from '../home/useDashboardResource';
+import { CompanyField } from '../../app/CompanyField';
 import { defaultCompanyId, rememberCompanyId } from '../reports/report-utils';
 import { TeamCalendarTab } from './TeamCalendarTab';
 import { TeamRosterEditor } from './TeamRosterEditor';
@@ -305,18 +305,7 @@ export function TeamPage({ user }: { user: SessionUser }) {
           <Card className="lg:sticky lg:top-24">
             <MonthNav month={month} onMonth={setMonth} />
             <div className="mt-4">
-              <TextField
-                label="Company ID"
-                value={companyId}
-                hint={
-                  canSignOff
-                    ? 'Last used company is remembered. This is the entity you are signing for.'
-                    : 'Enter the company you are signing for — never defaults to 0.'
-                }
-                onChange={(event) => {
-                  setCompanyId(event.currentTarget.value);
-                }}
-              />
+              <CompanyField value={companyId} onChange={setCompanyId} />
             </div>
             <div className="mt-4 flex justify-end">
               <Button

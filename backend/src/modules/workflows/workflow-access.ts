@@ -68,9 +68,31 @@ function workflowAdministrationSql(userId: Id, subjectId: Id) {
   return employeePermissionSql(userId, sql<string>`'admin.settings'`, subjectId);
 }
 
+/**
+ * An org-unit hold grant with no unit on the assignment covers the actor's
+ * own company. NULL = NULL does not, and a missing org unit must not hide
+ * every held request from the HR person who works there.
+ */
+function unboundCompanyHoldSql(userId: Id, subjectId: Id) {
+  return sql<boolean>`EXISTS (
+    SELECT 1
+      FROM core.users actor
+      JOIN core.employees actor_emp ON actor_emp.id = actor.employee_id
+      JOIN core.employees subject ON subject.id = ${subjectId}
+      JOIN ${effectiveRoleGrants(userId)} grant_role ON grant_role.scope_org_unit_id IS NULL
+      JOIN core.role_permissions grant_permission ON grant_permission.role_id = grant_role.role_id
+      JOIN core.permissions permission ON permission.id = grant_permission.permission_id
+     WHERE actor.id = ${userId}
+       AND actor.is_active
+       AND permission.code = 'workflow.routing_holds'
+       AND grant_permission.scope = 'org_unit'
+       AND actor_emp.company_id = subject.company_id
+  )`;
+}
+
 /** E2E-004 (RQ-WF-009, O25): routing-hold repair needs admin.settings OR workflow.routing_holds, in scope. */
 export function workflowRoutingHoldSql(userId: Id, subjectId: Id) {
-  return sql<boolean>`(${workflowAdministrationSql(userId, subjectId)} OR ${employeePermissionSql(userId, sql<string>`'workflow.routing_holds'`, subjectId)})`;
+  return sql<boolean>`(${workflowAdministrationSql(userId, subjectId)} OR ${employeePermissionSql(userId, sql<string>`'workflow.routing_holds'`, subjectId)} OR ${unboundCompanyHoldSql(userId, subjectId)})`;
 }
 
 export function workflowRoleSql(userId: Id, roleSpec: Text, definition: Text, subjectId: Id) {

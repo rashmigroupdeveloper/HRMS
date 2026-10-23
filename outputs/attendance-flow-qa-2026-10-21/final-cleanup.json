@@ -1,0 +1,15 @@
+{
+  "users": [
+    {
+      "active": "0",
+      "total": "5"
+    }
+  ],
+  "run": [
+    {
+      "status": "paid",
+      "attendance_lock_id": "1859"
+    }
+  ],
+  "ownRecomputeQueueCleared": true
+}

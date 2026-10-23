@@ -186,6 +186,9 @@ async function runKentCase(db: Kysely<Database>, c: KentCase) {
       ]).execute();
       // Isolate from devices other suites left behind (rolled back with the case).
       await trx.updateTable('att.devices').set({ is_active: false }).where('door_code', 'not like', `${tag}-%`).where('is_active', '=', true).execute();
+      // The worker's bounded drain must exercise this case rather than dirty
+      // employees retained by other suites. This isolation rolls back below.
+      await trx.deleteFrom('att.recompute_queue').where('employee_id', '!=', emp.id).execute();
 
       const cfg = kentConfigFromEnv({ KENT_BASE_URL: `http://127.0.0.1:${String(port)}`, KENT_API_KEY: 'matrix-key', KENT_PAGE_SIZE: '50', KENT_DEVICES_PATH: '/devices', KENT_DEVICE_MAP: JSON.stringify(doors) });
       if (!cfg) throw new Error('kent config');
@@ -203,6 +206,11 @@ async function runKentCase(db: Kysely<Database>, c: KentCase) {
 
       const prepare = async () => {
         await queueMissingDays(trx, { companyId: o.companyId, from: c.window.from, until: c.window.until });
+        // Real worker cycles commit separately. This rollback-only scenario
+        // shares one PostgreSQL transaction, whose now() stays fixed; make
+        // already-due retries eligible without advancing a future cutoff.
+        await trx.updateTable('att.recompute_queue').set({ queued_at: sql<Date>`now()` })
+          .where('employee_id', '=', emp.id).where('queued_at', '<=', sql<Date>`clock_timestamp()`).execute();
         await drainRecomputeQueue(trx);
         for (let w = weekStartOf(c.window.from); w < c.window.until; w = addDaysIso(w, 7)) await closeWeekOffs(trx, w, 1, emp.id);
       };

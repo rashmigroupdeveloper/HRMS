@@ -6,6 +6,8 @@ import type { EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { readSessionStatuses, validateSessionSummary, type SessionStatuses } from './session-status.js';
 import { AttendanceMutationError, assertAttendanceMonthOpen, attendanceTransaction, lockAttendanceEmployee } from './attendance-mutation.js';
+import { recloseDecidedWeekOffs } from '../../core/db/attendance-period.js';
+import { getTypedSetting } from '../settings/index.js';
 
 function snapshot(row: Selectable<AttDayRecordsTable>) {
   return { status: row.status, sessionStatuses: row.session_statuses, source: row.source,
@@ -52,6 +54,8 @@ export async function setManualStatus(db: Kysely<Database>, params: {
       session_statuses: sessions ? JSON.stringify(sessions) : null, computed_at: new Date(),
     }).where('att.day_records.is_locked', '=', false)).returningAll().executeTakeFirst();
     if (!posted) throw new AttendanceMutationError('CONFLICT', 'Attendance changed or became locked; refresh before correcting');
+    await recloseDecidedWeekOffs(trx, params.employeeId, [params.isoDate],
+      await getTypedSetting(trx, 'att.weekoff_min_worked_days', 'number', 1));
     await writeAudit(trx, { actorUserId: params.actorUserId, action: 'update', entity: 'att.day_records',
       entityId: posted.id, subjectEmployeeId: params.employeeId, field: `manual_override:${params.isoDate}`,
       oldValue: previous ? JSON.stringify(snapshot(previous)) : null, newValue: JSON.stringify(snapshot(posted)) });

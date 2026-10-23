@@ -17,6 +17,7 @@ import {
   toast,
 } from '../../ui';
 import type { Column } from '../../ui';
+import { CompanyField } from '../../app/CompanyField';
 import { currentMonthIST } from '../home/dashboard-format';
 import { defaultCompanyId, rememberCompanyId } from '../reports/report-utils';
 
@@ -156,15 +157,7 @@ export function MonthLockPage() {
 
       <Card>
         <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
-          <TextField
-            label="Company ID"
-            value={companyId}
-            onChange={(event) => {
-              setCompanyId(event.currentTarget.value);
-            }}
-            placeholder="e.g. 1"
-            error={error ?? undefined}
-          />
+          <CompanyField value={companyId} onChange={setCompanyId} error={error ?? undefined} />
           <TextField
             label="Month"
             type="month"

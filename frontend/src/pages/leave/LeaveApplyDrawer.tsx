@@ -1,10 +1,10 @@
+import { ownedDraftKey } from '../../lib/draft-storage';
 import { useEffect, useRef, useState } from 'react';
 import { apiFetch } from '../../lib/api';
 import { Button, Checkbox, DatePicker, Drawer, Select, Textarea, formatDateIN, toast, todayISOIST } from '../../ui';
 import { ChainPreview } from '../workflows/ChainPreview';
 import { sandwichPreviewCopy, type LeaveSkip } from './leave-preview';
 
-const LEAVE_DRAFT_KEY = 'rashmi.draft.leave';
 const DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 interface LeaveDraft {
@@ -13,6 +13,7 @@ interface LeaveDraft {
   from: string | null;
   to: string | null;
   halfDay: boolean;
+  lastHalf: boolean;
   reason: string;
 }
 
@@ -20,9 +21,10 @@ function isIsoDate(value: unknown): value is string {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
-function readLeaveDraft(): LeaveDraft | null {
+function readLeaveDraft(key: string | null): LeaveDraft | null {
   try {
-    const raw = window.localStorage.getItem(LEAVE_DRAFT_KEY);
+    if (key === null) return null;
+    const raw = window.localStorage.getItem(key);
     if (raw === null) return null;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null) return null;
@@ -30,37 +32,41 @@ function readLeaveDraft(): LeaveDraft | null {
     const savedAt = record['savedAt'];
     if (typeof savedAt !== 'number' || !Number.isFinite(savedAt)) return null;
     if (Date.now() - savedAt >= DRAFT_MAX_AGE_MS) {
-      window.localStorage.removeItem(LEAVE_DRAFT_KEY);
+      window.localStorage.removeItem(key);
       return null;
     }
     const typeRaw = record['typeCode'];
     const fromRaw = record['from'];
     const toRaw = record['to'];
     const halfDay = record['halfDay'];
+    const lastHalfRaw = record['lastHalf'];
     const reason = record['reason'];
     const typeCode = typeRaw === null || typeof typeRaw === 'string' ? typeRaw : undefined;
     const from = fromRaw === null ? null : isIsoDate(fromRaw) ? fromRaw : undefined;
     const to = toRaw === null ? null : isIsoDate(toRaw) ? toRaw : undefined;
     if (typeCode === undefined || from === undefined || to === undefined) return null;
     if (typeof halfDay !== 'boolean' || typeof reason !== 'string') return null;
-    return { savedAt, typeCode, from, to, halfDay, reason };
+    const lastHalf = typeof lastHalfRaw === 'boolean' ? lastHalfRaw : false;
+    return { savedAt, typeCode, from, to, halfDay, lastHalf, reason };
   } catch {
     return null;
   }
 }
 
-function writeLeaveDraft(draft: Omit<LeaveDraft, 'savedAt'>): void {
+function writeLeaveDraft(key: string | null, draft: Omit<LeaveDraft, 'savedAt'>): void {
+  if (key === null) return;
   try {
     const payload: LeaveDraft = { ...draft, savedAt: Date.now() };
-    window.localStorage.setItem(LEAVE_DRAFT_KEY, JSON.stringify(payload));
+    window.localStorage.setItem(key, JSON.stringify(payload));
   } catch {
     /* persistence is best-effort */
   }
 }
 
-function clearLeaveDraft(): void {
+function clearLeaveDraft(key: string | null): void {
+  if (key === null) return;
   try {
-    window.localStorage.removeItem(LEAVE_DRAFT_KEY);
+    window.localStorage.removeItem(key);
   } catch {
     /* persistence is best-effort */
   }
@@ -86,23 +92,28 @@ interface LeaveApplyPreview {
   blocked: boolean;
 }
 
-export function LeaveApplyDrawer({
+function OwnedLeaveApplyDrawer({
+  ownerId,
   open,
   leaveTypes,
   onClose,
   onSubmitted,
 }: {
+  ownerId?: number | undefined;
   open: boolean;
   leaveTypes: LeaveTypeOption[];
   onClose: () => void;
   onSubmitted: () => void;
 }) {
+  const draftKey = ownedDraftKey('leave', ownerId);
   const [typeCode, setTypeCode] = useState<string | null>(null);
   const [from, setFrom] = useState<string | null>(null);
   const [to, setTo] = useState<string | null>(null);
   const [halfDay, setHalfDay] = useState(false);
+  const [lastHalf, setLastHalf] = useState(false);
   const [reason, setReason] = useState('');
   const [preview, setPreview] = useState<LeaveApplyPreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,19 +128,20 @@ export function LeaveApplyDrawer({
       return;
     }
     skipPersistRef.current = true;
-    const draft = readLeaveDraft();
+    const draft = readLeaveDraft(draftKey);
     if (draft !== null) {
       draftAppliedRef.current = true;
       setTypeCode(draft.typeCode);
       setFrom(draft.from);
       setTo(draft.to);
       setHalfDay(draft.halfDay);
+      setLastHalf(draft.from !== null && draft.to !== null && draft.from !== draft.to && draft.lastHalf);
       setReason(draft.reason);
       return;
     }
     setFrom((value) => value ?? todayISOIST());
     setTo((value) => value ?? todayISOIST());
-  }, [open]);
+  }, [open, draftKey]);
 
   useEffect(() => {
     if (!open || draftAppliedRef.current || typeCode !== null || leaveTypes.length === 0) return;
@@ -143,27 +155,35 @@ export function LeaveApplyDrawer({
       skipPersistRef.current = false;
       return;
     }
-    writeLeaveDraft({ typeCode, from, to, halfDay, reason });
-  }, [open, typeCode, from, to, halfDay, reason]);
+    writeLeaveDraft(draftKey, { typeCode, from, to, halfDay, lastHalf, reason });
+  }, [open, typeCode, from, to, halfDay, lastHalf, reason, draftKey]);
 
   useEffect(() => {
     if (!open || !from || !to || !typeCode) {
       setPreview(null);
+      setPreviewLoading(false);
       setPreviewError(null);
       return;
     }
     let cancelled = false;
-    const fromHalf = halfDay ? 'true' : 'false';
-    const path = `/api/leave/preview?leaveType=${encodeURIComponent(typeCode)}&from=${from}&to=${to}&fromHalf=${fromHalf}&toHalf=false`;
+    setPreview(null);
+    setPreviewError(null);
+    setPreviewLoading(true);
+    const allowsHalf = selected?.allowHalfDay === true;
+    const endsOnHalf = allowsHalf && from !== to && lastHalf;
+    const startsOnHalf = allowsHalf && halfDay;
+    const path = `/api/leave/preview?leaveType=${encodeURIComponent(typeCode)}&from=${from}&to=${to}&fromHalf=${startsOnHalf ? 'true' : 'false'}&toHalf=${endsOnHalf ? 'true' : 'false'}`;
     void apiFetch<LeaveApplyPreview>(path)
       .then((result) => {
         if (!cancelled) {
+          setPreviewLoading(false);
           setPreview(result);
           setPreviewError(null);
         }
       })
       .catch((cause: unknown) => {
         if (!cancelled) {
+          setPreviewLoading(false);
           setPreview(null);
           setPreviewError(cause instanceof Error ? cause.message : 'Could not preview this leave.');
         }
@@ -171,19 +191,27 @@ export function LeaveApplyDrawer({
     return () => {
       cancelled = true;
     };
-  }, [open, typeCode, from, to, halfDay]);
+  }, [open, typeCode, from, to, halfDay, lastHalf, selected?.allowHalfDay]);
 
   const submit = async () => {
     if (!typeCode || !from || !to || reason.trim().length < 3) {
       setError('Choose a leave type and dates, then add a short reason.');
       return;
     }
-    if (preview?.blocked) {
+    if (previewLoading || preview === null) {
+      setError(previewError ?? 'Wait for the leave preview before sending this request.');
+      return;
+    }
+    if (preview.blocked) {
       setError(
         preview.blackouts[0]
           ? `Leave is blocked on ${formatDateIN(preview.blackouts[0].date)} (${preview.blackouts[0].name}).`
           : (preview.coverage.warnings[0] ?? 'Coverage policy is blocking this leave.'),
       );
+      return;
+    }
+    if (selected?.isPaid === true && preview.remaining < 0) {
+      setError(`Insufficient ${selected.name} balance: ${preview.available.toLocaleString('en-IN')} available, ${preview.days.toLocaleString('en-IN')} requested.`);
       return;
     }
     setLoading(true);
@@ -195,29 +223,38 @@ export function LeaveApplyDrawer({
           leaveType: typeCode,
           fromDate: from,
           toDate: to,
-          fromHalf: halfDay,
-          toHalf: false,
+          fromHalf: selected?.allowHalfDay === true && halfDay,
+          toHalf: selected?.allowHalfDay === true && from !== to && lastHalf,
           reason: reason.trim(),
         }),
       });
       toast.success('Leave request submitted', {
-        description: 'Your reporting manager has been notified.',
+        description: 'It is in the approval chain. Attendance changes only after it is approved.',
       });
       skipPersistRef.current = true;
-      clearLeaveDraft();
+      clearLeaveDraft(draftKey);
       setTypeCode(null);
       setFrom(null);
       setTo(null);
       setHalfDay(false);
+      setLastHalf(false);
       setReason('');
       onSubmitted();
       onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not submit leave.');
+      const message = cause instanceof Error ? cause.message : 'Could not submit leave.';
+      setError(message);
+      if (/already covers|overlap|these dates/i.test(message)) {
+        toast.error('Those dates are already booked', { description: message });
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const dateError = error !== null && /already covers|overlap|these dates|blocked on/i.test(error) ? error : null;
+  const reasonError = error !== null && dateError === null && /reason/i.test(error) ? error : null;
+  const formError = error !== null && dateError === null && reasonError === null ? error : null;
 
   return (
     <Drawer
@@ -230,7 +267,12 @@ export function LeaveApplyDrawer({
           <Button variant="ghost" onClick={onClose}>
             Keep draft
           </Button>
-          <Button variant="primary" loading={loading} onClick={() => void submit()}>
+          <Button
+            variant="primary"
+            loading={loading}
+            disabled={previewLoading || preview === null || preview.blocked || (selected?.isPaid === true && preview.remaining < 0)}
+            onClick={() => void submit()}
+          >
             Send to my manager
           </Button>
         </div>
@@ -259,21 +301,35 @@ export function LeaveApplyDrawer({
             onChange={setTo}
           />
         </div>
+        {dateError !== null && (
+          <p className="text-sm text-negative-ink" role="alert">{dateError}</p>
+        )}
         {selected?.allowHalfDay && (
-          <Checkbox
-            label="First day is a half day"
-            description="The final debit follows leave policy after approval."
-            checked={halfDay}
-            onChange={(event) => {
-              setHalfDay(event.currentTarget.checked);
-            }}
-          />
+          <div className="space-y-3">
+            <Checkbox
+              label={from !== null && to !== null && from !== to ? 'First day is a half day' : 'This day is a half day'}
+              description="Half a day is reserved. The other half stays on attendance; morning or afternoon is not a separate choice."
+              checked={halfDay}
+              onChange={(event) => {
+                setHalfDay(event.currentTarget.checked);
+              }}
+            />
+            {from !== null && to !== null && from !== to && (
+              <Checkbox
+                label="Last day is a half day"
+                description="The leave ends after half of the last day."
+                checked={lastHalf}
+                onChange={(event) => {
+                  setLastHalf(event.currentTarget.checked);
+                }}
+              />
+            )}
+          </div>
         )}
         {preview && selected && from && to && (
           <div className="rounded-row bg-surface-2 px-4 py-3 text-sm">
             <p className="font-semibold text-ink">
-              Preview · {preview.days.toLocaleString('en-IN')} day
-              {preview.days === 1 ? '' : 's'} of {selected.name}
+              {`Preview · ${preview.days.toLocaleString('en-IN')} ${preview.days === 1 ? 'day' : 'days'} of ${selected.name}`}
             </p>
             <p className="mt-1 text-ink-muted">
               {formatDateIN(from)}
@@ -289,10 +345,11 @@ export function LeaveApplyDrawer({
                   : `This preview is ${Math.abs(preview.remaining).toLocaleString('en-IN')} days over the ${preview.available.toLocaleString('en-IN')} available`}
             </p>
             <p className="mt-2 text-ink-muted">
-              Applying now reserves the days so they are not treated as unauthorised absence.
+              Sending this reserves the balance. The day stays unchanged until the request is approved.
             </p>
           </div>
         )}
+        {previewLoading && <p role="status" className="text-sm text-ink-muted">Checking dates and leave balance…</p>}
         {previewError !== null && (
           <p className="rounded-row bg-surface-2 px-4 py-3 text-sm text-ink" role="status">
             {previewError}
@@ -331,10 +388,17 @@ export function LeaveApplyDrawer({
             setReason(event.currentTarget.value);
           }}
           hint="Visible to everyone in the approval chain."
-          error={error ?? undefined}
+          error={reasonError ?? undefined}
         />
+        {formError !== null && (
+          <p className="text-sm text-negative-ink" role="alert">{formError}</p>
+        )}
         <ChainPreview definitionCode={typeCode === 'CO' ? 'comp_off' : 'leave'} />
       </div>
     </Drawer>
   );
+}
+
+export function LeaveApplyDrawer(props: Parameters<typeof OwnedLeaveApplyDrawer>[0]) {
+  return <OwnedLeaveApplyDrawer key={props.ownerId ?? 'unowned'} {...props} />;
 }

@@ -9,8 +9,8 @@
  * Changing a shift does not retroactively rewrite closed days — recomputation
  * is explicit, and locked months stay frozen.
  */
-import { useMemo, useState } from 'react';
-import { CalendarDays, Clock, Plus } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import type { SessionUser } from '../../lib/session';
 import { hasPermission } from '../../lib/session';
@@ -21,11 +21,17 @@ import {
   DataTable,
   Drawer,
   EmptyState,
+  IconButton,
+  MonthCalendar,
   Pill,
+  Select,
   StatusBadge,
   TextField,
+  collapseDaySpans,
   toast,
+  todayISOIST,
 } from '../../ui';
+import type { AttendanceDay } from '../../ui';
 import type { Column } from '../../ui';
 import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
 import { useDashboardResource } from '../home/useDashboardResource';
@@ -35,12 +41,22 @@ import { BLANK_SHIFT, ShiftEditor, normalizeShift, type ShiftRecord } from './Sh
 interface Holiday {
   date: string;
   name: string;
+  companyId: number | null;
+  plantId: number | null;
   locationId: number | null;
 }
 
+interface HolidayTargets {
+  groupWide: boolean;
+  companies: { id: number; name: string; code: string }[];
+  plants: { id: number; companyId: number; name: string; plantCode: string }[];
+  locations: { id: number; companyId: number; name: string }[];
+}
+
 export function AttendanceMastersPage({ user }: { user: SessionUser }) {
-  const [tab, setTab] = useState<'shifts' | 'holidays'>('shifts');
-  const canEdit = hasPermission(user, 'admin.settings');
+  const canEditShifts = hasPermission(user, 'admin.settings');
+  const [tab, setTab] = useState<'shifts' | 'holidays'>(canEditShifts ? 'shifts' : 'holidays');
+  const canEdit = canEditShifts;
 
   return (
     <div className="space-y-6">
@@ -56,15 +72,17 @@ export function AttendanceMastersPage({ user }: { user: SessionUser }) {
           </p>
         </div>
         <div className="flex min-w-0 max-w-full overflow-x-auto rounded-full bg-surface-2 p-1 [scrollbar-width:none] [&>*]:shrink-0">
-          <Button
-            size="sm"
-            variant={tab === 'shifts' ? 'primary' : 'ghost'}
-            onClick={() => {
-              setTab('shifts');
-            }}
-          >
-            Shifts
-          </Button>
+          {canEditShifts && (
+            <Button
+              size="sm"
+              variant={tab === 'shifts' ? 'primary' : 'ghost'}
+              onClick={() => {
+                setTab('shifts');
+              }}
+            >
+              Shifts
+            </Button>
+          )}
           <Button
             size="sm"
             variant={tab === 'holidays' ? 'primary' : 'ghost'}
@@ -217,18 +235,61 @@ function ShiftsPanel({ canEdit }: { canEdit: boolean }) {
 function HolidaysPanel({ canEdit }: { canEdit: boolean }) {
   const thisYear = new Date().getFullYear();
   const [year, setYear] = useState(thisYear);
+  const [viewMonth, setViewMonth] = useState(() => Number(todayISOIST().slice(5, 7)));
   const holidays = useDashboardResource<Holiday[]>(`/api/attendance/config/holidays?year=${String(year)}`);
+  const [targets, setTargets] = useState<HolidayTargets | null>(null);
   const [adding, setAdding] = useState(false);
   const [date, setDate] = useState('');
   const [name, setName] = useState('');
+  const [companyId, setCompanyId] = useState('');
+  const [plantId, setPlantId] = useState('');
+  const [locationId, setLocationId] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const groupWide = targets?.groupWide === true;
+  const companies = targets?.companies ?? [];
+
+  useEffect(() => {
+    if (!canEdit) return;
+    let cancelled = false;
+    void apiFetch<HolidayTargets>('/api/attendance/config/holiday-targets')
+      .then((result) => {
+        if (!cancelled) setTargets(result);
+      })
+      .catch(() => {
+        if (!cancelled) setTargets({ groupWide: false, companies: [], plants: [], locations: [] });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canEdit]);
+
+  useEffect(() => {
+    const only = targets?.companies.length === 1 ? targets.companies[0] : undefined;
+    if (!adding || targets?.groupWide || only === undefined) return;
+    setCompanyId(String(only.id));
+  }, [adding, targets]);
 
   const years = useMemo(() => [thisYear - 1, thisYear, thisYear + 1], [thisYear]);
+  const monthKey = `${String(year)}-${String(viewMonth).padStart(2, '0')}`;
+  const monthRows = (holidays.data ?? []).filter((row) => row.date.startsWith(monthKey));
+  const holidaySpans = collapseDaySpans(monthRows.map((row) => ({ iso: row.date, label: row.name, tone: 'holiday' as const })));
+  const holidayDays: Partial<Record<number, AttendanceDay>> = Object.fromEntries(
+    monthRows.map((row) => [Number(row.date.slice(-2)), { state: 'holiday' as const, note: row.name }]),
+  );
+  const monthTitle = new Intl.DateTimeFormat('en-IN', { month: 'long', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(year, viewMonth - 1, 1)),
+  );
 
   const save = async () => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || name.trim() === '') {
       setError('Pick a date and give the holiday a name.');
+      return;
+    }
+    if (!groupWide && companyId === '') {
+      setError(companies.length === 0
+        ? 'No company is in your holiday scope. Ask a group admin to add the calendar.'
+        : 'Choose the company this holiday applies to.');
       return;
     }
     setSaving(true);
@@ -236,12 +297,21 @@ function HolidaysPanel({ canEdit }: { canEdit: boolean }) {
     try {
       await apiFetch('/api/attendance/config/holidays', {
         method: 'PUT',
-        body: JSON.stringify({ date, name: name.trim(), locationId: null }),
+        body: JSON.stringify({
+          date,
+          name: name.trim(),
+          companyId: companyId === '' ? null : Number(companyId),
+          plantId: plantId === '' ? null : Number(plantId),
+          locationId: locationId === '' ? null : Number(locationId),
+        }),
       });
       toast.success('Holiday saved', { description: `${formatDateIN(date)} — ${name.trim()}` });
       setAdding(false);
       setDate('');
       setName('');
+      setCompanyId('');
+      setPlantId('');
+      setLocationId('');
       holidays.reload();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not save the holiday.');
@@ -281,7 +351,10 @@ function HolidaysPanel({ canEdit }: { canEdit: boolean }) {
       header: 'Scope',
       width: '140px',
       render: (row) =>
-        row.locationId === null ? <Pill>All locations</Pill> : <Pill>Location #{row.locationId}</Pill>,
+        row.locationId !== null ? <Pill>One location</Pill>
+          : row.plantId !== null ? <Pill>One plant</Pill>
+            : row.companyId !== null ? <Pill>One company</Pill>
+              : <Pill>Whole group</Pill>,
     },
   ];
 
@@ -322,6 +395,30 @@ function HolidaysPanel({ canEdit }: { canEdit: boolean }) {
             </div>
           }
         />
+      </Card>
+
+      <Card>
+        <CardHeader
+          title={monthTitle}
+          subtitle="Each holiday sits on its date. The table below is the year you can edit."
+          action={
+            <div className="flex gap-1">
+              <IconButton
+                label="Previous month"
+                icon={<ChevronLeft />}
+                size="sm"
+                onClick={() => { setViewMonth((current) => (current === 1 ? 12 : current - 1)); }}
+              />
+              <IconButton
+                label="Next month"
+                icon={<ChevronRight />}
+                size="sm"
+                onClick={() => { setViewMonth((current) => (current === 12 ? 1 : current + 1)); }}
+              />
+            </div>
+          }
+        />
+        <MonthCalendar year={year} month={viewMonth} days={holidayDays} spans={holidaySpans} showLegend={false} />
       </Card>
 
       <DataTable
@@ -378,14 +475,68 @@ function HolidaysPanel({ canEdit }: { canEdit: boolean }) {
               setName(e.currentTarget.value);
             }}
           />
+          {targets === null ? (
+            <p className="text-sm text-ink-muted" role="status">Loading the companies you can update…</p>
+          ) : groupWide ? (
+            <Select
+              label="Company"
+              value={companyId}
+              onChange={(next) => { setCompanyId(next); setPlantId(''); setLocationId(''); }}
+              options={[
+                { value: '', label: 'Whole group', description: 'Every company' },
+                ...companies.map((company) => ({ value: String(company.id), label: `${company.name} (${company.code})` })),
+              ]}
+            />
+          ) : (
+            <Select
+              label="Company"
+              required
+              value={companyId}
+              onChange={(next) => { setCompanyId(next); setPlantId(''); setLocationId(''); }}
+              options={companies.map((company) => ({ value: String(company.id), label: `${company.name} (${company.code})` }))}
+              hint={companies.length === 0 ? 'No company is in your holiday scope.' : 'This holiday applies to that company only.'}
+            />
+          )}
+          {companyId !== '' && (
+            <>
+              <Select
+                label="Plant"
+                value={plantId}
+                onChange={setPlantId}
+                options={[
+                  { value: '', label: 'Whole company', description: 'Not limited to one plant' },
+                  ...(targets?.plants ?? []).filter((plant) => String(plant.companyId) === companyId).map((plant) => ({
+                    value: String(plant.id),
+                    label: `${plant.name} (${plant.plantCode})`,
+                  })),
+                ]}
+              />
+              <Select
+                label="Location"
+                value={locationId}
+                onChange={setLocationId}
+                options={[
+                  { value: '', label: 'Every location', description: 'Not limited to one site' },
+                  ...(targets?.locations ?? []).filter((location) => String(location.companyId) === companyId).map((location) => ({
+                    value: String(location.id),
+                    label: location.name,
+                  })),
+                ]}
+              />
+            </>
+          )}
           {error !== null && (
             <p className="text-sm text-negative-ink" role="alert">
               {error}
             </p>
           )}
           <p className="text-xs leading-5 text-ink-muted">
-            Saved for all locations. Adding a holiday marks the day non-working for future
-            processing; already-locked months are unaffected.
+            {groupWide && companyId === ''
+              ? 'Saved for the whole group. '
+              : plantId !== '' || locationId !== ''
+                ? 'Saved for the company, narrowed to the plant or location you choose. '
+                : 'Saved for the company you choose. '}
+            Adding a holiday marks the day non-working for future processing; already-locked months are unaffected.
           </p>
         </div>
       </Drawer>

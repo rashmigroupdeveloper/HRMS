@@ -9,12 +9,26 @@ import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { formatDbDate } from '../../core/dates.js';
+import { DomainError } from '../../core/errors/index.js';
+import type { EmployeeScope } from '../../core/rbac/employee-scope.js';
+import type { PermissionAccess } from '../../core/rbac/permissions.service.js';
 import { issueAbsenceCaseLetter, listAbsenceCases, runAbsenceScan, setAbsenceCaseStage } from './absence.service.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
 
+/** Business-rule refusals stay 400; scope/authorization refusals keep their
+ *  own HTTP code (403/404) via the global error firewall. */
 function asBadRequest(err: unknown): never {
+  if (err instanceof DomainError) throw err;
   throw new ORPCError('BAD_REQUEST', { message: err instanceof Error ? err.message : 'Invalid request' });
+}
+
+/** The caller's permitted data scope — narrows every case to their employees. */
+function employeeScope(context: {
+  permissionAccess: PermissionAccess;
+  user: { employee_id: number | null };
+}): EmployeeScope {
+  return { ...context.permissionAccess, actorEmployeeId: context.user.employee_id };
 }
 
 const cases = withPermission('attendance.team.read')
@@ -37,7 +51,7 @@ const cases = withPermission('attendance.team.read')
     ),
   )
   .handler(async ({ input, context }) => {
-    const rows = await listAbsenceCases(context.db, input?.open ?? true);
+    const rows = await listAbsenceCases(context.db, input?.open ?? true, employeeScope(context));
     return rows.map((r) => ({
       id: r.id,
       employeeId: r.employee_id,
@@ -58,7 +72,7 @@ const escalate = withPermission('letters.issue')
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
     try {
-      await setAbsenceCaseStage(context.db, { caseId: input.id, stage: input.stage, actorUserId: context.user.id });
+      await setAbsenceCaseStage(context.db, { caseId: input.id, stage: input.stage, actorUserId: context.user.id, scope: employeeScope(context) });
       return { ok: true as const };
     } catch (err) {
       asBadRequest(err);
@@ -82,6 +96,7 @@ const issueCaseLetter = withPermission('letters.issue')
         templateCode: input.template,
         actorUserId: context.user.id,
         responseDays: input.responseDays,
+        scope: employeeScope(context),
       });
     } catch (err) {
       asBadRequest(err);

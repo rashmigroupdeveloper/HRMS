@@ -101,3 +101,93 @@ export function monthMatrix(year: number, month: number): CalendarDay[][] {
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
   return weeks;
 }
+
+/** Inclusive bar drawn across a month grid (docs/12 §7 spanning calendar events). */
+export interface CalendarSpan {
+  id: string;
+  /** Inclusive `YYYY-MM-DD`. */
+  from: string;
+  /** Inclusive `YYYY-MM-DD`. */
+  to: string;
+  label: string;
+  tone: 'holiday' | 'leave' | 'duty';
+}
+
+interface PlacedSpan {
+  id: string;
+  label: string;
+  tone: CalendarSpan['tone'];
+  /** Column 0–6 inside the week. */
+  start: number;
+  length: number;
+  /** 0 = the lane closest to the day number. Later lanes sit below. */
+  lane: number;
+}
+
+function nextIso(iso: string): string {
+  const [year = 0, month = 1, day = 1] = iso.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + 1));
+  return toISO(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate());
+}
+
+/**
+ * Merge consecutive days that share a label and tone into inclusive spans.
+ * A gap of one day, or a different label, starts a new span.
+ */
+export function collapseDaySpans(
+  days: readonly { iso: string; label: string; tone: CalendarSpan['tone'] }[],
+): CalendarSpan[] {
+  const sorted = [...days].sort((a, b) => a.iso.localeCompare(b.iso) || a.label.localeCompare(b.label));
+  const spans: CalendarSpan[] = [];
+  for (const day of sorted) {
+    const last = spans.at(-1);
+    if (last?.label === day.label && last.tone === day.tone && nextIso(last.to) === day.iso) {
+      last.to = day.iso;
+      continue;
+    }
+    spans.push({ id: `${day.tone}:${day.iso}:${day.label}`, from: day.iso, to: day.iso, label: day.label, tone: day.tone });
+  }
+  return spans;
+}
+
+/**
+ * Clip spans to one Monday-first week and assign non-overlapping lanes.
+ * `week` is the seven ISO dates from `monthMatrix`, padding days included.
+ */
+export function placeSpans(spans: readonly CalendarSpan[], week: readonly string[]): PlacedSpan[] {
+  const start = week[0];
+  const end = week[6];
+  if (start === undefined || end === undefined) return [];
+
+  const clipped = spans
+    .filter((span) => span.to >= start && span.from <= end)
+    .map((span) => {
+      const from = span.from < start ? start : span.from;
+      const to = span.to > end ? end : span.to;
+      const startCol = week.indexOf(from);
+      const endCol = week.indexOf(to);
+      return { span, start: startCol, length: endCol - startCol + 1 };
+    })
+    .filter((item) => item.start >= 0 && item.length > 0)
+    .sort((a, b) => a.start - b.start || b.length - a.length);
+
+  const laneEnds: number[] = [];
+  return clipped.map((item) => {
+    const endCol = item.start + item.length - 1;
+    let lane = laneEnds.findIndex((taken) => taken < item.start);
+    if (lane < 0) {
+      lane = laneEnds.length;
+      laneEnds.push(endCol);
+    } else {
+      laneEnds[lane] = endCol;
+    }
+    return {
+      id: item.span.id,
+      label: item.span.label,
+      tone: item.span.tone,
+      start: item.start,
+      length: item.length,
+      lane,
+    };
+  });
+}

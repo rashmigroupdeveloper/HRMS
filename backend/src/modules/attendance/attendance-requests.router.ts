@@ -13,8 +13,8 @@ import { dayPortionSchema } from './half-requests.js';
 import { createRegularization, listRegularizations } from './regularization.service.js';
 import { decideOvertime, lapseExpiredOvertime, listMyOvertime, listPendingOvertime } from './overtime.service.js';
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
-const hhmm = z.string().regex(/^\d{2}:\d{2}$/, 'HH:MM');
+const isoDate = z.string().date('Choose a valid calendar date (YYYY-MM-DD)');
+const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'HH:MM');
 
 /** Domain validation failures become 400s, not 500s. */
 function asBadRequest(err: unknown): never {
@@ -43,6 +43,7 @@ const regularizationShape = z.object({
   requestedStatus: z.string(),
   workflowRequestId: z.number(),
   workflowStatus: z.string(),
+  routingHeld: z.boolean(),
   applied: z.boolean(),
 });
 
@@ -65,10 +66,10 @@ const submitRequest = withPermission('attendance.own')
       toDate: isoDate,
       fromTime: hhmm.optional(),
       toTime: hhmm.optional(),
-      reason: z.string().min(5, 'A meaningful reason is mandatory'),
+      reason: z.string().trim().min(5, 'A meaningful reason is mandatory'),
     }),
   )
-  .output(z.object({ id: z.number(), workflowRequestId: z.number() }))
+  .output(z.object({ id: z.number(), workflowRequestId: z.number(), routingHeld: z.boolean() }))
   .handler(async ({ input, context }) => {
     const employeeId = requireEmployeeId(context.user);
     try {
@@ -106,6 +107,7 @@ const myRequests = withPermission('attendance.own')
       requestedStatus: r.requested_status,
       workflowRequestId: r.workflow_request_id,
       workflowStatus: r.workflow_status,
+      routingHeld: r.routing_held,
       applied: r.applied,
     }));
   });

@@ -18,9 +18,14 @@ import {
   toast,
 } from '../../ui';
 import { DashboardError, DashboardSkeleton } from '../home/DashboardFeedback';
+import { formatTimestamp } from '../home/dashboard-format';
 import { useDashboardResource } from '../home/useDashboardResource';
 import { payloadAsJson, summarizeRequest } from './request-summary';
 import { ApprovalRequestStatus } from './ApprovalRequestStatus';
+
+function requestCount(count: number): string {
+  return `${count.toLocaleString('en-IN')} ${count === 1 ? 'request' : 'requests'}`;
+}
 
 interface InboxItem {
   requestId: number;
@@ -214,7 +219,7 @@ export function ApprovalsPage() {
         <div className="grid items-start gap-6 lg:grid-cols-[0.75fr_1.25fr]">
           <Card padded={false}>
             <div className="p-5">
-              <CardHeader title="Queue" subtitle={`${String(inbox.data?.length ?? 0)} requests`} />
+              <CardHeader title="Queue" subtitle={requestCount(inbox.data?.length ?? 0)} />
               {selectedIds.size > 0 && (
                 <div className="mt-4 flex items-center justify-between gap-3 rounded-tile bg-accent-soft p-3">
                   <span className="text-xs font-semibold text-ink">{selectedIds.size} selected</span>
@@ -312,7 +317,7 @@ export function ApprovalsPage() {
               <p className="mt-6 text-sm leading-6 text-hero-muted">{summary.consequence}</p>
               <p className="mt-4 flex items-center gap-2 text-xs text-hero-muted">
                 <Clock3 className="size-3.5" aria-hidden />
-                Notified {new Date(item.notifiedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+                Notified {formatTimestamp(item.notifiedAt)}
               </p>
               <details className="mt-4 text-xs text-hero-muted">
                 <summary className="cursor-pointer font-medium text-hero-ink">Technical payload</summary>
@@ -368,7 +373,7 @@ export function ApprovalsPage() {
         open={batchOpen}
         onClose={() => { setBatchOpen(false); }}
         onConfirm={() => { void batchApprove(); }}
-        title={`Approve ${String(selectedIds.size)} requests?`}
+        title={`Approve ${requestCount(selectedIds.size)}?`}
         description="Each selected request will be granted as submitted. This cannot be undone from the inbox."
         confirmLabel="Approve selected"
       />

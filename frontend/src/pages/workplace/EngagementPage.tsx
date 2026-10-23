@@ -1016,7 +1016,7 @@ function SurveysTab({
           questionId: question.questionId,
           prompt: question.prompt,
           type: question.type,
-          ...(question.avgRating != null ? { averageRating: question.avgRating } : {}),
+          ...(question.avgRating !== null && question.avgRating !== undefined ? { averageRating: question.avgRating } : {}),
           ...(question.ratingDistribution
             ? { distribution: Object.entries(question.ratingDistribution).map(([stars, count]) => ({ stars: Number(stars), count })) }
             : {}),

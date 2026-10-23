@@ -7,7 +7,19 @@ RML uses **KENT CamAttendance**: Android face-recognition terminals that sync to
 five ways to get data out: **webhook push**, a **token-secured pull API** (often custom per client), **SFTP/FTP upload**,
 **scheduled CSV/Excel jobs** to a share, and a **DB-integration exe** that writes rows into a client database.
 
-Kent devices send **no in/out direction**, so HRMS uses first-in/last-out. ZKTeco/eSSL ADMS is not relevant.
+The published KENT recognition webhook sample has **no in/out direction**. KENT also documents Continuous and Alternative In/Out device modes, so RML's actual mode/payload must be confirmed. HRMS uses first-in/last-out under ATT-18. ZKTeco/eSSL ADMS is not relevant.
+
+**22 Oct 2026 evidence:** [Native report mapping and canteen reconciliation](KENT-REPORT-MAPPING-2026-10-22.md) covers five supplied exports, all columns, employee/date matches and the seven observed canteen devices. Canteen bookings are separate financial events; daily/muster summaries are not raw swipes. The ₹1 item charge in this sample is not an approved payroll deduction. Classify canteen devices before enabling any mixed recognition feed.
+
+**Current execution status (code-traced 22 Oct):** the worker and manual sync API both select `kentConnectorFromEnv()` and pass the adapter to `runKentSync`. The worker schedules pull every five minutes and a recompute safety drain every minute. This wiring exists; RML credentials, source contract, device mapping, worker operation and real-day acceptance remain unverified. No pull configuration means no generated punches. See [code flow and repairs](KENT-CODE-FLOW-2026-10-22.md).
+
+### Separate attendance gates from canteen devices
+
+For a mixed recognition source, configure `KENT_ATTENDANCE_DEVICE_IDS` as a comma-separated allow-list of **raw vendor attendance device IDs**. Use the confirmed attendance-device inventory; the seven canteen IDs in the report mapping must be excluded. The filter applies before `KENT_DEVICE_MAP` renaming in API, DB, scheduled CSV and webhook event mapping, and to API completeness telemetry. Never use the food transaction amount or a canteen recognition to create attendance.
+
+With the list unset/empty, dedicated attendance feeds retain their existing behavior; mixed feeds are not protected until the list is configured. Unlisted devices are intentionally excluded, including newly added gates until configured. Webhook raw batches retain excluded events and count them under `rejected`; this is not a financial canteen importer. CSV archives retain their source lines after successful processing. Manual bulk imports retain their separate reviewed-file contract and do not use this feed allow-list. Existing historical swipes/devices are not reclassified or deleted.
+
+API/DB/CSV mapping errors now fail the fetched batch instead of silently dropping a malformed recognition and advancing/archive-processing past it. CSV files remain unarchived until all files validate and ingestion commits. Unterminated CSV quotes are rejected. DB reads request one row beyond `KENT_PAGE_SIZE`; overflow fails visibly before ingestion. Until the source provides a stable pagination cursor, increase that configured bound to cover the full overlap window or choose a paginated API; a timestamp-only truncated result is not a safe checkpoint.
 
 **"Astra" is not Kent.** In the old `EmployeeSwipeDetails.xlsx`, "Swipe Type = Astra" is **Greytip Astra**, greytHR's on-prem
 agent. The chain today is most likely Kent cloud → Kent DB-integration exe → a local SQL table → Astra → greytHR.
@@ -143,3 +155,9 @@ Tests: `backend/tests/kent-adapter.integration.test.ts` covers the webhook gates
   (`att.cycle_start_day`); muster LOP equals the payroll deduction.
 - Proven end to end by scenario-matrix cases K01–K03 (`docs/qa-handover/attendance-payroll/scripts`).
 
+
+## 23 Oct 2026: native logs and sponsor-selected HRMS cutoff
+
+The supplied Recognition Logs layout and HRMS next-morning finalization are documented in [KENT recognition mapping](KENT-RECOGNITION-LOGS-2026-10-23.md). The sponsor clarified that **HRMS chooses 04:00 IST**; KENT does not finalize at that time. `att.day_finalize_after_time` controls the cutoff; shifts ending later and incomplete device watermarks keep the day pending. Actual timestamps, exclusive shift attribution, regularization protection and month locks remain authoritative. Automatic present results remain provisional and queued until ready; delayed source records can update unlocked days.
+
+Native bulk uploads and scheduled CSV accept separate Date/Time, Attendance Type and Created on. Missing native device names and invalid direction labels require correction. Created on is a source timestamp proxy, not certified cloud receipt/completeness. Bulk uploads retain the 20,000-row limit and require an attendance-gate-only reviewed file; scheduled/live adapters use the configured device allow-list.

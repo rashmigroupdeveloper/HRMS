@@ -39,6 +39,7 @@ export interface AttendanceRequest {
   requestedStatus: string;
   workflowRequestId: number;
   workflowStatus: string;
+  routingHeld: boolean;
   applied: boolean;
 }
 

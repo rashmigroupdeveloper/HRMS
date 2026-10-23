@@ -47,6 +47,8 @@ export interface KentHttpConfig {
   maxRetries: number;
   defaultOffset: string;
   deviceMap: Record<string, string>;
+  /** Raw vendor device IDs accepted for attendance; unset preserves dedicated-feed compatibility. */
+  attendanceDeviceIds?: readonly string[];
   fields: KentFieldMap;
 }
 
@@ -65,10 +67,11 @@ function oneOf<T extends string>(env: Env, name: string, allowed: readonly T[], 
 const str = (env: Env, name: string, fallback: string) => env[name] ?? fallback;
 
 /** Shared record settings for every Kent mode. */
-export function kentCommonFromEnv(env: Env = process.env): { defaultOffset: string; deviceMap: Record<string, string>; fields: KentFieldMap } {
+export function kentCommonFromEnv(env: Env = process.env): { defaultOffset: string; deviceMap: Record<string, string>; attendanceDeviceIds: string[]; fields: KentFieldMap } {
   return {
     defaultOffset: str(env, 'KENT_DEFAULT_OFFSET', '+05:30'),
     deviceMap: jsonEnv<Record<string, string>>(env, 'KENT_DEVICE_MAP', {}),
+    attendanceDeviceIds: (env['KENT_ATTENDANCE_DEVICE_IDS'] ?? '').split(',').map(id => id.trim()).filter(Boolean),
     fields: { ...DEFAULT_KENT_FIELDS, ...jsonEnv<Partial<KentFieldMap>>(env, 'KENT_FIELD_MAP', {}) },
   };
 }
@@ -122,13 +125,13 @@ export function atPath(v: unknown, path: string): unknown {
 
 export class KentFeedError extends Error {}
 
-export interface MappedKentRecord { swipe: RawSwipe | null; unknownFace: boolean; reason?: string }
+export interface MappedKentRecord { swipe: RawSwipe | null; unknownFace: boolean; excluded?: boolean; reason?: string }
 
 /**
  * One Kent record → RawSwipe. `type: 0` (unknown face) is never a swipe. Direction is optional
- * (Kent sends none; FILO applies). receivedAt falls back to `now` (arrival time).
+ * (absent in Kent's published webhook sample; FILO applies). receivedAt falls back to arrival time.
  */
-export function mapKentRecord(r: Row, opts: { fields: KentFieldMap; deviceMap: Record<string, string>; defaultOffset: string; now: Date; swipeType: string }): MappedKentRecord {
+export function mapKentRecord(r: Row, opts: { fields: KentFieldMap; deviceMap: Record<string, string>; attendanceDeviceIds?: readonly string[]; defaultOffset: string; now: Date; swipeType: string }): MappedKentRecord {
   const f = opts.fields;
   const scalar = (k: string) => { const v = r[k]; return typeof v === 'string' || typeof v === 'number' ? String(v).trim() : ''; };
   const type = r[f.type];
@@ -136,6 +139,12 @@ export function mapKentRecord(r: Row, opts: { fields: KentFieldMap; deviceMap: R
   const employeeNo = scalar(f.employeeNo).toUpperCase();
   const deviceId = scalar(f.device);
   const deviceName = scalar(f.deviceName);
+  if (!deviceId && !deviceName) return { swipe: null, unknownFace: false, reason: 'missing device' };
+  // Use the original vendor ID, before door renaming. A canteen mapped to a
+  // gate label must not bypass the allow-list or acquire an attendance watermark.
+  if (opts.attendanceDeviceIds?.length && !opts.attendanceDeviceIds.includes(deviceId || deviceName)) {
+    return { swipe: null, unknownFace: false, excluded: true, reason: 'device is outside the attendance allow-list' };
+  }
   const door = (deviceId ? opts.deviceMap[deviceId] : undefined) ?? (deviceName ? opts.deviceMap[deviceName] : undefined) ?? (deviceId || deviceName);
   if (!employeeNo) return { swipe: null, unknownFace: false, reason: 'missing employee code' };
   if (!door) return { swipe: null, unknownFace: false, reason: 'missing device' };
@@ -249,11 +258,12 @@ export class KentHttpConnector implements KentConnector {
       const body = await this.request('GET', `${c.pullPath}${qs ? (c.pullPath.includes('?') ? '&' : '?') + qs : ''}`, undefined);
       const rawItems = atPath(body, c.itemsPath);
       if (!Array.isArray(rawItems)) throw new KentFeedError(`Kent response has no array at "${c.itemsPath}"`);
-      const items = rawItems as Row[];
+      const items: unknown[] = rawItems;
       for (const r of items) {
-        const m = mapKentRecord(r, { fields: c.fields, deviceMap: c.deviceMap, defaultOffset: c.defaultOffset, now, swipeType: 'kent' });
+        if (r === null || typeof r !== 'object' || Array.isArray(r)) throw new KentFeedError('Kent API record must be an object');
+        const m = mapKentRecord(r as Row, { ...c, now, swipeType: 'kent' });
         if (m.swipe) out.push(m.swipe);
-        else if (m.reason?.startsWith('Unreadable')) throw new KentFeedError(m.reason);
+        else if (!m.unknownFace && !m.excluded) throw new KentFeedError(`Kent API record: ${m.reason ?? 'invalid recognition'}`);
       }
       if (c.paging === 'none' || items.length === 0) return out;
       if (c.paging === 'cursor') {
@@ -278,6 +288,7 @@ export class KentHttpConnector implements KentConnector {
     return items.flatMap((r): DeviceInfo[] => {
       const id = r[f.device];
       if (typeof id !== 'string' && typeof id !== 'number') return [];
+      if (c.attendanceDeviceIds?.length && !c.attendanceDeviceIds.includes(String(id).trim())) return [];
       const seen = r[f.deviceLastSeen];
       const wm = r[f.deviceWatermark];
       const lastContactAt = seen ? this.parseTime(seen) : undefined;

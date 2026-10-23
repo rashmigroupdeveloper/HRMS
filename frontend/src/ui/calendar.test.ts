@@ -6,7 +6,7 @@
  * not be, and an off-by-one day here silently mis-attributes a swipe.
  */
 import { describe, expect, it } from 'vitest';
-import { addMonths, formatDateIN, monthLabel, monthMatrix, todayISOIST, WEEKDAYS_MIN } from './calendar';
+import { addMonths, collapseDaySpans, formatDateIN, monthLabel, monthMatrix, placeSpans, todayISOIST, WEEKDAYS_MIN } from './calendar';
 import { cn } from './cn';
 
 describe('todayISOIST', () => {
@@ -111,6 +111,54 @@ describe('monthMatrix', () => {
     const first = monthMatrix(2026, 6)[0]?.[0];
     expect(first?.iso).toBe('2026-06-01');
     expect(first?.inMonth).toBe(true);
+  });
+});
+
+describe('collapseDaySpans', () => {
+  it('merges consecutive days that share a label and tone', () => {
+    const spans = collapseDaySpans([
+      { iso: '2026-12-22', label: 'Sick leave', tone: 'leave' },
+      { iso: '2026-12-24', label: 'Sick leave', tone: 'leave' },
+      { iso: '2026-12-23', label: 'Sick leave', tone: 'leave' },
+    ]);
+    expect(spans).toEqual([
+      { id: 'leave:2026-12-22:Sick leave', from: '2026-12-22', to: '2026-12-24', label: 'Sick leave', tone: 'leave' },
+    ]);
+  });
+
+  it('keeps a gap, and a different label, as separate spans', () => {
+    const spans = collapseDaySpans([
+      { iso: '2026-12-22', label: 'Sick leave', tone: 'leave' },
+      { iso: '2026-12-24', label: 'Sick leave', tone: 'leave' },
+      { iso: '2026-12-25', label: 'Christmas', tone: 'holiday' },
+    ]);
+    expect(spans.map((span) => span.from)).toEqual(['2026-12-22', '2026-12-24', '2026-12-25']);
+  });
+});
+
+describe('placeSpans', () => {
+  const week = ['2026-12-21', '2026-12-22', '2026-12-23', '2026-12-24', '2026-12-25', '2026-12-26', '2026-12-27'];
+
+  it('clips a span to the week and records its column', () => {
+    const placed = placeSpans(
+      [{ id: 'leave', from: '2026-12-18', to: '2026-12-23', label: 'Leave', tone: 'leave' }],
+      week,
+    );
+    expect(placed).toEqual([
+      { id: 'leave', label: 'Leave', tone: 'leave', start: 0, length: 3, lane: 0 },
+    ]);
+  });
+
+  it('stacks overlapping spans on later lanes', () => {
+    const placed = placeSpans(
+      [
+        { id: 'a', from: '2026-12-22', to: '2026-12-24', label: 'Leave', tone: 'leave' },
+        { id: 'b', from: '2026-12-23', to: '2026-12-23', label: 'Christmas', tone: 'holiday' },
+      ],
+      week,
+    );
+    expect(placed.find((span) => span.id === 'a')?.lane).toBe(0);
+    expect(placed.find((span) => span.id === 'b')?.lane).toBe(1);
   });
 });
 

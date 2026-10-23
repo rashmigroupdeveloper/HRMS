@@ -328,7 +328,7 @@ export async function exportR24Excel(
   db: Kysely<Database>,
   fromDate: string,
   toDate: string,
-  companyId: number,
+  companyId: number | undefined,
   scope?: EmployeeScope,
 ): Promise<Buffer> {
   const { joins, exits } = await reportR24Boarding(db, fromDate, toDate, companyId, scope);

@@ -63,6 +63,7 @@
   - International claims transition to `invoice_pending` until commercial invoice is signed
 - [ ] **Stage E — Warm Editorial UI pass:**
   - Budget request wizard, live reservation bars, approver line-edit modal, and settlement dashboard
+  - [x] Employee journey screens (21 Oct 2026): Create Budget, My Budgets, Claim Expense, My Claims, Claim Advance, My Advances, Wallet — domestic budget fields, draft/submit, claims and advances offered only against an approved budget. Approver line-edit and the settlement dashboard remain open.
 
 ## Stage T4 — Migration, parallel run, decommission   `[ ☐ ]`
 **Goal:** Yatra Avedan's data in, parity proven, old system retired.

@@ -1,3 +1,4 @@
+import { leaveConfigRouter, leaveTypeDto, leaveTypeOutput } from './leave-config.router.js';
 /**
  * Leave API surface (LV-01..09). Central permission gates (CORE-10):
  *   ESS (my types/balances/apply/cancel/encash/RH pick) → leave.own
@@ -11,13 +12,13 @@ import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
-import { formatDbDate } from '../../core/dates.js';
+import { formatDbDate, istDateString } from '../../core/dates.js';
 import { employeeScopeSql } from '../../core/rbac/employee-scope.js';
-import { adjustBalance, genderCode, getBalances, runCompOffExpiry, runMonthlyAccrual, runYearEndCarryForward } from './leave-core.service.js';
+import { adjustBalance, getBalances, runCompOffExpiry, runMonthlyAccrual, runYearEndCarryForward } from './leave-core.service.js';
 import { applyForLeave, requestCancellation, requestEncashment, selectRestrictedHoliday } from './leave-apply.service.js';
 import { previewLeaveApply } from './leave-preview.service.js';
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
+const isoDate = z.string().date('Choose a valid calendar date (YYYY-MM-DD)');
 
 function asBadRequest(err: unknown): never {
   throw new ORPCError('BAD_REQUEST', { message: err instanceof Error ? err.message : 'Invalid request' });
@@ -30,83 +31,12 @@ function requireEmployeeId(user: { employee_id: number | null }): number {
   return user.employee_id;
 }
 
-const typeShape = z.object({
-  code: z.string(),
-  name: z.string(),
-  isPaid: z.boolean(),
-  accrualPerMonth: z.number(),
-  accrualRequiresServiceMonths: z.number(),
-  maxCarryForward: z.number().nullable(),
-  encashable: z.boolean(),
-  maxPerRequest: z.number().nullable(),
-  allowHalfDay: z.boolean(),
-  sandwichRule: z.enum(['include', 'exclude']),
-  isActive: z.boolean(),
-});
-
 const listTypes = withPermission('leave.own')
-  .route({ method: 'GET', path: '/leave/types', summary: 'Leave type catalog (LV-01)' })
-  .output(z.array(typeShape))
+  .route({ method: 'GET', path: '/leave/types', summary: 'Leave types applicable to the current employee' })
+  .output(z.array(leaveTypeOutput))
   .handler(async ({ context }) => {
-    const rows = await context.db.selectFrom('lv.leave_types').selectAll().where('is_active', '=', true).orderBy('code').execute();
-    let caller: string | null = null;
-    if (context.user.employee_id !== null) {
-      const employee = await context.db.selectFrom('core.employees').select('gender').where('id', '=', context.user.employee_id).executeTakeFirst();
-      caller = genderCode(employee?.gender ?? null);
-    }
-    return rows.filter((t) => t.applicable_gender === null || genderCode(t.applicable_gender) === caller).map((t) => ({
-      code: t.code,
-      name: t.name,
-      isPaid: t.is_paid,
-      accrualPerMonth: Number(t.accrual_per_month),
-      accrualRequiresServiceMonths: t.accrual_requires_service_months,
-      maxCarryForward: t.max_carry_forward === null ? null : Number(t.max_carry_forward),
-      encashable: t.encashable,
-      maxPerRequest: t.max_per_request === null ? null : Number(t.max_per_request),
-      allowHalfDay: t.allow_half_day,
-      sandwichRule: t.sandwich_rule,
-      isActive: t.is_active,
-    }));
-  });
-
-const upsertType = withPermission('leave.admin')
-  .route({ method: 'PUT', path: '/leave/types/{code}', summary: 'Create/update a leave type — every rate is runtime data (audited)' })
-  .input(
-    typeShape.omit({ isActive: true }).extend({
-      isActive: z.boolean().default(true),
-      applicableGender: z.string().length(1).nullish(),
-    }),
-  )
-  .output(z.object({ ok: z.literal(true) }))
-  .handler(async ({ input, context }) => {
-    const values = {
-      code: input.code,
-      name: input.name,
-      is_paid: input.isPaid,
-      accrual_per_month: String(input.accrualPerMonth),
-      accrual_requires_service_months: input.accrualRequiresServiceMonths,
-      max_carry_forward: input.maxCarryForward === null ? null : String(input.maxCarryForward),
-      encashable: input.encashable,
-      max_per_request: input.maxPerRequest === null ? null : String(input.maxPerRequest),
-      allow_half_day: input.allowHalfDay,
-      sandwich_rule: input.sandwichRule,
-      applicable_gender: input.applicableGender ?? null,
-      is_active: input.isActive,
-    };
-    await context.db
-      .insertInto('lv.leave_types')
-      .values(values)
-      .onConflict((oc) => oc.column('code').doUpdateSet(values))
-      .execute();
-    await writeAudit(context.db, {
-      actorUserId: context.user.id,
-      action: 'update',
-      entity: 'lv.leave_types',
-      field: input.code,
-      newValue: JSON.stringify(input),
-      ip: context.req.ip ?? null,
-    });
-    return { ok: true as const };
+    const rows = await getBalances(context.db, requireEmployeeId(context.user));
+    return rows.map(row => leaveTypeDto(row.type));
   });
 
 const balanceShape = z.object({
@@ -254,7 +184,7 @@ const myLedger = withPermission('leave.own')
         id: z.number(),
         leaveType: z.string(),
         txnType: z.string(),
-        delta: z.number(),
+        delta: z.number().finite().refine(value => value !== 0, 'Days cannot be zero'),
         effectiveDate: z.string(),
         expiryDate: z.string().nullable(),
         note: z.string().nullable(),
@@ -380,7 +310,7 @@ const selectRh = withPermission('leave.own')
 
 const adjust = withPermission('leave.admin')
   .route({ method: 'POST', path: '/leave/adjustments', summary: 'Manual balance correction — note mandatory, audited' })
-  .input(z.object({ employeeId: z.number().int().positive(), leaveType: z.string().min(1), delta: z.number(), note: z.string().min(5) }))
+  .input(z.object({ employeeId: z.number().int().positive(), leaveType: z.string().min(1), delta: z.number().finite().refine(value => value !== 0, 'Days cannot be zero'), note: z.string().trim().min(5) }))
   .output(z.object({ ledgerTxnId: z.number() }))
   .handler(async ({ input, context }) => {
     const { assertEmployeesInScope } = await import('../../core/rbac/employee-scope.js');
@@ -405,25 +335,36 @@ const adjust = withPermission('leave.admin')
 
 const accrualRun = withPermission('admin.integrations')
   .route({ method: 'POST', path: '/leave/accrual/run', summary: 'Run the monthly accrual (idempotent; also runs on the 1st, 00:05 IST)' })
-  .input(z.object({ month: z.string().regex(/^\d{4}-\d{2}$/) }).optional())
+  .input(z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) }).optional())
   .output(z.object({ credited: z.number(), flagged: z.number() }))
-  .handler(async ({ input, context }) => runMonthlyAccrual(context.db, input ? `${input.month}-01` : undefined));
+  .handler(async ({ input, context }) => {
+    if (!context.permissionAccess.all) throw new ORPCError('FORBIDDEN', { message: 'Group-wide integration authority is required to run leave jobs.' });
+    if (input && input.month > istDateString().slice(0, 7)) throw new ORPCError('BAD_REQUEST', { message: 'Future monthly leave credits cannot be posted.' });
+    return runMonthlyAccrual(context.db, input ? `${input.month}-01` : undefined);
+  });
 
 const compOffExpiryRun = withPermission('admin.integrations')
   .route({ method: 'POST', path: '/leave/comp-off/expire', summary: 'Lapse expired comp-off credits (also runs daily)' })
   .output(z.object({ employeesLapsed: z.number() }))
-  .handler(async ({ context }) => ({ employeesLapsed: await runCompOffExpiry(context.db) }));
+  .handler(async ({ context }) => {
+    if (!context.permissionAccess.all) throw new ORPCError('FORBIDDEN', { message: 'Group-wide integration authority is required to run leave jobs.' });
+    return { employeesLapsed: await runCompOffExpiry(context.db) };
+  });
 
 const yearEndRun = withPermission('admin.integrations')
   .route({ method: 'POST', path: '/leave/year-end/run', summary: 'Apply carry-forward caps for a year end (LV year boundary pending P0-T06)' })
   .input(z.object({ yearEnd: isoDate }))
   .output(z.object({ employeesLapsed: z.number() }))
-  .handler(async ({ input, context }) => ({ employeesLapsed: await runYearEndCarryForward(context.db, input.yearEnd) }));
+  .handler(async ({ input, context }) => {
+    if (!context.permissionAccess.all) throw new ORPCError('FORBIDDEN', { message: 'Group-wide integration authority is required to run leave jobs.' });
+    if (input.yearEnd > istDateString()) throw new ORPCError('BAD_REQUEST', { message: 'Future year-end leave lapses cannot be posted.' });
+    return { employeesLapsed: await runYearEndCarryForward(context.db, input.yearEnd) };
+  });
 
 /** E2E-039: HR leave register — balances per type and who is on leave on a date, scoped to the caller. */
 const register = withPermission('leave.admin')
   .route({ method: 'GET', path: '/leave/register', summary: 'Company leave register: balances by type + on-leave status (scoped)' })
-  .input(z.object({ q: z.string().trim().max(80).optional(), onDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), onLeaveOnly: z.coerce.boolean().default(false), limit: z.coerce.number().int().min(1).max(500).default(200) }))
+  .input(z.object({ q: z.string().trim().max(80).optional(), onDate: isoDate.optional(), onLeaveOnly: booleanQuery().default(false), limit: z.coerce.number().int().min(1).max(500).default(200) }))
   .output(z.object({
     onDate: z.string(),
     types: z.array(z.object({ code: z.string(), name: z.string() })),
@@ -437,7 +378,8 @@ const register = withPermission('leave.admin')
     let q = db.selectFrom('core.employees as e').select(['e.id', 'e.ecode', 'e.first_name', 'e.last_name'])
       .where('e.status', 'in', ['active', 'on_notice']).where(employeeScopeSql(scope, 'e'));
     if (input.q) { const like = `%${input.q}%`; q = q.where((eb) => eb.or([eb('e.ecode', 'ilike', like), eb('e.first_name', 'ilike', like), eb('e.last_name', 'ilike', like)])); }
-    const leaves = await db.selectFrom('lv.applications as a').innerJoin('lv.leave_types as t', 't.id', 'a.leave_type_id')
+    const leaves = await db.selectFrom('lv.applications as a').innerJoin('lv.leave_types as t', 't.id', 'a.leave_type_id').innerJoin('core.employees as e', 'e.id', 'a.employee_id')
+      .where(employeeScopeSql(scope, 'e'))
       .select(['a.employee_id', 't.code', 'a.from_date', 'a.to_date', 'a.status'])
       .where('a.status', 'in', ['approved', 'pending']).where('a.from_date', '<=', new Date(`${onDate}T00:00:00Z`)).where('a.to_date', '>=', new Date(`${onDate}T00:00:00Z`)).execute();
     const onLeave = new Map(leaves.map((l) => [l.employee_id, { type: l.code, fromDate: formatDbDate(l.from_date), toDate: formatDbDate(l.to_date), status: l.status }]));
@@ -446,7 +388,6 @@ const register = withPermission('leave.admin')
     const ids = emps.map((e) => e.id);
     const sums = ids.length === 0 ? [] : await db.selectFrom('lv.ledger as l').innerJoin('lv.leave_types as t', 't.id', 'l.leave_type_id')
       .select(['l.employee_id', 't.code', sql<string>`SUM(l.delta)`.as('bal')]).where('l.employee_id', 'in', ids)
-      .where((eb) => eb.or([eb('l.expiry_date', 'is', null), eb('l.expiry_date', '>=', new Date(`${onDate}T00:00:00Z`))]))
       .groupBy(['l.employee_id', 't.code']).execute();
     const bal = new Map<number, Record<string, number>>();
     for (const r of sums) { const m = bal.get(r.employee_id) ?? {}; m[r.code] = Math.round(Number(r.bal) * 100) / 100; bal.set(r.employee_id, m); }
@@ -460,7 +401,7 @@ const register = withPermission('leave.admin')
 export const leaveRouter = {
   register,
   listTypes,
-  upsertType,
+  ...leaveConfigRouter,
   myBalances,
   employeeBalances,
   preview,

@@ -329,6 +329,14 @@ describe.skipIf(!url)('recovered split-shift integration', () => {
           .where('device_id', '=', device.id)
           .execute();
         expect(await getAbsenceFinalizationReadiness(db, employee.id, date)).toMatchObject({
+          ready: false,
+          reason: 'device_watermark_pending',
+          shiftEndAt: at('18:00'),
+        });
+        await db.updateTable('att.device_watermarks')
+          .set({ watermark_ts: istDateTime(addDaysIso(date, 1), '04:00') })
+          .where('device_id', '=', device.id).execute();
+        expect(await getAbsenceFinalizationReadiness(db, employee.id, date)).toMatchObject({
           ready: true,
         });
         throw rollback;

@@ -1,0 +1,37 @@
+{
+  "source": "/Users/anooppratapsingh/Downloads/Kent data.xlsx",
+  "sha256": "4f0fde9cc787ae09245961ab9a364270cb5762a36069907581ceeb77116fd66b",
+  "sheet": "Recognition Logs",
+  "records": 41936,
+  "employees": 2386,
+  "dates": {
+    "2026-10-01": 4008,
+    "2026-10-02": 1772,
+    "2026-10-03": 3688,
+    "2026-10-04": 2542,
+    "2026-10-05": 4130,
+    "2026-10-06": 4354,
+    "2026-10-07": 4447,
+    "2026-10-08": 4610,
+    "2026-10-09": 4549,
+    "2026-10-10": 4505,
+    "2026-10-11": 3331
+  },
+  "directions": {
+    "in": 19800,
+    "out": 14733,
+    "(blank)": 7403
+  },
+  "blank_device_records": 2638,
+  "named_devices": 67,
+  "min_created_delay_minutes": 0,
+  "max_created_delay_minutes": 17272,
+  "created_on_later_calendar_date": 250,
+  "created_at_least_24h_later": 45,
+  "duplicate_minute_key_groups": 225,
+  "duplicate_minute_key_excess_rows": 225,
+  "duplicate_groups_with_direction_conflicts": 5,
+  "source_precision": "Minute; no seconds supplied",
+  "can_match_21_22_oct_bookings": false,
+  "report_policy": "Sponsor chooses HRMS finalization no earlier than next-day 04:00 IST; not a KENT finalization promise, forced OUT, attendance-day boundary or completeness proof"
+}

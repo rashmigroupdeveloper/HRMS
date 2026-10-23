@@ -13,7 +13,7 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { ConflictError, DomainError, ForbiddenError, NotFoundError } from '../../core/errors/index.js';
 import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { createRequest } from '../workflows/index.js';
-import { assertDate, assertWithinTrip } from './travel-utils.js';
+import { assertDate, assertTravelMonth, assertWithinTrip, budgetEstimatePaise, inclusiveTravelDays } from './travel-utils.js';
 import { WalletService } from './wallet.service.js';
 import { inTransaction } from '../../core/db/database.js';
 
@@ -35,6 +35,16 @@ export interface CreateTripInput {
   endDate: string; // YYYY-MM-DD
   visaRequired?: boolean | undefined;
   estimatedBudgetPaise?: number | undefined;
+  travelMonth?: string | undefined;
+  originCity?: string | undefined;
+  airfarePaise?: number | undefined;
+  hotelPerNightPaise?: number | undefined;
+  hotelNights?: number | undefined;
+  dailyAllowancePerDayPaise?: number | undefined;
+  visaCostPaise?: number | undefined;
+  overLimitJustification?: string | undefined;
+  /** Draft saves the budget without opening the approval chain. */
+  saveAs?: 'draft' | 'submit' | undefined;
   requestedByUserId: number;
 }
 
@@ -60,6 +70,11 @@ export interface RequestAdvanceInput {
 }
 
 type Db = Kysely<Database> | Transaction<Database>;
+
+function blankToNull(value: string | undefined): string | null {
+  const trimmed = value?.trim() ?? '';
+  return trimmed === '' ? null : trimmed;
+}
 
 function scopeFilter(scope: EmployeeScope | undefined) {
   return sql<boolean>`employee_id IN (SELECT e.id FROM core.employees e WHERE ${employeeScopeSql(scope, 'e')})`;
@@ -110,12 +125,23 @@ export class TravelService {
     return { trip, itineraries, advances };
   }
 
-  /** Raises a trip and routes it through the travel approval chain ('travel_trip'). */
+  /** Raises a budget (stored as a trip) and, unless saved as draft, opens 'travel_trip'. */
   async createTrip(input: CreateTripInput): Promise<TripRow> {
-    const start = assertDate(input.startDate, 'Start date');
-    const end = assertDate(input.endDate, 'End date');
+    const start = assertDate(input.startDate, 'Travel start');
+    const end = assertDate(input.endDate, 'Travel end');
     if (end < start) throw new DomainError('End date cannot be before the start date');
-    const referenceNo = `TRIP-${start.slice(0, 4)}-${String(Date.now()).slice(-6)}${String(Math.floor(Math.random() * 90 + 10))}`;
+    if (input.travelMonth) assertTravelMonth(input.travelMonth, start, end);
+    const days = inclusiveTravelDays(start, end);
+    const componentTotal = budgetEstimatePaise({
+      airfarePaise: input.airfarePaise ?? 0,
+      hotelPerNightPaise: input.hotelPerNightPaise ?? 0,
+      hotelNights: input.hotelNights ?? 0,
+      dailyAllowancePerDayPaise: input.dailyAllowancePerDayPaise ?? 0,
+      travelDays: days,
+      visaCostPaise: input.visaCostPaise ?? 0,
+    });
+    const estimatedPaise = componentTotal > 0 ? componentTotal : (input.estimatedBudgetPaise ?? 0);
+    const referenceNo = `BDG-${start.slice(0, 4)}-${String(Date.now()).slice(-6)}${String(Math.floor(Math.random() * 90 + 10))}`;
     const country = input.destinationCountry ?? (input.travelType === 'domestic' ? 'India' : 'International');
     const region: 'domestic' | 'sea' | 'africa' | 'middle_east' | 'europe' | 'americas' | 'other' =
       input.travelType === 'domestic'
@@ -127,51 +153,91 @@ export class TravelService {
                 ? 'africa'
                 : 'other'
           );
-    const estimatedPaise = input.estimatedBudgetPaise ?? 0;
+    const values = {
+      reference_no: referenceNo,
+      employee_id: input.employeeId,
+      company_id: input.companyId,
+      trip_name: input.tripName,
+      travel_type: input.travelType,
+      destination_region: region,
+      purpose: input.purpose,
+      destination_country: country,
+      destination_city: input.destinationCity,
+      travel_month: input.travelMonth ?? null,
+      origin_city: blankToNull(input.originCity),
+      airfare_paise: input.airfarePaise ?? 0,
+      hotel_per_night_paise: input.hotelPerNightPaise ?? 0,
+      hotel_nights: input.hotelNights ?? 0,
+      daily_allowance_per_day_paise: input.dailyAllowancePerDayPaise ?? 0,
+      visa_cost_paise: input.visaCostPaise ?? 0,
+      over_limit_justification: blankToNull(input.overLimitJustification),
+      start_date: sql<Date>`${start}::date`,
+      end_date: sql<Date>`${end}::date`,
+      visa_required: input.visaRequired ?? false,
+      visa_status: input.visaRequired ? 'applied' as const : 'not_applicable' as const,
+      estimated_budget_paise: estimatedPaise,
+      approved_budget_paise: 0,
+    };
+    const payload = {
+      tripName: input.tripName,
+      destinationCity: input.destinationCity,
+      destinationCountry: country,
+      travelType: input.travelType,
+      destinationRegion: region,
+      estimatedBudgetPaise: estimatedPaise,
+      startDate: start,
+      endDate: end,
+    };
     let tripId = 0;
+    if (input.saveAs === 'draft') {
+      await inTransaction(this.db, async (trx) => {
+        const row = await trx.insertInto('te.trips').values({ ...values, status: 'draft', workflow_request_id: null }).returning('id').executeTakeFirstOrThrow();
+        tripId = row.id;
+        await writeAudit(trx, { actorUserId: input.requestedByUserId, action: 'create', entity: 'te.trips', entityId: row.id, newValue: referenceNo });
+      });
+      return (await this.getTripById(tripId)).trip;
+    }
+    await createRequest(
+      this.db,
+      { definitionCode: 'travel_trip', subjectEmployeeId: input.employeeId, requestedByUserId: input.requestedByUserId, payload },
+      async (trx, requestId) => {
+        const row = await trx.insertInto('te.trips').values({ ...values, status: 'submitted', workflow_request_id: requestId }).returning('id').executeTakeFirstOrThrow();
+        tripId = row.id;
+        await writeAudit(trx, { actorUserId: input.requestedByUserId, action: 'create', entity: 'te.trips', entityId: row.id, newValue: referenceNo });
+      },
+    );
+    return (await this.getTripById(tripId)).trip;
+  }
+
+  /** Opens the approval chain for a budget the employee saved as draft. */
+  async submitBudget(tripId: number, requestedByUserId: number, employeeId: number): Promise<TripRow> {
+    const trip = await this.db.selectFrom('te.trips').selectAll().where('id', '=', tripId).executeTakeFirst();
+    if (!trip) throw new NotFoundError(`Budget #${String(tripId)} not found`);
+    if (trip.employee_id !== employeeId) throw new ForbiddenError('You can only submit your own budget');
+    if (trip.status !== 'draft') throw new ConflictError(`This budget is already ${trip.status}`);
+    if (trip.estimated_budget_paise <= 0) throw new DomainError('Add at least one budget item before submitting');
     await createRequest(
       this.db,
       {
         definitionCode: 'travel_trip',
-        subjectEmployeeId: input.employeeId,
-        requestedByUserId: input.requestedByUserId,
+        subjectEmployeeId: employeeId,
+        requestedByUserId,
         payload: {
-          tripName: input.tripName,
-          destinationCity: input.destinationCity,
-          destinationCountry: country,
-          travelType: input.travelType,
-          destinationRegion: region,
-          estimatedBudgetPaise: estimatedPaise,
-          startDate: start,
-          endDate: end,
+          tripName: trip.trip_name,
+          destinationCity: trip.destination_city,
+          travelType: trip.travel_type,
+          destinationRegion: trip.destination_region,
+          estimatedBudgetPaise: trip.estimated_budget_paise,
         },
       },
       async (trx, requestId) => {
-        const row = await trx
-          .insertInto('te.trips')
-          .values({
-            reference_no: referenceNo,
-            employee_id: input.employeeId,
-            company_id: input.companyId,
-            trip_name: input.tripName,
-            travel_type: input.travelType,
-            destination_region: region,
-            purpose: input.purpose,
-            destination_country: country,
-            destination_city: input.destinationCity,
-            start_date: sql<Date>`${start}::date`,
-            end_date: sql<Date>`${end}::date`,
-            visa_required: input.visaRequired ?? false,
-            visa_status: input.visaRequired ? 'applied' : 'not_applicable',
-            status: 'submitted',
-            estimated_budget_paise: estimatedPaise,
-            approved_budget_paise: 0,
-            workflow_request_id: requestId,
-          })
-          .returning('id')
-          .executeTakeFirstOrThrow();
-        tripId = row.id;
-        await writeAudit(trx, { actorUserId: input.requestedByUserId, action: 'create', entity: 'te.trips', entityId: row.id, newValue: referenceNo });
+        const updated = await trx
+          .updateTable('te.trips')
+          .set({ status: 'submitted', workflow_request_id: requestId, updated_at: new Date() })
+          .where('id', '=', tripId)
+          .where('status', '=', 'draft')
+          .executeTakeFirst();
+        if (updated.numUpdatedRows === 0n) throw new ConflictError('This budget was already submitted');
       },
     );
     return (await this.getTripById(tripId)).trip;

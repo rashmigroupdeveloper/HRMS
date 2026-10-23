@@ -1,9 +1,9 @@
 /** LC-01: joining forms RML/HR/02/01 — regular, consultant/intern, overseas. */
 export type JoiningFormKind = 'regular' | 'consultant' | 'overseas';
 
-export interface GridRow { qualification: string; institute: string; year: string }
-export interface FamilyGridRow { name: string; relation: string; gender: string }
-export interface NominationGridRow { scheme: string; name: string; relation: string; share: string; address: string }
+interface GridRow { qualification: string; institute: string; year: string }
+interface FamilyGridRow { name: string; relation: string; gender: string }
+interface NominationGridRow { scheme: string; name: string; relation: string; share: string; address: string }
 
 export const EMPTY_PREJOIN_FORM = {
   formKind: 'regular' as JoiningFormKind,

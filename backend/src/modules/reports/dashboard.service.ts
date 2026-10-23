@@ -48,6 +48,16 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number, s
   if (companyId !== undefined) absentQ = absentQ.where('e.company_id', '=', companyId);
   const absentToday = (await absentQ.executeTakeFirstOrThrow()).n;
 
+  let coverageQ = db.selectFrom('core.employees as e')
+    .leftJoin('att.day_records as d', join => join.onRef('d.employee_id', '=', 'e.id')
+      .on('d.work_date', '=', sql<Date>`${today}::date`))
+    .where(employeeScopeSql(scope, 'e')).where('e.status', 'in', ['active', 'on_notice'])
+    .where(eb => eb.or([eb('e.doj', 'is', null), eb('e.doj', '<=', sql<Date>`${today}::date`)]))
+    .where(eb => eb.or([eb('e.dol', 'is', null), eb('e.dol', '>=', sql<Date>`${today}::date`)]))
+    .select(({ fn }) => [fn.countAll<number>().as('expected'), fn.count<number>('d.id').as('processed')]);
+  if (companyId !== undefined) coverageQ = coverageQ.where('e.company_id', '=', companyId);
+  const coverage = await coverageQ.executeTakeFirstOrThrow();
+
   let pendingApprovalsQuery = db
       .selectFrom('wf.request_steps as step')
       .innerJoin('wf.requests as request', 'request.id', 'step.request_id')
@@ -107,6 +117,9 @@ export async function hrOpsDashboard(db: Kysely<Database>, companyId?: number, s
     joinersMtd,
     exitsMtd,
     absentToday,
+    expectedToday: coverage.expected,
+    processedToday: coverage.processed,
+    awaitingToday: coverage.expected - coverage.processed,
     pendingApprovals,
     openAbsenceByStage: openAbsence.map((r) => ({ stage: r.stage, count: r.n })),
     pendingOt,

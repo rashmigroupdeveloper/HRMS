@@ -40,6 +40,7 @@ interface SettingRow {
   value: unknown;
   valueType: ValueType;
   description: string;
+  editable: boolean;
 }
 
 /** `att.grace_minutes` → "att" — the module that owns the policy. */
@@ -124,7 +125,7 @@ export function SettingsPage({ user }: { user: SessionUser }) {
       header: '',
       width: '110px',
       render: (row) =>
-        canEdit ? (
+        canEdit && row.editable ? (
           <Button
             size="sm"
             variant="ghost"

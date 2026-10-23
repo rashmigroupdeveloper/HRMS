@@ -5,7 +5,7 @@
 import type { Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { evaluateLeaveCoverage, type LeaveCoverageImpact } from './coverage-check.service.js';
-import { computeLeaveSpan } from './leave-validation.js';
+import { computeLeaveSpan, validateLeaveApplication } from './leave-validation.js';
 import { findLeaveBlackouts, type LeaveBlackoutHit } from './leave-blackout.js';
 import { getBalance, getLeaveType } from './leave-core.service.js';
 
@@ -39,6 +39,7 @@ export async function previewLeaveApply(
     toHalf?: boolean | undefined;
   },
 ): Promise<LeaveApplyPreview> {
+  await validateLeaveApplication(db, { employeeId: params.employeeId, requestedByUserId: 0, leaveTypeCode: params.leaveTypeCode, fromDate: params.from, toDate: params.to, fromHalf: params.fromHalf, toHalf: params.toHalf }, undefined, true);
   if (params.from > params.to) throw new Error('fromDate must be on or before toDate');
   const type = await getLeaveType(db, params.leaveTypeCode);
   const fromHalf = params.fromHalf ?? false;

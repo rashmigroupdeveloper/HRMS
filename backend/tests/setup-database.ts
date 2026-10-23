@@ -2,7 +2,11 @@
 import { config } from 'dotenv';
 import { testDatabaseTarget } from './test-database-target.js';
 
+const declaredTestUrl = process.env['TEST_DATABASE_URL'] ?? '';
+const declaredLocalName = process.env['LOCAL_TEST_DATABASE_NAME'] ?? '';
 config();
+process.env['TEST_DATABASE_URL'] = declaredTestUrl;
+process.env['LOCAL_TEST_DATABASE_NAME'] = declaredLocalName;
 const testUrl = testDatabaseTarget(process.env);
 if (testUrl === undefined || testUrl === '') {
   // Leave an empty value so a later dotenv/config import cannot reload the app DB.

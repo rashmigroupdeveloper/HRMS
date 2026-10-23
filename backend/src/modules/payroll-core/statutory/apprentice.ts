@@ -40,10 +40,10 @@ export interface ApprenticeDeductionsResult {
  * General trainees under contract are regular employees, but designated apprentices are excluded.
  */
 export function isApprentice(category: string, contractType: string): boolean {
-  const normCategory = category.trim().toLowerCase();
+  void category; // Employment category alone never establishes a statutory apprenticeship.
   const normContract = contractType.trim().toLowerCase();
 
-  return normCategory === 'trainee' && normContract === 'apprentice';
+  return normContract === 'apprentice';
 }
 
 /**

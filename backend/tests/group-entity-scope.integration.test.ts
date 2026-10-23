@@ -55,6 +55,12 @@ describe.skipIf(!DB_URL)('group vs entity scope', () => {
       uid[key] = u.id;
       t[key] = await signAccessToken(u.id, u.email, JWT_SECRET, s.sid);
     }
+    // Input locking tests authorization only after the required attendance
+    // close exists. An unrestricted role must not bypass that business gate.
+    for (const key of ['A', 'B']) {
+      const lock = await tx.insertInto('att.month_locks').values({ company_id: co[key] ?? 0, month: '2097-03-01', locked_at: new Date(), locked_by: uid['superAdmin'] ?? 0 }).returning('id').executeTakeFirstOrThrow();
+      await tx.updateTable('pay.payroll_runs').set({ attendance_lock_id: lock.id }).where('id', '=', run[key] ?? 0).execute();
+    }
     app = createApp({ db: tx, jwtSecret: JWT_SECRET, secureCookies: false });
   });
   afterAll(async () => {

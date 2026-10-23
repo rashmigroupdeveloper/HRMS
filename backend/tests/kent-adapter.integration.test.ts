@@ -1,5 +1,5 @@
 /** Item 7 / KENT_RESEARCH: Kent CamAttendance webhook + pull (API / DB / CSV drop) → ingest → dedupe. */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -131,7 +131,7 @@ describe('kent pull over HTTP (simulator)', () => {
 describe('kent DB-read and CSV-drop modes', () => {
   it('DB mode reads the configured table above the watermark and rejects unsafe identifiers', async () => {
     const calls: { text: string; params: unknown[] }[] = [];
-    const client: KentDbClient = { query: (text, params) => { calls.push({ text, params }); return Promise.resolve({ rows: [{ employeeNo: 'rml9', time: new Date('2026-06-02T03:30:00Z'), device: 'Seamless-Plant_S4', card: 'RML9' }, { employeeNo: '', time: 'x', device: 'd' }] }); } };
+    const client: KentDbClient = { query: (text, params) => { calls.push({ text, params }); return Promise.resolve({ rows: [{ employeeNo: 'rml9', time: new Date('2026-06-02T03:30:00Z'), device: 'Seamless-Plant_S4', card: 'RML9' }] }); } };
     const c = new KentDbConnector(client, { table: 'dbo.AttendanceLogs', columns: { employeeNo: 'EmpCode', time: 'LogTime', device: 'Door', card: 'Card' }, watermark: 'time', rereadDays: 1, batchSize: 10, defaultOffset: '+05:30', deviceMap: {} }, () => new Date('2026-06-03T00:00:00Z'));
     const got = await c.fetchSince(new Date('2026-06-02T23:00:00Z'));
     expect(got).toHaveLength(1);
@@ -257,5 +257,25 @@ describe.skipIf(!DB_URL)('kent feeds → pipeline', () => {
     const r = await runKentSync(tx, c, `${source}-csv`);
     expect(r.inserted).toBe(1);
     expect((await readdir(dir)).filter((n) => n.endsWith('.csv'))).toHaveLength(0);
+  });
+
+  it('mixed webhook retains the food recognition raw but creates only attendance swipes/devices', async () => {
+    vi.stubEnv('KENT_ATTENDANCE_DEVICE_IDS', 'WH-ATTENDANCE');
+    try {
+      const app = createApp({ db: tx, jwtSecret: 'x'.repeat(40), secureCookies: false, kentWebhook: { token: TOKEN, allowIps: [], header: null, maxBytes: '1mb' } });
+      const c = await httpRequest(app);
+      const body = [
+        { empId: ecode, time: recent(15), type: 1, deviceId: 'WH-ATTENDANCE' },
+        { empId: ecode, time: recent(20), type: 1, deviceId: 'HGR5GEDS' },
+      ];
+      const res = await c.post(`/api/integrations/kent/webhook/${TOKEN}`).send(body);
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ received: 2, accepted: 1, inserted: 1, rejected: 1 });
+      const batch = await tx.selectFrom('att.kent_webhook_batches').select('raw_body').where('id', '=', (res.body as { batchId: number }).batchId).executeTakeFirstOrThrow();
+      expect(batch.raw_body).toContain('HGR5GEDS');
+      const swipes = await tx.selectFrom('att.swipe_events').select('door_code').where('employee_no', '=', ecode).where('door_code', 'in', ['WH-ATTENDANCE', 'HGR5GEDS']).execute();
+      expect(swipes.map(s => s.door_code)).toEqual(['WH-ATTENDANCE']);
+      expect(await tx.selectFrom('att.devices').select('id').where('door_code', '=', 'HGR5GEDS').execute()).toEqual([]);
+    } finally { vi.unstubAllEnvs(); }
   });
 });

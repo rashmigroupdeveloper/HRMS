@@ -31,6 +31,8 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
   const password = 'stage13-test-password-1!';
   const genericDefinitionCode = `s13_chain_${stamp}`;
   const editableDefinitionCode = `s13_edit_${stamp}`;
+  const multiStepDefinitionCode = `s13_multi_${stamp}`;
+  const vacantTailDefinitionCode = `s13_vacant_tail_${stamp}`;
 
   // people: worker → manager → (hr user with hr_ops role)
   let workerEmpId: number;
@@ -125,7 +127,7 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     await db.deleteFrom('wf.event_subscriptions').where('event_code', '=', 'workflow.routing_held')
       .where('recipient_kind', '=', 'user').where('recipient_ref', '=', String(hrUser)).execute();
     await db.deleteFrom('wf.definitions')
-      .where('code', 'in', [genericDefinitionCode, editableDefinitionCode]).execute();
+      .where('code', 'in', [genericDefinitionCode, editableDefinitionCode, multiStepDefinitionCode, vacantTailDefinitionCode]).execute();
     await db.deleteFrom('core.user_roles').where('user_id', 'in', [workerUser, managerUser, hrUser, delegateUser]).execute();
     await db
       .updateTable('core.users')
@@ -215,6 +217,70 @@ run('Stage 1.3 — workflow engine (live Postgres)', () => {
     const body = timeline.body as { status: string; steps: { action: string | null }[] };
     expect(body.status).toBe('pending');
     expect(body.steps.map((s) => s.action)).toEqual(['sent_back', null]); // round 1 + fresh step
+  });
+
+  it('resubmit on a multi-step chain re-asks EARLIER approvers — it never collapses a prior round (doc 11 §4b/§5)', async () => {
+    // RM (step 1) approves, then a later approver sends it back. The prior-round
+    // RM approval must NOT collapse step 1 on resubmit, or the edited request
+    // would silently bypass the RM who approved the old version.
+    const steps = JSON.stringify([
+      { step: 1, approver: 'reporting_manager', slaHours: 48, onBreach: 'escalate' },
+      { step: 2, approver: `user:${String(hrUser)}`, slaHours: 48, onBreach: 'escalate' },
+    ]);
+    await db.insertInto('wf.definitions').values({ code: multiStepDefinitionCode, name: 'S13 two-step resubmit proof', steps }).execute();
+
+    const requestId = await createRequest(db, {
+      definitionCode: multiStepDefinitionCode, subjectEmployeeId: workerEmpId, requestedByUserId: workerUser,
+      payload: { amount: 10_000, reason: 'original' },
+    });
+    createdRequests.push(requestId);
+
+    // Step 1: RM approves → step 2 opens on hrUser.
+    expect(await act(db, { requestId, actorUserId: managerUser, action: 'approve', comment: 'ok at 10k' })).toBe('advanced');
+    const step2 = await db.selectFrom('wf.request_steps').selectAll().where('request_id', '=', requestId)
+      .where('action', 'is', null).orderBy('id', 'desc').executeTakeFirstOrThrow();
+    expect(step2.step_no).toBe(2);
+    expect(step2.approver_user_id).toBe(hrUser);
+
+    // Step 2 sends it back; requester resubmits an EDITED (larger) amount.
+    expect(await act(db, { requestId, actorUserId: hrUser, action: 'send_back', comment: 'justify the amount' })).toBe('sent_back');
+    await resubmit(db, { requestId, requesterUserId: workerUser, payload: { amount: 100_000, reason: 'revised — much larger' } });
+
+    // The fresh round must land back on the RM at step 1, NOT skip to step 2.
+    const open = await db.selectFrom('wf.request_steps').selectAll().where('request_id', '=', requestId)
+      .where('action', 'is', null).execute();
+    expect(open.length).toBe(1);
+    expect(open[0]?.step_no).toBe(1);
+    expect(open[0]?.approver_user_id).toBe(managerUser);
+
+    // And there is NO 'collapsed' audit entry for this fresh round.
+    const collapsed = await db.selectFrom('core.audit_log').select('id')
+      .where('entity', '=', 'wf.requests').where('entity_id', '=', requestId)
+      .where('new_value', 'like', '%collapsed%').execute();
+    expect(collapsed.length).toBe(0);
+  });
+
+  it('a later all-vacant tail is held for HR — it is not approved (vacancy is not consent)', async () => {
+    await db.insertInto('wf.definitions').values({
+      code: vacantTailDefinitionCode,
+      name: 'S13 vacant tail',
+      steps: JSON.stringify([
+        { step: 1, approver: 'reporting_manager', slaHours: 48, onBreach: 'escalate' },
+        { step: 2, approver: 'user:999999999', slaHours: 48, onBreach: 'escalate' },
+      ]),
+    }).execute();
+    const requestId = await createRequest(db, {
+      definitionCode: vacantTailDefinitionCode, subjectEmployeeId: workerEmpId, requestedByUserId: workerUser, payload: { reason: 'vacant tail' },
+    });
+    createdRequests.push(requestId);
+    expect(await act(db, { requestId, actorUserId: managerUser, action: 'approve', comment: 'step 1 only' })).toBe('advanced');
+    const after = await db.selectFrom('wf.requests').select('status').where('id', '=', requestId).executeTakeFirstOrThrow();
+    expect(after.status).toBe('pending');
+    const open = await db.selectFrom('wf.request_steps').select('id').where('request_id', '=', requestId).where('action', 'is', null).execute();
+    expect(open).toHaveLength(0);
+    const hold = await db.selectFrom('core.audit_log').select('new_value')
+      .where('entity', '=', 'wf.requests').where('entity_id', '=', requestId).where('field', '=', 'routing_hold').executeTakeFirst();
+    expect(hold?.new_value ?? '').toContain('remaining approver');
   });
 
   it('CORE-10 derives manager approval permissions from the live reporting tree', async () => {

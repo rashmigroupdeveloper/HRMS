@@ -30,6 +30,9 @@ export interface HrDashboardData {
   joinersMtd: number;
   exitsMtd: number;
   absentToday: number;
+  expectedToday: number;
+  processedToday: number;
+  awaitingToday: number;
   pendingApprovals: number;
   openAbsenceByStage: { stage: string; count: number }[];
   pendingOt: number;

@@ -17,6 +17,7 @@ const settingOutput = z.object({
   value: z.unknown(),
   valueType: z.enum(['number', 'string', 'boolean', 'json']),
   description: z.string(),
+  editable: z.boolean(),
 });
 
 const getProcedure = withPermission('admin.settings', 'read')
@@ -26,7 +27,8 @@ const getProcedure = withPermission('admin.settings', 'read')
   .handler(async ({ input, context }) => {
     const row = await getSetting(context.db, input.key);
     if (!row) throw new ORPCError('NOT_FOUND', { message: `Setting ${input.key} not found` });
-    return { key: row.key, value: row.value, valueType: row.value_type, description: row.description };
+    const roles = await getUserRoleCodes(context.db, context.user.id);
+    return { key: row.key, value: row.value, valueType: row.value_type, description: row.description, editable: canEditSetting(roles, row.key) };
   });
 
 const listProcedure = withPermission('admin.settings', 'read')
@@ -34,11 +36,13 @@ const listProcedure = withPermission('admin.settings', 'read')
   .output(z.array(settingOutput))
   .handler(async ({ context }) => {
     const rows = await listSettings(context.db);
+    const roles = await getUserRoleCodes(context.db, context.user.id);
     return rows.map((row) => ({
       key: row.key,
       value: row.value,
       valueType: row.value_type,
       description: row.description,
+      editable: canEditSetting(roles, row.key),
     }));
   });
 

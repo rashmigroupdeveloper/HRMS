@@ -8,7 +8,8 @@
  * - Archives batch file into core.documents and registers in pay.bank_batches.
  */
 
-import type { Kysely } from 'kysely';
+import { sql, type Kysely } from 'kysely';
+import { inTransaction } from '../../../core/db/database.js';
 import type { Database } from '../../../core/db/types.js';
 import { createDocument } from '../../../core/storage/index.js';
 import { formulaSafe } from '../../../core/bulk/index.js';
@@ -47,6 +48,10 @@ export class BankFileService {
     runId: number,
     actorUserId: number
   ): Promise<BankBatchSummary> {
+    return inTransaction(this.db, async db => new BankFileService(db).generateLockedBatch(runId, actorUserId));
+  }
+
+  private async generateLockedBatch(runId: number, actorUserId: number): Promise<BankBatchSummary> {
     // 1. Fetch Run & Company
     const run = await this.db
       .selectFrom('pay.payroll_runs as r')
@@ -59,6 +64,7 @@ export class BankFileService {
         'c.name as company_name',
       ])
       .where('r.id', '=', runId)
+      .forUpdate('r')
       .executeTakeFirst();
 
     if (!run) {
@@ -177,6 +183,7 @@ export class BankFileService {
         total_amount: totalAmtStr,
         record_count: payableRecords.length,
         generated_by: actorUserId,
+        created_at: sql<Date>`clock_timestamp()`,
       })
       .returning('id')
       .executeTakeFirstOrThrow();

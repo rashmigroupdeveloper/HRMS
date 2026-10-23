@@ -701,17 +701,16 @@ export async function reportR24Boarding(
   db: Kysely<Database>,
   fromDate: string,
   toDate: string,
-  companyId: number,
+  companyId?: number,
   scope?: EmployeeScope,
 ): Promise<{ joins: BoardingReportRow[]; exits: BoardingReportRow[] }> {
-  const base = db
+  let base = db
     .selectFrom('core.employees as e')
     .leftJoin('core.designations as d', 'd.id', 'e.designation_id')
     .leftJoin('core.departments as dep', 'dep.id', 'e.department_id')
     .leftJoin('core.cost_centers as cc', 'cc.id', 'e.cost_center_id')
     .leftJoin('core.locations as loc', 'loc.id', 'e.location_id')
     .leftJoin('core.employees as rm', 'rm.id', 'e.reporting_manager_id')
-    .where('e.company_id', '=', companyId)
     .where(employeeScopeSql(scope, 'e'))
     .select([
       'e.ecode',
@@ -727,6 +726,7 @@ export async function reportR24Boarding(
       'e.dol',
       'e.exit_reason',
     ]);
+  if (companyId !== undefined) base = base.where('e.company_id', '=', companyId);
 
   const joinsRaw = await base
     .where('e.doj', '>=', sql<Date>`${fromDate}::date`)

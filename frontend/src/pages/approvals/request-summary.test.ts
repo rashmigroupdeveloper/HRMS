@@ -56,6 +56,15 @@ describe('summarizeRequest', () => {
     expect(od.preview).toContain('DIP-6');
   });
 
+  it('shows a trip as destination, then start, then end', () => {
+    const summary = summarizeRequest('travel_trip', {
+      destinationCity: 'Durgapur',
+      endDate: '2026-11-25',
+      startDate: '2026-11-24',
+    });
+    expect(summary.preview).toBe('Durgapur · 24 Nov 2026 · 25 Nov 2026');
+  });
+
   it('still labels unknown keys instead of dumping the object', () => {
     const summary = summarizeRequest('letter_signature', { templateCode: 'offer' });
     expect(summary.rows).toEqual([{ label: 'Template', value: 'offer' }]);
@@ -75,6 +84,37 @@ describe('payloadAsJson', () => {
   });
 });
 
+
+it('names a leave half day instead of From half Yes', () => {
+  const summary = summarizeRequest('leave', {
+    leaveType: 'CL',
+    fromDate: '2026-10-21',
+    toDate: '2026-10-21',
+    days: 0.5,
+    fromHalf: true,
+    toHalf: false,
+    reason: 'Personal work in the first half.',
+  });
+  expect(summary.rows).toContainEqual({ label: 'Day length', value: 'Half day' });
+  expect(summary.rows.map((row) => row.label)).not.toContain('From Half');
+  expect(summary.consequence).toBe(
+    'Final approval grants 0.5 days of CL (21 Oct 2026), half day.',
+  );
+});
+
+it('names half days on the ends of a longer leave', () => {
+  const summary = summarizeRequest('leave', {
+    leaveType: 'EL',
+    fromDate: '2026-10-21',
+    toDate: '2026-10-23',
+    days: 2,
+    fromHalf: true,
+    toHalf: true,
+  });
+  expect(summary.rows).toContainEqual({ label: 'First day', value: 'Half day' });
+  expect(summary.rows).toContainEqual({ label: 'Last day', value: 'Half day' });
+  expect(summary.consequence).toContain('half day on the first and last dates');
+});
 
 it('shows the selected attendance half and limits the approval consequence to it', () => {
   const summary = summarizeRequest('od', { kind: 'OD', dayPortion: 'second_half', fromDate: '2026-10-16', toDate: '2026-10-16' });

@@ -1,0 +1,757 @@
+Browser tab: 3, Title: "Rashmi HRMS", URL: "http://localhost:5173/leave".
+0 AXWebArea Rashmi HRMS, URL: localhost:5173/leave
+	1 container root
+		2 link Description: Skip to content, Value: localhost:5173/leave#main
+		3 container
+			4 link Description: Rashmi HRMS home, Value: localhost:5173/
+			5 pop up button (collapsed) Description: Company scope: all companies (consolidated), Secondary Actions: Expand
+			6 container Primary
+				7 link Description: Dashboard, Value: localhost:5173/
+				8 link Description: People, Value: localhost:5173/people
+				9 link Description: Attendance, Value: localhost:5173/attendance
+				10 link Description: Leave, Value: localhost:5173/leave
+				11 link Description: Payroll, Value: localhost:5173/payroll
+				12 link Description: Lifecycle, Value: localhost:5173/lifecycle
+				13 link Description: Assets, Value: localhost:5173/assets
+				14 pop up button (collapsed) More, Secondary Actions: Expand
+			15 button Search people and pages (Ctrl+K)
+			16 button Approvals — 4 waiting
+			17 button Switch to light theme
+			18 pop up button (collapsed) Description: QH, account menu, Help: qa218638895-hrhead@hrms.invalid · HR Head, Secondary Actions: Expand
+		19 container main
+			20 container
+				21 text Leave administration
+				22 heading Leave operations, Value: 1
+					23 text Leave operations
+				24 text Who is on leave, every balance, and audited corrections for the employees in your scope.
+			25 container
+				26 text Ledger discipline
+				27 heading Every balance has a full history, Value: 2
+					28 text Every balance has a full history
+				29 text Accruals, adjustments, leave taken and comp-off lapses are recorded as entries that never change. A balance is simply their total.
+			30 heading Leave configuration, Value: 2
+				31 text Leave configuration
+			32 text Group-wide rules. Changes are audited; existing paid/unpaid history is protected.
+			33 button New leave type
+			34 table Leave configuration
+				35 row
+					36 cell
+						37 text Leave type
+					38 cell
+						39 text Treatment
+					40 cell
+						41 text Monthly credit
+					42 cell
+						43 text Request cap
+					44 cell
+						45 text Half days
+					46 cell
+						47 text Actions
+				48 container
+					49 row
+						50 cell
+							51 text Casual Leave
+							52 container
+								53 text CL  ·  Active
+						54 cell
+							55 text Paid
+						56 cell
+							57 text 0.75 days after 0 months of service
+						58 cell
+							59 text 3 days
+						60 cell
+							61 text Allowed
+						62 cell
+							63 button Edit CL
+								64 text Edit 
+								65 text CL
+					66 row
+						67 cell
+							68 text Compensatory Off
+							69 container
+								70 text CO  ·  Active
+						71 cell
+							72 text Paid
+						73 cell
+							74 text 0 days after 0 months of service
+						75 cell
+							76 text No cap
+						77 cell
+							78 text Allowed
+						79 cell
+							80 button Edit CO
+								81 text Edit 
+								82 text CO
+					83 row
+						84 cell
+							85 text Earned Leave
+							86 container
+								87 text EL  ·  Active
+						88 cell
+							89 text Paid
+						90 cell
+							91 text 1.25 days after 12 months of service
+						92 cell
+							93 text No cap
+						94 cell
+							95 text Allowed
+						96 cell
+							97 button Edit EL
+								98 text Edit 
+								99 text EL
+					100 row
+						101 cell
+							102 text Election Leave
+							103 container
+								104 text EL_VOTE  ·  Active
+						105 cell
+							106 text Paid
+						107 cell
+							108 text 0 days after 0 months of service
+						109 cell
+							110 text 1 days
+						111 cell
+							112 text Whole days only
+						113 cell
+							114 button Edit EL_VOTE
+								115 text Edit 
+								116 text EL_VOTE
+					117 row
+						118 cell
+							119 text Loss Of Pay
+							120 container
+								121 text LWP  ·  Active
+						122 cell
+							123 text Unpaid
+						124 cell
+							125 text 0 days after 0 months of service
+						126 cell
+							127 text No cap
+						128 cell
+							129 text Allowed
+						130 cell
+							131 button Edit LWP
+								132 text Edit 
+								133 text LWP
+					134 row
+						135 cell
+							136 text Maternity Leave
+							137 container
+								138 text ML  ·  Active
+						139 cell
+							140 text Paid
+						141 cell
+							142 text 0 days after 0 months of service
+						143 cell
+							144 text 182 days
+						145 cell
+							146 text Whole days only
+						147 cell
+							148 button Edit ML
+								149 text Edit 
+								150 text ML
+					151 row
+						152 cell
+							153 text Synthetic policy QA — inactive
+							154 container
+								155 text QA218638895_POLICY  ·  Inactive
+						156 cell
+							157 text Paid
+						158 cell
+							159 text 0 days after 0 months of service
+						160 cell
+							161 text No cap
+						162 cell
+							163 text Allowed
+						164 cell
+							165 button Edit QA218638895_POLICY
+								166 text Edit 
+								167 text QA218638895_POLICY
+					168 row
+						169 cell
+							170 text Sick Leave
+							171 container
+								172 text SL  ·  Active
+						173 cell
+							174 text Paid
+						175 cell
+							176 text 0.58 days after 0 months of service
+						177 cell
+							178 text No cap
+						179 cell
+							180 text Allowed
+						181 cell
+							182 button Edit SL
+								183 text Edit 
+								184 text SL
+			185 heading Leave register, Value: 2
+				186 text Leave register
+			187 text Balances are the sum of the ledger; on-leave reflects approved and pending applications.
+			188 text Find an employee
+			189 text field (settable) Find an employee
+			190 text On date
+			191 date field (settable) On date
+				192 container
+					193 stepper
+					194 stepper
+					195 stepper
+				196 pop up button Show date picker Show date picker
+			197 checkbox (settable, integer) Description: Only people on leave, Value: 0
+			198 text 200 rows
+			199 button (collapsed) Description: Saved views, Secondary Actions: Expand
+			200 button (collapsed) Description: Choose columns, Secondary Actions: Expand
+			201 button Export CSV
+			202 table Leave register
+				203 row
+					204 cell
+						205 button Employee
+					206 cell
+						207 text On 2026-10-21
+					208 cell
+						209 button CL
+					210 cell
+						211 button CO
+					212 cell
+						213 button EL
+					214 cell
+						215 button EL_VOTE
+					216 cell
+						217 button LWP
+					218 cell
+						219 button ML
+					220 cell
+						221 button QA218638895_POLICY
+					222 cell
+						223 button SL
+				224 container
+					225 row
+						226 cell
+							227 text Dev All-Roles
+							228 text DEV44439925
+						229 cell
+							230 text —
+						231 cell
+							232 text 0.75
+						233 cell
+							234 text 0
+						235 cell
+							236 text 0
+						237 cell
+							238 text 0
+						239 cell
+							240 text 0
+						241 cell
+							242 text 0
+						243 cell
+							244 text 0
+						245 cell
+							246 text 0.58
+						247 cell
+							248 button Adjust
+					249 row
+						250 cell
+							251 text CEO Cell / Executive Dev
+							252 text DEVCEOCEL008
+						253 cell
+							254 text —
+						255 cell
+							256 text 0.75
+						257 cell
+							258 text 0
+						259 cell
+							260 text 0
+						261 cell
+							262 text 0
+						263 cell
+							264 text 0
+						265 cell
+							266 text 0
+						267 cell
+							268 text 0
+						269 cell
+							270 text 0.58
+						271 cell
+							272 button Adjust
+					273 row
+						274 cell
+							275 text Employee Dev
+							276 text DEVEMPLOY001
+						277 cell
+							278 text —
+						279 cell
+							280 text 0.75
+						281 cell
+							282 text 0
+						283 cell
+							284 text 0
+						285 cell
+							286 text 0
+						287 cell
+							288 text 0
+						289 cell
+							290 text 0
+						291 cell
+							292 text 0
+						293 cell
+							294 text 0.58
+						295 cell
+							296 button Adjust
+					297 row
+						298 cell
+							299 text HR Head Dev
+							300 text DEVHRHEAD005
+						301 cell
+							302 text —
+						303 cell
+							304 text 0.75
+						305 cell
+							306 text 0
+						307 cell
+							308 text 0
+						309 cell
+							310 text 0
+						311 cell
+							312 text 0
+						313 cell
+							314 text 0
+						315 cell
+							316 text 0
+						317 cell
+							318 text 0.58
+						319 cell
+							320 button Adjust
+					321 row
+						322 cell
+							323 text HR Operations Dev
+							324 text DEVHROPS004
+						325 cell
+							326 text —
+						327 cell
+							328 text 0.75
+						329 cell
+							330 text 0
+						331 cell
+							332 text 0
+						333 cell
+							334 text 0
+						335 cell
+							336 text 0
+						337 cell
+							338 text 0
+						339 cell
+							340 text 0
+						341 cell
+							342 text 0.58
+						343 cell
+							344 button Adjust
+					345 row
+						346 cell
+							347 text IT / System Administrator Dev
+							348 text DEVITADMI009
+						349 cell
+							350 text —
+						351 cell
+							352 text 0.75
+						353 cell
+							354 text 0
+						355 cell
+							356 text 0
+						357 cell
+							358 text 0
+						359 cell
+							360 text 0
+						361 cell
+							362 text 0
+						363 cell
+							364 text 0
+						365 cell
+							366 text 0.58
+						367 cell
+							368 button Adjust
+					369 row
+						370 cell
+							371 text Reporting Manager Dev
+							372 text DEVMANAGE002
+						373 cell
+							374 text —
+						375 cell
+							376 text 0.75
+						377 cell
+							378 text 0
+						379 cell
+							380 text 0
+						381 cell
+							382 text 0
+						383 cell
+							384 text 0
+						385 cell
+							386 text 0
+						387 cell
+							388 text 0
+						389 cell
+							390 text 0.58
+						391 cell
+							392 button Adjust
+					393 row
+						394 cell
+							395 text Payroll Administrator Dev
+							396 text DEVPAYROL006
+						397 cell
+							398 text —
+						399 cell
+							400 text 0.75
+						401 cell
+							402 text 0
+						403 cell
+							404 text 0
+						405 cell
+							406 text 0
+						407 cell
+							408 text 0
+						409 cell
+							410 text 0
+						411 cell
+							412 text 0
+						413 cell
+							414 text 0.58
+						415 cell
+							416 button Adjust
+					417 row
+						418 cell
+							419 text Plant / Business Head Dev
+							420 text DEVPLANTH007
+						421 cell
+							422 text —
+						423 cell
+							424 text 0.75
+						425 cell
+							426 text 0
+						427 cell
+							428 text 0
+						429 cell
+							430 text 0
+						431 cell
+							432 text 0
+						433 cell
+							434 text 0
+						435 cell
+							436 text 0
+						437 cell
+							438 text 0.58
+						439 cell
+							440 button Adjust
+					441 row
+						442 cell
+							443 text Senior Manager — manager of managers Dev
+							444 text DEVSENIOR003
+						445 cell
+							446 text —
+						447 cell
+							448 text 0.75
+						449 cell
+							450 text 0
+						451 cell
+							452 text 0
+						453 cell
+							454 text 0
+						455 cell
+							456 text 0
+						457 cell
+							458 text 0
+						459 cell
+							460 text 0
+						461 cell
+							462 text 0.58
+						463 cell
+							464 button Adjust
+					465 row
+						466 cell
+							467 text Super Administrator Dev
+							468 text DEVSUPERA010
+						469 cell
+							470 text —
+						471 cell
+							472 text 0.75
+						473 cell
+							474 text 0
+						475 cell
+							476 text 0
+						477 cell
+							478 text 0
+						479 cell
+							480 text 0
+						481 cell
+							482 text 0
+						483 cell
+							484 text 0
+						485 cell
+							486 text 0.58
+						487 cell
+							488 button Adjust
+					489 row
+						490 cell
+							491 text Vault Empty
+							492 text DOC25591136
+						493 cell
+							494 text —
+						495 cell
+							496 text 0.75
+						497 cell
+							498 text 0
+						499 cell
+							500 text 0
+						501 cell
+							502 text 0
+						503 cell
+							504 text 0
+						505 cell
+							506 text 0
+						507 cell
+							508 text 0
+						509 cell
+							510 text 0.58
+						511 cell
+							512 button Adjust
+					513 row
+						514 cell
+							515 text Vault Empty
+							516 text DOC26720165
+						517 cell
+							518 text —
+						519 cell
+							520 text 0.75
+						521 cell
+							522 text 0
+						523 cell
+							524 text 0
+						525 cell
+							526 text 0
+						527 cell
+							528 text 0
+						529 cell
+							530 text 0
+						531 cell
+							532 text 0
+						533 cell
+							534 text 0.58
+						535 cell
+							536 button Adjust
+					537 row
+						538 cell
+							539 text Vault Empty
+							540 text DOC27008789
+						541 cell
+							542 text —
+						543 cell
+							544 text 0.75
+						545 cell
+							546 text 0
+						547 cell
+							548 text 0
+						549 cell
+							550 text 0
+						551 cell
+							552 text 0
+						553 cell
+							554 text 0
+						555 cell
+							556 text 0
+						557 cell
+							558 text 0.58
+						559 cell
+							560 button Adjust
+					561 row
+						562 cell
+							563 text Vault Empty
+							564 text DOC27485193
+						565 cell
+							566 text —
+						567 cell
+							568 text 0.75
+						569 cell
+							570 text 0
+						571 cell
+							572 text 0
+						573 cell
+							574 text 0
+						575 cell
+							576 text 0
+						577 cell
+							578 text 0
+						579 cell
+							580 text 0
+						581 cell
+							582 text 0.58
+						583 cell
+							584 button Adjust
+					585 row
+						586 cell
+							587 text Vault Empty
+							588 text DOC30495984
+						589 cell
+							590 text —
+						591 cell
+							592 text 0.75
+						593 cell
+							594 text 0
+						595 cell
+							596 text 0
+						597 cell
+							598 text 0
+						599 cell
+							600 text 0
+						601 cell
+							602 text 0
+						603 cell
+							604 text 0
+						605 cell
+							606 text 0.58
+						607 cell
+							608 button Adjust
+					609 row
+						610 cell
+							611 text Vault Empty
+							612 text DOC30541902
+						613 cell
+							614 text —
+						615 cell
+							616 text 0.75
+						617 cell
+							618 text 0
+						619 cell
+							620 text 0
+						621 cell
+							622 text 0
+						623 cell
+							624 text 0
+						625 cell
+							626 text 0
+						627 cell
+							628 text 0
+						629 cell
+							630 text 0.58
+						631 cell
+							632 button Adjust
+					633 row
+						634 cell
+							635 text Vault Empty
+							636 text DOC30587457
+						637 cell
+							638 text —
+						639 cell
+							640 text 0.75
+						641 cell
+							642 text 0
+						643 cell
+							644 text 0
+						645 cell
+							646 text 0
+						647 cell
+							648 text 0
+						649 cell
+							650 text 0
+						651 cell
+							652 text 0
+						653 cell
+							654 text 0.58
+						655 cell
+							656 button Adjust
+					657 row
+						658 cell
+							659 text Vault Empty
+							660 text DOC30633074
+						661 cell
+							662 text —
+						663 cell
+							664 text 0.75
+						665 cell
+							666 text 0
+						667 cell
+							668 text 0
+						669 cell
+							670 text 0
+						671 cell
+							672 text 0
+						673 cell
+							674 text 0
+						675 cell
+							676 text 0
+						677 cell
+							678 text 0.58
+						679 cell
+							680 button Adjust
+					681 row
+						682 cell
+							683 text Vault Empty
+							684 text DOC30764634
+						685 cell
+							686 text —
+						687 cell
+							688 text 0.75
+						689 cell
+							690 text 0
+						691 cell
+							692 text 0
+						693 cell
+							694 text 0
+						695 cell
+							696 text 0
+						697 cell
+							698 text 0
+						699 cell
+							700 text 0
+						701 cell
+							702 text 0.58
+						703 cell
+							704 button Adjust
+					705 row
+						706 cell
+							707 text Vault Empty
+							708 text DOC32371663
+						709 cell
+							710 text —
+						711 cell
+							712 text 0.75
+						713 cell
+							714 text 0
+						715 cell
+							716 text 0
+						717 cell
+							718 text 0
+						719 cell
+							720 text 0
+						721 cell
+							722 text 0
+						723 cell
+							724 text 0
+						725 cell
+							726 text 0.58
+						727 cell
+							728 button Adjust
+					729 row
+						730 cell
+							731 text Vault Empty
+							732 text DOC33088463
+						733 cell
+							734 text —
+						735 cell
+							736 text 0.75
+						737 cell
+							738 text 0
+						739 cell
+							740 text 0
+						741 cell
+							742 text 0
+						743 cell
+							744 text 0
+						745 cell
+							746 text 0
+						747 cell
+							748 text 0
+						749 cell
+							750 text 0.58
+						751 cell
+							752 button Adjust
+		753 container Notifications alt+T
+
+The focused UI element is 19 container main

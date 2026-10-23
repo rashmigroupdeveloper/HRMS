@@ -29,6 +29,7 @@ import {
 } from '../src/modules/lifecycle/onboarding/onboarding.service.js';
 import { TaskFanoutService } from '../src/modules/lifecycle/onboarding/task-fanout.service.js';
 import { ProbationService } from '../src/modules/lifecycle/probation/probation.service.js';
+import { applyPrejoinPack } from '../src/modules/lifecycle/onboarding/joining-pack.js';
 
 // Native boundary suite proves cross-transaction identity locking; this is composition only.
 vi.mock('../src/modules/settings/index.js',()=>({getTypedSetting:vi.fn().mockResolvedValue(72)}));
@@ -37,6 +38,12 @@ vi.mock('../src/modules/lifecycle/onboarding/joining-validation.js', async impor
   return { ...original, validateJoiningAssignments: vi.fn().mockResolvedValue(undefined) };
 });
 vi.mock('../src/modules/lifecycle/onboarding/onboarding-locks.js', () => ({ lockOnboardingIdentities: vi.fn().mockResolvedValue(undefined) }));
+// Joining-pack persistence is covered by native boundary tests; this fixture
+// verifies conversion delegates to it, rather than emulating its child tables.
+vi.mock('../src/modules/lifecycle/onboarding/joining-pack.js', async importOriginal => {
+  const original = await importOriginal<typeof import('../src/modules/lifecycle/onboarding/joining-pack.js')>();
+  return { ...original, applyPrejoinPack: vi.fn().mockResolvedValue(undefined) };
+});
 
 interface ReturningFixtureUpdate extends FixtureUpdate {returning():ReturningFixtureUpdate;executeTakeFirst():Promise<{id:number}>}
 describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () => {
@@ -499,6 +506,7 @@ describe('Phase 3, Stage 3.1 — Onboarding Bridge & Probation Management', () =
 
       expect(result.employeeId).toBeDefined();
       expect(result.ecode).toMatch(/^RML\d{6}$/);
+      expect(applyPrejoinPack).toHaveBeenCalledWith(mockDb, result.employeeId, candidate.id, expect.any(Object), 1);
 
       // Verify employee record created
       const emp = requireFixture(employeesStore.find((e) => e.id === result.employeeId));

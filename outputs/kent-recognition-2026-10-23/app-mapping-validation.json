@@ -1,0 +1,93 @@
+[
+  {
+    "date": "01/10/2026",
+    "rows": 4008,
+    "layout": "KENT Recognition Logs",
+    "rowsWithErrors": 522,
+    "reasons": {
+      "Recognition Logs: Device Name is missing; resolve the source device before importing": 522
+    }
+  },
+  {
+    "date": "05/10/2026",
+    "rows": 4130,
+    "layout": "KENT Recognition Logs",
+    "rowsWithErrors": 489,
+    "reasons": {
+      "Recognition Logs: Device Name is missing; resolve the source device before importing": 489
+    }
+  },
+  {
+    "date": "06/10/2026",
+    "rows": 4354,
+    "layout": "KENT Recognition Logs",
+    "rowsWithErrors": 390,
+    "reasons": {
+      "Recognition Logs: Device Name is missing; resolve the source device before importing": 390
+    }
+  },
+  {
+    "date": "07/10/2026",
+    "rows": 4447,
+    "layout": "KENT Recognition Logs",
+    "rowsWithErrors": 278,
+    "reasons": {
+      "Recognition Logs: Device Name is missing; resolve the source device before importing": 278
+    }
+  },
+  {
+    "date": "08/10/2026",
+    "rows": 4610,
+    "layout": "KENT Recognition Logs",
+    "rowsWithErrors": 0,
+    "reasons": {}
+  },
+  {
+    "date": "09/10/2026",
+    "rows": 4549,
+    "layout": "KENT Recognition Logs",
+    "rowsWithErrors": 0,
+    "reasons": {}
+  },
+  {
+    "date": "10/10/2026",
+    "rows": 4505,
+    "layout": "KENT Recognition Logs",
+    "rowsWithErrors": 0,
+    "reasons": {}
+  },
+  {
+    "date": "11/10/2026",
+    "rows": 3331,
+    "layout": "KENT Recognition Logs",
+    "rowsWithErrors": 0,
+    "reasons": {}
+  },
+  {
+    "date": "02/10/2026",
+    "rows": 1772,
+    "layout": "KENT Recognition Logs",
+    "rowsWithErrors": 59,
+    "reasons": {
+      "Recognition Logs: Device Name is missing; resolve the source device before importing": 59
+    }
+  },
+  {
+    "date": "03/10/2026",
+    "rows": 3688,
+    "layout": "KENT Recognition Logs",
+    "rowsWithErrors": 516,
+    "reasons": {
+      "Recognition Logs: Device Name is missing; resolve the source device before importing": 516
+    }
+  },
+  {
+    "date": "04/10/2026",
+    "rows": 2542,
+    "layout": "KENT Recognition Logs",
+    "rowsWithErrors": 384,
+    "reasons": {
+      "Recognition Logs: Device Name is missing; resolve the source device before importing": 384
+    }
+  }
+]

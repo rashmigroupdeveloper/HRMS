@@ -100,6 +100,10 @@ describe.skipIf(!DB_URL)('Separation lifecycle (LC-06/07, PAY-15)', () => {
     expect(after.status).toBe('on_notice');
 
     // C-08 / P-02: paise-correct F&F from the paise snapshot, earnings only.
+    // Explicit frozen final-month facts replace the old assumed-presence fallback.
+    await tx.insertInto('att.day_records').values(Array.from({length:Number(lwd.slice(8,10))},(_,i)=>({
+      employee_id:emp['emp'] ?? 0,work_date:addDaysIso(`${lwd.slice(0,7)}-01`,i),status:'P' as const,is_locked:true,
+    }))).execute();
     const fnf = await post(`/api/lifecycle/separations/${sep.id}/compute-fnf`, 'pay', { elBalanceDays: 10 });
     expect(fnf.status).toBe(200);
     const calc = (fnf.body as Body).calculation;

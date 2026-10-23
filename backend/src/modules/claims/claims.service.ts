@@ -127,16 +127,18 @@ export class ClaimsService {
       totalClaimedRupees += b.amountRupees;
     }
 
-    // 2. Validate live entitlement
+    // 2. Entitlement is a flag for the approver, not a hard stop (E2E-015).
+    // A missing budget must not reject the claim: this path is entitlement-funded.
     const targetDate = new Date(periodFrom);
     const entitlements = await this.entitlementService.getEmployeeEntitlements(employeeId, targetDate);
     const currentEntitlement = entitlements.find((e) => e.claimTypeCode === claimTypeCode);
-
-    if (currentEntitlement && currentEntitlement.availableBalanceRupees < totalClaimedRupees) {
-      throw new Error(
-        `Claimed amount (₹${totalClaimedRupees.toLocaleString('en-IN')}) exceeds available entitlement (₹${currentEntitlement.availableBalanceRupees.toLocaleString('en-IN')}) for ${currentEntitlement.claimTypeName}`
-      );
-    }
+    const overEntitlement = currentEntitlement !== undefined
+      && currentEntitlement.availableBalanceRupees < totalClaimedRupees;
+    const fundingFlag = currentEntitlement === undefined
+      ? 'FLAG:no-budget'
+      : overEntitlement
+        ? 'FLAG:over-entitlement'
+        : null;
 
     // 3. Atomically persist claim and bills
     return await inTransaction(this.db, async (trx) => {
@@ -145,6 +147,8 @@ export class ClaimsService {
         .values({
           employee_id: employeeId,
           claim_type_id: claimType.id,
+          funding_kind: 'entitlement',
+          reference: fundingFlag,
           period_from: new Date(periodFrom),
           period_to: new Date(periodTo),
           claimed_amount: totalClaimedRupees.toFixed(2),

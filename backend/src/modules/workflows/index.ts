@@ -18,3 +18,5 @@ export {
 } from './workflow.service.js';
 export { WORKFLOW_DEFINITIONS } from './definitions.seed.js';
 export { onWorkflowLockSubjects } from './workflow-hooks.js';
+export { routingHeldSql } from './workflow-holds.service.js';
+export { requestIsRoutingHeld } from './workflow.service.js';

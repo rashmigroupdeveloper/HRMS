@@ -59,7 +59,7 @@ describe.skipIf(!url)('Payroll run compute edge cases', () => {
 
         const juneLock = await trx.insertInto('att.month_locks').values({ company_id: company.id, month: '2025-06-01', locked_by: u.id, locked_at: new Date() }).returning('id').executeTakeFirstOrThrow();
         const lock = await trx.insertInto('att.month_locks').values({ company_id: company.id, month: '2025-07-01', locked_by: u.id, locked_at: new Date() }).returning('id').executeTakeFirstOrThrow();
-        const june = await trx.insertInto('pay.payroll_runs').values({ company_id: company.id, month: '2025-06-01' as never, status: 'draft', attendance_lock_id: juneLock.id }).returning('id').executeTakeFirstOrThrow();
+        const june = await trx.insertInto('pay.payroll_runs').values({ company_id: company.id, month: '2025-06-01' as never, status: 'finalized', attendance_lock_id: juneLock.id }).returning('id').executeTakeFirstOrThrow();
         await trx.insertInto('pay.recovery_carry_forwards').values({ employee_id: short, component_code: 'MISC_RECOVERY', amount: '700.00', from_run_id: june.id, note: 'June canteen' }).execute();
 
         const service = new PayrollRunService(trx);

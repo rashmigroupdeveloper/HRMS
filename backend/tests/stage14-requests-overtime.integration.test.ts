@@ -465,6 +465,8 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
   });
 
   it('R3: an AR spanning a Sunday marks the working days P but leaves the week-off intact', async () => {
+    // A separate subject avoids overlapping R1's approved AR on weekdays when
+    // arDay falls inside this weekend span. Duplicate coverage is correctly refused.
     // A recent Sunday whose following Monday is still in the past (AR window).
     let sun = addDaysIso(today, -1);
     while (!(dow(sun) === 0 && addDaysIso(sun, 1) <= today)) sun = addDaysIso(sun, -1);
@@ -472,7 +474,7 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
     const mon = addDaysIso(sun, 1);
 
     const { workflowRequestId } = await createRegularization(db, {
-      employeeId: empId,
+      employeeId: emp3Id,
       requestedByUserId: empUserId,
       kind: 'AR',
       fromDate: fri,
@@ -481,12 +483,12 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
     });
     expect(await act(db, { requestId: workflowRequestId, actorUserId: mgrUserId, action: 'approve' })).toBe('approved');
 
-    expect((await day(empId, fri)).status).toBe('P'); // working day → regularized P
-    expect((await day(empId, mon)).status).toBe('P');
+    expect((await day(emp3Id, fri)).status).toBe('P'); // working day → regularized P
+    expect((await day(emp3Id, mon)).status).toBe('P');
     const sundayRow = await db
       .selectFrom('att.day_records')
       .selectAll()
-      .where('employee_id', '=', empId)
+      .where('employee_id', '=', emp3Id)
       .where('work_date', '=', sql<Date>`${sun}::date`)
       .executeTakeFirst();
     expect(sundayRow?.status).not.toBe('P'); // the paid week-off was never converted

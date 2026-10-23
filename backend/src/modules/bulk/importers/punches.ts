@@ -11,6 +11,7 @@ import { writeAudit } from '../../../core/audit/audit.service.js';
 import type { BulkImporter } from '../../../core/bulk/index.js';
 import { isMonthLocked } from '../../attendance/index.js';
 import { attachEmployees, hasRowError, num, opt, rowError, str } from '../helpers.js';
+import { kentRecognitionLayout } from './kent-recognition-layout.js';
 
 const noContext = z.object({}).strict();
 type NoCtx = z.infer<typeof noContext>;
@@ -29,10 +30,11 @@ function directionOf(status: Parameters<typeof str>[0], swipeType: Parameters<ty
 export const punchesImporter: BulkImporter<NoCtx> = {
   key: 'punches',
   title: 'Attendance punches (biometric / Kent)',
-  description: 'Swipe-in/out records. Upload the Kent "Employee Swipe Details" export as-is, or use the template.',
+  description: 'Swipe records from native KENT Recognition Logs, the older Employee Swipe Details export, or the template. Split uploads above 20,000 rows.',
   permission: 'attendance.manual_override',
   contextSchema: noContext,
   contextFields: [],
+  layouts: [kentRecognitionLayout],
   columns: [
     { key: 'ecode', header: 'Employee No', aliases: ['employee code', 'ecode', 'employeeno', 'emp code'], type: 'string', required: true, help: 'E-code.' },
     { key: 'name', header: 'Employee Name', aliases: ['name'], type: 'string', help: 'For your reference; not imported.' },

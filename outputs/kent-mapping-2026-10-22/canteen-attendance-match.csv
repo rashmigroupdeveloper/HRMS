@@ -1,0 +1,886 @@
+canteen_row,employee_code,date,booking_time,meal,quantity,reported_actual_rupees,reported_item_charge_rupees,canteen_company,device_id,attendance_row,attendance_company,attendance_status,reported_in,reported_out,interval_comparison,review_reasons
+2,RGH033619,21/10/2026,07:56:36,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5LG39,1658,Rashmi Metaliks ltd,P,08:48,18:03,before reported in,before reported in
+3,RGH033620,21/10/2026,07:56:37,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,1660,Rashmi Metaliks ltd,P,08:49,18:03,before reported in,before reported in
+4,RML031382,21/10/2026,07:57:06,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4432,Rashmi Metaliks ltd,P,21:36,06:31,before reported in,before reported in
+5,RML031170,21/10/2026,07:57:39,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4262,Rashmi Metaliks ltd,P,05:49,14:30,within reported interval,
+6,RML031490,21/10/2026,07:57:46,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4506,Rashmi Metaliks ltd,P,05:54,17:10,within reported interval,
+7,RML031249,21/10/2026,07:59:45,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4346,Rashmi Metaliks ltd,P,05:40,14:36,within reported interval,
+8,RML030966,21/10/2026,08:01:30,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4138,Rashmi Metaliks ltd,P,05:49,14:30,within reported interval,
+9,RML031527,21/10/2026,08:02:28,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4532,Rashmi Metaliks ltd,HLF,05:34,14:00,within reported interval,
+10,RML026529,21/10/2026,08:03:33,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,3058,Rashmi Metaliks ltd,HLF,05:50,14:12,within reported interval,
+11,RGH033523,21/10/2026,08:03:55,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1550,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:54,22:32,before reported in,before reported in
+12,RGH032719,21/10/2026,08:06:08,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1140,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:30,within reported interval,
+13,RML031705,21/10/2026,08:07:20,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4650,Rashmi Metaliks ltd,P,14:30,05:51,before reported in,before reported in
+14,RGH032963,21/10/2026,08:07:59,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1294,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:53,14:31,within reported interval,
+15,RML031285,21/10/2026,08:11:41,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4384,Rashmi Metaliks ltd,P,05:49,14:34,within reported interval,
+16,RGH032693,21/10/2026,08:11:47,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1110,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:56,14:33,within reported interval,
+17,RML031391,21/10/2026,08:12:07,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4438,Rashmi Metaliks ltd,P,05:50,14:31,within reported interval,
+18,RGH033297,21/10/2026,08:12:14,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1418,Rashmi Green Hydrozen Steel Pvt Ltd,P,14:32,05:43,before reported in,before reported in
+19,RGH033290,21/10/2026,08:12:24,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1408,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:31,within reported interval,
+20,RGH033053,21/10/2026,08:12:27,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1324,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,05:59,,no complete interval,attendance MIS
+21,RML031497,21/10/2026,08:12:31,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4510,Rashmi Metaliks ltd,P,05:50,14:30,within reported interval,
+22,RGH033062,21/10/2026,08:12:36,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1326,Rashmi Green Hydrozen Steel Pvt Ltd,P,14:34,05:55,before reported in,before reported in
+23,RGH032798,21/10/2026,08:13:15,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1188,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:58,14:35,within reported interval,
+24,RGH033524,21/10/2026,08:13:22,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1552,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:49,14:30,within reported interval,
+25,RML035246,21/10/2026,08:13:30,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,6440,Rashmi Metaliks ltd,HLF,05:42,14:01,within reported interval,
+26,RGH033062,21/10/2026,08:13:10,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1326,Rashmi Green Hydrozen Steel Pvt Ltd,P,14:34,05:55,before reported in,before reported in
+27,RGH033453,21/10/2026,08:13:45,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1510,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:39,06:30,before reported in,before reported in
+28,RGH032867,21/10/2026,08:13:49,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1232,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:49,14:31,within reported interval,
+29,RGH033278,21/10/2026,08:15:56,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1396,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:34,14:32,within reported interval,
+30,RML034458,21/10/2026,08:16:59,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6158,Rashmi Metaliks ltd,HLF,05:37,14:01,within reported interval,
+31,RGH032713,21/10/2026,08:17:19,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1134,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:49,14:30,within reported interval,
+32,RML033556,21/10/2026,08:17:24,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,5718,Rashmi Metaliks ltd,P,05:57,14:30,within reported interval,
+33,RGH032921,21/10/2026,08:18:14,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1260,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:48,14:31,within reported interval,
+34,RGH033218,21/10/2026,08:18:40,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1374,Rashmi Green Hydrozen Steel Pvt Ltd,P,08:40,18:06,before reported in,before reported in
+35,RML031642,21/10/2026,08:19:19,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4596,Rashmi Metaliks ltd,P,05:51,14:30,within reported interval,
+36,RML030927,21/10/2026,08:20:34,Breakfast,1.0,25.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,4118,Rashmi Metaliks Ltd Fittings,P,08:31,18:00,before reported in,before reported in
+37,RGH033533,21/10/2026,08:22:36,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1560,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:49,14:31,within reported interval,
+38,RML030953,21/10/2026,08:22:50,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4128,Rashmi Metaliks ltd,P,05:49,14:31,within reported interval,
+39,RPL002210,21/10/2026,08:24:30,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,6798,Rashmi Metaliks ltd,P,08:40,18:00,before reported in,before reported in
+40,RML034535,21/10/2026,08:25:40,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,6190,Rashmi Metaliks ltd,P,06:32,15:03,within reported interval,
+41,RGH033349,21/10/2026,08:25:54,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1462,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:45,14:30,within reported interval,
+42,RGH032740,21/10/2026,08:26:34,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1154,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:49,14:30,within reported interval,
+43,RML031322,21/10/2026,08:29:11,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4396,Rashmi Metaliks ltd,P,13:29,22:30,before reported in,before reported in
+44,RML031032,21/10/2026,08:34:05,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4172,Rashmi Metaliks ltd,MIS,14:46,,no complete interval,attendance MIS
+45,RML023269,21/10/2026,08:34:40,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2122,Rashmi Metaliks ltd,HLF,05:49,14:03,within reported interval,
+46,RML026543,21/10/2026,08:34:45,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,3064,Rashmi Metaliks ltd,HLF,05:50,14:12,within reported interval,
+47,RML035346,21/10/2026,08:35:57,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,6492,Rashmi Metaliks ltd,P,08:29,18:02,within reported interval,
+48,RML026658,21/10/2026,08:38:21,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,3112,Rashmi Metaliks ltd,P,08:35,18:01,within reported interval,
+49,RML034524,21/10/2026,08:38:26,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,6182,Rashmi Metaliks ltd,HLF,05:54,14:00,within reported interval,
+50,RML031110,21/10/2026,08:38:58,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4236,Rashmi Metaliks ltd,P,05:58,14:32,within reported interval,
+51,RML024748,21/10/2026,08:40:13,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,2502,Rashmi Metaliks ltd,HLF,05:59,14:12,within reported interval,
+52,RML031839,21/10/2026,08:44:27,Breakfast,1.0,25.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5L318,4740,Rashmi Metaliks Ltd Fittings,P,08:41,18:02,within reported interval,
+53,RML031648,21/10/2026,08:44:30,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4604,Rashmi Metaliks ltd,P,05:50,14:31,within reported interval,
+54,RML035494,21/10/2026,08:44:56,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6662,Rashmi Metaliks ltd,P,09:03,18:05,before reported in,before reported in
+55,RML031648,21/10/2026,08:45:05,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4604,Rashmi Metaliks ltd,P,05:50,14:31,within reported interval,
+56,RML033729,21/10/2026,08:45:49,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5788,Rashmi Metaliks ltd,P,08:44,18:02,within reported interval,
+57,RGH032681,21/10/2026,08:46:39,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1096,Rashmi Green Hydrozen Steel Pvt Ltd,P,08:44,18:07,within reported interval,
+58,RML031656,21/10/2026,08:46:56,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4614,Rashmi Metaliks ltd,P,08:44,18:26,within reported interval,
+59,RML026656,21/10/2026,08:47:00,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,3110,Rashmi Metaliks ltd,P,08:42,18:22,within reported interval,
+60,RML022452,21/10/2026,08:48:57,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,2032,Rashmi Metaliks ltd,HLF,05:52,14:01,within reported interval,
+61,RML035521,21/10/2026,08:49:31,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,6710,Rashmi Metaliks ltd,P,08:40,18:42,within reported interval,
+62,RML030180,21/10/2026,08:50:34,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,3614,Rashmi Metaliks ltd,P,08:42,18:32,within reported interval,
+63,RML025007,21/10/2026,08:51:05,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,2614,Rashmi Metaliks ltd,HLF,05:51,14:01,within reported interval,
+64,RGH033292,21/10/2026,08:51:50,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1412,Rashmi Green Hydrozen Steel Pvt Ltd,P,08:43,18:05,within reported interval,
+65,RML031443,21/10/2026,08:51:59,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4466,Rashmi Metaliks ltd,P,08:43,18:18,within reported interval,
+66,RML033151,21/10/2026,08:52:15,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5544,Rashmi Metaliks ltd,P,08:48,18:03,within reported interval,
+67,RML031240,21/10/2026,08:53:54,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4330,Rashmi Metaliks ltd,P,08:45,18:12,within reported interval,
+68,RGH033590,21/10/2026,08:54:16,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,1616,Rashmi Metaliks ltd,P,13:51,22:33,before reported in,before reported in
+69,RML031383,21/10/2026,08:54:53,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4434,Rashmi Metaliks ltd,P,05:51,14:31,within reported interval,
+70,RML031774,21/10/2026,08:55:05,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4688,Rashmi Metaliks ltd,P,08:49,18:11,within reported interval,
+71,RGH033014,21/10/2026,08:55:44,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1314,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:50,22:32,before reported in,before reported in
+72,RML024050,21/10/2026,08:56:21,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,2294,Rashmi Metaliks ltd,P,08:53,18:03,within reported interval,
+73,RML023650,21/10/2026,08:56:42,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,2196,Rashmi Metaliks ltd,P,08:54,18:03,within reported interval,
+74,RML032695,21/10/2026,08:56:47,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5216,Rashmi Metaliks ltd,P,08:47,18:01,within reported interval,
+75,RML033358,21/10/2026,08:56:57,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,5646,Rashmi Metaliks ltd,P,08:53,18:01,within reported interval,
+76,RML031283,21/10/2026,08:57:22,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4380,Rashmi Metaliks ltd,P,08:43,18:13,within reported interval,
+77,RGH033611,21/10/2026,08:57:46,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1642,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:53,,no complete interval,attendance MIS
+78,RML031686,21/10/2026,08:58:00,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4634,Rashmi Metaliks ltd,P,05:49,14:29,within reported interval,
+79,RGH033250,21/10/2026,08:58:24,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,1382,Rashmi Metaliks ltd,P,13:54,22:32,before reported in,before reported in
+80,RML033706,21/10/2026,08:59:26,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5780,Rashmi Metaliks ltd,P,08:51,18:02,within reported interval,
+81,RML031267,21/10/2026,08:59:37,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4366,Rashmi Metaliks ltd,P,08:56,18:14,within reported interval,
+82,RGH032887,21/10/2026,08:59:44,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,1240,Rashmi Metaliks ltd,P,08:52,18:10,within reported interval,
+83,RML032490,21/10/2026,08:59:58,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5094,Rashmi Metaliks ltd,P,08:53,18:04,within reported interval,
+84,RML025302,21/10/2026,09:01:35,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2732,Rashmi Metaliks ltd,HLF,05:58,14:15,within reported interval,
+85,RML030774,21/10/2026,09:01:42,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4030,Rashmi Metaliks ltd,HLF,06:04,14:22,within reported interval,
+86,RGH032759,21/10/2026,09:02:00,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1160,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+87,RML032509,21/10/2026,09:02:11,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5108,Rashmi Metaliks ltd,HLF,05:49,14:17,within reported interval,
+88,RGH032761,21/10/2026,09:02:15,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1162,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:41,22:32,before reported in,before reported in
+89,RML031639,21/10/2026,09:03:17,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4594,Rashmi Metaliks ltd,P,08:50,18:31,within reported interval,
+90,RML034005,21/10/2026,09:03:27,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5894,Rashmi Metaliks ltd,P,08:50,18:08,within reported interval,
+91,RML032691,21/10/2026,09:03:40,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5212,Rashmi Metaliks ltd,P,08:43,18:03,within reported interval,
+92,RML034271,21/10/2026,09:04:47,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6018,Rashmi Metaliks ltd,P,13:19,22:02,before reported in,before reported in
+93,RML035350,21/10/2026,09:06:18,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6498,Rashmi Metaliks ltd,P,08:46,18:01,within reported interval,
+94,RML032137,21/10/2026,09:07:53,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4894,Rashmi Metaliks ltd,P,08:50,18:20,within reported interval,
+95,RGH032931,21/10/2026,09:14:00,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1266,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:30,within reported interval,
+96,RPL002330,21/10/2026,09:30:54,Breakfast,1.0,25.0,1.0,Rashmi 6 Paradigm Limited,HGR5L4F5,6838,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+97,RGH033451,21/10/2026,09:32:12,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1506,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:53,06:30,before reported in,before reported in
+98,RML031527,21/10/2026,12:28:33,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4532,Rashmi Metaliks ltd,HLF,05:34,14:00,within reported interval,
+99,RML023452,21/10/2026,12:29:06,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2154,Rashmi Metaliks ltd,P,09:04,18:06,within reported interval,
+100,RML032788,21/10/2026,12:30:25,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5280,Rashmi Metaliks ltd,P,08:47,18:04,within reported interval,
+101,RGH033218,21/10/2026,12:30:49,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1374,Rashmi Green Hydrozen Steel Pvt Ltd,P,08:40,18:06,within reported interval,
+102,RML032500,21/10/2026,12:31:12,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5102,Rashmi Metaliks ltd,P,08:47,18:01,within reported interval,
+103,RML032695,21/10/2026,12:31:21,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5216,Rashmi Metaliks ltd,P,08:47,18:01,within reported interval,
+104,RGH032887,21/10/2026,12:31:36,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,1240,Rashmi Metaliks ltd,P,08:52,18:10,within reported interval,
+105,RML024174,21/10/2026,12:31:56,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,2328,Rashmi Metaliks ltd,P,09:05,18:06,within reported interval,
+106,RML023650,21/10/2026,12:32:33,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,2196,Rashmi Metaliks ltd,P,08:54,18:03,within reported interval,
+107,RML032491,21/10/2026,12:32:40,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5096,Rashmi Metaliks ltd,P,08:45,18:09,within reported interval,
+108,RML024050,21/10/2026,12:32:58,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,2294,Rashmi Metaliks ltd,P,08:53,18:03,within reported interval,
+109,RML031671,21/10/2026,12:33:56,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4622,Rashmi Metaliks ltd,P,05:49,14:30,within reported interval,
+110,RML026656,21/10/2026,12:34:19,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,3110,Rashmi Metaliks ltd,P,08:42,18:22,within reported interval,
+111,RML030781,21/10/2026,12:35:34,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,4034,Rashmi Metaliks ltd,P,08:13,18:06,within reported interval,
+112,RML026853,21/10/2026,12:36:45,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,3210,Rashmi Metaliks ltd,P,08:47,18:04,within reported interval,
+113,RML031207,21/10/2026,12:37:54,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4296,Rashmi Metaliks ltd,P,05:54,14:38,within reported interval,
+114,RGH033590,21/10/2026,12:39:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,1616,Rashmi Metaliks ltd,P,13:51,22:33,before reported in,before reported in
+115,RPL002378,21/10/2026,12:39:13,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5L318,6866,Rashmi 6 Paradigm Limited,HLF,05:44,14:04,within reported interval,
+116,RGH033523,21/10/2026,12:40:17,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1550,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:54,22:32,before reported in,before reported in
+117,RML035011,21/10/2026,12:42:00,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6242,Rashmi Metaliks ltd,HLF,12:08,18:02,within reported interval,
+118,RML035481,21/10/2026,12:42:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,6638,Rashmi Metaliks Ltd Fittings,P,08:40,18:02,within reported interval,
+119,RML035477,21/10/2026,12:42:23,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6630,Rashmi Metaliks ltd,P,08:39,18:01,within reported interval,
+120,RML035480,21/10/2026,12:42:30,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,6636,Rashmi Metaliks Ltd Fittings,P,08:39,18:02,within reported interval,
+121,RML035465,21/10/2026,12:42:58,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6612,Rashmi Metaliks ltd,P,08:48,18:40,within reported interval,
+122,RML030209,21/10/2026,12:43:53,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,3638,Rashmi Metaliks ltd,P,08:49,18:13,within reported interval,
+123,RML035524,21/10/2026,12:43:58,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,6714,Rashmi Metaliks ltd,P,09:08,18:12,within reported interval,
+124,RML030717,21/10/2026,12:44:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,3988,Rashmi Metaliks ltd,P,08:53,18:00,within reported interval,
+125,RML030435,21/10/2026,12:44:16,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5L318,3792,Rashmi Metaliks Ltd Fittings,P,08:57,18:04,within reported interval,
+126,RGH033292,21/10/2026,12:44:31,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1412,Rashmi Green Hydrozen Steel Pvt Ltd,P,08:43,18:05,within reported interval,
+127,RML034005,21/10/2026,12:45:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,5894,Rashmi Metaliks ltd,P,08:50,18:08,within reported interval,
+128,RML034257,21/10/2026,12:45:18,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,6010,Rashmi Metaliks ltd,P,21:48,06:40,before reported in,before reported in
+129,RML033151,21/10/2026,12:45:28,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5544,Rashmi Metaliks ltd,P,08:48,18:03,within reported interval,
+130,RGH033453,21/10/2026,12:45:39,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1510,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:39,06:30,before reported in,before reported in
+131,RML031283,21/10/2026,12:46:40,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4380,Rashmi Metaliks ltd,P,08:43,18:13,within reported interval,
+132,RML034310,21/10/2026,12:47:49,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,6046,Rashmi Metaliks ltd,P,05:52,16:01,within reported interval,
+133,RGH033014,21/10/2026,12:49:00,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1314,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:50,22:32,before reported in,before reported in
+134,RGH032814,21/10/2026,12:49:04,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1198,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:58,14:35,within reported interval,
+135,RGH032921,21/10/2026,12:49:41,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1260,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:48,14:31,within reported interval,
+136,RML035515,21/10/2026,12:49:45,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5L318,6700,Rashmi Metaliks Ltd Fittings,P,08:57,18:05,within reported interval,
+137,RML034202,21/10/2026,12:50:00,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5962,Rashmi Metaliks ltd,P,08:35,18:00,within reported interval,
+138,RML031230,21/10/2026,12:50:07,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4314,Rashmi Metaliks ltd,P,08:51,18:08,within reported interval,
+139,RML031383,21/10/2026,12:50:33,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,4434,Rashmi Metaliks ltd,P,05:51,14:31,within reported interval,
+140,RML031190,21/10/2026,12:50:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4274,Rashmi Metaliks ltd,P,08:38,18:00,within reported interval,
+141,RML035346,21/10/2026,12:51:19,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,6492,Rashmi Metaliks ltd,P,08:29,18:02,within reported interval,
+142,RML022977,21/10/2026,12:51:30,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,2064,Rashmi Metaliks ltd,HLF,21:51,06:04,before reported in,before reported in
+143,RGH033623,21/10/2026,12:54:35,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,1666,Rashmi Metaliks ltd,P,08:57,18:03,within reported interval,
+144,RML031085,21/10/2026,12:57:10,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4218,Rashmi Metaliks ltd,P,08:56,18:11,within reported interval,
+145,RML035494,21/10/2026,12:57:27,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6662,Rashmi Metaliks ltd,P,09:03,18:05,within reported interval,
+146,RML035519,21/10/2026,12:57:43,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6706,Rashmi Metaliks ltd,P,08:56,18:05,within reported interval,
+147,RML035418,21/10/2026,12:57:52,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6568,Rashmi Metaliks ltd,P,08:43,18:05,within reported interval,
+148,RML035521,21/10/2026,12:59:46,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,6710,Rashmi Metaliks ltd,P,08:40,18:42,within reported interval,
+149,RML031839,21/10/2026,13:00:31,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5L318,4740,Rashmi Metaliks Ltd Fittings,P,08:41,18:02,within reported interval,
+150,RML030217,21/10/2026,13:01:54,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,3648,Rashmi Metaliks ltd,P,09:00,19:25,within reported interval,
+151,RML031692,21/10/2026,13:02:37,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,4646,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+152,RGH033250,21/10/2026,13:04:33,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,1382,Rashmi Metaliks ltd,P,13:54,22:32,before reported in,before reported in
+153,RML030993,21/10/2026,13:05:30,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,4150,Rashmi Metaliks Ltd Fittings,P,09:03,18:05,within reported interval,
+154,RML030966,21/10/2026,13:05:38,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4138,Rashmi Metaliks ltd,P,05:49,14:30,within reported interval,
+155,RML030927,21/10/2026,13:05:43,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,4118,Rashmi Metaliks Ltd Fittings,P,08:31,18:00,within reported interval,
+156,RML031642,21/10/2026,13:05:53,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4596,Rashmi Metaliks ltd,P,05:51,14:30,within reported interval,
+157,RML031858,21/10/2026,13:05:57,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,4744,Rashmi Metaliks Ltd Fittings,P,08:50,18:00,within reported interval,
+158,RML031639,21/10/2026,13:07:24,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4594,Rashmi Metaliks ltd,P,08:50,18:31,within reported interval,
+159,RML023841,21/10/2026,13:07:31,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2250,Rashmi Metaliks ltd,P,08:50,18:00,within reported interval,
+160,RML030238,21/10/2026,13:07:52,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,3660,Rashmi Metaliks ltd,P,08:42,18:01,within reported interval,
+161,RGH032901,21/10/2026,13:08:01,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,1250,Rashmi Metaliks ltd,P,08:44,18:18,within reported interval,
+162,RML031322,21/10/2026,13:08:18,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4396,Rashmi Metaliks ltd,P,13:29,22:30,before reported in,before reported in
+163,RML031443,21/10/2026,13:08:51,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4466,Rashmi Metaliks ltd,P,08:43,18:18,within reported interval,
+164,RGH032901,21/10/2026,13:09:09,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,1250,Rashmi Metaliks ltd,P,08:44,18:18,within reported interval,
+165,RML033358,21/10/2026,13:09:10,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,5646,Rashmi Metaliks ltd,P,08:53,18:01,within reported interval,
+166,RGH033053,21/10/2026,13:09:20,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1324,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,05:59,,no complete interval,attendance MIS
+167,RGH032934,21/10/2026,13:09:26,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1268,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:43,06:30,before reported in,before reported in
+168,RML030925,21/10/2026,13:10:57,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5L318,4116,Rashmi Metaliks Ltd Fittings,P,09:25,18:04,within reported interval,
+169,RML002244,21/10/2026,13:11:07,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,1944,Rashmi Metaliks ltd,HLF,05:54,14:06,within reported interval,
+170,RML031249,21/10/2026,13:11:14,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,4346,Rashmi Metaliks ltd,P,05:40,14:36,within reported interval,
+171,RGH033062,21/10/2026,13:11:48,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1326,Rashmi Green Hydrozen Steel Pvt Ltd,P,14:34,05:55,before reported in,before reported in
+172,RGH033290,21/10/2026,13:11:48,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1408,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:31,within reported interval,
+173,RML031497,21/10/2026,13:11:58,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4510,Rashmi Metaliks ltd,P,05:50,14:30,within reported interval,
+174,RML031267,21/10/2026,13:12:37,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4366,Rashmi Metaliks ltd,P,08:56,18:14,within reported interval,
+175,RGH032681,21/10/2026,13:12:59,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1096,Rashmi Green Hydrozen Steel Pvt Ltd,P,08:44,18:07,within reported interval,
+176,RGH033614,21/10/2026,13:14:52,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,1648,Rashmi Metaliks ltd,P,08:25,18:02,within reported interval,
+177,RGH033620,21/10/2026,13:15:02,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,1660,Rashmi Metaliks ltd,P,08:49,18:03,within reported interval,
+178,RML031228,21/10/2026,13:16:35,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4312,Rashmi Metaliks ltd,P,08:43,18:11,within reported interval,
+179,RGH033619,21/10/2026,13:17:01,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,1658,Rashmi Metaliks ltd,P,08:48,18:03,within reported interval,
+180,RGH032739,21/10/2026,13:17:21,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1152,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:46,22:35,before reported in,before reported in
+181,RGH032761,21/10/2026,13:17:19,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1162,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:41,22:32,before reported in,before reported in
+182,RML033856,21/10/2026,13:18:02,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5846,Rashmi Metaliks ltd,P,08:48,18:42,within reported interval,
+183,RGH033451,21/10/2026,13:18:37,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1506,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:53,06:30,before reported in,before reported in
+184,RML026769,21/10/2026,13:18:42,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,3172,Rashmi Metaliks ltd,P,08:42,18:00,within reported interval,
+185,RML033733,21/10/2026,13:18:53,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5792,Rashmi Metaliks ltd,P,08:40,18:08,within reported interval,
+186,RML035350,21/10/2026,13:22:27,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6498,Rashmi Metaliks ltd,P,08:46,18:01,within reported interval,
+187,RGH032867,21/10/2026,13:23:30,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1232,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:49,14:31,within reported interval,
+188,RGH033524,21/10/2026,13:23:43,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1552,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:49,14:30,within reported interval,
+189,RML031391,21/10/2026,13:23:50,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4438,Rashmi Metaliks ltd,P,05:50,14:31,within reported interval,
+190,RPL002330,21/10/2026,13:24:51,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5L4F5,6838,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+191,RGH032931,21/10/2026,13:26:18,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1266,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:30,within reported interval,
+192,RGH032693,21/10/2026,13:26:46,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1110,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:56,14:33,within reported interval,
+193,RML031781,21/10/2026,13:28:00,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4696,Rashmi Metaliks ltd,P,13:56,22:30,before reported in,before reported in
+194,RGH032693,21/10/2026,13:28:44,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1110,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:56,14:33,within reported interval,
+195,RGH032759,21/10/2026,13:30:07,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1160,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+196,RGH033158,21/10/2026,13:32:14,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1356,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:52,22:37,before reported in,before reported in
+197,RML030210,21/10/2026,13:33:03,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,3640,Rashmi Metaliks ltd,P,08:40,18:09,within reported interval,
+198,RML033625,21/10/2026,13:33:03,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5748,Rashmi Metaliks ltd,P,09:08,18:16,within reported interval,
+199,RML035516,21/10/2026,13:33:22,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6702,Rashmi Metaliks ltd,P,08:51,18:07,within reported interval,
+200,RGH032713,21/10/2026,13:33:25,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1134,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:49,14:30,within reported interval,
+201,RML033581,21/10/2026,13:36:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5730,Rashmi Metaliks ltd,P,09:07,18:36,within reported interval,
+202,RML031728,21/10/2026,13:36:21,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4654,Rashmi Metaliks ltd,MIS,09:00,,no complete interval,attendance MIS
+203,RPL002122,21/10/2026,13:37:27,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5HHBX,6758,Rashmi 6 Paradigm Limited,MIS,08:50,,no complete interval,attendance MIS
+204,RML033138,21/10/2026,13:37:47,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5538,Rashmi Metaliks ltd,P,08:48,18:48,within reported interval,
+205,RGH033524,21/10/2026,13:39:54,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1552,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:49,14:30,within reported interval,
+206,RML030180,21/10/2026,13:40:16,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,3614,Rashmi Metaliks ltd,P,08:42,18:32,within reported interval,
+207,RML032137,21/10/2026,13:40:22,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,4894,Rashmi Metaliks ltd,P,08:50,18:20,within reported interval,
+208,RGH032944,21/10/2026,13:40:30,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1278,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:31,22:31,within reported interval,
+209,RML023269,21/10/2026,13:42:14,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2122,Rashmi Metaliks ltd,HLF,05:49,14:03,within reported interval,
+210,RML033556,21/10/2026,13:43:45,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5718,Rashmi Metaliks ltd,P,05:57,14:30,within reported interval,
+211,RML031656,21/10/2026,13:44:03,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4614,Rashmi Metaliks ltd,P,08:44,18:26,within reported interval,
+212,RML023086,21/10/2026,13:44:58,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2082,Rashmi Metaliks ltd,HLF,13:42,22:01,within reported interval,
+213,RML031490,21/10/2026,13:45:48,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,4506,Rashmi Metaliks ltd,P,05:54,17:10,within reported interval,
+214,RML031170,21/10/2026,13:45:55,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,4262,Rashmi Metaliks ltd,P,05:49,14:30,within reported interval,
+215,RPL002210,21/10/2026,13:47:40,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,6798,Rashmi Metaliks ltd,P,08:40,18:00,within reported interval,
+216,RGH032776,21/10/2026,13:49:24,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1176,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:47,22:32,within reported interval,
+217,RML032372,21/10/2026,13:49:40,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,5032,Rashmi Metaliks ltd,MIS,08:40,,no complete interval,attendance MIS
+218,RML033838,21/10/2026,13:49:48,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,5834,Rashmi Metaliks ltd,P,08:47,18:09,within reported interval,
+219,RML000979,21/10/2026,13:49:53,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,1864,Rashmi Metaliks ltd,P,08:47,18:09,within reported interval,
+220,RML031774,21/10/2026,13:50:05,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4688,Rashmi Metaliks ltd,P,08:49,18:11,within reported interval,
+221,RML031648,21/10/2026,13:50:30,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4604,Rashmi Metaliks ltd,P,05:50,14:31,within reported interval,
+222,RML032509,21/10/2026,13:50:49,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5108,Rashmi Metaliks ltd,HLF,05:49,14:17,within reported interval,
+223,RGH032719,21/10/2026,13:50:50,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1140,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:30,within reported interval,
+224,RML034227,21/10/2026,13:52:10,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,5972,Rashmi Green Hydrozen Steel Pvt Ltd,P,22:04,06:40,before reported in,before reported in
+225,RML031705,21/10/2026,13:52:13,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4650,Rashmi Metaliks ltd,P,14:30,05:51,before reported in,before reported in
+226,RML031686,21/10/2026,13:52:23,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4634,Rashmi Metaliks ltd,P,05:49,14:29,within reported interval,
+227,RGH033294,21/10/2026,13:55:38,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1414,Rashmi Green Hydrozen Steel Pvt Ltd,P,08:59,18:25,within reported interval,
+228,RML031604,21/10/2026,13:56:28,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4582,Rashmi Metaliks ltd,P,13:47,22:31,within reported interval,
+229,RML025007,21/10/2026,14:05:43,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2614,Rashmi Metaliks ltd,HLF,05:51,14:01,after reported out minute,after reported out minute
+230,RGH033297,21/10/2026,14:05:42,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1418,Rashmi Green Hydrozen Steel Pvt Ltd,P,14:32,05:43,before reported in,before reported in
+231,RGH033497,21/10/2026,14:05:59,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1536,Rashmi Green Hydrozen Steel Pvt Ltd,P,08:49,18:31,within reported interval,
+232,RML033386,21/10/2026,14:07:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5652,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+233,RML034073,21/10/2026,14:09:13,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5920,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+234,RML031240,21/10/2026,14:09:19,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4330,Rashmi Metaliks ltd,P,08:45,18:12,within reported interval,
+235,RGH033533,21/10/2026,14:11:57,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1560,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:49,14:31,within reported interval,
+236,RGH033611,21/10/2026,14:29:47,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1642,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:53,,no complete interval,attendance MIS
+237,RML031521,21/10/2026,14:46:10,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4528,Rashmi Metaliks ltd,P,08:58,18:01,within reported interval,
+238,RML034535,21/10/2026,14:46:18,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,6190,Rashmi Metaliks ltd,P,06:32,15:03,within reported interval,
+239,RGH033483,21/10/2026,20:00:16,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1524,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:58,06:31,before reported in,before reported in
+240,RML030781,21/10/2026,20:02:41,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,4034,Rashmi Metaliks ltd,P,08:13,18:06,after reported out minute,after reported out minute
+241,RML030180,21/10/2026,20:06:41,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L318,3614,Rashmi Metaliks ltd,P,08:42,18:32,after reported out minute,after reported out minute
+242,RML030174,21/10/2026,20:08:37,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,3606,Rashmi Metaliks ltd,P,13:56,05:45,within reported interval,
+243,RGH032715,21/10/2026,20:09:32,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1136,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:50,06:30,before reported in,before reported in
+244,RML031248,21/10/2026,20:09:40,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,4344,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:47,22:30,within reported interval,
+245,RML034257,21/10/2026,20:09:47,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,6010,Rashmi Metaliks ltd,P,21:48,06:40,before reported in,before reported in
+246,RML034271,21/10/2026,20:09:58,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6018,Rashmi Metaliks ltd,P,13:19,22:02,within reported interval,
+247,RML030209,21/10/2026,20:10:06,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L099,3638,Rashmi Metaliks ltd,P,08:49,18:13,after reported out minute,after reported out minute
+248,RML031458,21/10/2026,20:10:57,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L318,4478,Rashmi Metaliks ltd,P,13:37,22:31,within reported interval,
+249,RGH032934,21/10/2026,20:11:29,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1268,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:43,06:30,before reported in,before reported in
+250,RGH033620,21/10/2026,20:11:37,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,1660,Rashmi Metaliks ltd,P,08:49,18:03,after reported out minute,after reported out minute
+251,RGH033290,21/10/2026,20:11:42,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1408,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:31,after reported out minute,after reported out minute
+252,RGH033537,21/10/2026,20:12:05,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1562,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:44,22:30,within reported interval,
+253,RGH032776,21/10/2026,20:15:22,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1176,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:47,22:32,within reported interval,
+254,RML031322,21/10/2026,20:15:40,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L318,4396,Rashmi Metaliks ltd,P,13:29,22:30,within reported interval,
+255,RGH032710,21/10/2026,20:16:55,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1132,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:27,06:32,before reported in,before reported in
+256,RGH032741,21/10/2026,20:19:02,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1156,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:47,22:30,within reported interval,
+257,RML025006,21/10/2026,20:21:10,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2612,Rashmi Metaliks ltd,HLF,13:50,22:00,within reported interval,
+258,RML023845,21/10/2026,20:21:22,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2256,Rashmi Metaliks ltd,HLF,13:51,22:01,within reported interval,
+259,RML023435,21/10/2026,20:21:44,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2150,Rashmi Metaliks ltd,HLF,13:48,22:14,within reported interval,
+260,RML031692,21/10/2026,20:21:56,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,4646,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+261,RML035521,21/10/2026,20:24:51,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6710,Rashmi Metaliks ltd,P,08:40,18:42,after reported out minute,after reported out minute
+262,RML031275,21/10/2026,20:30:42,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4372,Rashmi Metaliks ltd,P,13:48,22:30,within reported interval,
+263,RGH033250,21/10/2026,20:32:09,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,1382,Rashmi Metaliks ltd,P,13:54,22:32,within reported interval,
+264,RML035493,21/10/2026,20:35:21,Dinner,1.0,18.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5L4F5,6660,Rashmi Metaliks Ltd Fittings,A,,,no complete interval,attendance A
+265,RML031197,21/10/2026,20:38:03,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4286,Rashmi Metaliks ltd,P,13:36,22:31,within reported interval,
+266,RML031465,21/10/2026,20:41:08,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4482,Rashmi Metaliks ltd,P,13:48,22:30,within reported interval,
+267,RML034269,21/10/2026,20:43:44,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6016,Rashmi Metaliks ltd,P,21:23,06:07,before reported in,before reported in
+268,RML031425,21/10/2026,20:44:26,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4456,Rashmi Metaliks ltd,P,13:43,22:30,within reported interval,
+269,RML031198,21/10/2026,20:47:41,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L318,4288,Rashmi Metaliks ltd,P,13:47,22:30,within reported interval,
+270,RML022977,21/10/2026,20:53:15,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,2064,Rashmi Metaliks ltd,HLF,21:51,06:04,before reported in,before reported in
+271,RML031604,21/10/2026,20:54:11,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4582,Rashmi Metaliks ltd,P,13:47,22:31,within reported interval,
+272,RGH033590,21/10/2026,20:53:45,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,1616,Rashmi Metaliks ltd,P,13:51,22:33,within reported interval,
+273,RML031382,21/10/2026,20:55:01,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4432,Rashmi Metaliks ltd,P,21:36,06:31,before reported in,before reported in
+274,RGH032635,21/10/2026,20:56:51,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1082,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:25,06:44,before reported in,before reported in
+275,RML031030,21/10/2026,20:57:12,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4168,Rashmi Metaliks ltd,P,21:25,06:31,before reported in,before reported in
+276,RML023086,21/10/2026,20:58:40,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2082,Rashmi Metaliks ltd,HLF,13:42,22:01,within reported interval,
+277,RML030975,21/10/2026,21:01:09,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4142,Rashmi Metaliks ltd,HLF,13:51,22:03,within reported interval,
+278,RGH033053,21/10/2026,21:02:45,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1324,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,05:59,,no complete interval,attendance MIS
+279,RPL002330,21/10/2026,21:02:56,Dinner,1.0,18.0,1.0,Rashmi 6 Paradigm Limited,HGR5L4F5,6838,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+280,RGH032938,21/10/2026,21:03:19,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1272,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:48,22:32,within reported interval,
+281,RGH033451,21/10/2026,21:08:51,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1506,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:53,06:30,before reported in,before reported in
+282,RGH033218,21/10/2026,21:09:36,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1374,Rashmi Green Hydrozen Steel Pvt Ltd,P,08:40,18:06,after reported out minute,after reported out minute
+283,RGH033345,21/10/2026,21:09:58,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1456,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:50,22:31,within reported interval,
+284,RGH033453,21/10/2026,21:13:04,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1510,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:39,06:30,before reported in,before reported in
+285,RGH033299,21/10/2026,21:14:43,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1420,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:34,06:31,before reported in,before reported in
+286,RML033608,21/10/2026,21:15:25,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5742,Rashmi Metaliks ltd,P,13:47,22:30,within reported interval,
+287,RML034387,21/10/2026,21:16:21,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,6116,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:44,06:31,before reported in,before reported in
+288,RGH032761,21/10/2026,21:17:38,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1162,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:41,22:32,within reported interval,
+289,RGH033297,21/10/2026,21:19:18,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1418,Rashmi Green Hydrozen Steel Pvt Ltd,P,14:32,05:43,within reported interval,
+290,RGH033014,21/10/2026,21:22:26,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1314,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:50,22:32,within reported interval,
+291,RML023737,21/10/2026,21:24:26,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,2216,Rashmi Metaliks ltd,P,13:55,05:52,within reported interval,
+292,RML023663,21/10/2026,21:24:42,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2202,Rashmi Metaliks ltd,HLF,13:45,22:01,within reported interval,
+293,RGH033004,21/10/2026,21:25:09,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1310,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:23,06:31,within reported interval,
+294,RGH033391,21/10/2026,21:25:22,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1486,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:44,06:34,before reported in,before reported in
+295,RML035527,21/10/2026,21:32:43,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6720,Rashmi Metaliks ltd,HLF,10:56,18:03,after reported out minute,after reported out minute
+296,RGH033062,21/10/2026,21:34:17,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1326,Rashmi Green Hydrozen Steel Pvt Ltd,P,14:34,05:55,within reported interval,
+297,RGH033263,21/10/2026,21:34:25,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1386,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:45,22:32,within reported interval,
+298,RML031332,21/10/2026,21:35:52,Dinner,1.0,18.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5HHBX,4404,Rashmi Metaliks Ltd Fittings,P,13:27,22:04,within reported interval,
+299,RML034073,21/10/2026,21:39:20,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5920,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+300,RML035519,21/10/2026,21:39:50,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6706,Rashmi Metaliks ltd,P,08:56,18:05,after reported out minute,after reported out minute
+301,RML031483,21/10/2026,21:40:49,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5L318,4496,Rashmi Metaliks ltd,P,21:53,06:31,before reported in,before reported in
+302,RGH032704,21/10/2026,21:48:05,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1126,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:50,22:31,within reported interval,
+303,RML034227,21/10/2026,21:48:37,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,5972,Rashmi Green Hydrozen Steel Pvt Ltd,P,22:04,06:40,before reported in,before reported in
+304,RGH033573,21/10/2026,21:48:50,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1592,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+305,RGH033533,21/10/2026,21:49:20,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1560,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:49,14:31,after reported out minute,after reported out minute
+306,RGH033523,21/10/2026,21:50:07,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1550,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:54,22:32,within reported interval,
+307,RGH032771,21/10/2026,21:50:15,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1174,Rashmi Green Hydrozen Steel Pvt Ltd,P,22:03,06:40,before reported in,before reported in
+308,RML033445,21/10/2026,21:52:41,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5674,Rashmi Metaliks ltd,P,21:49,06:30,within reported interval,
+309,RGH033208,21/10/2026,21:53:31,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,1372,Rashmi Metaliks ltd,P,21:49,06:31,within reported interval,
+310,RGH033158,21/10/2026,22:01:27,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1356,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:52,22:37,within reported interval,
+311,RML033479,21/10/2026,22:07:36,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5692,Rashmi Metaliks ltd,P,13:47,22:30,within reported interval,
+312,RGH033395,21/10/2026,22:07:53,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1490,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:48,22:30,within reported interval,
+313,RGH033357,21/10/2026,22:13:47,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1472,Rashmi Green Hydrozen Steel Pvt Ltd,P,21:49,06:31,within reported interval,
+314,RML032804,21/10/2026,22:35:34,Dinner,1.0,18.0,1.0,Rashmi 6 Paradigm Limited,HGR5HHBX,5300,Rashmi 6 Paradigm Limited,P,13:17,22:27,after reported out minute,after reported out minute
+315,RPL002304,21/10/2026,09:22:08,Breakfast,1.0,25.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,6826,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+316,RPL002302,21/10/2026,09:32:48,Breakfast,1.0,25.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,6822,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+317,RPL002393,21/10/2026,12:28:06,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,6872,Rashmi 6 Paradigm Limited,P,13:50,05:49,before reported in,before reported in
+318,RML033841,21/10/2026,12:35:19,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5836,Rashmi Metaliks ltd,P,08:56,18:02,within reported interval,
+319,RML024755,21/10/2026,12:56:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,2512,Rashmi Metaliks ltd,P,09:02,18:33,within reported interval,
+320,RML034271,21/10/2026,12:57:00,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6018,Rashmi Metaliks ltd,P,13:19,22:02,before reported in,before reported in
+321,RML033860,21/10/2026,12:57:28,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5848,Rashmi Metaliks ltd,P,21:37,06:47,before reported in,before reported in
+322,RML030975,21/10/2026,12:59:22,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,4142,Rashmi Metaliks ltd,HLF,13:51,22:03,before reported in,before reported in
+323,RML033748,21/10/2026,13:01:24,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5794,Rashmi Metaliks ltd,P,08:48,18:38,within reported interval,
+324,RML023845,21/10/2026,13:01:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,2256,Rashmi Metaliks ltd,HLF,13:51,22:01,before reported in,before reported in
+325,RML033479,21/10/2026,13:05:09,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5692,Rashmi Metaliks ltd,P,13:47,22:30,before reported in,before reported in
+326,RML032490,21/10/2026,13:07:07,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5094,Rashmi Metaliks ltd,P,08:53,18:04,within reported interval,
+327,RML023737,21/10/2026,13:09:45,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,2216,Rashmi Metaliks ltd,P,13:55,05:52,before reported in,before reported in
+328,RML033706,21/10/2026,13:14:35,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5780,Rashmi Metaliks ltd,P,08:51,18:02,within reported interval,
+329,RML030724,21/10/2026,13:15:01,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,3996,Rashmi Metaliks ltd,P,08:43,18:01,within reported interval,
+330,RML032803,21/10/2026,13:18:22,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5298,Rashmi Metaliks ltd,P,09:08,18:09,within reported interval,
+331,RML035038,21/10/2026,13:21:33,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6256,Rashmi Metaliks ltd,P,08:59,18:05,within reported interval,
+332,RPL002302,21/10/2026,13:22:44,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,6822,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+333,RML031382,21/10/2026,13:22:57,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,4432,Rashmi Metaliks ltd,P,21:36,06:31,before reported in,before reported in
+334,RML024086,21/10/2026,13:25:22,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,2300,Rashmi Metaliks ltd,P,08:45,18:00,within reported interval,
+335,RML034186,21/10/2026,13:29:45,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5958,Rashmi Metaliks ltd,P,08:39,18:01,within reported interval,
+336,RML026973,21/10/2026,13:32:55,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,3270,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+337,RML034524,21/10/2026,13:36:07,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6182,Rashmi Metaliks ltd,HLF,05:54,14:00,within reported interval,
+338,RML035226,21/10/2026,13:40:42,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6420,Rashmi Metaliks ltd,P,08:54,18:07,within reported interval,
+339,RML034064,21/10/2026,13:40:50,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5912,Rashmi Metaliks ltd,P,09:09,18:10,within reported interval,
+340,RML031332,21/10/2026,13:44:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5LG39,4404,Rashmi Metaliks Ltd Fittings,P,13:27,22:04,within reported interval,
+341,RML025302,21/10/2026,13:50:52,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,2732,Rashmi Metaliks ltd,HLF,05:58,14:15,within reported interval,
+342,RPL002304,21/10/2026,13:59:13,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,6826,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+343,RML025007,21/10/2026,20:07:57,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5LG39,2614,Rashmi Metaliks ltd,HLF,05:51,14:01,after reported out minute,after reported out minute
+344,RGH033619,21/10/2026,20:10:41,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5LG39,1658,Rashmi Metaliks ltd,P,08:48,18:03,after reported out minute,after reported out minute
+345,RPL002302,21/10/2026,20:27:02,Dinner,1.0,18.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,6822,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+346,RML031230,21/10/2026,20:31:48,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5LG39,4314,Rashmi Metaliks ltd,P,08:51,18:08,after reported out minute,after reported out minute
+347,RML033706,21/10/2026,20:35:44,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5780,Rashmi Metaliks ltd,P,08:51,18:02,after reported out minute,after reported out minute
+348,RML034535,21/10/2026,20:46:20,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6190,Rashmi Metaliks ltd,P,06:32,15:03,after reported out minute,after reported out minute
+349,RML034495,21/10/2026,20:47:16,Dinner,1.0,18.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6172,Rashmi Metaliks ltd,P,08:33,18:02,after reported out minute,after reported out minute
+350,RPL002304,21/10/2026,20:59:32,Dinner,1.0,18.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,6826,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+351,RGH032768,21/10/2026,21:09:52,Dinner,1.0,18.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1170,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+352,RML000747,21/10/2026,08:40:06,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5LG39,1808,Rashmi Metaliks ltd,HLF,06:06,14:10,within reported interval,
+353,RML033860,21/10/2026,08:35:32,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5848,Rashmi Metaliks ltd,P,21:37,06:47,before reported in,before reported in
+354,RGH032739,21/10/2026,08:18:49,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1152,Rashmi Green Hydrozen Steel Pvt Ltd,P,13:46,22:35,before reported in,before reported in
+355,RML034495,21/10/2026,08:13:50,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6172,Rashmi Metaliks ltd,P,08:33,18:02,before reported in,before reported in
+356,RGH032693,22/10/2026,07:52:59,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1111,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:53,14:36,within reported interval,
+357,RML031391,22/10/2026,07:53:52,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4439,Rashmi Metaliks ltd,P,05:51,14:30,within reported interval,
+358,RGH033451,22/10/2026,07:55:04,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1507,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+359,RML034227,22/10/2026,07:55:13,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,5973,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+360,RGH033520,22/10/2026,07:55:15,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1547,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+361,RGH032693,22/10/2026,07:55:28,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1111,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:53,14:36,within reported interval,
+362,RGH032710,22/10/2026,07:56:07,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1133,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:36,,no complete interval,attendance MIS
+363,RGH033619,22/10/2026,07:58:25,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5LG39,1659,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+364,RGH033620,22/10/2026,07:58:32,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,1661,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+365,RML031490,22/10/2026,07:59:54,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4507,Rashmi Metaliks ltd,P,05:44,14:32,within reported interval,
+366,RGH033297,22/10/2026,07:59:58,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1419,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,14:33,,no complete interval,attendance MIS
+367,RML033445,22/10/2026,08:00:03,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5675,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+368,RML031705,22/10/2026,08:00:02,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4651,Rashmi Metaliks ltd,MIS,14:30,,no complete interval,attendance MIS
+369,RML031248,22/10/2026,08:04:00,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,4345,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:30,within reported interval,
+370,RML002244,22/10/2026,08:05:08,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,1945,Rashmi Metaliks ltd,HLF,05:56,14:02,within reported interval,
+371,RML035527,22/10/2026,08:05:07,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6721,Rashmi Metaliks ltd,MIS,08:52,,no complete interval,attendance MIS
+372,RML031383,22/10/2026,08:05:24,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4435,Rashmi Metaliks ltd,P,05:51,14:33,within reported interval,
+373,RML031391,22/10/2026,08:06:03,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4439,Rashmi Metaliks ltd,P,05:51,14:30,within reported interval,
+374,RML034495,22/10/2026,08:06:04,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6173,Rashmi Metaliks ltd,MIS,08:43,,no complete interval,attendance MIS
+375,RGH033532,22/10/2026,08:06:35,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1559,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,14:32,,no complete interval,attendance MIS
+376,RGH032710,22/10/2026,08:06:43,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1133,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:36,,no complete interval,attendance MIS
+377,RML031243,22/10/2026,08:07:02,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4337,Rashmi Metaliks ltd,P,05:50,14:30,within reported interval,
+378,RML035493,22/10/2026,08:08:15,Breakfast,1.0,25.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,6661,Rashmi Metaliks Ltd Fittings,MIS,08:22,,no complete interval,attendance MIS
+379,RML031705,22/10/2026,08:08:19,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4651,Rashmi Metaliks ltd,MIS,14:30,,no complete interval,attendance MIS
+380,RGH032771,22/10/2026,08:08:24,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1175,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+381,RML031382,22/10/2026,08:08:26,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4433,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+382,RML034227,22/10/2026,08:08:38,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,5973,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+383,RGH033453,22/10/2026,08:09:12,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1511,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+384,RGH032713,22/10/2026,08:09:14,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1135,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:29,within reported interval,
+385,RML033556,22/10/2026,08:09:21,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,5719,Rashmi Metaliks ltd,P,05:57,14:35,within reported interval,
+386,RGH032713,22/10/2026,08:09:47,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1135,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:29,within reported interval,
+387,RML031371,22/10/2026,08:09:52,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4427,Rashmi Metaliks ltd,P,05:51,14:30,within reported interval,
+388,RGH032937,22/10/2026,08:10:01,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1271,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:52,14:30,within reported interval,
+389,RGH033391,22/10/2026,08:11:24,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1487,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,14:32,,no complete interval,attendance MIS
+390,RGH033299,22/10/2026,08:12:29,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1421,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+391,RGH032759,22/10/2026,08:13:16,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1161,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:56,14:39,within reported interval,
+392,RGH033483,22/10/2026,08:13:39,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1525,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+393,RGH033290,22/10/2026,08:14:02,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1409,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+394,RGH033278,22/10/2026,08:14:03,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1397,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:52,14:32,within reported interval,
+395,RGH032867,22/10/2026,08:14:11,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1233,Rashmi Green Hydrozen Steel Pvt Ltd,P,06:00,14:31,within reported interval,
+396,RML031322,22/10/2026,08:14:16,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4397,Rashmi Metaliks ltd,MIS,13:31,,no complete interval,attendance MIS
+397,RGH033349,22/10/2026,08:15:05,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1463,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:43,14:30,within reported interval,
+398,RML031648,22/10/2026,08:15:13,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4605,Rashmi Metaliks ltd,P,05:49,14:31,within reported interval,
+399,RGH033128,22/10/2026,08:16:54,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1351,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:46,14:36,within reported interval,
+400,RGH032768,22/10/2026,08:17:01,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1171,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:53,14:33,within reported interval,
+401,RGH032635,22/10/2026,08:17:07,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1083,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,14:41,,no complete interval,attendance MIS
+402,RGH032685,22/10/2026,08:17:20,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1103,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:33,within reported interval,
+403,RGH032814,22/10/2026,08:17:25,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1199,Rashmi Green Hydrozen Steel Pvt Ltd,P,06:00,14:33,within reported interval,
+404,RGH032715,22/10/2026,08:17:32,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1137,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+405,RGH033573,22/10/2026,08:17:38,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1593,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:50,,no complete interval,attendance MIS
+406,RGH032715,22/10/2026,08:19:03,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1137,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+407,RGH032685,22/10/2026,08:19:41,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1103,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:33,within reported interval,
+408,RGH033218,22/10/2026,08:20:22,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1375,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:40,,no complete interval,attendance MIS
+409,RGH033460,22/10/2026,08:21:39,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1517,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:53,14:37,within reported interval,
+410,RML031506,22/10/2026,08:21:41,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4517,Rashmi Metaliks ltd,P,05:50,14:30,within reported interval,
+411,RGH033549,22/10/2026,08:21:45,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1575,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:53,14:30,within reported interval,
+412,RML031678,22/10/2026,08:22:57,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4631,Rashmi Metaliks ltd,MIS,08:39,,no complete interval,attendance MIS
+413,RGH032498,22/10/2026,08:23:06,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1077,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:39,,no complete interval,attendance MIS
+414,RML030781,22/10/2026,08:23:21,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,4035,Rashmi Metaliks ltd,MIS,08:35,,no complete interval,attendance MIS
+415,RML031686,22/10/2026,08:23:21,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4635,Rashmi Metaliks ltd,P,05:50,14:29,within reported interval,
+416,RML031458,22/10/2026,08:23:39,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4479,Rashmi Metaliks ltd,MIS,08:43,,no complete interval,attendance MIS
+417,RML031894,22/10/2026,08:24:54,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4761,Rashmi Metaliks ltd,P,05:55,14:43,within reported interval,
+418,RML031248,22/10/2026,08:25:02,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,4345,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:30,within reported interval,
+419,RGH033350,22/10/2026,08:26:20,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1465,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:51,14:29,within reported interval,
+420,RGH033062,22/10/2026,08:28:33,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1327,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,14:54,,no complete interval,attendance MIS
+421,RML026529,22/10/2026,08:29:10,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,3059,Rashmi Metaliks ltd,HLF,05:59,14:02,within reported interval,
+422,RML033706,22/10/2026,08:29:21,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5781,Rashmi Metaliks ltd,MIS,08:54,,no complete interval,attendance MIS
+423,RGH032761,22/10/2026,08:29:59,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1163,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:12,,no complete interval,attendance MIS
+424,RML026658,22/10/2026,08:30:51,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,3113,Rashmi Metaliks ltd,HLF,05:45,14:05,within reported interval,
+425,RML031527,22/10/2026,08:33:06,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4533,Rashmi Metaliks ltd,MIS,08:27,,no complete interval,attendance MIS
+426,RML031839,22/10/2026,08:34:43,Breakfast,1.0,25.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5L318,4741,Rashmi Metaliks Ltd Fittings,MIS,08:47,,no complete interval,attendance MIS
+427,RML031230,22/10/2026,08:35:18,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5LG39,4315,Rashmi Metaliks ltd,MIS,08:55,,no complete interval,attendance MIS
+428,RGH032788,22/10/2026,08:37:15,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1183,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:34,,no complete interval,attendance MIS
+429,RML022452,22/10/2026,08:37:52,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,2033,Rashmi Metaliks ltd,HLF,05:50,14:02,within reported interval,
+430,RML023737,22/10/2026,08:37:58,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,2217,Rashmi Metaliks ltd,MIS,14:03,,no complete interval,attendance MIS
+431,RML032288,22/10/2026,08:39:13,Breakfast,1.0,25.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5L099,4981,Rashmi Metaliks Ltd Fittings,MIS,08:32,,no complete interval,attendance MIS
+432,RML035519,22/10/2026,08:39:18,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6707,Rashmi Metaliks ltd,MIS,08:51,,no complete interval,attendance MIS
+433,RGH033510,22/10/2026,08:39:31,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1545,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:54,14:32,within reported interval,
+434,RML035521,22/10/2026,08:39:35,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6711,Rashmi Metaliks ltd,MIS,08:51,,no complete interval,attendance MIS
+435,RML030927,22/10/2026,08:39:45,Breakfast,1.0,25.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,4119,Rashmi Metaliks Ltd Fittings,MIS,08:37,,no complete interval,attendance MIS
+436,RML030209,22/10/2026,08:41:19,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,3639,Rashmi Metaliks ltd,MIS,08:39,,no complete interval,attendance MIS
+437,RML035350,22/10/2026,08:42:27,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,6499,Rashmi Metaliks ltd,MIS,08:48,,no complete interval,attendance MIS
+438,RGH033454,22/10/2026,08:43:05,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1513,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:42,14:41,within reported interval,
+439,RML031774,22/10/2026,08:43:06,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4689,Rashmi Metaliks ltd,MIS,08:39,,no complete interval,attendance MIS
+440,RML032182,22/10/2026,08:43:14,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4921,Rashmi Metaliks ltd,HLF,06:01,14:05,within reported interval,
+441,RML024168,22/10/2026,08:43:21,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,2323,Rashmi Metaliks ltd,HLF,05:51,14:01,within reported interval,
+442,RML031240,22/10/2026,08:43:59,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,4331,Rashmi Metaliks ltd,P,05:51,14:30,within reported interval,
+443,RGH033524,22/10/2026,08:44:43,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1553,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:51,14:30,within reported interval,
+444,RML031621,22/10/2026,08:45:28,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4589,Rashmi Metaliks ltd,MIS,14:35,,no complete interval,attendance MIS
+445,RML026656,22/10/2026,08:47:09,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,3111,Rashmi Metaliks ltd,MIS,08:40,,no complete interval,attendance MIS
+446,RGH032842,22/10/2026,08:48:05,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1219,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:45,14:35,within reported interval,
+447,RML030180,22/10/2026,08:49:17,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,3615,Rashmi Metaliks ltd,HLF,05:53,14:02,within reported interval,
+448,RML025006,22/10/2026,08:49:23,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2613,Rashmi Metaliks ltd,HLF,05:52,14:05,within reported interval,
+449,RML025007,22/10/2026,08:50:31,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2615,Rashmi Metaliks ltd,HLF,05:52,14:06,within reported interval,
+450,RML031656,22/10/2026,08:50:38,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4615,Rashmi Metaliks ltd,MIS,08:46,,no complete interval,attendance MIS
+451,RML022774,22/10/2026,08:52:07,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,2043,Rashmi Metaliks ltd,MIS,08:48,,no complete interval,attendance MIS
+452,RML033860,22/10/2026,08:53:08,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5849,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+453,RML031283,22/10/2026,08:53:13,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4381,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+454,RML034271,22/10/2026,08:53:38,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6019,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+455,RML034269,22/10/2026,08:53:47,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6017,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+456,RML024050,22/10/2026,08:55:23,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L099,2295,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+457,RML035346,22/10/2026,08:56:27,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,6493,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+458,RML031443,22/10/2026,08:56:33,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4467,Rashmi Metaliks ltd,MIS,08:46,,no complete interval,attendance MIS
+459,RML031810,22/10/2026,08:57:12,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,4731,Rashmi Metaliks ltd,MIS,08:47,08:47,after reported out minute,attendance MIS; after reported out minute
+460,RML032695,22/10/2026,08:57:30,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5217,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+461,RML034022,22/10/2026,08:57:34,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5903,Rashmi Metaliks ltd,MIS,07:53,,no complete interval,attendance MIS
+462,RML033191,22/10/2026,08:57:39,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5563,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+463,RML035339,22/10/2026,08:57:44,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6491,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+464,RML034005,22/10/2026,08:57:55,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5895,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+465,RML030975,22/10/2026,08:59:27,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4143,Rashmi Metaliks ltd,HLF,05:52,14:01,within reported interval,
+466,RML033491,22/10/2026,08:59:38,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,5699,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:33,,no complete interval,attendance MIS
+467,RML024174,22/10/2026,08:59:39,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,2329,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+468,RML033860,22/10/2026,09:00:00,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5849,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+469,RML031267,22/10/2026,09:00:05,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4367,Rashmi Metaliks ltd,MIS,08:56,,no complete interval,attendance MIS
+470,RML023452,22/10/2026,09:00:24,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2155,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+471,RML023650,22/10/2026,09:00:45,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L318,2197,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+472,RML033063,22/10/2026,09:00:50,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5499,Rashmi Metaliks ltd,MIS,08:49,08:49,after reported out minute,attendance MIS; after reported out minute
+473,RML030174,22/10/2026,09:04:08,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,3607,Rashmi Metaliks ltd,MIS,14:01,,no complete interval,attendance MIS
+474,RML030993,22/10/2026,09:05:51,Breakfast,1.0,25.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,4151,Rashmi Metaliks Ltd Fittings,MIS,08:58,,no complete interval,attendance MIS
+475,RGH033590,22/10/2026,09:06:04,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,1617,Rashmi Metaliks ltd,MIS,13:52,,no complete interval,attendance MIS
+476,RGH033250,22/10/2026,09:07:18,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,1383,Rashmi Metaliks ltd,MIS,13:54,,no complete interval,attendance MIS
+477,RML034458,22/10/2026,09:08:50,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6159,Rashmi Metaliks ltd,HLF,05:35,14:01,within reported interval,
+478,RML034387,22/10/2026,09:10:12,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,6117,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+479,RGH033014,22/10/2026,09:14:41,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1315,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:46,,no complete interval,attendance MIS
+480,RML033479,22/10/2026,09:17:47,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5693,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+481,RPL002330,22/10/2026,09:19:17,Breakfast,1.0,25.0,1.0,Rashmi 6 Paradigm Limited,HGR5L4F5,6839,Rashmi 6 Paradigm Limited,MIS,13:54,,no complete interval,attendance MIS
+482,RGH032806,22/10/2026,09:22:02,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1193,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:48,,no complete interval,attendance MIS
+483,RPL002302,22/10/2026,09:22:50,Breakfast,1.0,25.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,6823,Rashmi 6 Paradigm Limited,MIS,13:45,,no complete interval,attendance MIS
+484,RGH033053,22/10/2026,09:27:42,Breakfast,1.0,25.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1325,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+485,RPL002304,22/10/2026,09:28:56,Breakfast,1.0,25.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,6827,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+486,RML034535,22/10/2026,09:30:53,Breakfast,1.0,25.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6191,Rashmi Metaliks ltd,MIS,13:44,,no complete interval,attendance MIS
+487,RML031332,22/10/2026,09:31:33,Breakfast,1.0,25.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5LG39,4405,Rashmi Metaliks Ltd Fittings,MIS,13:24,,no complete interval,attendance MIS
+488,RML032804,22/10/2026,09:31:33,Breakfast,1.0,25.0,1.0,Rashmi 6 Paradigm Limited,HGR5L318,5301,Rashmi 6 Paradigm Limited,HLF,05:53,14:11,within reported interval,
+489,RML023287,22/10/2026,12:24:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2127,Rashmi Metaliks ltd,MIS,08:50,,no complete interval,attendance MIS
+490,RML032491,22/10/2026,12:24:22,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5097,Rashmi Metaliks ltd,HLF,08:54,13:30,within reported interval,
+491,RML031591,22/10/2026,12:24:36,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,4571,Rashmi Metaliks ltd,MIS,08:48,,no complete interval,attendance MIS
+492,RML023257,22/10/2026,12:24:43,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2117,Rashmi Metaliks ltd,MIS,08:50,,no complete interval,attendance MIS
+493,RML024248,22/10/2026,12:24:53,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2353,Rashmi Metaliks ltd,HLF,05:52,14:05,within reported interval,
+494,RML023781,22/10/2026,12:25:11,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2239,Rashmi Metaliks ltd,HLF,05:54,14:03,within reported interval,
+495,RML023643,22/10/2026,12:25:17,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2193,Rashmi Metaliks ltd,HLF,06:02,14:02,within reported interval,
+496,RML032996,22/10/2026,12:25:19,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,5451,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+497,RML022848,22/10/2026,12:26:21,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2047,Rashmi Metaliks ltd,MIS,05:39,05:40,after reported out minute,attendance MIS; after reported out minute
+498,RML025123,22/10/2026,12:26:44,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2673,Rashmi Metaliks ltd,HLF,05:50,14:04,within reported interval,
+499,RML034253,22/10/2026,12:28:11,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6005,Rashmi Metaliks ltd,A,08:41,08:44,after reported out minute,attendance A; after reported out minute
+500,RML027119,22/10/2026,12:28:26,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3351,Rashmi Metaliks ltd,MIS,05:46,,no complete interval,attendance MIS
+501,RML030766,22/10/2026,12:28:37,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,4025,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+502,RML027279,22/10/2026,12:28:33,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3465,Rashmi Metaliks ltd,HLF,05:47,14:01,within reported interval,
+503,RML027118,22/10/2026,12:28:44,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3349,Rashmi Metaliks ltd,MIS,05:52,05:52,after reported out minute,attendance MIS; after reported out minute
+504,RML025449,22/10/2026,12:29:01,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2777,Rashmi Metaliks ltd,MIS,05:52,05:52,after reported out minute,attendance MIS; after reported out minute
+505,RML032788,22/10/2026,12:29:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5281,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+506,RML025460,22/10/2026,12:30:28,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2789,Rashmi Metaliks ltd,MIS,07:45,,no complete interval,attendance MIS
+507,RGH033218,22/10/2026,12:30:36,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1375,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:40,,no complete interval,attendance MIS
+508,RML033004,22/10/2026,12:30:36,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,5461,Rashmi Metaliks ltd,MIS,08:51,08:51,after reported out minute,attendance MIS; after reported out minute
+509,RML032500,22/10/2026,12:30:52,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5103,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+510,RML032695,22/10/2026,12:30:57,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5217,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+511,RML033191,22/10/2026,12:31:03,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5563,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+512,RML030204,22/10/2026,12:31:07,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3635,Rashmi Metaliks ltd,MIS,08:46,,no complete interval,attendance MIS
+513,RML025466,22/10/2026,12:31:44,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2795,Rashmi Metaliks ltd,MIS,07:56,,no complete interval,attendance MIS
+514,RML025447,22/10/2026,12:31:53,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2773,Rashmi Metaliks ltd,MIS,05:45,05:46,after reported out minute,attendance MIS; after reported out minute
+515,RML026853,22/10/2026,12:32:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,3211,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+516,RML034422,22/10/2026,12:32:06,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6147,Rashmi Metaliks ltd,HLF,05:39,14:01,within reported interval,
+517,RGH032989,22/10/2026,12:32:08,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1303,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:40,,no complete interval,attendance MIS
+518,RML030759,22/10/2026,12:32:24,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,4017,Rashmi Metaliks ltd,MIS,08:36,,no complete interval,attendance MIS
+519,RML025452,22/10/2026,12:32:46,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2779,Rashmi Metaliks ltd,MIS,05:45,,no complete interval,attendance MIS
+520,RML031085,22/10/2026,12:32:49,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4219,Rashmi Metaliks ltd,MIS,08:48,,no complete interval,attendance MIS
+521,RML031748,22/10/2026,12:32:59,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4679,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+522,RML031047,22/10/2026,12:33:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,4185,Rashmi Metaliks ltd,HLF,05:46,14:00,within reported interval,
+523,RML026466,22/10/2026,12:33:24,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3025,Rashmi Metaliks ltd,MIS,14:01,14:01,before reported in,attendance MIS; before reported in
+524,RML033571,22/10/2026,12:33:40,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5725,Rashmi Metaliks ltd,MIS,13:49,,no complete interval,attendance MIS
+525,RGH033523,22/10/2026,12:33:48,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1551,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:53,,no complete interval,attendance MIS
+526,RML034257,22/10/2026,12:34:27,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6011,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+527,RML031639,22/10/2026,12:34:30,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,4595,Rashmi Metaliks ltd,P,05:50,14:30,within reported interval,
+528,RML025486,22/10/2026,12:34:35,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2815,Rashmi Metaliks ltd,MIS,05:40,05:40,after reported out minute,attendance MIS; after reported out minute
+529,RML031678,22/10/2026,12:34:58,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4631,Rashmi Metaliks ltd,MIS,08:39,,no complete interval,attendance MIS
+530,RML024169,22/10/2026,12:35:37,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,2325,Rashmi Metaliks ltd,MIS,13:56,,no complete interval,attendance MIS
+531,RPL002330,22/10/2026,12:35:40,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5L4F5,6839,Rashmi 6 Paradigm Limited,MIS,13:54,,no complete interval,attendance MIS
+532,RML027204,22/10/2026,12:36:20,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3393,Rashmi Metaliks ltd,HLF,06:00,14:04,within reported interval,
+533,RML023650,22/10/2026,12:36:22,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,2197,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+534,RML024755,22/10/2026,12:36:38,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,2513,Rashmi Metaliks ltd,MIS,09:03,,no complete interval,attendance MIS
+535,RML032490,22/10/2026,12:37:27,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,5095,Rashmi Metaliks ltd,MIS,08:54,,no complete interval,attendance MIS
+536,KOL002074,22/10/2026,12:37:33,LUNCH,1.0,55.0,1.0,Reach Dredging Ltd,HGR5L318,145,Reach Dredging Ltd,MIS,08:26,,no complete interval,attendance MIS
+537,RGH033590,22/10/2026,12:38:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,1617,Rashmi Metaliks ltd,MIS,13:52,,no complete interval,attendance MIS
+538,RML035346,22/10/2026,12:38:30,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,6493,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+539,RML030781,22/10/2026,12:38:47,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,4035,Rashmi Metaliks ltd,MIS,08:35,,no complete interval,attendance MIS
+540,RML027052,22/10/2026,12:38:54,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,3317,Rashmi Metaliks ltd,MIS,09:00,,no complete interval,attendance MIS
+541,RGH033453,22/10/2026,12:39:40,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1511,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+542,RML034395,22/10/2026,12:39:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6125,Rashmi Metaliks ltd,MIS,08:41,,no complete interval,attendance MIS
+543,RGH032498,22/10/2026,12:39:46,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1077,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:39,,no complete interval,attendance MIS
+544,RML032994,22/10/2026,12:40:00,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,5449,Rashmi Metaliks ltd,MIS,07:15,,no complete interval,attendance MIS
+545,RML031207,22/10/2026,12:40:08,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4297,Rashmi Metaliks ltd,P,05:55,14:45,within reported interval,
+546,RML023663,22/10/2026,12:40:50,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,2203,Rashmi Metaliks ltd,MIS,13:46,,no complete interval,attendance MIS
+547,RML026741,22/10/2026,12:40:49,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3155,Rashmi Metaliks ltd,HLF,05:39,14:07,within reported interval,
+548,RML025500,22/10/2026,12:41:00,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2821,Rashmi Metaliks ltd,MIS,07:46,,no complete interval,attendance MIS
+549,RML033706,22/10/2026,12:41:11,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5781,Rashmi Metaliks ltd,MIS,08:54,,no complete interval,attendance MIS
+550,RGH032834,22/10/2026,12:42:16,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1213,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:48,,no complete interval,attendance MIS
+551,RML024957,22/10/2026,12:42:32,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2605,Rashmi Metaliks ltd,HLF,05:56,14:01,within reported interval,
+552,RML024956,22/10/2026,12:42:51,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2603,Rashmi Metaliks ltd,MIS,08:49,08:49,after reported out minute,attendance MIS; after reported out minute
+553,RML026329,22/10/2026,12:43:10,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,2985,Rashmi Metaliks ltd,MIS,08:52,,no complete interval,attendance MIS
+554,RML026656,22/10/2026,12:43:12,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,3111,Rashmi Metaliks ltd,MIS,08:40,,no complete interval,attendance MIS
+555,RML033301,22/10/2026,12:43:20,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,5627,Rashmi 6 Paradigm Limited,MIS,13:54,,no complete interval,attendance MIS
+556,RML033860,22/10/2026,12:43:29,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5849,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+557,RML002244,22/10/2026,12:43:35,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,1945,Rashmi Metaliks ltd,HLF,05:56,14:02,within reported interval,
+558,RML031458,22/10/2026,12:43:38,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4479,Rashmi Metaliks ltd,MIS,08:43,,no complete interval,attendance MIS
+559,RML020667,22/10/2026,12:43:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,1977,Rashmi Metaliks ltd,MIS,08:19,08:19,after reported out minute,attendance MIS; after reported out minute
+560,RML026588,22/10/2026,12:44:37,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3079,Rashmi Metaliks ltd,HLF,05:45,14:01,within reported interval,
+561,RML034269,22/10/2026,12:45:14,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6017,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+562,RML031588,22/10/2026,12:45:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4569,Rashmi Metaliks ltd,MIS,08:51,,no complete interval,attendance MIS
+563,RML034005,22/10/2026,12:45:48,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5895,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+564,RGH032931,22/10/2026,12:45:52,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1267,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+565,RML024940,22/10/2026,12:46:05,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2593,Rashmi Metaliks ltd,MIS,09:03,,no complete interval,attendance MIS
+566,RML023601,22/10/2026,12:46:26,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2185,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+567,RML032182,22/10/2026,12:47:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4921,Rashmi Metaliks ltd,HLF,06:01,14:05,within reported interval,
+568,RML026764,22/10/2026,12:47:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,3169,Rashmi Metaliks ltd,MIS,08:08,,no complete interval,attendance MIS
+569,RML030209,22/10/2026,12:47:12,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,3639,Rashmi Metaliks ltd,MIS,08:39,,no complete interval,attendance MIS
+570,RML031383,22/10/2026,12:47:17,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,4435,Rashmi Metaliks ltd,P,05:51,14:33,within reported interval,
+571,RGH033014,22/10/2026,12:47:19,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1315,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:46,,no complete interval,attendance MIS
+572,RML031240,22/10/2026,12:47:23,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,4331,Rashmi Metaliks ltd,P,05:51,14:30,within reported interval,
+573,RML032486,22/10/2026,12:47:28,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,5093,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+574,RML034336,22/10/2026,12:47:37,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6071,Rashmi Metaliks ltd,HLF,05:50,14:04,within reported interval,
+575,RGH032901,22/10/2026,12:47:56,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,1251,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+576,RML034389,22/10/2026,12:48:30,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6119,Rashmi Metaliks ltd,MIS,08:50,,no complete interval,attendance MIS
+577,RML034202,22/10/2026,12:48:44,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5963,Rashmi Metaliks ltd,MIS,08:37,,no complete interval,attendance MIS
+578,RML025089,22/10/2026,12:48:53,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2657,Rashmi Metaliks ltd,MIS,08:53,08:53,after reported out minute,attendance MIS; after reported out minute
+579,RML021972,22/10/2026,12:48:59,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2019,Rashmi Metaliks ltd,MIS,08:31,,no complete interval,attendance MIS
+580,RML032767,22/10/2026,12:49:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,5267,Rashmi Metaliks ltd,HLF,05:46,14:04,within reported interval,
+581,RGH032859,22/10/2026,12:49:20,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,1225,Rashmi Metaliks ltd,MIS,13:09,,no complete interval,attendance MIS
+582,RML026667,22/10/2026,12:49:21,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3117,Rashmi Metaliks ltd,MIS,08:04,,no complete interval,attendance MIS
+583,RML034022,22/10/2026,12:49:24,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5903,Rashmi Metaliks ltd,MIS,07:53,,no complete interval,attendance MIS
+584,RGH032761,22/10/2026,12:49:31,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1163,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:12,,no complete interval,attendance MIS
+585,RML027051,22/10/2026,12:49:32,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3315,Rashmi Metaliks ltd,MIS,08:02,,no complete interval,attendance MIS
+586,RML032284,22/10/2026,12:50:00,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,4975,Rashmi Metaliks ltd,MIS,08:42,,no complete interval,attendance MIS
+587,RML034397,22/10/2026,12:50:11,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6129,Rashmi Metaliks ltd,MIS,08:41,,no complete interval,attendance MIS
+588,RML032387,22/10/2026,12:50:19,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,5039,Rashmi Metaliks ltd,MIS,09:01,,no complete interval,attendance MIS
+589,RML030186,22/10/2026,12:50:25,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3619,Rashmi Metaliks ltd,MIS,05:54,05:55,after reported out minute,attendance MIS; after reported out minute
+590,RML035472,22/10/2026,12:50:31,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6621,Rashmi Metaliks ltd,MIS,05:54,05:55,after reported out minute,attendance MIS; after reported out minute
+591,RGH032768,22/10/2026,12:50:53,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1171,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:53,14:33,within reported interval,
+592,RML035465,22/10/2026,12:51:11,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6613,Rashmi Metaliks ltd,MIS,08:48,,no complete interval,attendance MIS
+593,RML030238,22/10/2026,12:51:31,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,3661,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+594,RML031283,22/10/2026,12:51:53,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4381,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+595,RML031527,22/10/2026,12:51:56,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4533,Rashmi Metaliks ltd,MIS,08:27,,no complete interval,attendance MIS
+596,RML025021,22/10/2026,12:52:02,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2625,Rashmi Metaliks ltd,MIS,13:36,,no complete interval,attendance MIS
+597,RML035074,22/10/2026,12:52:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,6295,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+598,RML023452,22/10/2026,12:52:13,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2155,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+599,RML034310,22/10/2026,12:52:30,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,6047,Rashmi Metaliks ltd,MIS,08:56,,no complete interval,attendance MIS
+600,RML034314,22/10/2026,12:53:40,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6049,Rashmi Metaliks ltd,MIS,08:39,,no complete interval,attendance MIS
+601,RML025340,22/10/2026,12:54:11,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2745,Rashmi Metaliks ltd,HLF,05:53,14:03,within reported interval,
+602,RML024174,22/10/2026,12:54:14,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,2329,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+603,RML031371,22/10/2026,12:54:25,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4427,Rashmi Metaliks ltd,P,05:51,14:30,within reported interval,
+604,RML033662,22/10/2026,12:54:47,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,5763,Rashmi Metaliks Ltd Fittings,MIS,08:48,,no complete interval,attendance MIS
+605,RML021718,22/10/2026,12:55:06,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2009,Rashmi Metaliks ltd,MIS,08:39,08:40,after reported out minute,attendance MIS; after reported out minute
+606,RML031810,22/10/2026,12:55:26,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4731,Rashmi Metaliks ltd,MIS,08:47,08:47,after reported out minute,attendance MIS; after reported out minute
+607,RML023845,22/10/2026,12:55:41,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2257,Rashmi Metaliks ltd,MIS,13:39,,no complete interval,attendance MIS
+608,RML033748,22/10/2026,12:56:07,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5795,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+609,RGH032776,22/10/2026,12:56:10,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1177,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:59,15:40,within reported interval,
+610,RML035087,22/10/2026,12:56:14,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6303,Rashmi Metaliks ltd,MIS,08:51,,no complete interval,attendance MIS
+611,RML022977,22/10/2026,12:56:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,2065,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+612,RGH032710,22/10/2026,12:56:24,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1133,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:36,,no complete interval,attendance MIS
+613,RML031934,22/10/2026,12:56:34,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,4773,Rashmi Metaliks ltd,MIS,06:14,06:14,after reported out minute,attendance MIS; after reported out minute
+614,RGH033623,22/10/2026,12:56:46,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,1667,Rashmi Metaliks ltd,MIS,08:56,,no complete interval,attendance MIS
+615,RML030467,22/10/2026,12:56:57,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3809,Rashmi Metaliks ltd,HLF,06:23,14:25,within reported interval,
+616,RML033320,22/10/2026,12:57:07,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5637,Rashmi Metaliks ltd,MIS,08:46,08:46,after reported out minute,attendance MIS; after reported out minute
+617,RML035350,22/10/2026,12:57:10,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6499,Rashmi Metaliks ltd,MIS,08:48,,no complete interval,attendance MIS
+618,RML035075,22/10/2026,12:57:10,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,6297,Rashmi Metaliks ltd,MIS,13:15,,no complete interval,attendance MIS
+619,RML034415,22/10/2026,12:57:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,6145,Rashmi Metaliks ltd,HLF,05:59,14:06,within reported interval,
+620,RML034535,22/10/2026,12:57:16,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6191,Rashmi Metaliks ltd,MIS,13:44,,no complete interval,attendance MIS
+621,RML033063,22/10/2026,12:57:23,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,5499,Rashmi Metaliks ltd,MIS,08:49,08:49,after reported out minute,attendance MIS; after reported out minute
+622,RML034203,22/10/2026,12:57:36,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5965,Rashmi Metaliks ltd,MIS,08:50,,no complete interval,attendance MIS
+623,RML030820,22/10/2026,12:57:56,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4065,Rashmi Metaliks ltd,MIS,08:41,,no complete interval,attendance MIS
+624,RML030662,22/10/2026,12:58:09,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,3949,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+625,RML033063,22/10/2026,12:58:14,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,5499,Rashmi Metaliks ltd,MIS,08:49,08:49,after reported out minute,attendance MIS; after reported out minute
+626,RML030682,22/10/2026,12:58:16,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,3965,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+627,RML030609,22/10/2026,12:58:20,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,3919,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+628,RML035521,22/10/2026,12:58:34,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,6711,Rashmi Metaliks ltd,MIS,08:51,,no complete interval,attendance MIS
+629,RML031878,22/10/2026,12:59:13,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4757,Rashmi Metaliks ltd,MIS,08:56,,no complete interval,attendance MIS
+630,RML030993,22/10/2026,12:59:20,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,4151,Rashmi Metaliks Ltd Fittings,MIS,08:58,,no complete interval,attendance MIS
+631,RML030927,22/10/2026,12:59:25,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,4119,Rashmi Metaliks Ltd Fittings,MIS,08:37,,no complete interval,attendance MIS
+632,RML031858,22/10/2026,12:59:32,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,4745,Rashmi Metaliks Ltd Fittings,MIS,08:43,,no complete interval,attendance MIS
+633,RML032614,22/10/2026,12:59:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5165,Rashmi Metaliks ltd,MIS,08:35,,no complete interval,attendance MIS
+634,RML030196,22/10/2026,13:00:18,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,3627,Rashmi Metaliks ltd,MIS,08:52,,no complete interval,attendance MIS
+635,RML035504,22/10/2026,13:00:55,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5L318,6683,Rashmi Metaliks Ltd Fittings,A,,,no complete interval,attendance A
+636,RGH033263,22/10/2026,13:01:03,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1387,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:44,,no complete interval,attendance MIS
+637,RGH033619,22/10/2026,13:01:40,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,1659,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+638,RML034292,22/10/2026,13:01:47,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6033,Rashmi Metaliks ltd,MIS,08:41,,no complete interval,attendance MIS
+639,RML035418,22/10/2026,13:01:56,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,6569,Rashmi Metaliks ltd,MIS,09:04,,no complete interval,attendance MIS
+640,RML034322,22/10/2026,13:01:59,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6061,Rashmi Metaliks ltd,MIS,08:38,,no complete interval,attendance MIS
+641,RML035524,22/10/2026,13:02:03,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,6715,Rashmi Metaliks ltd,MIS,09:02,,no complete interval,attendance MIS
+642,RML001138,22/10/2026,13:02:16,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,1931,Rashmi Metaliks ltd,MIS,08:00,,no complete interval,attendance MIS
+643,RML030552,22/10/2026,13:02:18,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,3873,Rashmi Metaliks ltd,MIS,08:48,,no complete interval,attendance MIS
+644,RML000863,22/10/2026,13:02:26,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,1823,Rashmi Metaliks ltd,MIS,09:13,,no complete interval,attendance MIS
+645,RPL002210,22/10/2026,13:02:26,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,6799,Rashmi Metaliks ltd,MIS,09:25,,no complete interval,attendance MIS
+646,RGH033250,22/10/2026,13:02:33,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,1383,Rashmi Metaliks ltd,MIS,13:54,,no complete interval,attendance MIS
+647,RML031511,22/10/2026,13:02:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,4521,Rashmi Metaliks ltd,MIS,13:36,,no complete interval,attendance MIS
+648,RML031839,22/10/2026,13:02:43,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,4741,Rashmi Metaliks Ltd Fittings,MIS,08:47,,no complete interval,attendance MIS
+649,RML034539,22/10/2026,13:02:52,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,6195,Rashmi Metaliks ltd,A,08:55,08:57,after reported out minute,attendance A; after reported out minute
+650,RML034495,22/10/2026,13:04:18,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6173,Rashmi Metaliks ltd,MIS,08:43,,no complete interval,attendance MIS
+651,RML035356,22/10/2026,13:04:30,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6507,Rashmi Metaliks ltd,MIS,08:32,,no complete interval,attendance MIS
+652,RML024050,22/10/2026,13:04:33,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,2295,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+653,RML024051,22/10/2026,13:04:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,2297,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+654,RML031153,22/10/2026,13:05:23,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4255,Rashmi Metaliks ltd,MIS,08:37,,no complete interval,attendance MIS
+655,RML023849,22/10/2026,13:05:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,2259,Rashmi Metaliks ltd,MIS,13:50,,no complete interval,attendance MIS
+656,RGH033573,22/10/2026,13:06:03,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1593,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:50,,no complete interval,attendance MIS
+657,RML030901,22/10/2026,13:06:10,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,4105,Rashmi Metaliks ltd,HLF,05:50,14:02,within reported interval,
+658,RML035449,22/10/2026,13:06:28,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6597,Rashmi Metaliks ltd,MIS,10:30,,no complete interval,attendance MIS
+659,RML035527,22/10/2026,13:06:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6721,Rashmi Metaliks ltd,MIS,08:52,,no complete interval,attendance MIS
+660,RML035519,22/10/2026,13:06:47,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6707,Rashmi Metaliks ltd,MIS,08:51,,no complete interval,attendance MIS
+661,RML033856,22/10/2026,13:06:58,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5847,Rashmi Metaliks ltd,A,08:48,09:06,after reported out minute,attendance A; after reported out minute
+662,RPL002304,22/10/2026,13:07:12,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,6827,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+663,RML026709,22/10/2026,13:07:21,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,3135,Rashmi Metaliks ltd,HLF,05:48,14:04,within reported interval,
+664,RML031195,22/10/2026,13:07:26,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,4283,Rashmi Metaliks ltd,MIS,08:59,,no complete interval,attendance MIS
+665,RML030199,22/10/2026,13:07:40,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,3629,Rashmi Metaliks ltd,MIS,13:50,,no complete interval,attendance MIS
+666,RGH032806,22/10/2026,13:08:10,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1193,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:48,,no complete interval,attendance MIS
+667,RML033481,22/10/2026,13:08:32,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5695,Rashmi Metaliks ltd,MIS,13:48,,no complete interval,attendance MIS
+668,RML030724,22/10/2026,13:08:50,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,3997,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+669,RML033358,22/10/2026,13:08:50,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,5647,Rashmi Metaliks ltd,MIS,08:53,,no complete interval,attendance MIS
+670,RML032288,22/10/2026,13:08:57,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,4981,Rashmi Metaliks Ltd Fittings,MIS,08:32,,no complete interval,attendance MIS
+671,RML031322,22/10/2026,13:08:58,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4397,Rashmi Metaliks ltd,MIS,13:31,,no complete interval,attendance MIS
+672,RGH032739,22/10/2026,13:09:13,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1153,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:40,,no complete interval,attendance MIS
+673,RGH033579,22/10/2026,13:09:19,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1603,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:51,,no complete interval,attendance MIS
+674,RGH033290,22/10/2026,13:09:19,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1409,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+675,RGH032934,22/10/2026,13:09:48,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1269,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+676,RML033080,22/10/2026,13:09:52,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,5507,Rashmi Metaliks ltd,HLF,05:56,14:07,within reported interval,
+677,RML033362,22/10/2026,13:09:57,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,5651,Rashmi Metaliks ltd,MIS,14:10,,no complete interval,attendance MIS
+678,RML035339,22/10/2026,13:11:16,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6491,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+679,RGH033520,22/10/2026,13:11:27,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1547,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+680,RML032735,22/10/2026,13:11:49,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,5239,Rashmi Metaliks ltd,HLF,05:48,14:01,within reported interval,
+681,RGH033207,22/10/2026,13:11:50,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,1371,Rashmi Metaliks ltd,MIS,13:51,,no complete interval,attendance MIS
+682,RGH033614,22/10/2026,13:11:52,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,1649,Rashmi Metaliks ltd,MIS,08:52,,no complete interval,attendance MIS
+683,RML030632,22/10/2026,13:11:55,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3929,Rashmi Metaliks ltd,HLF,05:48,14:01,within reported interval,
+684,RGH033620,22/10/2026,13:12:02,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,1661,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+685,RML026980,22/10/2026,13:12:11,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,3275,Rashmi Metaliks ltd,MIS,08:48,,no complete interval,attendance MIS
+686,RML035516,22/10/2026,13:13:19,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,6703,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+687,RML035011,22/10/2026,13:13:26,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6243,Rashmi Metaliks ltd,MIS,08:55,,no complete interval,attendance MIS
+688,RGH033158,22/10/2026,13:13:31,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1357,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+689,RML031594,22/10/2026,13:13:43,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4573,Rashmi Metaliks ltd,MIS,08:48,,no complete interval,attendance MIS
+690,RML030372,22/10/2026,13:13:49,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,3749,Rashmi Metaliks ltd,MIS,09:18,,no complete interval,attendance MIS
+691,RML035332,22/10/2026,13:13:56,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6489,Rashmi Metaliks ltd,A,12:55,13:48,within reported interval,attendance A
+692,RML035422,22/10/2026,13:14:02,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6575,Rashmi Metaliks ltd,MIS,08:54,,no complete interval,attendance MIS
+693,RML023844,22/10/2026,13:14:05,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,2255,Rashmi Metaliks ltd,MIS,13:39,,no complete interval,attendance MIS
+694,RGH033532,22/10/2026,13:14:18,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1559,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,14:32,,no complete interval,attendance MIS
+695,RML034998,22/10/2026,13:14:18,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6239,Rashmi Metaliks ltd,MIS,08:49,,no complete interval,attendance MIS
+696,RML033151,22/10/2026,13:14:17,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5545,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+697,RML034316,22/10/2026,13:14:20,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6053,Rashmi Metaliks ltd,MIS,13:46,13:46,before reported in,attendance MIS; before reported in
+698,RML026404,22/10/2026,13:14:40,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3009,Rashmi Metaliks ltd,HLF,05:54,14:01,within reported interval,
+699,RML026444,22/10/2026,13:14:46,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3017,Rashmi Metaliks ltd,MIS,08:38,,no complete interval,attendance MIS
+700,RML031087,22/10/2026,13:14:50,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,4221,Rashmi Metaliks ltd,MIS,08:38,,no complete interval,attendance MIS
+701,RML022774,22/10/2026,13:15:13,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2043,Rashmi Metaliks ltd,MIS,08:48,,no complete interval,attendance MIS
+702,RML027021,22/10/2026,13:15:27,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3303,Rashmi Metaliks ltd,HLF,05:50,14:00,within reported interval,
+703,RGH032867,22/10/2026,13:15:51,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1233,Rashmi Green Hydrozen Steel Pvt Ltd,P,06:00,14:31,within reported interval,
+704,RML026718,22/10/2026,13:16:49,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3143,Rashmi Metaliks ltd,MIS,09:00,,no complete interval,attendance MIS
+705,RML033005,22/10/2026,13:16:57,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,5463,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+706,RML031692,22/10/2026,13:17:21,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4647,Rashmi Metaliks ltd,MIS,13:37,,no complete interval,attendance MIS
+707,RML027180,22/10/2026,13:17:31,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3383,Rashmi Metaliks ltd,MIS,13:36,13:36,before reported in,attendance MIS; before reported in
+708,RML024823,22/10/2026,13:17:55,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2545,Rashmi Metaliks ltd,HLF,05:40,14:01,within reported interval,
+709,RML027267,22/10/2026,13:18:52,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3453,Rashmi Metaliks ltd,HLF,05:52,14:01,within reported interval,
+710,RPL002341,22/10/2026,13:19:02,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,6851,Rashmi 6 Paradigm Limited,MIS,13:50,,no complete interval,attendance MIS
+711,RGH033533,22/10/2026,13:19:03,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1561,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+712,RML032850,22/10/2026,13:19:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,5341,Rashmi Metaliks ltd,HLF,05:51,14:01,within reported interval,
+713,RML035122,22/10/2026,13:19:21,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6345,Rashmi Metaliks ltd,MIS,13:16,13:17,after reported out minute,attendance MIS; after reported out minute
+714,RML034340,22/10/2026,13:19:27,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6077,Rashmi Metaliks ltd,MIS,13:16,13:16,after reported out minute,attendance MIS; after reported out minute
+715,RPL002302,22/10/2026,13:19:43,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5GEDS,6823,Rashmi 6 Paradigm Limited,MIS,13:45,,no complete interval,attendance MIS
+716,RML031728,22/10/2026,13:19:58,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,4655,Rashmi Metaliks ltd,MIS,09:00,,no complete interval,attendance MIS
+717,RML031230,22/10/2026,13:20:02,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4315,Rashmi Metaliks ltd,MIS,08:55,,no complete interval,attendance MIS
+718,RPL002122,22/10/2026,13:20:04,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,6759,Rashmi 6 Paradigm Limited,MIS,08:54,,no complete interval,attendance MIS
+719,RML033246,22/10/2026,13:20:11,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5L4F5,5609,Rashmi 6 Paradigm Limited,A,,,no complete interval,attendance A
+720,RML033445,22/10/2026,13:20:26,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5675,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+721,RML033138,22/10/2026,13:21:13,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5539,Rashmi Metaliks ltd,MIS,08:58,,no complete interval,attendance MIS
+722,RML025328,22/10/2026,13:21:14,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,2743,Rashmi Metaliks ltd,MIS,08:46,,no complete interval,attendance MIS
+723,RML033581,22/10/2026,13:21:25,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5731,Rashmi Metaliks ltd,MIS,09:12,,no complete interval,attendance MIS
+724,RML031642,22/10/2026,13:22:14,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4597,Rashmi Metaliks ltd,P,05:49,14:30,within reported interval,
+725,RML031243,22/10/2026,13:22:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,4337,Rashmi Metaliks ltd,P,05:50,14:30,within reported interval,
+726,RML031521,22/10/2026,13:22:22,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,4529,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+727,RML024168,22/10/2026,13:22:32,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,2323,Rashmi Metaliks ltd,HLF,05:51,14:01,within reported interval,
+728,RGH033411,22/10/2026,13:22:45,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,1493,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:50,,no complete interval,attendance MIS
+729,RML031599,22/10/2026,13:06:42,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4577,Rashmi Metaliks ltd,MIS,08:52,,no complete interval,attendance MIS
+730,RML031650,22/10/2026,13:07:22,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4609,Rashmi Metaliks ltd,P,05:35,14:31,within reported interval,
+731,RGH032964,22/10/2026,13:22:58,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1297,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:27,,no complete interval,attendance MIS
+732,RML033856,22/10/2026,13:07:44,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5847,Rashmi Metaliks ltd,A,08:48,09:06,after reported out minute,attendance A; after reported out minute
+733,RGH032771,22/10/2026,13:23:13,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1175,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+734,RML030484,22/10/2026,13:24:22,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5L099,3821,Rashmi Metaliks Ltd Fittings,A,,,no complete interval,attendance A
+735,RML024634,22/10/2026,13:24:36,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2463,Rashmi Metaliks ltd,HLF,05:55,14:01,within reported interval,
+736,RML027016,22/10/2026,13:24:45,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3299,Rashmi Metaliks ltd,MIS,13:48,,no complete interval,attendance MIS
+737,RML026023,22/10/2026,13:25:36,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2859,Rashmi Metaliks ltd,HLF,05:53,14:02,within reported interval,
+738,RML030451,22/10/2026,13:26:53,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,3799,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:41,,no complete interval,attendance MIS
+739,RGH033345,22/10/2026,13:28:20,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1457,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:49,,no complete interval,attendance MIS
+740,RML034387,22/10/2026,13:28:46,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,6117,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+741,RML026313,22/10/2026,13:28:50,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2981,Rashmi Metaliks ltd,P,05:57,14:27,within reported interval,
+742,RGH032704,22/10/2026,13:28:52,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1127,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:49,,no complete interval,attendance MIS
+743,RML031624,22/10/2026,13:28:54,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5L4F5,4591,Rashmi Metaliks Ltd Fittings,MIS,13:18,,no complete interval,attendance MIS
+744,RML034326,22/10/2026,13:26:12,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6065,Rashmi Metaliks ltd,HLF,05:54,14:20,within reported interval,
+745,RML032817,22/10/2026,13:29:29,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5313,Rashmi Metaliks ltd,MIS,08:55,,no complete interval,attendance MIS
+746,RGH032715,22/10/2026,13:30:09,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1137,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+747,RGH033095,22/10/2026,13:30:56,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1347,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:27,,no complete interval,attendance MIS
+748,RML023632,22/10/2026,13:30:53,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2187,Rashmi Metaliks ltd,HLF,05:55,14:15,within reported interval,
+749,RML035038,22/10/2026,13:31:48,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6257,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+750,RML034186,22/10/2026,13:32:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5959,Rashmi Metaliks ltd,MIS,08:42,,no complete interval,attendance MIS
+751,RML027228,22/10/2026,13:32:34,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3419,Rashmi Metaliks ltd,HLF,06:07,14:20,within reported interval,
+752,RML031490,22/10/2026,13:33:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,4507,Rashmi Metaliks ltd,P,05:44,14:32,within reported interval,
+753,RML034227,22/10/2026,13:33:14,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,5973,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+754,RML035226,22/10/2026,13:33:18,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,6421,Rashmi Metaliks ltd,MIS,08:56,,no complete interval,attendance MIS
+755,RML033695,22/10/2026,13:33:26,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5777,Rashmi Metaliks ltd,MIS,08:54,,no complete interval,attendance MIS
+756,RML034064,22/10/2026,13:33:27,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5913,Rashmi Metaliks ltd,MIS,09:08,,no complete interval,attendance MIS
+757,RML025345,22/10/2026,13:33:46,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2747,Rashmi Metaliks ltd,MIS,13:31,,no complete interval,attendance MIS
+758,RML035385,22/10/2026,13:34:03,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6535,Rashmi Metaliks ltd,MIS,09:02,09:03,after reported out minute,attendance MIS; after reported out minute
+759,RML024580,22/10/2026,13:35:08,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2443,Rashmi Metaliks ltd,P,06:07,14:39,within reported interval,
+760,RML030650,22/10/2026,13:35:12,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,3935,Rashmi Metaliks Ltd Fittings,MIS,08:51,,no complete interval,attendance MIS
+761,RML026156,22/10/2026,13:35:17,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2929,Rashmi Metaliks ltd,MIS,13:31,,no complete interval,attendance MIS
+762,RML031651,22/10/2026,13:13:02,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4611,Rashmi Metaliks ltd,P,05:35,14:34,within reported interval,
+763,RGH033274,22/10/2026,13:13:13,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1395,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:54,,no complete interval,attendance MIS
+764,RML031228,22/10/2026,13:13:21,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4313,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+765,RML033491,22/10/2026,13:14:24,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,5699,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:33,,no complete interval,attendance MIS
+766,RML031248,22/10/2026,13:14:37,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,4345,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:30,within reported interval,
+767,RGH032788,22/10/2026,13:14:55,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1183,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:34,,no complete interval,attendance MIS
+768,RML033871,22/10/2026,13:36:27,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5855,Rashmi Metaliks ltd,MIS,08:41,,no complete interval,attendance MIS
+769,RML032129,22/10/2026,13:15:26,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4889,Rashmi Metaliks ltd,MIS,08:48,,no complete interval,attendance MIS
+770,RGH032930,22/10/2026,13:17:11,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1265,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:57,,no complete interval,attendance MIS
+771,RML033838,22/10/2026,13:36:37,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5835,Rashmi Metaliks ltd,MIS,08:50,,no complete interval,attendance MIS
+772,RGH033291,22/10/2026,13:18:10,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1411,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:47,,no complete interval,attendance MIS
+773,RML031705,22/10/2026,13:18:58,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4651,Rashmi Metaliks ltd,MIS,14:30,,no complete interval,attendance MIS
+774,RML031762,22/10/2026,13:20:32,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4685,Rashmi Metaliks ltd,MIS,09:06,,no complete interval,attendance MIS
+775,RGH033286,22/10/2026,13:22:45,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1403,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:41,,no complete interval,attendance MIS
+776,RML031656,22/10/2026,13:22:54,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4615,Rashmi Metaliks ltd,MIS,08:46,,no complete interval,attendance MIS
+777,RML031647,22/10/2026,13:23:16,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4603,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+778,RML034284,22/10/2026,13:37:06,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6027,Rashmi Metaliks ltd,MIS,14:30,,no complete interval,attendance MIS
+779,RML031452,22/10/2026,13:24:17,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4477,Rashmi Metaliks ltd,MIS,12:10,,no complete interval,attendance MIS
+780,RML031774,22/10/2026,13:26:50,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4689,Rashmi Metaliks ltd,MIS,08:39,,no complete interval,attendance MIS
+781,RGH033392,22/10/2026,13:31:18,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1489,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:27,,no complete interval,attendance MIS
+782,RGH033414,22/10/2026,13:31:32,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1497,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:28,,no complete interval,attendance MIS
+783,RGH033460,22/10/2026,13:32:13,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1517,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:53,14:37,within reported interval,
+784,RGH032862,22/10/2026,13:32:22,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1227,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,14:37,,no complete interval,attendance MIS
+785,RML032691,22/10/2026,13:33:01,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5213,Rashmi Metaliks ltd,MIS,08:46,,no complete interval,attendance MIS
+786,RML031894,22/10/2026,13:33:12,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4761,Rashmi Metaliks ltd,P,05:55,14:43,within reported interval,
+787,RML023737,22/10/2026,13:33:26,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,2217,Rashmi Metaliks ltd,MIS,14:03,,no complete interval,attendance MIS
+788,RML031332,22/10/2026,13:33:42,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5HHBX,4405,Rashmi Metaliks Ltd Fittings,MIS,13:24,,no complete interval,attendance MIS
+789,RML033171,22/10/2026,13:34:02,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5557,Rashmi Metaliks ltd,MIS,09:34,,no complete interval,attendance MIS
+790,RML030180,22/10/2026,13:38:11,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,3615,Rashmi Metaliks ltd,HLF,05:53,14:02,within reported interval,
+791,RML033561,22/10/2026,13:35:19,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,5721,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:32,,no complete interval,attendance MIS
+792,RML031621,22/10/2026,13:35:28,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4589,Rashmi Metaliks ltd,MIS,14:35,,no complete interval,attendance MIS
+793,RML030650,22/10/2026,13:35:42,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5HHBX,3935,Rashmi Metaliks Ltd Fittings,MIS,08:51,,no complete interval,attendance MIS
+794,RGH033078,22/10/2026,13:35:56,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1335,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:32,,no complete interval,attendance MIS
+795,RGH033615,22/10/2026,13:36:43,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,1651,Rashmi Metaliks ltd,MIS,08:52,,no complete interval,attendance MIS
+796,RML031686,22/10/2026,13:01:20,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4635,Rashmi Metaliks ltd,P,05:50,14:29,within reported interval,
+797,RPL002393,22/10/2026,13:00:10,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5HHBX,6873,Rashmi 6 Paradigm Limited,MIS,14:03,,no complete interval,attendance MIS
+798,RML031190,22/10/2026,12:58:30,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4275,Rashmi Metaliks ltd,MIS,08:42,08:42,after reported out minute,attendance MIS; after reported out minute
+799,RML031267,22/10/2026,12:57:57,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4367,Rashmi Metaliks ltd,MIS,08:56,,no complete interval,attendance MIS
+800,RML030734,22/10/2026,13:39:02,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,4005,Rashmi Metaliks ltd,MIS,09:08,,no complete interval,attendance MIS
+801,RGH033004,22/10/2026,13:39:07,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1311,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+802,RML030324,22/10/2026,13:39:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,3709,Rashmi Metaliks ltd,A,08:58,09:03,after reported out minute,attendance A; after reported out minute
+803,RML032077,22/10/2026,13:39:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,4859,Rashmi Metaliks ltd,HLF,05:55,14:17,within reported interval,
+804,RGH033395,22/10/2026,13:39:29,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L318,1491,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:55,,no complete interval,attendance MIS
+805,RML033428,22/10/2026,13:41:09,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5667,Rashmi Metaliks ltd,MIS,13:37,,no complete interval,attendance MIS
+806,RGH033342,22/10/2026,13:41:22,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1455,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:37,,no complete interval,attendance MIS
+807,RML032135,22/10/2026,13:42:12,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,4893,Rashmi Metaliks ltd,MIS,08:54,,no complete interval,attendance MIS
+808,RML026769,22/10/2026,13:42:17,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,3173,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+809,RML032803,22/10/2026,13:42:18,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5299,Rashmi Metaliks ltd,MIS,08:47,,no complete interval,attendance MIS
+810,RML025007,22/10/2026,13:42:42,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2615,Rashmi Metaliks ltd,HLF,05:52,14:06,within reported interval,
+811,RML034527,22/10/2026,13:42:41,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6185,Rashmi Metaliks ltd,MIS,13:40,,no complete interval,attendance MIS
+812,RML025043,22/10/2026,13:43:09,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2639,Rashmi Metaliks ltd,MIS,05:56,05:56,after reported out minute,attendance MIS; after reported out minute
+813,RML033479,22/10/2026,13:43:20,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,5693,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+814,RGH032922,22/10/2026,13:43:37,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1263,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:04,,no complete interval,attendance MIS
+815,RML030318,22/10/2026,13:44:00,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3703,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+816,RML031443,22/10/2026,13:44:05,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4467,Rashmi Metaliks ltd,MIS,08:46,,no complete interval,attendance MIS
+817,RML025006,22/10/2026,13:44:24,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2613,Rashmi Metaliks ltd,HLF,05:52,14:05,within reported interval,
+818,RML023269,22/10/2026,13:44:32,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2123,Rashmi Metaliks ltd,HLF,05:51,14:03,within reported interval,
+819,RGH033299,22/10/2026,13:45:10,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1421,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+820,RGH032693,22/10/2026,13:45:58,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1111,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:53,14:36,within reported interval,
+821,RML033309,22/10/2026,13:46:37,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L099,5633,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,14:04,,no complete interval,attendance MIS
+822,RGH033053,22/10/2026,13:47:08,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5LG39,1325,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+823,RGH033496,22/10/2026,13:47:29,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1535,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:43,,no complete interval,attendance MIS
+824,RGH033611,22/10/2026,13:47:32,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1643,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:37,,no complete interval,attendance MIS
+825,RGH033610,22/10/2026,13:47:45,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1641,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:37,,no complete interval,attendance MIS
+826,RML033625,22/10/2026,13:47:49,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5749,Rashmi Metaliks ltd,MIS,09:08,,no complete interval,attendance MIS
+827,RGH032265,22/10/2026,13:49:03,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L099,1065,Rashmi Metaliks ltd,MIS,08:52,,no complete interval,attendance MIS
+828,RML026622,22/10/2026,13:49:07,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3101,Rashmi Metaliks ltd,MIS,13:45,,no complete interval,attendance MIS
+829,RML034256,22/10/2026,13:49:31,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6009,Rashmi Metaliks ltd,MIS,13:47,13:47,after reported out minute,attendance MIS; after reported out minute
+830,RML023250,22/10/2026,13:50:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2113,Rashmi Metaliks ltd,HLF,05:58,14:21,within reported interval,
+831,RML032785,22/10/2026,13:50:40,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,5275,Rashmi Metaliks ltd,MIS,13:48,,no complete interval,attendance MIS
+832,RML032907,22/10/2026,13:50:46,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,5383,Rashmi Metaliks ltd,MIS,13:49,,no complete interval,attendance MIS
+833,RML034069,22/10/2026,13:50:48,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5GEDS,5917,Rashmi 6 Paradigm Limited,MIS,14:09,,no complete interval,attendance MIS
+834,RML025202,22/10/2026,13:52:06,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,2697,Rashmi Metaliks ltd,MIS,09:02,,no complete interval,attendance MIS
+835,RGH033320,22/10/2026,13:52:11,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1431,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:49,,no complete interval,attendance MIS
+836,RGH032883,22/10/2026,13:52:43,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1239,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:51,,no complete interval,attendance MIS
+837,RML023214,22/10/2026,13:53:44,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,2105,Rashmi Metaliks ltd,MIS,13:50,,no complete interval,attendance MIS
+838,RML026864,22/10/2026,13:54:19,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,3219,Rashmi Metaliks ltd,MIS,13:50,,no complete interval,attendance MIS
+839,RPL002336,22/10/2026,13:54:31,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5GEDS,6845,Rashmi 6 Paradigm Limited,MIS,08:53,,no complete interval,attendance MIS
+840,RML030435,22/10/2026,13:54:59,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5L318,3793,Rashmi Metaliks Ltd Fittings,MIS,09:00,,no complete interval,attendance MIS
+841,RGH032880,22/10/2026,13:55:20,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1237,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,13:50,,no complete interval,attendance MIS
+842,RGH033549,22/10/2026,13:55:33,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1575,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:53,14:30,within reported interval,
+843,RML000773,22/10/2026,13:55:43,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,1813,Rashmi Metaliks ltd,MIS,13:52,,no complete interval,attendance MIS
+844,RGH032722,22/10/2026,13:56:26,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1145,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+845,RML034073,22/10/2026,13:57:27,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5921,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+846,RML024623,22/10/2026,13:58:40,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2459,Rashmi Metaliks ltd,MIS,13:55,,no complete interval,attendance MIS
+847,RML031490,22/10/2026,13:59:28,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4507,Rashmi Metaliks ltd,P,05:44,14:32,within reported interval,
+848,RML031803,22/10/2026,13:59:50,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,4725,Rashmi Metaliks ltd,MIS,13:45,,no complete interval,attendance MIS
+849,RGH033297,22/10/2026,14:00:05,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1419,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,14:33,,no complete interval,attendance MIS
+850,RML034378,22/10/2026,14:01:29,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,6113,Rashmi Metaliks ltd,MIS,13:49,,no complete interval,attendance MIS
+851,RML024888,22/10/2026,14:01:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2575,Rashmi Metaliks ltd,MIS,08:54,,no complete interval,attendance MIS
+852,RML031506,22/10/2026,14:01:47,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L318,4517,Rashmi Metaliks ltd,P,05:50,14:30,within reported interval,
+853,RML026267,22/10/2026,14:01:58,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2969,Rashmi Metaliks ltd,MIS,13:46,13:46,after reported out minute,attendance MIS; after reported out minute
+854,RGH032713,22/10/2026,14:02:53,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1135,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:50,14:29,within reported interval,
+855,RGH032635,22/10/2026,14:03:04,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1083,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,14:41,,no complete interval,attendance MIS
+856,RML024889,22/10/2026,14:03:20,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2577,Rashmi Metaliks ltd,MIS,08:54,,no complete interval,attendance MIS
+857,RML025306,22/10/2026,14:03:30,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,2737,Rashmi Metaliks ltd,MIS,13:39,,no complete interval,attendance MIS
+858,RGH033454,22/10/2026,14:04:05,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1513,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:42,14:41,within reported interval,
+859,RML033556,22/10/2026,14:05:05,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5719,Rashmi Metaliks ltd,P,05:57,14:35,within reported interval,
+860,RGH033128,22/10/2026,14:05:11,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1351,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:46,14:36,within reported interval,
+861,RGH033483,22/10/2026,14:05:17,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5L4F5,1525,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+862,RGH033391,22/10/2026,14:07:13,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1487,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,14:32,,no complete interval,attendance MIS
+863,RML030339,22/10/2026,14:07:50,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HA151K40,3719,Rashmi Metaliks ltd,MIS,14:06,,no complete interval,attendance MIS
+864,RGH033510,22/10/2026,14:07:54,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5GEDS,1545,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:54,14:32,within reported interval,
+865,RML030976,22/10/2026,14:08:32,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4145,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+866,RML033386,22/10/2026,14:08:37,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5L4F5,5653,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+867,RML031648,22/10/2026,14:08:42,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,4605,Rashmi Metaliks ltd,P,05:49,14:31,within reported interval,
+868,RPL002121,22/10/2026,14:08:49,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5GEDS,6757,Rashmi 6 Paradigm Limited,HLF,05:53,14:01,after reported out minute,after reported out minute
+869,RGH032838,22/10/2026,14:09:18,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5HHBX,1217,Rashmi 6 Paradigm Limited,HLF,05:41,14:05,after reported out minute,after reported out minute
+870,RGH032983,22/10/2026,14:10:37,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1301,Rashmi Green Hydrozen Steel Pvt Ltd,MIS,08:46,,no complete interval,attendance MIS
+871,RML033111,22/10/2026,14:11:06,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5HHBX,5527,Rashmi Metaliks ltd,MIS,13:54,,no complete interval,attendance MIS
+872,RGH033319,22/10/2026,14:11:43,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1429,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:49,14:30,within reported interval,
+873,RML035291,22/10/2026,14:12:17,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6471,Rashmi Metaliks ltd,MIS,14:07,,no complete interval,attendance MIS
+874,RGH032759,22/10/2026,14:14:36,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1161,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:56,14:39,within reported interval,
+875,RGH032842,22/10/2026,14:16:14,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1219,Rashmi Green Hydrozen Steel Pvt Ltd,P,05:45,14:35,within reported interval,
+876,RML031382,22/10/2026,14:17:09,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5LG39,4433,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+877,RML032804,22/10/2026,14:18:25,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5LG39,5301,Rashmi 6 Paradigm Limited,HLF,05:53,14:11,after reported out minute,after reported out minute
+878,RGH032838,22/10/2026,14:19:56,LUNCH,1.0,55.0,1.0,Rashmi 6 Paradigm Limited,HGR5GEDS,1217,Rashmi 6 Paradigm Limited,HLF,05:41,14:05,after reported out minute,after reported out minute
+879,RML032963,22/10/2026,14:31:34,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,5429,Rashmi Metaliks ltd,A,,,no complete interval,attendance A
+880,RML035480,22/10/2026,14:33:15,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,6637,Rashmi Metaliks Ltd Fittings,MIS,08:50,,no complete interval,attendance MIS
+881,RML035476,22/10/2026,14:33:29,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6629,Rashmi Metaliks ltd,MIS,08:36,,no complete interval,attendance MIS
+882,RML035477,22/10/2026,14:33:39,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6631,Rashmi Metaliks ltd,MIS,08:50,,no complete interval,attendance MIS
+883,RML035481,22/10/2026,14:33:46,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,6639,Rashmi Metaliks Ltd Fittings,MIS,08:50,,no complete interval,attendance MIS
+884,RGH032762,22/10/2026,14:41:45,LUNCH,1.0,55.0,1.0,Rashmi Green Hydrozen Steel Pvt Ltd,HGR5HHBX,1165,Rashmi Green Hydrozen Steel Pvt Ltd,A,,,no complete interval,attendance A
+885,RML035494,22/10/2026,14:47:51,LUNCH,1.0,55.0,1.0,Rashmi Metaliks ltd,HGR5GEDS,6663,Rashmi Metaliks ltd,MIS,08:50,,no complete interval,attendance MIS
+886,RML035515,22/10/2026,14:48:04,LUNCH,1.0,55.0,1.0,Rashmi Metaliks Ltd Fittings,HGR5GEDS,6701,Rashmi Metaliks Ltd Fittings,MIS,08:55,,no complete interval,attendance MIS

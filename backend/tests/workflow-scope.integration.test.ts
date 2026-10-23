@@ -160,7 +160,7 @@ describe.skipIf(!url)('WF-01 scoped approvers against native PostgreSQL', () => 
       .where('request_id', '=', request.workflowRequestId).execute();
     await db.deleteFrom('core.user_roles').where('user_id', '=', insideUser).where('role_id', '=', roleId).execute();
     try {
-      await expect(resolveApprover(db, `role:${roleCode}`, subjectId, 'od')).rejects.toThrow(/No authorized approver/);
+      await expect(resolveApprover(db, `role:${roleCode}`, subjectId, 'od')).resolves.toBeNull();
       const queue = await (await httpRequest(app)).get('/api/workflows/inbox').set('Authorization', `Bearer ${insideToken}`);
       expectHttpStatus(queue, 200);
       expect((queue.body as { requestId: number }[]).some(row => row.requestId === request.workflowRequestId)).toBe(false);

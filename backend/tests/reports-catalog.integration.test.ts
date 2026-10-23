@@ -42,14 +42,14 @@ import {
 } from '../src/modules/reports/dashboard.service.js';
 import { setSetting } from '../src/modules/settings/index.js';
 
-const DB_URL = process.env['DATABASE_URL'] ?? 'postgres://anooppratapsingh@localhost:5432/hrms';
+const DB_URL = process.env['DATABASE_URL'];
 
-describe('Reports Catalog & KPI Snapshot Suite (Live Postgres)', () => {
+describe.skipIf(!DB_URL)('Reports Catalog & KPI Snapshot Suite (Live Postgres)', () => {
   let db: Kysely<Database>;
   let companyId: number;
 
   beforeAll(async () => {
-    db = createDatabase(DB_URL);
+    db = createDatabase(DB_URL ?? '');
     const company = await db
       .selectFrom('core.companies')
       .select('id')

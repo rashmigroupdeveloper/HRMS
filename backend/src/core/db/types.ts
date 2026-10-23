@@ -2007,6 +2007,14 @@ export interface TeTripsTable {
   destination_country: ColumnType<string, string | undefined, string>;
   destination_region: ColumnType<'domestic' | 'sea' | 'africa' | 'middle_east' | 'europe' | 'americas' | 'other', string | undefined, string>;
   destination_city: string;
+  travel_month: ColumnType<string | null, string | null | undefined, string | null>;
+  origin_city: ColumnType<string | null, string | null | undefined, string | null>;
+  airfare_paise: ColumnType<number, number | undefined, number>;
+  hotel_per_night_paise: ColumnType<number, number | undefined, number>;
+  hotel_nights: ColumnType<number, number | undefined, number>;
+  daily_allowance_per_day_paise: ColumnType<number, number | undefined, number>;
+  visa_cost_paise: ColumnType<number, number | undefined, number>;
+  over_limit_justification: ColumnType<string | null, string | null | undefined, string | null>;
   start_date: ColumnType<Date, Date | string, Date | string>;
   end_date: ColumnType<Date, Date | string, Date | string>;
   visa_required: ColumnType<boolean, boolean | undefined, boolean>;

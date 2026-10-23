@@ -15,7 +15,6 @@
  *    in one transaction, then the LC-07 exit-day cascade.
  */
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
-import { loadCycleStartDay, periodMonthOf } from '../../../core/db/attendance-cycle.js';
 import type { Database, SeparationsTable } from '../../../core/db/types.js';
 import { addDaysIso, formatDbDate, istDateString } from '../../../core/dates.js';
 import { writeAudit } from '../../../core/audit/audit.service.js';
@@ -353,15 +352,17 @@ export class SeparationService {
     tdsRupees?: number | undefined;
     userId?: number | undefined;
   }): Promise<FnfSettlementCalculation> {
-    const separation = await this.db.selectFrom('core.separations').selectAll().where('id', '=', params.separationId).executeTakeFirst();
+    if (!this.db.isTransaction) return inTransaction(this.db, trx => new SeparationService(trx).computeFnf(params));
+    let separation = await this.db.selectFrom('core.separations').selectAll().where('id', '=', params.separationId).executeTakeFirst();
     if (!separation) throw new NotFoundError(`Separation #${String(params.separationId)} not found`);
+    const employee = await this.db.selectFrom('core.employees').selectAll().where('id', '=', separation.employee_id).forUpdate().executeTakeFirstOrThrow();
+    separation = await this.db.selectFrom('core.separations').selectAll().where('id', '=', params.separationId).forUpdate().executeTakeFirstOrThrow();
     if (separation.status !== 'approved') {
       throw new ConflictError(`Cannot compute F&F for separation in status '${separation.status}' (must be 'approved')`);
     }
-    const existingFnf = await this.db.selectFrom('pay.fnf_settlements').select(['id', 'status']).where('separation_id', '=', separation.id).executeTakeFirst();
+    const existingFnf = await this.db.selectFrom('pay.fnf_settlements').select(['id', 'status']).where('separation_id', '=', separation.id).forUpdate().executeTakeFirst();
     if (existingFnf?.status === 'paid') throw new ConflictError('F&F is already paid; it cannot be recomputed');
 
-    const employee = await this.db.selectFrom('core.employees').selectAll().where('id', '=', separation.employee_id).executeTakeFirstOrThrow();
     if (!employee.doj) throw new DomainError('Employee has no date of joining; F&F cannot be computed');
     const lwdStr = formatDbDate(separation.approved_lwd ?? separation.requested_lwd);
     const monthStart = `${lwdStr.slice(0, 7)}-01`;
@@ -372,6 +373,7 @@ export class SeparationService {
       .selectAll()
       .where('employee_id', '=', employee.id)
       .where('effective_from', '<=', sql<Date>`${lwdStr}::date`)
+      .where('effective_to', '>', sql<Date>`${lwdStr}::date`)
       .orderBy('effective_from', 'desc')
       .executeTakeFirst();
     if (!salary) throw new DomainError('Employee has no salary in force on the last working day');
@@ -392,25 +394,20 @@ export class SeparationService {
       .where('i.employee_id', '=', employee.id)
       .where('r.month', '=', sql<Date>`${monthStart}::date`)
       .where('r.status', 'in', ['computed', 'under_review', 'approved', 'finalized', 'paid'])
+      .where('i.payment_status', '!=', 'hold_process')
       .executeTakeFirst();
     const daysInMonth = new Date(Date.UTC(Number(lwdStr.slice(0, 4)), Number(lwdStr.slice(5, 7)), 0)).getUTCDate();
     let daysPayable: number;
     if (paidInRun) {
       daysPayable = 0;
-    } else if (params.daysPayable !== undefined) {
-      daysPayable = params.daysPayable;
     } else {
-      // C-17: the lock covering the LWD is the payroll month of its attendance cycle.
-      const lockMonth = periodMonthOf(lwdStr, await loadCycleStartDay(this.db));
-      const lock = await this.db
-        .selectFrom('att.month_locks')
-        .select('id')
-        .where('company_id', '=', employee.company_id)
-        .where('month', '=', sql<Date>`${lockMonth}::date`)
-        .executeTakeFirst();
+      // Final partial-period days may be frozen independently of month close.
+      // Missing/unlocked attendance is never replaced by assumed presence.
       const from = formatDbDate(employee.doj) > monthStart ? formatDbDate(employee.doj) : monthStart;
-      daysPayable = lock ? await readLockedPayableDays(this.db, employee.id, from, addDaysIso(lwdStr, 1)) : dayDiff(from, lwdStr) + 1;
+      daysPayable = await readLockedPayableDays(this.db, employee.id, from, addDaysIso(lwdStr, 1));
     }
+    if (params.daysPayable !== undefined && params.daysPayable !== daysPayable)
+      throw new DomainError('Requested payable days must match frozen final-month attendance or the payroll run already paying it');
     if (daysPayable < 0 || daysPayable > daysInMonth) throw new DomainError('Days payable must be within the final month');
 
     // EL balance from the leave ledger unless HR overrides it.

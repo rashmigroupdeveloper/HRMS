@@ -323,7 +323,7 @@ body {
 .u-gold-sweep {
   transform: scaleX(0);
   transform-origin: left center;
-  animation: u-gold-sweep var(--motion-counter) var(--ease-out-strong) 160ms both;
+  animation: u-gold-sweep var(--motion-medium) var(--ease-out-strong) both;
 }
 @keyframes u-gold-sweep {
   from {
@@ -463,8 +463,12 @@ body {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: 150ms !important;
     animation-iteration-count: 1 !important;
+    transition-duration: 150ms !important;
+  }
+  .u-stagger > * {
+    animation-delay: 0ms !important;
   }
 }
 

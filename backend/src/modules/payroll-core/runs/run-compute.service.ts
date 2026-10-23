@@ -141,6 +141,15 @@ export async function computeLockedRun(
   await trx.deleteFrom('pay.payroll_items').where('run_id', '=', runId).execute();
   await trx.deleteFrom('pay.recovery_carry_forwards').where('from_run_id', '=', runId).execute();
 
+  // A provisional short-recovery is not a settled debt. Keep earlier settled
+  // origins stable until this run has claimed their balances; reopen takes
+  // the same origin-before-carry lock order.
+  const recoveryOrigins = await trx.selectFrom('pay.payroll_runs').select('id')
+    .where('company_id', '=', run.company_id).where('status', 'in', ['finalized', 'paid'])
+    .where('month', '<', sql<Date>`${monthStr}::date`).orderBy('month', 'desc').orderBy('id')
+    .forShare().execute();
+  const recoveryOriginIds = recoveryOrigins.map(origin => origin.id);
+
   let totalGrossPaise = paise(0);
   let totalNetPaise = paise(0);
   let totalEmployerPaise = paise(0);
@@ -237,18 +246,19 @@ export async function computeLockedRun(
         source: { kind: 'loan', loanId: l.id },
       };
     });
-    const carried = await trx
+    const carried = recoveryOriginIds.length === 0 ? [] : await trx
       .selectFrom('pay.recovery_carry_forwards')
       .selectAll()
       .where('employee_id', '=', emp.id)
       .where('consumed_run_id', 'is', null)
-      .where('from_run_id', '!=', runId)
+      .where('from_run_id', 'in', recoveryOriginIds)
+      .orderBy('id').forUpdate()
       .execute();
     for (const c of carried) {
       recoveries.push({ componentCode: c.component_code, amountPaise: parseRupees(c.amount), note: `Carried forward: ${c.note}`, source: { kind: 'carry_forward', carryId: c.id } });
     }
 
-    const apprentice = emp.contract_type === 'apprentice' || isApprentice(emp.category ?? '', emp.contract_type ?? '');
+    const apprentice = isApprentice(emp.category ?? '', emp.contract_type ?? '');
     const stateCode = emp.state_code ?? 'WB';
     const ptSlabs = ptByState.get(stateCode) ?? [];
 

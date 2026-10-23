@@ -8,7 +8,8 @@ import { z } from 'zod';
 import { ForbiddenError } from '../../../core/errors/index.js';
 import { withPermission } from '../../../api/orpc.js';
 import { employeeScopeSql } from '../../../core/rbac/employee-scope.js';
-import { requireRunInScope } from '../../../core/rbac/company-scope.js';
+import { requireCompanyInScope, requireRunInScope } from '../../../core/rbac/company-scope.js';
+import { payrollIdentifierGaps } from '../runs/preflight.service.js';
 import {
   addRunInputs, addStatutoryRate, listGlAccounts, listPtSlabs, listRunInputs, listStatutoryRates,
   parseInputsCsv, removeRunInput, setPtSlabs, upsertGlAccount, STATUTORY_PARAMS,
@@ -23,6 +24,18 @@ function requireGroupScope(access: { all: boolean }): void {
 }
 
 export const payrollConfigRouter = {
+  preflight: withPermission('payroll.run.view', 'read')
+    .route({ method: 'GET', path: '/payroll/preflight', summary: 'Employees missing PAN, UAN, ESIC or bank details before compute (REQ-012)' })
+    .input(z.object({ companyId: z.coerce.number().int().positive() }))
+    .output(z.object({
+      gaps: z.array(z.object({ employeeId: z.number(), ecode: z.string(), name: z.string(), missing: z.array(z.string()) })),
+    }))
+    .handler(async ({ input, context }) => {
+      await requireCompanyInScope(context, input.companyId);
+      const gaps = await payrollIdentifierGaps(context.db, input.companyId);
+      return { gaps: gaps.slice(0, 200) };
+    }),
+
   statutoryParams: withPermission('payroll.run.view', 'read')
     .route({ method: 'GET', path: '/payroll/config/statutory-params', summary: 'Statutory parameters the engine reads, by scheme' })
     .output(z.record(z.string(), z.array(z.string())))

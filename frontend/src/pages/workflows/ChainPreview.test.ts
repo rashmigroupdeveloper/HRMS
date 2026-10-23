@@ -48,4 +48,22 @@ describe('chain preview strip (SHF-16)', () => {
     ]);
     expect(timeline[0]?.description).toContain('Priya Sen');
   });
+
+  it('holds an all-vacant chain for HR instead of skipping it into an approval', () => {
+    const timeline = stepsToTimeline([
+      {
+        step: 1,
+        approverSpec: 'reporting_manager',
+        slaHours: 48,
+        vacant: true,
+        userId: null,
+        displayName: null,
+        delegatedFromUserId: null,
+        delegatedFromName: null,
+      },
+    ]);
+    expect(timeline[0]?.title).toBe('Reporting manager cannot approve yet');
+    expect(timeline[0]?.timestamp).toBe('Held for HR');
+    expect(timeline[0]?.description).toContain('pay stay unchanged');
+  });
 });

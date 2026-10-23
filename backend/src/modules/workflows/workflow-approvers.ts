@@ -63,9 +63,8 @@ export async function resolveApprover(
       .orderBy('u.id');
     const user = await candidates.where(workflowRoleSql(sql.ref<number>('u.id'), spec, definitionCode, subjectEmployeeId))
       .executeTakeFirst();
-    if (!user && await candidates.executeTakeFirst()) {
-      throw new Error('No authorized approver in this role for the employee scope — contact HR');
-    }
+    // Holders who cannot act on this employee are vacant. A later step may
+    // take the request; an all-vacant round is held for HR (WF-01).
     userId = user?.id ?? null;
   } else if (spec.startsWith('user:')) {
     const explicit = Number(spec.slice('user:'.length));
@@ -93,7 +92,9 @@ export async function resolveApprover(
 
   const authorized = await db.selectFrom('core.users').select('id').where('id', '=', userId)
     .where(workflowPermissionSql(userId, definitionCode, subjectEmployeeId)).executeTakeFirst();
-  if (!authorized) throw new Error('Configured approver has no current permission for this employee — contact HR');
+  // Onboarding, a revoked role, or a scope miss: the person is named but cannot
+  // decide. Vacant — not an error the employee has to retry (WF-01, 16 Oct 2026).
+  if (!authorized) return null;
 
   // Out-of-office delegation (WF-01): active IST-calendar window today.
   const today = istDateString();

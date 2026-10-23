@@ -74,7 +74,9 @@ const finalizationHoldsProcedure = withPermission('reports.hr')
         employeeName: z.string(),
         workDate: isoDate,
         shiftEndAt: z.string().nullable(),
+        finalizeAfterAt: z.string().nullable(),
         reason: z.enum([
+          'day_cutoff_pending',
           'location_not_mapped',
           'no_active_devices',
           'device_watermark_pending',

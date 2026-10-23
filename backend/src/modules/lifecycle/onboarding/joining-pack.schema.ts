@@ -1,7 +1,7 @@
 /** LC-01 / REQ-002..008: joining grids shared by the portal and the HR walk-in form. */
 import { z } from 'zod';
 
-export const SCHEMES = ['pf', 'eps', 'gratuity', 'esic', 'gpa', 'gmc', 'gtli'] as const;
+const SCHEMES = ['pf', 'eps', 'gratuity', 'esic', 'gpa', 'gmc', 'gtli'] as const;
 
 export const addressSchema = z.object({
   house: z.string().trim().min(1).max(120),
@@ -40,7 +40,7 @@ export const joiningDocumentSchema = z.object({
   content: z.string().min(8).max(2_000_000),
 });
 
-export const joiningPackObjectSchema = z.object({
+const joiningPackObjectSchema = z.object({
   gender: z.enum(['Male', 'Female', 'Transgender']).optional(),
   fatherName: z.string().trim().max(120).optional(),
   present: addressSchema.optional(),

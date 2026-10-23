@@ -1,0 +1,71 @@
+- link "Skip to content":
+  - /url: "#main"
+- banner:
+  - link "Rashmi HRMS home":
+    - /url: /
+    - generic: R
+    - generic: Rashmi
+    - generic: HRMS home
+  - button "Search people and pages (Ctrl+K)":
+  - button "QE, account menu": QE
+- main [active]:
+  - heading "Payslips" [level=1]
+  - paragraph: Your finalized monthly payslips. Pick a month to see an older one.
+  - generic: Month
+  - textbox "Month"
+  - paragraph: Latest finalized month is shown by default
+  - button "Form 16":
+    - text: Form 16
+  - paragraph: Net pay · September 2026
+  - paragraph:
+    - generic: ₹29,350.00
+  - paragraph: Rupees Twenty-Nine Thousand Three Hundred Fifty Only
+  - term: Gross
+  - definition: ₹29,500
+  - term: Deductions
+  - definition: ₹150
+  - term: Paid days
+  - definition: 29.5 of 30 · 0.5 LOP
+  - heading "Tax · 2026-27" [level=2]
+  - paragraph: New tax regime
+  - link "Open declaration":
+    - /url: /my/tax
+  - heading "QA216002750 Synthetic QA — September 2026" [level=2]
+  - paragraph: QA employee (QA216002750EMPLOYEE)
+  - button "Print / PDF":
+    - text: Print / PDF
+  - button "Download":
+    - text: Download
+  - region "Earnings":
+    - heading "Earnings" [level=3]:
+      - text: Earnings
+    - list:
+      - text: Basic Salary
+      - generic: "Prorated: ₹30000.00 × 29.5/30 days (0.5 LOP days)"
+      - generic: ₹29,500
+  - region "Deductions":
+    - heading "Deductions" [level=3]:
+      - text: Deductions
+    - list:
+      - text: Professional Tax
+      - generic: WB professional tax
+      - generic: ₹150
+  - paragraph: PAN — · UAN — · Bank 12••••••9012
+- navigation "Daily":
+  - list:
+    - link "Home":
+      - /url: /
+      - generic: Home
+    - link "Directory":
+      - /url: /people
+      - generic: Directory
+    - button "Quick actions":
+    - link "Punch":
+      - /url: /my/attendance
+      - generic: Punch
+    - link "Leave":
+      - /url: /my/leave
+      - generic: Leave
+    - button "More":
+      - text: More
+- region "Notifications alt+T"

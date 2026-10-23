@@ -1,0 +1,203 @@
+- link "Skip to content":
+  - /url: "#main"
+- banner:
+  - link "Rashmi HRMS home":
+    - /url: /
+    - generic: R
+    - generic: Rashmi
+    - generic: HRMS home
+  - button "Search people and pages (Ctrl+K)":
+  - button "QM, account menu": QM
+- main:
+  - heading "My attendance" [level=1]
+  - paragraph: Processed Kent swipes land here as the month unfolds — nothing is waiting until a day is posted.
+  - button "Request a correction":
+    - text: Request a correction
+  - generic: Present
+  - generic: "0"
+  - generic: Need a look
+  - generic: "0"
+  - generic: Half-days
+  - generic: "0"
+  - generic: Requests
+  - generic: "0"
+  - heading "2026 holidays" [level=2]
+  - paragraph: These days are already off — you do not apply leave for them.
+  - paragraph: No further holidays this year.
+  - generic "Already observed · 1"
+  - heading "October 2026" [level=2]
+  - paragraph: 0 full days · 0 half-days · 0 processed
+  - button "Previous month":
+  - button "Next month":
+  - generic: Mo
+  - generic: Tu
+  - generic: We
+  - generic: Th
+  - generic: Fr
+  - generic: Sa
+  - generic: Su
+  - grid "October 2026":
+    - row "1 October 2026 2 October 2026 3 October 2026 4 October 2026":
+      - gridcell
+      - gridcell
+      - gridcell
+      - gridcell "1 October 2026":
+        - button "1 October 2026":
+          - generic: "1"
+      - gridcell "2 October 2026":
+        - button "2 October 2026":
+          - generic: "2"
+      - gridcell "3 October 2026":
+        - button "3 October 2026":
+          - generic: "3"
+      - gridcell "4 October 2026":
+        - button "4 October 2026":
+          - generic: "4"
+    - row "5 October 2026 6 October 2026 7 October 2026 8 October 2026 9 October 2026 10 October 2026 11 October 2026":
+      - gridcell "5 October 2026":
+        - button "5 October 2026":
+          - generic: "5"
+      - gridcell "6 October 2026":
+        - button "6 October 2026":
+          - generic: "6"
+      - gridcell "7 October 2026":
+        - button "7 October 2026":
+          - generic: "7"
+      - gridcell "8 October 2026":
+        - button "8 October 2026":
+          - generic: "8"
+      - gridcell "9 October 2026":
+        - button "9 October 2026":
+          - generic: "9"
+      - gridcell "10 October 2026":
+        - button "10 October 2026":
+          - generic: "10"
+      - gridcell "11 October 2026":
+        - button "11 October 2026":
+          - generic: "11"
+    - row "12 October 2026 13 October 2026 14 October 2026 15 October 2026 16 October 2026 17 October 2026 18 October 2026":
+      - gridcell "12 October 2026":
+        - button "12 October 2026":
+          - generic: "12"
+      - gridcell "13 October 2026":
+        - button "13 October 2026":
+          - generic: "13"
+      - gridcell "14 October 2026":
+        - button "14 October 2026":
+          - generic: "14"
+      - gridcell "15 October 2026":
+        - button "15 October 2026":
+          - generic: "15"
+      - gridcell "16 October 2026":
+        - button "16 October 2026":
+          - generic: "16"
+      - gridcell "17 October 2026":
+        - button "17 October 2026":
+          - generic: "17"
+      - gridcell "18 October 2026":
+        - button "18 October 2026":
+          - generic: "18"
+    - row "19 October 2026 20 October 2026 21 October 2026 22 October 2026 23 October 2026 24 October 2026 25 October 2026":
+      - gridcell "19 October 2026":
+        - button "19 October 2026":
+          - generic: "19"
+      - gridcell "20 October 2026":
+        - button "20 October 2026":
+          - generic: "20"
+      - gridcell "21 October 2026":
+        - button "21 October 2026":
+          - generic: "21"
+      - gridcell "22 October 2026":
+        - button "22 October 2026":
+          - generic: "22"
+      - gridcell "23 October 2026":
+        - button "23 October 2026":
+          - generic: "23"
+      - gridcell "24 October 2026":
+        - button "24 October 2026":
+          - generic: "24"
+      - gridcell "25 October 2026":
+        - button "25 October 2026":
+          - generic: "25"
+    - row "26 October 2026 27 October 2026 28 October 2026 29 October 2026 30 October 2026 31 October 2026":
+      - gridcell "26 October 2026":
+        - button "26 October 2026":
+          - generic: "26"
+      - gridcell "27 October 2026":
+        - button "27 October 2026":
+          - generic: "27"
+      - gridcell "28 October 2026":
+        - button "28 October 2026":
+          - generic: "28"
+      - gridcell "29 October 2026":
+        - button "29 October 2026":
+          - generic: "29"
+      - gridcell "30 October 2026":
+        - button "30 October 2026":
+          - generic: "30"
+      - gridcell "31 October 2026":
+        - button "31 October 2026":
+          - generic: "31"
+      - gridcell
+  - paragraph: Bars name leave, holidays and official duty. A blank day has no posted attendance yet.
+  - paragraph: This day
+  - paragraph: Pick a calendar day to see its attendance and swipes. Today is highlighted on the month.
+  - heading "Requests you have already sent" [level=2]
+  - paragraph: Regularisation, official duty and short permission
+  - paragraph: No corrections in flight
+  - paragraph: A blank day is not an absence. Send a correction after a day is posted and the swipe does not match the day you worked.
+  - button "Request a correction"
+  - heading "Overtime already detected" [level=2]
+  - paragraph: Claimed minutes against the 48-hour window
+  - paragraph: No overtime on this record yet
+  - paragraph: Extra minutes appear here after attendance is processed. Nothing to claim until a day runs long.
+- navigation "Daily":
+  - list:
+    - link "Home":
+      - /url: /
+      - generic: Home
+    - link "Inbox":
+      - /url: /approvals
+      - generic: Inbox
+    - button "Quick actions":
+    - link "Directory":
+      - /url: /people
+      - generic: Directory
+    - link "Reports":
+      - /url: /reports
+      - generic: Reports
+    - button "More":
+      - text: More
+- region "Notifications alt+T"
+- dialog "Request regularisation":
+  - button "Close panel"
+  - heading "Request regularisation" [level=2]
+  - paragraph: Correct a day so the muster matches when you were actually at work.
+  - button "Close":
+  - generic: What do you need?
+  - combobox "What do you need?":
+    - generic: Attendance regularisation
+  - generic: From date*
+  - button "From date":
+    - generic: 21 Oct 2026
+  - generic: To date*
+  - button "To date":
+    - generic: 21 Oct 2026
+  - generic: Which part of each day?
+  - combobox "Which part of each day?":
+    - generic: Whole day
+  - paragraph: General 09:00–18:00
+  - paragraph: Whole day · 09:00 – 18:00 IST
+  - paragraph: Assigned shift timings for 21 Oct 2026.
+  - paragraph: You are requesting 1 day
+  - paragraph: 21 Oct 2026 · No attendance is posted for these dates yet, so they are not absences. Send this only if you were at work and the swipe will not arrive.
+  - generic: Why should this be approved?*
+  - textbox "Why should this be approved?": QA21 EMPLOYEE PRIVATE DRAFT - synthetic cross-account isolation probe
+  - paragraph: Your manager reads this — a short, specific why is enough.
+  - paragraph: Who will approve this
+  - list:
+    - generic: Reporting manager cannot approve yet
+    - generic: Held for HR
+    - paragraph: Attendance and pay stay unchanged until HR restores someone who can approve.
+  - button "Keep draft"
+  - button "Send to my manager"

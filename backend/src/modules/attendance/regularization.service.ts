@@ -15,17 +15,17 @@
  * request. Whole-day rows stay protected; approved half coverage is reapplied
  * during swipe recomputation so the other half can still become present.
  */
-import { shiftSessions } from './shift-windows.js';
+import { scheduledShiftIntervals, shiftSessions } from './shift-windows.js';
 import { z } from 'zod';
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import type { AttRegularizationsTable, Database, DayStatus } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
-import { addDaysIso, formatDbDate, istDateString } from '../../core/dates.js';
+import { addDaysIso, formatDbDate, istDateString, istDateTime } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
-import { createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
+import { createRequest, requestIsRoutingHeld, routingHeldSql, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
 import { dayPortionSchema, type DayPortion } from './half-requests.js';
 import { recomputeDay, resolveDay } from './day-status.service.js';
-import { assertApprovalSpanWritable } from '../../core/db/attendance-period.js';
+import { assertApprovalSpanWritable, recloseDecidedWeekOffs } from '../../core/db/attendance-period.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
 
@@ -58,6 +58,8 @@ export interface CreateRegularizationParams {
 }
 
 async function validateRegularization(db: Db, params: CreateRegularizationParams, excludeRequestId?: number): Promise<void> {
+  z.string().date().parse(params.fromDate); z.string().date().parse(params.toDate);
+  z.string().trim().min(5).parse(params.reason);
   if (params.fromDate > params.toDate) throw new Error('fromDate must be on or before toDate');
 
   const today = istDateString();
@@ -70,15 +72,29 @@ async function validateRegularization(db: Db, params: CreateRegularizationParams
   if (params.kind === 'AR' && params.toDate > today) {
     throw new Error('AR is for past days only — use OD for planned duty');
   }
+  if (params.kind !== 'PERMISSION' && (params.fromTime !== undefined || params.toTime !== undefined)) {
+    throw new Error('Select a full day or shift half without custom times; use short permission for custom times');
+  }
   if (params.kind === 'PERMISSION') {
     if (params.fromDate !== params.toDate) throw new Error('Permission covers exactly one day');
     if (!params.fromTime || !params.toTime) throw new Error('Permission needs from/to times');
+    z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).parse(params.fromTime);
+    z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/).parse(params.toTime);
     if (params.toTime <= params.fromTime) throw new Error('Permission toTime must be after fromTime');
     const maxHours = await getTypedSetting(db, 'att.permission_max_hours', 'number', 2);
     const [fh = 0, fm = 0] = params.fromTime.split(':').map(Number);
     const [th = 0, tm = 0] = params.toTime.split(':').map(Number);
     if (th * 60 + tm - (fh * 60 + fm) > maxHours * 60) {
       throw new Error(`Permission is capped at ${maxHours} hours`);
+    }
+    const resolved = await resolveDay(db, params.employeeId, params.fromDate);
+    if (resolved.isHoliday || resolved.isWeekOff || !resolved.shift) throw new Error('Short permission requires a configured working shift');
+    const from = istDateTime(params.fromDate, params.fromTime).getTime();
+    const until = istDateTime(params.fromDate, params.toTime).getTime();
+    const windows = scheduledShiftIntervals(resolved.shift, params.fromDate);
+    const offsets = resolved.shift.crosses_midnight ? [0, 86_400_000] : [0];
+    if (!offsets.some(offset => windows.some(window => from + offset >= window.start && until + offset <= window.end))) {
+      throw new Error('Short permission times must be inside a configured working shift session');
     }
   }
 
@@ -91,6 +107,11 @@ async function validateRegularization(db: Db, params: CreateRegularizationParams
     .where('is_locked', '=', true)
     .executeTakeFirst();
   if (locked) throw new Error('The period is locked for payroll — contact HR');
+
+  const leaveCoverage = await db.selectFrom('lv.applications').select('id').where('employee_id', '=', params.employeeId)
+    .where('status', 'in', ['pending', 'approved']).where('from_date', '<=', sql<Date>`${params.toDate}::date`)
+    .where('to_date', '>=', sql<Date>`${params.fromDate}::date`).executeTakeFirst();
+  if (leaveCoverage) throw new Error('An open or approved leave covers these dates; contact HR to reconcile attendance.');
 
   const portion = dayPortionSchema.parse(params.dayPortion ?? 'full_day');
   if (params.kind === 'PERMISSION' && portion !== 'full_day') throw new Error('Short permission uses times rather than attendance halves');
@@ -113,11 +134,7 @@ async function validateRegularization(db: Db, params: CreateRegularizationParams
     .innerJoin('wf.requests as r', 'r.id', 'reg.workflow_request_id')
     .where('reg.employee_id', '=', params.employeeId)
     .where('r.id', '!=', excludeRequestId ?? -1)
-    .where(eb => eb.or([
-      eb('r.status', 'in', ['pending', 'sent_back']),
-      eb.and([eb('r.status', '=', 'approved'), portion !== 'full_day'
-        ? eb.val(true) : eb('reg.day_portion', '!=', 'full_day')]),
-    ]))
+    .where('r.status', 'in', ['pending', 'sent_back', 'approved'])
     .$if(portion !== 'full_day', q => q.where(eb => eb.or([
       eb('reg.day_portion', '=', 'full_day'), eb('reg.day_portion', '=', portion),
     ])))
@@ -134,7 +151,7 @@ async function validateRegularization(db: Db, params: CreateRegularizationParams
 export async function createRegularization(
   db: Kysely<Database>,
   params: CreateRegularizationParams,
-): Promise<{ id: number; workflowRequestId: number }> {
+): Promise<{ id: number; workflowRequestId: number; routingHeld: boolean }> {
   await validateRegularization(db, params);
 
   let regularizationId = 0;
@@ -176,7 +193,7 @@ export async function createRegularization(
     },
   );
 
-  return { id: regularizationId, workflowRequestId };
+  return { id: regularizationId, workflowRequestId, routingHeld: await requestIsRoutingHeld(db, workflowRequestId) };
 }
 
 /**
@@ -202,9 +219,10 @@ export async function applyRegularizationOnFinal(db: Db, request: RequestRow, st
 
   const toIso = formatDbDate(reg.to_date);
   await assertApprovalSpanWritable(db, reg.employee_id, formatDbDate(reg.from_date), toIso);
+  await validateRegularization(db, { employeeId: reg.employee_id, requestedByUserId: request.requested_by,
+    kind: reg.kind, fromDate: formatDbDate(reg.from_date), toDate: toIso, reason: reg.reason, dayPortion: reg.day_portion,
+    fromTime: reg.from_time?.slice(0, 5), toTime: reg.to_time?.slice(0, 5) }, request.id);
   if (reg.day_portion !== 'full_day') {
-    await validateRegularization(db, { employeeId: reg.employee_id, requestedByUserId: request.requested_by,
-      kind: reg.kind, fromDate: formatDbDate(reg.from_date), toDate: toIso, reason: reg.reason, dayPortion: reg.day_portion }, request.id);
     await db.updateTable('att.regularizations').set({ applied: true }).where('id', '=', reg.id).execute();
     for (let iso = formatDbDate(reg.from_date); iso <= toIso; iso = addDaysIso(iso, 1)) {
       const resolved = await resolveDay(db, reg.employee_id, iso);
@@ -224,6 +242,7 @@ export async function applyRegularizationOnFinal(db: Db, request: RequestRow, st
     source: 'regularized' as const,
     computed_at: new Date(),
   };
+  const changedDays: string[] = [];
   for (let iso = formatDbDate(reg.from_date); iso <= toIso; iso = addDaysIso(iso, 1)) {
     const resolved = await resolveDay(db, reg.employee_id, iso);
     if (resolved.isHoliday || resolved.isWeekOff) continue; // leave the paid off-day intact
@@ -239,7 +258,10 @@ export async function applyRegularizationOnFinal(db: Db, request: RequestRow, st
       )
       .returning('id').executeTakeFirst();
     if (!applied) throw new Error('Attendance changed during approval — refresh and contact HR');
+    changedDays.push(iso);
   }
+  await recloseDecidedWeekOffs(db, reg.employee_id, changedDays,
+    await getTypedSetting(db, 'att.weekoff_min_worked_days', 'number', 1));
 
   await db.updateTable('att.regularizations').set({ applied: true }).where('id', '=', reg.id).execute();
   await writeAudit(db, {
@@ -251,7 +273,10 @@ export async function applyRegularizationOnFinal(db: Db, request: RequestRow, st
   });
 }
 
-export type RegularizationRow = Selectable<AttRegularizationsTable> & { workflow_status: string };
+export type RegularizationRow = Selectable<AttRegularizationsTable> & {
+  workflow_status: string;
+  routing_held: boolean;
+};
 
 /** An employee's own requests with their live workflow state (ESS list). */
 export async function listRegularizations(db: Kysely<Database>, employeeId: number): Promise<RegularizationRow[]> {
@@ -261,6 +286,7 @@ export async function listRegularizations(db: Kysely<Database>, employeeId: numb
     .where('reg.employee_id', '=', employeeId)
     .selectAll('reg')
     .select('r.status as workflow_status')
+    .select(routingHeldSql().as('routing_held'))
     .orderBy('reg.id', 'desc')
     .limit(200)
     .execute();

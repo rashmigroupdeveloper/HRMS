@@ -1,7 +1,7 @@
 /**
  * P1-T07 / doc 14 §8.5 — the PP-9 structural guarantee.
  * No automatic Absent row exists until every active door at the employee's
- * mapped location is synchronized past that employee's shift end.
+ * mapped location is synchronized through the next-morning finalization cutoff.
  */
 import 'dotenv/config';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -45,12 +45,11 @@ run('Stage 1.7 — per-device absence finalization watermark', () => {
   const doorA = `WM-A-${stamp}`;
   const doorB = `WM-B-${stamp}`;
   const source = `wm-${stamp}`;
-  // Fixed weekday (2042-06-10 is a Tuesday) — uniqueness already comes from the
-  // per-run company/employee/source, and a month-varying `-10` could land on a
-  // Sunday (→ WO, not the expected 'held'), an ~8% flake. See merge audit note.
-  const workDate = '2042-06-10';
-  const beforeShiftEnd = istDateTime(workDate, '17:59');
-  const afterShiftEnd = istDateTime(workDate, '18:01');
+  // Fixed past Tuesday: source uniqueness comes from the per-run identity.
+  // A future date cannot finalize before its real next-morning cutoff.
+  const workDate = '2026-10-06';
+  const beforeShiftEnd = istDateTime('2026-10-07', '03:59');
+  const afterShiftEnd = istDateTime('2026-10-07', '04:01');
   let companyId: number;
   let locationId: number;
   let employeeId: number;
@@ -136,7 +135,7 @@ run('Stage 1.7 — per-device absence finalization watermark', () => {
     await db.destroy();
   });
 
-  it('holds Absent until every mapped active door passes shift end', async () => {
+  it('holds Absent until every mapped active door passes the next-morning cutoff', async () => {
     await ingestOnce(
       db,
       deviceConnector([

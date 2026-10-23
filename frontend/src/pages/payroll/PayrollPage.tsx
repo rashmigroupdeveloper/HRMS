@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Banknote, Download, FileUp, Lock, Plus, RotateCcw, Search, Settings2, Trash2 } from 'lucide-react';
 import { BulkUploadDrawer } from '../imports/BulkUploadDrawer';
+import { DashboardError } from '../home/DashboardFeedback';
 import { ApiError, apiFetch } from '../../lib/api';
 import type { SessionUser } from '../../lib/session';
 import { hasPermission, hasRole } from '../../lib/session';
@@ -95,8 +96,28 @@ export function PayrollPage({ user }: { user: SessionUser }) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'hold' | 'zero' | 'lop'>('all');
   const [slip, setSlip] = useState<RegisterItem | null>(null);
+  const [identifierGaps, setIdentifierGaps] = useState<{ ecode: string; name: string; missing: string[] }[] | null>(null);
 
   const run = runs?.find((r) => r.id === selectedId) ?? null;
+
+  const preflightCompanyId = run?.companyId ?? null;
+  useEffect(() => {
+    if (preflightCompanyId === null) {
+      setIdentifierGaps(null);
+      return;
+    }
+    let cancelled = false;
+    void apiFetch<{ gaps: { ecode: string; name: string; missing: string[] }[] }>(`/api/payroll/preflight?companyId=${String(preflightCompanyId)}`)
+      .then((result) => {
+        if (!cancelled) setIdentifierGaps(result.gaps);
+      })
+      .catch(() => {
+        if (!cancelled) setIdentifierGaps(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [preflightCompanyId]);
   const company = companies.find((c) => c.id === run?.companyId);
 
   const loadRuns = useCallback(async () => {
@@ -109,7 +130,7 @@ export function PayrollPage({ user }: { user: SessionUser }) {
       setRuns(sorted); setCompanies(comp.companies);
       setSelectedId((cur) => cur ?? sorted[0]?.id ?? null);
       setError(null);
-    } catch (e) { setError(errText(e)); setRuns([]); }
+    } catch (e) { setError(errText(e)); }
   }, []);
 
   const loadRunDetail = useCallback(async (id: number) => {
@@ -209,7 +230,20 @@ export function PayrollPage({ user }: { user: SessionUser }) {
           </div>
         }
       />
-      {error && <Card><p role="alert" className="text-negative-ink">{error}</p></Card>}
+      {error && <DashboardError message={error} onRetry={() => { void loadRuns(); }} />}
+      {identifierGaps !== null && identifierGaps.length > 0 && (
+        <Card>
+          <CardHeader
+            title={`${String(identifierGaps.length)} people are missing pay identifiers`}
+            subtitle="PAN, UAN, ESIC or bank details. Compute can still run; the bank file and TDS export will stop on these."
+          />
+          <ul className="mt-3 space-y-1 text-sm">
+            {identifierGaps.slice(0, 12).map((gap) => (
+              <li key={gap.ecode}><span className="font-mono">{gap.ecode}</span> {gap.name} — {gap.missing.join(', ')}</li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <Card padded={false}>

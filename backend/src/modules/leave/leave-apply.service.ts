@@ -8,11 +8,12 @@
 import { sql, type Kysely, type Transaction } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
+import { inTransaction } from '../../core/db/database.js';
 import { addDaysIso, formatDbDate, istDateString } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
 import { createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
 import { getBalance, getLeaveType } from './leave-core.service.js';
-import { assertApprovalSpanWritable, closeWeekOffs, weekStartOf } from '../../core/db/attendance-period.js';
+import { assertApprovalSpanWritable, recloseDecidedWeekOffs } from '../../core/db/attendance-period.js';
 import { computeLeaveSpan, validateLeaveApplication, type ApplyLeaveParams } from './leave-validation.js';
 export { computeLeaveSpan } from './leave-validation.js';
 export type { ApplyLeaveParams } from './leave-validation.js';
@@ -82,7 +83,22 @@ export async function applyLeaveOnFinal(db: Db, request: RequestRow, status: Wor
 
   if (app.employee_id !== request.subject_employee_id) throw new Error('Leave subject does not match its application');
   await assertApprovalSpanWritable(db, app.employee_id, formatDbDate(app.from_date), formatDbDate(app.to_date));
-  const type = await db.selectFrom('lv.leave_types').selectAll().where('id', '=', app.leave_type_id).executeTakeFirstOrThrow();
+  const configuredType = await db.selectFrom('lv.leave_types').select('code').where('id', '=', app.leave_type_id).executeTakeFirstOrThrow();
+  const validated = await validateLeaveApplication(db, { employeeId: app.employee_id, requestedByUserId: request.requested_by,
+    leaveTypeCode: configuredType.code, fromDate: formatDbDate(app.from_date), toDate: formatDbDate(app.to_date),
+    fromHalf: app.from_half, toHalf: app.to_half }, app.id);
+  if (validated.days !== Number(app.days)) throw new Error('Leave policy or calendar changed. Send this request back so the employee can review the updated day count.');
+  const type = validated.type;
+  const employee = await db.selectFrom('core.employees').select(['id', 'location_id']).where('id', '=', app.employee_id).executeTakeFirstOrThrow();
+  const { span } = await computeLeaveSpan(db, employee, type, formatDbDate(app.from_date), formatDbDate(app.to_date), app.from_half, app.to_half);
+  const fullDays = span.filter(day => day.writesRecord && !day.isHalf);
+  if (fullDays.length > 0) {
+    const obligation = await db.selectFrom('att.overtime_entries').select('id').where('employee_id', '=', app.employee_id)
+      .where('work_date', 'in', fullDays.map(day => sql<Date>`${day.iso}::date`))
+      .where(eb => eb.or([eb('status', 'in', ['pending', 'approved', 'converted_comp_off']),
+        eb('payroll_item_id', 'is not', null), eb('comp_off_credit_id', 'is not', null)])).executeTakeFirst();
+    if (obligation) throw new Error('Resolve the overtime or comp-off obligation before approving full-day leave');
+  }
   let ledgerTxnId: number | null = null;
   if (type.is_paid) {
     const debit = await db
@@ -102,8 +118,6 @@ export async function applyLeaveOnFinal(db: Db, request: RequestRow, status: Wor
   }
   await db.updateTable('lv.applications').set({ status: 'approved', ledger_txn_id: ledgerTxnId }).where('id', '=', app.id).execute();
 
-  const employee = await db.selectFrom('core.employees').select(['id', 'location_id']).where('id', '=', app.employee_id).executeTakeFirstOrThrow();
-  const { span } = await computeLeaveSpan(db, employee, type, formatDbDate(app.from_date), formatDbDate(app.to_date), app.from_half, app.to_half);
   // Full day → L (or CO for comp-off); half-day edge → HD + leave type: payroll pays
   // the leave half (if paid) plus the other half when its punches show it worked.
   const fullStatus = type.code === 'CO' ? ('CO' as const) : ('L' as const);
@@ -113,7 +127,8 @@ export async function applyLeaveOnFinal(db: Db, request: RequestRow, status: Wor
     const row = {
       status: day.isHalf ? ('HD' as const) : fullStatus,
       penalty_flag: false, penalty_evaluation: null,
-      ...(day.isHalf ? {} : { session_statuses: null }),
+      ...(day.isHalf ? {} : { session_statuses: null, first_in: null, last_out: null, worked_minutes: null,
+        late_minutes: 0, early_exit_minutes: 0, ot_minutes: 0, weekoff_paid: null }),
       leave_type_id: app.leave_type_id,
       source: 'regularized' as const,
       computed_at: new Date(),
@@ -140,16 +155,9 @@ export async function applyLeaveOnFinal(db: Db, request: RequestRow, status: Wor
  * maternity leave are paid. Weeks not closed yet are left to the weekly job.
  */
 async function recloseDecidedWeeks(db: Db, employeeId: number, isoDays: string[]): Promise<void> {
-  const weeks = [...new Set(isoDays.map(weekStartOf))];
-  if (weeks.length === 0) return;
+  if (isoDays.length === 0) return;
   const minWorked = await getTypedSetting(db, 'att.weekoff_min_worked_days', 'number', 1);
-  for (const week of weeks) {
-    const decided = await db.selectFrom('att.day_records').select('id')
-      .where('employee_id', '=', employeeId).where('status', '=', 'WO').where('weekoff_paid', 'is not', null)
-      .where('work_date', '>=', sql<Date>`${week}::date`).where('work_date', '<', sql<Date>`${week}::date + 7`)
-      .executeTakeFirst();
-    if (decided) await closeWeekOffs(db, week, minWorked, employeeId);
-  }
+  await recloseDecidedWeekOffs(db, employeeId, isoDays, minWorked);
 }
 
 /** LV-08: cancelling an APPROVED leave is a re-approval. */
@@ -157,9 +165,13 @@ export async function requestCancellation(
   db: Kysely<Database>,
   params: { applicationId: number; employeeId: number; requestedByUserId: number },
 ): Promise<number> {
-  const app = await db.selectFrom('lv.applications').selectAll().where('id', '=', params.applicationId).executeTakeFirstOrThrow();
+  return inTransaction(db, async db => {
+  let app = await db.selectFrom('lv.applications').selectAll().where('id', '=', params.applicationId).executeTakeFirstOrThrow();
   if (app.employee_id !== params.employeeId) throw new Error('Not your application');
   if (app.status !== 'approved') throw new Error(`Only approved leave can be cancelled (this one is ${app.status})`);
+  await assertApprovalSpanWritable(db, app.employee_id, formatDbDate(app.from_date), formatDbDate(app.to_date));
+  app = await db.selectFrom('lv.applications').selectAll().where('id', '=', params.applicationId).forUpdate().executeTakeFirstOrThrow();
+  if (app.status !== 'approved') throw new Error('Only approved leave can be cancelled');
   if (app.cancel_workflow_request_id !== null) {
     const open = await db
       .selectFrom('wf.requests')
@@ -181,6 +193,7 @@ export async function requestCancellation(
       await trx.updateTable('lv.applications').set({ cancel_workflow_request_id: requestId }).where('id', '=', app.id).execute();
     },
   );
+  });
 }
 
 /** Completion hook ('leave_cancel'): reversal credit + days handed back to the
@@ -219,7 +232,8 @@ export async function applyCancelOnFinal(db: Db, request: RequestRow, status: Wo
       // Reset to the ABSENT floor (never leave a cancelled leave showing as a
       // paid 'L'/'HD' — that would over-pay if the month locks before the
       // queued recompute re-derives the day from swipes).
-      .set({ status: 'A', source: 'auto', leave_type_id: null, session_statuses: null, penalty_flag: false, penalty_evaluation: null })
+      .set({ status: 'A', source: 'auto', leave_type_id: null, session_statuses: null, penalty_flag: false, penalty_evaluation: null,
+        first_in: null, last_out: null, worked_minutes: null, late_minutes: 0, early_exit_minutes: 0, ot_minutes: 0 })
       .where('employee_id', '=', app.employee_id)
       .where('work_date', '=', sql<Date>`${iso}::date`)
       .where('source', '=', 'regularized')
@@ -240,7 +254,9 @@ export async function requestEncashment(
   db: Kysely<Database>,
   params: { employeeId: number; requestedByUserId: number; leaveTypeCode: string; days: number },
 ): Promise<number> {
-  if (params.days <= 0) throw new Error('days must be positive');
+  return inTransaction(db, async db => {
+  await db.selectFrom('core.employees').select('id').where('id', '=', params.employeeId).forUpdate().executeTakeFirstOrThrow();
+  if (!Number.isFinite(params.days) || params.days <= 0) throw new Error('days must be positive and finite');
   const type = await getLeaveType(db, params.leaveTypeCode);
   if (!type.encashable) throw new Error(`${type.code} is not encashable`);
   const { available } = await getBalance(db, params.employeeId, type.id);
@@ -260,6 +276,7 @@ export async function requestEncashment(
     subjectEmployeeId: params.employeeId,
     requestedByUserId: params.requestedByUserId,
     payload: { leaveTypeId: type.id, leaveType: type.code, days: params.days },
+  });
   });
 }
 
@@ -303,8 +320,11 @@ export async function selectRestrictedHoliday(
   db: Kysely<Database>,
   params: { employeeId: number; requestedByUserId: number; restrictedHolidayId: number },
 ): Promise<number> {
+  return inTransaction(db, async db => {
+  await db.selectFrom('core.employees').select('id').where('id', '=', params.employeeId).forUpdate().executeTakeFirstOrThrow();
   const rh = await db.selectFrom('lv.restricted_holidays').selectAll().where('id', '=', params.restrictedHolidayId).executeTakeFirstOrThrow();
   const rhIso = formatDbDate(rh.holiday_date);
+  await assertApprovalSpanWritable(db, params.employeeId, rhIso, rhIso);
   if (rhIso < istDateString()) throw new Error('This restricted holiday is in the past');
 
   const employee = await db.selectFrom('core.employees').select('location_id').where('id', '=', params.employeeId).executeTakeFirstOrThrow();
@@ -340,6 +360,7 @@ export async function selectRestrictedHoliday(
         .executeTakeFirstOrThrow();
     },
   );
+  });
 }
 
 /** Completion hook ('restricted_holiday'): the picked day becomes a personal
@@ -369,4 +390,5 @@ export async function applyRhOnFinal(db: Db, request: RequestRow, status: Workfl
     .returning('id').executeTakeFirst();
   if (!applied) throw new Error('Attendance changed during holiday approval — refresh and contact HR');
   await db.updateTable('lv.rh_selections').set({ applied: true }).where('id', '=', selection.id).execute();
+  await recloseDecidedWeeks(db, selection.employee_id, [formatDbDate(rh.holiday_date)]);
 }

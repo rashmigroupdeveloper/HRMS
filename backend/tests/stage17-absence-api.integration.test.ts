@@ -30,13 +30,14 @@ run('Stage 1.7 — absence-case API open filter (live Postgres)', () => {
   const password = 's17api-pw-1!';
   let openEmpId: number;
   let closedEmpId: number;
+  let caseUnitId: number;
   let token: string;
 
   async function mkEmployee(suffix: string): Promise<number> {
     const rml = await db.selectFrom('core.companies').select('id').where('code', '=', 'RML').executeTakeFirstOrThrow();
     const r = await db
       .insertInto('core.employees')
-      .values({ ecode: `RMLQ${String(stamp).slice(-5)}${suffix}`, company_id: rml.id, first_name: `S17API ${suffix}`, status: 'active' })
+      .values({ ecode: `RMLQ${String(stamp).slice(-5)}${suffix}`, company_id: rml.id, org_unit_id: caseUnitId, first_name: `S17API ${suffix}`, status: 'active' })
       .returning('id')
       .executeTakeFirstOrThrow();
     return r.id;
@@ -45,6 +46,9 @@ run('Stage 1.7 — absence-case API open filter (live Postgres)', () => {
   beforeAll(async () => {
     db = createDatabase(DB_URL ?? '');
     app = createApp({ db, jwtSecret: JWT_SECRET, secureCookies: false });
+
+    const company = await db.selectFrom('core.companies').select('id').where('code', '=', 'RML').executeTakeFirstOrThrow();
+    caseUnitId = (await db.insertInto('core.org_units').values({ company_id: company.id, name: `S17 Cases ${stamp}` }).returning('id').executeTakeFirstOrThrow()).id;
 
     openEmpId = await mkEmployee('O');
     closedEmpId = await mkEmployee('C');
@@ -71,7 +75,7 @@ run('Stage 1.7 — absence-case API open filter (live Postgres)', () => {
       .returning('id')
       .executeTakeFirstOrThrow();
     const role = await db.selectFrom('core.roles').select('id').where('code', '=', 'hr_ops').executeTakeFirstOrThrow();
-    await db.insertInto('core.user_roles').values({ user_id: u.id, role_id: role.id, scope_org_unit_id: null }).execute();
+    await db.insertInto('core.user_roles').values({ user_id: u.id, role_id: role.id, scope_org_unit_id: caseUnitId }).execute();
 
     const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: `s17api-${stamp}@hrms.test`, password });
     token = (login.body as { accessToken: string }).accessToken;
@@ -81,7 +85,10 @@ run('Stage 1.7 — absence-case API open filter (live Postgres)', () => {
   afterAll(async () => {
     const empIds = [openEmpId, closedEmpId];
     await db.deleteFrom('att.absence_cases').where('employee_id', 'in', empIds).execute();
+    await db.deleteFrom('core.user_roles').where('user_id', 'in', db.selectFrom('core.users').select('id').where('email', '=', `s17api-${stamp}@hrms.test`)).execute();
     await db.updateTable('core.users').set({ is_active: false, employee_id: null }).where('email', 'like', `s17api-${stamp}@hrms.test`).execute();
+    await db.updateTable('core.employees').set({ org_unit_id: null, status: 'onboarding' }).where('id', 'in', empIds).execute();
+    // The immutable request audit references the fixture unit; retain it.
     await db.destroy();
   });
 
@@ -99,6 +106,68 @@ run('Stage 1.7 — absence-case API open filter (live Postgres)', () => {
     expect(all.status).toBe(200); // 'false' must PARSE, not 400
     const allRows = our(all.body as CaseDto[]);
     expect(allRows.some((r) => r.ecode.endsWith('C') && r.closedAt !== null)).toBe(true); // closed now visible
+  });
+
+  it('CORE-10: the queue, escalation and letter actions are confined to the caller’s data scope', async () => {
+    const rml = await db.selectFrom('core.companies').select('id').where('code', '=', 'RML').executeTakeFirstOrThrow();
+
+    // Two org units in RML; the hr_ops caller is bound to unit A only.
+    const ouA = await db.insertInto('core.org_units').values({ company_id: rml.id, name: `S17 Unit A ${stamp}` }).returning('id').executeTakeFirstOrThrow();
+    const ouB = await db.insertInto('core.org_units').values({ company_id: rml.id, name: `S17 Unit B ${stamp}` }).returning('id').executeTakeFirstOrThrow();
+
+    const mkEmp = async (suffix: string, orgUnitId: number) => {
+      const r = await db
+        .insertInto('core.employees')
+        .values({ ecode: `RMLS${String(stamp).slice(-5)}${suffix}`, company_id: rml.id, first_name: `S17Scope ${suffix}`, status: 'active', org_unit_id: orgUnitId })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      return r.id;
+    };
+    const inEmp = await mkEmp('IN', ouA.id); // inside the caller's unit
+    const outEmp = await mkEmp('OUT', ouB.id); // outside it
+    const mkCase = async (employeeId: number) =>
+      (await db
+        .insertInto('att.absence_cases')
+        .values({ employee_id: employeeId, start_date: sql<Date>`'2039-03-02'::date` as unknown as Date, days_absent: 8, stage: 'show_cause' })
+        .returning('id')
+        .executeTakeFirstOrThrow()).id;
+    const inCaseId = await mkCase(inEmp);
+    const outCaseId = await mkCase(outEmp);
+
+    // An hr_ops user (holds attendance.team.read + letters.issue, both org_unit) bound to unit A.
+    const scopedEmail = `s17scope-${stamp}@hrms.test`;
+    const u = await db.insertInto('core.users').values({ email: scopedEmail, password_hash: await hashPassword(password), employee_id: inEmp }).returning('id').executeTakeFirstOrThrow();
+    const hrOps = await db.selectFrom('core.roles').select('id').where('code', '=', 'hr_ops').executeTakeFirstOrThrow();
+    await db.insertInto('core.user_roles').values({ user_id: u.id, role_id: hrOps.id, scope_org_unit_id: ouA.id }).execute();
+    const login = await (await httpRequest(app)).post('/api/auth/login').send({ identifier: scopedEmail, password });
+    const scopedToken = (login.body as { accessToken: string }).accessToken;
+    const auth = { Authorization: `Bearer ${scopedToken}` };
+
+    try {
+      // List: the in-unit case is visible, the out-of-unit case is NOT.
+      const list = await (await httpRequest(app)).get('/api/attendance/absence-cases?open=true').set(auth);
+      expect(list.status).toBe(200);
+      const ids = (list.body as { id: number }[]).map((r) => r.id);
+      expect(ids).toContain(inCaseId);
+      expect(ids).not.toContain(outCaseId);
+
+      // Escalation + letter on the out-of-scope case are refused with 403 (not 400/200).
+      const escOut = await (await httpRequest(app)).post(`/api/attendance/absence-cases/${outCaseId}/stage`).set(auth).send({ stage: 'warning' });
+      expect(escOut.status).toBe(403);
+      const letterOut = await (await httpRequest(app)).post(`/api/attendance/absence-cases/${outCaseId}/letter`).set(auth).send({ template: 'show_cause' });
+      expect(letterOut.status).toBe(403);
+
+      // The same escalation on the in-scope case is allowed.
+      const escIn = await (await httpRequest(app)).post(`/api/attendance/absence-cases/${inCaseId}/stage`).set(auth).send({ stage: 'warning' });
+      expect(escIn.status).toBe(200);
+    } finally {
+      await db.deleteFrom('att.absence_cases').where('id', 'in', [inCaseId, outCaseId]).execute();
+      await db.deleteFrom('core.user_roles').where('user_id', '=', u.id).execute();
+      await db.updateTable('core.users').set({ is_active: false, employee_id: null }).where('email', '=', scopedEmail).execute();
+      // Detach from the org units (FK) rather than hard-deleting audited employees.
+      await db.updateTable('core.employees').set({ org_unit_id: null, status: 'onboarding' }).where('id', 'in', [inEmp, outEmp]).execute();
+      // Audit scope FKs retain these units even after users/employees detach.
+    }
   });
 
   it('numeric query params coerce from the string (?limit / ?companyId) — no 400', async () => {

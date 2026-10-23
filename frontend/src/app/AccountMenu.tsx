@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { FileText, LogOut, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { SessionUser } from '../lib/session';
+import { markSignedOut } from '../lib/auth-landing';
 import { logout } from '../lib/session';
 import { accountInitials, primaryRoleLabel } from './user-display';
 
@@ -99,7 +100,10 @@ export function AccountMenu({ user, onSignedOut }: AccountMenuProps) {
               role="menuitem"
               onClick={() => {
                 setOpen(false);
-                void logout().finally(onSignedOut);
+                void logout().finally(() => {
+                  markSignedOut();
+                  onSignedOut();
+                });
               }}
               className="u-press flex w-full items-center gap-2.5 rounded-row px-3 py-2 text-left text-sm font-medium text-ink hover:bg-surface-2"
             >

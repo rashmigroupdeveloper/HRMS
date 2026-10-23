@@ -13,6 +13,7 @@ import {
   TextField,
   type Column,
 } from '../../ui';
+import { CompanyField } from '../../app/CompanyField';
 import {
   defaultCompanyId,
   defaultMonth,
@@ -172,11 +173,10 @@ export function SupportingReportPage<T extends object>({
 
       <Card>
         <div className="grid gap-4 md:grid-cols-[repeat(auto-fit,minmax(140px,1fr))_auto_auto] md:items-end">
-          <TextField
-            label="Company ID"
+          <CompanyField
             value={filters.companyId}
-            onChange={(e) => {
-              set({ companyId: e.currentTarget.value });
+            onChange={(companyId) => {
+              set({ companyId });
             }}
             error={error && !companyOk ? error : undefined}
           />

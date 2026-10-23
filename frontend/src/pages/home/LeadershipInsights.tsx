@@ -165,19 +165,12 @@ export function LeadershipInsights({
   const headcount = useOptional<HeadcountRow[]>(`hc`, needPeople, () =>
     apiFetch<HeadcountRow[]>('/api/reports/r27-headcount'),
   );
-  const companyIds =
-    companies.status === 'ready' ? (companyId === null ? companies.data.map((c) => c.id) : [companyId]) : null;
   const boarding = useOptional<{ joins: BoardingRow[]; exits: BoardingRow[] }>(
-    `b-${companyIds?.join(',') ?? ''}`,
-    want('movement') && companyIds !== null,
-    () =>
-      Promise.all(
-        (companyIds ?? []).map((id) =>
-          apiFetch<{ joins: BoardingRow[]; exits: BoardingRow[] }>(
-            `/api/reports/r24-boarding?companyId=${String(id)}&fromDate=${from}&toDate=${to}`,
-          ),
-        ),
-      ).then((all) => ({ joins: all.flatMap((a) => a.joins), exits: all.flatMap((a) => a.exits) })),
+    `b-${String(companyId)}`,
+    want('movement'),
+    () => apiFetch<{ joins: BoardingRow[]; exits: BoardingRow[] }>(
+      `/api/reports/r24-boarding?fromDate=${from}&toDate=${to}${companyId === null ? '' : `&companyId=${String(companyId)}`}`,
+    ),
   );
   const attrition = useOptional<AttritionRow[]>(`at`, want('attrition'), () =>
     apiFetch<AttritionRow[]>('/api/reports/r26-attrition'),

@@ -18,7 +18,7 @@ import { withAnyPermission, withPermission } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
-import { holidayAppliesSql, loadHolidaySubject, resolveHolidayScope, upsertScopedHoliday } from '../../core/db/holiday-calendar.js';
+import { holidayAppliesSql, holidayWriteTargets, loadHolidaySubject, resolveHolidayScope, upsertScopedHoliday } from '../../core/db/holiday-calendar.js';
 import { assertCompanyInScope } from '../../core/rbac/company-scope.js';
 import { assertEmployeesInScope } from '../../core/rbac/employee-scope.js';
 import {
@@ -183,6 +183,20 @@ const listHolidays = withPermission('attendance.own')
     }));
   });
 
+const holidayTargets = withAnyPermission('admin.settings', 'attendance.holidays.manage')
+  .route({ method: 'GET', path: '/attendance/config/holiday-targets', summary: 'Companies the caller may attach a holiday to' })
+  .output(z.object({
+    groupWide: z.boolean(),
+    companies: z.array(z.object({ id: z.number(), name: z.string(), code: z.string() })),
+    plants: z.array(z.object({ id: z.number(), companyId: z.number(), name: z.string(), plantCode: z.string() })),
+    locations: z.array(z.object({ id: z.number(), companyId: z.number(), name: z.string() })),
+  }))
+  .handler(async ({ context }) => holidayWriteTargets(context.db, {
+    all: context.permissionAccess.all,
+    orgUnitIds: context.permissionAccess.orgUnitIds,
+    actorEmployeeId: context.user.employee_id,
+  }));
+
 const upsertHoliday = withAnyPermission('admin.settings', 'attendance.holidays.manage')
   .route({ method: 'PUT', path: '/attendance/config/holidays', summary: 'Add/update a holiday for the group, a company, a plant or a location (audited)' })
   .input(z.object({
@@ -200,11 +214,17 @@ const upsertHoliday = withAnyPermission('admin.settings', 'attendance.holidays.m
     } catch (error) {
       throw new ORPCError('BAD_REQUEST', { message: error instanceof Error ? error.message : 'Invalid holiday scope' });
     }
-    const access = { ...context.permissionAccess, actorEmployeeId: context.user.employee_id };
+    const targets = await holidayWriteTargets(context.db, {
+      all: context.permissionAccess.all,
+      orgUnitIds: context.permissionAccess.orgUnitIds,
+      actorEmployeeId: context.user.employee_id,
+    });
     if (scope.company_id === null) {
-      if (!access.all) throw new ORPCError('FORBIDDEN', { message: 'Only a group-level admin can add a holiday for the whole group; choose a company' });
-    } else {
-      await assertCompanyInScope(context.db, access, scope.company_id);
+      if (!targets.groupWide) {
+        throw new ORPCError('FORBIDDEN', { message: 'Choose the company this holiday applies to. A group-wide holiday needs a group admin.' });
+      }
+    } else if (!targets.groupWide && !targets.companies.some((company) => company.id === scope.company_id)) {
+      throw new ORPCError('FORBIDDEN', { message: 'That company is outside the holiday calendar you can maintain.' });
     }
     const created = await upsertScopedHoliday(context.db, scope, input.date, input.name);
     await writeAudit(context.db, {
@@ -531,6 +551,7 @@ export const attendanceConfigRouter = {
   listShiftsForRoster,
   upsertShift,
   listHolidays,
+  holidayTargets,
   upsertHoliday,
   setScheme,
   getTeamRoster,

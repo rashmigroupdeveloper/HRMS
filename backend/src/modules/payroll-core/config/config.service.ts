@@ -17,6 +17,7 @@ import { writeAudit } from '../../../core/audit/audit.service.js';
 import { inTransaction } from '../../../core/db/database.js';
 import { ConflictError, DomainError, NotFoundError } from '../../../core/errors/index.js';
 import { formatDbDate } from '../../../core/dates.js';
+import { decimalRupees, parseRupees } from '../../../core/money/index.js';
 
 type Db = Kysely<Database>;
 
@@ -143,8 +144,9 @@ export async function enterableComponentCodes(db: Db): Promise<string[]> {
   return rows.filter((r) => r.kind !== 'employer_contribution' && !ENGINE_COMPONENTS.has(r.code)).map((r) => r.code);
 }
 
-async function openRun(db: Db, runId: number) {
-  const run = await db.selectFrom('pay.payroll_runs').select(['id', 'status', 'company_id']).where('id', '=', runId).executeTakeFirst();
+async function openRun(db: Db, runId: number, lock = false) {
+  const run = await db.selectFrom('pay.payroll_runs').select(['id', 'status', 'company_id']).where('id', '=', runId)
+    .$if(lock, query => query.forUpdate()).executeTakeFirst();
   if (!run) throw new NotFoundError('Payroll run not found');
   if (run.status !== 'draft') throw new ConflictError('Variable inputs can only change while the run is a draft (before inputs are locked)');
   return run;
@@ -177,7 +179,11 @@ export async function runInputProblems(db: Db, runId: number, inputs: readonly V
     else if (comp.kind === 'employer_contribution' || ENGINE_COMPONENTS.has(comp.code)) problems.push({ index, field: 'component_code', message: `${inp.componentCode} is computed by payroll and cannot be entered` });
     else if (!comp.is_active) problems.push({ index, field: 'component_code', message: `${inp.componentCode} is inactive` });
     if (empCompany.get(inp.employeeId) !== run.company_id) problems.push({ index, field: 'ecode', message: `employee ${String(inp.employeeId)} is not in this run's company` });
-    if (!Number.isFinite(inp.amountRupees) || inp.amountRupees <= 0 || Math.round(inp.amountRupees * 100) !== inp.amountRupees * 100) problems.push({ index, field: 'amount', message: 'amount must be a positive rupee value with at most 2 decimals' });
+    // Parse the decimal DTO representation, not a binary-float product (1.09 *
+    // 100 is not exactly 109). The shared Money boundary also checks safe range.
+    try {
+      if (parseRupees(String(inp.amountRupees)) <= 0) throw new RangeError('Non-positive input');
+    } catch { problems.push({ index, field: 'amount', message: 'amount must be a positive rupee value with at most 2 decimals within the safe money range' }); }
     if (inp.note.trim().length < 2) problems.push({ index, field: 'note', message: 'a note is required' });
   });
   return problems;
@@ -187,9 +193,10 @@ export async function runInputProblems(db: Db, runId: number, inputs: readonly V
 export async function addRunInputs(db: Db, runId: number, inputs: VariableInput[], actorUserId: number): Promise<{ inserted: number }> {
   if (inputs.length === 0) throw new DomainError('Nothing to add');
   return inTransaction(db, async (trx) => {
+    await openRun(trx, runId, true);
     const problems = await runInputProblems(trx, runId, inputs);
     if (problems.length > 0) throw new DomainError(problems.slice(0, 20).map((p) => `Row ${String(p.index + 1)}: ${p.message}`).join('; '));
-    const rows = inputs.map((i) => ({ run_id: runId, employee_id: i.employeeId, component_code: i.componentCode, amount: i.amountRupees.toFixed(2), note: i.note.trim(), entered_by: actorUserId }));
+    const rows = inputs.map((i) => ({ run_id: runId, employee_id: i.employeeId, component_code: i.componentCode, amount: decimalRupees(parseRupees(String(i.amountRupees))), note: i.note.trim(), entered_by: actorUserId }));
     for (let start = 0; start < rows.length; start += 1000) await trx.insertInto('pay.inputs').values(rows.slice(start, start + 1000)).execute();
     await writeAudit(trx, { actorUserId, action: 'payroll_inputs_added', entity: 'pay.payroll_runs', entityId: runId, oldValue: null, newValue: JSON.stringify({ count: inputs.length, inputs: inputs.slice(0, 200) }) });
     return { inserted: inputs.length };
@@ -198,7 +205,7 @@ export async function addRunInputs(db: Db, runId: number, inputs: VariableInput[
 
 export async function removeRunInput(db: Db, runId: number, inputId: number, actorUserId: number): Promise<void> {
   await inTransaction(db, async (trx) => {
-    await openRun(trx, runId);
+    await openRun(trx, runId, true);
     const row = await trx.deleteFrom('pay.inputs').where('id', '=', inputId).where('run_id', '=', runId).returningAll().executeTakeFirst();
     if (!row) throw new NotFoundError('Input not found on this run');
     await writeAudit(trx, { actorUserId, action: 'payroll_input_removed', entity: 'pay.payroll_runs', entityId: runId, oldValue: JSON.stringify({ employeeId: row.employee_id, componentCode: row.component_code, amount: row.amount, note: row.note }), newValue: null });
@@ -246,5 +253,5 @@ export async function parseInputsCsv(db: Db, runId: number, csv: string): Promis
   const idByCode = new Map(emps.map((e) => [e.ecode, e.id]));
   const missing = ecodes.filter((c) => !idByCode.has(c));
   if (missing.length > 0) throw new DomainError(`Unknown employee codes for this company: ${missing.slice(0, 10).join(', ')}`);
-  return rows.map((r) => ({ employeeId: idByCode.get(r[ci] ?? '') ?? 0, componentCode: (r[cc] ?? '').toUpperCase(), amountRupees: Number(r[ca]), note: r.slice(cn).join(',').trim() }));
+  return rows.map((r) => ({ employeeId: idByCode.get(r[ci] ?? '') ?? 0, componentCode: (r[cc] ?? '').toUpperCase(), amountRupees: Number(r[ca]), note: (r[cn] ?? '').trim() }));
 }

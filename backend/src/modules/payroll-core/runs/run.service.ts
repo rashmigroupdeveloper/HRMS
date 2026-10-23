@@ -117,6 +117,9 @@ export class PayrollRunService {
       }
 
       const lockId = run.attendance_lock_id ?? (await resolveAttendanceLock(trx, run.company_id, formatDbDate(run.month)));
+      if (lockId === null) {
+        throw new DomainError('Approve and close attendance for this company and month before locking payroll inputs.', 'CONFLICT');
+      }
       await trx
         .updateTable('pay.payroll_runs')
         .set({
@@ -141,7 +144,17 @@ export class PayrollRunService {
    * 3. Compute the run: executes the full deterministic payroll engine across all employees.
    */
   async computeRun(runId: number, actorUserId: number): Promise<RunComputationResult> {
-    return this.withLockedRun(runId, (trx, run) => computeLockedRun(trx, run, actorUserId));
+    return this.withLockedRun(runId, async (trx, run) => {
+      // Recover older inputs-locked runs only after their authoritative period closes.
+      if (run.attendance_lock_id === null && ['inputs_locked', 'reopened'].includes(run.status)) {
+        const lockId = await resolveAttendanceLock(trx, run.company_id, formatDbDate(run.month));
+        if (lockId === null) throw new DomainError('Approve and close attendance before computing this payroll run.', 'CONFLICT');
+        await trx.updateTable('pay.payroll_runs').set({ attendance_lock_id: lockId }).where('id', '=', runId).execute();
+        await writeAudit(trx, { actorUserId, entity: 'pay.payroll_runs', entityId: runId, action: 'payroll_attendance_lock_attached', oldValue: null, newValue: String(lockId) });
+        return computeLockedRun(trx, { ...run, attendance_lock_id: lockId }, actorUserId);
+      }
+      return computeLockedRun(trx, run, actorUserId);
+    });
   }
 
   /**
@@ -314,7 +327,14 @@ export class PayrollRunService {
         throw new DomainError(validation.error ?? 'This run cannot move to that state now', 'CONFLICT');
       }
 
-      if (run.status === 'finalized') await this.reverseRunRecoveries(trx, runId);
+      if (run.status === 'finalized') {
+        const balances = await trx.selectFrom('pay.recovery_carry_forwards').select('consumed_run_id')
+          .where('from_run_id', '=', runId).orderBy('id').forUpdate().execute();
+        if (balances.some(balance => balance.consumed_run_id !== null)) {
+          throw new DomainError('A later payroll run has consumed this run’s recovery balance. Reconcile that dependent run before reopening.', 'CONFLICT');
+        }
+        await this.reverseRunRecoveries(trx, runId);
+      }
 
       await trx
         .updateTable('pay.payroll_runs')
@@ -347,8 +367,12 @@ export class PayrollRunService {
       if (!['inputs_locked', 'computed', 'under_review', 'reopened'].includes(run.status)) {
         throw new DomainError(`A ${run.status} run cannot go back to draft${run.status === 'approved' || run.status === 'finalized' ? ' (ask a super admin to reopen it)' : ''}`, 'CONFLICT');
       }
+      // Draft results cannot reserve settled balances against other runs. A
+      // fresh compute must re-read the currently eligible origins.
+      const released = await trx.updateTable('pay.recovery_carry_forwards').set({ consumed_run_id: null })
+        .where('consumed_run_id', '=', runId).executeTakeFirst();
       await trx.updateTable('pay.payroll_runs').set({ status: 'draft' }).where('id', '=', runId).execute();
-      await writeAudit(trx, { actorUserId, entity: 'pay.payroll_runs', entityId: runId, action: 'payroll_run_returned_to_draft', oldValue: run.status, newValue: JSON.stringify({ status: 'draft', reason }) });
+      await writeAudit(trx, { actorUserId, entity: 'pay.payroll_runs', entityId: runId, action: 'payroll_run_returned_to_draft', oldValue: run.status, newValue: JSON.stringify({ status: 'draft', reason, releasedRecoveryBalances: Number(released.numUpdatedRows) }) });
     });
   }
 
