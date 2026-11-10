@@ -3,8 +3,9 @@ name: CI
 
 on:
   push:
-    branches: [main, 'remediation/**', 'codex/**']
+    branches: [main, production, 'remediation/**', 'codex/**']
   pull_request:
+    branches: [main, production]
 
 permissions:
   contents: read
