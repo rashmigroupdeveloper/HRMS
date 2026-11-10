@@ -53,6 +53,8 @@ Deploys are blocked while `/var/hrms/DEPLOY_FREEZE` exists (payroll days). Overr
 
 Manual deploy: Actions → Deploy production → Run workflow. App path on this host: `/home/hrms/hrms`; public site: `https://myhr.rashmimetaliks.com`.
 
+Production `.env` must include `CORS_ORIGIN=https://myhr.rashmimetaliks.com` (required by `createApp` in production). Database is PostgreSQL 16 on `127.0.0.1:5433` (cPanel’s older PG10 on 5432 is left alone). Apache proxies `/api` and `/health` to PM2 `:5100` via userdata rewrite includes; frontend `dist` is rsynced to `~/public_html`.
+
 ## 6. Backup and restore
 Nightly: `DATABASE_URL=… STORAGE_DIR=… BACKUP_DIR=/srv/hrms-backups scripts/backup.sh` (pg_dump custom format + document store + SHA-256 manifest, 30-day retention). Copy off-site, encrypted.
 Restore drill (monthly): `PGHOST=… PGUSER=… scripts/restore.sh /srv/hrms-backups/hrms-<stamp> hrms_restore_test` — restores only into a new database; evidence of the last drill: docs/qa-handover/fix-verify/backup/EVIDENCE.md.

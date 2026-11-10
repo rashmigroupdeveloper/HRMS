@@ -48,7 +48,7 @@
 - [x] doc14-T1 — **Money module** (`backend/src/core/money/`): integer-paise branded `Paise` type, `percentBp`/`mulDiv` integer math, single rounding-policy file (PF nearest-rupee, ESIC round-UP, TDS, gratuity, net, OT) — **27 hand-computed statutory tests green; caught + fixed an arithmetic error in doc 10's G8 gratuity fixture** *(6 Jul 2026)*
 - [x] doc14-T1 — Kysely setup + `core.*` table types in `src/core/db/types.ts` *(raw-SQL lint ban: add custom rule when first repository lands)*
 - [x] doc14-§3 — **oRPC (decided over tRPC — tRPC's type-sharing violates the independent-teams boundary)** mounted in Express: `src/api/{orpc,router,handler}.ts` + first module (`modules/system`) with a zod-output-validated procedure at `GET /api/system/health`; **OpenAPI contract served at `/api/openapi.json`** — the frontend team generates its typed client from this *(6 Jul 2026; 3 API tests green)*
-- [~] P0-T11 — Deploy machinery: `scripts/deploy.sh` (freeze-file check → pull → verify → migrate → build → `pm2 reload`) + `ecosystem.config.cjs` **written**; staging vhost + PgBouncer ≥1.21 setup = **server task, pending access**
+- [~] P0-T11 — Deploy machinery: `scripts/deploy.sh` + `ecosystem.config.cjs` + GitHub Actions `deploy.yml` (`main` CI → merge `production` → SSH deploy) **proven 10 Nov 2026** on `111.118.189.60` / `myhr.rashmimetaliks.com` (Node 24, PG16 :5433, PM2, Apache rewrite proxy). **Still open:** dedicated staging vhost + PgBouncer ≥1.21
 - [ ] P0-T13 — Observability baseline: pino ✓ (with redaction); OTel wiring, GlitchTip, PM2 monit + alert cron = pending server
 - [x] CI pipeline: two independent jobs (backend/frontend), gate order typecheck → eslint → knip → depcruise → test → build
 - [x] Card F01 follow-up, 10 Oct 2026 — sponsor confirmed all local databases are test-only; explicitly requested `hrms_test` removal completed. Local tests now require explicit `TEST_DATABASE_URL` and loopback-only `LOCAL_TEST_DATABASE_NAME=hrms`; CI retains a dedicated test target. No implicit application-DB fallback. Nine target guard tests passed.
@@ -128,7 +128,7 @@
 
 - [ ] Employee master loaded with REAL data: EMS seed (1,066) + greytHR enrichment — *pipeline built + proven on fixtures; needs the P0-T09 snapshot + P0-T02 export*
 - [ ] SSO accepted against the ATS on staging —19 Oct local code/native/HTTP/browser proof exists; production registration, real authorized identity population, proxy/cookie/rollout and UAT remain open (pack34)
-- [ ] Deploy pipeline + PgBouncer proven on staging — *needs server access (P0-T11/T13)*
+- [~] Deploy pipeline proven on production host (`myhr.rashmimetaliks.com`); PgBouncer + staging vhost still open (P0-T11/T13)
 - [ ] One REAL day of Kent swipes ingested — *pipeline proven with mock; needs P0-T01 access method from IT*
 - [x] Scale-spike numbers acceptable; partitioning frozen *(docs/recon/scale-spike.md — re-run on prod box at sign-off)*
 - [ ] Stage 0.1 external dependencies resolved (or escalated with dates)
