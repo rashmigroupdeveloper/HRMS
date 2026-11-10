@@ -33,8 +33,25 @@ Do **not** run anything under `docs/qa-handover/fix-verify/seed` in production �
 - Health: `GET /health` (liveness), `GET /health/ready` (DB reachable; use for the load balancer). Every response and error log carries a request id.
 - Logs: JSON (pino) on stdout → journald/your collector. No PII in logs (see PII_ENCRYPTION_PLAN.md).
 
-## 5. Upgrades
-`scripts/deploy.sh` (pull → install → typecheck/test → migrate → build → reload). Deploys are blocked while `/var/hrms/DEPLOY_FREEZE` exists (payroll days).
+## 5. Upgrades / CI-CD (main → production)
+
+**Branch model:** feature → PR → `main` (CI verify only) → PR merge `main`→`production` → GitHub Actions SSHs to cPanel and runs `scripts/deploy.sh`.
+
+`scripts/deploy.sh` (on the server): freeze check → `git pull --ff-only origin production` → backend `npm ci` + migrate + build → frontend build → rsync `frontend/dist` to `public_html` → `pm2 reload`. Full typecheck/tests run in Actions CI, not on the live box.
+
+Deploys are blocked while `/var/hrms/DEPLOY_FREEZE` exists (payroll days). Override with `HRMS_FREEZE_FILE` if needed.
+
+**GitHub Actions secrets** (environment `production`):
+
+| Secret | Example |
+|---|---|
+| `CPANEL_HOST` | `111.118.189.60` |
+| `CPANEL_PORT` | `2232` |
+| `CPANEL_USER` | `hrms` |
+| `CPANEL_SSH_KEY` | Ed25519 private key (never a password) |
+| `CPANEL_APP_DIR` | `/home/hrms/hrms` |
+
+Manual deploy: Actions → Deploy production → Run workflow. App path on this host: `/home/hrms/hrms`; public site: `https://myhr.rashmimetaliks.com`.
 
 ## 6. Backup and restore
 Nightly: `DATABASE_URL=… STORAGE_DIR=… BACKUP_DIR=/srv/hrms-backups scripts/backup.sh` (pg_dump custom format + document store + SHA-256 manifest, 30-day retention). Copy off-site, encrypted.
