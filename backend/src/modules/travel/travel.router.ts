@@ -363,13 +363,13 @@ export const travelRouter = {
       };
     }),
 
-  approveAdvance: withPermission('payroll.run.manage')
+  approveAdvance: withPermission('claims.payout.manage')
     .route({ method: 'POST', path: '/travel/advances/{advanceId}/approve', summary: 'Disburse an advance approved by the RM chain into the wallet' })
     .input(z.object({ advanceId: z.number() }))
     .output(z.object({ advance: advanceItemSchema }))
     .handler(async ({ input, context }) => {
       const service = new TravelService(context.db);
-      const advance = await service.approveAdvance(input.advanceId, context.user.id);
+      const advance = await service.approveAdvance(input.advanceId, context.user.id,{...context.permissionAccess,actorEmployeeId:context.user.employee_id});
       return {
         advance: {
           id: advance.id,
@@ -544,7 +544,7 @@ export const travelRouter = {
       };
     }),
 
-  settleClaim: withPermission('payroll.run.manage')
+  settleClaim: withPermission('claims.payout.manage')
     .route({ method: 'POST', path: '/travel/claims/{claimId}/settle', summary: 'Reconcile claim against advance and settle' })
     .input(
       z.object({
@@ -571,7 +571,7 @@ export const travelRouter = {
         settlementMode: input.settlementMode,
         recoveryChannel: input.recoveryChannel,
         settledByUserId: context.user.id,
-      });
+      },{...context.permissionAccess,actorEmployeeId:context.user.employee_id});
       return {
         settlementId: res.settlement.id,
         netPayablePaise: res.reconciliation.netPayablePaise,

@@ -8,10 +8,12 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import type { ControlledTransaction, Kysely } from 'kysely';
 import { createApp } from '../src/app.js';
+import { hashPassword } from '../src/modules/auth/index.js';
 import { signAccessToken } from '../src/core/auth/jwt.js';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database } from '../src/core/db/types.js';
 import { httpRequest } from './http-client.js';
+import { loadGratuityPolicy } from '../src/modules/payroll-core/fnf/gratuity-policy.js';
 import { canEditSetting, settingOwners } from '../src/modules/settings/settings-ownership.js';
 
 const DB_URL = process.env['DATABASE_URL'];
@@ -19,13 +21,13 @@ const JWT_SECRET = process.env['JWT_SECRET'] ?? 'synthetic-jwt-test-secret-at-le
 
 describe('setting ownership map', () => {
   it('routes each namespace to its owning role; super_admin owns all', () => {
-    expect(settingOwners('auth.password_min_length')).toEqual(['it_admin']);
-    expect(settingOwners('att.device_silent_minutes')).toEqual(['it_admin']);
-    expect(settingOwners('pay.pf_wage_base')).toEqual(['payroll_admin']);
-    expect(settingOwners('loans.interest_rate_pct')).toEqual(['payroll_admin', 'hr_head']);
-    expect(settingOwners('lv.rh_max_per_year')).toEqual(['hr_head']);
-    expect(settingOwners('mystery.key')).toEqual([]);
-    expect(canEditSetting(new Set(['super_admin']), 'mystery.key')).toBe(true);
+    expect(settingOwners('auth.password_min_length')).toEqual(['system.config.manage']);
+    expect(settingOwners('att.device_silent_minutes')).toEqual(['system.config.manage']);
+    expect(settingOwners('pay.pf_wage_base')).toEqual(['payroll.config.manage']);
+    expect(settingOwners('loans.interest_rate_pct')).toEqual(['payroll.config.manage']);
+    expect(settingOwners('lv.rh_max_per_year')).toEqual(['hr.config.manage']);
+    expect(settingOwners('mystery.key')).toEqual(['system.config.manage']);
+    expect(canEditSetting(new Set(['system.config.manage']), 'mystery.key')).toBe(true);
     expect(canEditSetting(new Set(['payroll_admin']), 'auth.failure_threshold')).toBe(false);
   });
 });
@@ -57,6 +59,7 @@ describe.skipIf(!DB_URL)('Payroll configuration API', () => {
       uid[role] = u.id;
       t[role] = await signAccessToken(u.id, u.email, JWT_SECRET, s.sid);
     }
+    await tx.updateTable('core.users').set({password_hash:await hashPassword('SyntheticConfig#2026')}).where('id','=',uid['super_admin'] ?? 0).execute();
     app = createApp({ db: tx, jwtSecret: JWT_SECRET, secureCookies: false });
   });
   afterAll(async () => {
@@ -64,6 +67,33 @@ describe.skipIf(!DB_URL)('Payroll configuration API', () => {
     finally { await db.destroy(); }
   });
   const tx = () => { if (!transaction) throw new Error('no transaction'); return transaction; };
+
+  it('defaults configuration to super admin while preserving payroll processing authority', async () => {
+    const c = await httpRequest(app);
+    const auth = `Bearer ${t['payroll_admin'] ?? ''}`;
+    expect((await c.put('/api/settings/pay.negative_net_policy').set('Authorization', auth).send({value:'flag',valueType:'string',description:'Sponsor configuration scope'})).status).toBe(403);
+    expect((await c.get('/api/workflows/definitions').set('Authorization', auth)).status).toBe(403);
+    expect((await c.get('/api/rbac/matrix').set('Authorization', `Bearer ${t['hr_head'] ?? ''}`)).status).toBe(403);
+    const sa=`Bearer ${t['super_admin'] ?? ''}`;
+    expect((await c.post('/api/auth/step-up').set('Authorization',sa).send({password:'SyntheticConfig#2026'})).status).toBe(200);
+    const roleCode=`${tag}_configuration`;
+    expect((await c.post('/api/rbac/roles').set('Authorization',auth).send({code:roleCode,name:'Delegated configuration'})).status).toBe(403);
+    expect((await c.post('/api/rbac/roles').set('Authorization',sa).send({code:roleCode,name:'Delegated configuration'})).status).toBe(200);
+    expect((await tx().selectFrom('core.role_permissions as rp').innerJoin('core.roles as r','r.id','rp.role_id').select('r.id').where('r.code','=',roleCode).execute())).toHaveLength(0);
+    expect((await c.post('/api/rbac/roles').set('Authorization',sa).send({code:roleCode,name:'Duplicate role'})).status).toBe(409);
+    for (const permission of ['admin.settings','payroll.config.manage']) expect((await c.post('/api/rbac/grants').set('Authorization',sa).send({role:roleCode,permission,scope:'all'})).status).toBe(200);
+    expect((await c.post('/api/rbac/user-roles').set('Authorization',sa).send({userId:uid['employee'],role:roleCode})).status).toBe(200);
+    expect((await c.put('/api/settings/pay.negative_net_policy').set('Authorization',`Bearer ${t['employee'] ?? ''}`).send({value:'flag',valueType:'string',description:'Custom role delegated configuration'})).status).toBe(200);
+    expect((await c.get('/api/workflows/definitions').set('Authorization',`Bearer ${t['employee'] ?? ''}`)).status).toBe(403);
+    expect((await c.get('/api/payroll/config/statutory-rates').set('Authorization',`Bearer ${t['employee'] ?? ''}`)).status).toBe(200);
+    expect((await c.post('/api/payroll/runs/list').set('Authorization',`Bearer ${t['employee'] ?? ''}`).send({})).status).toBe(403);
+    expect((await c.delete('/api/rbac/user-roles').set('Authorization',sa).send({userId:uid['employee'],role:roleCode})).status).toBe(200);
+    expect((await c.post('/api/rbac/grants').set('Authorization',sa).send({role:'payroll_admin',permission:'payroll.config.manage',scope:'all'})).status).toBe(200);
+    expect((await c.put('/api/settings/pay.negative_net_policy').set('Authorization', auth).send({value:'flag',valueType:'string',description:'Delegated policy edit'})).status).toBe(200);
+    expect((await c.delete('/api/rbac/grants').set('Authorization',sa).send({role:'payroll_admin',permission:'payroll.config.manage',scope:'all'})).status).toBe(200);
+    expect((await c.put('/api/settings/pay.negative_net_policy').set('Authorization', auth).send({value:'flag',valueType:'string',description:'Revoked policy edit'})).status).toBe(403);
+    expect((await c.post('/api/rbac/grants').set('Authorization',sa).send({role:'payroll_admin',permission:'payroll.config.manage',scope:'all'})).status).toBe(200);
+  });
 
   it('versions statutory parameters by month, audited, never retro into a finalized month', async () => {
     const c = await httpRequest(app);
@@ -89,6 +119,18 @@ describe.skipIf(!DB_URL)('Payroll configuration API', () => {
     const retro = await c.post('/api/payroll/config/statutory-rates').set('Authorization', `Bearer ${t['payroll_admin'] ?? ''}`).send({ ...body, effectiveFrom: '2098-03-01' });
     expect(retro.status).toBe(409);
     expect((retro.body as { message: string }).message).toMatch(/already finalized/);
+  });
+
+  it('lets payroll admins version the gratuity cap and loads only the exit-date version', async () => {
+    const c = await httpRequest(app);
+    const auth = `Bearer ${t['payroll_admin'] ?? ''}`;
+    const rate = {scheme:'GRATUITY',param:'cap',value:1000,effectiveFrom:'2099-01-01',sourceNote:'Synthetic cap'};
+    expect((await c.post('/api/payroll/config/statutory-rates').set('Authorization', auth).send(rate)).status).toBe(200);
+    expect((await c.post('/api/payroll/config/statutory-rates').set('Authorization', auth).send({...rate,value:1.09,effectiveFrom:'2100-01-01'})).status).toBe(200);
+    expect((await loadGratuityPolicy(tx(),'2099-06-15')).capPaise).toBe(100_000);
+    expect((await loadGratuityPolicy(tx(),'2100-06-15')).capPaise).toBe(109);
+    expect((await c.post('/api/payroll/config/statutory-rates').set('Authorization', auth).send({...rate,value:0})).status).toBe(400);
+    expect((await c.post('/api/payroll/config/statutory-rates').set('Authorization', auth).send({...rate,value:1.001})).status).toBe(400);
   });
 
   it('replaces PT slab sets per state with contiguity checks', async () => {
@@ -159,9 +201,14 @@ describe.skipIf(!DB_URL)('Payroll configuration API', () => {
     expect((await put('payroll_admin', 'auth.password_min_length', 14, 'number')).status).toBe(403);
     expect((await put('it_admin', 'pay.negative_net_policy', 'flag', 'string')).status).toBe(403);
     expect((await put('hr_head', 'pay.pf_wage_base', 'CEILING_15000', 'string')).status).toBe(403);
+    expect((await put('hr_head', 'pay.gratuity_eligibility_mode', 'STRICT_5Y', 'string')).status).toBe(403);
+    expect((await put('payroll_admin', 'pay.gratuity_eligibility_mode', 'STRICT_5Y', 'string')).status).toBe(200);
+    expect((await loadGratuityPolicy(tx(),'2099-06-15')).mode).toBe('STRICT_5Y');
+    expect((await put('payroll_admin', 'pay.gratuity_eligibility_mode', 'LIBERAL_4Y240D', 'string')).status).toBe(200);
+    expect((await put('payroll_admin', 'pay.gratuity_eligibility_mode', 'ANYTHING', 'string')).status).toBeGreaterThanOrEqual(400);
     expect((await put('payroll_admin', 'pay.negative_net_policy', 'flag', 'string')).status).toBe(200);
-    expect((await put('it_admin', 'auth.password_min_length', 12, 'number')).status).toBe(200);
-    expect((await put('hr_head', 'lv.rh_max_per_year', 2, 'number')).status).toBe(200);
+    expect((await put('it_admin', 'auth.password_min_length', 12, 'number')).status).toBe(403);
+    expect((await put('hr_head', 'lv.rh_max_per_year', 2, 'number')).status).toBe(403);
     expect((await put('super_admin', 'pay.pf_wage_base', 'ACTUAL', 'string')).status).toBe(200);
   });
 });

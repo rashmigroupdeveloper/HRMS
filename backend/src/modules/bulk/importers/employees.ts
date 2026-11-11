@@ -86,7 +86,8 @@ export const employeesImporter: BulkImporter<NoCtx> = {
     { key: 'contract_type', header: 'Contract type', type: 'enum', options: CONTRACT, help: 'Default probationary for new employees.' },
     { key: 'manager_ecode', header: 'Reporting manager code', aliases: ['rm', 'manager', 'reporting manager'], type: 'string', help: 'E-code of the reporting manager.' },
     { key: 'hod_ecode', header: 'HOD code', aliases: ['hod', 'department head'], type: 'string', help: 'E-code of the department head (second approver).' },
-    { key: 'work_email', header: 'Work e-mail', aliases: ['email', 'official email'], type: 'string', maxLength: 120, help: 'Unique.' },
+    { key: 'personal_email', header: 'Personal email', aliases: ['personal e-mail', 'personal mail id'], type: 'string', maxLength: 254, help: 'Personal contact email, stored separately from company email.' },
+    { key: 'work_email', header: 'Company email', aliases: ['email', 'official email', 'work email', 'work e-mail', 'company mail id'], type: 'string', maxLength: 120, help: 'Unique.' },
     { key: 'mobile', header: 'Mobile', aliases: ['phone', 'contact'], type: 'string', help: '10-digit mobile (India).' },
     { key: 'pan', header: 'PAN', type: 'string', help: 'ABCDE1234F.' },
     { key: 'aadhaar', header: 'Aadhaar', type: 'string', help: '12 digits (checksum verified).' },
@@ -102,7 +103,7 @@ export const employeesImporter: BulkImporter<NoCtx> = {
     'Department, designation, grade, unit and location must already exist (Org masters).',
   ],
   samples: [
-    { ecode: null, company: 'RML', first_name: 'Ananya', last_name: 'Ghosh', gender: 'Female', dob: '1998-07-14', doj: '2026-11-02', org_unit: 'RML Kharagpur', location: 'Kharagpur', department: 'ERP-CELL', designation: 'Junior Graduate Engineer', category: 'white_collar', contract_type: 'probationary', manager_ecode: 'RML033625', work_email: 'ananya.ghosh@rashmigroup.example', mobile: '9876543210', pan: 'ABCPG1234K', bank_name: 'HDFC Bank', bank_account: '50100491230000', bank_ifsc: 'HDFC0009686' },
+    { ecode: null, company: 'RML', first_name: 'Ananya', last_name: 'Ghosh', gender: 'Female', dob: '1998-07-14', doj: '2026-11-02', org_unit: 'RML Kharagpur', location: 'Kharagpur', department: 'ERP-CELL', designation: 'Junior Graduate Engineer', category: 'white_collar', contract_type: 'probationary', manager_ecode: 'RML033625', personal_email: 'ananya.ghosh@example.com', work_email: 'ananya.ghosh@rashmigroup.example', mobile: '9876543210', pan: 'ABCPG1234K', bank_name: 'HDFC Bank', bank_account: '50100491230000', bank_ifsc: 'HDFC0009686' },
     { ecode: 'RML033901', company: 'RML', mobile: '9123456780', bank_ifsc: 'SBIN0001234' },
   ],
   dynamicOptions: async (db) => ({ company: await companyCodes(db) }),
@@ -163,8 +164,10 @@ export const employeesImporter: BulkImporter<NoCtx> = {
         else if (ageOn(dob, doj) < 18) rowError(row, 'Date of birth', `Employee would be ${String(ageOn(dob, doj))} on joining — minors cannot be employed`);
         else if (ageOn(dob, doj) > 65) rowWarning(row, 'Date of birth', 'Over 65 on joining — check the date');
       }
-      const email = opt(v['work_email']);
-      if (email !== null && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) rowError(row, 'Work e-mail', 'Not a valid e-mail address');
+      for (const [key, label] of [['personal_email', 'Personal email'], ['work_email', 'Company email']] as const) {
+        const email = opt(v[key]);
+        if (email !== null && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) rowError(row, label, 'Not a valid e-mail address');
+      }
       for (const [key, field, label] of IDS) {
         const raw = opt(v[key]);
         if (raw === null) continue;
@@ -206,6 +209,7 @@ export const employeesImporter: BulkImporter<NoCtx> = {
       put('dob', opt(v['dob'])); put('doj', opt(v['doj'])); put('org_unit_id', v['org_unit_id']); put('location_id', v['location_id']);
       put('department_id', v['department_id']); put('designation_id', v['designation_id']); put('grade_id', v['grade_id']);
       put('category', opt(v['category'])); put('contract_type', opt(v['contract_type'])); put('reporting_manager_id', v['manager_ecode_id']);
+      put('personal_email', opt(v['personal_email'])?.toLowerCase());
       put('hod_employee_id', v['hod_ecode_id']); put('work_email', opt(v['work_email'])?.toLowerCase()); put('mobile', opt(v['mobile']));
       put('pan', opt(v['pan'])); put('aadhaar', opt(v['aadhaar'])); put('uan', opt(v['uan'])); put('esic_ip_number', opt(v['esic_no']));
       put('bank_name', opt(v['bank_name'])); put('bank_account', opt(v['bank_account'])); put('bank_ifsc', opt(v['bank_ifsc']));

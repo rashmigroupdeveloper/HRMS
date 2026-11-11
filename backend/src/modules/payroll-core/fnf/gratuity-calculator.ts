@@ -2,16 +2,17 @@
  * Gratuity Calculator — Payment of Gratuity Act, 1972 (PAY-15, Golden G8, docs/10 §13).
  *
  * Rules:
- * 1. Eligibility: Continuous service >= 4 years 240 days (approx 4.66 years / 5 continuous years).
+ * 1. Eligibility: payroll-admin strict five calendar years or legacy liberal calendar approximation.
+ *    The liberal approximation does not establish 240 actual worked days.
  * 2. Service tenure rounding: Any service fraction >= 6 months rounds UP to next full year.
  *    (e.g., 8 years 7 months -> 9 years).
  * 3. Calculation formula: (15 * (Basic + DA) * completed_years) / 26.
- * 4. Statutory ceiling: Maximum ₹20,00,000 (₹20 Lakhs).
+ * 4. Ceiling: effective-dated configured cap supplied by F&F; legacy fallback ₹20 lakh.
  * 5. Fixture G8 test: Basic ₹32,286, DA ₹0, 8y 7m service -> 9 years:
  *    (32,286 * 15 * 9) / 26 = 1,67,638.846... -> rounds to ₹1,67,639.
  */
 import { addMonthsIso } from '../../../core/dates.js';
-import { paise } from '../../../core/money/index.js';
+import { paise, mulDiv, roundGratuity, toRupees } from '../../../core/money/index.js';
 
 function calendarDate(value: Date | string): { iso: string; date: Date } {
   const iso = value instanceof Date ? value.toISOString().slice(0, 10) : value;
@@ -21,7 +22,10 @@ function calendarDate(value: Date | string): { iso: string; date: Date } {
   return { iso, date };
 }
 
+export type GratuityEligibilityMode = 'STRICT_5Y' | 'LIBERAL_4Y240D';
+
 export interface GratuityCalculationInput {
+  eligibilityMode?: GratuityEligibilityMode | undefined;
   basicMonthlyPaise: number; // in paise
   daMonthlyPaise?: number; // in paise (defaults to 0)
   doj: Date | string; // Date of Joining
@@ -102,7 +106,10 @@ export function calculateGratuity(input: GratuityCalculationInput): GratuityCalc
   if (basicPaise < 0 || daPaise < 0 || capPaise <= 0) throw new RangeError('Invalid gratuity wages or cap');
 
   const tenure = calculateServiceTenure(input.doj, input.lastWorkingDay);
-  const eligible = tenure.isEligible || input.waiveMinimumService === true;
+  const mode = input.eligibilityMode ?? 'LIBERAL_4Y240D';
+  if (!['STRICT_5Y', 'LIBERAL_4Y240D'].includes(mode)) throw new RangeError('Invalid gratuity eligibility mode');
+  const meetsMinimum = mode === 'STRICT_5Y' ? tenure.years >= 5 : tenure.isEligible;
+  const eligible = meetsMinimum || input.waiveMinimumService === true;
 
   if (!eligible) {
     return {
@@ -113,24 +120,22 @@ export function calculateGratuity(input: GratuityCalculationInput): GratuityCalc
       gratuityPaise: 0,
       gratuityRupees: 0,
       cappedAtCeiling: false,
-      calcNote: `Ineligible for statutory gratuity: service tenure ${tenure.years}y ${tenure.months}m (${tenure.totalDays} days) is less than statutory threshold of 4 years 240 days.`,
+      calcNote: `Ineligible for statutory gratuity: service tenure ${tenure.years}y ${tenure.months}m (${tenure.totalDays} days) does not meet configured ${mode} eligibility.`,
     };
   }
 
   // Formula: (15 * (Basic + DA) * completed_years) / 26
-  // Round to nearest integer rupee per statutory standard
-  const unroundedPaise = (15 * wageBasePaise * tenure.completedYearsForGratuity) / 26;
-  const roundedRupees = Math.round(unroundedPaise / 100);
-  let finalPaise = roundedRupees * 100;
+  // Round to nearest integer rupee per statutory standard (docs/10 §13 G8)
+  const unroundedPaise = mulDiv(paise(wageBasePaise), 15 * tenure.completedYearsForGratuity, 26);
+  let finalPaise = roundGratuity(unroundedPaise);
 
   let cappedAtCeiling = false;
   if (finalPaise > capPaise) {
     finalPaise = capPaise;
     cappedAtCeiling = true;
   }
-  paise(finalPaise);
 
-  const finalRupees = Math.round(finalPaise / 100);
+  const finalRupees = toRupees(finalPaise);
 
   return {
     isEligible: true,
@@ -141,7 +146,7 @@ export function calculateGratuity(input: GratuityCalculationInput): GratuityCalc
     gratuityRupees: finalRupees,
     cappedAtCeiling,
     calcNote: cappedAtCeiling
-      ? `Gratuity capped at statutory ceiling of ₹${(capPaise / 100).toLocaleString('en-IN')}`
-      : `Gratuity calculated: (15 × ₹${(wageBasePaise / 100).toLocaleString('en-IN')} × ${tenure.completedYearsForGratuity} years) / 26 = ₹${finalRupees.toLocaleString('en-IN')}${input.waiveMinimumService === true && !tenure.isEligible ? ' (five-year rule waived on death)' : ''}`,
+      ? `Gratuity (${mode}) capped at configured ceiling of ₹${(capPaise / 100).toLocaleString('en-IN')}`
+      : `Gratuity (${mode}) calculated: (15 × ₹${(wageBasePaise / 100).toLocaleString('en-IN')} × ${tenure.completedYearsForGratuity} years) / 26 = ₹${finalRupees.toLocaleString('en-IN')}${input.waiveMinimumService === true && !meetsMinimum ? ' (minimum service waived on death)' : ''}`,
   };
 }

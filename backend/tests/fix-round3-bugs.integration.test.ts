@@ -55,12 +55,11 @@ describe.skipIf(!DB_URL)('fix round 3 bugs', () => {
     expect((await call('ops', 'post', '/api/workflows/requests/999999999/retry-routing', { reason: 'fixed manager' })).status).toBeGreaterThanOrEqual(400);
   });
 
-  it('E2E-005: hr_head reads and exports the access matrix but cannot change it', async () => {
+  it('sponsor restriction: hr_head cannot read, export or change the access matrix', async () => {
     const m = await call('head', 'get', '/api/rbac/matrix');
-    expect(m.status).toBe(200);
+    expect(m.status).toBe(403);
     const x = await call('head', 'get', '/api/rbac/matrix/export');
-    expect(x.status).toBe(200);
-    expect(Buffer.from((x.body as { base64: string }).base64, 'base64').subarray(0, 2).toString()).toBe('PK');
+    expect(x.status).toBe(403);
     expect((await call('head', 'post', '/api/rbac/grants', { role: 'employee', permission: 'admin.roles' })).status).toBe(403);
     expect((await call('emp', 'get', '/api/rbac/matrix')).status).toBe(403);
   });

@@ -11,13 +11,13 @@ import { Button, Drawer, Select, TextField, toast } from '../../ui';
 export interface EmployeeFormValues {
   companyCode: string; firstName: string; lastName: string; gender: string; dob: string; doj: string;
   orgUnit: string; location: string; department: string; designation: string; grade: string;
-  category: string; contractType: string; managerEcode: string; hodEcode: string; workEmail: string;
+  category: string; contractType: string; managerEcode: string; hodEcode: string; personalEmail: string; workEmail: string;
   mobile: string; pan: string; aadhaar: string; uan: string; esicNo: string; bankName: string; bankAccount: string; bankIfsc: string;
 }
 
 const EMPTY: EmployeeFormValues = {
   companyCode: '', firstName: '', lastName: '', gender: '', dob: '', doj: '', orgUnit: '', location: '', department: '',
-  designation: '', grade: '', category: '', contractType: '', managerEcode: '', hodEcode: '', workEmail: '', mobile: '',
+  designation: '', grade: '', category: '', contractType: '', managerEcode: '', hodEcode: '', personalEmail: '', workEmail: '', mobile: '',
   pan: '', aadhaar: '', uan: '', esicNo: '', bankName: '', bankAccount: '', bankIfsc: '',
 };
 
@@ -48,6 +48,7 @@ export function formHints(v: EmployeeFormValues, creating: boolean): Partial<Rec
   if (v.bankIfsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(up(v.bankIfsc))) e.bankIfsc = 'Like HDFC0001234 (5th character 0)';
   if (v.bankAccount && !/^\d{9,18}$/.test(up(v.bankAccount))) e.bankAccount = '9–18 digits';
   if (v.mobile && !/^[6-9]\d{9}$/.test(up(v.mobile).replace(/^\+91/, ''))) e.mobile = '10-digit Indian mobile';
+  if (v.personalEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.personalEmail.trim())) e.personalEmail = 'Not a valid e-mail';
   if (v.workEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.workEmail.trim())) e.workEmail = 'Not a valid e-mail';
   return e;
 }
@@ -148,7 +149,10 @@ export function EmployeeFormDrawer({ open, onClose, ecode, initial, onSaved }: {
             options={['probationary', 'permanent', 'temporary', 'fixed_term', 'consultant', 'apprentice'].map((c) => ({ value: c, label: c.replace('_', ' ') }))} />
           {text('managerEcode', 'Reporting manager e-code')}
           {text('hodEcode', 'HOD e-code')}
-          {text('workEmail', 'Work e-mail', { type: 'email' })}
+        </section>
+        <section className="grid gap-4 sm:grid-cols-2" aria-label="Contact">
+          {text('personalEmail', 'Personal email', { type: 'email' })}
+          {text('workEmail', 'Company email', { type: 'email' })}
           {text('mobile', 'Mobile', { type: 'tel' })}
         </section>
         <section className="grid gap-4 sm:grid-cols-2" aria-label="Statutory and bank">

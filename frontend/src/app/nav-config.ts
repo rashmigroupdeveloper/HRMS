@@ -176,6 +176,9 @@ export function navForUser(user: SessionUser): NavItem[] {
       }),
     );
   }
+  if (hasPermission(user, 'lifecycle.onboard.tasks')) {
+    push(grouped('People',{label:'Onboarding tasks',to:'/lifecycle/tasks',icon:Route}));
+  }
   if (hasPermission(user, 'employee.write') || isOps) {
     push(
       grouped('People', {
@@ -212,8 +215,19 @@ export function navForUser(user: SessionUser): NavItem[] {
   if (hasPermission(user, 'payroll.run.view') || hasPermission(user, 'payroll.run.manage')) {
     push({ label: 'Payroll', to: '/payroll', match: '/payroll', icon: Banknote });
   }
+  if (hasAnyPermission(user, ['payroll.run.view', 'payroll.config.manage'])) {
+    push({ label: 'Payroll settings', to: '/payroll/settings', icon: Settings });
+  }
   if (hasPermission(user, 'payroll.run.view')) {
+    push({ label: 'Salary structures', to: '/payroll/structures', icon: Banknote });
+    push({ label: 'Parallel run', to: '/payroll/parallel-run', icon: FileSpreadsheet });
+    push({ label: 'Salary holds', to: '/payroll/holds', icon: Banknote });
+    push({ label: 'Investment proofs', to: '/payroll/declarations', icon: ReceiptText });
     push({ label: 'TDS compliance', to: '/payroll/tds', icon: ReceiptText });
+  }
+  if(hasPermission(user,'claims.payout.view'))push({label:'Reimbursement payments',to:'/claims/payments',icon:ReceiptText});
+  if (hasPermission(user, 'salary.write') || hasPermission(user, 'payroll.run.manage')) {
+    push({ label: 'Salary revisions', to: '/payroll/revisions', icon: FileClock });
   }
   if (
     hasPermission(user, 'payroll.run.manage') || hasPermission(user, 'payroll.reports')
@@ -221,8 +235,7 @@ export function navForUser(user: SessionUser): NavItem[] {
     push({ label: 'Loans', to: '/loans', icon: Coins });
   }
   if (
-    hasPermission(user, 'payroll.run.manage') ||
-    hasPermission(user, 'payroll.reports') ||
+    hasPermission(user, 'claims.payout.view') ||
     hasPermission(user, 'claims.approve')
   ) {
     push({ label: 'Claims', to: '/claims', icon: ReceiptText });
@@ -279,15 +292,15 @@ export function navForUser(user: SessionUser): NavItem[] {
   }
 
   // Admin
-  if (hasPermission(user, 'admin.users') || hasPermission(user, 'admin.roles') || hasPermission(user, 'admin.rbac.read')) {
+  if (hasPermission(user, 'admin.users') || hasPermission(user, 'admin.roles')) {
     push(grouped('Admin', { label: 'Users & Roles', to: '/admin/users', icon: ShieldCheck }));
   }
-  if (hasPermission(user, 'admin.settings')) {
+  if (hasPermission(user, 'admin.workflows')) {
     push(
       grouped('Admin', { label: 'Approval chains', to: '/admin/workflows', icon: GitBranch }),
     );
   }
-  if (!hasPermission(user, 'admin.settings') && hasPermission(user, 'workflow.routing_holds')) {
+  if (!hasPermission(user, 'admin.workflows') && hasPermission(user, 'workflow.routing_holds')) {
     push(grouped('Admin', { label: 'Routing holds', to: '/admin/workflows', icon: GitBranch }));
   }
   if (hasPermission(user, 'admin.settings') || hasPermission(user, 'attendance.holidays.manage')) {

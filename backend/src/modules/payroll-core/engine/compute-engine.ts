@@ -241,7 +241,9 @@ export function computeEmployeePayroll(
   // 2. Approved overtime (ATT-08): (BASIC ÷ divisor) × multiplier × hours, on the contracted BASIC.
   if (otMinutes > 0) {
     const basic = salaryComponentsPaise['BASIC'] ?? paise(0);
-    otPaise = roundHalfUp(mulDiv(basic, otMinutes * rates.otMultiplier, rates.otDivisor * 60));
+    const otNum = Math.round(otMinutes * rates.otMultiplier * 100);
+    const otDen = Math.round(rates.otDivisor * 60 * 100);
+    otPaise = roundHalfUp(mulDiv(basic, otNum, otDen));
     if (otPaise > 0) {
       pushEarning(meta('OT'), otPaise, `Overtime ${String(otMinutes / 60)} h × ₹${rupees(mulDiv(basic, 1, rates.otDivisor))}/h × ${String(rates.otMultiplier)}`);
     }

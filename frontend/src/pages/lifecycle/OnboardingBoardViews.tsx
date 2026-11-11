@@ -4,12 +4,14 @@ import { Button, Card, CardHeader, StatusBadge } from '../../ui';
 import type { StakeholderTaskItem } from './onboarding-types';
 interface TasksProps {
   tasks: StakeholderTaskItem[];
+  busyTaskId?: number | null;
   taskError: string | null;
   onVerifyBiometric: (employeeId: number) => Promise<void>;
   onCompleteTask: (taskId: number) => Promise<void>;
 }
 export function OnboardingTasks({
   tasks,
+  busyTaskId = null,
   taskError,
   onVerifyBiometric,
   onCompleteTask,
@@ -59,6 +61,7 @@ export function OnboardingTasks({
                 <Button
                   size="sm"
                   variant="secondary"
+                  disabled={busyTaskId !== null}
                   leadingIcon={<Fingerprint className="h-4 w-4" />}
                   onClick={() => {
                     void onVerifyBiometric(task.employeeId);
@@ -72,6 +75,8 @@ export function OnboardingTasks({
                 <Button
                   size="sm"
                   variant="ghost"
+                  loading={busyTaskId === task.id}
+                  disabled={busyTaskId !== null}
                   leadingIcon={<Check className="h-4 w-4" />}
                   onClick={() => {
                     void onCompleteTask(task.id);

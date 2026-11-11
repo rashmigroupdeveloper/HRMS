@@ -29,6 +29,15 @@ describe('statutory input and calendar safety', () => {
   it.each([{daysPayable:Infinity},{daysPayable:-1},{daysPayable:31},{daysInMonth:0},{elBalanceDays:-1},{tdsPaise:-100},{grossMonthlyPaise:1.5}])('rejects invalid final-settlement inputs %j', invalid => {
     expect(()=>computeFnfSettlement({...fnf,...invalid})).toThrow();
   });
+  it('lets payroll choose strict five years without losing the liberal default', () => {
+    const input = {...gratuity, doj:'2021-01-01',lastWorkingDay:'2025-10-01'};
+    expect(calculateGratuity(input).isEligible).toBe(true);
+    expect(calculateGratuity({...input,eligibilityMode:'STRICT_5Y'}).isEligible).toBe(false);
+    expect(calculateGratuity({...input,eligibilityMode:'STRICT_5Y',lastWorkingDay:'2026-01-01'}).isEligible).toBe(true);
+    expect(calculateGratuity({...input,eligibilityMode:'STRICT_5Y',waiveMinimumService:true}).isEligible).toBe(true);
+    expect(computeFnfSettlement({...fnf,doj:'2022-01-01',gratuityEligibilityMode:'STRICT_5Y'}).earnings.gratuityPaise).toBe(0);
+    expect(computeFnfSettlement({...fnf,gratuityCapPaise:100_000}).earnings.gratuityPaise).toBe(100_000);
+  });
   it('retains the approved fractional payable-day arithmetic', () => {
     const result = computeFnfSettlement(fnf);
     expect(result.earnings.proratedSalaryPaise).toBe(250_000); // ₹10,000 × 7.5 / 30

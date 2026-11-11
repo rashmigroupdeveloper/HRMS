@@ -10,6 +10,9 @@
 
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../../core/db/types.js';
+import { inTransaction } from '../../../core/db/database.js';
+import { fromRupees } from '../../../core/money/index.js';
+import { getStructure, listComponents, resolveSalaryStructure, structureLineNode } from '../../payroll-core/index.js';
 import { employeeScopeSql, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
 import { DomainError, NotFoundError } from '../../../core/errors/index.js';
 
@@ -115,32 +118,35 @@ export const ProbationService = {
     db: Kysely<Database>,
     input: SubmitEvaluationInput
   ): Promise<void> {
-    const review = await db
-      .selectFrom('core.probation_reviews')
-      .selectAll()
-      .where('id', '=', input.reviewId)
-      .executeTakeFirst();
+    return inTransaction(db, async (trx) => {
+      const review = await trx
+        .selectFrom('core.probation_reviews')
+        .selectAll()
+        .where('id', '=', input.reviewId)
+        .forUpdate()
+        .executeTakeFirst();
 
-    if (!review) {
-      throw new NotFoundError(`Probation review ${String(input.reviewId)} not found.`);
-    }
+      if (!review) {
+        throw new NotFoundError(`Probation review ${String(input.reviewId)} not found.`);
+      }
 
-    if (input.managerRecommendation === 'extend' && (!input.extensionMonths || input.extensionMonths < 1)) {
-      throw new DomainError('Extension requires a valid duration between 1 and 6 months.');
-    }
+      if (input.managerRecommendation === 'extend' && (!input.extensionMonths || input.extensionMonths < 1)) {
+        throw new DomainError('Extension requires a valid duration between 1 and 6 months.');
+      }
 
-    await db
-      .updateTable('core.probation_reviews')
-      .set({
-        manager_recommendation: input.managerRecommendation,
-        extension_months: input.extensionMonths ?? null,
-        review_notes: input.reviewNotes,
-        ratings: input.ratings ? JSON.stringify(input.ratings) : null,
-        status: 'under_review',
-        updated_at: new Date(),
-      })
-      .where('id', '=', input.reviewId)
-      .execute();
+      await trx
+        .updateTable('core.probation_reviews')
+        .set({
+          manager_recommendation: input.managerRecommendation,
+          extension_months: input.extensionMonths ?? null,
+          review_notes: input.reviewNotes,
+          ratings: input.ratings ? JSON.stringify(input.ratings) : null,
+          status: 'under_review',
+          updated_at: new Date(),
+        })
+        .where('id', '=', input.reviewId)
+        .execute();
+    });
   },
 
   /**
@@ -150,146 +156,181 @@ export const ProbationService = {
     db: Kysely<Database>,
     input: DecideReviewInput
   ): Promise<{ outcome: string; confirmationLetterId?: number | undefined }> {
-    const now = new Date();
+    return inTransaction(db, async (trx) => {
+      const now = new Date();
 
-    const review = await db
-      .selectFrom('core.probation_reviews')
-      .selectAll()
-      .where('id', '=', input.reviewId)
-      .executeTakeFirst();
-
-    if (!review) {
-      throw new NotFoundError(`Probation review ${String(input.reviewId)} not found.`);
-    }
-
-    let confirmationLetterId: number | undefined;
-
-    if (input.outcome === 'confirmed') {
-      const confDate = input.confirmationDate ?? new Date().toISOString().slice(0, 10);
-
-      // 1. Update review record
-      await db
-        .updateTable('core.probation_reviews')
-        .set({
-          outcome: 'confirmed',
-          status: 'completed',
-          decided_by: input.decidedByUserId,
-          decided_at: now,
-          confirmation_date: new Date(confDate),
-          review_notes: input.decisionNotes ?? review.review_notes,
-          updated_at: now,
-        })
+      const review = await trx
+        .selectFrom('core.probation_reviews')
+        .selectAll()
         .where('id', '=', input.reviewId)
-        .execute();
-
-      // 2. Update employee contract type to permanent
-      await db
-        .updateTable('core.employees')
-        .set({
-          contract_type: 'permanent',
-          confirmation_date: new Date(confDate),
-        })
-        .where('id', '=', review.employee_id)
-        .execute();
-
-      // 3. Atomically transition salary: close probation salary, open confirmed salary
-      if (input.confirmedAnnualCtc && input.salaryStructureId) {
-        // Close prior salary assignment effective the day before confirmation
-        const prevDay = new Date(new Date(confDate).getTime() - 24 * 60 * 60 * 1000)
-          .toISOString()
-          .slice(0, 10);
-
-        await db
-          .updateTable('pay.employee_salaries')
-          .set({
-            effective_to: new Date(prevDay),
-          })
-          .where('employee_id', '=', review.employee_id)
-          .where('effective_to', '=', new Date('9999-12-31'))
-          .execute();
-
-        // Insert new confirmed salary assignment
-        await db
-          .insertInto('pay.employee_salaries')
-          .values({
-            employee_id: review.employee_id,
-            structure_id: input.salaryStructureId,
-            effective_from: new Date(confDate),
-            effective_to: new Date('9999-12-31'),
-            annual_ctc: input.confirmedAnnualCtc.toFixed(2),
-            phase: 'confirmed',
-            component_amounts: {},
-          })
-          .execute();
-      }
-
-      // 4. Generate confirmation letter in core.letters
-      const letterInsert = await db
-        .insertInto('core.letters')
-        .values({
-          employee_id: review.employee_id,
-          template_code: 'CONFIRMATION_LETTER',
-          document_id: null,
-          body_rendered: `Confirmation of Service granted effective ${confDate}.`,
-          status: 'issued',
-          issued_by: input.decidedByUserId,
-          issued_at: now,
-          workflow_request_id: null,
-        })
-        .returning('id')
+        .forUpdate()
         .executeTakeFirst();
 
-      if (letterInsert) {
-        confirmationLetterId = letterInsert.id;
+      if (!review) {
+        throw new NotFoundError(`Probation review ${String(input.reviewId)} not found.`);
       }
-    } else if (input.outcome === 'extended') {
-      const extMonths = input.extensionMonths ?? review.extension_months ?? 3;
-      const [curY, curM, curD] = dbDate(review.due_date).split('-').map(Number);
-      const nextDate = new Date(Date.UTC(curY ?? 2026, (curM ?? 1) - 1 + extMonths, curD ?? 1));
-      const nextDueDate = nextDate.toISOString().slice(0, 10);
 
-      // Update current review
-      await db
-        .updateTable('core.probation_reviews')
-        .set({
-          outcome: 'extended',
-          status: 'completed',
-          extension_months: extMonths,
-          decided_by: input.decidedByUserId,
-          decided_at: now,
-          updated_at: now,
-        })
-        .where('id', '=', input.reviewId)
-        .execute();
+      let confirmationLetterId: number | undefined;
 
-      // Create new review cycle for extended period
-      await db
-        .insertInto('core.probation_reviews')
-        .values({
-          employee_id: review.employee_id,
-          due_date: new Date(nextDueDate),
-          status: 'pending',
-          updated_at: now,
-        })
-        .execute();
-    } else {
-      await db
-        .updateTable('core.probation_reviews')
-        .set({
-          outcome: 'separated',
-          status: 'completed',
-          decided_by: input.decidedByUserId,
-          decided_at: now,
-          updated_at: now,
-        })
-        .where('id', '=', input.reviewId)
-        .execute();
-    }
+      if (input.outcome === 'confirmed') {
+        const confDate = input.confirmationDate ?? new Date().toISOString().slice(0, 10);
 
-    return {
-      outcome: input.outcome,
-      ...(confirmationLetterId !== undefined ? { confirmationLetterId } : {}),
-    };
+        // 1. Update review record
+        await trx
+          .updateTable('core.probation_reviews')
+          .set({
+            outcome: 'confirmed',
+            status: 'completed',
+            decided_by: input.decidedByUserId,
+            decided_at: now,
+            confirmation_date: new Date(confDate),
+            review_notes: input.decisionNotes ?? review.review_notes,
+            updated_at: now,
+          })
+          .where('id', '=', input.reviewId)
+          .execute();
+
+        // 2. Update employee contract type to permanent
+        await trx
+          .updateTable('core.employees')
+          .set({
+            contract_type: 'permanent',
+            confirmation_date: new Date(confDate),
+          })
+          .where('id', '=', review.employee_id)
+          .execute();
+
+        // 3. Atomically transition salary: close probation salary, open confirmed salary
+        if (input.confirmedAnnualCtc && input.salaryStructureId) {
+          // Close prior salary assignment effective the day before confirmation
+          const prevDay = new Date(new Date(confDate).getTime() - 24 * 60 * 60 * 1000)
+            .toISOString()
+            .slice(0, 10);
+
+          await trx
+            .updateTable('pay.employee_salaries')
+            .set({
+              effective_to: new Date(prevDay),
+            })
+            .where('employee_id', '=', review.employee_id)
+            .where('effective_to', '=', new Date('9999-12-31'))
+            .execute();
+
+          // Resolve component amounts from salary structure
+          let componentAmounts: Record<string, number> = {};
+          try {
+            const struct = await getStructure(trx, input.salaryStructureId);
+            if (struct) {
+              const comps = await listComponents(trx);
+              const compMap = new Map(comps.map((c) => [c.code, c]));
+              const nodes = struct.components.map((item) => {
+                const meta = compMap.get(item.component_code);
+                if (!meta) throw new Error(`Salary component '${item.component_code}' not found`);
+                return structureLineNode(item, meta);
+              });
+              const evaluated = resolveSalaryStructure({
+                nodes,
+                annualCtcPaise: fromRupees(input.confirmedAnnualCtc),
+              });
+              for (const [code, amt] of Object.entries(evaluated.monthly)) {
+                componentAmounts[code] = amt;
+              }
+            }
+          } catch {
+            const prevSalary = await trx
+              .selectFrom('pay.employee_salaries')
+              .selectAll()
+              .where('employee_id', '=', review.employee_id)
+              .orderBy('effective_from', 'desc')
+              .executeTakeFirst();
+            if (prevSalary?.component_amounts) {
+              componentAmounts = prevSalary.component_amounts;
+            }
+          }
+
+          // Insert new confirmed salary assignment
+          await trx
+            .insertInto('pay.employee_salaries')
+            .values({
+              employee_id: review.employee_id,
+              structure_id: input.salaryStructureId,
+              effective_from: new Date(confDate),
+              effective_to: new Date('9999-12-31'),
+              annual_ctc: input.confirmedAnnualCtc.toFixed(2),
+              phase: 'confirmed',
+              component_amounts: componentAmounts,
+            })
+            .execute();
+        }
+
+        // 4. Generate confirmation letter in core.letters
+        const letterInsert = await trx
+          .insertInto('core.letters')
+          .values({
+            employee_id: review.employee_id,
+            template_code: 'CONFIRMATION_LETTER',
+            document_id: null,
+            body_rendered: `Confirmation of Service granted effective ${confDate}.`,
+            status: 'issued',
+            issued_by: input.decidedByUserId,
+            issued_at: now,
+            workflow_request_id: null,
+          })
+          .returning('id')
+          .executeTakeFirst();
+
+        if (letterInsert) {
+          confirmationLetterId = letterInsert.id;
+        }
+      } else if (input.outcome === 'extended') {
+        const extMonths = input.extensionMonths ?? review.extension_months ?? 3;
+        const [curY, curM, curD] = dbDate(review.due_date).split('-').map(Number);
+        const nextDate = new Date(Date.UTC(curY ?? 2026, (curM ?? 1) - 1 + extMonths, curD ?? 1));
+        const nextDueDate = nextDate.toISOString().slice(0, 10);
+
+        // Update current review
+        await trx
+          .updateTable('core.probation_reviews')
+          .set({
+            outcome: 'extended',
+            status: 'completed',
+            extension_months: extMonths,
+            decided_by: input.decidedByUserId,
+            decided_at: now,
+            updated_at: now,
+          })
+          .where('id', '=', input.reviewId)
+          .execute();
+
+        // Create new review cycle for extended period
+        await trx
+          .insertInto('core.probation_reviews')
+          .values({
+            employee_id: review.employee_id,
+            due_date: new Date(nextDueDate),
+            status: 'pending',
+            updated_at: now,
+          })
+          .execute();
+      } else {
+        await trx
+          .updateTable('core.probation_reviews')
+          .set({
+            outcome: 'separated',
+            status: 'completed',
+            decided_by: input.decidedByUserId,
+            decided_at: now,
+            updated_at: now,
+          })
+          .where('id', '=', input.reviewId)
+          .execute();
+      }
+
+      return {
+        outcome: input.outcome,
+        ...(confirmationLetterId !== undefined ? { confirmationLetterId } : {}),
+      };
+    });
   },
 
   /**

@@ -11,8 +11,8 @@ import type { Database, TeTripsTable, TeTripItinerariesTable, TeBudgetsTable, Te
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { ConflictError, DomainError, ForbiddenError, NotFoundError } from '../../core/errors/index.js';
-import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
-import { createRequest } from '../workflows/index.js';
+import { assertEmployeesInScope, employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
+import { createRequest, type WorkflowFinalStatus } from '../workflows/index.js';
 import { assertDate, assertTravelMonth, assertWithinTrip, budgetEstimatePaise, inclusiveTravelDays } from './travel-utils.js';
 import { WalletService } from './wallet.service.js';
 import { inTransaction } from '../../core/db/database.js';
@@ -81,7 +81,7 @@ function scopeFilter(scope: EmployeeScope | undefined) {
 }
 
 /** Workflow final hooks for the travel chains (registered in workflow-hooks.ts). */
-export async function applyTripOnFinal(db: Db, request: { id: number }, status: 'approved' | 'rejected' | 'lapsed'): Promise<void> {
+export async function applyTripOnFinal(db: Db, request: { id: number }, status: WorkflowFinalStatus): Promise<void> {
   const trip = await db.selectFrom('te.trips').selectAll().where('workflow_request_id', '=', request.id).executeTakeFirst();
   if (trip?.status !== 'submitted') return;
   await db
@@ -93,7 +93,7 @@ export async function applyTripOnFinal(db: Db, request: { id: number }, status: 
     .execute();
 }
 
-export async function applyAdvanceOnFinal(db: Db, request: { id: number }, status: 'approved' | 'rejected' | 'lapsed'): Promise<void> {
+export async function applyAdvanceOnFinal(db: Db, request: { id: number }, status: WorkflowFinalStatus): Promise<void> {
   await db
     .updateTable('te.advances')
     .set({ status: status === 'approved' ? 'approved' : 'rejected', updated_at: new Date() })
@@ -335,10 +335,11 @@ export class TravelService {
   }
 
   /** Disburses an advance the approval chain already approved into the wallet (TE-08). */
-  async approveAdvance(advanceId: number, approverUserId: number): Promise<AdvanceRow> {
+  async approveAdvance(advanceId: number, approverUserId: number,scope?:EmployeeScope): Promise<AdvanceRow> {
     return inTransaction(this.db, async (trx) => {
       const advance = await trx.selectFrom('te.advances').selectAll().where('id', '=', advanceId).forUpdate().executeTakeFirst();
       if (!advance) throw new NotFoundError(`Advance #${String(advanceId)} not found`);
+      if(scope)await assertEmployeesInScope(trx,scope,[advance.employee_id]);
       if (advance.status === 'disbursed') throw new ConflictError(`Advance #${String(advanceId)} is already disbursed`);
       if (advance.status !== 'approved') {
         throw new ConflictError(`Advance #${String(advanceId)} is ${advance.status}; it must be approved by the reporting manager chain before disbursal`);

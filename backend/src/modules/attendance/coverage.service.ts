@@ -46,36 +46,51 @@ export async function coverageView(
     .where('to_date', '>=', sql<Date>`${params.from}::date`)
     .execute();
 
-  const onLeave = new Set<string>();
+  const leaveByEmp = new Map<number, { from: string; to: string }[]>();
   for (const row of leave) {
     const from = formatDbDate(row.from_date);
     const to = formatDbDate(row.to_date);
-    for (const r of roster) {
-      const iso = formatDbDate(r.work_date);
-      if (r.employee_id === row.employee_id && from <= iso && iso <= to) {
-        onLeave.add(`${String(r.employee_id)}|${iso}`);
+    const list = leaveByEmp.get(row.employee_id);
+    if (list) {
+      list.push({ from, to });
+    } else {
+      leaveByEmp.set(row.employee_id, [{ from, to }]);
+    }
+  }
+
+  const onLeave = new Set<string>();
+  for (const r of roster) {
+    const iso = formatDbDate(r.work_date);
+    const empLeaves = leaveByEmp.get(r.employee_id);
+    if (empLeaves) {
+      for (const l of empLeaves) {
+        if (l.from <= iso && iso <= l.to) {
+          onLeave.add(`${String(r.employee_id)}|${iso}`);
+          break;
+        }
       }
     }
   }
 
   const targets = await db.selectFrom('att.coverage_targets').selectAll().execute();
+  const exactTargets = new Map<string, number>();
+  const locTargets = new Map<string, number>();
+  for (const t of targets) {
+    if (t.department_id !== null) {
+      exactTargets.set(`${String(t.location_id)}:${String(t.department_id)}:${String(t.shift_id)}:${String(t.weekday)}`, t.sanctioned);
+    } else {
+      locTargets.set(`${String(t.location_id)}:${String(t.shift_id)}:${String(t.weekday)}`, t.sanctioned);
+    }
+  }
+
   const targetOf = (locationId: number | null, departmentId: number | null, shiftId: number, weekday: number): number => {
-    const exact = targets.find(
-      (t) =>
-        t.location_id === locationId &&
-        t.shift_id === shiftId &&
-        t.weekday === weekday &&
-        t.department_id === departmentId,
-    );
-    if (exact) return exact.sanctioned;
-    const loc = targets.find(
-      (t) =>
-        t.location_id === locationId &&
-        t.shift_id === shiftId &&
-        t.weekday === weekday &&
-        t.department_id === null,
-    );
-    return loc?.sanctioned ?? minHeadcount;
+    if (departmentId !== null) {
+      const exact = exactTargets.get(`${locationId ?? 'null'}:${String(departmentId)}:${String(shiftId)}:${String(weekday)}`);
+      if (exact !== undefined) return exact;
+    }
+    const loc = locTargets.get(`${locationId ?? 'null'}:${String(shiftId)}:${String(weekday)}`);
+    if (loc !== undefined) return loc;
+    return minHeadcount;
   };
 
   const buckets = new Map<string, CoverageCell & { shiftId: number; locationId: number | null; departmentId: number | null }>();

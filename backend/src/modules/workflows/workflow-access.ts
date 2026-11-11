@@ -65,7 +65,7 @@ export function workflowPermissionSql(userId: Id, definition: Text, subjectId: I
 
 /** Routing administration cannot grant consent, and readonly grants cannot repair it. */
 function workflowAdministrationSql(userId: Id, subjectId: Id) {
-  return employeePermissionSql(userId, sql<string>`'admin.settings'`, subjectId);
+  return employeePermissionSql(userId, sql<string>`'admin.workflows'`, subjectId);
 }
 
 /**
@@ -90,7 +90,7 @@ function unboundCompanyHoldSql(userId: Id, subjectId: Id) {
   )`;
 }
 
-/** E2E-004 (RQ-WF-009, O25): routing-hold repair needs admin.settings OR workflow.routing_holds, in scope. */
+/** E2E-004 (RQ-WF-009, O25): routing-hold repair needs admin.workflows OR workflow.routing_holds, in scope. */
 export function workflowRoutingHoldSql(userId: Id, subjectId: Id) {
   return sql<boolean>`(${workflowAdministrationSql(userId, subjectId)} OR ${employeePermissionSql(userId, sql<string>`'workflow.routing_holds'`, subjectId)} OR ${unboundCompanyHoldSql(userId, subjectId)})`;
 }

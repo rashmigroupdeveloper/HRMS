@@ -1,7 +1,7 @@
 import { beforeEach, expect, it } from 'vitest';
 import { ownedDraftKey } from './draft-storage';
 beforeEach(() => { localStorage.clear(); });
-it.each(['ar', 'leave'] as const)('isolates %s drafts and refuses unowned legacy content', kind => {
+it.each(['ar', 'leave', 'claims', 'prejoin', 'resignation'] as const)('isolates %s drafts and refuses unowned legacy content', kind => {
   localStorage.setItem(`rashmi.draft.${kind}`, 'private legacy text');
   const first = ownedDraftKey(kind, 10);
   const second = ownedDraftKey(kind, 20);

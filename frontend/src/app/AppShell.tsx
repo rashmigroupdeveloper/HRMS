@@ -93,8 +93,9 @@ export function AppShell({ user, onSignedOut }: AppShellProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
-  const canApprove = hasAnyPermission(user, APPROVAL_PERMS);
-  const inboxCount = useInboxCount(canApprove);
+  // Named workflow steps may target a user without a broad domain approval grant.
+  const inboxCount = useInboxCount(true, user.id);
+  const canApprove = hasAnyPermission(user, APPROVAL_PERMS) || inboxCount > 0;
   const groupScope = hasRole(user, 'hr_head') || hasRole(user, 'super_admin');
   const sheetItems = compact ? mobileMore : moreItems;
   const moreActive = sheetItems.some((item) => isNavActive(location.pathname, item));

@@ -11,7 +11,7 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { inTransaction } from '../../core/db/database.js';
 import { addDaysIso, formatDbDate, istDateString } from '../../core/dates.js';
 import { getTypedSetting } from '../settings/index.js';
-import { createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
+import { cancelRequest, createRequest, type RequestRow, type WorkflowFinalStatus } from '../workflows/index.js';
 import { getBalance, getLeaveType } from './leave-core.service.js';
 import { assertApprovalSpanWritable, recloseDecidedWeekOffs } from '../../core/db/attendance-period.js';
 import { computeLeaveSpan, validateLeaveApplication, type ApplyLeaveParams } from './leave-validation.js';
@@ -77,7 +77,7 @@ export async function applyLeaveOnFinal(db: Db, request: RequestRow, status: Wor
   if (!app) return;
 
   if (status !== 'approved') {
-    await db.updateTable('lv.applications').set({ status: 'rejected' }).where('id', '=', app.id).execute();
+    await db.updateTable('lv.applications').set({ status: status === 'cancelled' ? 'cancelled' : 'rejected' }).where('id', '=', app.id).execute();
     return;
   }
 
@@ -193,6 +193,30 @@ export async function requestCancellation(
       await trx.updateTable('lv.applications').set({ cancel_workflow_request_id: requestId }).where('id', '=', app.id).execute();
     },
   );
+  });
+}
+
+/** Requester withdrawal of a pending leave application before manager approval. */
+export async function withdrawLeaveApplication(
+  db: Kysely<Database>,
+  params: { applicationId: number; employeeId: number; actorUserId: number; reason?: string | undefined },
+): Promise<void> {
+  return inTransaction(db, async (trx) => {
+    const app = await trx
+      .selectFrom('lv.applications')
+      .selectAll()
+      .where('id', '=', params.applicationId)
+      .forUpdate()
+      .executeTakeFirstOrThrow();
+    if (app.employee_id !== params.employeeId) throw new Error('Not your application');
+    if (app.status !== 'pending') {
+      throw new Error(`Only pending leave can be withdrawn (this one is ${app.status})`);
+    }
+    await cancelRequest(trx, {
+      requestId: app.workflow_request_id,
+      actorUserId: params.actorUserId,
+      reason: params.reason ?? 'Withdrawn by applicant',
+    });
   });
 }
 

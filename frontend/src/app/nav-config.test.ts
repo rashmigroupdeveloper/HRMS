@@ -84,7 +84,8 @@ describe('navForUser', () => {
     expect(withoutSettings).not.toContain('/admin/settings');
 
     const withSettings = paths(user(['it_admin'], ['admin.users', 'admin.settings']));
-    expect(withSettings).toContain('/admin/workflows');
+    expect(withSettings).not.toContain('/admin/workflows');
+    expect(paths(user(['super_admin'], ['admin.workflows']))).toContain('/admin/workflows');
     expect(withSettings).toContain('/admin/masters');
     expect(withSettings).toContain('/admin/settings');
   });
@@ -99,10 +100,14 @@ describe('navForUser', () => {
     expect(paths(user(['payroll_admin'], ['payroll.run.view']))).toContain('/payroll');
   });
 
-  it('gates loans and claims administration on payroll permissions', () => {
+  it('keeps reimbursement administration independent of payroll permissions', () => {
     const nav = paths(user(['payroll_admin'], ['payroll.run.manage']));
     expect(nav).toContain('/loans');
-    expect(nav).toContain('/claims');
+    expect(nav).not.toContain('/claims');
+    expect(nav).not.toContain('/claims/payments');
+    const finance=paths(user([],['claims.payout.view']));
+    expect(finance).toContain('/claims/payments');
+    expect(finance).not.toContain('/payroll');
 
     expect(paths(user(['manager'], ['attendance.team.read']))).not.toContain('/loans');
   });
@@ -238,4 +243,14 @@ describe('splitNav — Crextio pill strip (docs/05 §3, 08 §3)', () => {
     expect(tabs.map((item) => item.to)).toEqual(['/', '/my/attendance', '/my/leave', '/my/pay']);
     expect(more.length).toBeGreaterThan(0);
   });
+});
+
+it('exposes payroll configuration and processing pages through the permission-driven navigation', () => {
+  const nav = paths(user(['payroll_admin'], ['payroll.run.view','payroll.run.manage','salary.write','admin.settings']));
+  for (const path of ['/payroll/settings','/payroll/structures','/payroll/revisions','/payroll/parallel-run','/loans']) expect(nav).toContain(path);
+});
+
+it('gives a configuration-only delegate its settings page without the payroll processing console',()=>{
+ const nav=paths(user(['configuration_delegate'],['admin.settings','payroll.config.manage']));
+ expect(nav).toContain('/payroll/settings'); expect(nav).not.toContain('/payroll');
 });

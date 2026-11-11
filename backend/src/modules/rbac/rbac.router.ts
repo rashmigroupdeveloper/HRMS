@@ -10,7 +10,7 @@
 import { assertDelegationCeiling, assertRoleDelegation } from './rbac.guard.js';
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { withAnyPermission, withPermission, withStepUp } from '../../api/orpc.js';
+import { withPermission, withStepUp } from '../../api/orpc.js';
 import { rowsToExcelBuffer } from '../../core/excel/workbook.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import {
@@ -26,11 +26,25 @@ import {
   searchUsersWithRoles,
 } from './rbac.repository.js';
 import { inTransaction } from '../../core/db/database.js';
+import { ConflictError } from '../../core/errors/index.js';
 
 const guard = () => withStepUp('admin.roles');
 
-/** E2E-005 (RQ-RBAC-008): hr_head reviews the matrix read-only (admin.rbac.read); editing stays admin.roles. */
-const readGuard = () => withAnyPermission('admin.roles', 'admin.rbac.read');
+const createRole = guard()
+  .route({ method: 'POST', path: '/rbac/roles', summary: 'Create an empty role; delegate permissions separately (audited)' })
+  .input(z.object({ code: z.string().regex(/^[a-z][a-z0-9_]{1,49}$/), name: z.string().trim().min(2).max(120) }))
+  .output(z.object({ code: z.string(), name: z.string() }))
+  .handler(({ input, context }) => inTransaction(context.db, async db => {
+    const row = await db.insertInto('core.roles').values(input)
+      .onConflict(oc => oc.column('code').doNothing()).returning(['id', 'code', 'name']).executeTakeFirst();
+    if (!row) throw new ConflictError('A role with this code already exists');
+    await writeAudit(db, { actorUserId: context.user.id, action: 'role_created', entity: 'core.roles',
+      entityId: row.id, newValue: JSON.stringify(input), ip: context.req.ip ?? null });
+    return { code: row.code, name: row.name };
+  }));
+
+/** Sponsor restriction: matrix read/export and changes require delegated admin.roles authority. */
+const readGuard = () => withPermission('admin.roles', 'read');
 
 const matrixProcedure = readGuard()
   .route({ method: 'GET', path: '/rbac/matrix', summary: 'The live role×permission access matrix' })
@@ -299,6 +313,7 @@ const usersProcedure = withPermission('admin.roles')
   });
 
 export const rbacRouter = {
+  createRole,
   matrix: matrixProcedure,
   matrixExport,
   users: usersProcedure,

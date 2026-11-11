@@ -1,17 +1,9 @@
-import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { authed, withPermission } from '../../api/orpc.js';
+import { authed, withPermission, requireEmployeeId } from '../../api/orpc.js';
 import { assertEmployeesInScope } from '../../core/rbac/employee-scope.js';
 import { getUserPermissionAccess } from '../../core/rbac/permissions.service.js';
 import { ForbiddenError } from '../../core/errors/index.js';
 import { LoansService, policyInterestRate } from './loans.service.js';
-
-function requireEmployeeId(user: { employee_id: number | null }): number {
-  if (user.employee_id === null) {
-    throw new ORPCError('BAD_REQUEST', { message: 'Your account has no employee profile linked' });
-  }
-  return user.employee_id;
-}
 
 const loanTypeSchema = z.enum([
   'loan_diminishing',
@@ -241,7 +233,10 @@ export const loansRouter = {
     )
     .handler(async ({ input, context }) => {
       const service = new LoansService(context.db);
-      return await service.listAllLoans(input);
+      return await service.listAllLoans(input, {
+        ...context.permissionAccess,
+        actorEmployeeId: context.user.employee_id,
+      });
     }),
 
   /**
@@ -268,6 +263,11 @@ export const loansRouter = {
     )
     .output(z.object({ success: z.boolean(), loanId: z.number() }))
     .handler(async ({ input, context }) => {
+      await assertEmployeesInScope(
+        context.db,
+        { ...context.permissionAccess, actorEmployeeId: context.user.employee_id },
+        [input.employeeId],
+      );
       const service = new LoansService(context.db);
       const res = await service.importLegacyLoan(input);
       return { success: true, loanId: res.loanId };

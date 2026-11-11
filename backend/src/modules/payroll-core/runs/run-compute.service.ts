@@ -39,12 +39,20 @@ export interface RunComputationResult {
   exceptions: { employeeId: number; ecode: string; reason: string }[];
 }
 
-/** Monthly interest on a reducing balance; zero-interest loans recover principal only. */
-export function loanInstalment(loan: { outstanding: string; emi: string; interest_rate: string; loan_type: string }): { principalPaise: Paise; interestPaise: Paise } {
+/** Monthly interest on a reducing balance or flat rate; zero-interest loans recover principal only. */
+export function loanInstalment(loan: { outstanding: string; emi: string; interest_rate: string; loan_type: string; principal?: string | undefined }): { principalPaise: Paise; interestPaise: Paise } {
   const outstanding = parseRupees(loan.outstanding);
   const emi = parseRupees(loan.emi);
   const rate = Number(loan.interest_rate);
-  const interest = loan.loan_type === 'loan_diminishing' && rate > 0 ? Math.round((outstanding * rate) / 1200) : 0;
+  let interest = 0;
+  if (rate > 0) {
+    if (loan.loan_type === 'loan_diminishing') {
+      interest = Math.round((outstanding * rate) / 1200);
+    } else if (loan.loan_type === 'loan_flat') {
+      const orig = loan.principal !== undefined ? parseRupees(loan.principal) : outstanding;
+      interest = Math.round((orig * rate) / 1200);
+    }
+  }
   const principal = Math.max(0, Math.min(outstanding, emi - interest));
   return { principalPaise: paise(principal), interestPaise: paise(interest) };
 }
@@ -55,6 +63,9 @@ export async function computeLockedRun(
   actorUserId: number,
 ): Promise<RunComputationResult> {
   const runId = run.id;
+  if (run.run_type !== 'regular') {
+    throw new DomainError('The monthly salary engine only computes regular runs. Off-cycle, bonus, arrears and F&F need their dedicated payout flow; they must not repeat regular salary.', 'CONFLICT');
+  }
   const validation = validateRunTransition({ fromStatus: run.status, toStatus: 'computed', attendanceLockId: run.attendance_lock_id, actorUserId });
   if (!validation.valid) throw new DomainError(validation.error ?? 'Run cannot be computed now', 'CONFLICT');
   await assertIndiaPayroll(trx, run.company_id);
@@ -230,7 +241,7 @@ export async function computeLockedRun(
     // P-08: active loans recover their instalment from the start month.
     const loans = await trx
       .selectFrom('pay.loans')
-      .select(['id', 'outstanding', 'emi', 'interest_rate', 'loan_type'])
+      .select(['id', 'outstanding', 'emi', 'interest_rate', 'loan_type', 'principal'])
       .where('employee_id', '=', emp.id)
       .where('status', '=', 'active')
       .where('start_month', '<=', sql<Date>`${monthStr}::date`)

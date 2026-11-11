@@ -4,8 +4,9 @@
  * Resolves grade-specific or default entitlements per claim type and basis period.
  * Tracks available balance = entitlement - approved - pending.
  */
-import type { Kysely } from 'kysely';
-import type { Database, ClaimBasis } from '../../core/db/types.js';
+import type { Kysely, Selectable } from 'kysely';
+import type { Database, ClaimBasis, ClaimEntitlementsTable } from '../../core/db/types.js';
+import { getTypedSetting } from '../settings/index.js';
 import {
   paise,
   fromRupees,
@@ -79,70 +80,81 @@ export class EntitlementService {
       .orderBy('code', 'asc')
       .execute();
 
+    if (claimTypes.length === 0) return [];
+
+    const claimTypeIds = claimTypes.map((ct) => ct.id);
+
+    // 1. Batch-fetch all relevant entitlements for these claim types effective on or before targetDate
+    const entitlements = await this.db
+      .selectFrom('pay.claim_entitlements')
+      .selectAll()
+      .where('claim_type_id', 'in', claimTypeIds)
+      .where((eb) =>
+        gradeId !== null
+          ? eb.or([eb('grade_id', '=', gradeId), eb('grade_id', 'is', null)])
+          : eb('grade_id', 'is', null)
+      )
+      .where('effective_from', '<=', targetDate)
+      .orderBy('effective_from', 'desc')
+      .execute();
+
+    // Map each claim_type_id to the best matching entitlement (prefer grade-specific over default)
+    const entitlementByClaimTypeId = new Map<number, Selectable<ClaimEntitlementsTable>>();
+    for (const ent of entitlements) {
+      const existing = entitlementByClaimTypeId.get(ent.claim_type_id);
+      if (!existing) {
+        entitlementByClaimTypeId.set(ent.claim_type_id, ent);
+      } else if (existing.grade_id === null && ent.grade_id !== null) {
+        entitlementByClaimTypeId.set(ent.claim_type_id, ent);
+      }
+    }
+
+    // 2. Batch-fetch all non-rejected claims for this employee
+    const claims = await this.db
+      .selectFrom('pay.claims')
+      .select(['claim_type_id', 'status', 'approved_amount', 'claimed_amount', 'period_from', 'period_to'])
+      .where('employee_id', '=', employeeId)
+      .where('status', 'in', ['approved', 'paid', 'pending', 'verified'])
+      .execute();
+
     const summaries: EntitlementSummary[] = [];
 
     for (const ct of claimTypes) {
-      // 1. Resolve entitlement limit for employee's grade or default (grade_id IS NULL)
-      let entitlementRow = gradeId
-        ? await this.db
-            .selectFrom('pay.claim_entitlements')
-            .selectAll()
-            .where('claim_type_id', '=', ct.id)
-            .where('grade_id', '=', gradeId)
-            .where('effective_from', '<=', targetDate)
-            .orderBy('effective_from', 'desc')
-            .executeTakeFirst()
-        : undefined;
+      const entitlementRow = entitlementByClaimTypeId.get(ct.id);
 
-      entitlementRow ??= await this.db
-        .selectFrom('pay.claim_entitlements')
-        .selectAll()
-        .where('claim_type_id', '=', ct.id)
-        .where('grade_id', 'is', null)
-        .where('effective_from', '<=', targetDate)
-        .orderBy('effective_from', 'desc')
-        .executeTakeFirst();
-
-      // Default baseline limits if no explicit entitlement row configured yet:
-      // Medical: 15,000/yr, Conveyance: 5,000/mo, Telephone: 2,000/mo, LTA: 50,000/yr, Misc: 10,000
+      // Configurable baseline limits if no explicit entitlement row configured yet (CLAUDE.md Rule 2):
       let totalEntitlementRupees = entitlementRow ? Number(entitlementRow.amount) : 0;
       if (!entitlementRow) {
-        if (ct.code === 'medical') totalEntitlementRupees = 15000;
-        else if (ct.code === 'conveyance') totalEntitlementRupees = 5000;
-        else if (ct.code === 'telephone') totalEntitlementRupees = 2000;
-        else if (ct.code === 'lta') totalEntitlementRupees = 50000;
-        else if (ct.code === 'relocation') totalEntitlementRupees = 25000;
-        else totalEntitlementRupees = 10000;
+        const fallbacks: Record<string, number> = {
+          medical: 15000,
+          conveyance: 5000,
+          telephone: 2000,
+          lta: 50000,
+          relocation: 25000,
+        };
+        const defLimit = fallbacks[ct.code] ?? 10000;
+        totalEntitlementRupees = await getTypedSetting(this.db, `claims.default_limit_${ct.code}`, 'number', defLimit);
       }
 
       const totalEntitlementPaise = fromRupees(totalEntitlementRupees);
       const bounds = this.getPeriodBounds(ct.entitlement_basis, targetDate);
 
-      // 2. Query consumed (approved/paid) claims in this period
-      const approvedClaims = await this.db
-        .selectFrom('pay.claims')
-        .select((eb) => [eb.fn.sum<string>('approved_amount').as('sum_approved')])
-        .where('employee_id', '=', employeeId)
-        .where('claim_type_id', '=', ct.id)
-        .where('status', 'in', ['approved', 'paid'])
-        .where('period_from', '>=', bounds.from)
-        .where('period_to', '<=', bounds.to)
-        .executeTakeFirst();
+      // Sum consumed and pending claims for this claim type within period bounds
+      let approvedSum = 0;
+      let pendingSum = 0;
+      for (const c of claims) {
+        if (c.claim_type_id !== ct.id) continue;
+        if (c.period_from >= bounds.from && c.period_to <= bounds.to) {
+          if (c.status === 'approved' || c.status === 'paid') {
+            approvedSum += Number(c.approved_amount ?? 0);
+          } else if (c.status === 'pending' || c.status === 'verified') {
+            pendingSum += Number(c.claimed_amount);
+          }
+        }
+      }
 
-      const approvedPaise = fromRupees(Number(approvedClaims?.sum_approved ?? 0));
-
-      // 3. Query pending claims in this period
-      const pendingClaims = await this.db
-        .selectFrom('pay.claims')
-        .select((eb) => [eb.fn.sum<string>('claimed_amount').as('sum_pending')])
-        .where('employee_id', '=', employeeId)
-        .where('claim_type_id', '=', ct.id)
-        .where('status', 'in', ['pending', 'verified'])
-        .where('period_from', '>=', bounds.from)
-        .where('period_to', '<=', bounds.to)
-        .executeTakeFirst();
-
-      const pendingPaise = fromRupees(Number(pendingClaims?.sum_pending ?? 0));
+      const approvedPaise = fromRupees(approvedSum);
+      const pendingPaise = fromRupees(pendingSum);
 
       const consumedPaise = paise(Number(approvedPaise) + Number(pendingPaise));
       const availablePaise =

@@ -27,7 +27,7 @@ export function parseSlabs(text: string): { minMonthly: number; maxMonthly: numb
 }
 
 export function PayrollSettingsPage({ user }: { user: SessionUser }) {
-  const canEdit = hasPermission(user, 'payroll.run.manage');
+  const canEdit = hasPermission(user, 'payroll.config.manage');
   const [tab, setTab] = useState<Tab>('rates');
   const [rates, setRates] = useState<Rate[]>([]);
   const [slabs, setSlabs] = useState<Slab[]>([]);

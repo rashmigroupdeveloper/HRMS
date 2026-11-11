@@ -94,6 +94,7 @@ export function TravelPage() {
         description="Raise a budget, take an advance, add receipts and settle what you spent."
         actions={(
           <div className="flex flex-wrap items-center gap-3">
+            <Button variant="primary" onClick={() => { void navigate('/travel/budgets/new'); }}>Plan new trip</Button>
             <Button variant="ghost" size="sm" onClick={() => { void load(); }} aria-busy={loading}>
               <RefreshCw className={`mr-1.5 size-4 ${loading ? 'animate-spin' : ''}`} />
               Sync

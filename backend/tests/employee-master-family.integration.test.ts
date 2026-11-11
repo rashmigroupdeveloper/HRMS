@@ -104,6 +104,34 @@ describe.skipIf(!DB_URL)('employee master, org masters and family (API)', () => 
     expect((await call('post', 'ess', '/api/employees', { ...base, dob: '1990-01-01' })).status).toBe(403);
   });
 
+  it('stores both emails and preserves the other address on partial updates (CORE-01)', async () => {
+    const personalEmail = `${tag.toLowerCase()}-personal@example.com`;
+    const workEmail = `${tag.toLowerCase()}-company@example.com`;
+    const created = await call('post', 'ops', '/api/employees', {
+      companyCode: tag, firstName: 'Email fixture', doj: '2026-11-02', orgUnit: `${tag} unit`,
+      personalEmail: ` ${personalEmail.toUpperCase()} `, workEmail,
+    });
+    expect(created.status).toBe(200);
+    const { ecode, employeeId } = created.body as { ecode: string; employeeId: number };
+    const read = () => tx().selectFrom('core.employees').select(['personal_email', 'work_email'])
+      .where('id', '=', employeeId).executeTakeFirstOrThrow();
+    expect(await read()).toEqual({ personal_email: personalEmail, work_email: workEmail });
+    const replacement = `${tag.toLowerCase()}-new-personal@example.com`;
+    expect((await call('patch', 'ops', `/api/employees/${ecode}`, { personalEmail: replacement })).status).toBe(200);
+    expect(await read()).toEqual({ personal_email: replacement, work_email: workEmail });
+    const newWork = `${tag.toLowerCase()}-new-company@example.com`;
+    expect((await call('patch', 'ops', `/api/employees/${ecode}`, { workEmail: newWork })).status).toBe(200);
+    expect(await read()).toEqual({ personal_email: replacement, work_email: newWork });
+    const profile = await call('get', 'ops', `/api/employees/${ecode}`);
+    expect(profile.status).toBe(200);
+    expect(profile.body).toMatchObject({ personalEmail: replacement, workEmail: newWork });
+    for (const field of ['personalEmail', 'workEmail']) {
+      expect((await call('patch', 'ops', `/api/employees/${ecode}`, { [field]: 'invalid' })).status).toBe(400);
+    }
+    expect(await read()).toEqual({ personal_email: replacement, work_email: newWork });
+    expect((await call('patch', 'ops', `/api/employees/${subjectCode}`, { workEmail: newWork })).status).toBe(400);
+  });
+
   it('only super_admin edits org masters; a master in use cannot be deleted', async () => {
     expect((await call('post', 'ops', '/api/core/masters/departments', { values: { name: `${tag} Dept` } })).status).toBe(403);
     const list = await call('get', 'ops', '/api/core/masters/companies');

@@ -12,7 +12,7 @@
  *    updates employee to 'exited' with Date of Leaving (dol), and transitions user to 'alumni'.
  */
 
-import { calculateGratuity, type GratuityCalculationResult } from './gratuity-calculator.js';
+import { calculateGratuity, type GratuityEligibilityMode, type GratuityCalculationResult } from './gratuity-calculator.js';
 import { paise, mulDiv } from '../../../core/money/index.js';
 
 export interface FnfComputeParams {
@@ -36,6 +36,8 @@ export interface FnfComputeParams {
   tdsPaise?: number;
   /** Death exit: gratuity does not wait for five years (Payment of Gratuity Act s.4). */
   gratuityWaivesMinimumService?: boolean | undefined;
+  gratuityEligibilityMode?: GratuityEligibilityMode | undefined;
+  gratuityCapPaise?: number | undefined;
 }
 
 export interface FnfBreakdownLine {
@@ -162,6 +164,8 @@ export function computeFnfSettlement(params: FnfComputeParams): FnfSettlementCal
     doj: params.doj,
     lastWorkingDay: params.approvedLwd,
     waiveMinimumService: params.gratuityWaivesMinimumService,
+    eligibilityMode: params.gratuityEligibilityMode,
+    ...(params.gratuityCapPaise === undefined ? {} : { statutoryCapPaise: params.gratuityCapPaise }),
   });
   const gratuityPaise = gratuityDetail.gratuityPaise;
 

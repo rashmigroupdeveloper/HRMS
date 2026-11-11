@@ -1,5 +1,7 @@
 # HRMS Execution Plans
 
+**Latest 23 Oct 2026:** [Pack41 — Super Admin configuration and the 38 reported role-flow groups](sow-completion/41-SUPERADMIN-CONFIGURATION-AND-ROLE-FLOW.md). Backend 1,102 tests and frontend 397 tests/full verification pass; original UAT replay, open features and human payroll review remain. No release gate advanced.
+
 **Latest HR action audit, 16 Oct 2026:** [pack23](sow-completion/23-HR-ACTIONS-SAFETY-REVIEW.md) verifies attendance overrides, actual Excel exports, onboarding durability, IT tasks, absence/letters and HR dashboard access.21 native observations,10 controls and a separate committed-orphan reproduction show critical gaps remain. No application/schema changes or gate advancement.
 
 **Latest other-module audit, 16 Oct 2026:** [pack22](sow-completion/22-OTHER-MODULE-BUG-AUDIT.md) confirms seven additional specific bug groups and three residual security/integrity issues, with20 native observations and four passing controls. Survey/helpdesk screen contracts, company audience, answer validation and ticket history remain open. No application/schema changes or gate advancement.
@@ -117,3 +119,9 @@ Product routes live in `frontend/src/app/router.tsx`. **Every route now resolves
 **17 Oct Stage1.8 role-flow review:** [49 separate cases and remaining SOW](sow-completion/28-ROLE-FLOW-AND-SOW-REVIEW.md).19 native observations reproduce open HR scope/correction, month-close, co-sign and task-access gaps. Original176 SOW texts retained; no acceptance gate advanced. Next build is the separately announced Stage1.2 HR attendance safety repair.
 
 **17 Oct Stage1.2 repair:** [HR attendance safety F02–F05](sow-completion/29-HR-ATTENDANCE-SAFETY-REPAIR.md) implements scoped, transactional correction/scheme safety with17 new native regressions and546 passing full-suite tests. Coverage and other13 role-flow finding groups remain open; no gate advanced.
+
+Latest Stage1.8 continuation: [Pack42 — payroll controls and stakeholder tasks](sow-completion/42-PAYROLL-CONTROLS-AND-ONBOARDING-TASKS.md). Full38-group closure remains open.
+
+Latest continuation: [Pack43 — claims workflow and payroll provenance](sow-completion/43-CLAIMS-WORKFLOW-AND-PAYROLL-PROVENANCE.md),24 Oct2026.
+
+Latest sponsor correction: [Pack44 — independent reimbursement payments](sow-completion/44-INDEPENDENT-REIMBURSEMENT-PAYMENTS.md). Salary and reimbursement payment state and delegated populations are independent; this supersedes Pack43's combined-payment path.

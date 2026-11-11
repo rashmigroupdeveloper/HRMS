@@ -14,6 +14,7 @@
  * console exists to prevent.
  */
 import { useStepUpAction } from '../../app/useStepUpAction';
+import { CreateRoleAction } from './CreateRoleAction';
 import { ConnectedAccountsPanel } from './ConnectedAccountsPanel';
 import { SessionsPanel } from './SessionsPanel';
 import { LoginAccountsPanel } from './LoginAccountsPanel';
@@ -83,7 +84,7 @@ type Tab = 'permissions' | 'people' | 'accounts' | 'sessions' | 'connected';
 export function AccessControlPage({ user }: { user: SessionUser }) {
   const canEditRoles = hasPermission(user, 'admin.roles');
   const canUsers = hasPermission(user, 'admin.users');
-  const canMatrix = canEditRoles || hasPermission(user, 'admin.rbac.read');
+  const canMatrix = canEditRoles;
   // Only tabs this role can act on are shown (forbidden actions are hidden, not 403s).
   const tabs: [Tab, string][] = ([
     ['permissions', 'Permissions', canMatrix],
@@ -187,6 +188,7 @@ function PermissionGrid({ readOnly }: { readOnly: boolean }) {
   return (
     <>
       {stepUp.dialog}
+      {!readOnly && <CreateRoleAction onCreated={() => { setLocal(null); matrix.reload(); }} />}
       <Card>
         <div className="flex flex-wrap items-center gap-1.5">
           {domains.map((d) => (

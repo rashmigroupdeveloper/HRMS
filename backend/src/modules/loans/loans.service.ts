@@ -13,7 +13,7 @@ import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate, istDateString } from '../../core/dates.js';
 import { ConflictError, DomainError, NotFoundError } from '../../core/errors/index.js';
 import { getTypedSetting } from '../settings/index.js';
-import { createRequest } from '../workflows/index.js';
+import { createRequest, type WorkflowFinalStatus } from '../workflows/index.js';
 import type { Database, LoanStatus, LoanType } from '../../core/db/types.js';
 import {
   fromRupees,
@@ -26,6 +26,7 @@ import {
   type AmortizationSchedule,
 } from './amortization.js';
 import { inTransaction } from '../../core/db/database.js';
+import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 
 export interface ApplyLoanParams {
   employeeId: number;
@@ -71,7 +72,7 @@ export interface LoanLedgerSummary {
 type Db = Kysely<Database> | Transaction<Database>;
 
 /** 'loan' chain (RM → HR head → payroll) final hook — a loan only starts on approval (P-08). */
-export async function applyLoanOnFinal(db: Db, request: { id: number }, status: 'approved' | 'rejected' | 'lapsed'): Promise<void> {
+export async function applyLoanOnFinal(db: Db, request: { id: number }, status: WorkflowFinalStatus): Promise<void> {
   await db
     .updateTable('pay.loans')
     .set({ status: status === 'approved' ? 'active' : 'rejected' })
@@ -144,7 +145,9 @@ export class LoansService {
     const serviceMonths = (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth());
 
     const isAdvance = loanType === 'salary_advance' || loanType === 'travel_advance';
-    const minServiceRequired = isAdvance ? 1 : 6;
+    const minTermMonths = await getTypedSetting(this.db, 'loans.min_service_months_term', 'number', 6);
+    const minAdvanceMonths = await getTypedSetting(this.db, 'loans.min_service_months_advance', 'number', 1);
+    const minServiceRequired = isAdvance ? minAdvanceMonths : minTermMonths;
     if (serviceMonths < minServiceRequired) {
       reasons.push(
         `Insufficient tenure: required at least ${minServiceRequired} months of service (current: ${serviceMonths} months).`
@@ -466,18 +469,53 @@ export class LoansService {
       .orderBy('id', 'desc')
       .execute();
 
-    const summaries: LoanLedgerSummary[] = [];
-    for (const l of loans) {
-      const ledger = await this.getLoanLedger(l.id);
-      summaries.push(ledger);
+    if (loans.length === 0) return [];
+    const loanIds = loans.map((l) => l.id);
+    const postings = await this.db
+      .selectFrom('pay.loan_postings')
+      .select(['loan_id', 'principal_part', 'interest_part', 'perquisite_value'])
+      .where('loan_id', 'in', loanIds)
+      .execute();
+
+    const postingsByLoan = new Map<number, { princ: number; int: number; perq: number; count: number }>();
+    for (const p of postings) {
+      const cur = postingsByLoan.get(p.loan_id) ?? { princ: 0, int: 0, perq: 0, count: 0 };
+      cur.princ += Number(p.principal_part);
+      cur.int += Number(p.interest_part);
+      cur.perq += Number(p.perquisite_value);
+      cur.count += 1;
+      postingsByLoan.set(p.loan_id, cur);
     }
-    return summaries;
+
+    return loans.map((l) => {
+      const stat = postingsByLoan.get(l.id) ?? { princ: 0, int: 0, perq: 0, count: 0 };
+      return {
+        loanId: l.id,
+        employeeId: l.employee_id,
+        loanType: l.loan_type,
+        originalPrincipalRupees: Number(l.principal),
+        annualInterestRate: Number(l.interest_rate),
+        monthlyEmiRupees: Number(l.emi),
+        tenureMonths: l.tenure_months,
+        startMonth: formatDbDate(l.start_month),
+        currentOutstandingRupees: Number(l.outstanding),
+        totalRecoveredPrincipalRupees: stat.princ,
+        totalRecoveredInterestRupees: stat.int,
+        totalPerquisiteValuedRupees: stat.perq,
+        status: l.status,
+        source: l.source,
+        postingsCount: stat.count,
+      };
+    });
   }
 
   /**
    * Lists all active loans company-wide for payroll admin.
    */
-  async listAllLoans(filter?: { status?: LoanStatus | undefined; loanType?: LoanType | undefined }): Promise<
+  async listAllLoans(
+    filter?: { status?: LoanStatus | undefined; loanType?: LoanType | undefined },
+    scope?: EmployeeScope,
+  ): Promise<
     (LoanLedgerSummary & {
       ecode: string;
       employeeName: string;
@@ -486,13 +524,16 @@ export class LoansService {
     let query = this.db
       .selectFrom('pay.loans')
       .innerJoin('core.employees', 'core.employees.id', 'pay.loans.employee_id')
+      .selectAll('pay.loans')
       .select([
-        'pay.loans.id as loan_id',
         'core.employees.ecode',
         'core.employees.first_name',
         'core.employees.last_name',
       ]);
 
+    if (scope) {
+      query = query.where(employeeScopeSql(scope, 'core.employees'));
+    }
     if (filter?.status) {
       query = query.where('pay.loans.status', '=', filter.status);
     }
@@ -501,16 +542,46 @@ export class LoansService {
     }
 
     const rows = await query.orderBy('pay.loans.id', 'desc').execute();
+    if (rows.length === 0) return [];
 
-    const results: (LoanLedgerSummary & { ecode: string; employeeName: string })[] = [];
-    for (const r of rows) {
-      const ledger = await this.getLoanLedger(r.loan_id);
-      results.push({
-        ...ledger,
+    const loanIds = rows.map((r) => r.id);
+    const postings = await this.db
+      .selectFrom('pay.loan_postings')
+      .select(['loan_id', 'principal_part', 'interest_part', 'perquisite_value'])
+      .where('loan_id', 'in', loanIds)
+      .execute();
+
+    const postingsByLoan = new Map<number, { princ: number; int: number; perq: number; count: number }>();
+    for (const p of postings) {
+      const cur = postingsByLoan.get(p.loan_id) ?? { princ: 0, int: 0, perq: 0, count: 0 };
+      cur.princ += Number(p.principal_part);
+      cur.int += Number(p.interest_part);
+      cur.perq += Number(p.perquisite_value);
+      cur.count += 1;
+      postingsByLoan.set(p.loan_id, cur);
+    }
+
+    return rows.map((r) => {
+      const stat = postingsByLoan.get(r.id) ?? { princ: 0, int: 0, perq: 0, count: 0 };
+      return {
+        loanId: r.id,
+        employeeId: r.employee_id,
+        loanType: r.loan_type,
+        originalPrincipalRupees: Number(r.principal),
+        annualInterestRate: Number(r.interest_rate),
+        monthlyEmiRupees: Number(r.emi),
+        tenureMonths: r.tenure_months,
+        startMonth: formatDbDate(r.start_month),
+        currentOutstandingRupees: Number(r.outstanding),
+        totalRecoveredPrincipalRupees: stat.princ,
+        totalRecoveredInterestRupees: stat.int,
+        totalPerquisiteValuedRupees: stat.perq,
+        status: r.status,
+        source: r.source,
+        postingsCount: stat.count,
         ecode: r.ecode,
         employeeName: `${r.first_name} ${r.last_name}`.trim(),
-      });
-    }
-    return results;
+      };
+    });
   }
 }

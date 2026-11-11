@@ -32,6 +32,7 @@ async function readJoiningFile(
 import { useSearchParams } from 'react-router-dom';
 import { CheckCircle2, AlertCircle, Building2, Send, Lock } from 'lucide-react';
 import { Button, Card, CardHeader, DarkCard, TextField, Select, type SelectOption } from '../../ui';
+import { ownedDraftKey } from '../../lib/draft-storage';
 
 const BLOOD_GROUPS: SelectOption[] = [
   { value: 'A+', label: 'A Positive (A+)' },
@@ -66,6 +67,56 @@ export function PrejoinPortalPage() {
   const [files, setFiles] = useState<{ documentType: 'photo' | 'id_proof'; fileName: string; mime: 'application/pdf' | 'image/png' | 'image/jpeg'; content: string }[]>([]);
   const submittingRef = useRef(false);
   const tokenVersion = useRef(0);
+  const skipDraftPersistRef = useRef(true);
+
+  const draftKey = ownedDraftKey('prejoin', candidateInfo?.candidateId);
+
+  // Restore draft when candidate is validated
+  useEffect(() => {
+    if (!candidateInfo?.candidateId || !draftKey) return;
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (raw) {
+        const draft = JSON.parse(raw) as { savedAt?: number; form?: PrejoinForm; step?: number } | null;
+        if (draft !== null && typeof draft.savedAt === 'number' && Date.now() - draft.savedAt < 48 * 60 * 60 * 1000) {
+          if (draft.form && typeof draft.form === 'object') {
+            setForm((prev) => ({ ...prev, ...draft.form }));
+          }
+          if (typeof draft.step === 'number' && draft.step >= 0 && draft.step <= 4) {
+            setStep(draft.step);
+          }
+        }
+      }
+    } catch {
+      // discard invalid draft
+    }
+  }, [candidateInfo?.candidateId, draftKey]);
+
+  // Persist draft changes
+  useEffect(() => {
+    if (!candidateInfo?.candidateId || !draftKey) return;
+    if (skipDraftPersistRef.current) {
+      skipDraftPersistRef.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      try {
+        window.localStorage.setItem(
+          draftKey,
+          JSON.stringify({
+            savedAt: Date.now(),
+            form,
+            step,
+          }),
+        );
+      } catch {
+        // storage quota exceeded
+      }
+    }, 500);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [form, step, candidateInfo?.candidateId, draftKey]);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -197,6 +248,13 @@ export function PrejoinPortalPage() {
         throw new Error(
           'The server did not confirm this application submission. Please contact HR.',
         );
+      if (draftKey) {
+        try {
+          window.localStorage.removeItem(draftKey);
+        } catch {
+          // ignore
+        }
+      }
       setSubmitted(true);
     } catch (err: unknown) {
       if (tokenVersion.current === version)

@@ -27,6 +27,7 @@ export const STATUTORY_PARAMS: Record<string, readonly string[]> = {
   ESIC: ['ee_rate_pct', 'er_rate_pct', 'wage_ceiling'],
   OT: ['hour_divisor', 'multiplier'],
   BONUS: ['min_rate_pct'],
+  GRATUITY: ['cap'],
 };
 
 /** Statutory deductions the engine computes itself — never entered by hand. */
@@ -56,6 +57,10 @@ export async function addStatutoryRate(db: Db, input: { scheme: string; param: s
   if (!STATUTORY_PARAMS[scheme]?.includes(input.param)) throw new DomainError(`Unknown statutory parameter ${scheme}.${input.param}`);
   assertMonthStart(input.effectiveFrom, 'Effective from');
   if (!Number.isFinite(input.value) || input.value < 0) throw new DomainError('Value must be a non-negative number');
+  if (scheme === 'GRATUITY') {
+    try { if (parseRupees(String(input.value)) <= 0) throw new RangeError('Non-positive cap'); }
+    catch { throw new DomainError('Gratuity cap must be positive whole paise within the safe money range'); }
+  }
   if (input.param.endsWith('_pct') && input.value > 100) throw new DomainError('A percentage cannot exceed 100');
   return inTransaction(db, async (trx) => {
     await assertNoClosedRunFrom(trx, input.effectiveFrom);
@@ -148,7 +153,7 @@ async function openRun(db: Db, runId: number, lock = false) {
   const run = await db.selectFrom('pay.payroll_runs').select(['id', 'status', 'company_id']).where('id', '=', runId)
     .$if(lock, query => query.forUpdate()).executeTakeFirst();
   if (!run) throw new NotFoundError('Payroll run not found');
-  if (run.status !== 'draft') throw new ConflictError('Variable inputs can only change while the run is a draft (before inputs are locked)');
+  if (!['draft', 'reopened'].includes(run.status)) throw new ConflictError('Variable inputs can only change while the run is draft or reopened (before inputs are locked)');
   return run;
 }
 
@@ -206,6 +211,8 @@ export async function addRunInputs(db: Db, runId: number, inputs: VariableInput[
 export async function removeRunInput(db: Db, runId: number, inputId: number, actorUserId: number): Promise<void> {
   await inTransaction(db, async (trx) => {
     await openRun(trx, runId, true);
+    const existing=await trx.selectFrom('pay.inputs').select(['id','claim_id']).where('id','=',inputId).where('run_id','=',runId).forUpdate().executeTakeFirst();
+    if(existing?.claim_id !== null && existing?.claim_id !== undefined)throw new ConflictError('This input belongs to an approved reimbursement; reconcile the claim reservation before removing it');
     const row = await trx.deleteFrom('pay.inputs').where('id', '=', inputId).where('run_id', '=', runId).returningAll().executeTakeFirst();
     if (!row) throw new NotFoundError('Input not found on this run');
     await writeAudit(trx, { actorUserId, action: 'payroll_input_removed', entity: 'pay.payroll_runs', entityId: runId, oldValue: JSON.stringify({ employeeId: row.employee_id, componentCode: row.component_code, amount: row.amount, note: row.note }), newValue: null });

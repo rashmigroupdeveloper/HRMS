@@ -1,3 +1,4 @@
+import { registerClaimsWorkflowHooks } from './modules/claims/index.js';
 import { registerEmployeesWorkflowHooks } from './modules/employees/index.js';
 import { sql } from 'kysely';
 import { registerLoansWorkflowHooks } from './modules/loans/index.js';
@@ -99,6 +100,7 @@ export function createApp(deps?: Partial<AppDeps> & { kentWebhook?: KentWebhookC
   registerEmployeesWorkflowHooks();
   registerTravelWorkflowHooks();
   registerLoansWorkflowHooks();
+  registerClaimsWorkflowHooks();
 
   const app = express();
 

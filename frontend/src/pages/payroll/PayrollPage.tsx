@@ -134,12 +134,17 @@ export function PayrollPage({ user }: { user: SessionUser }) {
   }, []);
 
   const loadRunDetail = useCallback(async (id: number) => {
-    const [reg, inp, out] = await Promise.all([
-      apiFetch<RegisterItem[]>(`/api/payroll/runs/${String(id)}/items`).catch(() => []),
-      apiFetch<InputRow[]>(`/api/payroll/runs/${String(id)}/inputs`).catch(() => []),
-      apiFetch<{ outputs: OutputItem[] }>('/api/payroll/outputs/getRunOutputs', { method: 'POST', body: JSON.stringify({ runId: id }) }).catch(() => ({ outputs: [] })),
-    ]);
-    setItems(reg); setInputs(inp); setOutputs(out.outputs);
+    try {
+      const [reg, inp, out, issues] = await Promise.all([
+        apiFetch<RegisterItem[]>(`/api/payroll/runs/${String(id)}/items`),
+        apiFetch<InputRow[]>(`/api/payroll/runs/${String(id)}/inputs`),
+        apiFetch<{ outputs: OutputItem[] }>('/api/payroll/outputs/getRunOutputs', { method: 'POST', body: JSON.stringify({ runId: id }) }),
+        apiFetch<ComputeResult | null>(`/api/payroll/runs/${String(id)}/compute-issues`),
+      ]);
+      setItems(reg); setInputs(inp); setOutputs(out.outputs); setLastCompute(issues);
+    } catch (e) {
+      toast.error(`Failed to load run details: ${errText(e)}`);
+    }
   }, []);
 
   useEffect(() => { void loadRuns(); }, [loadRuns]);
@@ -225,6 +230,9 @@ export function PayrollPage({ user }: { user: SessionUser }) {
         description="Create the month's run, enter inputs, compute, review, approve and pay — every step is audited."
         actions={
           <div className="flex flex-wrap gap-2">
+            <Link to="/payroll/holds"><Button variant="secondary">Salary holds</Button></Link>
+            <Link to="/payroll/declarations"><Button variant="secondary">Investment proofs</Button></Link>
+            <Link to="/payroll/tds"><Button variant="secondary">TDS / Form 16</Button></Link>
             <Link to="/payroll/settings"><Button variant="secondary" leadingIcon={<Settings2 size={16} />}>Payroll settings</Button></Link>
             {canManage && <Button leadingIcon={<Plus size={16} />} onClick={() => { setNewRun((s) => ({ ...s, open: true, companyId: s.companyId || String(companies[0]?.id ?? '') })); }}>New run</Button>}
           </div>
@@ -287,7 +295,7 @@ export function PayrollPage({ user }: { user: SessionUser }) {
                 {canSign && status === 'approved' && <Button variant="hero" onClick={() => { setConfirm('finalize'); }}>Finalize…</Button>}
                 {canManage && status === 'finalized' && <Button variant="secondary" onClick={() => { setTab('outputs'); }}>Outputs</Button>}
                 {canSign && status === 'finalized' && <Button leadingIcon={<Banknote size={16} />} onClick={() => { setReason(''); setConfirm('paid'); }}>Mark paid…</Button>}
-                {canManage && ['inputs_locked', 'computed', 'under_review'].includes(status) && <Button variant="ghost" leadingIcon={<RotateCcw size={16} />} onClick={() => { setReason(''); setConfirm('draft'); }}>Back to draft</Button>}
+                {canManage && ['inputs_locked', 'computed', 'under_review', 'reopened'].includes(status) && <Button variant="ghost" leadingIcon={<RotateCcw size={16} />} onClick={() => { setReason(''); setConfirm('draft'); }}>Back to draft</Button>}
                 {canReopen && ['approved', 'finalized'].includes(status) && <Button variant="danger" leadingIcon={<RotateCcw size={16} />} onClick={() => { setReason(''); setConfirm('reopen'); }}>Reopen…</Button>}
               </div>
               {!canManage && !canSign && <p className="mt-3 text-sm text-ink-muted">You have read-only access to payroll runs.</p>}
@@ -295,7 +303,7 @@ export function PayrollPage({ user }: { user: SessionUser }) {
 
             {lastCompute && (lastCompute.exceptions.length > 0 || lastCompute.negativeNetCount > 0) && (
               <Card>
-                <CardHeader title={`${String(lastCompute.exceptions.length)} employees need attention`} subtitle="These were skipped or flagged — fix the data and recompute (Back to draft → Lock → Compute)." action={<AlertTriangle className="text-warning-ink" aria-hidden />} />
+                <CardHeader title={`${String(lastCompute.exceptions.length)} employees need attention (last compute)`} subtitle="These were skipped or flagged — fix the data and recompute (Back to draft → Lock → Compute)." action={<AlertTriangle className="text-warning-ink" aria-hidden />} />
                 <ul className="mt-3 space-y-1 text-sm">{lastCompute.exceptions.map((x) => <li key={x.employeeId}><span className="font-mono">{x.ecode}</span> — {x.reason}</li>)}</ul>
               </Card>
             )}

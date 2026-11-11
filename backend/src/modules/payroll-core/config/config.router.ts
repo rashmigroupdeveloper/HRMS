@@ -2,11 +2,11 @@
  * Payroll configuration router — the UI for what previously needed SQL:
  * statutory parameters, PT slabs, GL mapping, run variable inputs (+ CSV),
  * and the run register for the review grid.
- * Reads: payroll.run.view · Writes: payroll.run.manage (payroll_admin, super_admin) — all audited.
+ * Reads: payroll.run.view · Configuration writes: payroll.config.manage; run inputs: payroll.run.manage — all audited.
  */
 import { z } from 'zod';
 import { ForbiddenError } from '../../../core/errors/index.js';
-import { withPermission } from '../../../api/orpc.js';
+import { withAnyPermission, withPermission } from '../../../api/orpc.js';
 import { employeeScopeSql } from '../../../core/rbac/employee-scope.js';
 import { requireCompanyInScope, requireRunInScope } from '../../../core/rbac/company-scope.js';
 import { payrollIdentifierGaps } from '../runs/preflight.service.js';
@@ -20,7 +20,7 @@ const inputRow = z.object({ employeeId: z.number().int().positive(), componentCo
 
 /** Statutory tables are group-wide reference data: an entity-bound admin must not change other entities' pay. */
 function requireGroupScope(access: { all: boolean }): void {
-  if (!access.all) throw new ForbiddenError('Statutory rates and PT slabs are group-wide; only a group-level payroll admin can change them');
+  if (!access.all) throw new ForbiddenError('Statutory rates and PT slabs are group-wide; only a delegated group-wide payroll configuration administrator can change them');
 }
 
 export const payrollConfigRouter = {
@@ -36,28 +36,28 @@ export const payrollConfigRouter = {
       return { gaps: gaps.slice(0, 200) };
     }),
 
-  statutoryParams: withPermission('payroll.run.view', 'read')
+  statutoryParams: withAnyPermission('payroll.run.view', 'payroll.config.manage')
     .route({ method: 'GET', path: '/payroll/config/statutory-params', summary: 'Statutory parameters the engine reads, by scheme' })
     .output(z.record(z.string(), z.array(z.string())))
     .handler(() => Object.fromEntries(Object.entries(STATUTORY_PARAMS).map(([k, v]) => [k, [...v]]))),
 
-  statutoryRates: withPermission('payroll.run.view', 'read')
+  statutoryRates: withAnyPermission('payroll.run.view', 'payroll.config.manage')
     .route({ method: 'GET', path: '/payroll/config/statutory-rates', summary: 'Effective-dated statutory parameters (PF, ESIC, OT, bonus)' })
     .output(z.array(z.object({ id: z.number(), scheme: z.string(), param: z.string(), value: z.number(), effectiveFrom: z.string(), sourceNote: z.string() })))
     .handler(({ context }) => listStatutoryRates(context.db)),
 
-  setStatutoryRate: withPermission('payroll.run.manage')
+  setStatutoryRate: withPermission('payroll.config.manage')
     .route({ method: 'POST', path: '/payroll/config/statutory-rates', summary: 'Add a new effective-dated version of a statutory parameter (audited)' })
     .input(z.object({ scheme: z.string().min(2).max(10), param: z.string().min(2).max(40), value: z.number(), effectiveFrom: monthStart, sourceNote: z.string().trim().min(3).max(300) }))
     .output(z.object({ id: z.number() }))
     .handler(({ input, context }) => { requireGroupScope(context.permissionAccess); return addStatutoryRate(context.db, { ...input, actorUserId: context.user.id }); }),
 
-  ptSlabs: withPermission('payroll.run.view', 'read')
+  ptSlabs: withAnyPermission('payroll.run.view', 'payroll.config.manage')
     .route({ method: 'GET', path: '/payroll/config/pt-slabs', summary: 'Professional tax slab sets per state' })
     .output(z.array(z.object({ id: z.number(), stateCode: z.string(), minMonthly: z.number(), maxMonthly: z.number().nullable(), amount: z.number(), effectiveFrom: z.string(), basis: z.string() })))
     .handler(({ context }) => listPtSlabs(context.db)),
 
-  setPtSlabs: withPermission('payroll.run.manage')
+  setPtSlabs: withPermission('payroll.config.manage')
     .route({ method: 'PUT', path: '/payroll/config/pt-slabs', summary: 'Replace the PT slab set for a state from a month (audited)' })
     .input(z.object({
       stateCode: z.string().length(2), effectiveFrom: monthStart, basis: z.enum(['earned_monthly', 'contracted_monthly']),
@@ -66,16 +66,16 @@ export const payrollConfigRouter = {
     .output(z.object({ count: z.number() }))
     .handler(({ input, context }) => { requireGroupScope(context.permissionAccess); return setPtSlabs(context.db, { ...input, actorUserId: context.user.id }); }),
 
-  glAccounts: withPermission('payroll.run.view', 'read')
+  glAccounts: withAnyPermission('payroll.run.view', 'payroll.config.manage')
     .route({ method: 'GET', path: '/payroll/config/gl-accounts', summary: 'SAP GL mapping per company/plant/cost centre/component' })
     .output(z.array(z.object({ id: z.number(), companyCode: z.string(), plantCode: z.string(), costCenterCode: z.string(), componentCode: z.string(), glCode: z.string() })))
     .handler(({ context }) => listGlAccounts(context.db)),
 
-  setGlAccount: withPermission('payroll.run.manage')
+  setGlAccount: withPermission('payroll.config.manage')
     .route({ method: 'PUT', path: '/payroll/config/gl-accounts', summary: 'Create or change a GL mapping (audited)' })
     .input(z.object({ companyCode: z.string().min(1).max(20), plantCode: z.string().min(1).max(20), costCenterCode: z.string().min(1).max(20), componentCode: z.string().min(1).max(40), glCode: z.string().trim().min(3).max(20) }))
     .output(z.object({ id: z.number() }))
-    .handler(({ input, context }) => upsertGlAccount(context.db, { ...input, actorUserId: context.user.id })),
+    .handler(({ input, context }) => { requireGroupScope(context.permissionAccess); return upsertGlAccount(context.db, { ...input, actorUserId: context.user.id }); }),
 
   runInputs: withPermission('payroll.run.view', 'read')
     .route({ method: 'GET', path: '/payroll/runs/{runId}/inputs', summary: 'Variable inputs entered for a run' })

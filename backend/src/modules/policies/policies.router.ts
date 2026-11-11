@@ -7,7 +7,7 @@
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { withPermission } from '../../api/orpc.js';
+import { withPermission, requireEmployeeId } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { rowsToExcelBuffer } from '../../core/excel/workbook.js';
@@ -24,13 +24,6 @@ import {
 } from './policies.service.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD');
-
-function requireEmployeeId(user: { employee_id: number | null }): number {
-  if (user.employee_id === null) {
-    throw new ORPCError('BAD_REQUEST', { message: 'Your account has no employee profile linked' });
-  }
-  return user.employee_id;
-}
 
 /** A policy carries a document OR a short body summary (or both). */
 const policyListItem = z.object({

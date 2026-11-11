@@ -1,7 +1,7 @@
 /**
  * Travel data access (C-02 / B-05 / P-23): an employee works on their OWN
- * trips, advances, claims and wallet. Travel desk / payroll (claims.approve,
- * payroll.run.manage) see employees inside their permission scope; a
+ * trips, advances, claims and wallet. Travel desk / reimbursement finance (claims.approve,
+ * claims.payout.view) see employees inside their permission scope; a
  * reporting manager may view a direct/indirect report's trip they approve.
  */
 import { sql, type Kysely } from 'kysely';
@@ -11,7 +11,7 @@ import { assertEmployeesInScope, type EmployeeScope } from '../../core/rbac/empl
 import { getUserPermissionAccess, getUserPermissions } from '../../core/rbac/permissions.service.js';
 import type { PermissionCode } from '../../core/rbac/seed-data.js';
 
-const TRAVEL_ADMIN: PermissionCode[] = ['payroll.run.manage', 'claims.approve'];
+const TRAVEL_ADMIN: PermissionCode[] = ['claims.payout.view', 'claims.approve'];
 
 export interface TravelActor {
   db: Kysely<Database>;

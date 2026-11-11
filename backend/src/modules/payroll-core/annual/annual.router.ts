@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { withPermission } from '../../../api/orpc.js';
+import { decimalRupees, paise } from '../../../core/money/index.js';
 import {
   BonusTrueupEngine,
 } from './bonus-trueup.js';
@@ -229,16 +230,27 @@ export const annualProcessesRouter = {
 
       // Persist scheduled arrears into pay.arrears if retro lookback months exist
       if (retroArrears.length > 0) {
+        const empIds = [...new Set(retroArrears.map((r) => r.employeeId))];
+        const salaries = await context.db
+          .selectFrom('pay.employee_salaries')
+          .select(['id', 'employee_id'])
+          .where('employee_id', 'in', empIds)
+          .where('effective_to', '=', new Date('9999-12-31'))
+          .execute();
+        const salaryMap = new Map(salaries.map((s) => [s.employee_id, s.id]));
+
         for (const r of retroArrears) {
+          const salaryId = salaryMap.get(r.employeeId);
+          if (!salaryId) continue;
           await context.db
             .insertInto('pay.arrears')
             .values({
               employee_id: r.employeeId,
-              source_salary_id: 1, // Reference revision
+              source_salary_id: salaryId,
               for_month: `${r.forMonth}-01`,
               paid_in_run_id: null, // To be consumed when executionMonth run is created
               component_code: r.componentCode,
-              amount: (Number(r.amountPaise) / 100).toFixed(2),
+              amount: decimalRupees(paise(Number(r.amountPaise))),
             })
             .execute();
         }

@@ -12,8 +12,8 @@ import type { Database, TeClaimsTable, TeClaimItemsTable, TeSettlementsTable } f
 import { sql, type Kysely, type Selectable, type Transaction } from 'kysely';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { ConflictError, DomainError, ForbiddenError, NotFoundError } from '../../core/errors/index.js';
-import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
-import { createRequest } from '../workflows/index.js';
+import { assertEmployeesInScope, employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
+import { createRequest, type WorkflowFinalStatus } from '../workflows/index.js';
 import { getTypedSetting } from '../settings/index.js';
 import { assertDate, assertWithinTrip, isoDay } from './travel-utils.js';
 import { WalletService } from './wallet.service.js';
@@ -116,7 +116,7 @@ export async function getTripBudgetHeadroom(db: Db, tripId: number): Promise<{
 }
 
 /** 'travel_claim' final hook: approved claims become settleable; rejected/lapsed claims release reservation. */
-export async function applyTravelClaimOnFinal(db: Db, request: { id: number }, status: 'approved' | 'rejected' | 'lapsed'): Promise<void> {
+export async function applyTravelClaimOnFinal(db: Db, request: { id: number }, status: WorkflowFinalStatus): Promise<void> {
   const claim = await db.selectFrom('te.claims').selectAll().where('workflow_request_id', '=', request.id).executeTakeFirst();
   if (claim?.status !== 'submitted') return;
   if (status === 'approved') {
@@ -462,16 +462,18 @@ export class SettlementService {
    * 4. Debits the advance amount from the wallet.
    * 5. Persists te.settlements and updates claim status to 'settled'.
    */
-  async settleClaim(params: SettleClaimParams): Promise<SettlementResult> {
+  async settleClaim(params: SettleClaimParams,scope?:EmployeeScope): Promise<SettlementResult> {
     return inTransaction(this.db, async (trx) => {
     const walletService = new WalletService(trx);
     const claim = await trx
       .selectFrom('te.claims')
       .selectAll()
       .where('id', '=', params.claimId)
+      .forUpdate()
       .executeTakeFirst();
 
     if (!claim) throw new NotFoundError(`Claim #${String(params.claimId)} not found`);
+    if(scope)await assertEmployeesInScope(trx,scope,[claim.employee_id]);
     if (claim.settlement_status === 'settled') throw new ConflictError(`Claim #${String(params.claimId)} is already settled`);
     // P-23: only a claim the approval chain approved can be settled.
     if (claim.status !== 'approved') throw new ConflictError(`Claim #${String(params.claimId)} is ${claim.status}; only approved claims can be settled`);

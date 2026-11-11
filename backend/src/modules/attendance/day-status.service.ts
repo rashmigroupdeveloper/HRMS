@@ -16,6 +16,7 @@
  * core.settings (review F10), never hardcoded.
  */
 import { evaluateAttendancePenalties } from './penalty-evaluation.js';
+import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
 import { logger } from '../../core/logger.js';
 import { closeWeekOffs, recloseDecidedWeekOffs } from '../../core/db/attendance-period.js';
 import { findHoliday, loadHolidaySubject } from '../../core/db/holiday-calendar.js';
@@ -613,15 +614,16 @@ export async function listFinalizationHolds(
  * than having its flag silently erased (review F9); a failed recompute
  * re-enqueues its row so nothing is lost.
  */
-export async function drainRecomputeQueue(db: Kysely<Database>, batch = 500): Promise<number> {
+export async function drainRecomputeQueue(db: Kysely<Database>, batch = 500, scope?: EmployeeScope): Promise<number> {
   const claimed = await sql<{ employee_id: number; work_date: Date }>`
     DELETE FROM att.recompute_queue
     WHERE ctid IN (
-      SELECT ctid FROM att.recompute_queue
-      WHERE queued_at <= now()
-      ORDER BY queued_at
+      SELECT q.ctid FROM att.recompute_queue q
+      JOIN core.employees e ON e.id = q.employee_id
+      WHERE q.queued_at <= now() AND ${scope ? employeeScopeSql(scope, 'e') : sql`TRUE`}
+      ORDER BY q.queued_at
       LIMIT ${batch}
-      FOR UPDATE SKIP LOCKED
+      FOR UPDATE OF q SKIP LOCKED
     )
     RETURNING employee_id, work_date
   `.execute(db);

@@ -17,3 +17,5 @@ export {
 } from './claims.service.js';
 
 export { claimsRouter } from './claims.router.js';
+
+export { registerClaimsWorkflowHooks } from './workflow-operations.js';

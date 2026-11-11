@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-23",
+  "stage": "Phase1 Stage1.8",
+  "backend": {
+    "command": "npm run verify",
+    "passed": true,
+    "files": 153,
+    "tests": 1108,
+    "coverage": {
+      "lines": 86.77,
+      "statements": 86.77,
+      "branches": 81.11,
+      "functions": 91.31
+    },
+    "log": "/tmp/hrms-controls-backend-verify.log"
+  },
+  "frontend": {
+    "command": "npm run verify",
+    "passed": true,
+    "files": 63,
+    "tests": 401,
+    "log": "/tmp/hrms-controls-frontend-verify.log"
+  },
+  "focused_native_follow_up": {
+    "passed": true,
+    "tests": 6,
+    "log": "/tmp/hrms-controls-biometric-test.log"
+  },
+  "database": "hrms_roleflow_test_20261023",
+  "migration": "1753000001300_onboarding-task-owners.ts",
+  "deployed": false,
+  "all_38_closed": false,
+  "remaining": [
+    "LOP correction UI and durable retro flow",
+    "dedicated off-cycle payroll",
+    "geo punch",
+    "OT planning and preapproval",
+    "manpower requisitions",
+    "SMTP configuration and delivery evidence",
+    "backup/restore controls and restore drill",
+    "full browser role-flow and accessibility replay",
+    "Pack40 statutory acceptance"
+  ],
+  "human_payroll_review": "required before deployment"
+}

@@ -627,7 +627,7 @@ CREATE TABLE pay.claim_types (
   entitlement_basis TEXT NOT NULL,  -- 'annual'|'monthly'|'per_event' (CLM-01)
   bill_required BOOLEAN NOT NULL DEFAULT true,
   taxable_if_unsubstantiated BOOLEAN NOT NULL DEFAULT true, -- year-end TDS on unclaimed/unproven (CLM-05)
-  payout_component_code TEXT NOT NULL REFERENCES pay.salary_components(code) -- which payslip line pays it (CLM-04)
+  payout_component_code TEXT NOT NULL REFERENCES pay.salary_components(code) -- legacy tax/component mapping; never an instruction to pay via salary
 );
 
 CREATE TABLE pay.claim_entitlements ( -- per grade × type limit (CLM-01); NULL grade = default
@@ -647,8 +647,8 @@ CREATE TABLE pay.claims (
   workflow_request_id BIGINT NOT NULL,     -- RM → HR verify → payroll (chain in 08-ROLES §4)
   rejection_reason TEXT,             -- mandatory when rejected (CLM-03)
   advance_loan_id BIGINT REFERENCES pay.loans, -- travel-advance adjustment linkage (CLM-07)
-  paid_in_run_id BIGINT REFERENCES pay.payroll_runs, -- payroll payout (CLM-04)
-  paid_in_batch_id BIGINT REFERENCES pay.bank_batches -- OR off-cycle reimbursement batch — CHECK: not both
+  paid_in_run_id BIGINT REFERENCES pay.payroll_runs, -- legacy salary link, retained for reconciliation
+  paid_in_batch_id BIGINT REFERENCES pay.bank_batches -- legacy bank link, retained for reconciliation
 );
 
 CREATE TABLE pay.claim_bills (      -- CLM-02 multiple bill uploads per claim
@@ -900,3 +900,13 @@ These existing `att.shifts` fields extend the earlier abbreviated DDL above; the
 | `is_active` | Shift-catalog availability for assignment; retirement is not deletion of historical roster/day references. |
 
 `att.day_records.penalty_evaluation` is the only business column introduced by this penalty change. Snapshot validation and boolean consistency live at the DB; existing generic locked-row protection and manager-attestation invalidation apply to it. Locked historical rows are not backfilled from current mutable rules. No separate payable-day counter or duplicate penalty total is added.
+
+
+### CLM-04 payroll provenance amendment —24 October2026
+
+`pay.inputs.claim_id` is a nullable FK to `pay.claims(id)` with a unique partial index for non-NULL values. Existing/manual inputs remain NULL. These columns describe the superseded combined-payment model and are retained only for historical reconciliation; no new reimbursements are written to salary inputs and salary mark-paid does not update claim status. Historical rows are not backfilled with inferred provenance.
+
+
+### CLM-04 independent reimbursement payments — sponsor correction24 Oct2026
+
+Migration1753000001600 adds `pay.reimbursement_batches` (company, draft/prepared/paid status, exact NUMERIC total, creator, stored bank document, payment reference and confirmer/time) and `pay.reimbursement_batch_items` (batch, claim, employee, approved amount snapshot). `pay.claims.reimbursement_batch_id` is independent of `pay.payroll_runs`/`pay.bank_batches`; a constraint permits at most one legacy/new destination. Prepared item rows and closed batch records are protected by DB triggers. New payments use no `pay.inputs` row. Historical combined destinations are retained without inferred backfill or automatic re-payment.

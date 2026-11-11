@@ -11,6 +11,7 @@
  *     sweep lapses it
  */
 import 'dotenv/config';
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { httpRequest } from './http-client.js';
 import { sql, type Kysely } from 'kysely';
@@ -45,7 +46,7 @@ function dow(isoDate: string): number {
 run('Stage 1.4 — requests + overtime (live Postgres)', () => {
   let db: Kysely<Database>;
   let app: Express;
-  const stamp = Date.now();
+  const stamp = randomUUID();
   const today = istDateString();
   const password = 's14-test-pw-1!';
 
@@ -72,7 +73,7 @@ run('Stage 1.4 — requests + overtime (live Postgres)', () => {
     const r = await db
       .insertInto('core.employees')
       .values({
-        ecode: `RML8${String(stamp).slice(-5)}${suffix}`,
+        ecode: `RML8${stamp.replaceAll('-', '').slice(0, 12)}${suffix}`,
         company_id: rml.id,
         first_name: `S14 ${suffix}`,
         reporting_manager_id: managerId,

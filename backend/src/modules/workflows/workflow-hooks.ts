@@ -12,7 +12,7 @@ type RequestRow = Selectable<WfRequestsTable>;
  * wiring time; the engine fires the handler inside the SAME transaction that
  * finalized the request, so domain side-effects are atomic with the decision.
  */
-export type WorkflowFinalStatus = 'approved' | 'rejected' | 'lapsed';
+export type WorkflowFinalStatus = 'approved' | 'rejected' | 'lapsed' | 'cancelled';
 export type WorkflowFinalHook = (
   db: Db,
   request: RequestRow,

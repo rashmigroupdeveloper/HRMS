@@ -42,6 +42,7 @@ export interface EmployeeIncrementResult {
   currentMonthlyGrossPaise: Paise;
   proposedMonthlyGrossPaise: Paise;
   monthlyGrossDeltaPaise: Paise;
+  monthlyBasicDeltaPaise: Paise;
   monthlyPfDeltaPaise: Paise;
   monthlyNetDeltaPaise: Paise;
   retroMonthsCount: number;
@@ -172,6 +173,7 @@ export const IncrementBatchEngine = {
         currentMonthlyGrossPaise: curGrossPaise,
         proposedMonthlyGrossPaise: proposedGrossPaise,
         monthlyGrossDeltaPaise,
+        monthlyBasicDeltaPaise,
         monthlyPfDeltaPaise,
         monthlyNetDeltaPaise,
         retroMonthsCount,
@@ -219,7 +221,7 @@ export const IncrementBatchEngine = {
           forMonth: forMonthStr,
           targetRunMonth: simulation.executionMonth,
           componentCode: 'BASIC_ARREARS',
-          amountPaise: item.monthlyNetDeltaPaise,
+          amountPaise: item.monthlyBasicDeltaPaise,
         });
       }
     }

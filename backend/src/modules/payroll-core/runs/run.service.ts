@@ -399,7 +399,7 @@ export class PayrollRunService {
       .selectFrom('pay.payroll_item_lines as l')
       .innerJoin('pay.payroll_items as i', 'i.id', 'l.item_id')
       .innerJoin('pay.loans as ln', 'ln.id', 'l.loan_id')
-      .select(['l.loan_id', 'l.amount', 'ln.outstanding', 'ln.emi', 'ln.interest_rate', 'ln.loan_type'])
+      .select(['l.loan_id', 'l.amount', 'ln.outstanding', 'ln.emi', 'ln.interest_rate', 'ln.loan_type', 'ln.principal'])
       .where('i.run_id', '=', runId)
       .where('i.payment_status', '!=', 'hold_process')
       .where('l.loan_id', 'is not', null)

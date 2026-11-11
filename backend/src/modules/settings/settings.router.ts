@@ -8,8 +8,7 @@ import { z } from 'zod';
 import { withPermission } from '../../api/orpc.js';
 import { getSetting, listSettings } from './settings.repository.js';
 import { setSetting } from './settings.service.js';
-import { canEditSetting, settingOwners } from './settings-ownership.js';
-import { getUserRoleCodes } from '../../core/rbac/permissions.service.js';
+import { canEditSetting, settingOwners, settingWritePermissions } from './settings-ownership.js';
 import { ForbiddenError } from '../../core/errors/index.js';
 
 const settingOutput = z.object({
@@ -27,8 +26,8 @@ const getProcedure = withPermission('admin.settings', 'read')
   .handler(async ({ input, context }) => {
     const row = await getSetting(context.db, input.key);
     if (!row) throw new ORPCError('NOT_FOUND', { message: `Setting ${input.key} not found` });
-    const roles = await getUserRoleCodes(context.db, context.user.id);
-    return { key: row.key, value: row.value, valueType: row.value_type, description: row.description, editable: canEditSetting(roles, row.key) };
+    const permissions = await settingWritePermissions(context.db, context.user.id);
+    return { key: row.key, value: row.value, valueType: row.value_type, description: row.description, editable: canEditSetting(permissions, row.key) };
   });
 
 const listProcedure = withPermission('admin.settings', 'read')
@@ -36,13 +35,13 @@ const listProcedure = withPermission('admin.settings', 'read')
   .output(z.array(settingOutput))
   .handler(async ({ context }) => {
     const rows = await listSettings(context.db);
-    const roles = await getUserRoleCodes(context.db, context.user.id);
+    const permissions = await settingWritePermissions(context.db, context.user.id);
     return rows.map((row) => ({
       key: row.key,
       value: row.value,
       valueType: row.value_type,
       description: row.description,
-      editable: canEditSetting(roles, row.key),
+      editable: canEditSetting(permissions, row.key),
     }));
   });
 
@@ -58,8 +57,8 @@ const setProcedure = withPermission('admin.settings')
   )
   .output(z.object({ ok: z.literal(true) }))
   .handler(async ({ input, context }) => {
-    const roles = await getUserRoleCodes(context.db, context.user.id);
-    if (!canEditSetting(roles, input.key)) {
+    const permissions = await settingWritePermissions(context.db, context.user.id);
+    if (!canEditSetting(permissions, input.key)) {
       const owners = settingOwners(input.key);
       throw new ForbiddenError(`${input.key} is owned by ${owners.length > 0 ? owners.join(' / ') : 'super_admin'}; your role cannot change it`);
     }

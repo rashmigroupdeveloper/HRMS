@@ -1,3 +1,4 @@
+import { declarationReviewRouter } from './tax-declaration/review.router.js';
 import { payrollConfigRouter } from './config/config.router.js';
 /**
  * @module payroll-core — Salary Components, Structures, Assignments & Pipeline Engine.
@@ -18,6 +19,7 @@ export const payrollCoreRouter = {
   salaries: salaryRouter,
   runs: payrollRunsRouter,
   holds: salaryHoldsRouter,
+  declarations: declarationReviewRouter,
   statutory: statutoryRouter,
   parallelRun: parallelRunRouter,
   annual: annualProcessesRouter,
@@ -239,3 +241,5 @@ export { addRunInputs, runInputProblems, enterableComponentCodes, addStatutoryRa
 
 // Muster LOP parity (owner bar #2): the muster counts LOP exactly as payroll deducts it.
 export { unpaidDayEquivalents, parseLopDivisor, type DayFact } from './runs/payable-days.js';
+
+export { loadGratuityPolicy } from './fnf/gratuity-policy.js';

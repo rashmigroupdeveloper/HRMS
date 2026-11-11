@@ -36,7 +36,7 @@ describe.skipIf(!DB_URL)('Travel & Expense Router Endpoints (TE-01..12, C-02, P-
   let transaction:ControlledTransaction<Database>|undefined;
   let app:ReturnType<typeof createApp>;
   const ids = { employee: 0, employeeUser: 0, manager: 0, managerUser: 0, outsider: 0, payrollUser: 0, adminUser: 0 };
-  const tokens = { employee: '', manager: '', outsider: '', payroll: '', admin: '' };
+  const tokens = { employee: '', manager: '', outsider: '', payroll: '', finance:'', admin: '' };
   beforeAll(async()=>{
     db=createDatabase(DB_URL??'');
     transaction=await db.startTransaction().execute();
@@ -56,8 +56,11 @@ describe.skipIf(!DB_URL)('Travel & Expense Router Endpoints (TE-01..12, C-02, P-
     const outsider=await person('out',null,null);
     const payroll=await person('pay',null,'payroll_admin');
     const admin=await person('adm',null,'super_admin');
+    const financeRole=await tx.insertInto('core.roles').values({code:`${tag}_finance`,name:'Synthetic reimbursement finance'}).returning(['id','code']).executeTakeFirstOrThrow();
+    for(const code of ['claims.payout.view','claims.payout.manage']){const permission=await tx.selectFrom('core.permissions').select('id').where('code','=',code).executeTakeFirstOrThrow();await tx.insertInto('core.role_permissions').values({role_id:financeRole.id,permission_id:permission.id,scope:'all'}).execute();}
+    const finance=await person('finance',null,financeRole.code);
     Object.assign(ids,{employee:employee.employeeId,employeeUser:employee.userId,manager:manager.employeeId,managerUser:manager.userId,outsider:outsider.employeeId,payrollUser:payroll.userId,adminUser:admin.userId});
-    Object.assign(tokens,{employee:employee.token,manager:manager.token,outsider:outsider.token,payroll:payroll.token,admin:admin.token});
+    Object.assign(tokens,{employee:employee.token,manager:manager.token,outsider:outsider.token,payroll:payroll.token,finance:finance.token,admin:admin.token});
     app=createApp({db:tx,jwtSecret:JWT_SECRET,secureCookies:false});
   });
   afterAll(async()=>{
@@ -112,12 +115,13 @@ describe.skipIf(!DB_URL)('Travel & Expense Router Endpoints (TE-01..12, C-02, P-
     // The reporting manager may view the trip they approve.
     expect((await get(`/api/travel/trips/${tripId}`,'manager')).status).toBe(200);
 
-    // Advance: requested → payroll cannot disburse before the RM chain approves.
+    // Advance: requested → independently delegated finance cannot disburse before the RM chain approves.
     const advRes = await post('/api/travel/advances','employee',{tripId,amountPaise:1000000,purpose:'Site hotel and logistics advance'});
     expect(advRes.status).toBe(200);
     const advanceId = (advRes.body as TravelBody).advance.id;
     expect((advRes.body as TravelBody).advance.status).toBe('requested');
-    expect((await post(`/api/travel/advances/${advanceId}/approve`,'payroll')).status).toBe(409);
+    expect((await post(`/api/travel/advances/${advanceId}/approve`,'payroll')).status).toBe(403);
+    expect((await post(`/api/travel/advances/${advanceId}/approve`,'finance')).status).toBe(409);
 
     // A claim cannot be raised on an unapproved trip.
     expect((await post('/api/travel/claims','employee',{tripId})).status).toBe(409);
@@ -125,7 +129,7 @@ describe.skipIf(!DB_URL)('Travel & Expense Router Endpoints (TE-01..12, C-02, P-
     expect(['approved','advanced']).toContain(await approveAs('te.advances', advanceId, ids.managerUser));
     const approvedAdvance = await (txn()).selectFrom('te.advances').select('status').where('id','=',advanceId).executeTakeFirstOrThrow();
     expect(approvedAdvance.status).toBe('approved');
-    const disburse = await post(`/api/travel/advances/${advanceId}/approve`,'payroll');
+    const disburse = await post(`/api/travel/advances/${advanceId}/approve`,'finance');
     expect(disburse.status).toBe(200);
     expect((disburse.body as TravelBody).advance.status).toBe('disbursed');
 
@@ -138,23 +142,23 @@ describe.skipIf(!DB_URL)('Travel & Expense Router Endpoints (TE-01..12, C-02, P-
     expect(itemRes.status).toBe(200);
 
     // Draft claims cannot be settled (P-23).
-    expect((await post(`/api/travel/claims/${claimId}/settle`,'payroll',{claimId,approvedAmountPaise:400000})).status).toBe(409);
+    expect((await post(`/api/travel/claims/${claimId}/settle`,'finance',{claimId,approvedAmountPaise:400000})).status).toBe(409);
     expect((await post(`/api/travel/claims/${claimId}/submit`,'employee',{claimId,summaryDocumentUrl:'https://storage.hrms/summary.pdf'})).status).toBe(200);
     expect(await approveAs('te.claims', claimId, ids.managerUser)).toBe('approved');
 
-    const settleRes = await post(`/api/travel/claims/${claimId}/settle`,'payroll',{claimId,approvedAmountPaise:400000,settlementMode:'AUTO'});
+    const settleRes = await post(`/api/travel/claims/${claimId}/settle`,'finance',{claimId,approvedAmountPaise:400000,settlementMode:'AUTO'});
     expect(settleRes.status).toBe(200);
     expect((settleRes.body as TravelBody).advanceAdjustedPaise).toBe(400000);
     expect((settleRes.body as TravelBody).netRecoverablePaise).toBe(600000);
-    expect((await post(`/api/travel/claims/${claimId}/settle`,'payroll',{claimId})).status).toBe(409);
+    expect((await post(`/api/travel/claims/${claimId}/settle`,'finance',{claimId})).status).toBe(409);
 
     const walletRes = await get('/api/travel/wallet','employee');
     expect(walletRes.status).toBe(200);
     expect((walletRes.body as TravelBody).balancePaise).toBe(0);
     const ledgerRes = await get('/api/travel/wallet/ledger','employee');
     expect((ledgerRes.body as TravelBody).transactions).toHaveLength(2);
-    // Payroll (travel desk) may read the employee's wallet; a user without an employee gets a clean 400.
-    expect((await get(`/api/travel/wallet?employeeId=${ids.employee}`,'payroll')).status).toBe(200);
+    // An independently delegated reimbursement operator may read the employee's wallet; a user without an employee gets a clean 400.
+    expect((await get(`/api/travel/wallet?employeeId=${ids.employee}`,'finance')).status).toBe(200);
   });
 
   it('Phase 3.5 Stage A — EMS routing parity: duplicate collapse, self-approval prevention, and admin auto-approval', async () => {

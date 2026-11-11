@@ -1,16 +1,18 @@
+import { employeeScopeSql, type EmployeeScope } from '../../core/rbac/employee-scope.js';
+import {parseRupees,paise,add,decimalRupees,toRupees} from '../../core/money/index.js';
 /**
  * Claims & Reimbursements Service (M12, CLM-01..07)
  *
  * Implements:
  * - Claim submission with multiple uploaded bills and live entitlement check
  * - Multi-tier verification: Line manager & HR line-item bill approval
- * - Payout routing: regular payroll run OR off-cycle batch (DB CHECK: run XOR batch)
+ * - Legacy combined payout is refused; independent payments use payments.service
  * - Travel advance adjustment (CLM-07)
  * - Year-end unsubstantiated proof tax recovery (CLM-05)
  */
 import type { Kysely } from 'kysely';
 import type { Database, ClaimStatus } from '../../core/db/types.js';
-import { NotFoundError } from '../../core/errors/index.js';
+import { ConflictError, NotFoundError } from '../../core/errors/index.js';
 import { EntitlementService } from './entitlement.service.js';
 import { inTransaction } from '../../core/db/database.js';
 
@@ -71,6 +73,7 @@ export interface ClaimWithBills {
   advanceLoanId: number | null;
   paidInRunId: number | null;
   paidInBatchId: number | null;
+  reimbursementBatchId: number | null;
   createdAt: Date;
   bills: {
     id: number;
@@ -119,13 +122,15 @@ export class ClaimsService {
     }
 
     // 1. Calculate sum of bill amounts
-    let totalClaimedRupees = 0;
+    let totalClaimedPaise = paise(0);
     for (const b of bills) {
       if (b.amountRupees <= 0) {
         throw new Error('Bill amount must be positive');
       }
-      totalClaimedRupees += b.amountRupees;
+      totalClaimedPaise = add(totalClaimedPaise,parseRupees(String(b.amountRupees)));
     }
+
+    const totalClaimedRupees=toRupees(totalClaimedPaise);
 
     // 2. Entitlement is a flag for the approver, not a hard stop (E2E-015).
     // A missing budget must not reject the claim: this path is entitlement-funded.
@@ -151,7 +156,7 @@ export class ClaimsService {
           reference: fundingFlag,
           period_from: new Date(periodFrom),
           period_to: new Date(periodTo),
-          claimed_amount: totalClaimedRupees.toFixed(2),
+          claimed_amount: decimalRupees(totalClaimedPaise),
           approved_amount: null,
           status: 'pending',
           workflow_request_id: workflowRequestId,
@@ -171,7 +176,7 @@ export class ClaimsService {
             document_id: bill.documentId,
             bill_no: bill.billNo ?? null,
             bill_date: bill.billDate ? new Date(bill.billDate) : null,
-            amount: bill.amountRupees.toFixed(2),
+            amount: decimalRupees(parseRupees(String(bill.amountRupees))),
             verified: false,
             verified_by: null,
           })
@@ -268,123 +273,15 @@ export class ClaimsService {
   }
 
   /**
-   * Routes an approved claim to either a regular payroll run OR an off-cycle bank batch.
-   * Enforces DB invariant: paid_in_run_id XOR paid_in_batch_id.
-   * If advanceLoanId is set, performs travel advance adjustment (CLM-07).
+   * Legacy combined routing is refused: reimbursement payments use independent batches.
    */
-  async routePayout(params: RoutePayoutParams): Promise<{
+  routePayout(params: RoutePayoutParams): Promise<{
     payoutMethod: 'payroll_run' | 'off_cycle_batch';
     paidAmountRupees: number;
     advanceAdjustedRupees: number;
   }> {
-    const { claimId, payoutMethod, runId, batchId, userId } = params;
-
-    if (payoutMethod === 'payroll_run' && !runId) {
-      throw new Error('runId is required when paying through regular payroll run');
-    }
-    if (payoutMethod === 'off_cycle_batch' && !batchId) {
-      throw new Error('batchId is required when paying through off-cycle bank batch');
-    }
-
-    return await inTransaction(this.db, async (trx) => {
-      const claim = await trx
-        .selectFrom('pay.claims')
-        .innerJoin('pay.claim_types', 'pay.claim_types.id', 'pay.claims.claim_type_id')
-        .select([
-          'pay.claims.id',
-          'pay.claims.employee_id',
-          'pay.claims.approved_amount',
-          'pay.claims.status',
-          'pay.claims.advance_loan_id',
-          'pay.claims.paid_in_run_id',
-          'pay.claims.paid_in_batch_id',
-          'pay.claim_types.payout_component_code',
-        ])
-        .where('pay.claims.id', '=', claimId)
-        .forUpdate()
-        .executeTakeFirstOrThrow();
-
-      if (claim.status !== 'approved') {
-        throw new Error(`Only approved claims can be paid (current status: ${claim.status})`);
-      }
-      if (claim.paid_in_run_id !== null || claim.paid_in_batch_id !== null) {
-        throw new Error('Claim is already marked as paid');
-      }
-
-      const approvedRupees = Number(claim.approved_amount ?? 0);
-      let advanceAdjustedRupees = 0;
-      let netPayableRupees = approvedRupees;
-
-      // Advance loan settlement (CLM-07)
-      if (claim.advance_loan_id) {
-        const advLoan = await trx
-          .selectFrom('pay.loans')
-          .selectAll()
-          .where('id', '=', claim.advance_loan_id)
-          .forUpdate()
-          .executeTakeFirst();
-
-        if (advLoan?.status === 'active') {
-          const advOutstanding = Number(advLoan.outstanding);
-          advanceAdjustedRupees = Math.min(approvedRupees, advOutstanding);
-          netPayableRupees = approvedRupees - advanceAdjustedRupees;
-
-          const newAdvOutstanding = advOutstanding - advanceAdjustedRupees;
-          await trx
-            .updateTable('pay.loans')
-            .set({
-              outstanding: newAdvOutstanding.toFixed(2),
-              status: newAdvOutstanding <= 0 ? 'closed' : 'active',
-            })
-            .where('id', '=', claim.advance_loan_id)
-            .execute();
-        }
-      }
-
-      if (payoutMethod === 'payroll_run' && runId) {
-        // Enqueue into payroll inputs (pay.inputs) if net amount > 0
-        if (netPayableRupees > 0) {
-          await trx
-            .insertInto('pay.inputs')
-            .values({
-              run_id: runId,
-              employee_id: claim.employee_id,
-              component_code: claim.payout_component_code,
-              amount: netPayableRupees.toFixed(2),
-              note: `Reimbursement claim #${claimId} settlement`,
-              entered_by: userId,
-            })
-            .execute();
-        }
-
-        // Update claim record
-        await trx
-          .updateTable('pay.claims')
-          .set({
-            status: 'paid',
-            paid_in_run_id: runId,
-            paid_in_batch_id: null, // XOR enforcement
-          })
-          .where('id', '=', claimId)
-          .execute();
-      } else if (payoutMethod === 'off_cycle_batch' && batchId) {
-        await trx
-          .updateTable('pay.claims')
-          .set({
-            status: 'paid',
-            paid_in_run_id: null, // XOR enforcement
-            paid_in_batch_id: batchId,
-          })
-          .where('id', '=', claimId)
-          .execute();
-      }
-
-      return {
-        payoutMethod,
-        paidAmountRupees: netPayableRupees,
-        advanceAdjustedRupees,
-      };
-    });
+    void params;
+    return Promise.reject(new ConflictError('Salary and reimbursements are paid separately; use an independent reimbursement batch'));
   }
 
   /**
@@ -413,6 +310,7 @@ export class ClaimsService {
         'pay.claims.advance_loan_id',
         'pay.claims.paid_in_run_id',
         'pay.claims.paid_in_batch_id',
+        'pay.claims.reimbursement_batch_id',
         'pay.claims.created_at',
       ])
       .where('pay.claims.id', '=', claimId)
@@ -448,6 +346,7 @@ export class ClaimsService {
       advanceLoanId: row.advance_loan_id,
       paidInRunId: row.paid_in_run_id,
       paidInBatchId: row.paid_in_batch_id,
+      reimbursementBatchId: row.reimbursement_batch_id,
       createdAt: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
       bills: bills.map((b) => ({
         id: b.id,
@@ -487,16 +386,17 @@ export class ClaimsService {
   /**
    * Lists claims waiting for verification or approval.
    */
-  async listPendingVerification(statusFilter?: ClaimStatus): Promise<ClaimWithBills[]> {
-    let query = this.db.selectFrom('pay.claims').select(['id', 'claim_type_id']);
+  async listPendingVerification(statusFilter?: ClaimStatus, scope?: EmployeeScope): Promise<ClaimWithBills[]> {
+    let query = this.db.selectFrom('pay.claims').innerJoin('core.employees as e','e.id','pay.claims.employee_id').select(['pay.claims.id', 'pay.claims.claim_type_id']);
+    if(scope !== undefined) query=query.where(employeeScopeSql(scope,'e'));
 
     if (statusFilter) {
-      query = query.where('status', '=', statusFilter);
+      query = query.where('pay.claims.status', '=', statusFilter);
     } else {
-      query = query.where('status', 'in', ['pending', 'verified', 'approved']);
+      query = query.where('pay.claims.status', 'in', ['pending', 'verified', 'approved']);
     }
 
-    const rows = await query.orderBy('id', 'desc').execute();
+    const rows = await query.orderBy('pay.claims.id', 'desc').execute();
     const result: ClaimWithBills[] = [];
     for (const r of rows) {
       // A claim with no type cannot be verified; one bad row must not 500 the queue.
@@ -522,29 +422,40 @@ export class ClaimsService {
     const marchDate = new Date(Date.UTC(fyYear, 2, 31)); // 31 March
     const entitlements = await this.entitlementService.getEmployeeEntitlements(employeeId, marchDate);
 
+    const taxableCodes = new Set(
+      entitlements.filter((e) => e.taxableIfUnsubstantiated).map((e) => e.claimTypeCode),
+    );
+
+    if (taxableCodes.size === 0) {
+      return { taxableAdditionRupees: 0, breakdown: [] };
+    }
+
+    const unverifiedRows = await this.db
+      .selectFrom('pay.claims')
+      .innerJoin('pay.claim_bills', 'pay.claim_bills.claim_id', 'pay.claims.id')
+      .innerJoin('pay.claim_types', 'pay.claim_types.id', 'pay.claims.claim_type_id')
+      .select([
+        'pay.claim_types.code as claim_type_code',
+        (eb) => eb.fn.sum<string>('pay.claim_bills.amount').as('unverified_sum'),
+      ])
+      .where('pay.claims.employee_id', '=', employeeId)
+      .where('pay.claims.status', 'in', ['approved', 'paid'])
+      .where('pay.claim_bills.verified', '=', false)
+      .where('pay.claim_types.code', 'in', [...taxableCodes])
+      .groupBy('pay.claim_types.code')
+      .execute();
+
     let taxableAdditionRupees = 0;
     const breakdown: { claimTypeCode: string; unsubstantiatedRupees: number }[] = [];
 
-    for (const ent of entitlements) {
-      if (ent.taxableIfUnsubstantiated) {
-        // Any approved claim without verified bills is treated as unsubstantiated
-        const unverifiedClaims = await this.db
-          .selectFrom('pay.claims')
-          .innerJoin('pay.claim_bills', 'pay.claim_bills.claim_id', 'pay.claims.id')
-          .select((eb) => [eb.fn.sum<string>('pay.claim_bills.amount').as('unverified_sum')])
-          .where('pay.claims.employee_id', '=', employeeId)
-          .where('pay.claims.status', 'in', ['approved', 'paid'])
-          .where('pay.claim_bills.verified', '=', false)
-          .executeTakeFirst();
-
-        const unverifiedRupees = Number(unverifiedClaims?.unverified_sum ?? 0);
-        if (unverifiedRupees > 0) {
-          taxableAdditionRupees += unverifiedRupees;
-          breakdown.push({
-            claimTypeCode: ent.claimTypeCode,
-            unsubstantiatedRupees: unverifiedRupees,
-          });
-        }
+    for (const row of unverifiedRows) {
+      const unverifiedRupees = Number(row.unverified_sum);
+      if (unverifiedRupees > 0) {
+        taxableAdditionRupees += unverifiedRupees;
+        breakdown.push({
+          claimTypeCode: row.claim_type_code,
+          unsubstantiatedRupees: unverifiedRupees,
+        });
       }
     }
 

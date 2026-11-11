@@ -22,9 +22,10 @@ import { ConflictError, DomainError, ForbiddenError, NotFoundError } from '../..
 import { employeeScopeSql, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
 import { parseJsonObject } from '../../../core/json.js';
 import { getTypedSetting } from '../../settings/index.js';
-import { cancelRequest, createRequest, act } from '../../workflows/index.js';
+import { cancelRequest, createRequest, act, type WorkflowFinalStatus } from '../../workflows/index.js';
 import { ClearanceService } from './clearance.service.js';
-import { computeFnfSettlement, readLockedPayableDays, type FnfSettlementCalculation } from '../../payroll-core/index.js';
+import { computeFnfSettlement, readLockedPayableDays, loadGratuityPolicy, type FnfSettlementCalculation } from '../../payroll-core/index.js';
+import { decimalRupees, paise } from '../../../core/money/index.js';
 import { inTransaction } from '../../../core/db/database.js';
 
 type Db = Kysely<Database> | Transaction<Database>;
@@ -110,7 +111,7 @@ async function assertNoOpenCase(db: Db, employeeId: number): Promise<void> {
 export async function applyResignationOnFinal(
   db: Db,
   request: { id: number; requested_by: number },
-  status: 'approved' | 'rejected' | 'lapsed',
+  status: WorkflowFinalStatus,
 ): Promise<void> {
   const sep = await db
     .selectFrom('core.separations')
@@ -427,6 +428,12 @@ export class SeparationService {
     const unreturnedAssetRecoveryPaise = Math.round(clearanceResolution.totalRecoveryAmountRupees * 100);
     const loans = await this.db.selectFrom('pay.loans').select(['outstanding']).where('employee_id', '=', employee.id).where('status', '=', 'active').execute();
     const loanOutstandingPaise = loans.reduce((sum, l) => sum + Math.round(Number(l.outstanding) * 100), 0);
+    const wallet = await this.db
+      .selectFrom('te.wallets')
+      .select('balance_paise')
+      .where('employee_id', '=', employee.id)
+      .executeTakeFirst();
+    const travelAdvanceDebitPaise = Math.max(0, wallet?.balance_paise ?? 0);
     // Held salary: payment-held items from finalized runs are released in the F&F.
     const held = await this.db
       .selectFrom('pay.payroll_items as i')
@@ -452,6 +459,7 @@ export class SeparationService {
       .executeTakeFirst();
     const noticeAlreadyRecoveredPaise = Math.round(Number(noticeInRuns?.amount ?? 0) * 100);
 
+    const gratuityPolicy = await loadGratuityPolicy(this.db, lwdStr);
     const calculation = computeFnfSettlement({
       employeeId: employee.id,
       separationId: separation.id,
@@ -465,13 +473,16 @@ export class SeparationService {
       elBalanceDays,
       shortfallDays: Number(separation.shortfall_days),
       gratuityWaivesMinimumService: separation.exit_type === 'death',
+      gratuityEligibilityMode: gratuityPolicy.mode,
+      gratuityCapPaise: gratuityPolicy.capPaise,
       noticeAlreadyRecoveredPaise,
       unreturnedAssetRecoveryPaise,
       loanOutstandingPaise,
+      travelAdvanceDebitPaise,
       heldSalaryPaise,
       tdsPaise: Math.round((params.tdsRupees ?? 0) * 100),
     });
-    const money = (p: number) => (p / 100).toFixed(2);
+    const money = (p: number) => decimalRupees(paise(Math.round(p)));
     const values = {
       last_working_day: sql<Date>`${lwdStr}::date`,
       days_payable: daysPayable.toFixed(1),
@@ -482,7 +493,12 @@ export class SeparationService {
       gratuity_amount: money(calculation.earnings.gratuityPaise),
       held_salary_released: money(heldSalaryPaise),
       other_payments: '0.00',
-      other_deductions: money(calculation.deductions.assetRecoveryPaise + calculation.deductions.loanRecoveryPaise + calculation.deductions.tdsPaise),
+      other_deductions: money(
+        calculation.deductions.assetRecoveryPaise +
+        calculation.deductions.loanRecoveryPaise +
+        calculation.deductions.travelAdvanceRecoveryPaise +
+        calculation.deductions.tdsPaise
+      ),
       gross_payable: money(calculation.earnings.grossPayablePaise),
       total_deductions: money(calculation.deductions.totalDeductionsPaise),
       net_payable: money(calculation.netPayablePaise),
@@ -572,6 +588,10 @@ export class SeparationService {
         .execute();
       await trx.updateTable('core.separations').set({ status: 'completed', updated_at: new Date() }).where('id', '=', fnf.separation_id).execute();
       await trx.updateTable('core.employees').set({ status: 'exited', dol: sql<Date>`${lwdStr}::date` }).where('id', '=', fnf.employee_id).execute();
+      // Active loans settled in F&F are closed.
+      await trx.updateTable('pay.loans').set({ status: 'closed', outstanding: '0.00' }).where('employee_id', '=', fnf.employee_id).where('status', '=', 'active').execute();
+      // Travel advance wallet settled in F&F is cleared.
+      await trx.updateTable('te.wallets').set({ balance_paise: 0, updated_at: new Date() }).where('employee_id', '=', fnf.employee_id).execute();
       // Held payroll items are now released through the F&F.
       await trx.updateTable('pay.salary_holds').set({ released_month: sql<Date>`date_trunc('month', ${lwdStr}::date)::date` }).where('employee_id', '=', fnf.employee_id).where('released_month', 'is', null).execute();
       const linkedUser = await trx.selectFrom('core.users').select(['id']).where('employee_id', '=', fnf.employee_id).executeTakeFirst();

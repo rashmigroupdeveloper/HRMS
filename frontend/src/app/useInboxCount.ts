@@ -7,10 +7,11 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '../lib/api';
 import { WORKFLOW_CHANGED_EVENT } from '../lib/workflow-events';
 
-export function useInboxCount(enabled: boolean): number {
+export function useInboxCount(enabled: boolean, ownerId?: number): number {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
+    setCount(0);
     if (!enabled) return;
     let cancelled = false;
     let latestPoll = 0;
@@ -32,7 +33,7 @@ export function useInboxCount(enabled: boolean): number {
       window.clearInterval(timer);
       window.removeEventListener(WORKFLOW_CHANGED_EVENT, poll);
     };
-  }, [enabled]);
+  }, [enabled, ownerId]);
 
   return count;
 }

@@ -1,22 +1,28 @@
-/**
- * Domain ownership of policy settings (docs/08 role notes made enforceable):
- * payroll_admin holds admin.settings for "payroll policy values only",
- * it_admin for "technical settings only", hr_head for "HR policy values only".
- * super_admin may change anything. Unknown namespaces are super_admin-only.
- */
-const TECHNICAL = [/^auth\./, /^att\.device_/, /^att\.quarantine_/];
-const PAYROLL = [/^pay\./, /^loans\./];
-const HR = [/^att\./, /^lv\./, /^lifecycle\./, /^probation\./, /^wf\./, /^reporting\./, /^loans\./];
+/** CORE-10/11: Super Admin delegates configuration domains through runtime RBAC. */
+import type { Kysely } from 'kysely';
+import type { Database } from '../../core/db/types.js';
+import { getUserPermissionAccess } from '../../core/rbac/permissions.service.js';
 
-export function settingOwners(key: string): readonly string[] {
-  if (TECHNICAL.some((r) => r.test(key))) return ['it_admin'];
-  const owners: string[] = [];
-  if (PAYROLL.some((r) => r.test(key))) owners.push('payroll_admin');
-  if (HR.some((r) => r.test(key))) owners.push('hr_head');
-  return owners;
+const TECHNICAL = [/^auth\./, /^sec\./, /^att\.device_/, /^att\.quarantine_/];
+const PAYROLL = [/^pay\./, /^loans\./, /^tax\./];
+const HR = [/^att\./, /^lv\./, /^lifecycle\./, /^probation\./, /^wf\./, /^reporting\./];
+const CONFIG_PERMISSIONS = ['payroll.config.manage', 'hr.config.manage', 'system.config.manage'] as const;
+
+/** Configuration keys are group-wide; an entity-bound or read-only grant cannot edit them. */
+export async function settingWritePermissions(db: Kysely<Database>, userId: number): Promise<ReadonlySet<string>> {
+  const access = await Promise.all(CONFIG_PERMISSIONS.map(async permission => ({
+    permission, access: await getUserPermissionAccess(db, userId, permission, 'write'),
+  })));
+  return new Set(access.filter(entry => entry.access?.all).map(entry => entry.permission));
 }
 
-export function canEditSetting(roleCodes: ReadonlySet<string>, key: string): boolean {
-  if (roleCodes.has('super_admin')) return true;
-  return settingOwners(key).some((role) => roleCodes.has(role));
+export function settingOwners(key: string): readonly string[] {
+  if (TECHNICAL.some(pattern => pattern.test(key))) return ['system.config.manage'];
+  if (PAYROLL.some(pattern => pattern.test(key))) return ['payroll.config.manage'];
+  if (HR.some(pattern => pattern.test(key))) return ['hr.config.manage'];
+  return ['system.config.manage'];
+}
+
+export function canEditSetting(permissions: ReadonlySet<string>, key: string): boolean {
+  return settingOwners(key).some(permission => permissions.has(permission));
 }

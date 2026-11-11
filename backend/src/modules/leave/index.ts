@@ -16,6 +16,7 @@ export {
   computeLeaveSpan,
   applyForLeave,
   requestCancellation,
+  withdrawLeaveApplication,
   requestEncashment,
   selectRestrictedHoliday,
 } from './leave-apply.service.js';

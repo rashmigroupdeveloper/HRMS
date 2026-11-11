@@ -1,17 +1,33 @@
 /** ATT-15/PAY-15: F&F cannot assume presence or bypass locked day facts by an override. */
 import { randomUUID } from 'node:crypto';
 import { afterAll,beforeAll,describe,expect,it } from 'vitest';
+import type { MigrationBuilder } from 'node-pg-migrate';
+import { up, down } from '../migrations/1753000001100_payroll-gratuity-policy.js';
 import { sql,type Kysely } from 'kysely';
 import { createDatabase } from '../src/core/db/database.js';
 import type { Database,SalaryComponentItem } from '../src/core/db/types.js';
 import { SeparationService } from '../src/modules/lifecycle/separation/separation.service.js';
 import { insertSalaryRevision } from '../src/modules/payroll-core/salaries/assignment.repository.js';
+import { setSetting } from '../src/modules/settings/index.js';
 import { addDaysIso } from '../src/core/dates.js';
 const url=process.env['DATABASE_URL'];
 describe.skipIf(!url)('F&F attendance integrity',()=>{
   let db:Kysely<Database>;
   beforeAll(()=>{db=createDatabase(url ?? '');});
   afterAll(async()=>{await db.destroy();});
+  it('makes gratuity configuration visible without overwriting administrator choices on migration or rollback', async () => {
+    await db.transaction().execute(async tx => {
+      await sql`CREATE TEMP TABLE gratuity_settings_fixture (key text PRIMARY KEY, value jsonb, value_type text, description text) ON COMMIT DROP`.execute(tx);
+      const statements:string[]=[];
+      const builder={sql:(statement:string)=>{statements.push(statement);}} as MigrationBuilder;
+      const apply=async()=>{for(const statement of statements.splice(0)) await sql.raw(statement.replaceAll('core.settings','pg_temp.gratuity_settings_fixture')).execute(tx);};
+      up(builder); await apply();
+      expect((await sql<{value:string}>`SELECT value FROM pg_temp.gratuity_settings_fixture`.execute(tx)).rows[0]?.value).toBe('LIBERAL_4Y240D');
+      await sql`UPDATE pg_temp.gratuity_settings_fixture SET value='"STRICT_5Y"'::jsonb`.execute(tx);
+      up(builder); await apply(); down(builder); await apply();
+      expect((await sql<{value:string}>`SELECT value FROM pg_temp.gratuity_settings_fixture`.execute(tx)).rows[0]?.value).toBe('STRICT_5Y');
+    });
+  });
   it.each(['white_collar','blue_collar'] as const)('uses locked half/full-day facts and rejects guessed payable days for %s',async category=>{
     const tx=await db.startTransaction().execute();
     try {
@@ -36,6 +52,13 @@ describe.skipIf(!url)('F&F attendance integrity',()=>{
       await tx.insertInto('pay.payroll_items').values({run_id:run.id,employee_id:e.id,days_in_month:'30',payable_days:'0',lop_days:'30',gross:'0',total_deductions:'0',net_pay:'0',payment_status:'hold_process'}).execute();
       // A zero process-held item never paid the final-month salary.
       expect((await service.computeFnf(input)).earnings.proratedSalaryPaise).toBe(250_000);
+      await setSetting(tx,{key:'pay.gratuity_eligibility_mode',value:'STRICT_5Y',type:'string',description:'Synthetic eligibility',actorUserId:u.id});
+      await tx.updateTable('core.employees').set({doj:'2022-01-01'}).where('id','=',e.id).execute();
+      expect((await service.computeFnf(input)).earnings.gratuityPaise).toBe(0);
+      await setSetting(tx,{key:'pay.gratuity_eligibility_mode',value:'LIBERAL_4Y240D',type:'string',description:'Synthetic eligibility',actorUserId:u.id});
+      expect((await service.computeFnf(input)).earnings.gratuityPaise).toBeGreaterThan(0);
+      await tx.insertInto('pay.statutory_rates').values({scheme:'GRATUITY',param:'cap',value:'100.0000',effective_from:sql<Date>`'2026-09-01'::date`,source_note:'Synthetic cap'}).onConflict(oc=>oc.columns(['scheme','param','effective_from']).doUpdateSet({value:'100.0000'})).execute();
+      expect((await service.computeFnf(input)).earnings.gratuityPaise).toBe(10_000);
     } finally {await tx.rollback().execute();}
   });
 });

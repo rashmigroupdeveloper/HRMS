@@ -401,49 +401,9 @@ describe('Stage 2.5 — LoansService & ClaimsService Core Domain Engines', () =>
       expect(decided.approvedAmountRupees).toBe(1000);
     });
 
-    it('routes payout enforcing regular payroll run XOR off-cycle batch constraint and adjusts advance', async () => {
-      const db = createMockDb();
-      const service = new ClaimsService(db);
-
-      // Create an existing travel advance loan of ₹500
-      loansStore.push({
-        id: 77,
-        employee_id: 1,
-        loan_type: 'travel_advance',
-        outstanding: '500.00',
-        status: 'active',
-      });
-
-      const claim = await service.submitClaim({
-        employeeId: 1,
-        claimTypeCode: 'telephone',
-        periodFrom: '2026-05-01',
-        periodTo: '2026-05-31',
-        advanceLoanId: 77,
-        bills: [{ documentId: 401, amountRupees: 1500 }],
-      });
-
-      await service.decideClaim({
-        claimId: claim.claimId,
-        decidedByUserId: 20,
-        action: 'approve',
-      });
-
-      // Route to payroll run: ₹1500 approved - ₹500 advance = ₹1000 net payable
-      const routed = await service.routePayout({
-        claimId: claim.claimId,
-        payoutMethod: 'payroll_run',
-        runId: 55,
-        userId: 20,
-      });
-
-      expect(routed.payoutMethod).toBe('payroll_run');
-      expect(routed.advanceAdjustedRupees).toBe(500);
-      expect(routed.paidAmountRupees).toBe(1000);
-      expect(claimsStore[0]?.['paid_in_run_id']).toBe(55);
-      expect(claimsStore[0]?.['paid_in_batch_id']).toBeNull();
-      expect(loansStore[0]?.['status']).toBe('closed'); // advance loan fully settled
-      expect(inputsStore).toHaveLength(1); // enqueued to pay.inputs
+    it('refuses salary-backed reimbursement routing without changing advances or claim payment state',async()=>{
+      const service=new ClaimsService(createMockDb());
+      await expect(service.routePayout({claimId:1,payoutMethod:'payroll_run',runId:55,userId:20})).rejects.toThrow(/separately/);
     });
 
     it('retrieves detailed claim information with bills and lists pending claims', async () => {
@@ -504,7 +464,7 @@ describe('Stage 2.5 — LoansService & ClaimsService Core Domain Engines', () =>
           runId: 10,
           userId: 20,
         }),
-      ).rejects.toThrow(/Only approved claims can be paid/);
+      ).rejects.toThrow(/separately/);
 
       // 3. Submit another claim and approve it
       const claim2 = await service.submitClaim({
@@ -528,36 +488,12 @@ describe('Stage 2.5 — LoansService & ClaimsService Core Domain Engines', () =>
           payoutMethod: 'payroll_run',
           userId: 20,
         }),
-      ).rejects.toThrow(/runId is required/);
+      ).rejects.toThrow(/separately/);
 
-      // 5. Missing batchId when payoutMethod is off_cycle_batch
-      await expect(
-        service.routePayout({
-          claimId: claim2.claimId,
-          payoutMethod: 'off_cycle_batch',
-          userId: 20,
-        }),
-      ).rejects.toThrow(/batchId is required/);
-
-      // 6. Successful off-cycle batch payout
-      const batchRouted = await service.routePayout({
-        claimId: claim2.claimId,
-        payoutMethod: 'off_cycle_batch',
-        batchId: 99,
-        userId: 20,
-      });
-      expect(batchRouted.payoutMethod).toBe('off_cycle_batch');
-      expect(batchRouted.paidAmountRupees).toBe(900);
-
-      // 7. Cannot pay again
-      await expect(
-        service.routePayout({
-          claimId: claim2.claimId,
-          payoutMethod: 'off_cycle_batch',
-          batchId: 100,
-          userId: 20,
-        }),
-      ).rejects.toThrow(/Only approved claims can be paid/);
+      // A caller-supplied bank batch ID is not a reimbursement payout artifact.
+      await expect(service.routePayout({claimId:claim2.claimId,payoutMethod:'off_cycle_batch',userId:20})).rejects.toThrow(/separately/);
+      await expect(service.routePayout({claimId:claim2.claimId,payoutMethod:'off_cycle_batch',batchId:99,userId:20})).rejects.toThrow(/separately/);
+      expect(claimsStore.find(c=>c.id===claim2.claimId)?.['status']).toBe('approved');
 
       // 8. submitClaim validation guards: empty bills and periodFrom > periodTo
       await expect(

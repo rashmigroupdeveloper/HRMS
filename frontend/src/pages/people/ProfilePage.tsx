@@ -226,7 +226,7 @@ export function ProfilePage({ self = false, user }: { self?: boolean; user?: Ses
       </Card>
       {!self && canWrite && (
         <EmployeeFormDrawer open={editOpen} onClose={() => { setEditOpen(false); }} ecode={profile.ecode}
-          initial={{ firstName: profile.name.split(' ')[0] ?? '', gender: profile.gender ?? '', dob: profile.dob ?? '', doj: profile.doj ?? '', mobile: profile.mobile ?? '', workEmail: profile.workEmail ?? '' }}
+          initial={{ firstName: profile.name.split(' ')[0] ?? '', gender: profile.gender ?? '', dob: profile.dob ?? '', doj: profile.doj ?? '', mobile: profile.mobile ?? '', personalEmail: profile.personalEmail ?? '', workEmail: profile.workEmail ?? '' }}
           onSaved={() => { setVersion((n) => n + 1); }} />
       )}
 
@@ -260,7 +260,7 @@ export function ProfilePage({ self = false, user }: { self?: boolean; user?: Ses
         <Card>
           <CardHeader title="Overview" />
           <dl className="grid gap-4 sm:grid-cols-2">
-            <Field label="Work email" value={profile.workEmail} />
+            <Field label="Company email" value={profile.workEmail} />
             <Field label="Personal email" value={profile.personalEmail} />
             <Field label="Mobile" value={profile.mobile} />
             <Field label="Gender" value={profile.gender} />

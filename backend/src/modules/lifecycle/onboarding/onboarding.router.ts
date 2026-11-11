@@ -1,3 +1,4 @@
+import { stakeholderTasksRouter } from './stakeholder-tasks.router.js';
 /**
  * Onboarding Bridge Router (LC-01, LC-02, SOW crosswalk, SOW crosswalk).
  *
@@ -27,6 +28,7 @@ import { offerPayloadSchema, submitOffer } from '../offers/offer.service.js';
 
 const referenceOption = z.object({id:z.number(),name:z.string()});
 export const onboardingRouter = {
+  stakeholderTasks: stakeholderTasksRouter,
   ...onboardingApplicationRouter,
   ...prejoinLinkRouter,
   referenceData: withPermission('lifecycle.onboard.convert')

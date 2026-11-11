@@ -9,3 +9,14 @@ Scope: sponsor requested full review of all1,813 application fields,19 October20
 - [ ] Validate every live field appears exactly once, all references exist, no unresolved field is labeled accepted, and input/source changes are detected.
 
 Completion means every field has a reviewed disposition, including justified gaps, conflicts and excluded/deferred scope. It does not mean every feature is implemented, every invariant is enforced, or deployment/UAT is accepted. Review runtime operations/constraints; do not infer passing behavior from a typed declaration or a green historic test suite. No live employee values or credential contents are needed.
+
+## Data dictionary deliverable — 11 Nov 2026 (CORE-08/NFR-04)
+
+- [x] Export a fresh metadata-only catalog in a repeatable-read/read-only transaction; no migration or business-row read/write by the exporter.
+- [x] Publish [the complete data dictionary](../docs/data-dictionary/README.md), module references, CSV and structured JSON: **1,843 defined fields / 165 logical relations**, including 1,840 application fields and three migration bookkeeping fields. Physical child partitions inherit parent definitions; vendor/system schemas are excluded.
+- [x] Include per-field meaning and basis, SQL type, nullability, default, relationships, full column-linked constraints, finite value meanings where declared, code declaration/source, monetary units, table indexes and lifecycle triggers.
+- [x] Validate exact catalog coverage, zero duplicate or blank definitions and zero application type fields missing from the database. Capture source hashes and preserve compatibility/excluded MFA and historical combined-payment distinctions.
+
+This completes the requested persisted-field dictionary. It does **not** complete the broader semantic implementation/disposition audit above, certify every nested JSON payload/HTTP field, advance a release gate, or establish production parity. Historical purpose explanations are documentation inputs, not current runtime acceptance evidence. Verification outcome is recorded with the dictionary's coverage evidence.
+
+Validation: dictionary coverage/link/format checks pass; backend verification passes typecheck and ESLint, then stops at knip's existing unused `absenceRun` export in `attendance/absence.service.ts:54`. Full verification is not green; later gates were not reached. See [verification record](../docs/data-dictionary/VERIFICATION.md).

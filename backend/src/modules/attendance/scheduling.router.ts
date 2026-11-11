@@ -6,7 +6,7 @@
 import { ORPCError } from '@orpc/server';
 import { sql } from 'kysely';
 import { z } from 'zod';
-import { withPermission } from '../../api/orpc.js';
+import { withPermission, requireEmployeeId } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate } from '../../core/dates.js';
@@ -30,13 +30,6 @@ function asBadRequest(err: unknown): never {
     throw new ORPCError('BAD_REQUEST', { message: err.message });
   }
   throw new ORPCError('BAD_REQUEST', { message: err instanceof Error ? err.message : 'Invalid request' });
-}
-
-function requireEmployeeId(user: { employee_id: number | null }): number {
-  if (user.employee_id === null) {
-    throw new ORPCError('BAD_REQUEST', { message: 'No employee profile linked' });
-  }
-  return user.employee_id;
 }
 
 async function teamIds(
@@ -348,7 +341,7 @@ const mySwaps = withPermission('attendance.own')
     }));
   });
 
-const upsertBlackout = withPermission('admin.settings')
+const upsertBlackout = withPermission('hr.config.manage')
   .route({ method: 'PUT', path: '/attendance/blackouts', summary: 'Leave blackout date (SHF-08)' })
   .input(z.object({ date: isoDate, name: z.string().min(1), locationId: z.number().int().positive().nullish() }))
   .output(z.object({ ok: z.literal(true) }))

@@ -74,7 +74,7 @@ export function MyPayPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Payslips" description="Your finalized monthly payslips. Pick a month to see an older one."
-        actions={<div className="flex items-end gap-2"><TextField label="Month" type="month" value={month || ''} max={previousMonth()} onChange={(e) => { setMonth(e.target.value); }} hint="Latest finalized month is shown by default" /><Button variant="secondary" leadingIcon={<Download size={14} />} onClick={() => {
+        actions={<div className="flex flex-wrap items-end gap-2"><Link to="/my/tax" className="text-sm font-semibold text-ink underline underline-offset-4">Investment declaration</Link><TextField label="Month" type="month" value={month || ''} max={previousMonth()} onChange={(e) => { setMonth(e.target.value); }} hint="Latest finalized month is shown by default" /><Button variant="secondary" leadingIcon={<Download size={14} />} onClick={() => {
           void apiFetch<{ filename: string; base64: string }>(`/api/tax/me/form16?fy=${currentFy()}&format=pdf`).then((f) => { downloadBase64(f.filename, f.base64, 'application/pdf'); }).catch((e: unknown) => { toast.error(e instanceof ApiError ? e.message : 'Form 16 is not available for this year yet.'); });
         }}>Form 16</Button></div>} />
       {loading && <Card><Skeleton className="h-40" /></Card>}

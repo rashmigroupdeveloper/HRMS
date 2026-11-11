@@ -30,6 +30,7 @@ const fields = z.object({
   contractType: z.enum(['permanent', 'temporary', 'probationary', 'consultant', 'fixed_term', 'apprentice']).optional(),
   managerEcode: z.string().trim().max(32).optional(),
   hodEcode: z.string().trim().max(32).optional(),
+  personalEmail: z.string().trim().max(254).optional(),
   workEmail: z.string().trim().max(120).optional(),
   mobile: z.string().trim().max(20).optional(),
   pan: z.string().trim().max(20).optional(),
@@ -45,7 +46,7 @@ type Fields = z.infer<typeof fields>;
 const KEYS: Record<keyof Fields, string> = {
   firstName: 'first_name', lastName: 'last_name', gender: 'gender', dob: 'dob', doj: 'doj', orgUnit: 'org_unit',
   location: 'location', department: 'department', designation: 'designation', grade: 'grade', category: 'category',
-  contractType: 'contract_type', managerEcode: 'manager_ecode', hodEcode: 'hod_ecode', workEmail: 'work_email',
+  contractType: 'contract_type', managerEcode: 'manager_ecode', hodEcode: 'hod_ecode', personalEmail: 'personal_email', workEmail: 'work_email',
   mobile: 'mobile', pan: 'pan', aadhaar: 'aadhaar', uan: 'uan', esicNo: 'esic_no', bankName: 'bank_name',
   bankAccount: 'bank_account', bankIfsc: 'bank_ifsc',
 };

@@ -1,0 +1,79 @@
+{
+  "date": "2026-10-23",
+  "timezone": "Asia/Kolkata",
+  "phase": 1,
+  "stage": "1.8",
+  "requirements": [
+    "ATT-06",
+    "ATT-07",
+    "ATT-08",
+    "ATT-15",
+    "PAY-09",
+    "PAY-14",
+    "PAY-15",
+    "LC-06",
+    "LC-07",
+    "CORE-06",
+    "CORE-11"
+  ],
+  "backend": {
+    "command": "npm run verify",
+    "exit_code": 0,
+    "typecheck": "passed",
+    "lint": "passed",
+    "knip": "passed",
+    "dependency_cruiser": "passed",
+    "coverage_gate": "passed",
+    "build": "passed",
+    "test_files": 151,
+    "tests_passed": 1099,
+    "tests_skipped": 0,
+    "coverage_percent": {
+      "statements": 86.51,
+      "lines": 86.51,
+      "branches": 81.1,
+      "functions": 90.85
+    }
+  },
+  "focused_pre_configuration": {
+    "files": 9,
+    "tests_passed": 114
+  },
+  "git_diff_check": "passed",
+  "frontend": "No frontend source changes; existing generic settings and statutory-rate editors reused",
+  "environment": {
+    "database": "explicitly declared loopback PostgreSQL test target",
+    "new_fixture_behavior": "rolled-back application records; migration exercised on temporary table",
+    "legacy_fixture_fix": "UUID identity replaces five-digit timestamp suffix; immutable history retained"
+  },
+  "gratuity_configuration": {
+    "owner": "payroll_admin (existing settings ownership and payroll permissions)",
+    "eligibility_modes": [
+      "STRICT_5Y",
+      "LIBERAL_4Y240D"
+    ],
+    "migration_default": "LIBERAL_4Y240D preserves existing behavior",
+    "cap": "effective-dated GRATUITY.cap in rupees, selected on approved exit date",
+    "fallback_cap_rupees": 2000000,
+    "production_migration_applied": false
+  },
+  "golden_checks": {
+    "fnf_salary_monthly_rupees": 10000,
+    "frozen_days": 15,
+    "payable_days": 7.5,
+    "salary_rupees": 2500,
+    "exact_cap_readback_rupees": 1.09
+  },
+  "release_status": "not released; no acceptance gate advanced",
+  "deployed": false,
+  "actual_payouts": false,
+  "open_items": [
+    "Mandatory human payroll-core review under CLAUDE.md section 3",
+    "PF estimate/monthly employer-basis policy conflict",
+    "Operative 2026 PF notification and transition instructions",
+    "Revised wage-definition component mapping",
+    "Liberal eligibility actual-worked-day evidence and rounding acceptance",
+    "Fixed-term and disability gratuity coverage",
+    "KENT/canteen settlement and half-leave acceptance carried from Pack39"
+  ]
+}

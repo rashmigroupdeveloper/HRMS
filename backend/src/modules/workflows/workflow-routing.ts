@@ -122,18 +122,20 @@ export async function advance(db: Db, request: Pick<RequestRow, 'id' | 'definiti
       field: `step_${spec.step}`, newValue: `skipped — approver '${spec.approver}' vacant` });
   };
 
+  const priorApprovedRows = await db
+    .selectFrom('wf.request_steps')
+    .select('approver_user_id')
+    .where('request_id', '=', request.id)
+    .where('action', '=', 'approved')
+    .where('id', '>', roundStartId)
+    .execute();
+  const priorApprovedUserIds = new Set(priorApprovedRows.map((s) => s.approver_user_id));
+
   for (const spec of steps.filter((s) => s.step > fromStepNo).sort((a, b) => a.step - b.step)) {
     const approver = await resolveApprover(db, spec.approver, request.subject_employee_id, request.definition_code, request.id);
     if (approver) {
       // EMS Rule: duplicates collapse (if RM and HOD are the same person, it becomes one step)
-      const priorApproved = await db
-        .selectFrom('wf.request_steps')
-        .select(['approver_user_id', 'action'])
-        .where('request_id', '=', request.id)
-        .where('action', '=', 'approved')
-        .where('id', '>', roundStartId)
-        .execute();
-      if (priorApproved.some((s) => s.approver_user_id === approver.userId)) {
+      if (priorApprovedUserIds.has(approver.userId)) {
         collapsed.push({ step: spec.step, userId: approver.userId, approver: spec.approver });
         continue;
       }

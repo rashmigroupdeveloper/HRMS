@@ -9,26 +9,19 @@ import { leaveConfigRouter, leaveTypeDto, leaveTypeOutput } from './leave-config
 import { ORPCError } from '@orpc/server';
 import { sql } from 'kysely';
 import { z } from 'zod';
-import { withPermission } from '../../api/orpc.js';
+import { withPermission, requireEmployeeId } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import { formatDbDate, istDateString } from '../../core/dates.js';
 import { employeeScopeSql } from '../../core/rbac/employee-scope.js';
 import { adjustBalance, getBalances, runCompOffExpiry, runMonthlyAccrual, runYearEndCarryForward } from './leave-core.service.js';
-import { applyForLeave, requestCancellation, requestEncashment, selectRestrictedHoliday } from './leave-apply.service.js';
+import { applyForLeave, requestCancellation, withdrawLeaveApplication, requestEncashment, selectRestrictedHoliday } from './leave-apply.service.js';
 import { previewLeaveApply } from './leave-preview.service.js';
 
 const isoDate = z.string().date('Choose a valid calendar date (YYYY-MM-DD)');
 
 function asBadRequest(err: unknown): never {
   throw new ORPCError('BAD_REQUEST', { message: err instanceof Error ? err.message : 'Invalid request' });
-}
-
-function requireEmployeeId(user: { employee_id: number | null }): number {
-  if (user.employee_id === null) {
-    throw new ORPCError('BAD_REQUEST', { message: 'Your account has no employee profile linked' });
-  }
-  return user.employee_id;
 }
 
 const listTypes = withPermission('leave.own')
@@ -237,6 +230,24 @@ const cancel = withPermission('leave.own')
     }
   });
 
+const withdraw = withPermission('leave.own')
+  .route({ method: 'POST', path: '/leave/applications/{id}/withdraw', summary: 'Withdraw pending leave application before approval' })
+  .input(z.object({ id: z.coerce.number().int().positive(), reason: z.string().optional() }))
+  .output(z.object({ success: z.boolean() }))
+  .handler(async ({ input, context }) => {
+    try {
+      await withdrawLeaveApplication(context.db, {
+        applicationId: input.id,
+        employeeId: requireEmployeeId(context.user),
+        actorUserId: context.user.id,
+        reason: input.reason,
+      });
+      return { success: true };
+    } catch (err) {
+      asBadRequest(err);
+    }
+  });
+
 const encash = withPermission('leave.own')
   .route({ method: 'POST', path: '/leave/encashments', summary: 'Request leave encashment (LV-06)' })
   .input(z.object({ leaveType: z.string().min(1), days: z.number().positive() }))
@@ -409,6 +420,7 @@ export const leaveRouter = {
   myApplications,
   myLedger,
   cancel,
+  withdraw,
   encash,
   listRestrictedHolidays,
   publishRestrictedHoliday,

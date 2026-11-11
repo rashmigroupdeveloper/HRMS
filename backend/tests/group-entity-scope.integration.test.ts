@@ -119,9 +119,14 @@ describe.skipIf(!DB_URL)('group vs entity scope', () => {
   });
 
   it('group-wide statutory tables cannot be changed by an entity-bound payroll admin', async () => {
+    // Explicit delegation keeps this a scope test, independent of the new default configuration boundary.
+    const role=await tx().selectFrom('core.roles').select('id').where('code','=','payroll_admin').executeTakeFirstOrThrow();
+    const permission=await tx().selectFrom('core.permissions').select('id').where('code','=','payroll.config.manage').executeTakeFirstOrThrow();
+    await tx().insertInto('core.role_permissions').values({role_id:role.id,permission_id:permission.id,scope:'all'}).onConflict(oc=>oc.doNothing()).execute();
     expect((await post('payA', '/api/payroll/config/statutory-rates', { scheme: 'ESIC', param: 'wage_ceiling', value: 21000, effectiveFrom: '2097-04-01', sourceNote: 'entity attempt' })).status).toBe(403);
     const res = await (await httpRequest(app)).put('/api/payroll/config/pt-slabs').set('Authorization', `Bearer ${t['payA'] ?? ''}`).send({ stateCode: 'ZZ', effectiveFrom: '2097-04-01', basis: 'earned_monthly', slabs: [{ minMonthly: 0, maxMonthly: null, amount: 0 }] });
     expect(res.status).toBe(403);
+    expect((await (await httpRequest(app)).put('/api/settings/pay.negative_net_policy').set('Authorization',`Bearer ${t['payA'] ?? ''}`).send({value:'flag',valueType:'string',description:'Scoped configuration must refuse group changes'})).status).toBe(403);
     expect((await post('payGroup', '/api/payroll/config/statutory-rates', { scheme: 'ESIC', param: 'wage_ceiling', value: 21000, effectiveFrom: '2097-04-01', sourceNote: 'group change' })).status).toBe(200);
   });
 

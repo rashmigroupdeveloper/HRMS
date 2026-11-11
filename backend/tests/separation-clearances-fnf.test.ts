@@ -111,7 +111,7 @@ describe('Phase 3, Stage 3.2 — Separation, Clearances & F&F Engine', () => {
       expect(result.isEligible).toBe(true);
       expect(result.gratuityPaise).toBe(200000000); // ₹20 Lakhs
       expect(result.cappedAtCeiling).toBe(true);
-      expect(result.calcNote).toContain('statutory ceiling of ₹20,00,000');
+      expect(result.calcNote).toContain('configured ceiling of ₹20,00,000');
     });
   });
 

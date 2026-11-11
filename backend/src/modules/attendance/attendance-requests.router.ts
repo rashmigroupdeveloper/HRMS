@@ -6,7 +6,7 @@
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { withPermission } from '../../api/orpc.js';
+import { withPermission, requireEmployeeId } from '../../api/orpc.js';
 import { formatDbDate } from '../../core/dates.js';
 import { attendanceRequestSchedule } from './request-schedule.js';
 import { dayPortionSchema } from './half-requests.js';
@@ -22,13 +22,6 @@ function asBadRequest(err: unknown): never {
     throw new ORPCError('FORBIDDEN', { message: err.message });
   }
   throw new ORPCError('BAD_REQUEST', { message: err instanceof Error ? err.message : 'Invalid request' });
-}
-
-function requireEmployeeId(user: { employee_id: number | null }): number {
-  if (user.employee_id === null) {
-    throw new ORPCError('BAD_REQUEST', { message: 'Your account has no employee profile linked' });
-  }
-  return user.employee_id;
 }
 
 const regularizationShape = z.object({

@@ -1351,6 +1351,8 @@ export interface Database {
   'pay.claim_types': ClaimTypesTable;
   'pay.claim_entitlements': ClaimEntitlementsTable;
   'pay.claims': ClaimsTable;
+  'pay.reimbursement_batches': ReimbursementBatchesTable;
+  'pay.reimbursement_batch_items': ReimbursementBatchItemsTable;
   'pay.claim_bills': ClaimBillsTable;
 
 
@@ -1578,6 +1580,7 @@ export interface PayrollItemLinesTable {
 }
 
 export interface PayrollInputsTable {
+  claim_id: number | null;
   id: Generated<number>;
   run_id: number;
   employee_id: number;
@@ -1783,6 +1786,7 @@ export interface ClaimEntitlementsTable {
 }
 
 export interface ClaimsTable {
+  reimbursement_batch_id: number | null;
   id: Generated<number>;
   employee_id: number;
   claim_type_id: number | null;
@@ -2163,3 +2167,12 @@ export interface AtsAcceptanceReceiptsTable {
 export interface AppLinksTable {id:Generated<number>;user_id:number;client_id:string;external_subject:string;is_active:Generated<boolean>;link_nonce:Generated<string>;created_by:number;created_at:Generated<Date>}
 /** One-use authorization credential; plaintext code/verifier/tokens never persist. */
 export interface SsoGrantsTable {id:Generated<number>;code_hash:string;link_id:number;link_nonce:string;session_sid:string;redirect_uri:string;challenge:string;expires_at:Date;consumed_at:Date|null;created_at:Generated<Date>}
+
+/** CLM-04: separate from salary runs, salary bank batches and salary payslips. */
+export interface ReimbursementBatchesTable {
+ id:Generated<number>;company_id:number;status:Generated<'draft'|'prepared'|'paid'|'cancelled'>;total_amount:string;
+ created_by:number;created_at:DefaultedTimestamp;bank_document_id:number|null;paid_by:number|null;paid_at:NullableTimestamp;payment_reference:string|null;
+}
+export interface ReimbursementBatchItemsTable {
+ id:Generated<number>;batch_id:number;claim_id:number;employee_id:number;amount:string;
+}

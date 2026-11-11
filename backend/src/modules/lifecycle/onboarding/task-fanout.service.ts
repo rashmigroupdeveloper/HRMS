@@ -11,6 +11,7 @@ import { sql, type Kysely } from 'kysely';
 import { writeAudit } from '../../../core/audit/audit.service.js';
 import { assertEmployeesInScope, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
 import type { Database } from '../../../core/db/types.js';
+import { ForbiddenError } from '../../../core/errors/index.js';
 import { inTransaction } from '../../../core/db/database.js';
 
 export class KentEnrollmentUnavailable extends Error {
@@ -101,7 +102,7 @@ export const TaskFanoutService = {
    * Completes a stakeholder task.
    */
   async completeTask(
-    db: Kysely<Database>, taskId: number, userId: number, notes?: string | null, scope?: EmployeeScope,
+    db: Kysely<Database>, taskId: number, userId: number, notes?: string | null, scope?: EmployeeScope, ownerRoles?: readonly string[],
   ): Promise<void> {
     const complete=async(db:Kysely<Database>)=>{
       const target=await db.selectFrom('core.onboarding_tasks').select('employee_id').where('id','=',taskId).executeTakeFirst();
@@ -109,8 +110,9 @@ export const TaskFanoutService = {
       if(scope) await assertEmployeesInScope(db,scope,[target.employee_id]);
       await db.selectFrom('core.employees').select('id').where('id','=',target.employee_id).forUpdate().executeTakeFirstOrThrow();
       const task=await db.selectFrom('core.onboarding_tasks').selectAll().where('id','=',taskId).forUpdate().executeTakeFirstOrThrow();
-      if(task.task_code==='it_biometric') throw new KentEnrollmentUnavailable();
-      if(task.status==='completed') return;
+      if (ownerRoles !== undefined && !ownerRoles.includes(task.owner_role)) throw new ForbiddenError('This task belongs to a different stakeholder role');
+      if (task.task_code === 'it_biometric' && !notes?.trim()) throw new KentEnrollmentUnavailable();
+      if (task.status === 'completed') return;
       const now=new Date();
       await db.updateTable('core.onboarding_tasks').set({status:'completed',done_by:userId,done_at:now,notes:notes??null,updated_at:now}).where('id','=',taskId).execute();
       await writeAudit(db,{actorUserId:userId,subjectEmployeeId:target.employee_id,action:'update',entity:'core.onboarding_tasks',entityId:taskId,field:'status',oldValue:task.status,newValue:'completed'});

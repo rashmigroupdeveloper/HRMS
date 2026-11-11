@@ -51,9 +51,9 @@ Deploys are blocked while `/var/hrms/DEPLOY_FREEZE` exists (payroll days). Overr
 | `CPANEL_SSH_KEY` | Ed25519 private key (never a password) |
 | `CPANEL_APP_DIR` | `/home/hrms/hrms` |
 
-Manual deploy: Actions → Deploy production → Run workflow. App path on this host: `/home/hrms/hrms`; public site: `https://myhr.rashmimetaliks.com`.
+Manual deploy: Actions → Deploy production → Run workflow. App path on this host: `/home/hrms/hrms`; public site: `https://one.rashmimetaliks.com` (Rashmi One).
 
-Production `.env` must include `CORS_ORIGIN=https://myhr.rashmimetaliks.com` (required by `createApp` in production). Database is PostgreSQL 16 on `127.0.0.1:5433` (cPanel’s older PG10 on 5432 is left alone). Apache proxies `/api` and `/health` to PM2 `:5100` via userdata rewrite includes; frontend `dist` is rsynced to `~/public_html`.
+Production `.env` must include `CORS_ORIGIN=https://one.rashmimetaliks.com` (required by `createApp` in production). Database is PostgreSQL 16 on `127.0.0.1:5433` (cPanel’s older PG10 on 5432 is left alone). Apache proxies `/api` and `/health` to PM2 `:5100` via userdata rewrite includes; frontend `dist` is rsynced to `~/public_html`.
 
 ## 6. Backup and restore
 Nightly: `DATABASE_URL=… STORAGE_DIR=… BACKUP_DIR=/srv/hrms-backups scripts/backup.sh` (pg_dump custom format + document store + SHA-256 manifest, 30-day retention). Copy off-site, encrypted.

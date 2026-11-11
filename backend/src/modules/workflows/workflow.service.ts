@@ -74,6 +74,15 @@ export async function createRequest(
   });
 }
 
+/** Domain forms use the same current-assignee/consent check before editing decision details. Caller keeps the transaction open through act(). */
+export async function assertCurrentApprover(db: Db, requestId: number, actorUserId: number): Promise<void> {
+  const request=await lockWorkflowRequest(db,requestId);
+  if(request.status!=='pending') throw new ForbiddenError('This workflow is not pending with your approval');
+  const step=await db.selectFrom('wf.request_steps').selectAll().where('request_id','=',requestId).where('action','is',null).orderBy('id','desc').forUpdate().executeTakeFirst();
+  const actor=await db.selectFrom('core.users').select('employee_id').where('id','=',actorUserId).executeTakeFirst();
+  if(actor?.employee_id===request.subject_employee_id || !step || !(await canActOnStep(db,step,actorUserId,request))) throw new ForbiddenError('Not the current approver');
+}
+
 export type ActOutcome = 'advanced' | 'approved' | 'rejected' | 'sent_back';
 
 export async function act(
@@ -170,6 +179,7 @@ export async function cancelRequest(
     .set({ status: 'cancelled', decided_at: new Date() })
     .where('id', '=', params.requestId)
     .execute();
+  await fireFinalHooks(db, params.requestId, 'cancelled');
   await writeAudit(db, {
     actorUserId: params.actorUserId,
     action: 'cancel',

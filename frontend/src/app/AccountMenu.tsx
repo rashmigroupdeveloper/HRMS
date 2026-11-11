@@ -7,7 +7,8 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, LogOut, UserRound } from 'lucide-react';
+import { FileText, KeyRound, LogOut, UserRound } from 'lucide-react';
+import { ChangePasswordDrawer } from './ChangePasswordDrawer';
 import type { LucideIcon } from 'lucide-react';
 import type { SessionUser } from '../lib/session';
 import { markSignedOut } from '../lib/auth-landing';
@@ -33,6 +34,7 @@ const MENU: MenuLink[] = [
 
 export function AccountMenu({ user, onSignedOut }: AccountMenuProps) {
   const [open, setOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,6 +82,10 @@ export function AccountMenu({ user, onSignedOut }: AccountMenuProps) {
             <p className="mt-0.5 text-xs text-ink-muted">{role}</p>
           </div>
           <div className="p-1.5">
+            <button type="button" role="menuitem" onClick={() => { setOpen(false); setPasswordOpen(true); }}
+              className="u-press flex w-full items-center gap-2.5 rounded-row px-3 py-2 text-left text-sm font-medium text-ink hover:bg-surface-2">
+              <KeyRound className="size-4 shrink-0 text-ink-muted" aria-hidden />Change password
+            </button>
             {MENU.map((item) => (
               <Link
                 key={item.to}
@@ -113,6 +119,7 @@ export function AccountMenu({ user, onSignedOut }: AccountMenuProps) {
           </div>
         </div>
       )}
+      {passwordOpen && <ChangePasswordDrawer onClose={() => { setPasswordOpen(false); }} />}
     </div>
   );
 }

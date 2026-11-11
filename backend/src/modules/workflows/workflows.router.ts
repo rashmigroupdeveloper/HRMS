@@ -53,7 +53,7 @@ const createProcedure = authed
     if (subjectEmployeeId !== context.user.employee_id) {
       const { getUserPermissions } = await import('../../core/rbac/permissions.service.js');
       const perms = await getUserPermissions(db, context.user.id, 'write');
-      if (!perms.has('admin.workflows') && !perms.has('admin.settings')) {
+      if (!perms.has('admin.workflows')) {
         throw new ORPCError('FORBIDDEN', {
           message: 'You can only raise workflow requests for yourself unless you hold workflow administration permissions',
         });
@@ -307,7 +307,7 @@ const revokeDelegation = authed
     return { ok: true as const };
   });
 
-const listDefinitions = withPermission('admin.settings')
+const listDefinitions = withPermission('admin.workflows', 'read')
   .route({ method: 'GET', path: '/workflows/definitions', summary: 'The approval-chain catalog (runtime data)' })
   .output(z.array(z.object({ code: z.string(), name: z.string(), steps: z.unknown(), isActive: z.boolean() })))
   .handler(async ({ context }) => {
@@ -316,7 +316,7 @@ const listDefinitions = withPermission('admin.settings')
     return rows.map((r) => ({ code: r.code, name: r.name, steps: r.steps, isActive: r.is_active }));
   });
 
-const upsertDefinition = withPermission('admin.settings')
+const upsertDefinition = withPermission('admin.workflows')
   .route({ method: 'PUT', path: '/workflows/definitions/{code}', summary: 'Edit an approval chain (audited; effective immediately)' })
   .input(
     z.object({

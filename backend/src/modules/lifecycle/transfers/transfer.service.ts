@@ -20,9 +20,11 @@ import type {
 import { writeAudit } from '../../../core/audit/audit.service.js';
 import { formatDbDate, istDateString } from '../../../core/dates.js';
 import { DomainError, NotFoundError } from '../../../core/errors/index.js';
-import { createRequest } from '../../workflows/index.js';
+import { createRequest, type WorkflowFinalStatus } from '../../workflows/index.js';
 import { allocateEmployeeCode } from '../../../core/employee-code.js';
 import { inTransaction } from '../../../core/db/database.js';
+import { fromRupees } from '../../../core/money/index.js';
+import { getStructure, listComponents, resolveSalaryStructure, structureLineNode } from '../../payroll-core/index.js';
 import { employeeScopeSql, type EmployeeScope } from '../../../core/rbac/employee-scope.js';
 
 export interface CreateTransferInput {
@@ -406,6 +408,64 @@ export async function approveTransferRequest(
           reference_id: transfer.id,
         })
         .execute();
+
+      // Close prior active salary and open new promotional salary row in pay.employee_salaries
+      const activeSalary = await trx
+        .selectFrom('pay.employee_salaries')
+        .selectAll()
+        .where('employee_id', '=', emp.id)
+        .where('effective_to', '=', new Date('9999-12-31'))
+        .executeTakeFirst();
+
+      if (activeSalary) {
+        const prevDay = new Date(new Date(effectiveDateStr).getTime() - 24 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 10);
+        await trx
+          .updateTable('pay.employee_salaries')
+          .set({ effective_to: new Date(prevDay) })
+          .where('id', '=', activeSalary.id)
+          .execute();
+
+        let newComponentAmounts: Record<string, number> = {};
+        try {
+          const struct = await getStructure(trx, activeSalary.structure_id);
+          if (struct) {
+            const comps = await listComponents(trx);
+            const compMap = new Map(comps.map((c) => [c.code, c]));
+            const nodes = struct.components.map((item) => {
+              const meta = compMap.get(item.component_code);
+              if (!meta) throw new Error(`Component '${item.component_code}' not found`);
+              return structureLineNode(item, meta);
+            });
+            const evaluated = resolveSalaryStructure({
+              nodes,
+              annualCtcPaise: fromRupees(Number(transfer.salary_revision_amount)),
+            });
+            for (const [code, amt] of Object.entries(evaluated.monthly)) {
+              newComponentAmounts[code] = amt;
+            }
+          }
+        } catch {
+          newComponentAmounts = { ...activeSalary.component_amounts };
+        }
+
+        await trx
+          .insertInto('pay.employee_salaries')
+          .values({
+            employee_id: emp.id,
+            structure_id: activeSalary.structure_id,
+            effective_from: new Date(effectiveDateStr),
+            effective_to: new Date('9999-12-31'),
+            annual_ctc: Number(transfer.salary_revision_amount).toFixed(2),
+            phase: 'confirmed',
+            component_amounts: newComponentAmounts,
+            revision_reason: 'promotion',
+            approved_by: actorUserId,
+            approved_at: new Date(),
+          })
+          .execute();
+      }
     }
 
     // 3. Update core.employees master record with target values
@@ -523,7 +583,7 @@ export async function submitTransferForApproval(
 export async function applyTransferOnFinal(
   db: Kysely<Database>,
   request: { id: number; requested_by: number },
-  status: 'approved' | 'rejected' | 'lapsed',
+  status: WorkflowFinalStatus,
 ): Promise<void> {
   const transfer = await db.selectFrom('core.transfers').select(['id', 'status'])
     .where('workflow_request_id', '=', request.id).executeTakeFirst();

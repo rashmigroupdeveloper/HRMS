@@ -7,7 +7,7 @@ import type { Database, SalaryComponentItem } from '../src/core/db/types.js';
 import { PayrollRunService } from '../src/modules/payroll-core/runs/run.service.js';
 import { insertSalaryRevision } from '../src/modules/payroll-core/salaries/assignment.repository.js';
 import { addDaysIso } from '../src/core/dates.js';
-import { addRunInputs } from '../src/modules/payroll-core/config/config.service.js';
+import { addRunInputs, removeRunInput, parseInputsCsv } from '../src/modules/payroll-core/config/config.service.js';
 
 const url = process.env['DATABASE_URL'];
 describe.skipIf(!url)('Canteen recovery run provenance', () => {
@@ -62,6 +62,10 @@ describe.skipIf(!url)('Canteen recovery run provenance', () => {
       await expect(addRunInputs(tx,run,[{employeeId:e.id,componentCode:'CANTEEN',amountRupees:50,note:'Must not repeat'}],u.id)).rejects.toThrow(/draft/);
       // A dependent run must release its draft claim before its origin changes.
       await service.reopenRun(run,'Review recovery origin',u.id);
+      await addRunInputs(tx,run,[{employeeId:e.id,componentCode:'CANTEEN',amountRupees:1.09,note:'Reopened correction'}],u.id);
+      expect(await parseInputsCsv(tx,run,`ecode,component_code,amount,note\n${tag},CANTEEN,1.09,Reopened correction`)).toHaveLength(1);
+      const correction=await tx.selectFrom('pay.inputs').select('id').where('run_id','=',run).where('note','=','Reopened correction').executeTakeFirstOrThrow();
+      await removeRunInput(tx,run,correction.id,u.id);
       await service.returnToDraft(run,u.id,'Release stale recovery claim');
       expect((await tx.selectFrom('pay.recovery_carry_forwards').select('consumed_run_id').where('id','=',carries[0] ?? 0).executeTakeFirstOrThrow()).consumed_run_id).toBeNull();
       await service.reopenRun(settledSource,'Correct previous recovery',u.id);

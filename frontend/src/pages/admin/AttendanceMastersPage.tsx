@@ -54,7 +54,7 @@ interface HolidayTargets {
 }
 
 export function AttendanceMastersPage({ user }: { user: SessionUser }) {
-  const canEditShifts = hasPermission(user, 'admin.settings');
+  const canEditShifts = hasPermission(user, 'hr.config.manage');
   const [tab, setTab] = useState<'shifts' | 'holidays'>(canEditShifts ? 'shifts' : 'holidays');
   const canEdit = canEditShifts;
 

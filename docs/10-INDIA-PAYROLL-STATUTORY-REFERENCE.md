@@ -321,6 +321,10 @@ cap: ₹20,00,000 (private sector, 2018 amendment)
 |---|---|
 | `pay.gratuity_eligibility_mode` | `STRICT_5Y` (default) \| `LIBERAL_4Y240D` |
 
+**Sponsor clarification, 23 Oct 2026 (PAY-15), amended by the later Super Admin delegation decision:** Super Admin or an explicitly delegated payroll configuration administrator configures this choice. For existing installations the migration and missing-setting fallback retain `LIBERAL_4Y240D`, matching the deployed calculator and doc04; this supersedes the strict-default entry above for migration compatibility. Authorized configuration administrators edit the audited `pay.gratuity_eligibility_mode` through Settings. `STRICT_5Y` requires five completed calendar years. Liberal mode deliberately retains the legacy inclusive-calendar approximation (1,700 total days / rounded 4.66 years); it does **not** establish 240 actual worked days. Legal/Finance acceptance of this approximation remains open. No collar category decides eligibility. Death retains the existing minimum-service waiver.
+
+The payroll settings statutory-rate editor now accepts `GRATUITY.cap` in rupees, with effective month and source note. F&F selects the latest version effective on/before approved LWD; existing installations without a version retain their previous ₹20 lakh cap. New positive caps require exact paise. Paid settlements stay protected. These controls do not resolve the revised statutory wage definition, fixed-term/disability coverage or the six-month rounding interpretation; see [Pack40](../plans/sow-completion/40-ATTENDANCE-STATUTORY-INTEGRITY.md) before release.
+
 **Death/disability:** no minimum service.
 
 **F&F additional heads** (04-MODULE-SPECS §6.7): EL encashment, notice recovery `(Basic/30 × shortfall days)`, held salary release, asset damage from clearances.

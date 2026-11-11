@@ -13,7 +13,7 @@ export function DayCorrectionCard({ user }: { user: SessionUser }) {
   const [status, setStatus] = useState<string>('P');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
-  const canRecompute = hasPermission(user, 'admin.integrations');
+  const canRecompute = hasPermission(user, 'admin.integrations') || hasPermission(user, 'attendance.manual_override');
 
   const save = async () => {
     setBusy(true);

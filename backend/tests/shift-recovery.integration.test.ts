@@ -136,7 +136,7 @@ describe.skipIf(!url)('recovered split-shift integration', () => {
         const settingsPermission = await db
           .selectFrom('core.permissions')
           .select('id')
-          .where('code', '=', 'admin.settings')
+          .where('code', '=', 'hr.config.manage')
           .executeTakeFirstOrThrow();
         await db
           .insertInto('core.role_permissions')

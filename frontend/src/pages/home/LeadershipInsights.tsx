@@ -8,7 +8,7 @@
 import { CalendarClock, CheckCircle2, Sparkles, UserMinus } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ApiError, apiFetch } from '../../lib/api';
-import type { SessionUser } from '../../lib/session';
+import { hasAnyPermission, hasPermission, type SessionUser } from '../../lib/session';
 import { canAccessRoute } from '../../app/route-guard';
 import {
   CalmEmpty,
@@ -148,7 +148,8 @@ export function LeadershipInsights({
   title?: string;
   subtitle?: string;
 }) {
-  const want = (k: InsightKey) => !only || only.includes(k);
+  const canReport = hasAnyPermission(user, ['reports.hr', 'reports.bu', 'reports.ceo']);
+  const want = (k: InsightKey) => (!only || only.includes(k)) && (k === 'desk' || (k === 'payroll' ? hasPermission(user, 'payroll.run.view') : canReport));
   const months = useMemo(lastTwelveMonths, []);
   const from = `${months[0]?.key ?? ''}-01`;
   const to = months.at(-1)?.end ?? '';
@@ -179,7 +180,7 @@ export function LeadershipInsights({
     apiFetch<RunRow[]>('/api/payroll/runs/list', { method: 'POST', body: JSON.stringify({}) }),
   );
   const inbox = useOptional<InboxRow[]>(`inbox`, want('desk'), () => apiFetch<InboxRow[]>('/api/workflows/inbox'));
-  const probation = useOptional<ProbationAlerts>(`prob`, want('desk'), () =>
+  const probation = useOptional<ProbationAlerts>(`prob`, want('desk') && hasPermission(user, 'lifecycle.probation.view'), () =>
     apiFetch<ProbationAlerts>('/api/lifecycle/probation/alerts'),
   );
 

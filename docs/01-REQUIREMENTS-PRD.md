@@ -53,7 +53,7 @@ Phasing (detail in 07-ROADMAP): Phase 1 = M1+M2+M3+M6+M7(core reports); Phase 2 
 
 ## 3. M1 Core HR — requirements
 
-- **CORE-01** Single employee master: personal, employment, statutory, financial details in one record. *(SOW-2.1a)*
+- **CORE-01** Single employee master: personal, employment, statutory, financial details in one record. Store personal email and company email separately for every employee; expose both in employee create/edit, profile and bulk master import (sponsor clarification, 11 Nov 2026). *(SOW-2.1a)*
 - **CORE-02** E-code generation per entity series (RML…, RGH…, EIPL…, RPF…) — system-generated, sequence-enforced, duplicates impossible. *(Agreement tracker 3.2 remark: "Incorrect employee codes generated, not adhering to predefined series"; SOW-5.2: duplicate e-code checks)*
 - **CORE-03** Both **Reporting Manager** and **Functional Reporting Manager** on every employee; both appear in master report and muster exports. *(RT: "Functional Reporting Manager… not yet updated"; PP-15)*
 - **CORE-04** Cost center (plant code, e.g., 1701) on every employee; manpower cost queryable by cost center. *(PP-8)*
@@ -174,7 +174,7 @@ Phasing (detail in 07-ROADMAP): Phase 1 = M1+M2+M3+M6+M7(core reports); Phase 2 
 - **CLM-01** Claim types configurable (medical, conveyance/fuel, telephone, LTA, relocation, misc.) with per-type: annual/monthly entitlement (per grade), bill-required flag, taxability rule.
 - **CLM-02** ESS claim submission: amount, period, bill uploads (multiple), running entitlement balance shown before submit.
 - **CLM-03** Approval chain: RM → HR verify (bill check) → payroll pay-batch; rejection reasons mandatory; partial approval (approved amount ≤ claimed) supported.
-- **CLM-04** Payout via payroll run as non-taxable/taxable component per type rule **or** off-cycle reimbursement batch with its own bank file + reimbursement payslip (SOW-6: reimbursement bank transfer, register, payslip via platform).
+- **CLM-04**, sponsor correction24 Oct2026: reimbursements are paid separately from salary, using independent reimbursement batches, bank files, payment confirmation and reimbursement statements. Super Admin delegates reimbursement operational permissions and employee populations independently of salary. Original combined salary payout is superseded; taxability remains governed by each type rule.
 - **CLM-05** Year-end: TDS on unclaimed/unsubstantiated entitlement per policy (SOW-6: "TDS on the unclaimed entitlement at the year end"); entitlement lapse/carry per type.
 - **CLM-06** Reimbursement register report (R31) and per-employee claim history in ESS.
 - **CLM-07** Travel advance settlement links to claims: advance adjusted against approved claim; unspent advance recovered via payroll deduction. *(closes the loop on LN-04)*
@@ -200,7 +200,7 @@ The permanent, better version of RML's approved T&E system. Full corporate trave
 
 **Expense claims (this is M12, expanded by the live model)**
 - **TE-10** Claim with line items: expense types (travel, daily_allowance, hotel, visa, local_travel, miscellaneous), per-item receipt no/date/amount/currency, travel mode + from/to + dates, hotel name/location + check-in/out, purpose, remarks, receipt attachment (MinIO). Multi-currency with exchange-rate capture. *(this is the concrete CLM-01..07 schema, sourced from the live `Claim` model)*
-- **TE-11** Claim approval chain (RM → Travel Admin/CM → CEO stages per amount), **send_back** for correction; settlement per TE-09; reimbursement payout via payroll or off-cycle batch (validates CLM-04 / the live "Reimbursement Payslip").
+- **TE-11** Claim approval chain (RM → Travel Admin/CM → CEO stages per amount), **send_back** for correction; settlement per TE-09; reimbursement payout is separate from salary per the24 Oct2026 sponsor correction to CLM-04. Travel finance authority is independently delegated; recoverable advances retain the explicit TE-09 recovery-channel rule.
 
 **Migration & retirement**
 - **TE-12** Migrate Yatra Avedan MongoDB data (users, trips, claims, advances, budgets, wallets, transactions) into the HRMS; run parallel until parity; **decommission Yatra Avedan** once payroll settlement integration is proven.

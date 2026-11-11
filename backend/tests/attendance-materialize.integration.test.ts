@@ -90,6 +90,17 @@ describe.skipIf(!DB_URL)('attendance day materialisation + muster LOP parity', (
     expect((await post('entity', { companyId: legacy, from: '2030-03-10', until: '2030-03-12' })).status).toBe(403);
   });
 
+  it('lets scoped HR recompute only its own employees and leaves other queue rows untouched', async () => {
+    const post=(body:object)=>httpRequest(app).then(h=>h.post('/api/attendance/recompute').set('Authorization',`Bearer ${t['entity'] ?? ''}`).send(body));
+    expect((await post({employeeId:emp['J'],date:'2030-03-10'})).status).toBe(200);
+    expect((await post({employeeId:emp['LG'],date:'2030-03-10'})).status).toBe(403);
+    await tx.deleteFrom('att.recompute_queue').where('employee_id','in',[emp['J'] ?? 0,emp['LG'] ?? 0]).execute();
+    await tx.insertInto('att.recompute_queue').values([{employee_id:emp['J'] ?? 0,work_date:'2030-03-11',queued_at:new Date(0)},{employee_id:emp['LG'] ?? 0,work_date:'2030-03-11',queued_at:new Date(0)}]).execute();
+    expect((await post({})).status).toBe(200);
+    const outside=await tx.selectFrom('att.recompute_queue').select('queued_at').where('employee_id','=',emp['LG'] ?? 0).where('work_date','=',sql<Date>`'2030-03-11'::date`).executeTakeFirstOrThrow();
+    expect(outside.queued_at.getTime()).toBe(0);
+  });
+
   it('counts muster LOP exactly as payroll deducts it', async () => {
     const lt = new Map((await tx.selectFrom('lv.leave_types').select(['id', 'code']).execute()).map((l) => [l.code, l.id]));
     const p = emp['LG'] ?? 0;

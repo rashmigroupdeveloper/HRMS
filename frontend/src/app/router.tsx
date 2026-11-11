@@ -62,12 +62,16 @@ const PayrollPage = lazy(() => import('../pages/payroll/PayrollPage').then((m) =
 const SalaryStructuresPage = lazy(() => import('../pages/payroll/SalaryStructuresPage').then((m) => ({ default: m.SalaryStructuresPage })));
 const SalaryRevisionsPage = lazy(() => import('../pages/payroll/SalaryRevisionsPage').then((m) => ({ default: m.SalaryRevisionsPage })));
 const ParallelRunPage = lazy(() => import('../pages/payroll/ParallelRunPage').then((m) => ({ default: m.ParallelRunPage })));
+const DeclarationReviewPage = lazy(() => import('../pages/tax/DeclarationReviewPage').then(m=>({default:m.DeclarationReviewPage})));
+const SalaryHoldsPage = lazy(() => import('../pages/payroll/SalaryHoldsPage').then(m=>({default:m.SalaryHoldsPage})));
 const TaxDeclarationPage = lazy(() => import('../pages/tax/TaxDeclarationPage').then((m) => ({ default: m.TaxDeclarationPage })));
 const TdsCompliancePage = lazy(() => import('../pages/tax/TdsCompliancePage').then((m) => ({ default: m.TdsCompliancePage })));
 const PayrollSettingsPage = lazy(() => import('../pages/payroll/PayrollSettingsPage').then((m) => ({ default: m.PayrollSettingsPage })));
 const MyPayPage = lazy(() => import('../pages/payroll/MyPayPage').then((m) => ({ default: m.MyPayPage })));
+const ReimbursementPaymentsPage = lazy(() => import('../pages/payroll/ReimbursementPaymentsPage').then(m=>({default:m.ReimbursementPaymentsPage})));
 const ClaimsPage = lazy(() => import('../pages/payroll/ClaimsPage').then((m) => ({ default: m.ClaimsPage })));
 const LoansPage = lazy(() => import('../pages/payroll/LoansPage').then((m) => ({ default: m.LoansPage })));
+const StakeholderTasksPage = lazy(() => import('../pages/lifecycle/StakeholderTasksPage').then(m=>({default:m.StakeholderTasksPage})));
 const LifecyclePage = lazy(() => import('../pages/lifecycle/LifecyclePage').then((m) => ({ default: m.LifecyclePage })));
 const PrejoinPortalPage = lazy(() => import('../pages/lifecycle/PrejoinPortalPage').then((m) => ({ default: m.PrejoinPortalPage })));
 const AlumniPortalPage = lazy(() => import('../pages/lifecycle/AlumniPortalPage').then((m) => ({ default: m.AlumniPortalPage })));
@@ -102,7 +106,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="my/leave" element={<MyLeavePage ownerId={user.id} />} />
         <Route path="my/pay" element={<MyPayPage />} />
         <Route path="my/tax" element={<TaxDeclarationPage />} />
-        <Route path="my/claims" element={<ClaimsPage />} />
+        <Route path="my/claims" element={<ClaimsPage user={user} />} />
         <Route path="my/team" element={<TeamPage user={user} />} />
         <Route path="my/team/overtime" element={<OtDecisionsPage />} />
         <Route path="my/documents" element={<DocumentsPage />} />
@@ -122,6 +126,8 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="leave" element={<LeaveAdminPage />} />
         <Route path="payroll" element={<PayrollPage user={user} />} />
         <Route path="payroll/settings" element={<PayrollSettingsPage user={user} />} />
+        <Route path="payroll/holds" element={<SalaryHoldsPage user={user} />} />
+        <Route path="payroll/declarations" element={<DeclarationReviewPage user={user} />} />
         <Route path="payroll/tds" element={<TdsCompliancePage />} />
         <Route path="payroll/structures" element={<SalaryStructuresPage />} />
         <Route path="payroll/revisions" element={<SalaryRevisionsPage />} />
@@ -129,8 +135,10 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="admin/salary-structures" element={<SalaryStructuresPage />} />
         <Route path="my/loans" element={<LoansPage />} />
         <Route path="loans" element={<LoansPage registry />} />
-        <Route path="claims" element={<ClaimsPage />} />
+        <Route path="claims/payments" element={<ReimbursementPaymentsPage user={user} />} />
+        <Route path="claims" element={<ClaimsPage user={user} />} />
         <Route path="lifecycle/*" element={<LifecyclePage user={user} />} />
+        <Route path="lifecycle/tasks" element={<StakeholderTasksPage />} />
         <Route path="onboard/prejoin" element={<PrejoinPortalPage />} />
         <Route path="alumni" element={<AlumniPortalPage />} />
         <Route path="assets" element={<AssetsPage />} />

@@ -2,6 +2,7 @@
 export { workflowsRouter } from './workflows.router.js';
 export {
   createRequest,
+  assertCurrentApprover,
   act,
   resubmit,
   cancelRequest,

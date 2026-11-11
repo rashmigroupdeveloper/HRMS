@@ -1,15 +1,14 @@
-import { ORPCError } from '@orpc/server';
+import {reimbursementPaymentsRouter} from './payments.router.js';
+import {getUserPermissionAccess} from '../../core/rbac/permissions.service.js';
+import { claimReceiptsRouter } from './receipts.router.js';
+import { submitRoutedClaim, decideRoutedClaim } from './workflow-operations.js';
+import { assertEmployeesInScope } from '../../core/rbac/employee-scope.js';
+import { ConflictError } from '../../core/errors/index.js';
+import { parseRupees } from '../../core/money/index.js';
 import { z } from 'zod';
-import { authed, withPermission } from '../../api/orpc.js';
+import { authed, withPermission, requireEmployeeId } from '../../api/orpc.js';
 import { ClaimsService } from './claims.service.js';
 import { EntitlementService } from './entitlement.service.js';
-
-function requireEmployeeId(user: { employee_id: number | null }): number {
-  if (user.employee_id === null) {
-    throw new ORPCError('BAD_REQUEST', { message: 'Your account has no employee profile linked' });
-  }
-  return user.employee_id;
-}
 
 const claimStatusSchema = z.enum(['pending', 'verified', 'approved', 'rejected', 'paid']);
 
@@ -40,11 +39,14 @@ const claimWithBillsSchema = z.object({
   advanceLoanId: z.number().nullable(),
   paidInRunId: z.number().nullable(),
   paidInBatchId: z.number().nullable(),
+  reimbursementBatchId: z.number().nullable(),
   createdAt: z.string(),
   bills: z.array(billSchema),
 });
 
 export const claimsRouter = {
+  payments: reimbursementPaymentsRouter,
+  ...claimReceiptsRouter,
   /**
    * ESS: Lists live entitlement limits, approved and available balances for calling user.
    */
@@ -110,15 +112,15 @@ export const claimsRouter = {
     .input(
       z.object({
         claimTypeCode: z.string(),
-        periodFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        periodTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        periodFrom: z.string().date(),
+        periodTo: z.string().date(),
         advanceLoanId: z.number().optional().nullable(),
         bills: z.array(
           z.object({
             documentId: z.number(),
             billNo: z.string().optional(),
-            billDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-            amountRupees: z.number().positive(),
+            billDate: z.string().date().optional(),
+            amountRupees: z.number().positive().refine(n=>{try{parseRupees(String(n));return true;}catch{return false;}},'Use an exact amount with at most two decimal places'),
           })
         ).min(1),
       })
@@ -132,8 +134,7 @@ export const claimsRouter = {
     )
     .handler(async ({ input, context }) => {
       const employeeId = requireEmployeeId(context.user);
-      const service = new ClaimsService(context.db);
-      const res = await service.submitClaim({
+      const res = await submitRoutedClaim(context.db,{
         employeeId,
         claimTypeCode: input.claimTypeCode,
         periodFrom: input.periodFrom,
@@ -145,7 +146,7 @@ export const claimsRouter = {
           billNo: b.billNo,
           billDate: b.billDate,
         })),
-      });
+      },context.user.id);
 
       return {
         success: true,
@@ -171,7 +172,7 @@ export const claimsRouter = {
     .output(z.array(claimWithBillsSchema))
     .handler(async ({ input, context }) => {
       const service = new ClaimsService(context.db);
-      const claims = await service.listPendingVerification(input.status);
+      const claims = await service.listPendingVerification(input.status,{...context.permissionAccess,actorEmployeeId:context.user.employee_id});
       return claims.map((c) => ({
         ...c,
         createdAt: c.createdAt.toISOString(),
@@ -211,15 +212,15 @@ export const claimsRouter = {
       })
     )
     .handler(async ({ input, context }) => {
-      const service = new ClaimsService(context.db);
-      const res = await service.decideClaim({
+      const verification=await getUserPermissionAccess(context.db,context.user.id,'claims.verify','write');
+      const res = await decideRoutedClaim(context.db,{
         claimId: input.claimId,
         decidedByUserId: context.user.id,
         action: input.action,
         approvedAmountRupees: input.approvedAmountRupees,
         rejectionReason: input.rejectionReason,
         billVerifications: input.billVerifications,
-      });
+      },{...context.permissionAccess,actorEmployeeId:context.user.employee_id},verification?{...verification,actorEmployeeId:context.user.employee_id}:undefined);
 
       return {
         success: true,
@@ -229,13 +230,13 @@ export const claimsRouter = {
     }),
 
   /**
-   * Payroll Admin: Routes approved claim payout to regular run or off-cycle batch (XOR).
+   * Legacy combined payout is refused; reimbursements use an independent lifecycle.
    */
-  routePayout: withPermission('payroll.run.manage')
+  routePayout: withPermission('claims.payout.manage')
     .route({
       method: 'POST',
       path: '/claims/route-payout',
-      summary: 'Route claim payout to regular payroll run or off-cycle bank batch',
+      summary: 'Legacy combined payout endpoint (refused; use reimbursement payments)',
     })
     .input(
       z.object({
@@ -253,23 +254,7 @@ export const claimsRouter = {
         advanceAdjustedRupees: z.number(),
       })
     )
-    .handler(async ({ input, context }) => {
-      const service = new ClaimsService(context.db);
-      const res = await service.routePayout({
-        claimId: input.claimId,
-        payoutMethod: input.payoutMethod,
-        runId: input.runId,
-        batchId: input.batchId,
-        userId: context.user.id,
-      });
-
-      return {
-        success: true,
-        payoutMethod: res.payoutMethod,
-        paidAmountRupees: res.paidAmountRupees,
-        advanceAdjustedRupees: res.advanceAdjustedRupees,
-      };
-    }),
+    .handler(()=>{throw new ConflictError('Salary and reimbursements are paid separately. Use the independent reimbursement payments console.');}),
 
   /**
    * Payroll Admin: Computes March final-run unsubstantiated proof tax recovery.
@@ -299,6 +284,7 @@ export const claimsRouter = {
     )
     .handler(async ({ input, context }) => {
       const service = new ClaimsService(context.db);
+      await assertEmployeesInScope(context.db,{...context.permissionAccess,actorEmployeeId:context.user.employee_id},[input.employeeId]);
       return await service.calculateYearEndUnsubstantiatedRecovery(input.employeeId, input.fyYear);
     }),
 };

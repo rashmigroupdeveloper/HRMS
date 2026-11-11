@@ -53,6 +53,7 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
   { key: 'wf.delegation_max_days', value: 90, valueType: 'number', description: 'WF-05: longest allowed approval delegation window' },
   { key: 'lifecycle.notice_days_white_collar', value: 90, valueType: 'number', description: 'LC-07: notice period (days) for white-collar staff' },
   { key: 'lifecycle.notice_days_default', value: 30, valueType: 'number', description: 'LC-07: notice period (days) for everyone else' },
+  { key: 'pay.gratuity_eligibility_mode', value: 'LIBERAL_4Y240D', valueType: 'string', description: 'PAY-15: STRICT_5Y or LIBERAL_4Y240D; preserves existing liberal eligibility until an authorized configuration administrator changes it. Liberal mode uses the legacy calendar approximation, not worked-day proof' },
   { key: 'pay.pf_wage_base', value: 'ACTUAL', valueType: 'string', description: 'P-01: default PF wage basis (ACTUAL or CEILING_15000); company and employee pf_wage_basis override it' },
   { key: 'pay.lwf_deduct_in_payroll', value: false, valueType: 'boolean', description: 'LWF deducted through monthly payroll (off: the client remits LWF outside the salary register)' },
   { key: 'pay.lop_divisor', value: 'CALENDAR', valueType: 'string', description: 'C-16 / item 4: LOP divisor — CALENDAR (days in month), FIXED_30, FIXED_26 (working days, WO/H excluded) or WORKING_DAYS (working days of the month)' },
@@ -63,6 +64,13 @@ export const POLICY_SETTINGS: readonly PolicySeed[] = [
   { key: 'pay.negative_net_policy', value: 'carry_forward', valueType: 'string', description: 'P-14: carry_forward trims recoveries so net is never negative and recovers the rest next run; flag blocks finalize for review' },
   { key: 'loans.interest_rate_pct', value: 0, valueType: 'number', description: 'LN-02: policy annual interest % on interest-bearing staff loans (interest-free types always 0)' },
   { key: 'loans.max_emi_pct_of_gross', value: 30, valueType: 'number', description: 'LN-01: EMI cap as % of monthly gross for eligibility' },
+  { key: 'loans.min_service_months_term', value: 6, valueType: 'number', description: 'LN-01: minimum service tenure in months required for term loans' },
+  { key: 'loans.min_service_months_advance', value: 1, valueType: 'number', description: 'LN-01: minimum service tenure in months required for salary/travel advances' },
+  { key: 'claims.default_limit_medical', value: 15000, valueType: 'number', description: 'CLM-01: default baseline annual limit (₹) for medical claims' },
+  { key: 'claims.default_limit_conveyance', value: 5000, valueType: 'number', description: 'CLM-01: default baseline monthly limit (₹) for conveyance claims' },
+  { key: 'claims.default_limit_telephone', value: 2000, valueType: 'number', description: 'CLM-01: default baseline monthly limit (₹) for telephone claims' },
+  { key: 'claims.default_limit_lta', value: 50000, valueType: 'number', description: 'CLM-01: default baseline annual limit (₹) for LTA claims' },
+  { key: 'claims.default_limit_relocation', value: 25000, valueType: 'number', description: 'CLM-01: default baseline limit (₹) for relocation claims' },
   // ── Attendance: swipe ingestion + quarantine (ATT-01/02) ──────────────────
   {
     key: 'att.swipe_window_early_hours',

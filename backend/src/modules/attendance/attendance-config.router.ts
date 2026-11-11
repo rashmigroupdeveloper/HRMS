@@ -43,7 +43,7 @@ function attendanceError(error: unknown): never {
   throw error;
 }
 
-const listShifts = withPermission('admin.settings')
+const listShifts = withPermission('hr.config.manage', 'read')
   .route({ method: 'GET', path: '/attendance/config/shifts', summary: 'Shift catalog (admin full)' })
   .input(z.object({}).optional())
   .output(z.array(shiftOutput.extend({ id: z.number() })))
@@ -87,7 +87,7 @@ const listShiftsForRoster = withPermission('attendance.roster.write')
     }));
   });
 
-const upsertShift = withPermission('admin.settings')
+const upsertShift = withPermission('hr.config.manage')
   .route({ method: 'PUT', path: '/attendance/config/shifts/{code}', summary: 'Create/update a shift (audited)' })
   .input(shiftInput)
   .output(z.object({ ok: z.literal(true) }))
@@ -183,7 +183,7 @@ const listHolidays = withPermission('attendance.own')
     }));
   });
 
-const holidayTargets = withAnyPermission('admin.settings', 'attendance.holidays.manage')
+const holidayTargets = withAnyPermission('hr.config.manage', 'attendance.holidays.manage')
   .route({ method: 'GET', path: '/attendance/config/holiday-targets', summary: 'Companies the caller may attach a holiday to' })
   .output(z.object({
     groupWide: z.boolean(),
@@ -197,7 +197,7 @@ const holidayTargets = withAnyPermission('admin.settings', 'attendance.holidays.
     actorEmployeeId: context.user.employee_id,
   }));
 
-const upsertHoliday = withAnyPermission('admin.settings', 'attendance.holidays.manage')
+const upsertHoliday = withAnyPermission('hr.config.manage', 'attendance.holidays.manage')
   .route({ method: 'PUT', path: '/attendance/config/holidays', summary: 'Add/update a holiday for the group, a company, a plant or a location (audited)' })
   .input(z.object({
     date: isoDate,
@@ -507,7 +507,7 @@ const overrideDay = withPermission('attendance.manual_override')
     return { ok: true as const };
   });
 
-const recompute = withPermission('admin.integrations')
+const recompute = withAnyPermission('admin.integrations', 'attendance.manual_override')
   .route({ method: 'POST', path: '/attendance/recompute', summary: 'Recompute a day, materialise a company period, or drain the dirty queue' })
   // E2E-033: `{}` (or no body) means "drain the queue"; a partial body is still a 400.
   .input(z.union([
@@ -526,6 +526,7 @@ const recompute = withPermission('admin.integrations')
   .handler(async ({ input, context }) => {
     if (input && 'date' in input) {
       const id = await resolveEmployeeRef(context.db, 'employeeId' in input ? input.employeeId : undefined, 'ecode' in input ? input.ecode : undefined);
+      await assertEmployeesInScope(context.db, { ...context.permissionAccess, actorEmployeeId: context.user.employee_id }, [id]);
       const outcome = await recomputeDay(context.db, id, input.date);
       return { processed: 1, outcome };
     }
@@ -535,7 +536,7 @@ const recompute = withPermission('admin.integrations')
       await assertCompanyInScope(context.db, { ...context.permissionAccess, actorEmployeeId: context.user.employee_id }, input.companyId);
       await queueMissingDays(context.db, { companyId: input.companyId, from: input.from, until: input.until });
     }
-    return { processed: await drainRecomputeQueue(context.db), outcome: null };
+    return { processed: await drainRecomputeQueue(context.db, 500, { ...context.permissionAccess, actorEmployeeId: context.user.employee_id }), outcome: null };
   });
 
 const weekClose = withPermission('admin.integrations')

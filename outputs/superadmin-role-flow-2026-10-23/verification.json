@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-23",
+  "timezone": "Asia/Kolkata",
+  "phase": 1,
+  "stage": "1.8",
+  "scope": "Super Admin configuration delegation and review/repair of 38 reported issue groups",
+  "backend": {
+    "command": "npm run verify",
+    "exit_code": 0,
+    "typecheck": "passed",
+    "lint": "passed",
+    "knip": "passed",
+    "dependency_cruiser": "passed",
+    "coverage": "passed",
+    "build": "passed",
+    "test_files": 152,
+    "tests_passed": 1102,
+    "tests_skipped": 0,
+    "coverage_percent": {
+      "statements": 86.58,
+      "lines": 86.58,
+      "branches": 81.15,
+      "functions": 90.86
+    }
+  },
+  "frontend": {
+    "command": "npm run verify",
+    "exit_code": 0,
+    "typecheck": "passed",
+    "lint": "passed",
+    "knip": "passed",
+    "build": "passed",
+    "test_files": 60,
+    "tests_passed": 397
+  },
+  "git_diff_check": "passed",
+  "configuration": {
+    "default_owner": "super_admin",
+    "delegable_permissions": [
+      "payroll.config.manage",
+      "hr.config.manage",
+      "system.config.manage",
+      "admin.workflows"
+    ],
+    "console_permission": "admin.settings",
+    "matrix_permission": "admin.roles",
+    "configuration_only_role_register_access": "refused",
+    "group_configuration_from_entity_bound_grant": "refused",
+    "grant_revoke_without_restart": "proved via existing RBAC API",
+    "new_custom_roles": "empty by default; audited password-confirmed creation"
+  },
+  "hh3": {
+    "original_affected_run": "not present in inspected local databases; identifier requested",
+    "synthetic_gross_rupees": 59324,
+    "synthetic_pt_rupees": 200,
+    "expected_employee_net_rupees": 59124,
+    "missing_item_blocks_finalize": true,
+    "omission_diagnostics_survive_reload": true,
+    "after_salary_repair": [
+      "compute",
+      "review",
+      "independent_approval",
+      "finalize",
+      "payslip_archive",
+      "bank_batch",
+      "simulated_mark_paid",
+      "employee_own_payslip_api"
+    ],
+    "non_regular_monthly_computation": "refused before item writes"
+  },
+  "scope_regressions": {
+    "hr_recompute": "own target allowed, foreign target refused, foreign queued row unchanged",
+    "named_assignee_inbox": "discoverable without broad approval permission",
+    "reopened_inputs": "JSON/CSV shared validator accepts corrections; locked refusal retained"
+  },
+  "environment": {
+    "database": "explicitly declared loopback hrms_roleflow_test_20261023 clone",
+    "migrations_exercised": [
+      "1753000001100_payroll-gratuity-policy",
+      "1753000001200_superadmin-configuration-authority"
+    ],
+    "main_database_configuration_changed": false,
+    "real_payouts": false,
+    "deployed": false,
+    "new_financial_fixtures": "rolled back"
+  },
+  "reported_groups_reviewed": 38,
+  "all_reported_groups_closed": false,
+  "remaining": [
+    "Original HH3 run and old browser failures require environment/record replay",
+    "Hold/LOP-reversal and payroll proof-verification UI",
+    "Dedicated off-cycle payout UI/domain flow",
+    "Mobile/geo punch",
+    "OT pre-plan/pre-approval",
+    "Recruitment/manpower requisition",
+    "Dedicated IT onboarding task authority",
+    "SMTP/backup/restore UI and operational evidence",
+    "Full-browser axe/contrast acceptance",
+    "Human payroll-core review and existing statutory acceptance"
+  ],
+  "react_review_skill": "vercel-plugin:react-best-practices",
+  "release_gate_advanced": false
+}

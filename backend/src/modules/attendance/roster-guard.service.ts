@@ -200,10 +200,13 @@ export async function assertRosterSaveAllowed(
     }
   }
 
+  const existingMap = new Map<string, (typeof existing)[number]>();
+  for (const row of existing) {
+    existingMap.set(`${String(row.employee_id)}|${formatDbDate(row.work_date)}`, row);
+  }
+
   const changed = params.entries.filter((entry) => {
-    const was = existing.find(
-      (row) => row.employee_id === entry.employeeId && formatDbDate(row.work_date) === entry.date,
-    );
+    const was = existingMap.get(`${String(entry.employeeId)}|${entry.date}`);
     if (!was) return true;
     return was.shift_id !== entry.shiftId || was.is_week_off !== entry.weekOff;
   });
@@ -216,6 +219,18 @@ export async function assertRosterSaveAllowed(
     .execute();
   if (pubs.length === 0) return;
 
+  const pubsByManager = new Map<number, { from: string; to: string }[]>();
+  for (const pub of pubs) {
+    const from = formatDbDate(pub.period_from);
+    const to = formatDbDate(pub.period_to);
+    const list = pubsByManager.get(pub.manager_employee_id);
+    if (list) {
+      list.push({ from, to });
+    } else {
+      pubsByManager.set(pub.manager_employee_id, [{ from, to }]);
+    }
+  }
+
   const employees = await db
     .selectFrom('core.employees')
     .select(['id', 'reporting_manager_id'])
@@ -226,11 +241,9 @@ export async function assertRosterSaveAllowed(
   const publishedChange = changed.find((entry) => {
     const managerId = managerOf.get(entry.employeeId);
     if (managerId === null || managerId === undefined) return false;
-    return pubs.some((pub) => {
-      const fromPub = formatDbDate(pub.period_from);
-      const toPub = formatDbDate(pub.period_to);
-      return pub.manager_employee_id === managerId && fromPub <= entry.date && entry.date <= toPub;
-    });
+    const managerPubs = pubsByManager.get(managerId);
+    if (!managerPubs) return false;
+    return managerPubs.some((pub) => pub.from <= entry.date && entry.date <= pub.to);
   });
 
   if (publishedChange && (params.reason === null || params.reason.trim().length < 5)) {
@@ -250,27 +263,58 @@ export async function recordPublishedRevisions(
   },
 ): Promise<void> {
   if (params.reason === null || params.reason.trim().length < 5) return;
+  const employeeIds = [...new Set(params.entries.map((e) => e.employeeId))];
+  const dates = [...new Set(params.entries.map((e) => e.date))].sort();
+  if (employeeIds.length === 0 || dates.length === 0) return;
+  const minDate = dates[0] ?? '';
+  const maxDate = dates[dates.length - 1] ?? '';
+
+  const priors = await db
+    .selectFrom('att.rosters')
+    .select(['employee_id', 'work_date', 'shift_id', 'is_week_off'])
+    .where('employee_id', 'in', employeeIds)
+    .where('work_date', '>=', sql<Date>`${minDate}::date`)
+    .where('work_date', '<=', sql<Date>`${maxDate}::date`)
+    .execute();
+
+  const priorMap = new Map<string, (typeof priors)[number]>();
+  for (const p of priors) {
+    priorMap.set(`${String(p.employee_id)}|${formatDbDate(p.work_date)}`, p);
+  }
+
+  const revisionsToInsert: {
+    employee_id: number;
+    work_date: Date;
+    old_shift_id: number | null;
+    new_shift_id: number | null;
+    old_week_off: boolean;
+    new_week_off: boolean;
+    reason: string;
+    changed_by: number;
+  }[] = [];
+
   for (const entry of params.entries) {
-    const prior = await db
-      .selectFrom('att.rosters')
-      .select(['shift_id', 'is_week_off'])
-      .where('employee_id', '=', entry.employeeId)
-      .where('work_date', '=', sql<Date>`${entry.date}::date`)
-      .executeTakeFirst();
+    const prior = priorMap.get(`${String(entry.employeeId)}|${entry.date}`);
     if (!prior) continue;
     if (prior.shift_id === entry.shiftId && prior.is_week_off === entry.weekOff) continue;
-    await db
-      .insertInto('att.roster_revisions')
-      .values({
-        employee_id: entry.employeeId,
-        work_date: sql<Date>`${entry.date}::date` as unknown as Date,
-        old_shift_id: prior.shift_id,
-        new_shift_id: entry.shiftId,
-        old_week_off: prior.is_week_off,
-        new_week_off: entry.weekOff,
-        reason: params.reason.trim(),
-        changed_by: params.actorUserId,
-      })
-      .execute();
+    revisionsToInsert.push({
+      employee_id: entry.employeeId,
+      work_date: sql<Date>`${entry.date}::date` as unknown as Date,
+      old_shift_id: prior.shift_id,
+      new_shift_id: entry.shiftId,
+      old_week_off: prior.is_week_off,
+      new_week_off: entry.weekOff,
+      reason: params.reason.trim(),
+      changed_by: params.actorUserId,
+    });
+  }
+
+  if (revisionsToInsert.length > 0) {
+    for (let i = 0; i < revisionsToInsert.length; i += 500) {
+      await db
+        .insertInto('att.roster_revisions')
+        .values(revisionsToInsert.slice(i, i + 500))
+        .execute();
+    }
   }
 }

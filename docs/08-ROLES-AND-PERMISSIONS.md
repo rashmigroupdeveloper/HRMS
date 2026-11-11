@@ -2,6 +2,12 @@
 
 The single reference for "who sees what and can do what." An implementing AI/developer should be able to build the RBAC seed data and every role's navigation shell from this document alone. Mechanism: `core.roles` / `core.permissions` / `core.role_permissions` (03-DATABASE §1); data scoping via `core.reporting_tree` and `user_roles.scope_org_unit_id`.
 
+**Sponsor amendment, 23 Oct 2026 — configuration and delegation:** Super Admin controls configuration by default and delegates it through the existing live permission matrix. This supersedes automatic policy-edit authority implied by `admin.settings` below. That permission opens the settings console; writes additionally require unrestricted, non-readonly domain authority: `payroll.config.manage` for `pay.*`, `tax.*` and `loans.*`; `hr.config.manage` for attendance/leave/lifecycle/workflow policy settings; `system.config.manage` for technical/security/integration and other namespaces. Technical device/quarantine attendance keys belong to system configuration. Only Super Admin receives these new permissions by default. Custom roles may receive them through audited, password-confirmed grants without a restart. Company-bound grants cannot change group-wide settings, statutory rates, PT slabs or GL reference data. Payroll run/input processing remains `payroll.run.manage`; configuration delegation does not grant processing authority.
+
+`admin.workflows` independently controls chain editing, workflow administration and routing repair; `workflow.routing_holds` retains scoped HR routing repair without chain-edit authority. Payroll admin's settings-console permission no longer opens Approval chains. HR Head has no default access to the access matrix: read/export and mutations require `admin.roles`; the legacy `admin.rbac.read` code no longer authorizes the matrix. These restrictions were explicitly confirmed by the sponsor. Super Admin may create empty custom roles, then grant permissions and assign users separately. New roles never inherit authority implicitly.
+
+Scoped HR corrections (`attendance.manual_override`) may also request attendance recomputation. Single-day calls check the employee scope; queued recomputation claims only employees in that scope. Integration administrators retain their assigned scope. Named workflow assignees receive an inbox badge even without broad domain approval permissions; assignment/consent checks remain server-side.
+
 ## 1. Role catalog
 
 | Role code | Who it is (RML examples) | One-line charter |
@@ -35,7 +41,7 @@ Legend: ✓ full · S = own subtree only · O = own records only · P = scoped t
 | attendance.month_lock | — | — | — | — | ✓ | ✓ | — | — | — | ✓ |
 | attendance.muster.export | — | S | S | P | ✓ | ✓ | P | ✓ | — | ✓ |
 | leave.approve / ar.approve / od.approve / ot.approve | — | S | S | P(step 2) | ✓ | — | — | — | — | ✓ |
-| claims.approve | — | S | S | P(verify) | ✓ | ✓(pay) | — | — | — | ✓ |
+| claims.approve | — | S | S | P(verify) | ✓ | ✓(approval only) | — | — | — | ✓ |
 | leave.admin (types, balances, adjustments) | — | — | — | P | ✓ | — | — | — | — | ✓ |
 | payroll.run.* (create/compute/review) | — | — | — | — | R | ✓ | — | — | — | ✓ |
 | payroll.run.finalize / reopen | — | — | — | — | ✓(co-sign) | ✓ | — | — | — | ✓(reopen) |
@@ -143,3 +149,20 @@ All chains editable by hr_head via UI (WF-01 configurability); these are the shi
 DOC-01/02/03 is authorized by `docs/15-WAVE-0-RECOVERY-SCOPE.md`. `doc.vault.own` is own-record access for the employee-facing roles (and unrestricted administrative permission for super_admin); `doc.vault.manage` belongs to hr_ops at org_unit scope and hr_head/super_admin at group scope. Runtime grants remain database-driven. An HR vault permission does not reveal unmasked identity-document contents: non-owner downloads of configured identity types additionally require `employee.statutory_ids.read` covering that employee. Catalog filenames are redacted for non-owners because the filename itself can contain a statutory ID. Every content download requires a purpose and writes an audit row before returning bytes. Separate own/managed catalog procedures avoid requiring an unrelated own-vault grant for HR operations.
 
 SEC-04 password re-entry before role/permission mutations uses the existing `admin.roles` authority and a short, runtime-configured window on the current session; it never grants a permission. MFA is explicitly excluded by the sponsor.
+
+
+### LC-02 stakeholder task access —23 October2026
+
+`lifecycle.onboard.tasks` grants the independent joining-task queue, seeded to IT and Super Admin. Listing/completion additionally require the task owner role to be among the caller’s current effective roles and the employee to be in permission scope. It never authorizes candidate intake, conversion or compensation. HR’s existing scoped conversion board retains its own checklist. Delegation remains runtime RBAC data.
+
+
+### CLM-03 receipt verification —24 October2026
+
+`claims.verify` is operational authority to substantiate claim bills, separately delegated from `claims.approve` business/chain decisions. Defaults: HR Ops at org-unit scope; HR Head and Super Admin at group scope. Managers do not receive it implicitly. The current chain assignee and write scope are still required for a decision. Super Admin delegates through runtime RBAC. Receipt reading uses own-record authentication or scoped `claims.approve` read authority and is audited; a read permission never grants verification.
+
+
+### Independent reimbursement payment authority — sponsor correction24 Oct2026
+
+Salary and reimbursement payment scopes are independent. New permissions `claims.payout.view` (eligible claims and batches), `claims.payout.manage` (reserve claims and prepare/download bank artifact) and `claims.payout.confirm` (record successful transfer) default to Super Admin only. Super Admin delegates read/write capability and employee population per permission through runtime RBAC; salary permissions imply none of these grants. A reimbursement operator need not hold any salary processing permission. Each mutation checks its own delegated population; entire mixed-scope batches are hidden/refused if any employee is outside that population, including employees with no org unit. Claim business approval and bill substantiation retain their separate permissions. Console navigation requires reimbursement view access; no salary-run selector is shown.
+
+Travel advance disbursement and expense settlement now also require independently delegated `claims.payout.manage`, with its employee population checked inside the transaction. `payroll.run.manage` does not authorize them. Travel administrative reading uses explicit reimbursement-view or claim-approval access; salary processing alone does not confer it. Settlement records a net payable/recoverable; it is not proof of an external reimbursement transfer. The dedicated T&E settlement-to-bank-payment bridge remains open.

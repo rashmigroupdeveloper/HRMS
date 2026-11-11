@@ -10,6 +10,7 @@ import { withPermission } from '../../../api/orpc.js';
 import { PayrollRunService } from './run.service.js';
 import { ReconciliationService } from '../reconciliation/reconciliation.service.js';
 import { companiesInScope, requireCompanyInScope, requireRunInScope } from '../../../core/rbac/company-scope.js';
+import { parseJsonObject } from '../../../core/json.js';
 
 const RunSummarySchema = z.object({
   id: z.number(),
@@ -42,7 +43,23 @@ const ReconciliationReportSchema = z.object({
   anomalies: z.array(z.string()),
 });
 
+const ComputeIssuesSchema = z.object({
+  employeeCount: z.number(), negativeNetCount: z.number(),
+  exceptions: z.array(z.object({ employeeId: z.number(), ecode: z.string(), reason: z.string() })),
+});
+
 export const payrollRunsRouter = {
+  computeIssues: withPermission('payroll.run.view', 'read')
+    .route({ method: 'GET', path: '/payroll/runs/{id}/compute-issues', summary: 'Last computation omissions for maker/checker review after reload' })
+    .input(z.object({ id: z.coerce.number().int().positive() }))
+    .output(ComputeIssuesSchema.nullable())
+    .handler(async ({ input, context }) => {
+      await requireRunInScope(context, input.id);
+      const row = await context.db.selectFrom('core.audit_log').select('new_value')
+        .where('entity', '=', 'pay.payroll_runs').where('entity_id', '=', input.id)
+        .where('action', '=', 'payroll_run_computed').orderBy('id', 'desc').executeTakeFirst();
+      return row ? ComputeIssuesSchema.parse(parseJsonObject(row.new_value)) : null;
+    }),
   list: withPermission('payroll.run.view', 'read')
     .input(
       z.object({

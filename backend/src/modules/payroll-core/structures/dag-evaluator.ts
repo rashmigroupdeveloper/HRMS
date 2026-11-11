@@ -15,6 +15,7 @@ import {
   add,
   subtract,
 } from '../../../core/money/index.js';
+import { STATUTORY_PF_CEILING_PAISE } from '../statutory/pf.js';
 import type { SalaryComponentItem, SalaryRoundingMode } from '../../../core/db/types.js';
 
 /**
@@ -290,7 +291,7 @@ export function resolveSalaryStructure(params: {
       // PF wages is typically Basic (+ DA if any)
       const basicPaise = monthlyAmounts['BASIC'] ?? paise(0);
       evalContext['PF_WAGES'] = toRupees(basicPaise);
-      evalContext['PF_WAGES_CAPPED'] = Math.min(toRupees(basicPaise), 15000);
+      evalContext['PF_WAGES_CAPPED'] = Math.min(toRupees(basicPaise), toRupees(STATUTORY_PF_CEILING_PAISE));
 
       const missing = extractFormulaVariables(node.formula).filter((v) => nodeMap.has(v) && evalContext[v] === undefined);
       if (missing.length > 0) {

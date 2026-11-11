@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-24",
+  "stage": "Phase 1 Stage 1.8",
+  "requirementIds": [
+    "CLM-04",
+    "TE-07",
+    "TE-09",
+    "CORE-10",
+    "CORE-11",
+    "PAY-03",
+    "PAY-08"
+  ],
+  "backend": {
+    "command": "npm run verify",
+    "exitCode": 0,
+    "testFiles": 154,
+    "testsPassed": 1115,
+    "coverage": {
+      "lines": 87.03,
+      "statements": 87.03,
+      "branches": 80.91,
+      "functions": 91.47
+    },
+    "database": "hrms_roleflow_test_20261023",
+    "host": "loopback only",
+    "log": "/tmp/hrms-reimbursement-backend-verify.log"
+  },
+  "frontend": {
+    "command": "npm run verify",
+    "exitCode": 0,
+    "testFiles": 65,
+    "testsPassed": 405,
+    "log": "/tmp/hrms-reimbursement-frontend-verify.log"
+  },
+  "exactValueEvidence": {
+    "claimedRupees": 200,
+    "approvedAndSeparatelyPaidRupees": 100,
+    "salaryInputCreated": false,
+    "salaryRunCreated": false,
+    "independentSalaryRecoveryRupees": 59124
+  },
+  "safetyEvidence": [
+    "Salary-only principals cannot prepare or confirm reimbursement payments or disburse travel advances/settle travel claims",
+    "Independent reimbursement operator has no salary processing authority",
+    "NULL org-unit employees cannot bypass batch visibility or mutation scope",
+    "Changed accepted amounts block bank preparation",
+    "Prepared reimbursement items reject DB edits",
+    "Reference-free paid transitions fail at the DB",
+    "Account changes clear reimbursement console state"
+  ],
+  "deployed": false,
+  "bankTransferPerformed": false,
+  "mainDatabaseMigrated": false,
+  "phaseOrReleaseGateAdvanced": false,
+  "humanPayrollReview": "required before deployment",
+  "remaining": [
+    "Reimbursement statements/PDFs",
+    "Draft batch cancellation controls",
+    "T&E settlement-to-reimbursement-bank bridge",
+    "Historical combined-payment reconciliation",
+    "Bank-specific format acceptance",
+    "Original browser/UAT replay and remaining previously reported issue groups"
+  ]
+}

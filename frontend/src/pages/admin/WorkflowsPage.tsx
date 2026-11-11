@@ -98,7 +98,7 @@ function approverLabel(spec: string): string {
 
 export function WorkflowsPage({ user }: { user: SessionUser }) {
   // E2E-004: hr_ops repairs held routing without workflow-config rights.
-  if (!hasPermission(user, 'admin.settings')) {
+  if (!hasPermission(user, 'admin.workflows')) {
     return (
       <div className="space-y-6">
         <header>
@@ -117,7 +117,7 @@ export function WorkflowsPage({ user }: { user: SessionUser }) {
 
 function WorkflowCatalog({ user }: { user: SessionUser }) {
   const catalog = useDashboardResource<Definition[]>('/api/workflows/definitions');
-  const canEdit = hasPermission(user, 'admin.settings');
+  const canEdit = hasPermission(user, 'admin.workflows');
   const [editing, setEditing] = useState<Definition | null>(null);
 
   if (catalog.loading) return <DashboardSkeleton />;

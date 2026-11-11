@@ -7,6 +7,7 @@
  * - Admin: Company loans registry, ledger inspection, and legacy SAP balance import
  */
 import { authFetch, responseError } from '../../lib/api';
+import { formatINR } from '../../lib/format';
 import { useState, useEffect } from 'react';
 import {
   FileSpreadsheet,
@@ -86,10 +87,6 @@ const LOAN_TYPE_OPTIONS = [
   { value: 'emi_no_interest', label: 'Zero Interest EMI' },
   { value: 'salary_advance', label: 'Salary Advance (1-3 months)' },
 ];
-
-function formatINR(amount: number): string {
-  return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 export function LoansPage({ registry = false }: { registry?: boolean }) {
   const [tab, setTab] = useState<Tab>('my');

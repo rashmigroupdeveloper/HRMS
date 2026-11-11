@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-24",
+  "stage": "Phase1 Stage1.8",
+  "requirements": [
+    "M13",
+    "CLM-02",
+    "CLM-03",
+    "CLM-04",
+    "CLM-07",
+    "PAY-03",
+    "PAY-04",
+    "PAY-08",
+    "CORE-10",
+    "CORE-11",
+    "WF-01",
+    "WF-04"
+  ],
+  "backend": {
+    "command": "npm run verify",
+    "passed": true,
+    "files": 154,
+    "tests": 1115,
+    "skipped": 0,
+    "coverage": {
+      "lines": 86.94,
+      "statements": 86.94,
+      "branches": 81.02,
+      "functions": 91.42
+    },
+    "log": "/tmp/hrms-claims-backend-verify.log"
+  },
+  "frontend": {
+    "command": "npm run verify",
+    "passed": true,
+    "files": 64,
+    "tests": 402,
+    "log": "/tmp/hrms-claims-frontend-verify.log"
+  },
+  "exact_paise_fixture": {
+    "claimed_paise": 20000,
+    "verified_accepted_paise": 10000,
+    "salary_paise": 100000,
+    "expected_payroll_net_paise": 110000,
+    "actual_payroll_net_paise": 110000,
+    "actual_transfers": 0
+  },
+  "database": "hrms_roleflow_test_20261023",
+  "migrations_applied_to_clone": [
+    "1753000001400_claim-input-provenance.ts",
+    "1753000001500_claim-bill-verification-authority.ts"
+  ],
+  "deployed": false,
+  "all_38_closed": false,
+  "human_payroll_review": "required before deployment",
+  "verification_launch_correction": "One verifier launch lacking the clone override was stopped during lint before database tests; only corrected clone-backed launch counted.",
+  "remaining": [
+    "dedicated off-cycle payroll/reimbursement batches",
+    "LOP/retro correction UI and ledger flow",
+    "geo punch",
+    "OT preplanning/preapproval",
+    "manpower requisitions",
+    "SMTP/backup operational controls and evidence",
+    "browser role-flow/accessibility replay",
+    "legacy unlinked/reserved/held claim reconciliation",
+    "Pack40 statutory acceptance",
+    "legacy year-end recovery type/FY/accepted-amount isolation",
+    "baseline claim entitlement fallback configurability"
+  ]
+}

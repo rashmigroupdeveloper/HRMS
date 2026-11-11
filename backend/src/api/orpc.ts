@@ -195,3 +195,16 @@ export function withStepUp(permission: PermissionCode) {
     }),
   );
 }
+
+/**
+ * Asserts that the authenticated user has a linked employee profile.
+ * Throws FORBIDDEN if user.employee_id is null.
+ */
+export function requireEmployeeId(user: { employee_id: number | null }): number {
+  if (user.employee_id === null) {
+    throw new ORPCError('FORBIDDEN', {
+      message: 'This operation requires an employee profile linked to your user account',
+    });
+  }
+  return user.employee_id;
+}

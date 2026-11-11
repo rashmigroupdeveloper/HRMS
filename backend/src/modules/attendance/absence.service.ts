@@ -28,22 +28,14 @@ export type AbsenceCaseRow = Selectable<AttAbsenceCasesTable>;
 const ABSENT: readonly string[] = ['A', 'UAB'];
 const NEUTRAL: readonly string[] = ['WO', 'H'];
 
-/** Walk back from `endIso`: consecutive absent days (WO/H neutral). Returns the
- *  run length and its first absent day. */
-async function absenceRun(db: Db, employeeId: number, endIso: string): Promise<{ length: number; startIso: string }> {
-  const rows = await db
-    .selectFrom('att.day_records')
-    .select(['work_date', 'status'])
-    .where('employee_id', '=', employeeId)
-    .where('work_date', '<=', sql<Date>`${endIso}::date`)
-    .orderBy('work_date', 'desc')
-    .limit(90)
-    .execute();
-
+function computeRunLength(
+  records: { work_date: Date; status: string }[],
+  endIso: string,
+): { length: number; startIso: string } {
   let length = 0;
   let startIso = endIso;
   let expected = endIso;
-  for (const row of rows) {
+  for (const row of records) {
     const iso = formatDbDate(row.work_date);
     if (iso !== expected) break; // a gap (no record) ends the run
     if (ABSENT.includes(row.status)) {
@@ -55,6 +47,21 @@ async function absenceRun(db: Db, employeeId: number, endIso: string): Promise<{
     expected = addDaysIso(iso, -1);
   }
   return { length, startIso };
+}
+
+/** Walk back from `endIso`: consecutive absent days (WO/H neutral). Returns the
+ *  run length and its first absent day. */
+export async function absenceRun(db: Db, employeeId: number, endIso: string): Promise<{ length: number; startIso: string }> {
+  const rows = await db
+    .selectFrom('att.day_records')
+    .select(['work_date', 'status'])
+    .where('employee_id', '=', employeeId)
+    .where('work_date', '<=', sql<Date>`${endIso}::date`)
+    .orderBy('work_date', 'desc')
+    .limit(90)
+    .execute();
+
+  return computeRunLength(rows, endIso);
 }
 
 export interface AbsenceScanResult {
@@ -81,15 +88,68 @@ export async function runAbsenceScan(db: Kysely<Database>, scanDateIso?: string)
     .execute();
 
   const result: AbsenceScanResult = { absentees: absentRows.length, casesOpened: 0, casesEscalated: 0, casesClosed: 0 };
+  if (absentRows.length === 0) return result;
+
+  const employeeIds = absentRows.map((r) => r.employee_id);
+
+  // 1. Batch-fetch active user accounts for employees and their managers
+  const userRefs = new Set<number>();
+  for (const r of absentRows) {
+    userRefs.add(r.employee_id);
+    if (r.reporting_manager_id) userRefs.add(r.reporting_manager_id);
+  }
+  const userRows = await db
+    .selectFrom('core.users')
+    .select(['id', 'employee_id'])
+    .where('employee_id', 'in', [...userRefs])
+    .where('is_active', '=', true)
+    .execute();
+  const userIdByEmp = new Map<number, number>();
+  for (const u of userRows) {
+    if (u.employee_id !== null) userIdByEmp.set(u.employee_id, u.id);
+  }
+
+  // 2. Batch-fetch open absence cases
+  const existingOpenCases = await db
+    .selectFrom('att.absence_cases')
+    .selectAll()
+    .where('employee_id', 'in', employeeIds)
+    .where('closed_at', 'is', null)
+    .execute();
+  const openCaseByEmp = new Map<number, Selectable<AttAbsenceCasesTable>>();
+  for (const c of existingOpenCases) {
+    openCaseByEmp.set(c.employee_id, c);
+  }
+
+  // 3. Batch-fetch recent day records for all absent employees (up to 90 days back)
+  const minLookbackIso = addDaysIso(scanDate, -90);
+  const recentRecords = await db
+    .selectFrom('att.day_records')
+    .select(['employee_id', 'work_date', 'status'])
+    .where('employee_id', 'in', employeeIds)
+    .where('work_date', '<=', sql<Date>`${scanDate}::date`)
+    .where('work_date', '>=', sql<Date>`${minLookbackIso}::date`)
+    .orderBy('work_date', 'desc')
+    .execute();
+
+  const recordsByEmp = new Map<number, { work_date: Date; status: string }[]>();
+  for (const r of recentRecords) {
+    let list = recordsByEmp.get(r.employee_id);
+    if (!list) {
+      list = [];
+      recordsByEmp.set(r.employee_id, list);
+    }
+    list.push({ work_date: r.work_date, status: r.status });
+  }
 
   for (const row of absentRows) {
     // ATT-11: alert the employee and the RM (their user accounts, if any).
     for (const employeeRef of [row.employee_id, row.reporting_manager_id]) {
       if (employeeRef === null) continue;
-      const user = await db.selectFrom('core.users').select('id').where('employee_id', '=', employeeRef).where('is_active', '=', true).executeTakeFirst();
-      if (user) {
+      const recipientUserId = userIdByEmp.get(employeeRef);
+      if (recipientUserId) {
         await enqueue(db, {
-          recipientUserId: user.id,
+          recipientUserId,
           channel: 'in_app',
           templateCode: 'uab_alert',
           payload: { employeeId: row.employee_id, ecode: row.ecode, date: scanDate },
@@ -97,13 +157,9 @@ export async function runAbsenceScan(db: Kysely<Database>, scanDateIso?: string)
       }
     }
 
-    const run = await absenceRun(db, row.employee_id, scanDate);
-    const open = await db
-      .selectFrom('att.absence_cases')
-      .selectAll()
-      .where('employee_id', '=', row.employee_id)
-      .where('closed_at', 'is', null)
-      .executeTakeFirst();
+    const empRecords = recordsByEmp.get(row.employee_id) ?? [];
+    const run = computeRunLength(empRecords, scanDate);
+    const open = openCaseByEmp.get(row.employee_id);
 
     if (open) {
       const escalate = open.stage === 'watch' && run.length >= showCauseDays;
@@ -158,23 +214,36 @@ export async function runAbsenceScan(db: Kysely<Database>, scanDateIso?: string)
   }
 
   // Close cases whose employee is back (present-ish day), regularized, or exited.
-  const openCases = await db
+  const activeCases = await db
     .selectFrom('att.absence_cases as ac')
     .innerJoin('core.employees as e', 'e.id', 'ac.employee_id')
     .where('ac.closed_at', 'is', null)
     .select(['ac.id', 'ac.employee_id', 'e.status as employee_status'])
     .execute();
-  for (const c of openCases) {
+
+  const activeEmpIds = activeCases
+    .filter((c) => c.employee_status !== 'exited')
+    .map((c) => c.employee_id);
+
+  const scanDayRecords = activeEmpIds.length > 0
+    ? await db
+        .selectFrom('att.day_records')
+        .select(['employee_id', 'status', 'source'])
+        .where('employee_id', 'in', activeEmpIds)
+        .where('work_date', '=', sql<Date>`${scanDate}::date`)
+        .execute()
+    : [];
+  const scanDayByEmp = new Map<number, { employee_id: number; status: string; source: string }>();
+  for (const d of scanDayRecords) {
+    scanDayByEmp.set(d.employee_id, d);
+  }
+
+  for (const c of activeCases) {
     let resolution: 'returned' | 'regularized' | 'exited' | null = null;
     if (c.employee_status === 'exited') {
       resolution = 'exited';
     } else {
-      const day = await db
-        .selectFrom('att.day_records')
-        .select(['status', 'source'])
-        .where('employee_id', '=', c.employee_id)
-        .where('work_date', '=', sql<Date>`${scanDate}::date`)
-        .executeTakeFirst();
+      const day = scanDayByEmp.get(c.employee_id);
       if (day && !ABSENT.includes(day.status) && !NEUTRAL.includes(day.status)) {
         resolution = day.source === 'regularized' ? 'regularized' : 'returned';
       }

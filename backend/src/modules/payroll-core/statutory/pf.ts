@@ -60,7 +60,7 @@ export interface EcrRecordInput {
   refundOfAdvancesPaise?: Paise | undefined;
 }
 
-const STATUTORY_PF_CEILING_PAISE = paise(1500000); // ₹15,000
+export const STATUTORY_PF_CEILING_PAISE = paise(1500000); // ₹15,000
 const MAX_EPS_MONTHLY_PAISE = paise(125000); // ₹1,250
 const MAX_EDLI_MONTHLY_PAISE = paise(7500); // ₹75
 const MIN_ADMIN_PER_ESTABLISHMENT_PAISE = paise(50000); // ₹500

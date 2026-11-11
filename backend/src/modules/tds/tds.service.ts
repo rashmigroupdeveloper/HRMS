@@ -8,6 +8,7 @@
  *    Part A/B per employee (incl. alumni), as JSON, CSV and PDF.
  * Software prepares the data; humans file with TRACES / the e-TDS utility.
  */
+import { inTransaction } from '../../core/db/database.js';
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../../core/db/types.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
@@ -84,6 +85,8 @@ export async function myDeclarations(db: Kysely<Database>, employeeId: number, f
 }
 
 export async function upsertMyDeclaration(db: Kysely<Database>, p: { employeeId: number; fy: string; section: string; amountRupees: number; proofDocumentId?: number | null | undefined; actorUserId: number }) {
+  return inTransaction(db, async db => {
+  await db.selectFrom('core.employees').select('id').where('id','=',p.employeeId).forUpdate().executeTakeFirstOrThrow();
   const def = DECLARATION_SECTIONS[p.section];
   if (!def) throw new DomainError(`Unknown section ${p.section}`);
   if (!(p.amountRupees >= 0) || !Number.isFinite(p.amountRupees)) throw new DomainError('Amount must be zero or more');
@@ -98,7 +101,7 @@ export async function upsertMyDeclaration(db: Kysely<Database>, p: { employeeId:
   if (changingAmount && !declOpen) throw new DomainError('The declaration window is closed for this financial year');
   if (!changingAmount && p.proofDocumentId !== undefined && !proofOpen && !declOpen) throw new DomainError('The proof submission window is closed');
   if (p.proofDocumentId !== undefined && p.proofDocumentId !== null) {
-    const doc = await db.selectFrom('core.documents').select(['id', 'owner_employee_id']).where('id', '=', p.proofDocumentId).executeTakeFirst();
+    const doc = await db.selectFrom('core.documents').select(['id', 'owner_employee_id']).where('id', '=', p.proofDocumentId).where('kind','=','tax_proof').where('status','=','active').executeTakeFirst();
     if (doc?.owner_employee_id !== p.employeeId) throw new DomainError('Proof document not found among your documents');
   }
   const amount = p.amountRupees.toFixed(2);
@@ -109,6 +112,7 @@ export async function upsertMyDeclaration(db: Kysely<Database>, p: { employeeId:
     .returning('id').executeTakeFirstOrThrow();
   await writeAudit(db, { actorUserId: p.actorUserId, action: existing ? 'update' : 'create', entity: 'pay.investment_declarations', entityId: row.id, oldValue: existing ? existing.declared_amount : null, newValue: JSON.stringify({ section: p.section, amount, proof }), ip: null });
   return { id: row.id };
+  });
 }
 
 export async function setMyRegime(db: Kysely<Database>, employeeId: number, fy: string, regime: 'old' | 'new', actorUserId: number) {

@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { withPermission } from '../../../api/orpc.js';
+import { assertEmployeesInScope } from '../../../core/rbac/employee-scope.js';
 import { paise } from '../../../core/money/money.js';
 import { computePf, generateEcrExport } from './pf.js';
 import { computeEsic, isEsicEligibleAtPeriodStart, generateEsicMonthlyReturn } from './esic.js';
@@ -343,6 +344,7 @@ export const statutoryRouter = {
       )
       .handler(async ({ context, input }) => {
         const declarationService = new TaxDeclarationService(context.db);
+        await assertEmployeesInScope(context.db,{...context.permissionAccess,actorEmployeeId:context.user.employee_id},[input.employeeId]);
         return declarationService.listEmployeeDeclarations(input.employeeId, input.financialYear);
       }),
 
@@ -375,7 +377,8 @@ export const statutoryRouter = {
           section: input.section,
           declaredAmountPaise: paise(input.declaredAmountPaise),
           proofDocumentId: input.proofDocumentId,
-        });
+          actorUserId:context.user.id,
+        }, {...context.permissionAccess,actorEmployeeId:context.user.employee_id});
         return {
           id: res.id,
           employeeId: res.employeeId,
@@ -407,7 +410,7 @@ export const statutoryRouter = {
           declarationId: input.declarationId,
           verifiedAmountPaise: paise(input.verifiedAmountPaise),
           verifiedByUserId: context.user.id,
-        });
+        }, {...context.permissionAccess,actorEmployeeId:context.user.employee_id});
         return {
           id: res.id,
           verifiedAmountPaise: res.verifiedAmountPaise ?? 0,

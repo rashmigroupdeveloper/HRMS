@@ -10,6 +10,7 @@
 
 import type { Database, TeWalletsTable, TeWalletTransactionsTable } from '../../core/db/types.js';
 import type { Kysely, Selectable } from 'kysely';
+import { inTransaction } from '../../core/db/database.js';
 
 export type WalletRow = Selectable<TeWalletsTable>;
 export type WalletTransactionRow = Selectable<TeWalletTransactionsTable>;
@@ -55,6 +56,9 @@ export class WalletService {
         employee_id: employeeId,
         balance_paise: 0,
       })
+      .onConflict((oc) =>
+        oc.column('employee_id').doUpdateSet({ updated_at: new Date() }),
+      )
       .returningAll()
       .executeTakeFirstOrThrow();
   }
@@ -79,38 +83,58 @@ export class WalletService {
       throw new Error(`Credit amount must be greater than 0 paise`);
     }
 
-    const wallet = await this.getOrCreateWallet(params.employeeId);
-    const newBalance = wallet.balance_paise + params.amountPaise;
+    return await inTransaction(this.db, async (trx) => {
+      let wallet = await trx
+        .selectFrom('te.wallets')
+        .selectAll()
+        .where('employee_id', '=', params.employeeId)
+        .forUpdate()
+        .executeTakeFirst();
 
-    // 1. Record immutable ledger transaction
-    const transaction = await this.db
-      .insertInto('te.wallet_transactions')
-      .values({
-        wallet_id: wallet.id,
-        employee_id: params.employeeId,
-        trip_id: params.tripId ?? null,
-        source: params.source,
-        type: 'credit',
-        amount_paise: params.amountPaise,
-        balance_after_paise: newBalance,
-        transaction_reference: params.transactionReference,
-        notes: params.notes ?? null,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+      wallet ??= await trx
+        .insertInto('te.wallets')
+        .values({
+          employee_id: params.employeeId,
+          balance_paise: 0,
+        })
+        .onConflict((oc) =>
+          oc.column('employee_id').doUpdateSet({ updated_at: new Date() }),
+        )
+        .returningAll()
+        .executeTakeFirstOrThrow();
 
-    // 2. Update wallet current balance
-    const updatedWallet = await this.db
-      .updateTable('te.wallets')
-      .set({
-        balance_paise: newBalance,
-        updated_at: new Date(),
-      })
-      .where('id', '=', wallet.id)
-      .returningAll()
-      .executeTakeFirstOrThrow();
+      const newBalance = wallet.balance_paise + params.amountPaise;
 
-    return { wallet: updatedWallet, transaction };
+      // 1. Record immutable ledger transaction
+      const transaction = await trx
+        .insertInto('te.wallet_transactions')
+        .values({
+          wallet_id: wallet.id,
+          employee_id: params.employeeId,
+          trip_id: params.tripId ?? null,
+          source: params.source,
+          type: 'credit',
+          amount_paise: params.amountPaise,
+          balance_after_paise: newBalance,
+          transaction_reference: params.transactionReference,
+          notes: params.notes ?? null,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      // 2. Update wallet current balance
+      const updatedWallet = await trx
+        .updateTable('te.wallets')
+        .set({
+          balance_paise: newBalance,
+          updated_at: new Date(),
+        })
+        .where('id', '=', wallet.id)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      return { wallet: updatedWallet, transaction };
+    });
   }
 
   /**
@@ -121,46 +145,66 @@ export class WalletService {
       throw new Error(`Debit amount must be greater than 0 paise`);
     }
 
-    const wallet = await this.getOrCreateWallet(params.employeeId);
-    const currentBalance = wallet.balance_paise;
+    return await inTransaction(this.db, async (trx) => {
+      let wallet = await trx
+        .selectFrom('te.wallets')
+        .selectAll()
+        .where('employee_id', '=', params.employeeId)
+        .forUpdate()
+        .executeTakeFirst();
 
-    if (currentBalance < params.amountPaise) {
-      throw new Error(
-        `Insufficient wallet balance: requested debit of ₹${(params.amountPaise / 100).toFixed(2)}, current balance is ₹${(currentBalance / 100).toFixed(2)}`
-      );
-    }
+      wallet ??= await trx
+        .insertInto('te.wallets')
+        .values({
+          employee_id: params.employeeId,
+          balance_paise: 0,
+        })
+        .onConflict((oc) =>
+          oc.column('employee_id').doUpdateSet({ updated_at: new Date() }),
+        )
+        .returningAll()
+        .executeTakeFirstOrThrow();
 
-    const newBalance = currentBalance - params.amountPaise;
+      const currentBalance = wallet.balance_paise;
 
-    // 1. Record immutable ledger transaction
-    const transaction = await this.db
-      .insertInto('te.wallet_transactions')
-      .values({
-        wallet_id: wallet.id,
-        employee_id: params.employeeId,
-        trip_id: params.tripId ?? null,
-        source: params.source,
-        type: 'debit',
-        amount_paise: params.amountPaise,
-        balance_after_paise: newBalance,
-        transaction_reference: params.transactionReference,
-        notes: params.notes ?? null,
-      })
-      .returningAll()
-      .executeTakeFirstOrThrow();
+      if (currentBalance < params.amountPaise) {
+        throw new Error(
+          `Insufficient wallet balance: requested debit of ₹${(params.amountPaise / 100).toFixed(2)}, current balance is ₹${(currentBalance / 100).toFixed(2)}`
+        );
+      }
 
-    // 2. Update wallet current balance
-    const updatedWallet = await this.db
-      .updateTable('te.wallets')
-      .set({
-        balance_paise: newBalance,
-        updated_at: new Date(),
-      })
-      .where('id', '=', wallet.id)
-      .returningAll()
-      .executeTakeFirstOrThrow();
+      const newBalance = currentBalance - params.amountPaise;
 
-    return { wallet: updatedWallet, transaction };
+      // 1. Record immutable ledger transaction
+      const transaction = await trx
+        .insertInto('te.wallet_transactions')
+        .values({
+          wallet_id: wallet.id,
+          employee_id: params.employeeId,
+          trip_id: params.tripId ?? null,
+          source: params.source,
+          type: 'debit',
+          amount_paise: params.amountPaise,
+          balance_after_paise: newBalance,
+          transaction_reference: params.transactionReference,
+          notes: params.notes ?? null,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      // 2. Update wallet current balance
+      const updatedWallet = await trx
+        .updateTable('te.wallets')
+        .set({
+          balance_paise: newBalance,
+          updated_at: new Date(),
+        })
+        .where('id', '=', wallet.id)
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      return { wallet: updatedWallet, transaction };
+    });
   }
 
   /**

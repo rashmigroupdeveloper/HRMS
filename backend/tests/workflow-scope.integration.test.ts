@@ -90,7 +90,7 @@ describe.skipIf(!url)('WF-01 scoped approvers against native PostgreSQL', () => 
     roleId = (await db.insertInto('core.roles').values({ code: roleCode, name: 'Scoped approval fixture' }).returning('id').executeTakeFirstOrThrow()).id;
     const permission = await db.selectFrom('core.permissions').select('id').where('code', '=', 'od.approve').executeTakeFirstOrThrow();
     await db.insertInto('core.role_permissions').values({ role_id: roleId, permission_id: permission.id, scope: 'org_unit' }).execute();
-    const routingPermission = await db.selectFrom('core.permissions').select('id').where('code', '=', 'admin.settings').executeTakeFirstOrThrow();
+    const routingPermission = await db.selectFrom('core.permissions').select('id').where('code', '=', 'admin.workflows').executeTakeFirstOrThrow();
     await db.insertInto('core.role_permissions').values({ role_id: roleId, permission_id: routingPermission.id, scope: 'org_unit' }).execute();
     await db.insertInto('wf.definitions').values({ code: heldDefinition, name: 'Scoped hold fixture',
       steps: JSON.stringify([{ step: 1, approver: 'functional_manager', slaHours: 48, onBreach: 'auto_approve' }]),
@@ -215,7 +215,7 @@ describe.skipIf(!url)('WF-01 scoped approvers against native PostgreSQL', () => 
       const denied = await (await httpRequest(app)).post(retryUrl).auth(deniedToken, { type: 'bearer' }).send({ reason: 'Attempt outside authority' });
       expectHttpStatus(denied, 403);
     }
-    const routingPermission = await db.selectFrom('core.permissions').select('id').where('code', '=', 'admin.settings').executeTakeFirstOrThrow();
+    const routingPermission = await db.selectFrom('core.permissions').select('id').where('code', '=', 'admin.workflows').executeTakeFirstOrThrow();
     await db.updateTable('core.role_permissions').set({ scope: 'readonly' }).where('role_id', '=', roleId)
       .where('permission_id', '=', routingPermission.id).execute();
     try {

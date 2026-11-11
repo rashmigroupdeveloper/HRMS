@@ -85,3 +85,11 @@ describe('AppShell', () => {
     expect(screen.getByRole('menuitem', { name: 'Travel' })).toBeInTheDocument();
   });
 });
+
+it('shows an assigned approval to a plant head without broad domain approval permissions', async () => {
+  vi.mocked(fetch).mockImplementation(input => Promise.resolve(new Response(JSON.stringify((typeof input === 'string' ? input : input instanceof URL ? input.pathname : input.url).includes('/workflows/inbox') ? [{requestId:7}] : {}), {headers:{'Content-Type':'application/json'}})));
+  try {
+    renderShell(session(['plant_head'], ['reports.bu']));
+    expect(await screen.findByRole('button', { name: 'Approvals — 1 waiting' })).toBeEnabled();
+  } finally { vi.mocked(fetch).mockImplementation(() => Promise.reject(new Error('offline'))); }
+});

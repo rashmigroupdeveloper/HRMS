@@ -205,4 +205,24 @@ Historical checkboxes above record the original implementation, not current rele
 
 **21 Oct Stage 1.8 task QA:** [attendance → holidays → approvals → payroll](sow-completion/35-ATTENDANCE-HOLIDAY-PAYROLL-QA.md). Separate role journeys verify 29.5 payable days and ₹29,350 synthetic net through payslip and simulated paid state. Six runtime/UX findings, including cross-account draft disclosure, remain open. Focused backend 63/64 and frontend 365/375; no gate advanced. Global legacy-suite side effects and compensating cleanup are documented explicitly.
 
+**23 Oct Stage 1.8 statutory boundary repair:** [Pack40](sow-completion/40-ATTENDANCE-STATUTORY-INTEGRITY.md) covers frozen final-month attendance, half-day F&F, process-held salary, EPS facts, apprentice contracts, safe money/calendar inputs and minute-bound regularization. Sponsor-confirmed payroll-admin gratuity configuration is wired through actual F&F. See the pack for final verification and unresolved statutory acceptance; no release gate advanced.
+
 **21 Oct Stage 1.8 repair:** [attendance / leave / payroll flow repairs](sow-completion/36-ATTENDANCE-LEAVE-FLOW-REPAIR.md) closes the six runtime findings and adds validated leave configuration, overlap/approval safety, register consistency and bank-file recovery. Frontend full verification passed (384 tests); 91 focused native/golden checks passed. Full backend coverage/lifecycle gates and mandatory payroll-core human review remain open; no acceptance gate advanced. Shared local legacy-test effects and exact compensation are documented in the evidence report.
+
+**23 Oct Stage 1.8 role-flow repair:** [Pack41](sow-completion/41-SUPERADMIN-CONFIGURATION-AND-ROLE-FLOW.md) records Super Admin configuration/delegation, reopened inputs, persisted payroll omissions, the synthetic ₹59,124 finalization-to-employee cascade, scoped HR recompute, assigned approval discovery and ESS entry repairs. All 38 reported groups retain explicit dispositions; open features and original UAT replay remain. Backend 1,102 tests and frontend 397 tests/full verification pass. No release gate advanced.
+
+### Pack42 — payroll controls and IT task access,23 Oct2026
+
+Completed the Stage1.8 repair increment for scoped/audited salary holds, investment-proof verification and independent IT stakeholder tasks. Backend153 files/1,108 tests and frontend63 files/401 tests pass. [Pack42](sow-completion/42-PAYROLL-CONTROLS-AND-ONBOARDING-TASKS.md) retains remaining features and acceptance; no phase gate advanced.
+
+### Pack43 — claims inbox and payment provenance,24 Oct2026
+
+Reproduced and repaired claim submission missing the approval request, direct decision bypass and missing population guards. Added real receipts, delegated verification and durable payroll reservations; exact-value native chain proves₹1,100 payroll and bank-backed claim payment. Final gates and remaining work: [Pack43](sow-completion/43-CLAIMS-WORKFLOW-AND-PAYROLL-PROVENANCE.md).
+
+Pack43 final verification:backend154 files/1,115 tests (86.94% lines,81.02% branches,91.42% functions); frontend64 files/402 tests. Both full verification pipelines passed; no phase/release acceptance gate advanced.
+
+### Pack44 — independent reimbursement payments,24 Oct2026
+
+Sponsor correction supersedes Pack43's combined salary payout. Separate reimbursement batches, bank artifacts and paid confirmations use independently delegated populations and view/manage/confirm permissions, defaulting to Super Admin. Salary-only authority grants no reimbursement payment access. [Pack44](sow-completion/44-INDEPENDENT-REIMBURSEMENT-PAYMENTS.md) records verification and remaining acceptance; no gate advanced.
+
+Pack44 final verification:backend154 files/1,115 tests and frontend65 files/405 tests; both full pipelines pass. Separate reimbursement payment and travel-finance scope regressions pass. Statements, T&E payment bridge, cancellation controls, reconciliation and UAT remain tracked; no phase/release gate advanced.

@@ -43,6 +43,7 @@ run('central access control (live Postgres)', () => {
   const opsEmail = `test-acl-ops-${stamp}@hrms.test`;
   let adminId: number;
   let opsId: number;
+  let hadSystemConfig = false;
   const settingKey = `auth.acl_knob_${stamp}`; // technical namespace: it_admin owns it (settings-ownership)
 
   async function makeUser(email: string): Promise<number> {
@@ -88,6 +89,7 @@ run('central access control (live Postgres)', () => {
     adminId = await makeUser(adminEmail);
     opsId = await makeUser(opsEmail);
     await giveRole(adminId, 'super_admin');
+    hadSystemConfig = !!(await db.selectFrom('core.role_permissions as rp').innerJoin('core.roles as r','r.id','rp.role_id').innerJoin('core.permissions as p','p.id','rp.permission_id').select('r.id').where('r.code','=','it_admin').where('p.code','=','system.config.manage').executeTakeFirst());
   });
 
   afterAll(async () => {
@@ -98,6 +100,7 @@ run('central access control (live Postgres)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ role: 'it_admin', permission: 'admin.settings' });
 
+    if (!hadSystemConfig) await (await httpRequest(app)).delete('/api/rbac/grants').set('Authorization', `Bearer ${token}`).send({role:'it_admin',permission:'system.config.manage'});
     await db.deleteFrom('core.settings').where('key', '=', settingKey).execute();
     await db.deleteFrom('core.user_roles').where('user_id', 'in', [adminId, opsId]).execute();
     await db
@@ -138,6 +141,7 @@ run('central access control (live Postgres)', () => {
       .send({ userId: opsId, role: 'payroll_admin' })).status).toBe(200);
     expect((await (await httpRequest(app)).post('/api/rbac/user-roles').set('Authorization', `Bearer ${adminToken}`).send({ userId: opsId, role: 'it_admin' })).status).toBe(200);
 
+    expect((await (await httpRequest(app)).post('/api/rbac/grants').set('Authorization', `Bearer ${adminToken}`).send({role:'it_admin',permission:'system.config.manage',scope:'all'})).status).toBe(200);
     const opsToken = await loginToken(opsEmail);
     expect((await putSetting(opsToken)).status).toBe(200); // it_admin holds admin.settings
   });

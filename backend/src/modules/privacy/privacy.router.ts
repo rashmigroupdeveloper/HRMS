@@ -4,7 +4,7 @@
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { authed, withAnyPermission, withPermission, withStepUp } from '../../api/orpc.js';
+import { authed, withAnyPermission, withPermission, withStepUp, requireEmployeeId } from '../../api/orpc.js';
 import { getUserPermissions } from '../../core/rbac/permissions.service.js';
 import { acknowledgeNotice, currentNotice, listNotices, noticeStatus } from './notices.service.js';
 import { listAllConsents, listMyConsents, setConsent } from './consents.service.js';
@@ -20,13 +20,6 @@ import { buildAccessPack, dpoContact, listProcessingRegister } from './export.se
 
 const PURPOSE = z.enum(['photograph', 'wellness', 'bgv', 'family', 'alumni']);
 const RIGHTS_KIND = z.enum(['access', 'correction', 'erasure']);
-
-function requireEmployeeId(user: { employee_id: number | null }): number {
-  if (user.employee_id === null) {
-    throw new ORPCError('BAD_REQUEST', { message: 'Your account has no employee profile linked' });
-  }
-  return user.employee_id;
-}
 
 function clientIp(req: { ip?: string | undefined; headers: Record<string, unknown> }): string | null {
   const forwarded = req.headers['x-forwarded-for'];

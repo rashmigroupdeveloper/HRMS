@@ -3,7 +3,7 @@
  */
 import { ORPCError } from '@orpc/server';
 import { z } from 'zod';
-import { withAnyPermission, withPermission } from '../../api/orpc.js';
+import { withAnyPermission, withPermission, requireEmployeeId } from '../../api/orpc.js';
 import { booleanQuery } from '../../api/zod.js';
 import { writeAudit } from '../../core/audit/audit.service.js';
 import type { Database } from '../../core/db/types.js';
@@ -78,13 +78,6 @@ const fileOut = z.object({ filename: z.string(), base64: z.string() });
 
 function asBadRequest(err: unknown): never {
   throw new ORPCError('BAD_REQUEST', { message: err instanceof Error ? err.message : 'Invalid request' });
-}
-
-function requireEmployeeId(user: { employee_id: number | null }): number {
-  if (user.employee_id === null) {
-    throw new ORPCError('BAD_REQUEST', { message: 'No employee profile linked' });
-  }
-  return user.employee_id;
 }
 
 function filePayload(filename: string, buf: Buffer) {

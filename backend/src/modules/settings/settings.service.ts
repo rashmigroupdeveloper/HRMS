@@ -28,6 +28,7 @@ const POLICY_VALUES: Record<string, (value: unknown) => boolean> = {
   'att.sandwich_rule': (v) => typeof v === 'boolean',
   'att.materialize_lookback_days': (v) => typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 400,
   'att.day_finalize_after_time': v => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v),
+  'pay.gratuity_eligibility_mode': v => typeof v === 'string' && ['STRICT_5Y', 'LIBERAL_4Y240D'].includes(v),
   'pay.pf_wage_base': (v) => typeof v === 'string' && ['ACTUAL', 'CEILING_15000'].includes(v),
   'pay.negative_net_policy': (v) => typeof v === 'string' && ['carry_forward', 'flag'].includes(v),
 };

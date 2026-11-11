@@ -4,7 +4,7 @@ import { formHints, type EmployeeFormValues } from './EmployeeFormDrawer';
 const base: EmployeeFormValues = {
   companyCode: 'RML', firstName: 'Ananya', lastName: '', gender: '', dob: '', doj: '2026-11-02', orgUnit: 'RML Kharagpur',
   location: '', department: '', designation: '', grade: '', category: '', contractType: '', managerEcode: '', hodEcode: '',
-  workEmail: '', mobile: '', pan: '', aadhaar: '', uan: '', esicNo: '', bankName: '', bankAccount: '', bankIfsc: '',
+  personalEmail: '', workEmail: '', mobile: '', pan: '', aadhaar: '', uan: '', esicNo: '', bankName: '', bankAccount: '', bankIfsc: '',
 };
 
 describe('employee form hints', () => {
@@ -21,5 +21,11 @@ describe('employee form hints', () => {
     const h = formHints({ ...base, pan: 'ABCDE1234F', uan: '123', esicNo: '12', bankIfsc: 'HDFC1234567', bankAccount: '12', mobile: '12345', workEmail: 'x' }, true);
     expect(Object.keys(h).sort()).toEqual(['bankAccount', 'bankIfsc', 'esicNo', 'mobile', 'pan', 'uan', 'workEmail']);
     expect(formHints({ ...base, pan: 'ABCPG1234K', aadhaar: '234123412346', uan: '100200300400', esicNo: '1234567890', bankIfsc: 'HDFC0009686', bankAccount: '50100491230000', mobile: '+91 98765 43210' }, true)).toEqual({});
+  });
+
+  it('validates personal and company email independently', () => {
+    expect(formHints({ ...base, personalEmail: 'bad', workEmail: 'work@example.com' }, false)).toEqual({ personalEmail: 'Not a valid e-mail' });
+    expect(formHints({ ...base, personalEmail: 'personal@example.com', workEmail: 'bad' }, false)).toEqual({ workEmail: 'Not a valid e-mail' });
+    expect(formHints({ ...base, personalEmail: 'personal@example.com', workEmail: 'work@example.com' }, true)).toEqual({});
   });
 });
