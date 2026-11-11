@@ -1,0 +1,19 @@
+{
+  "auditChainVerified": true,
+  "employees": 3634,
+  "users": 3634,
+  "report": {
+    "id": 1,
+    "status": "resolved",
+    "page_path": "/people"
+  },
+  "email": {
+    "status": "sent",
+    "sent_at": "2026-11-11T05:44:33.520Z",
+    "recipient_email": "core_developers@rashmigroup.com",
+    "attempts": 0,
+    "last_error": null
+  },
+  "smtpSenderConfigured": true,
+  "envMode": "600"
+}

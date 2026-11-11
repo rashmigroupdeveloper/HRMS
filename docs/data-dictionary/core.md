@@ -4,13 +4,21 @@
 
 ## core.ats_acceptance_receipts
 
+Keeps evidence that an offer was accepted in the recruitment system; this does not itself create an employee.
+
 LC-01: immutable accepted-offer receipt; external subject is not a local user ID.
 
 Relation kind: table.
 
 ### event_id
 
-External immutable event UUID used for replay identity
+**In everyday language:** External protected against later changes event UUID used for replay identity.
+
+**Why it is kept:** Keeps this record connected to the correct event, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: External immutable event UUID used for replay identity
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### ats_offer_id
 
-External accepted-offer identity, distinct from candidate/account ID
+**In everyday language:** External accepted-offer identity, distinct from candidate/account ID.
+
+**Why it is kept:** Keeps this record connected to the correct ats offer, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: External accepted-offer identity, distinct from candidate/account ID
 
 | Property | Definition |
 |---|---|
@@ -51,7 +65,13 @@ Database rules (including conditions shared with other fields):
 
 ### candidate_id
 
-Reference linking this record’s candidate id to FOREIGN KEY (candidate_id) REFERENCES core.onboarding_candidates(id).
+**In everyday language:** Identifies the candidate connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct candidate, so related details can be checked together.
+
+**Example:** This record points to an existing entry in onboarding candidates instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s candidate id to FOREIGN KEY (candidate_id) REFERENCES core.onboarding_candidates(id).
 
 | Property | Definition |
 |---|---|
@@ -72,7 +92,13 @@ Database rules (including conditions shared with other fields):
 
 ### source_digest
 
-Digest of accepted offer snapshot detecting changed retries
+**In everyday language:** digital fingerprint of accepted offer copy saved at that point in time detecting changed retries.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The actual security value is omitted. The system compares it to check the correct credential or exact information.
+
+Technical definition: Digest of accepted offer snapshot detecting changed retries
 
 | Property | Definition |
 |---|---|
@@ -92,7 +118,13 @@ Database rules (including conditions shared with other fields):
 
 ### accepted_at
 
-Candidate acceptance instant reported by ATS
+**In everyday language:** Candidate acceptance instant reported by ATS.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Candidate acceptance instant reported by ATS
 
 | Property | Definition |
 |---|---|
@@ -112,7 +144,13 @@ Database rules (including conditions shared with other fields):
 
 ### accepted_by_subject
 
-External HR actor identifier; intentionally not HRMS user FK
+**In everyday language:** External HR actor identifier; intentionally not HRMS user link to another record.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the accepted by subject shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: External HR actor identifier; intentionally not HRMS user FK
 
 | Property | Definition |
 |---|---|
@@ -132,7 +170,13 @@ Database rules (including conditions shared with other fields):
 
 ### evidence_ref
 
-Acceptance evidence/reference supplied by ATS HR
+**In everyday language:** Acceptance evidence/reference supplied by ATS HR.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Acceptance evidence/reference supplied by ATS HR
 
 | Property | Definition |
 |---|---|
@@ -152,7 +196,13 @@ Database rules (including conditions shared with other fields):
 
 ### received_at
 
-HRMS receipt commit-time provenance
+**In everyday language:** HRMS receipt commit-time where the information came from.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: HRMS receipt commit-time provenance
 
 | Property | Definition |
 |---|---|
@@ -179,13 +229,21 @@ Table indexes and lifecycle triggers:
 
 ## core.audit_log
 
+Keeps the history of important actions so authorized reviewers can trace who did what.
+
 core.audit_log — append-only, hash-chained (CORE-11, doc 14 §7.4). INSERT only.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -205,7 +263,13 @@ Database rules (including conditions shared with other fields):
 
 ### actor_user_id
 
-Reference linking this record’s actor user id to FOREIGN KEY (actor_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies actor user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct actor user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s actor user id to FOREIGN KEY (actor_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -225,7 +289,13 @@ Database rules (including conditions shared with other fields):
 
 ### action
 
-Operation category recorded in immutable audit
+**In everyday language:** Operation category recorded in protected against later changes audit.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An event can record that a person viewed or changed something; the allowed action depends on this register.
+
+Technical definition: Operation category recorded in immutable audit
 
 | Property | Definition |
 |---|---|
@@ -243,7 +313,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### entity
 
-Audited table/domain name
+**In everyday language:** Audited table/domain name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A history entry can say that the action concerned an employee record rather than a leave request.
+
+Technical definition: Audited table/domain name
 
 | Property | Definition |
 |---|---|
@@ -261,7 +337,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### entity_id
 
-Polymorphic target identifier; no single table FK is appropriate
+**In everyday language:** Polymorphic target identifier; no single table link to another record is appropriate.
+
+**Why it is kept:** Keeps this record connected to the correct entity, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Polymorphic target identifier; no single table FK is appropriate
 
 | Property | Definition |
 |---|---|
@@ -279,7 +361,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### field
 
-Changed field or bounded operation label
+**In everyday language:** Changed field or bounded operation label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A change-history entry can identify “work email” as the detail that changed.
+
+Technical definition: Changed field or bounded operation label
 
 | Property | Definition |
 |---|---|
@@ -297,7 +385,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### old_value
 
-Masked before-image; caller must never include raw statutory credentials
+**In everyday language:** Masked before-image; caller must never include raw statutory credentials.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** If a permitted detail changes, this preserves what it was before the change.
+
+Technical definition: Masked before-image; caller must never include raw statutory credentials
 
 | Property | Definition |
 |---|---|
@@ -315,7 +409,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### new_value
 
-Masked after-image/explanation; caller masking is load-bearing
+**In everyday language:** Masked after-image/explanation; caller masking is load-bearing.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** If a permitted detail changes, this preserves what was saved after the change.
+
+Technical definition: Masked after-image/explanation; caller masking is load-bearing
 
 | Property | Definition |
 |---|---|
@@ -333,7 +433,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### ip
 
-Operation source network address
+**In everyday language:** Operation source network address.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A saved browser or connection detail can help an authorized administrator investigate which sign-in or submission produced the event.
+
+Technical definition: Operation source network address
 
 | Property | Definition |
 |---|---|
@@ -351,7 +457,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### at
 
-Audit event instant
+**In everyday language:** Audit event instant.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A time such as 9 AM describes the timing of this particular activity; whether a calendar date is also stored depends on the field.
+
+Technical definition: Audit event instant
 
 | Property | Definition |
 |---|---|
@@ -369,7 +481,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### prev_hash
 
-Set by the DB trigger — never write from the app.
+**In everyday language:** Set by the DB trigger — never write from the app.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Set by the DB trigger — never write from the app.
 
 | Property | Definition |
 |---|---|
@@ -387,7 +505,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### row_hash
 
-Set by the DB trigger — never write from the app.
+**In everyday language:** Set by the DB trigger — never write from the app.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Set by the DB trigger — never write from the app.
 
 | Property | Definition |
 |---|---|
@@ -405,7 +529,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### scope_org_unit_id
 
-Historical data scope captured when the event is written (CORE-10).
+**In everyday language:** Historical data scope captured when the event is written (CORE-10).
+
+**Why it is kept:** Keeps this record connected to the correct scope org unit, so related details can be checked together.
+
+**Example:** This record points to an existing entry in org units instead of copying all of that entry’s details.
+
+Technical definition: Historical data scope captured when the event is written (CORE-10).
 
 | Property | Definition |
 |---|---|
@@ -425,7 +555,13 @@ Database rules (including conditions shared with other fields):
 
 ### hash_version
 
-V1 predates scoped audit rows; V2 commits scope_org_unit_id into row_hash.
+**In everyday language:** V1 predates scoped audit rows; V2 commits scope_org_unit_id into row_hash.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: V1 predates scoped audit rows; V2 commits scope_org_unit_id into row_hash.
 
 | Property | Definition |
 |---|---|
@@ -445,7 +581,15 @@ Database rules (including conditions shared with other fields):
 
 ### chain_seq
 
-Hashing order, assigned INSIDE the chain trigger's advisory lock. `id`
+**In everyday language:** Hashing order, assigned INSIDE the chain trigger's advisory lock. id
+comes from a sequence evaluated before that lock, so under concurrency the
+two disagree — the chain is ordered by this, never by id.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A sequence such as 101 followed by 102 helps place protected history entries in their recorded order.
+
+Technical definition: Hashing order, assigned INSIDE the chain trigger's advisory lock. `id`
 comes from a sequence evaluated before that lock, so under concurrency the
 two disagree — the chain is ordered by this, never by id.
 
@@ -474,13 +618,21 @@ Table indexes and lifecycle triggers:
 
 ## core.bulk_jobs
 
+Tracks file imports and exports, their progress and errors.
+
 Bulk jobs records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -500,7 +652,13 @@ Database rules (including conditions shared with other fields):
 
 ### importer
 
-Registered importer type defining row semantics
+**In everyday language:** Registered importer type defining row semantics.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the importer.
+
+Technical definition: Registered importer type defining row semantics
 
 | Property | Definition |
 |---|---|
@@ -518,7 +676,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### context
 
-Validated import target/options snapshot; can include sensitive context
+**In everyday language:** Validated import target/options copy saved at that point in time; can include sensitive context.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the context.
+
+Technical definition: Validated import target/options snapshot; can include sensitive context
 
 | Property | Definition |
 |---|---|
@@ -536,7 +700,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### context_key
 
-Normalized target identity used for duplicate/commit coordination
+**In everyday language:** Normalized target identity used for duplicate/commit coordination.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Normalized target identity used for duplicate/commit coordination
 
 | Property | Definition |
 |---|---|
@@ -554,7 +724,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -574,7 +750,13 @@ Database rules (including conditions shared with other fields):
 
 ### filename
 
-Original workbook provenance
+**In everyday language:** Original workbook where the information came from.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A source file might be called employee-import.xlsx so staff can recognize which import was processed.
+
+Technical definition: Original workbook provenance
 
 | Property | Definition |
 |---|---|
@@ -592,7 +774,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### file_sha256
 
-Uploaded byte digest for retry identity
+**In everyday language:** Uploaded byte digital fingerprint for retry identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Two files with the same name can contain different data; their digital fingerprints help distinguish the bytes.
+
+Technical definition: Uploaded byte digest for retry identity
 
 | Property | Definition |
 |---|---|
@@ -610,7 +798,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Preview/commit/failure lifecycle
+**In everyday language:** Preview/commit/failure progress from creation to closure.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “previewed” means Record is previewed in this progress from creation to closure.
+
+Technical definition: Preview/commit/failure lifecycle
 
 | Property | Definition |
 |---|---|
@@ -638,14 +832,20 @@ Database rules (including conditions shared with other fields):
 
 ### total_rows
 
-Total source rows counted in the bulk import/export job.
+**In everyday language:** Previewed row count.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Previewed row count
 
 | Property | Definition |
 |---|---|
 | SQL type | `integer` |
 | Required | Yes |
 | Default | 0 |
-| Definition basis | dictionary supplement; docs/03, docs/04 and current catalog |
+| Definition basis | reviewer-authored field meaning (19 Oct 2026) |
 | Code declaration | `total_rows: Generated<number>;` |
 | Code source | [backend/src/core/db/types.bulk.ts](../../backend/src/core/db/types.bulk.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
@@ -656,7 +856,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### error_rows
 
-Rejected row count
+**In everyday language:** Rejected row count.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** A reviewer reads the saved explanation to understand the particular case before taking the next action.
+
+Technical definition: Rejected row count
 
 | Property | Definition |
 |---|---|
@@ -674,7 +880,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### warning_rows
 
-Rows with nonfatal validation warnings
+**In everyday language:** Rows with nonfatal validation warnings.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Rows with nonfatal validation warnings
 
 | Property | Definition |
 |---|---|
@@ -692,7 +904,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### processed_rows
 
-Committed/processed progress count, not authoritative financial amount
+**In everyday language:** Committed/processed progress count, not authoritative financial amount.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Committed/processed progress count, not authoritative financial amount
 
 | Property | Definition |
 |---|---|
@@ -710,7 +928,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### rows
 
-Staged normalized row data; may contain personal/statutory/pay values
+**In everyday language:** Staged normalized row data; may contain personal/statutory/pay values.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the rows.
+
+Technical definition: Staged normalized row data; may contain personal/statutory/pay values
 
 | Property | Definition |
 |---|---|
@@ -728,7 +952,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### report
 
-Per-row validation report
+**In everyday language:** Per-row validation report.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the report.
+
+Technical definition: Per-row validation report
 
 | Property | Definition |
 |---|---|
@@ -746,7 +976,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### result
 
-Import completion summary
+**In everyday language:** Import completion summary.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the result.
+
+Technical definition: Import completion summary
 
 | Property | Definition |
 |---|---|
@@ -764,7 +1000,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### error
 
-Bounded job failure explanation
+**In everyday language:** Bounded job failure explanation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A message explaining which import step failed helps staff correct the source rather than retry blindly.
+
+Technical definition: Bounded job failure explanation
 
 | Property | Definition |
 |---|---|
@@ -782,7 +1024,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -802,7 +1050,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -820,7 +1074,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### committed_by
 
-Reference linking this record’s committed by to FOREIGN KEY (committed_by) REFERENCES core.users(id).
+**In everyday language:** Identifies committed by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct committed by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s committed by to FOREIGN KEY (committed_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -840,7 +1100,13 @@ Database rules (including conditions shared with other fields):
 
 ### committed_at
 
-Successful commit receipt instant
+**In everyday language:** Successful commit receipt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Successful commit receipt instant
 
 | Property | Definition |
 |---|---|
@@ -858,7 +1124,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -884,13 +1156,21 @@ Table indexes and lifecycle triggers:
 
 ## core.clearances
 
+Tracks departmental clearances required when an employee leaves.
+
 core.clearances — LC-06 / AST-04 departmental clearance checklist.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -910,7 +1190,13 @@ Database rules (including conditions shared with other fields):
 
 ### separation_id
 
-Identity of the separation case for which final settlement is calculated.
+**In everyday language:** Identity of the separation case for which final settlement is calculated.
+
+**Why it is kept:** Keeps this record connected to the correct separation, so related details can be checked together.
+
+**Example:** This record points to an existing entry in separations instead of copying all of that entry’s details.
+
+Technical definition: Identity of the separation case for which final settlement is calculated.
 
 | Property | Definition |
 |---|---|
@@ -931,7 +1217,13 @@ Database rules (including conditions shared with other fields):
 
 ### department
 
-IT/Admin/Finance/HR clearance responsibility
+**In everyday language:** IT/Admin/Finance/HR clearance responsibility.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “IT” means It.
+
+Technical definition: IT/Admin/Finance/HR clearance responsibility
 
 | Property | Definition |
 |---|---|
@@ -959,7 +1251,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Pending/cleared/flagged clearance state
+**In everyday language:** Pending/cleared/flagged clearance state.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “pending” means Awaiting the required decision or next action.
+
+Technical definition: Pending/cleared/flagged clearance state
 
 | Property | Definition |
 |---|---|
@@ -985,7 +1283,13 @@ Database rules (including conditions shared with other fields):
 
 ### remarks
 
-Clearance explanation
+**In everyday language:** Clearance explanation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A reviewer reads the saved explanation to understand the particular case before taking the next action.
+
+Technical definition: Clearance explanation
 
 | Property | Definition |
 |---|---|
@@ -1003,7 +1307,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### unreturned_assets
 
-Captured unresolved asset details supporting exit review, not replacement custody authority
+**In everyday language:** Captured unresolved asset details supporting exit review, not replacement custody authority.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the unreturned assets.
+
+Technical definition: Captured unresolved asset details supporting exit review, not replacement custody authority
 
 | Property | Definition |
 |---|---|
@@ -1021,7 +1331,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### recovery_amount
 
-Proposed clearance-related recovery amount; requires approved downstream consumption
+**In everyday language:** Proposed clearance-related recovery amount; requires approved downstream consumption.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Proposed clearance-related recovery amount; requires approved downstream consumption
 
 | Property | Definition |
 |---|---|
@@ -1041,7 +1357,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### cleared_by
 
-Reference linking this record’s cleared by to FOREIGN KEY (cleared_by) REFERENCES core.users(id).
+**In everyday language:** Identifies cleared by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct cleared by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s cleared by to FOREIGN KEY (cleared_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -1061,7 +1383,13 @@ Database rules (including conditions shared with other fields):
 
 ### cleared_at
 
-Department sign-off instant
+**In everyday language:** Department sign-off instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Department sign-off instant
 
 | Property | Definition |
 |---|---|
@@ -1079,7 +1407,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1097,7 +1431,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -1121,13 +1461,21 @@ Table indexes and lifecycle triggers:
 
 ## core.companies
 
+Lists the separate legal companies covered by HRMS.
+
 core.companies — canonical entity master (doc 11 §0.2; 13 canonical of 14 raw).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1147,7 +1495,13 @@ Database rules (including conditions shared with other fields):
 
 ### code
 
-Canonical legal-entity code
+**In everyday language:** main legal-entity code.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Canonical legal-entity code
 
 | Property | Definition |
 |---|---|
@@ -1167,7 +1521,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Legal entity display/letterhead name
+**In everyday language:** Legal entity display/letterhead name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Legal entity display/letterhead name
 
 | Property | Definition |
 |---|---|
@@ -1187,7 +1547,13 @@ Database rules (including conditions shared with other fields):
 
 ### ecode_prefix
 
-Configured entity employee-code prefix; differs from removed doc ecode_format description
+**In everyday language:** Configured entity employee-code prefix; differs from removed doc ecode_format description.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A company can use a configured prefix to distinguish the employee codes it issues.
+
+Technical definition: Configured entity employee-code prefix; differs from removed doc ecode_format description
 
 | Property | Definition |
 |---|---|
@@ -1207,7 +1573,13 @@ Database rules (including conditions shared with other fields):
 
 ### ecode_next_seq
 
-Locked allocation sequence, not employee count
+**In everyday language:** Locked allocation sequence, not employee count.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The next employee-code number is advanced under controlled allocation so two joiners do not receive the same code.
+
+Technical definition: Locked allocation sequence, not employee count
 
 | Property | Definition |
 |---|---|
@@ -1225,7 +1597,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_india_payroll
 
-Explicit India statutory-engine eligibility gate
+**In everyday language:** Explicit India statutory-engine eligibility gate.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Explicit India statutory-engine eligibility gate
 
 | Property | Definition |
 |---|---|
@@ -1248,7 +1626,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### gstin
 
-Entity GST registration printed on documents where required
+**In everyday language:** Entity GST registration printed on documents where required.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This identifies the company for GST-related records; an actual tax identifier is omitted from this guide.
+
+Technical definition: Entity GST registration printed on documents where required
 
 | Property | Definition |
 |---|---|
@@ -1266,7 +1650,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### pan
 
-Legal entity PAN, distinct from individual employee PAN
+**In everyday language:** Legal entity PAN, distinct from individual employee PAN.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a tax identifier, not an employee number. An actual identifier is omitted from this guide.
+
+Technical definition: Legal entity PAN, distinct from individual employee PAN
 
 | Property | Definition |
 |---|---|
@@ -1284,7 +1674,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### pf_establishment_code
 
-Legal establishment PF filing identifier
+**In everyday language:** Legal establishment provident fund filing identifier.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Legal establishment PF filing identifier
 
 | Property | Definition |
 |---|---|
@@ -1302,7 +1698,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### esic_code
 
-Employer ESIC registration identifier
+**In everyday language:** Employer Employees’ State Insurance registration identifier.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Employer ESIC registration identifier
 
 | Property | Definition |
 |---|---|
@@ -1320,7 +1722,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### pt_registration_no
 
-Employer professional-tax registration identifier
+**In everyday language:** Employer professional-tax registration identifier.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Employer professional-tax registration identifier
 
 | Property | Definition |
 |---|---|
@@ -1338,7 +1746,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### tan
 
-TDS deductor identity
+**In everyday language:** income tax deducted from salary deductor identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Finance uses the company’s tax-deduction registration reference; an actual registration number is omitted.
+
+Technical definition: TDS deductor identity
 
 | Property | Definition |
 |---|---|
@@ -1356,7 +1770,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### address
 
-Legal letterhead/return address
+**In everyday language:** Legal letterhead/return address.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An address tells staff the place associated with this particular person or organization; it is not automatically a work location.
+
+Technical definition: Legal letterhead/return address
 
 | Property | Definition |
 |---|---|
@@ -1374,7 +1794,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1392,7 +1818,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -1410,7 +1842,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### sap_company_code
 
-External SAP payer mapping
+**In everyday language:** External SAP payer mapping.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: External SAP payer mapping
 
 | Property | Definition |
 |---|---|
@@ -1430,7 +1868,13 @@ Database rules (including conditions shared with other fields):
 
 ### pf_wage_basis
 
-Entity default PF wage-base policy; employee override precedence must be explicit
+**In everyday language:** Entity default provident fund wage-base policy; employee override precedence must be explicit.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “ACTUAL” means provident fund calculation on actual configured eligible wages.
+
+Technical definition: Entity default PF wage-base policy; employee override precedence must be explicit
 
 | Property | Definition |
 |---|---|
@@ -1455,7 +1899,13 @@ Database rules (including conditions shared with other fields):
 
 ### country_code
 
-Entity jurisdiction
+**In everyday language:** Entity jurisdiction.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the country code shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Entity jurisdiction
 
 | Property | Definition |
 |---|---|
@@ -1475,7 +1925,13 @@ Database rules (including conditions shared with other fields):
 
 ### currency_code
 
-Entity reporting/pay currency; India money engine is still INR-scoped
+**In everyday language:** Entity reporting/pay currency; India money engine is still INR-scoped.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** INR denotes Indian rupees; the saved currency describes the associated amounts.
+
+Technical definition: Entity reporting/pay currency; India money engine is still INR-scoped
 
 | Property | Definition |
 |---|---|
@@ -1495,7 +1951,13 @@ Database rules (including conditions shared with other fields):
 
 ### timezone
 
-Entity local time context; not permission to ignore locked IST business rules
+**In everyday language:** Entity local time context; not permission to ignore locked IST business rules.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the timezone.
+
+Technical definition: Entity local time context; not permission to ignore locked IST business rules
 
 | Property | Definition |
 |---|---|
@@ -1515,7 +1977,13 @@ Database rules (including conditions shared with other fields):
 
 ### locale
 
-Entity display localization
+**In everyday language:** Entity display localization.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the locale.
+
+Technical definition: Entity display localization
 
 | Property | Definition |
 |---|---|
@@ -1544,13 +2012,21 @@ Table indexes and lifecycle triggers:
 
 ## core.cost_centers
 
+Lists the accounting groups to which employee costs are assigned.
+
 Cost centers records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1571,7 +2047,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -1594,7 +2076,13 @@ Database rules (including conditions shared with other fields):
 
 ### code
 
-External payroll/SAP cost-center code scoped by company
+**In everyday language:** External payroll/SAP cost-center code scoped by company.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: External payroll/SAP cost-center code scoped by company
 
 | Property | Definition |
 |---|---|
@@ -1614,7 +2102,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Cost-center display label
+**In everyday language:** Cost-center display label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Cost-center display label
 
 | Property | Definition |
 |---|---|
@@ -1632,7 +2126,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1650,7 +2150,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -1668,7 +2174,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### plant_id
 
-Reference linking this record’s plant id to FOREIGN KEY (plant_id, company_id) REFERENCES core.plants(id, company_id); FOREIGN KEY (plant_id) REFERENCES core.plants(id).
+**In everyday language:** Identifies plant connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct plant, so related details can be checked together.
+
+**Example:** This record points to an existing entry in plants instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s plant id to FOREIGN KEY (plant_id, company_id) REFERENCES core.plants(id, company_id); FOREIGN KEY (plant_id) REFERENCES core.plants(id).
 
 | Property | Definition |
 |---|---|
@@ -1696,13 +2208,21 @@ Table indexes and lifecycle triggers:
 
 ## core.department_heads
 
+Records which people head each department.
+
 core.department_heads — designated HODs per department (migration 1752500000300).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1722,7 +2242,13 @@ Database rules (including conditions shared with other fields):
 
 ### department_id
 
-Reference linking this record’s department id to FOREIGN KEY (department_id) REFERENCES core.departments(id) ON DELETE CASCADE.
+**In everyday language:** Identifies department connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct department, so related details can be checked together.
+
+**Example:** This record points to an existing entry in departments instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s department id to FOREIGN KEY (department_id) REFERENCES core.departments(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -1742,7 +2268,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -1762,7 +2294,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -1782,7 +2320,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -1802,7 +2346,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1820,7 +2370,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -1846,13 +2402,21 @@ Table indexes and lifecycle triggers:
 
 ## core.departments
 
+Lists departments used to organize employees.
+
 Departments records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1872,7 +2436,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Department display label; current master is globally named
+**In everyday language:** Department display label; current master is globally named.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Department display label; current master is globally named
 
 | Property | Definition |
 |---|---|
@@ -1892,7 +2462,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1910,7 +2486,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -1928,7 +2510,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### mis_code_id
 
-Reference linking this record’s mis code id to FOREIGN KEY (mis_code_id) REFERENCES core.mis_codes(id).
+**In everyday language:** Identifies mis code connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct mis code, so related details can be checked together.
+
+**Example:** This record points to an existing entry in mis codes instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s mis code id to FOREIGN KEY (mis_code_id) REFERENCES core.mis_codes(id).
 
 | Property | Definition |
 |---|---|
@@ -1954,13 +2542,21 @@ Table indexes and lifecycle triggers:
 
 ## core.designations
 
+Lists employee job titles.
+
 Designations records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1980,7 +2576,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Validated designation label used by employee master
+**In everyday language:** Validated designation label used by main employee register.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Validated designation label used by employee master
 
 | Property | Definition |
 |---|---|
@@ -2000,7 +2602,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -2018,7 +2626,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -2042,13 +2656,21 @@ Table indexes and lifecycle triggers:
 
 ## core.documents
 
+Lists stored employee or candidate documents and their ownership and verification details.
+
 Documents records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Registry row identity used by download/audit references.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Registry row identity used by download/audit references.
 
 | Property | Definition |
 |---|---|
@@ -2068,7 +2690,13 @@ Database rules (including conditions shared with other fields):
 
 ### owner_employee_id
 
-Employee whose live HR scope controls employee-vault access; NULL while only candidate-owned.
+**In everyday language:** Employee whose live HR scope controls employee-vault access; not recorded while only candidate-owned.
+
+**Why it is kept:** Keeps this record connected to the correct owner employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee whose live HR scope controls employee-vault access; NULL while only candidate-owned.
 
 | Property | Definition |
 |---|---|
@@ -2088,7 +2716,13 @@ Database rules (including conditions shared with other fields):
 
 ### kind
 
-Generic file/storage category, such as letter, policy, joining or employee_document.
+**In everyday language:** Generic file/storage category, such as letter, policy, joining or employee_document.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the kind.
+
+Technical definition: Generic file/storage category, such as letter, policy, joining or employee_document.
 
 | Property | Definition |
 |---|---|
@@ -2106,7 +2740,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### path
 
-Private object-storage key, not a public download URL.
+**In everyday language:** Private object-storage key, not a public download URL.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A private storage reference lets an authorized process find a file; it should not be treated as an openly accessible web address.
+
+Technical definition: Private object-storage key, not a public download URL.
 
 | Property | Definition |
 |---|---|
@@ -2124,7 +2764,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### original_name
 
-Original client filename; potentially sensitive and redacted from non-owner catalog lists.
+**In everyday language:** Original client filename; potentially sensitive and redacted from non-owner list of available choices lists.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A document named joining-letter.pdf can keep that recognizable name even if stored under a private system key.
+
+Technical definition: Original client filename; potentially sensitive and redacted from non-owner catalog lists.
 
 | Property | Definition |
 |---|---|
@@ -2142,7 +2788,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### mime
 
-Stored content type, checked against accepted file signatures for vault uploads.
+**In everyday language:** Stored content type, checked against accepted file signatures for vault uploads.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A PDF file can have the file type application/pdf, which helps the system handle the file correctly.
+
+Technical definition: Stored content type, checked against accepted file signatures for vault uploads.
 
 | Property | Definition |
 |---|---|
@@ -2160,7 +2812,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### size_bytes
 
-Byte size of stored content, separate from business policy limits.
+**In everyday language:** Byte size of stored content, separate from business policy limits.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A file size of 1,024 bytes describes storage size; it is not the number of pages.
+
+Technical definition: Byte size of stored content, separate from business policy limits.
 
 | Property | Definition |
 |---|---|
@@ -2178,7 +2836,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### uploaded_by
 
-Account responsible for submitting the file.
+**In everyday language:** Account responsible for submitting the file.
+
+**Why it is kept:** Keeps this record connected to the correct uploaded by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Account responsible for submitting the file.
 
 | Property | Definition |
 |---|---|
@@ -2198,7 +2862,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Creation provenance timestamp.
+**In everyday language:** Creation where the information came from timestamp.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Creation provenance timestamp.
 
 | Property | Definition |
 |---|---|
@@ -2216,7 +2886,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Metadata modification provenance timestamp.
+**In everyday language:** descriptive information modification where the information came from timestamp.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Metadata modification provenance timestamp.
 
 | Property | Definition |
 |---|---|
@@ -2234,7 +2910,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### expires_on
 
-NULL = no expiry (PAN / appointment letter). DOC-03 colour language.
+**In everyday language:** not recorded = no expiry (PAN / appointment letter). DOC-03 colour language.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: NULL = no expiry (PAN / appointment letter). DOC-03 colour language.
 
 | Property | Definition |
 |---|---|
@@ -2252,7 +2934,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Registry lifecycle: active, superseded or withdrawn; downloads require active.
+**In everyday language:** register progress from creation to closure: active, superseded or withdrawn; downloads require active.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “active” means Record is active in this progress from creation to closure.
+
+Technical definition: Registry lifecycle: active, superseded or withdrawn; downloads require active.
 
 | Property | Definition |
 |---|---|
@@ -2278,7 +2966,13 @@ Database rules (including conditions shared with other fields):
 
 ### candidate_id
 
-Pre-joining candidate provenance; does not itself make a person an employee.
+**In everyday language:** Pre-joining candidate where the information came from; does not itself make a person an employee.
+
+**Why it is kept:** Keeps this record connected to the correct candidate, so related details can be checked together.
+
+**Example:** This record points to an existing entry in onboarding candidates instead of copying all of that entry’s details.
+
+Technical definition: Pre-joining candidate provenance; does not itself make a person an employee.
 
 | Property | Definition |
 |---|---|
@@ -2298,7 +2992,13 @@ Database rules (including conditions shared with other fields):
 
 ### doc_type
 
-Existing FK to doc.types.code; canonical catalog classification for joining and new employee-vault files.
+**In everyday language:** Existing link to another record to doc.types.code; main list of available choices classification for joining and new employee-vault files.
+
+**Why it is kept:** Keeps this record connected to the correct doc type, so related details can be checked together.
+
+**Example:** This record points to an existing entry in types instead of copying all of that entry’s details.
+
+Technical definition: Existing FK to doc.types.code; canonical catalog classification for joining and new employee-vault files.
 
 | Property | Definition |
 |---|---|
@@ -2318,7 +3018,13 @@ Database rules (including conditions shared with other fields):
 
 ### verification_status
 
-Joining-document HR verification state; not the same as registry active/withdrawn status. Verification workflow is not complete.
+**In everyday language:** Joining-document HR verification state; not the same as register active/withdrawn status. Verification workflow is not complete.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “pending” means Awaiting the required decision or next action.
+
+Technical definition: Joining-document HR verification state; not the same as registry active/withdrawn status. Verification workflow is not complete.
 
 | Property | Definition |
 |---|---|
@@ -2345,7 +3051,13 @@ Database rules (including conditions shared with other fields):
 
 ### verified_by
 
-Account recording the joining-document verification decision.
+**In everyday language:** Account recording the joining-document verification decision.
+
+**Why it is kept:** Keeps this record connected to the correct verified by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Account recording the joining-document verification decision.
 
 | Property | Definition |
 |---|---|
@@ -2365,7 +3077,13 @@ Database rules (including conditions shared with other fields):
 
 ### verified_at
 
-Time of verification decision.
+**In everyday language:** Time of verification decision.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Time of verification decision.
 
 | Property | Definition |
 |---|---|
@@ -2383,7 +3101,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### rejection_reason
 
-Reason an HR verifier rejected the evidence; not a file deletion flag.
+**In everyday language:** Reason an HR verifier rejected the evidence; not a file deletion flag.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Reason an HR verifier rejected the evidence; not a file deletion flag.
 
 | Property | Definition |
 |---|---|
@@ -2403,7 +3127,13 @@ Database rules (including conditions shared with other fields):
 
 ### sha256
 
-Digest of bytes; now stored on creation and used for identical-upload retry identity. Read-time integrity verification remains separate work.
+**In everyday language:** digital fingerprint of bytes; now stored on creation and used for identical-upload retry identity. Read-time integrity verification remains separate work.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The actual security value is omitted. The system compares it to check the correct credential or exact information.
+
+Technical definition: Digest of bytes; now stored on creation and used for identical-upload retry identity. Read-time integrity verification remains separate work.
 
 | Property | Definition |
 |---|---|
@@ -2421,7 +3151,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### document_number
 
-Permission-sensitive identifier printed on evidence; do not infer it from a filename or log it.
+**In everyday language:** Permission-sensitive identifier printed on evidence; do not infer it from a filename or log it.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This identifies the document itself, where applicable; it is different from the system’s document-record number.
+
+Technical definition: Permission-sensitive identifier printed on evidence; do not infer it from a filename or log it.
 
 | Property | Definition |
 |---|---|
@@ -2448,13 +3184,21 @@ Table indexes and lifecycle triggers:
 
 ## core.employee_addresses
 
+Keeps employees’ address details.
+
 Employee addresses records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -2474,7 +3218,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -2495,7 +3245,13 @@ Database rules (including conditions shared with other fields):
 
 ### kind
 
-Present/permanent address authority discriminator
+**In everyday language:** Present/permanent address authority choice that tells the system which kind this is.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “present” means Present classification for kind.
+
+Technical definition: Present/permanent address authority discriminator
 
 | Property | Definition |
 |---|---|
@@ -2521,7 +3277,13 @@ Database rules (including conditions shared with other fields):
 
 ### house
 
-House/flat/address line
+**In everyday language:** House/flat/address line.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A house or flat number helps distinguish the address within a street or building.
+
+Technical definition: House/flat/address line
 
 | Property | Definition |
 |---|---|
@@ -2539,7 +3301,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### locality
 
-Local area or village
+**In everyday language:** Local area or village.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A locality describes the neighborhood within the address.
+
+Technical definition: Local area or village
 
 | Property | Definition |
 |---|---|
@@ -2557,7 +3325,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### city
 
-City/village name
+**In everyday language:** City/village name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A city such as Kolkata identifies the city portion of the address or journey.
+
+Technical definition: City/village name
 
 | Property | Definition |
 |---|---|
@@ -2575,7 +3349,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### post_office
 
-Postal administrative office
+**In everyday language:** Postal administrative office.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This names the post office serving the address.
+
+Technical definition: Postal administrative office
 
 | Property | Definition |
 |---|---|
@@ -2593,7 +3373,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### police_station
 
-Thana/police administrative area
+**In everyday language:** Thana/police administrative area.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This names the police-station area associated with the address, where collected.
+
+Technical definition: Thana/police administrative area
 
 | Property | Definition |
 |---|---|
@@ -2611,7 +3397,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### sub_division
 
-Administrative sub-division
+**In everyday language:** Administrative sub-division.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the administrative subdivision within the address.
+
+Technical definition: Administrative sub-division
 
 | Property | Definition |
 |---|---|
@@ -2629,7 +3421,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### district
 
-Administrative district
+**In everyday language:** Administrative district.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The district is a separate administrative address detail from the city.
+
+Technical definition: Administrative district
 
 | Property | Definition |
 |---|---|
@@ -2647,7 +3445,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### state_code
 
-Structured state code; tax jurisdiction still needs approved work/residence precedence
+**In everyday language:** Structured state code; tax jurisdiction still needs approved work/residence precedence.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A stored state code selects the applicable state or address jurisdiction; it does not represent a company code.
+
+Technical definition: Structured state code; tax jurisdiction still needs approved work/residence precedence
 
 | Property | Definition |
 |---|---|
@@ -2665,7 +3469,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### country_code
 
-Address country jurisdiction
+**In everyday language:** Address country jurisdiction.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the country code shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Address country jurisdiction
 
 | Property | Definition |
 |---|---|
@@ -2686,7 +3496,13 @@ Database rules (including conditions shared with other fields):
 
 ### pin
 
-Postal code validated for declared country/policy
+**In everyday language:** Postal code validated for declared country/policy.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The postal PIN identifies the delivery area; no employee’s actual address is used here.
+
+Technical definition: Postal code validated for declared country/policy
 
 | Property | Definition |
 |---|---|
@@ -2706,7 +3522,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -2724,7 +3546,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -2748,13 +3576,21 @@ Table indexes and lifecycle triggers:
 
 ## core.employee_certifications
 
+Keeps employees’ professional qualifications and certificates.
+
 Employee certifications records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -2774,7 +3610,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -2794,7 +3636,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Certificate/qualification title
+**In everyday language:** Certificate/qualification title.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Certificate/qualification title
 
 | Property | Definition |
 |---|---|
@@ -2812,7 +3660,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### issuer
 
-Issuing organization
+**In everyday language:** Issuing organization.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This identifies the organization that issued the certificate.
+
+Technical definition: Issuing organization
 
 | Property | Definition |
 |---|---|
@@ -2830,7 +3684,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### issued_on
 
-Certificate issue date
+**In everyday language:** Certificate issue date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Certificate issue date
 
 | Property | Definition |
 |---|---|
@@ -2850,7 +3710,13 @@ Database rules (including conditions shared with other fields):
 
 ### expires_on
 
-Certificate expiry for validity/reminder work
+**In everyday language:** Certificate expiry for validity/reminder work.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Certificate expiry for validity/reminder work
 
 | Property | Definition |
 |---|---|
@@ -2870,7 +3736,13 @@ Database rules (including conditions shared with other fields):
 
 ### specialization
 
-Certificate specialization
+**In everyday language:** Certificate specialization.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This records the subject area, such as mechanical engineering, within a qualification.
+
+Technical definition: Certificate specialization
 
 | Property | Definition |
 |---|---|
@@ -2888,7 +3760,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### grade
 
-Reported certificate grade
+**In everyday language:** Reported certificate grade.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the grade shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Reported certificate grade
 
 | Property | Definition |
 |---|---|
@@ -2906,7 +3784,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### sort_order
 
-Presentation order within employee qualifications
+**In everyday language:** Presentation order within employee qualifications.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An entry with order 1 can be shown before an entry with order 2.
+
+Technical definition: Presentation order within employee qualifications
 
 | Property | Definition |
 |---|---|
@@ -2924,7 +3808,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -2942,7 +3832,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -2966,13 +3862,21 @@ Table indexes and lifecycle triggers:
 
 ## core.employee_education
 
+Keeps employees’ education history.
+
 Employee education records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -2992,7 +3896,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -3012,7 +3922,13 @@ Database rules (including conditions shared with other fields):
 
 ### qualification
 
-Degree/qualification label
+**In everyday language:** Degree/qualification label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A qualification such as a bachelor’s degree describes the course completed.
+
+Technical definition: Degree/qualification label
 
 | Property | Definition |
 |---|---|
@@ -3030,7 +3946,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### institute
 
-Educational institution name
+**In everyday language:** Educational institution name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This identifies the school, college or institute awarding the qualification.
+
+Technical definition: Educational institution name
 
 | Property | Definition |
 |---|---|
@@ -3048,7 +3970,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### year_of_passing
 
-Completion year
+**In everyday language:** Completion year.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** 2020 would identify the year a qualification was completed, not the year the employee joined.
+
+Technical definition: Completion year
 
 | Property | Definition |
 |---|---|
@@ -3068,7 +3996,13 @@ Database rules (including conditions shared with other fields):
 
 ### specialization
 
-Subject/specialization
+**In everyday language:** Subject/specialization.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This records the subject area, such as mechanical engineering, within a qualification.
+
+Technical definition: Subject/specialization
 
 | Property | Definition |
 |---|---|
@@ -3086,7 +4020,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### score
 
-Reported percentage or CGPA numeric value
+**In everyday language:** Reported percentage or CGPA numeric value.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This keeps the qualification result using its recorded scoring basis; a percentage and a grade-point score are different measures.
+
+Technical definition: Reported percentage or CGPA numeric value
 
 | Property | Definition |
 |---|---|
@@ -3107,7 +4047,13 @@ Database rules (including conditions shared with other fields):
 
 ### score_type
 
-Units/interpretation of score
+**In everyday language:** Units/interpretation of score.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “percent” means Percent.
+
+Technical definition: Units/interpretation of score
 
 | Property | Definition |
 |---|---|
@@ -3133,7 +4079,13 @@ Database rules (including conditions shared with other fields):
 
 ### sort_order
 
-Stable education-grid order
+**In everyday language:** Stable education-grid order.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An entry with order 1 can be shown before an entry with order 2.
+
+Technical definition: Stable education-grid order
 
 | Property | Definition |
 |---|---|
@@ -3151,7 +4103,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -3169,7 +4127,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -3192,13 +4156,21 @@ Table indexes and lifecycle triggers:
 
 ## core.employee_experience
 
+Keeps employees’ previous employment experience.
+
 Employee experience records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -3218,7 +4190,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -3238,7 +4216,13 @@ Database rules (including conditions shared with other fields):
 
 ### employer
 
-Former employing organization
+**In everyday language:** Former employing organization.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the employer shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Former employing organization
 
 | Property | Definition |
 |---|---|
@@ -3256,7 +4240,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### designation
 
-Prior job designation
+**In everyday language:** Prior job designation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the designation shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Prior job designation
 
 | Property | Definition |
 |---|---|
@@ -3274,7 +4264,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### from_date
 
-Prior employment beginning
+**In everyday language:** Prior employment beginning.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Prior employment beginning
 
 | Property | Definition |
 |---|---|
@@ -3294,7 +4290,13 @@ Database rules (including conditions shared with other fields):
 
 ### to_date
 
-Prior employment ending; NULL while unspecified/current per validated form
+**In everyday language:** Prior employment ending; not recorded while unspecified/current per validated form.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Prior employment ending; NULL while unspecified/current per validated form
 
 | Property | Definition |
 |---|---|
@@ -3314,7 +4316,13 @@ Database rules (including conditions shared with other fields):
 
 ### reason_for_leaving
 
-Candidate-supplied prior separation reason
+**In everyday language:** Candidate-supplied prior separation reason.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Candidate-supplied prior separation reason
 
 | Property | Definition |
 |---|---|
@@ -3332,7 +4340,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### last_ctc
 
-Prior-employer CTC, not current payroll entitlement
+**In everyday language:** Prior-employer cost to company (the total employment cost), not current payroll entitlement.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Prior-employer CTC, not current payroll entitlement
 
 | Property | Definition |
 |---|---|
@@ -3354,7 +4368,13 @@ Database rules (including conditions shared with other fields):
 
 ### sort_order
 
-Stable employment-history presentation order
+**In everyday language:** Stable employment-history presentation order.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An entry with order 1 can be shown before an entry with order 2.
+
+Technical definition: Stable employment-history presentation order
 
 | Property | Definition |
 |---|---|
@@ -3372,7 +4392,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -3390,7 +4416,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -3413,13 +4445,21 @@ Table indexes and lifecycle triggers:
 
 ## core.employee_family
 
+Keeps employees’ family and dependant details.
+
 Employee family records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -3439,7 +4479,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -3459,7 +4505,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Family member name
+**In everyday language:** Family member name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Family member name
 
 | Property | Definition |
 |---|---|
@@ -3477,7 +4529,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### relation
 
-Relationship to employee
+**In everyday language:** Relationship to employee.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This distinguishes how the listed person is related to the employee, such as parent or spouse.
+
+Technical definition: Relationship to employee
 
 | Property | Definition |
 |---|---|
@@ -3495,7 +4553,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### dob
 
-Family member birth date
+**In everyday language:** Family member birth date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Family member birth date
 
 | Property | Definition |
 |---|---|
@@ -3513,7 +4577,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### aadhaar
 
-Restricted family member statutory identifier
+**In everyday language:** Restricted family member statutory identifier.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a sensitive personal identity number. An actual number is omitted from this guide.
+
+Technical definition: Restricted family member statutory identifier
 
 | Property | Definition |
 |---|---|
@@ -3531,7 +4601,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_esic_dependent
 
-ESIC declaration eligibility flag
+**In everyday language:** Employees’ State Insurance declaration eligibility flag.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: ESIC declaration eligibility flag
 
 | Property | Definition |
 |---|---|
@@ -3554,7 +4630,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_nominee
 
-Legacy generic nomination flag; cannot replace scheme/version-specific nomination
+**In everyday language:** Legacy generic nomination flag; cannot replace scheme/version-specific nomination.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Legacy generic nomination flag; cannot replace scheme/version-specific nomination
 
 | Property | Definition |
 |---|---|
@@ -3577,7 +4659,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### nominee_share_pct
 
-Legacy generic nomination share; reconcile with scheme-specific share authority
+**In everyday language:** Legacy generic nomination share; reconcile with scheme-specific share authority.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A 50% share describes the person’s nominated share of that benefit; it is not a salary deduction.
+
+Technical definition: Legacy generic nomination share; reconcile with scheme-specific share authority
 
 | Property | Definition |
 |---|---|
@@ -3595,7 +4683,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -3613,7 +4707,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -3631,7 +4731,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### gender
 
-Family member gender for statutory declaration
+**In everyday language:** Family member gender for statutory declaration.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “Male” means Male.
+
+Technical definition: Family member gender for statutory declaration
 
 | Property | Definition |
 |---|---|
@@ -3657,7 +4763,13 @@ Database rules (including conditions shared with other fields):
 
 ### address
 
-Family member residential address
+**In everyday language:** Family member residential address.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An address tells staff the place associated with this particular person or organization; it is not automatically a work location.
+
+Technical definition: Family member residential address
 
 | Property | Definition |
 |---|---|
@@ -3675,7 +4787,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### residing_with_employee
 
-Whether member shares employee residence
+**In everyday language:** Whether member shares employee residence.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether member shares employee residence
 
 | Property | Definition |
 |---|---|
@@ -3698,7 +4816,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### residing_town
 
-Separate residing town when applicable
+**In everyday language:** Separate residing town when applicable.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Separate residing town when applicable
 
 | Property | Definition |
 |---|---|
@@ -3716,7 +4840,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### residing_state_code
 
-Separate residence state
+**In everyday language:** Separate residence state.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Separate residence state
 
 | Property | Definition |
 |---|---|
@@ -3734,7 +4864,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### occupation
 
-Family member occupation
+**In everyday language:** Family member occupation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This records the family member’s occupation where the form asks for it.
+
+Technical definition: Family member occupation
 
 | Property | Definition |
 |---|---|
@@ -3752,7 +4888,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_dependent
 
-General dependency flag, distinct from ESIC scheme eligibility
+**In everyday language:** General dependency flag, distinct from Employees’ State Insurance scheme eligibility.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: General dependency flag, distinct from ESIC scheme eligibility
 
 | Property | Definition |
 |---|---|
@@ -3780,13 +4922,21 @@ Table indexes and lifecycle triggers:
 
 ## core.employee_history
 
+Keeps a history of changes to employee information.
+
 Employee history records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -3806,7 +4956,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -3826,7 +4982,13 @@ Database rules (including conditions shared with other fields):
 
 ### effective_date
 
-Business effective date of recorded master movement
+**In everyday language:** Business effective date of recorded master movement.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Business effective date of recorded master movement
 
 | Property | Definition |
 |---|---|
@@ -3844,7 +5006,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### change_type
 
-Transfer/promotion/confirmation/change category
+**In everyday language:** Transfer/promotion/confirmation/change category.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the change type.
+
+Technical definition: Transfer/promotion/confirmation/change category
 
 | Property | Definition |
 |---|---|
@@ -3862,7 +5030,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### field
 
-Historical master field name
+**In everyday language:** Historical master field name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A change-history entry can identify “work email” as the detail that changed.
+
+Technical definition: Historical master field name
 
 | Property | Definition |
 |---|---|
@@ -3880,7 +5054,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### old_value
 
-Historical before-image; restricted fields must be masked appropriately
+**In everyday language:** Historical before-image; restricted fields must be masked appropriately.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** If a permitted detail changes, this preserves what it was before the change.
+
+Technical definition: Historical before-image; restricted fields must be masked appropriately
 
 | Property | Definition |
 |---|---|
@@ -3898,7 +5078,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### new_value
 
-Historical after-image; not a second editable master
+**In everyday language:** Historical after-image; not a second editable master.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** If a permitted detail changes, this preserves what was saved after the change.
+
+Technical definition: Historical after-image; not a second editable master
 
 | Property | Definition |
 |---|---|
@@ -3916,7 +5102,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### reference_id
 
-Polymorphic originating workflow/reference
+**In everyday language:** Polymorphic originating workflow/reference.
+
+**Why it is kept:** Keeps this record connected to the correct reference, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Polymorphic originating workflow/reference
 
 | Property | Definition |
 |---|---|
@@ -3934,7 +5126,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -3952,7 +5150,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -3976,13 +5180,21 @@ Table indexes and lifecycle triggers:
 
 ## core.employee_nominations
 
+Records people nominated to receive specified employee benefits.
+
 Employee nominations records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -4002,7 +5214,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -4022,7 +5240,13 @@ Database rules (including conditions shared with other fields):
 
 ### scheme
 
-PF/EPS/gratuity/ESIC/insurance nomination context
+**In everyday language:** provident fund/Employees’ Pension Scheme/gratuity/Employees’ State Insurance/insurance nomination context.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “pf” means Provident fund.
+
+Technical definition: PF/EPS/gratuity/ESIC/insurance nomination context
 
 | Property | Definition |
 |---|---|
@@ -4052,7 +5276,13 @@ Database rules (including conditions shared with other fields):
 
 ### version
 
-Whole nomination-set version, not individual edit counter
+**In everyday language:** Whole nomination-set version, not individual edit counter.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Read this number using the specific measure described above. A percentage, version number and priority order have different meanings.
+
+Technical definition: Whole nomination-set version, not individual edit counter
 
 | Property | Definition |
 |---|---|
@@ -4072,7 +5302,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Active versus superseded nomination set member
+**In everyday language:** Active versus superseded nomination set member.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “active” means Record is active in this progress from creation to closure.
+
+Technical definition: Active versus superseded nomination set member
 
 | Property | Definition |
 |---|---|
@@ -4097,7 +5333,13 @@ Database rules (including conditions shared with other fields):
 
 ### family_member_id
 
-Reference linking this record’s family member id to FOREIGN KEY (family_member_id) REFERENCES core.employee_family(id) ON DELETE SET NULL.
+**In everyday language:** Identifies family member connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct family member, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employee family instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s family member id to FOREIGN KEY (family_member_id) REFERENCES core.employee_family(id) ON DELETE SET NULL.
 
 | Property | Definition |
 |---|---|
@@ -4117,7 +5359,13 @@ Database rules (including conditions shared with other fields):
 
 ### nominee_name
 
-Nominee name snapshot supporting signed form history
+**In everyday language:** Nominee name copy saved at that point in time supporting signed form history.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the nominee name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Nominee name snapshot supporting signed form history
 
 | Property | Definition |
 |---|---|
@@ -4135,7 +5383,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### relation
 
-Nominee relationship snapshot
+**In everyday language:** Nominee relationship copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This distinguishes how the listed person is related to the employee, such as parent or spouse.
+
+Technical definition: Nominee relationship snapshot
 
 | Property | Definition |
 |---|---|
@@ -4153,7 +5407,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### dob
 
-Nominee birth date snapshot
+**In everyday language:** Nominee birth date copy saved at that point in time.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Nominee birth date snapshot
 
 | Property | Definition |
 |---|---|
@@ -4171,7 +5431,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### gender
 
-Nominee gender snapshot
+**In everyday language:** Nominee gender copy saved at that point in time.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “Male” means Male.
+
+Technical definition: Nominee gender snapshot
 
 | Property | Definition |
 |---|---|
@@ -4197,7 +5463,13 @@ Database rules (including conditions shared with other fields):
 
 ### address
 
-Nominee address snapshot
+**In everyday language:** Nominee address copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An address tells staff the place associated with this particular person or organization; it is not automatically a work location.
+
+Technical definition: Nominee address snapshot
 
 | Property | Definition |
 |---|---|
@@ -4215,7 +5487,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### share_pct
 
-Scheme/version-specific allocation percentage
+**In everyday language:** Scheme/version-specific allocation percentage.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A 50% nomination share means half of the relevant nominated benefit, subject to the benefit’s nomination rules.
+
+Technical definition: Scheme/version-specific allocation percentage
 
 | Property | Definition |
 |---|---|
@@ -4235,7 +5513,13 @@ Database rules (including conditions shared with other fields):
 
 ### guardian_name
 
-Minor nominee's guardian name
+**In everyday language:** Minor nominee's guardian name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** If a nominee needs a guardian, this names the recorded guardian rather than the nominee.
+
+Technical definition: Minor nominee's guardian name
 
 | Property | Definition |
 |---|---|
@@ -4253,7 +5537,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### guardian_relation
 
-Guardian relationship
+**In everyday language:** Guardian relationship.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This explains how the guardian is related to the nominee.
+
+Technical definition: Guardian relationship
 
 | Property | Definition |
 |---|---|
@@ -4271,7 +5561,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### guardian_address
 
-Guardian address snapshot
+**In everyday language:** Guardian address copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the guardian address.
+
+Technical definition: Guardian address snapshot
 
 | Property | Definition |
 |---|---|
@@ -4289,7 +5585,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -4309,7 +5611,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -4327,7 +5635,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -4350,13 +5664,21 @@ Table indexes and lifecycle triggers:
 
 ## core.employee_statutory_profile
 
+Keeps employee information needed for statutory declarations and benefits.
+
 Employee statutory profile records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -4377,7 +5699,13 @@ Database rules (including conditions shared with other fields):
 
 ### epf_prev_member
 
-Joining declaration of prior EPF membership
+**In everyday language:** Joining declaration of prior Employees’ Provident Fund membership.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Joining declaration of prior EPF membership
 
 | Property | Definition |
 |---|---|
@@ -4400,7 +5728,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### eps_prev_member
 
-Joining declaration of prior EPS membership
+**In everyday language:** Joining declaration of prior Employees’ Pension Scheme membership.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Joining declaration of prior EPS membership
 
 | Property | Definition |
 |---|---|
@@ -4423,7 +5757,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### prev_pf_number
 
-Previous employer PF member identifier
+**In everyday language:** Previous employer provident fund member identifier.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Previous employer PF member identifier
 
 | Property | Definition |
 |---|---|
@@ -4441,7 +5781,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### prev_exit_date
 
-Previous employment exit date for transfer declaration
+**In everyday language:** Previous employment exit date for transfer declaration.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Previous employment exit date for transfer declaration
 
 | Property | Definition |
 |---|---|
@@ -4459,7 +5805,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### scheme_certificate_no
 
-Existing EPS scheme certificate reference
+**In everyday language:** Existing Employees’ Pension Scheme scheme certificate reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Existing EPS scheme certificate reference
 
 | Property | Definition |
 |---|---|
@@ -4477,7 +5829,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### ppo_no
 
-Pension payment-order reference
+**In everyday language:** Pension payment-order reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Pension payment-order reference
 
 | Property | Definition |
 |---|---|
@@ -4495,7 +5853,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### epf_withdrawn
 
-Prior EPF withdrawal declaration
+**In everyday language:** Prior Employees’ Provident Fund withdrawal declaration.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Prior EPF withdrawal declaration
 
 | Property | Definition |
 |---|---|
@@ -4518,7 +5882,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### eps_withdrawn
 
-Prior EPS withdrawal declaration
+**In everyday language:** Prior Employees’ Pension Scheme withdrawal declaration.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Prior EPS withdrawal declaration
 
 | Property | Definition |
 |---|---|
@@ -4541,7 +5911,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### eps_withdrawn_after_sep2014
 
-Timing-sensitive EPS withdrawal fact for eligibility review
+**In everyday language:** Timing-sensitive Employees’ Pension Scheme withdrawal fact for eligibility review.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Timing-sensitive EPS withdrawal fact for eligibility review
 
 | Property | Definition |
 |---|---|
@@ -4564,7 +5940,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### kyc_status
 
-Statutory-profile verification workflow status
+**In everyday language:** Statutory-profile verification workflow status.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “not_uploaded” means Not uploaded.
+
+Technical definition: Statutory-profile verification workflow status
 
 | Property | Definition |
 |---|---|
@@ -4591,7 +5973,13 @@ Database rules (including conditions shared with other fields):
 
 ### transfer_request_status
 
-Prior PF transfer application progress
+**In everyday language:** Prior provident fund transfer application progress.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “not_needed” means Not needed.
+
+Technical definition: Prior PF transfer application progress
 
 | Property | Definition |
 |---|---|
@@ -4618,7 +6006,13 @@ Database rules (including conditions shared with other fields):
 
 ### esic_prev_ip_number
 
-Prior ESIC insured-person identifier; reconcile with current retained IP
+**In everyday language:** Prior Employees’ State Insurance insured-person identifier; reconcile with current retained IP.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Prior ESIC insured-person identifier; reconcile with current retained IP
 
 | Property | Definition |
 |---|---|
@@ -4638,7 +6032,13 @@ Database rules (including conditions shared with other fields):
 
 ### esic_prev_employer_code
 
-Previous ESIC employer registration code
+**In everyday language:** Previous Employees’ State Insurance employer registration code.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the esic prev employer code shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Previous ESIC employer registration code
 
 | Property | Definition |
 |---|---|
@@ -4656,7 +6056,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### esic_prev_employer_name
 
-Previous employer declaration name
+**In everyday language:** Previous employer declaration name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the esic prev employer name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Previous employer declaration name
 
 | Property | Definition |
 |---|---|
@@ -4674,7 +6080,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### esic_prev_employer_address
 
-Previous employer declaration address
+**In everyday language:** Previous employer declaration address.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the esic prev employer address shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Previous employer declaration address
 
 | Property | Definition |
 |---|---|
@@ -4692,7 +6104,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### esic_branch_office
 
-Designated ESIC office
+**In everyday language:** Designated Employees’ State Insurance office.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the esic branch office.
+
+Technical definition: Designated ESIC office
 
 | Property | Definition |
 |---|---|
@@ -4710,7 +6128,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### esic_dispensary
 
-Designated ESIC medical dispensary
+**In everyday language:** Designated Employees’ State Insurance medical dispensary.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the esic dispensary.
+
+Technical definition: Designated ESIC medical dispensary
 
 | Property | Definition |
 |---|---|
@@ -4728,7 +6152,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -4746,7 +6176,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -4769,13 +6205,21 @@ Table indexes and lifecycle triggers:
 
 ## core.employees
 
+Keeps the main employment record for each person who has actually joined.
+
 core.employees — THE master record (docs/03 §3).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** A number the system uses to recognize this employee internally. It is separate from the employee code HR normally quotes.
+
+**Why it is kept:** Keeps this person’s attendance, leave and salary connected to the same employee.
+
+**Example:** An attendance entry linked to employee 123 belongs to that employee, even if the display name changes.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -4796,7 +6240,13 @@ Database rules (including conditions shared with other fields):
 
 ### ecode
 
-Permanent entity-series employee code allocated only on actual-joining confirmation
+**In everyday language:** The employee code used by HR and employees to identify a person.
+
+**Why it is kept:** Helps staff find the right employee and match records across approved systems.
+
+**Example:** HR searches using the employee’s assigned company code rather than relying on the name alone.
+
+Technical definition: Permanent entity-series employee code allocated only on actual-joining confirmation
 
 | Property | Definition |
 |---|---|
@@ -4816,7 +6266,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -4840,7 +6296,13 @@ Database rules (including conditions shared with other fields):
 
 ### first_name
 
-Employee given/display first name
+**In everyday language:** Employee given/display first name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** In the invented name “Sample Employee”, “Sample” is the first name.
+
+Technical definition: Employee given/display first name
 
 | Property | Definition |
 |---|---|
@@ -4858,7 +6320,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### last_name
 
-Employee family/remaining name; may be absent for single-token names
+**In everyday language:** Employee family/remaining name; may be absent for single-token names.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** In the invented name “Sample Employee”, “Employee” is the last name.
+
+Technical definition: Employee family/remaining name; may be absent for single-token names
 
 | Property | Definition |
 |---|---|
@@ -4876,7 +6344,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### photo_path
 
-Employee portrait object reference
+**In everyday language:** Employee portrait object reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An authorized process follows this reference to find the associated file or destination. The reference alone does not grant access.
+
+Technical definition: Employee portrait object reference
 
 | Property | Definition |
 |---|---|
@@ -4894,7 +6368,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### gender
 
-Recorded gender for HR/statutory/demographic outputs
+**In everyday language:** Recorded gender for HR/statutory/demographic outputs.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “Male” means Male.
+
+Technical definition: Recorded gender for HR/statutory/demographic outputs
 
 | Property | Definition |
 |---|---|
@@ -4920,7 +6400,13 @@ Database rules (including conditions shared with other fields):
 
 ### dob
 
-Birth date for age/eligibility checks and reporting
+**In everyday language:** Birth date for age/eligibility checks and reporting.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Birth date for age/eligibility checks and reporting
 
 | Property | Definition |
 |---|---|
@@ -4938,7 +6424,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### marital_status
 
-Declared marital classification for forms
+**In everyday language:** Declared marital classification for forms.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “single” means Single.
+
+Technical definition: Declared marital classification for forms
 
 | Property | Definition |
 |---|---|
@@ -4966,7 +6458,13 @@ Database rules (including conditions shared with other fields):
 
 ### blood_group
 
-Safety/identity-card blood-group data
+**In everyday language:** Safety/identity-card blood-group data.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the blood group.
+
+Technical definition: Safety/identity-card blood-group data
 
 | Property | Definition |
 |---|---|
@@ -4984,7 +6482,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### personal_email
 
-Personal/prejoin/alumni communication address
+**In everyday language:** Personal/prejoin/alumni communication address.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A personal address such as sample@example.com is separate from the person’s company email.
+
+Technical definition: Personal/prejoin/alumni communication address
 
 | Property | Definition |
 |---|---|
@@ -5002,7 +6506,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### work_email
 
-Work communication/login identity reference
+**In everyday language:** Work communication/login identity reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A company-issued email is used for work correspondence; it should not be confused with the personal email used before joining.
+
+Technical definition: Work communication/login identity reference
 
 | Property | Definition |
 |---|---|
@@ -5022,7 +6532,13 @@ Database rules (including conditions shared with other fields):
 
 ### mobile
 
-Employee contact telephone
+**In everyday language:** Employee contact telephone.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A phone contact allows an authorized HR process to reach the person; no actual phone number is shown.
+
+Technical definition: Employee contact telephone
 
 | Property | Definition |
 |---|---|
@@ -5040,7 +6556,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### emergency_contact_name
 
-Emergency contact person
+**In everyday language:** Emergency contact person.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** HR can identify whom to contact in an emergency, such as the employee’s nominated family contact.
+
+Technical definition: Emergency contact person
 
 | Property | Definition |
 |---|---|
@@ -5058,7 +6580,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### emergency_contact_phone
 
-Primary emergency telephone
+**In everyday language:** Primary emergency telephone.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The nominated emergency contact’s phone number can differ from the employee’s own phone number.
+
+Technical definition: Primary emergency telephone
 
 | Property | Definition |
 |---|---|
@@ -5076,7 +6604,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### present_address
 
-Legacy formatted present address; specified derived copy once structured address authority is implemented
+**In everyday language:** Legacy formatted present address; specified worked out from other saved information copy once structured address authority is implemented.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An employee may currently live in one town while their permanent home is elsewhere.
+
+Technical definition: Legacy formatted present address; specified derived copy once structured address authority is implemented
 
 | Property | Definition |
 |---|---|
@@ -5094,7 +6628,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### permanent_address
 
-Legacy formatted permanent address; not a second editable structured authority
+**In everyday language:** Legacy formatted permanent address; not a second editable structured authority.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An employee’s permanent home can differ from their current place of residence.
+
+Technical definition: Legacy formatted permanent address; not a second editable structured authority
 
 | Property | Definition |
 |---|---|
@@ -5112,7 +6652,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### category
 
-Employment category controlling population and permitted payroll rules
+**In everyday language:** Employment category controlling population and permitted payroll rules.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The saved category helps a reviewer group similar records; its meaning depends on the register being viewed.
+
+Technical definition: Employment category controlling population and permitted payroll rules
 
 | Property | Definition |
 |---|---|
@@ -5130,7 +6676,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### contract_type
 
-Employment terms classification; distinct from employee category
+**In everyday language:** Employment terms classification; distinct from employee category.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the contract type.
+
+Technical definition: Employment terms classification; distinct from employee category
 
 | Property | Definition |
 |---|---|
@@ -5148,7 +6700,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### contract_end_date
 
-Fixed-term/consultant contract end date
+**In everyday language:** Fixed-term/consultant contract end date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Fixed-term/consultant contract end date
 
 | Property | Definition |
 |---|---|
@@ -5166,7 +6724,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### doj
 
-Confirmed actual joining date for service/attendance/pay
+**In everyday language:** The date the employee actually joined.
+
+**Why it is kept:** Establishes when employment starts for the processes that use joining date.
+
+**Example:** A joining date of 11 Nov 2026 means employment starts on that date.
+
+Technical definition: Confirmed actual joining date for service/attendance/pay
 
 | Property | Definition |
 |---|---|
@@ -5184,7 +6748,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### dol
 
-Employment exit date; required when exited
+**In everyday language:** The recorded date the employee left employment.
+
+**Why it is kept:** Keeps exit-related records and employment dates consistent.
+
+**Example:** Once an exit is completed, the leaving date tells HR when employment ended.
+
+Technical definition: Employment exit date; required when exited
 
 | Property | Definition |
 |---|---|
@@ -5204,7 +6774,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Employment lifecycle, distinct from login/session activity
+**In everyday language:** Employment progress from creation to closure, distinct from login/session activity.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** Staff read the saved stage to see where this particular record has reached.
+
+Technical definition: Employment lifecycle, distinct from login/session activity
 
 | Property | Definition |
 |---|---|
@@ -5224,7 +6800,13 @@ Database rules (including conditions shared with other fields):
 
 ### exit_reason
 
-Recorded separation cause; restricted HR information
+**In everyday language:** Recorded separation cause; restricted HR information.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Recorded separation cause; restricted HR information
 
 | Property | Definition |
 |---|---|
@@ -5242,7 +6824,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### designation_id
 
-Reference linking this record’s designation id to FOREIGN KEY (designation_id) REFERENCES core.designations(id).
+**In everyday language:** Identifies designation connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct designation, so related details can be checked together.
+
+**Example:** This record points to an existing entry in designations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s designation id to FOREIGN KEY (designation_id) REFERENCES core.designations(id).
 
 | Property | Definition |
 |---|---|
@@ -5262,7 +6850,13 @@ Database rules (including conditions shared with other fields):
 
 ### department_id
 
-Reference linking this record’s department id to FOREIGN KEY (department_id) REFERENCES core.departments(id).
+**In everyday language:** Identifies department connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct department, so related details can be checked together.
+
+**Example:** This record points to an existing entry in departments instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s department id to FOREIGN KEY (department_id) REFERENCES core.departments(id).
 
 | Property | Definition |
 |---|---|
@@ -5282,7 +6876,13 @@ Database rules (including conditions shared with other fields):
 
 ### org_unit_id
 
-Reference linking this record’s org unit id to FOREIGN KEY (org_unit_id, company_id) REFERENCES core.org_units(id, company_id); FOREIGN KEY (org_unit_id) REFERENCES core.org_units(id).
+**In everyday language:** Identifies org unit connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct org unit, so related details can be checked together.
+
+**Example:** This record points to an existing entry in org units instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s org unit id to FOREIGN KEY (org_unit_id, company_id) REFERENCES core.org_units(id, company_id); FOREIGN KEY (org_unit_id) REFERENCES core.org_units(id).
 
 | Property | Definition |
 |---|---|
@@ -5303,7 +6903,13 @@ Database rules (including conditions shared with other fields):
 
 ### location_id
 
-Reference linking this record’s location id to FOREIGN KEY (location_id, company_id) REFERENCES core.locations(id, company_id); FOREIGN KEY (location_id) REFERENCES core.locations(id).
+**In everyday language:** Identifies location connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct location, so related details can be checked together.
+
+**Example:** This record points to an existing entry in locations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s location id to FOREIGN KEY (location_id, company_id) REFERENCES core.locations(id, company_id); FOREIGN KEY (location_id) REFERENCES core.locations(id).
 
 | Property | Definition |
 |---|---|
@@ -5324,7 +6930,13 @@ Database rules (including conditions shared with other fields):
 
 ### cost_center_id
 
-Reference linking this record’s cost center id to FOREIGN KEY (cost_center_id, company_id) REFERENCES core.cost_centers(id, company_id); FOREIGN KEY (cost_center_id) REFERENCES core.cost_centers(id).
+**In everyday language:** Identifies cost center connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct cost center, so related details can be checked together.
+
+**Example:** This record points to an existing entry in cost centers instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s cost center id to FOREIGN KEY (cost_center_id, company_id) REFERENCES core.cost_centers(id, company_id); FOREIGN KEY (cost_center_id) REFERENCES core.cost_centers(id).
 
 | Property | Definition |
 |---|---|
@@ -5345,7 +6957,13 @@ Database rules (including conditions shared with other fields):
 
 ### grade_id
 
-Reference linking this record’s grade id to FOREIGN KEY (grade_id) REFERENCES core.grades(id).
+**In everyday language:** Identifies grade connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct grade, so related details can be checked together.
+
+**Example:** This record points to an existing entry in grades instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s grade id to FOREIGN KEY (grade_id) REFERENCES core.grades(id).
 
 | Property | Definition |
 |---|---|
@@ -5365,7 +6983,13 @@ Database rules (including conditions shared with other fields):
 
 ### reporting_manager_id
 
-Reference linking this record’s reporting manager id to FOREIGN KEY (reporting_manager_id) REFERENCES core.employees(id).
+**In everyday language:** Identifies reporting manager connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct reporting manager, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s reporting manager id to FOREIGN KEY (reporting_manager_id) REFERENCES core.employees(id).
 
 | Property | Definition |
 |---|---|
@@ -5385,7 +7009,13 @@ Database rules (including conditions shared with other fields):
 
 ### functional_manager_id
 
-Reference linking this record’s functional manager id to FOREIGN KEY (functional_manager_id) REFERENCES core.employees(id).
+**In everyday language:** Identifies functional manager connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct functional manager, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s functional manager id to FOREIGN KEY (functional_manager_id) REFERENCES core.employees(id).
 
 | Property | Definition |
 |---|---|
@@ -5405,7 +7035,13 @@ Database rules (including conditions shared with other fields):
 
 ### probation_months
 
-Agreed probation duration
+**In everyday language:** Agreed probation duration.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Agreed probation duration
 
 | Property | Definition |
 |---|---|
@@ -5423,7 +7059,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### probation_salary_pct
 
-Agreed probation pay percentage; source must match effective salary assignment
+**In everyday language:** Agreed probation pay percentage; source must match effective salary assignment.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An illustrative 80% means the configured proportion of confirmed salary during probation; it is not a policy recommendation.
+
+Technical definition: Agreed probation pay percentage; source must match effective salary assignment
 
 | Property | Definition |
 |---|---|
@@ -5441,7 +7083,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### probation_due_date
 
-Derived/current probation review deadline
+**In everyday language:** worked out from other saved information/current probation review deadline.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Derived/current probation review deadline
 
 | Property | Definition |
 |---|---|
@@ -5459,7 +7107,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### confirmation_date
 
-Effective confirmation date used by salary/probation lifecycle
+**In everyday language:** Effective confirmation date used by salary/probation progress from creation to closure.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Effective confirmation date used by salary/probation lifecycle
 
 | Property | Definition |
 |---|---|
@@ -5477,7 +7131,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### pan
 
-Restricted employee income-tax identifier
+**In everyday language:** Restricted employee income-tax identifier.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a tax identifier, not an employee number. An actual identifier is omitted from this guide.
+
+Technical definition: Restricted employee income-tax identifier
 
 | Property | Definition |
 |---|---|
@@ -5495,7 +7155,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### aadhaar
 
-Restricted employee identity number
+**In everyday language:** Restricted employee identity number.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a sensitive personal identity number. An actual number is omitted from this guide.
+
+Technical definition: Restricted employee identity number
 
 | Property | Definition |
 |---|---|
@@ -5513,7 +7179,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### uan
 
-Restricted EPF universal account number
+**In everyday language:** Restricted Employees’ Provident Fund universal account number.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This identifies the person’s provident-fund account relationship across employment; it is not their company employee code.
+
+Technical definition: Restricted EPF universal account number
 
 | Property | Definition |
 |---|---|
@@ -5531,7 +7203,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### pf_number
 
-Restricted PF member number
+**In everyday language:** Restricted provident fund member number.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The provident-fund membership reference supports the employee’s statutory records; no actual number is shown here.
+
+Technical definition: Restricted PF member number
 
 | Property | Definition |
 |---|---|
@@ -5549,7 +7227,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### esic_ip_number
 
-Restricted current insured-person number
+**In everyday language:** Restricted current insured-person number.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The insurance-person reference connects the employee to Employees’ State Insurance records.
+
+Technical definition: Restricted current insured-person number
 
 | Property | Definition |
 |---|---|
@@ -5567,7 +7251,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### pf_applicable
 
-Master PF coverage fact; run-specific approved freeze is separate work
+**In everyday language:** Master provident fund coverage fact; run-specific approved freeze is separate work.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Master PF coverage fact; run-specific approved freeze is separate work
 
 | Property | Definition |
 |---|---|
@@ -5590,7 +7280,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### esic_applicable
 
-Master ESIC coverage fact; contribution-period freeze must govern pay
+**In everyday language:** Master Employees’ State Insurance coverage fact; contribution-period freeze must govern pay.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Master ESIC coverage fact; contribution-period freeze must govern pay
 
 | Property | Definition |
 |---|---|
@@ -5613,7 +7309,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### pt_applicable
 
-Master PT applicability flag
+**In everyday language:** Master PT applicability flag.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Master PT applicability flag
 
 | Property | Definition |
 |---|---|
@@ -5636,7 +7338,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### lwf_applicable
 
-Master welfare-fund applicability flag
+**In everyday language:** Master welfare-fund applicability flag.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Master welfare-fund applicability flag
 
 | Property | Definition |
 |---|---|
@@ -5659,7 +7367,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### tax_regime
 
-Current old/new tax election; effective fiscal-year history remains required
+**In everyday language:** Current old/new tax election; effective fiscal-year history remains required.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “old” means Old income-tax regime.
+
+Technical definition: Current old/new tax election; effective fiscal-year history remains required
 
 | Property | Definition |
 |---|---|
@@ -5684,7 +7398,13 @@ Database rules (including conditions shared with other fields):
 
 ### bank_name
 
-Salary beneficiary bank name
+**In everyday language:** Salary beneficiary bank name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A bank name identifies the institution holding the account; it is not enough on its own to make a payment.
+
+Technical definition: Salary beneficiary bank name
 
 | Property | Definition |
 |---|---|
@@ -5702,7 +7422,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### bank_account
 
-Restricted salary beneficiary account number
+**In everyday language:** Restricted salary beneficiary account number.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** Read this number using the specific measure described above. A percentage, version number and priority order have different meanings.
+
+Technical definition: Restricted salary beneficiary account number
 
 | Property | Definition |
 |---|---|
@@ -5720,7 +7446,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### bank_ifsc
 
-Restricted beneficiary routing code
+**In everyday language:** Restricted beneficiary routing code.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The bank branch code helps direct a transfer to the correct branch; it must match the employee’s verified bank details.
+
+Technical definition: Restricted beneficiary routing code
 
 | Property | Definition |
 |---|---|
@@ -5738,7 +7470,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### payment_mode
 
-Bank/cheque/payment-hold routing selection
+**In everyday language:** Bank/cheque/payment-hold routing selection.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “bank” means Bank.
+
+Technical definition: Bank/cheque/payment-hold routing selection
 
 | Property | Definition |
 |---|---|
@@ -5764,7 +7502,13 @@ Database rules (including conditions shared with other fields):
 
 ### access_card_no
 
-Current source card mapping; does not rewrite immutable external events
+**In everyday language:** Current source card mapping; does not rewrite protected against later changes external events.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A biometric or access-card reference may help match punches; it is different from the payroll employee code.
+
+Technical definition: Current source card mapping; does not rewrite immutable external events
 
 | Property | Definition |
 |---|---|
@@ -5782,7 +7526,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### biometric_registered
 
-Confirmed enrollment fact; cannot be inferred from ordinary checklist completion
+**In everyday language:** Confirmed enrollment fact; cannot be inferred from ordinary checklist completion.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Confirmed enrollment fact; cannot be inferred from ordinary checklist completion
 
 | Property | Definition |
 |---|---|
@@ -5805,7 +7555,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### attendance_mode
 
-Biometric/mobile/manual attendance source expectation
+**In everyday language:** Biometric/mobile/manual attendance source expectation.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “biometric” means Biometric.
+
+Technical definition: Biometric/mobile/manual attendance source expectation
 
 | Property | Definition |
 |---|---|
@@ -5831,7 +7587,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -5849,7 +7611,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -5867,7 +7635,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### plant_id
 
-Reference linking this record’s plant id to FOREIGN KEY (plant_id, company_id) REFERENCES core.plants(id, company_id); FOREIGN KEY (plant_id) REFERENCES core.plants(id).
+**In everyday language:** Identifies plant connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct plant, so related details can be checked together.
+
+**Example:** This record points to an existing entry in plants instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s plant id to FOREIGN KEY (plant_id, company_id) REFERENCES core.plants(id, company_id); FOREIGN KEY (plant_id) REFERENCES core.plants(id).
 
 | Property | Definition |
 |---|---|
@@ -5888,7 +7662,13 @@ Database rules (including conditions shared with other fields):
 
 ### hod_employee_id
 
-Head of Department — the SECOND approver on claims, budgets and advances.
+**In everyday language:** Head of Department — the SECOND approver on claims, budgets and advances.
+
+**Why it is kept:** Keeps this record connected to the correct hod employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Head of Department — the SECOND approver on claims, budgets and advances.
 
 | Property | Definition |
 |---|---|
@@ -5909,7 +7689,13 @@ Database rules (including conditions shared with other fields):
 
 ### pf_wage_basis
 
-Employee-specific PF wage-base policy override
+**In everyday language:** Employee-specific provident fund wage-base policy override.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “ACTUAL” means provident fund calculation on actual configured eligible wages.
+
+Technical definition: Employee-specific PF wage-base policy override
 
 | Property | Definition |
 |---|---|
@@ -5934,7 +7720,13 @@ Database rules (including conditions shared with other fields):
 
 ### epf_member_before_sep2014
 
-REQ-003 EPF Form 11 facts (EPS membership).
+**In everyday language:** REQ-003 Employees’ Provident Fund Form 11 facts (Employees’ Pension Scheme membership).
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: REQ-003 EPF Form 11 facts (EPS membership).
 
 | Property | Definition |
 |---|---|
@@ -5957,14 +7749,20 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### epf_first_enrolled_on
 
-Date of first EPF enrolment used for membership and EPS eligibility decisions.
+**In everyday language:** First Employees’ Provident Fund enrollment date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: First EPF enrollment date
 
 | Property | Definition |
 |---|---|
 | SQL type | `date` |
 | Required | No (NULL allowed; NULL is distinct from zero/false/empty) |
 | Default | No database default |
-| Definition basis | dictionary supplement; docs/03, docs/04 and current catalog |
+| Definition basis | reviewer-authored field meaning (19 Oct 2026) |
 | Code declaration | `epf_first_enrolled_on: Timestamp \| null;` |
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
@@ -5975,14 +7773,20 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### epf_first_wages
 
-Monthly wages at first EPF enrolment, retained for membership eligibility evaluation.
+**In everyday language:** Historical first enrollment wage fact for Employees’ Pension Scheme review.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Historical first enrollment wage fact for EPS review
 
 | Property | Definition |
 |---|---|
 | SQL type | `numeric(12,2)` |
 | Required | No (NULL allowed; NULL is distinct from zero/false/empty) |
 | Default | No database default |
-| Definition basis | dictionary supplement; docs/03, docs/04 and current catalog |
+| Definition basis | reviewer-authored field meaning (19 Oct 2026) |
 | Code declaration | `epf_first_wages: string \| null;` |
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
@@ -5997,7 +7801,13 @@ Database rules (including conditions shared with other fields):
 
 ### international_worker
 
-International-worker PF eligibility fact, not nationality inference
+**In everyday language:** International-worker provident fund eligibility fact, not nationality inference.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: International-worker PF eligibility fact, not nationality inference
 
 | Property | Definition |
 |---|---|
@@ -6020,7 +7830,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### eps_eligible
 
-Approved EPS membership eligibility fact; requires effective/frozen source ownership
+**In everyday language:** Approved Employees’ Pension Scheme membership eligibility fact; requires effective/closed to ordinary changes source ownership.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Approved EPS membership eligibility fact; requires effective/frozen source ownership
 
 | Property | Definition |
 |---|---|
@@ -6043,7 +7859,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### father_name
 
-Joining-form paternal identity
+**In everyday language:** Joining-form paternal identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the father name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Joining-form paternal identity
 
 | Property | Definition |
 |---|---|
@@ -6061,7 +7883,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### spouse_name
 
-Joining-form spouse identity
+**In everyday language:** Joining-form spouse identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the spouse name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Joining-form spouse identity
 
 | Property | Definition |
 |---|---|
@@ -6079,7 +7907,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### form11_relative
 
-Father/spouse selection for statutory relative field
+**In everyday language:** Father/spouse selection for statutory relative field.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “father” means Father.
+
+Technical definition: Father/spouse selection for statutory relative field
 
 | Property | Definition |
 |---|---|
@@ -6104,7 +7938,13 @@ Database rules (including conditions shared with other fields):
 
 ### marriage_date
 
-Declared marriage calendar date
+**In everyday language:** Declared marriage calendar date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Declared marriage calendar date
 
 | Property | Definition |
 |---|---|
@@ -6122,7 +7962,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### nationality
 
-Declared nationality
+**In everyday language:** Declared nationality.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the nationality.
+
+Technical definition: Declared nationality
 
 | Property | Definition |
 |---|---|
@@ -6140,7 +7986,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### country_of_origin
 
-Declared origin country, distinct from payroll company jurisdiction
+**In everyday language:** Declared origin country, distinct from payroll company jurisdiction.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the country of origin shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Declared origin country, distinct from payroll company jurisdiction
 
 | Property | Definition |
 |---|---|
@@ -6158,7 +8010,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### religion
 
-Optional restricted joining-form demographic data
+**In everyday language:** Optional restricted joining-form demographic data.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the religion.
+
+Technical definition: Optional restricted joining-form demographic data
 
 | Property | Definition |
 |---|---|
@@ -6176,7 +8034,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### caste
 
-Optional restricted joining-form demographic data
+**In everyday language:** Optional restricted joining-form demographic data.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the caste.
+
+Technical definition: Optional restricted joining-form demographic data
 
 | Property | Definition |
 |---|---|
@@ -6194,7 +8058,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### height_cm
 
-Joining/master physical measurement; distinguish from dated medical examination
+**In everyday language:** Joining/master physical measurement; distinguish from dated medical examination.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** 170 means a height of 170 centimetres; it is sensitive medical information.
+
+Technical definition: Joining/master physical measurement; distinguish from dated medical examination
 
 | Property | Definition |
 |---|---|
@@ -6214,7 +8084,13 @@ Database rules (including conditions shared with other fields):
 
 ### weight_kg
 
-Joining/master physical measurement; distinguish from dated medical examination
+**In everyday language:** Joining/master physical measurement; distinguish from dated medical examination.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** 65 means a weight of 65 kilograms; it is sensitive medical information.
+
+Technical definition: Joining/master physical measurement; distinguish from dated medical examination
 
 | Property | Definition |
 |---|---|
@@ -6234,7 +8110,13 @@ Database rules (including conditions shared with other fields):
 
 ### is_pwd
 
-Declared disability status
+**In everyday language:** Declared disability status.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Declared disability status
 
 | Property | Definition |
 |---|---|
@@ -6257,7 +8139,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### disability_type
 
-Declared disability classification
+**In everyday language:** Declared disability classification.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the disability type.
+
+Technical definition: Declared disability classification
 
 | Property | Definition |
 |---|---|
@@ -6275,7 +8163,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### disability_pct
 
-Declared assessed disability percentage
+**In everyday language:** Declared assessed disability percentage.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Read this number using the specific measure described above. A percentage, version number and priority order have different meanings.
+
+Technical definition: Declared assessed disability percentage
 
 | Property | Definition |
 |---|---|
@@ -6295,7 +8189,13 @@ Database rules (including conditions shared with other fields):
 
 ### identification_mark
 
-Physical identification description
+**In everyday language:** Physical identification description.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the identification mark.
+
+Technical definition: Physical identification description
 
 | Property | Definition |
 |---|---|
@@ -6313,7 +8213,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### passport_no
 
-Restricted passport identity
+**In everyday language:** Restricted passport identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Restricted passport identity
 
 | Property | Definition |
 |---|---|
@@ -6331,7 +8237,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### passport_valid_until
 
-Passport expiry calendar date
+**In everyday language:** Passport expiry calendar date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Passport expiry calendar date
 
 | Property | Definition |
 |---|---|
@@ -6349,7 +8261,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### driving_licence_no
 
-Restricted driving-licence identity
+**In everyday language:** Restricted driving-licence identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Restricted driving-licence identity
 
 | Property | Definition |
 |---|---|
@@ -6367,7 +8285,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### driving_licence_valid_until
 
-Licence expiry calendar date
+**In everyday language:** Licence expiry calendar date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Licence expiry calendar date
 
 | Property | Definition |
 |---|---|
@@ -6385,7 +8309,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### name_as_per_aadhaar
 
-Statutory identity-matching name
+**In everyday language:** Statutory identity-matching name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name as per aadhaar shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Statutory identity-matching name
 
 | Property | Definition |
 |---|---|
@@ -6403,7 +8333,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### aadhaar_linked_mobile
 
-Whether Aadhaar has a linked mobile; not a second stored phone number
+**In everyday language:** Whether Aadhaar has a linked mobile; not a second stored phone number.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether Aadhaar has a linked mobile; not a second stored phone number
 
 | Property | Definition |
 |---|---|
@@ -6426,7 +8362,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### emergency_contact_relation
 
-Emergency person's relationship
+**In everyday language:** Emergency person's relationship.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the emergency contact relation.
+
+Technical definition: Emergency person's relationship
 
 | Property | Definition |
 |---|---|
@@ -6444,7 +8386,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### emergency_contact_alt_phone
 
-Alternate emergency telephone
+**In everyday language:** Alternate emergency telephone.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the emergency contact alt phone.
+
+Technical definition: Alternate emergency telephone
 
 | Property | Definition |
 |---|---|
@@ -6462,7 +8410,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### emergency_contact_address
 
-Emergency person's address
+**In everyday language:** Emergency person's address.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the emergency contact address.
+
+Technical definition: Emergency person's address
 
 | Property | Definition |
 |---|---|
@@ -6480,7 +8434,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### bank_branch
 
-Beneficiary bank branch descriptor
+**In everyday language:** Beneficiary bank branch descriptor.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the bank branch.
+
+Technical definition: Beneficiary bank branch descriptor
 
 | Property | Definition |
 |---|---|
@@ -6498,7 +8458,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### bank_account_holder
 
-Verified account beneficiary name; bank output must choose this rather than infer employee name
+**In everyday language:** Verified account beneficiary name; bank output must choose this rather than infer employee name.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** Read this number using the specific measure described above. A percentage, version number and priority order have different meanings.
+
+Technical definition: Verified account beneficiary name; bank output must choose this rather than infer employee name
 
 | Property | Definition |
 |---|---|
@@ -6516,7 +8482,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### bank_account_type
 
-Savings/current beneficiary account classification
+**In everyday language:** Savings/current beneficiary account classification.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “savings” means Savings.
+
+Technical definition: Savings/current beneficiary account classification
 
 | Property | Definition |
 |---|---|
@@ -6541,7 +8513,13 @@ Database rules (including conditions shared with other fields):
 
 ### joining_form_date
 
-Joining application execution date
+**In everyday language:** Joining application execution date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Joining application execution date
 
 | Property | Definition |
 |---|---|
@@ -6559,7 +8537,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### bgv_status
 
-Background-verification process status
+**In everyday language:** Background-verification process status.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “not_started” means Not started.
+
+Technical definition: Background-verification process status
 
 | Property | Definition |
 |---|---|
@@ -6587,7 +8571,13 @@ Database rules (including conditions shared with other fields):
 
 ### induction_date
 
-Completed induction calendar date
+**In everyday language:** Completed induction calendar date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Completed induction calendar date
 
 | Property | Definition |
 |---|---|
@@ -6605,7 +8595,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### joining_signed_off_by
 
-Reference linking this record’s joining signed off by to FOREIGN KEY (joining_signed_off_by) REFERENCES core.users(id).
+**In everyday language:** Identifies joining signed off by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct joining signed off by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s joining signed off by to FOREIGN KEY (joining_signed_off_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -6625,7 +8621,13 @@ Database rules (including conditions shared with other fields):
 
 ### joining_signed_off_at
 
-HR joining-form sign-off receipt, distinct from actual DOJ
+**In everyday language:** HR joining-form sign-off receipt, distinct from actual date of joining.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: HR joining-form sign-off receipt, distinct from actual DOJ
 
 | Property | Definition |
 |---|---|
@@ -6656,13 +8658,21 @@ Table indexes and lifecycle triggers:
 
 ## core.grades
 
+Lists employee grades used for employment and policy classification.
+
 Grades records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -6682,7 +8692,13 @@ Database rules (including conditions shared with other fields):
 
 ### code
 
-Stable grade/pay-band code
+**In everyday language:** Stable grade/pay-band code.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Stable grade/pay-band code
 
 | Property | Definition |
 |---|---|
@@ -6702,7 +8718,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Grade display name
+**In everyday language:** Grade display name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Grade display name
 
 | Property | Definition |
 |---|---|
@@ -6720,7 +8742,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### rank
 
-Grade ordering for leadership/eligibility thresholds
+**In everyday language:** Grade ordering for leadership/eligibility thresholds.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Grade ordering for leadership/eligibility thresholds
 
 | Property | Definition |
 |---|---|
@@ -6738,7 +8766,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -6756,7 +8790,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -6780,13 +8820,21 @@ Table indexes and lifecycle triggers:
 
 ## core.letter_templates
 
+Keeps reusable wording and layouts for HR letters.
+
 core.letter_templates — CORE-09; body is runtime-editable data.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -6806,7 +8854,13 @@ Database rules (including conditions shared with other fields):
 
 ### code
 
-Stable letter type/template identity
+**In everyday language:** Stable letter type/template identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Stable letter type/template identity
 
 | Property | Definition |
 |---|---|
@@ -6826,7 +8880,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-HR-facing template name
+**In everyday language:** HR-facing template name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: HR-facing template name
 
 | Property | Definition |
 |---|---|
@@ -6844,7 +8904,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### body_template
 
-Text merge template, alternative representation to stored DOCX source requiring renderer selection
+**In everyday language:** Text merge template, alternative representation to stored DOCX source requiring renderer selection.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Text merge template, alternative representation to stored DOCX source requiring renderer selection
 
 | Property | Definition |
 |---|---|
@@ -6862,7 +8928,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### body_docx_document_id
 
-Reference linking this record’s body docx document id to FOREIGN KEY (body_docx_document_id) REFERENCES core.documents(id).
+**In everyday language:** Identifies body docx document connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct body docx document, so related details can be checked together.
+
+**Example:** This record points to an existing entry in documents instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s body docx document id to FOREIGN KEY (body_docx_document_id) REFERENCES core.documents(id).
 
 | Property | Definition |
 |---|---|
@@ -6882,7 +8954,13 @@ Database rules (including conditions shared with other fields):
 
 ### merge_fields
 
-Declared allowed merge-field contract
+**In everyday language:** Declared allowed merge-field contract.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the merge fields.
+
+Technical definition: Declared allowed merge-field contract
 
 | Property | Definition |
 |---|---|
@@ -6900,7 +8978,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Template availability for new issuance
+**In everyday language:** Template availability for new issuance.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Template availability for new issuance
 
 | Property | Definition |
 |---|---|
@@ -6923,7 +9007,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -6941,7 +9031,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -6965,13 +9061,21 @@ Table indexes and lifecycle triggers:
 
 ## core.letters
 
+Records HR letters issued to employees.
+
 core.letters — issued letters; NULL issued_at = awaiting signature (PP-14).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -6991,7 +9095,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -7011,7 +9121,13 @@ Database rules (including conditions shared with other fields):
 
 ### template_code
 
-Letter template identity used at rendering; historical rendered body must remain frozen
+**In everyday language:** Letter template identity used at rendering; historical rendered body must remain closed to ordinary changes.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Letter template identity used at rendering; historical rendered body must remain frozen
 
 | Property | Definition |
 |---|---|
@@ -7029,7 +9145,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### document_id
 
-Reference linking this record’s document id to FOREIGN KEY (document_id) REFERENCES core.documents(id).
+**In everyday language:** Identifies document connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct document, so related details can be checked together.
+
+**Example:** This record points to an existing entry in documents instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s document id to FOREIGN KEY (document_id) REFERENCES core.documents(id).
 
 | Property | Definition |
 |---|---|
@@ -7049,7 +9171,13 @@ Database rules (including conditions shared with other fields):
 
 ### issued_by
 
-Reference linking this record’s issued by to FOREIGN KEY (issued_by) REFERENCES core.users(id).
+**In everyday language:** Identifies issued by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct issued by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s issued by to FOREIGN KEY (issued_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -7069,7 +9197,13 @@ Database rules (including conditions shared with other fields):
 
 ### issued_at
 
-Formal issuance instant
+**In everyday language:** Formal issuance instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Formal issuance instant
 
 | Property | Definition |
 |---|---|
@@ -7087,7 +9221,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### workflow_request_id
 
-Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
+**In everyday language:** Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database link to another record is present.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This record points to an existing entry in requests instead of copying all of that entry’s details.
+
+Technical definition: Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
 
 | Property | Definition |
 |---|---|
@@ -7107,7 +9247,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -7125,7 +9271,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -7143,7 +9295,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### body_rendered
 
-Rendered letter content snapshot; distinct from reusable template and exported object
+**In everyday language:** Rendered letter content copy saved at that point in time; distinct from reusable template and exported object.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Rendered letter content snapshot; distinct from reusable template and exported object
 
 | Property | Definition |
 |---|---|
@@ -7161,7 +9319,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Draft/issued/withdrawn lifecycle controlling ESS visibility
+**In everyday language:** Draft/issued/withdrawn progress from creation to closure controlling ESS visibility.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “draft” means Editable draft before submission/preparation.
+
+Technical definition: Draft/issued/withdrawn lifecycle controlling ESS visibility
 
 | Property | Definition |
 |---|---|
@@ -7194,13 +9358,21 @@ Table indexes and lifecycle triggers:
 
 ## core.locations
 
+Lists work locations.
+
 Locations records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -7221,7 +9393,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -7243,7 +9421,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Physical site label
+**In everyday language:** Physical site label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Physical site label
 
 | Property | Definition |
 |---|---|
@@ -7263,7 +9447,13 @@ Database rules (including conditions shared with other fields):
 
 ### state_code
 
-Work-location state selecting configured state statutory rules
+**In everyday language:** Work-location state selecting configured state statutory rules.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A stored state code selects the applicable state or address jurisdiction; it does not represent a company code.
+
+Technical definition: Work-location state selecting configured state statutory rules
 
 | Property | Definition |
 |---|---|
@@ -7281,7 +9471,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### timezone
 
-Location timezone metadata; current attendance business-date contract is IST
+**In everyday language:** Location timezone descriptive information; current attendance business-date contract is IST.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the timezone.
+
+Technical definition: Location timezone metadata; current attendance business-date contract is IST
 
 | Property | Definition |
 |---|---|
@@ -7299,7 +9495,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -7317,7 +9519,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -7342,13 +9550,21 @@ Table indexes and lifecycle triggers:
 
 ## core.mis_codes
 
+Lists management-reporting codes used to classify employees or organizational costs.
+
 Mis codes records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -7369,7 +9585,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -7392,7 +9614,13 @@ Database rules (including conditions shared with other fields):
 
 ### code
 
-Company-scoped MIS reporting code
+**In everyday language:** Company-scoped MIS reporting code.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Company-scoped MIS reporting code
 
 | Property | Definition |
 |---|---|
@@ -7413,7 +9641,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-MIS rollup label
+**In everyday language:** MIS rollup label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: MIS rollup label
 
 | Property | Definition |
 |---|---|
@@ -7431,7 +9665,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### parent_id
 
-Reference linking this record’s parent id to FOREIGN KEY (parent_id, company_id) REFERENCES core.mis_codes(id, company_id); FOREIGN KEY (parent_id) REFERENCES core.mis_codes(id).
+**In everyday language:** Identifies the parent entry connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct parent entry, so related details can be checked together.
+
+**Example:** This record points to an existing entry in mis codes instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s parent id to FOREIGN KEY (parent_id, company_id) REFERENCES core.mis_codes(id, company_id); FOREIGN KEY (parent_id) REFERENCES core.mis_codes(id).
 
 | Property | Definition |
 |---|---|
@@ -7452,7 +9692,13 @@ Database rules (including conditions shared with other fields):
 
 ### is_active
 
-Master availability without deleting historical references
+**In everyday language:** Master availability without deleting historical references.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Master availability without deleting historical references
 
 | Property | Definition |
 |---|---|
@@ -7475,7 +9721,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -7493,7 +9745,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -7518,13 +9776,21 @@ Table indexes and lifecycle triggers:
 
 ## core.nomination_declarations
 
+Keeps employees’ declarations supporting their benefit nominations.
+
 Nomination declarations records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -7544,7 +9810,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -7565,7 +9837,13 @@ Database rules (including conditions shared with other fields):
 
 ### scheme
 
-Scheme to which signed declaration applies
+**In everyday language:** Scheme to which signed declaration applies.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “pf” means Provident fund.
+
+Technical definition: Scheme to which signed declaration applies
 
 | Property | Definition |
 |---|---|
@@ -7596,7 +9874,13 @@ Database rules (including conditions shared with other fields):
 
 ### version
 
-Nomination-set version bound to declaration
+**In everyday language:** Nomination-set version bound to declaration.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Read this number using the specific measure described above. A percentage, version number and priority order have different meanings.
+
+Technical definition: Nomination-set version bound to declaration
 
 | Property | Definition |
 |---|---|
@@ -7617,7 +9901,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Active/superseded signed declaration version
+**In everyday language:** Active/superseded signed declaration version.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “active” means Record is active in this progress from creation to closure.
+
+Technical definition: Active/superseded signed declaration version
 
 | Property | Definition |
 |---|---|
@@ -7642,7 +9932,13 @@ Database rules (including conditions shared with other fields):
 
 ### statements
 
-Scheme-specific signed assertions snapshot
+**In everyday language:** Scheme-specific signed assertions copy saved at that point in time.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the statements.
+
+Technical definition: Scheme-specific signed assertions snapshot
 
 | Property | Definition |
 |---|---|
@@ -7660,7 +9956,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### witness1_name
 
-First witness identity snapshot
+**In everyday language:** First witness identity copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the witness1 name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: First witness identity snapshot
 
 | Property | Definition |
 |---|---|
@@ -7678,7 +9980,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### witness1_address
 
-First witness address snapshot
+**In everyday language:** First witness address copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the witness1 address.
+
+Technical definition: First witness address snapshot
 
 | Property | Definition |
 |---|---|
@@ -7696,7 +10004,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### witness2_name
 
-Second witness identity snapshot
+**In everyday language:** Second witness identity copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the witness2 name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Second witness identity snapshot
 
 | Property | Definition |
 |---|---|
@@ -7714,7 +10028,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### witness2_address
 
-Second witness address snapshot
+**In everyday language:** Second witness address copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the witness2 address.
+
+Technical definition: Second witness address snapshot
 
 | Property | Definition |
 |---|---|
@@ -7732,7 +10052,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### declared_at
 
-Declaration execution instant
+**In everyday language:** Declaration execution instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Declaration execution instant
 
 | Property | Definition |
 |---|---|
@@ -7750,7 +10076,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### declared_by
 
-Reference linking this record’s declared by to FOREIGN KEY (declared_by) REFERENCES core.users(id).
+**In everyday language:** Identifies declared by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct declared by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s declared by to FOREIGN KEY (declared_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -7770,7 +10102,13 @@ Database rules (including conditions shared with other fields):
 
 ### employer_verified_by
 
-Reference linking this record’s employer verified by to FOREIGN KEY (employer_verified_by) REFERENCES core.users(id).
+**In everyday language:** Identifies employer verified by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct employer verified by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s employer verified by to FOREIGN KEY (employer_verified_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -7790,7 +10128,13 @@ Database rules (including conditions shared with other fields):
 
 ### employer_verified_at
 
-Employer verification receipt instant
+**In everyday language:** Employer verification receipt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Employer verification receipt instant
 
 | Property | Definition |
 |---|---|
@@ -7808,7 +10152,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### employer_reference_no
 
-Employer declaration/form reference
+**In everyday language:** Employer declaration/form reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the employer reference no shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Employer declaration/form reference
 
 | Property | Definition |
 |---|---|
@@ -7826,7 +10176,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### employer_signatory_designation
 
-Authorized signatory's title snapshot
+**In everyday language:** Authorized signatory's title copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the employer signatory designation shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Authorized signatory's title snapshot
 
 | Property | Definition |
 |---|---|
@@ -7844,7 +10200,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### employee_acknowledged_at
 
-Employee acknowledgement receipt
+**In everyday language:** Employee acknowledgement receipt.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Employee acknowledgement receipt
 
 | Property | Definition |
 |---|---|
@@ -7862,7 +10224,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -7880,7 +10248,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -7905,13 +10279,21 @@ Table indexes and lifecycle triggers:
 
 ## core.onboarding_candidates
 
+Keeps accepted-offer candidates separate from employees until actual joining is confirmed.
+
 core.onboarding_candidates — LC-01 candidate intake bridge.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -7931,7 +10313,13 @@ Database rules (including conditions shared with other fields):
 
 ### ats_candidate_id
 
-External ATS candidate identity, intentionally not cross-database FK
+**In everyday language:** External ATS candidate identity, intentionally not cross-database link to another record.
+
+**Why it is kept:** Keeps this record connected to the correct ats candidate, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: External ATS candidate identity, intentionally not cross-database FK
 
 | Property | Definition |
 |---|---|
@@ -7949,7 +10337,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### loi_reference
 
-Source offer/LOI reference
+**In everyday language:** Source offer/LOI reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Source offer/LOI reference
 
 | Property | Definition |
 |---|---|
@@ -7967,7 +10361,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### full_name
 
-Accepted-offer candidate name before employee creation
+**In everyday language:** Accepted-offer candidate name before employee creation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An invented display name such as “Sample Employee” lets staff read the person’s name in full.
+
+Technical definition: Accepted-offer candidate name before employee creation
 
 | Property | Definition |
 |---|---|
@@ -7985,7 +10385,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### personal_email
 
-Prejoin delivery/contact address
+**In everyday language:** Prejoin delivery/contact address.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A personal address such as sample@example.com is separate from the person’s company email.
+
+Technical definition: Prejoin delivery/contact address
 
 | Property | Definition |
 |---|---|
@@ -8003,7 +10409,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### mobile
 
-Candidate contact telephone
+**In everyday language:** Candidate contact telephone.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A phone contact allows an authorized HR process to reach the person; no actual phone number is shown.
+
+Technical definition: Candidate contact telephone
 
 | Property | Definition |
 |---|---|
@@ -8021,7 +10433,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### dob
 
-Candidate birth date for validated conversion
+**In everyday language:** Candidate birth date for validated conversion.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Candidate birth date for validated conversion
 
 | Property | Definition |
 |---|---|
@@ -8039,7 +10457,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### address
 
-Candidate contact address snapshot
+**In everyday language:** Candidate contact address copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An address tells staff the place associated with this particular person or organization; it is not automatically a work location.
+
+Technical definition: Candidate contact address snapshot
 
 | Property | Definition |
 |---|---|
@@ -8057,7 +10481,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### total_experience_years
 
-Declared experience used in offer report
+**In everyday language:** Declared experience used in offer report.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Declared experience used in offer report
 
 | Property | Definition |
 |---|---|
@@ -8075,7 +10505,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### previous_company
 
-Prior employer offer-history snapshot
+**In everyday language:** Prior employer offer-history copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the previous company.
+
+Technical definition: Prior employer offer-history snapshot
 
 | Property | Definition |
 |---|---|
@@ -8093,7 +10529,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### current_salary
 
-Candidate's prior/current offered-against salary, not HRMS pay authority
+**In everyday language:** Candidate's prior/current offered-against salary, not HRMS pay authority.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A candidate’s reported current salary describes their earlier employment, not the company’s approved offer.
+
+Technical definition: Candidate's prior/current offered-against salary, not HRMS pay authority
 
 | Property | Definition |
 |---|---|
@@ -8113,7 +10555,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### expected_salary
 
-Candidate expectation, not approved payroll entitlement
+**In everyday language:** Candidate expectation, not approved payroll entitlement.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The candidate’s salary expectation is a request, not a promised salary.
+
+Technical definition: Candidate expectation, not approved payroll entitlement
 
 | Property | Definition |
 |---|---|
@@ -8133,7 +10581,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### position_title
 
-Requisition/offer title
+**In everyday language:** Requisition/offer title.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the position title shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Requisition/offer title
 
 | Property | Definition |
 |---|---|
@@ -8151,7 +10605,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### department
 
-Prejoin department label requiring canonical master resolution
+**In everyday language:** Prejoin department label requiring main master resolution.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the department shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Prejoin department label requiring canonical master resolution
 
 | Property | Definition |
 |---|---|
@@ -8169,7 +10629,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### org_unit
 
-Prejoin organization label requiring canonical resolution
+**In everyday language:** Prejoin organization label requiring main resolution.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the org unit.
+
+Technical definition: Prejoin organization label requiring canonical resolution
 
 | Property | Definition |
 |---|---|
@@ -8187,7 +10653,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### designation
 
-Prejoin designation label requiring canonical resolution
+**In everyday language:** Prejoin designation label requiring main resolution.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the designation shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Prejoin designation label requiring canonical resolution
 
 | Property | Definition |
 |---|---|
@@ -8205,7 +10677,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -8225,7 +10703,13 @@ Database rules (including conditions shared with other fields):
 
 ### category
 
-Offered employment category
+**In everyday language:** Offered employment category.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The saved category helps a reviewer group similar records; its meaning depends on the register being viewed.
+
+Technical definition: Offered employment category
 
 | Property | Definition |
 |---|---|
@@ -8243,7 +10727,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### replacement_of_ecode
 
-Replaced employee's source code/reference
+**In everyday language:** Replaced employee's source code/reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Replaced employee's source code/reference
 
 | Property | Definition |
 |---|---|
@@ -8261,7 +10751,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### offered_ctc
 
-Accepted annual offer CTC used to establish approved joining salary
+**In everyday language:** Accepted annual offer cost to company (the total employment cost) used to establish approved joining salary.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Accepted annual offer CTC used to establish approved joining salary
 
 | Property | Definition |
 |---|---|
@@ -8281,7 +10777,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### probation_months
 
-Offer probation duration
+**In everyday language:** Offer probation duration.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Offer probation duration
 
 | Property | Definition |
 |---|---|
@@ -8299,7 +10801,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### probation_salary_pct
 
-Offer probation pay ratio
+**In everyday language:** Offer probation pay ratio.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An illustrative 80% means the configured proportion of confirmed salary during probation; it is not a policy recommendation.
+
+Technical definition: Offer probation pay ratio
 
 | Property | Definition |
 |---|---|
@@ -8317,7 +10825,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### proposed_doj
 
-Planned joining date; does not authorize permanent employee creation
+**In everyday language:** Planned joining date; does not authorize permanent employee creation.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Planned joining date; does not authorize permanent employee creation
 
 | Property | Definition |
 |---|---|
@@ -8335,7 +10849,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### offer_date
 
-Offer issuance calendar date
+**In everyday language:** Offer issuance calendar date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Offer issuance calendar date
 
 | Property | Definition |
 |---|---|
@@ -8353,7 +10873,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### work_location
 
-Source offered location label
+**In everyday language:** Source offered location label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the work location shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Source offered location label
 
 | Property | Definition |
 |---|---|
@@ -8371,7 +10897,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### prejoin_link_token
 
-Legacy column constrained NULL; plaintext bearer credentials forbidden
+**In everyday language:** Legacy column constrained not recorded; plaintext bearer credentials forbidden.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Legacy column constrained NULL; plaintext bearer credentials forbidden
 
 | Property | Definition |
 |---|---|
@@ -8392,7 +10924,13 @@ Database rules (including conditions shared with other fields):
 
 ### prejoin_token_hash
 
-SHA256 authorization digest for finite-lived prejoin link
+**In everyday language:** a digital fingerprint used to check that information matches authorization digital fingerprint for finite-lived prejoin link.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: SHA256 authorization digest for finite-lived prejoin link
 
 | Property | Definition |
 |---|---|
@@ -8410,7 +10948,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### prejoin_token_expires_at
 
-Configured link expiration
+**In everyday language:** Configured link expiration.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Configured link expiration
 
 | Property | Definition |
 |---|---|
@@ -8428,7 +10972,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### prejoin_link_sent_at
 
-Actual delivery receipt; generation/enqueue alone must not imply delivery
+**In everyday language:** Actual delivery receipt; generation/enqueue alone must not imply delivery.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Actual delivery receipt; generation/enqueue alone must not imply delivery
 
 | Property | Definition |
 |---|---|
@@ -8446,7 +10996,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### prejoin_completed_at
 
-Accepted one-time form submission instant
+**In everyday language:** Accepted one-time form submission instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Accepted one-time form submission instant
 
 | Property | Definition |
 |---|---|
@@ -8464,7 +11020,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### prejoin_submitted_data
 
-Submitted application snapshot awaiting HR acceptance/actual joining
+**In everyday language:** Submitted application copy saved at that point in time awaiting HR acceptance/actual joining.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the prejoin submitted data.
+
+Technical definition: Submitted application snapshot awaiting HR acceptance/actual joining
 
 | Property | Definition |
 |---|---|
@@ -8482,7 +11044,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Separate preboarding/waiting/submitted/converted/no-show state
+**In everyday language:** Separate preboarding/waiting/submitted/converted/no-show state.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “awaiting_prejoin” means Accepted-offer candidate awaiting pre-joining completion; no permanent employee created.
+
+Technical definition: Separate preboarding/waiting/submitted/converted/no-show state
 
 | Property | Definition |
 |---|---|
@@ -8510,7 +11078,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** The employee record created after this candidate’s actual joining is confirmed, if conversion has occurred.
+
+**Why it is kept:** Links the earlier candidate information to the person’s employment record without treating every accepted offer as a joining.
+
+**Example:** A candidate who accepts an offer but never joins does not receive a permanent employee record through this link.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -8530,7 +11104,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -8548,7 +11128,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -8566,7 +11152,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### prejoin_draft_data
 
-Autosaved mutable candidate form before submission; not current employee master
+**In everyday language:** Autosaved mutable candidate form before submission; not current main employee register.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the prejoin draft data.
+
+Technical definition: Autosaved mutable candidate form before submission; not current employee master
 
 | Property | Definition |
 |---|---|
@@ -8584,7 +11176,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### gender
 
-Candidate gender to preserve on conversion
+**In everyday language:** Candidate gender to preserve on conversion.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “Male” means Male.
+
+Technical definition: Candidate gender to preserve on conversion
 
 | Property | Definition |
 |---|---|
@@ -8617,13 +11215,21 @@ Table indexes and lifecycle triggers:
 
 ## core.onboarding_tasks
 
+Tracks joining tasks assigned to HR, IT, Admin and Payroll.
+
 core.onboarding_tasks — LC-02 post-conversion task checklist.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -8643,7 +11249,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -8663,7 +11275,13 @@ Database rules (including conditions shared with other fields):
 
 ### candidate_id
 
-Reference linking this record’s candidate id to FOREIGN KEY (candidate_id) REFERENCES core.onboarding_candidates(id).
+**In everyday language:** Identifies the candidate connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct candidate, so related details can be checked together.
+
+**Example:** This record points to an existing entry in onboarding candidates instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s candidate id to FOREIGN KEY (candidate_id) REFERENCES core.onboarding_candidates(id).
 
 | Property | Definition |
 |---|---|
@@ -8683,7 +11301,13 @@ Database rules (including conditions shared with other fields):
 
 ### task_code
 
-Stable checklist obligation identity
+**In everyday language:** Stable checklist obligation identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Stable checklist obligation identity
 
 | Property | Definition |
 |---|---|
@@ -8701,7 +11325,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### task_name
 
-Stakeholder-readable obligation label
+**In everyday language:** Stakeholder-readable obligation label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the task name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Stakeholder-readable obligation label
 
 | Property | Definition |
 |---|---|
@@ -8719,7 +11349,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### department
 
-Responsible stakeholder function
+**In everyday language:** Responsible stakeholder function.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “IT” means It.
+
+Technical definition: Responsible stakeholder function
 
 | Property | Definition |
 |---|---|
@@ -8746,7 +11382,13 @@ Database rules (including conditions shared with other fields):
 
 ### owner_role
 
-Configured routing role name; not a stored resolved assignee
+**In everyday language:** Configured routing role name; not a stored resolved assignee.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the owner role shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Configured routing role name; not a stored resolved assignee
 
 | Property | Definition |
 |---|---|
@@ -8764,14 +11406,20 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### due_date
 
-Calendar date by which the task or obligation should be completed.
+**In everyday language:** Obligation deadline calendar date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Obligation deadline calendar date
 
 | Property | Definition |
 |---|---|
 | SQL type | `date` |
 | Required | Yes |
 | Default | No database default |
-| Definition basis | dictionary supplement; docs/03, docs/04 and current catalog |
+| Definition basis | reviewer-authored field meaning (19 Oct 2026) |
 | Code declaration | `due_date: Timestamp;` |
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
@@ -8782,7 +11430,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### sla_hours
 
-Configured escalation duration
+**In everyday language:** Configured escalation duration.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Configured escalation duration
 
 | Property | Definition |
 |---|---|
@@ -8800,7 +11454,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Open/done/escalated checklist state
+**In everyday language:** Open/done/escalated checklist state.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “open” means Record is open in this progress from creation to closure.
+
+Technical definition: Open/done/escalated checklist state
 
 | Property | Definition |
 |---|---|
@@ -8826,7 +11486,13 @@ Database rules (including conditions shared with other fields):
 
 ### escalated_at
 
-Escalation attempt instant
+**In everyday language:** Escalation attempt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Escalation attempt instant
 
 | Property | Definition |
 |---|---|
@@ -8844,7 +11510,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### done_by
 
-Reference linking this record’s done by to FOREIGN KEY (done_by) REFERENCES core.users(id).
+**In everyday language:** Identifies done by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct done by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s done by to FOREIGN KEY (done_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -8864,14 +11536,20 @@ Database rules (including conditions shared with other fields):
 
 ### done_at
 
-Instant of done for this record.
+**In everyday language:** Task-completion receipt.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Task-completion receipt
 
 | Property | Definition |
 |---|---|
 | SQL type | `timestamp with time zone` |
 | Required | No (NULL allowed; NULL is distinct from zero/false/empty) |
 | Default | No database default |
-| Definition basis | timestamp field convention |
+| Definition basis | reviewer-authored field meaning (19 Oct 2026) |
 | Code declaration | `done_at: Timestamp \| null;` |
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
@@ -8882,7 +11560,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### notes
 
-Stakeholder execution explanation
+**In everyday language:** Stakeholder execution explanation.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Stakeholder execution explanation
 
 | Property | Definition |
 |---|---|
@@ -8900,7 +11584,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -8918,7 +11608,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -8942,13 +11638,21 @@ Table indexes and lifecycle triggers:
 
 ## core.org_units
 
+Lists organizational units and their reporting hierarchy.
+
 Org units records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -8969,7 +11673,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -8990,7 +11700,13 @@ Database rules (including conditions shared with other fields):
 
 ### parent_id
 
-Reference linking this record’s parent id to FOREIGN KEY (parent_id) REFERENCES core.org_units(id).
+**In everyday language:** Identifies the parent entry connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct parent entry, so related details can be checked together.
+
+**Example:** This record points to an existing entry in org units instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s parent id to FOREIGN KEY (parent_id) REFERENCES core.org_units(id).
 
 | Property | Definition |
 |---|---|
@@ -9010,7 +11726,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Company organization hierarchy label
+**In everyday language:** Company organization hierarchy label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Company organization hierarchy label
 
 | Property | Definition |
 |---|---|
@@ -9028,7 +11750,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -9046,7 +11774,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -9070,13 +11804,21 @@ Table indexes and lifecycle triggers:
 
 ## core.password_reset_tokens
 
+Keeps temporary password-reset proof without storing a usable reset link in plain text.
+
 Password reset tokens records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -9096,7 +11838,13 @@ Database rules (including conditions shared with other fields):
 
 ### user_id
 
-Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies the login account connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct login account, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -9116,7 +11864,13 @@ Database rules (including conditions shared with other fields):
 
 ### token_hash
 
-Digest of opaque one-time reset credential, never its plaintext
+**In everyday language:** digital fingerprint of opaque one-time reset credential, never its plaintext.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Digest of opaque one-time reset credential, never its plaintext
 
 | Property | Definition |
 |---|---|
@@ -9136,7 +11890,13 @@ Database rules (including conditions shared with other fields):
 
 ### expires_at
 
-Reset credential cutoff
+**In everyday language:** Reset credential cutoff.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Reset credential cutoff
 
 | Property | Definition |
 |---|---|
@@ -9154,7 +11914,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### used_at
 
-One-way redemption marker
+**In everyday language:** One-way redemption marker.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: One-way redemption marker
 
 | Property | Definition |
 |---|---|
@@ -9172,7 +11938,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -9197,13 +11969,21 @@ Table indexes and lifecycle triggers:
 
 ## core.permissions
 
+Lists the individual actions that access administrators can allow.
+
 core.permissions — module.action grid (CORE-10).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -9223,7 +12003,13 @@ Database rules (including conditions shared with other fields):
 
 ### code
 
-Runtime business capability identity
+**In everyday language:** Runtime business capability identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Runtime business capability identity
 
 | Property | Definition |
 |---|---|
@@ -9243,7 +12029,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -9261,7 +12053,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -9285,13 +12083,21 @@ Table indexes and lifecycle triggers:
 
 ## core.plants
 
+Lists plants within the group.
+
 Plants records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -9312,7 +12118,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -9335,7 +12147,13 @@ Database rules (including conditions shared with other fields):
 
 ### plant_code
 
-Company plant identity, distinct from cost-center code
+**In everyday language:** Company plant identity, distinct from cost-center code.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Company plant identity, distinct from cost-center code
 
 | Property | Definition |
 |---|---|
@@ -9356,7 +12174,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Plant display label
+**In everyday language:** Plant display label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Plant display label
 
 | Property | Definition |
 |---|---|
@@ -9374,7 +12198,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### location_id
 
-Reference linking this record’s location id to FOREIGN KEY (location_id, company_id) REFERENCES core.locations(id, company_id); FOREIGN KEY (location_id) REFERENCES core.locations(id).
+**In everyday language:** Identifies location connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct location, so related details can be checked together.
+
+**Example:** This record points to an existing entry in locations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s location id to FOREIGN KEY (location_id, company_id) REFERENCES core.locations(id, company_id); FOREIGN KEY (location_id) REFERENCES core.locations(id).
 
 | Property | Definition |
 |---|---|
@@ -9395,7 +12225,13 @@ Database rules (including conditions shared with other fields):
 
 ### is_active
 
-Plant availability for assignment
+**In everyday language:** Plant availability for assignment.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Plant availability for assignment
 
 | Property | Definition |
 |---|---|
@@ -9418,7 +12254,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -9436,7 +12278,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -9461,13 +12309,21 @@ Table indexes and lifecycle triggers:
 
 ## core.policies
 
+Keeps published company policies and their versions.
+
 core.policies + acknowledgments — CORE-13 repository and live ack tracking.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -9487,7 +12343,13 @@ Database rules (including conditions shared with other fields):
 
 ### title
 
-Policy publication headline
+**In everyday language:** Policy publication headline.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the title shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Policy publication headline
 
 | Property | Definition |
 |---|---|
@@ -9505,7 +12367,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### document_id
 
-Reference linking this record’s document id to FOREIGN KEY (document_id) REFERENCES core.documents(id).
+**In everyday language:** Identifies document connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct document, so related details can be checked together.
+
+**Example:** This record points to an existing entry in documents instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s document id to FOREIGN KEY (document_id) REFERENCES core.documents(id).
 
 | Property | Definition |
 |---|---|
@@ -9526,7 +12394,13 @@ Database rules (including conditions shared with other fields):
 
 ### effective_date
 
-Policy applicability date
+**In everyday language:** Policy applicability date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Policy applicability date
 
 | Property | Definition |
 |---|---|
@@ -9544,7 +12418,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### requires_acknowledgment
 
-Whether audience members owe a receipt
+**In everyday language:** Whether audience members owe a receipt.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether audience members owe a receipt
 
 | Property | Definition |
 |---|---|
@@ -9567,7 +12447,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### audience
 
-Configured policy population selection
+**In everyday language:** Configured policy population selection.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the audience.
+
+Technical definition: Configured policy population selection
 
 | Property | Definition |
 |---|---|
@@ -9585,7 +12471,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Publication withdrawal flag
+**In everyday language:** Publication withdrawal flag.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Publication withdrawal flag
 
 | Property | Definition |
 |---|---|
@@ -9608,7 +12500,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -9628,7 +12526,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -9646,7 +12550,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -9664,7 +12574,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### body_summary
 
-Human-readable summary, not replacement for signed/stored policy document
+**In everyday language:** Human-readable summary, not replacement for signed/stored policy document.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Human-readable summary, not replacement for signed/stored policy document
 
 | Property | Definition |
 |---|---|
@@ -9689,13 +12605,21 @@ Table indexes and lifecycle triggers:
 
 ## core.policy_acknowledgments
 
+Records employees’ acknowledgment of published policies.
+
 Policy acknowledgments records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -9715,7 +12639,13 @@ Database rules (including conditions shared with other fields):
 
 ### policy_id
 
-Reference linking this record’s policy id to FOREIGN KEY (policy_id) REFERENCES core.policies(id).
+**In everyday language:** Identifies policy connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct policy, so related details can be checked together.
+
+**Example:** This record points to an existing entry in policies instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s policy id to FOREIGN KEY (policy_id) REFERENCES core.policies(id).
 
 | Property | Definition |
 |---|---|
@@ -9736,7 +12666,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -9757,7 +12693,13 @@ Database rules (including conditions shared with other fields):
 
 ### acknowledged_at
 
-Employee receipt of this exact policy record
+**In everyday language:** Employee receipt of this exact policy record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Employee receipt of this exact policy record
 
 | Property | Definition |
 |---|---|
@@ -9780,13 +12722,21 @@ Table indexes and lifecycle triggers:
 
 ## core.probation_reviews
 
+Tracks probation review dates, recommendations and decisions.
+
 core.probation_reviews — LC-04 probation review and confirmation.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -9806,7 +12756,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -9826,7 +12782,13 @@ Database rules (including conditions shared with other fields):
 
 ### due_date
 
-Review due date
+**In everyday language:** Review due date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Review due date
 
 | Property | Definition |
 |---|---|
@@ -9844,7 +12806,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### manager_recommendation
 
-Manager's proposed confirm/extend/terminate outcome
+**In everyday language:** Manager's proposed confirm/extend/terminate outcome.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “confirm” means Confirm.
+
+Technical definition: Manager's proposed confirm/extend/terminate outcome
 
 | Property | Definition |
 |---|---|
@@ -9870,7 +12838,13 @@ Database rules (including conditions shared with other fields):
 
 ### extension_months
 
-Recommended/approved extension duration
+**In everyday language:** Recommended/approved extension duration.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Recommended/approved extension duration
 
 | Property | Definition |
 |---|---|
@@ -9890,7 +12864,13 @@ Database rules (including conditions shared with other fields):
 
 ### review_notes
 
-Review explanation
+**In everyday language:** Review explanation.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Review explanation
 
 | Property | Definition |
 |---|---|
@@ -9908,7 +12888,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### ratings
 
-Review assessment payload; require a defined validation schema
+**In everyday language:** Review assessment saved request or message details; require a defined validation schema.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the ratings.
+
+Technical definition: Review assessment payload; require a defined validation schema
 
 | Property | Definition |
 |---|---|
@@ -9926,7 +12912,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Review workflow state
+**In everyday language:** Review workflow state.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “pending” means Awaiting the required decision or next action.
+
+Technical definition: Review workflow state
 
 | Property | Definition |
 |---|---|
@@ -9952,7 +12944,13 @@ Database rules (including conditions shared with other fields):
 
 ### outcome
 
-Final confirmed/extended/separated decision
+**In everyday language:** Final confirmed/extended/separated decision.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “confirmed” means Record is confirmed in this progress from creation to closure.
+
+Technical definition: Final confirmed/extended/separated decision
 
 | Property | Definition |
 |---|---|
@@ -9978,7 +12976,13 @@ Database rules (including conditions shared with other fields):
 
 ### decided_by
 
-Reference linking this record’s decided by to FOREIGN KEY (decided_by) REFERENCES core.users(id).
+**In everyday language:** Identifies decided by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct decided by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s decided by to FOREIGN KEY (decided_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -9998,14 +13002,20 @@ Database rules (including conditions shared with other fields):
 
 ### decided_at
 
-Instant of decided for this record.
+**In everyday language:** Decision receipt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Decision receipt instant
 
 | Property | Definition |
 |---|---|
 | SQL type | `timestamp with time zone` |
 | Required | No (NULL allowed; NULL is distinct from zero/false/empty) |
 | Default | No database default |
-| Definition basis | timestamp field convention |
+| Definition basis | reviewer-authored field meaning (19 Oct 2026) |
 | Code declaration | `decided_at: Timestamp \| null;` |
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
@@ -10016,7 +13026,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### confirmation_date
 
-Chosen effective confirmation date, distinct from decision time
+**In everyday language:** Chosen effective confirmation date, distinct from decision time.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Chosen effective confirmation date, distinct from decision time
 
 | Property | Definition |
 |---|---|
@@ -10034,7 +13050,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -10052,7 +13074,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -10076,13 +13104,21 @@ Table indexes and lifecycle triggers:
 
 ## core.profile_change_requests
 
+Tracks employee requests to change personal information.
+
 Profile change requests records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -10102,7 +13138,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -10122,7 +13164,13 @@ Database rules (including conditions shared with other fields):
 
 ### field
 
-Master change category, currently family requests
+**In everyday language:** Master change category, currently family requests.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A change-history entry can identify “work email” as the detail that changed.
+
+Technical definition: Master change category, currently family requests
 
 | Property | Definition |
 |---|---|
@@ -10140,7 +13188,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### old_value
 
-Before-image if captured; current family submission leaves it NULL
+**In everyday language:** Before-image if captured; current family submission leaves it not recorded.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** If a permitted detail changes, this preserves what it was before the change.
+
+Technical definition: Before-image if captured; current family submission leaves it NULL
 
 | Property | Definition |
 |---|---|
@@ -10158,7 +13212,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### new_value
 
-Requested master change JSON/text; may contain raw sensitive identifiers
+**In everyday language:** Requested master change a set of related details/text; may contain raw sensitive identifiers.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** If a permitted detail changes, this preserves what was saved after the change.
+
+Technical definition: Requested master change JSON/text; may contain raw sensitive identifiers
 
 | Property | Definition |
 |---|---|
@@ -10176,7 +13236,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Pending/approved/rejected change disposition
+**In everyday language:** Pending/approved/rejected change disposition.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “pending” means Awaiting the required decision or next action.
+
+Technical definition: Pending/approved/rejected change disposition
 
 | Property | Definition |
 |---|---|
@@ -10202,7 +13268,13 @@ Database rules (including conditions shared with other fields):
 
 ### workflow_request_id
 
-Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
+**In everyday language:** Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database link to another record is present.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This record points to an existing entry in requests instead of copying all of that entry’s details.
+
+Technical definition: Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
 
 | Property | Definition |
 |---|---|
@@ -10222,7 +13294,13 @@ Database rules (including conditions shared with other fields):
 
 ### decided_by
 
-Reference linking this record’s decided by to FOREIGN KEY (decided_by) REFERENCES core.users(id).
+**In everyday language:** Identifies decided by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct decided by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s decided by to FOREIGN KEY (decided_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -10242,14 +13320,20 @@ Database rules (including conditions shared with other fields):
 
 ### decided_at
 
-Instant of decided for this record.
+**In everyday language:** HR decision receipt.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: HR decision receipt
 
 | Property | Definition |
 |---|---|
 | SQL type | `timestamp with time zone` |
 | Required | No (NULL allowed; NULL is distinct from zero/false/empty) |
 | Default | No database default |
-| Definition basis | timestamp field convention |
+| Definition basis | reviewer-authored field meaning (19 Oct 2026) |
 | Code declaration | `decided_at: Timestamp \| null;` |
 | Code source | [backend/src/core/db/types.prv.ts](../../backend/src/core/db/types.prv.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
@@ -10260,7 +13344,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -10284,13 +13374,21 @@ Table indexes and lifecycle triggers:
 
 ## core.reporting_tree
 
+Connects employees to their management hierarchy for authorized team views.
+
 core.reporting_tree — closure table, rebuilt by trigger (CORE-10).
 
 Relation kind: table.
 
 ### manager_id
 
-Derived ancestor manager identity; no live FK
+**In everyday language:** worked out from other saved information ancestor manager identity; no live link to another record.
+
+**Why it is kept:** Keeps this record connected to the correct manager, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Derived ancestor manager identity; no live FK
 
 | Property | Definition |
 |---|---|
@@ -10310,7 +13408,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Derived descendant identity; no live FK
+**In everyday language:** worked out from other saved information descendant identity; no live link to another record.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Derived descendant identity; no live FK
 
 | Property | Definition |
 |---|---|
@@ -10330,7 +13434,13 @@ Database rules (including conditions shared with other fields):
 
 ### depth
 
-Number of reporting hops; self depth0 versus direct depth1 distinguishes scope
+**In everyday language:** Number of reporting hops; self depth0 versus direct depth1 distinguishes scope.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Depth distinguishes direct from more distant reporting relationships; it is not employee seniority.
+
+Technical definition: Number of reporting hops; self depth0 versus direct depth1 distinguishes scope
 
 | Property | Definition |
 |---|---|
@@ -10352,13 +13462,21 @@ Table indexes and lifecycle triggers:
 
 ## core.role_permissions
 
+Records which actions are allowed for each access role.
+
 Role permissions records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -10378,7 +13496,13 @@ Database rules (including conditions shared with other fields):
 
 ### role_id
 
-Reference linking this record’s role id to FOREIGN KEY (role_id) REFERENCES core.roles(id) ON DELETE CASCADE.
+**In everyday language:** Identifies role connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct role, so related details can be checked together.
+
+**Example:** This record points to an existing entry in roles instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s role id to FOREIGN KEY (role_id) REFERENCES core.roles(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -10399,7 +13523,13 @@ Database rules (including conditions shared with other fields):
 
 ### permission_id
 
-Reference linking this record’s permission id to FOREIGN KEY (permission_id) REFERENCES core.permissions(id) ON DELETE CASCADE.
+**In everyday language:** Identifies permission connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct permission, so related details can be checked together.
+
+**Example:** This record points to an existing entry in permissions instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s permission id to FOREIGN KEY (permission_id) REFERENCES core.permissions(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -10420,7 +13550,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -10438,7 +13574,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -10456,7 +13598,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### scope
 
-Grant population/mutability class: all/org/subtree/own/readonly; central read/write resolution owns interpretation
+**In everyday language:** Grant population/mutability class: all/org/subtree/own/readonly; central read/write resolution owns interpretation.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “all” means All records within the enclosing permission scope.
+
+Technical definition: Grant population/mutability class: all/org/subtree/own/readonly; central read/write resolution owns interpretation
 
 | Property | Definition |
 |---|---|
@@ -10494,13 +13642,21 @@ Table indexes and lifecycle triggers:
 
 ## core.roles
 
+Lists access roles used to group permitted actions.
+
 core.roles — role catalog (docs/08 §1).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -10520,7 +13676,13 @@ Database rules (including conditions shared with other fields):
 
 ### code
 
-Stable configurable role identity
+**In everyday language:** Stable configurable role identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Stable configurable role identity
 
 | Property | Definition |
 |---|---|
@@ -10540,7 +13702,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Administration display label
+**In everyday language:** Administration display label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Administration display label
 
 | Property | Definition |
 |---|---|
@@ -10558,7 +13726,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -10576,7 +13750,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -10600,13 +13780,21 @@ Table indexes and lifecycle triggers:
 
 ## core.separations
 
+Tracks resignations and other exits, including approved last working dates.
+
 core.separations — LC-06 resignation and separation records.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -10626,7 +13814,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -10646,7 +13840,13 @@ Database rules (including conditions shared with other fields):
 
 ### initiated_at
 
-Separation request receipt instant
+**In everyday language:** Separation request receipt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Separation request receipt instant
 
 | Property | Definition |
 |---|---|
@@ -10664,7 +13864,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### initiated_by
 
-Employee/HR initiation mode, not a user FK
+**In everyday language:** Employee/HR initiation mode, not a user link to another record.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “employee” means Employee.
+
+Technical definition: Employee/HR initiation mode, not a user FK
 
 | Property | Definition |
 |---|---|
@@ -10689,7 +13895,13 @@ Database rules (including conditions shared with other fields):
 
 ### reason
 
-Employee/HR separation explanation
+**In everyday language:** Employee/HR separation explanation.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Employee/HR separation explanation
 
 | Property | Definition |
 |---|---|
@@ -10707,7 +13919,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### resignation_date
 
-Business resignation date
+**In everyday language:** Business resignation date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Business resignation date
 
 | Property | Definition |
 |---|---|
@@ -10725,7 +13943,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### notice_period_days
 
-Configured/agreed notice requirement
+**In everyday language:** Configured/agreed notice requirement.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Configured/agreed notice requirement
 
 | Property | Definition |
 |---|---|
@@ -10743,7 +13967,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### requested_lwd
 
-Requested last working date
+**In everyday language:** Requested last working date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Requested last working date
 
 | Property | Definition |
 |---|---|
@@ -10761,7 +13991,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### approved_lwd
 
-Approved last working date controlling exit effect
+**In everyday language:** Approved last working date controlling exit effect.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Approved last working date controlling exit effect
 
 | Property | Definition |
 |---|---|
@@ -10779,7 +14015,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### shortfall_days
 
-Notice shortfall quantity requiring approved recovery policy
+**In everyday language:** Notice shortfall quantity requiring approved recovery policy.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Notice shortfall quantity requiring approved recovery policy
 
 | Property | Definition |
 |---|---|
@@ -10791,13 +14033,21 @@ Notice shortfall quantity requiring approved recovery policy
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
 
+Units: Days; fractional values represent part of a day.
+
 Value domain: no finite value list extracted. Use the SQL/code type and the complete rules below. Foreign-key values come from the referenced catalog; free text and extensible JSON have no invented fixed list.
 
 Database rules: no column-linked constraint in the captured catalog beyond the type/nullability/default above.
 
 ### workflow_request_id
 
-Approval instance link; live FK absent
+**In everyday language:** Approval instance link; live link to another record absent.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Approval instance link; live FK absent
 
 | Property | Definition |
 |---|---|
@@ -10815,7 +14065,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Pending/approved/completed/withdrawn/rejected lifecycle
+**In everyday language:** Pending/approved/completed/withdrawn/rejected progress from creation to closure.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “pending” means Awaiting the required decision or next action.
+
+Technical definition: Pending/approved/completed/withdrawn/rejected lifecycle
 
 | Property | Definition |
 |---|---|
@@ -10843,7 +14099,13 @@ Database rules (including conditions shared with other fields):
 
 ### fnf_id
 
-Settlement link; cyclic domain reference lacks live FK
+**In everyday language:** Settlement link; cyclic domain reference lacks live link to another record.
+
+**Why it is kept:** Keeps this record connected to the correct fnf, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Settlement link; cyclic domain reference lacks live FK
 
 | Property | Definition |
 |---|---|
@@ -10861,7 +14123,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -10879,7 +14147,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -10897,7 +14171,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### exit_type
 
-Classification of the employee's exit used by separation and final settlement.
+**In everyday language:** Classification of the employee's exit used by separation and final settlement.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “resignation” means Resignation.
+
+Technical definition: Classification of the employee's exit used by separation and final settlement.
 
 | Property | Definition |
 |---|---|
@@ -10931,13 +14211,21 @@ Table indexes and lifecycle triggers:
 
 ## core.settings
 
+Keeps configurable system and policy choices.
+
 core.settings — typed policy store; nothing policy-like is hardcoded (docs/04 §8).
 
 Relation kind: table.
 
 ### key
 
-Stable runtime configuration identity
+**In everyday language:** Stable runtime configuration identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Stable runtime configuration identity
 
 | Property | Definition |
 |---|---|
@@ -10957,7 +14245,13 @@ Database rules (including conditions shared with other fields):
 
 ### value
 
-Typed policy/configuration value serialized as text
+**In everyday language:** Typed policy/configuration value serialized as text.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** Read this together with the named parameter: a rate, a wage ceiling and a rupee cap can all be numbers but have different meanings.
+
+Technical definition: Typed policy/configuration value serialized as text
 
 | Property | Definition |
 |---|---|
@@ -10975,7 +14269,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### value_type
 
-Discriminator for runtime parsing
+**In everyday language:** choice that tells the system which kind this is for runtime parsing.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “number” means Number.
+
+Technical definition: Discriminator for runtime parsing
 
 | Property | Definition |
 |---|---|
@@ -11000,14 +14300,20 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### description
 
-Human-readable description of this record.
+**In everyday language:** Operator-facing purpose of setting; not enforcement.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Operator-facing purpose of setting; not enforcement
 
 | Property | Definition |
 |---|---|
 | SQL type | `text` |
 | Required | Yes |
 | Default | No database default |
-| Definition basis | catalog relationship / shared record convention |
+| Definition basis | reviewer-authored field meaning (19 Oct 2026) |
 | Code declaration | `description: string;` |
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
@@ -11018,7 +14324,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_by
 
-User who last updated this record.
+**In everyday language:** User who last updated this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who last changed the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who last updated this record.
 
 | Property | Definition |
 |---|---|
@@ -11038,7 +14350,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -11056,7 +14374,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -11079,13 +14403,21 @@ Table indexes and lifecycle triggers:
 
 ## core.transfers
 
+Tracks proposed and approved changes in employee placement or employment assignment.
+
 Transfers records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -11105,7 +14437,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -11125,7 +14463,13 @@ Database rules (including conditions shared with other fields):
 
 ### transfer_type
 
-Promotion/department/location/entity movement class
+**In everyday language:** Promotion/department/location/entity movement class.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “department” means Department.
+
+Technical definition: Promotion/department/location/entity movement class
 
 | Property | Definition |
 |---|---|
@@ -11152,7 +14496,13 @@ Database rules (including conditions shared with other fields):
 
 ### effective_date
 
-Business effective date, distinct from approval instant
+**In everyday language:** Business effective date, distinct from approval instant.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Business effective date, distinct from approval instant
 
 | Property | Definition |
 |---|---|
@@ -11170,7 +14520,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Pending/approved/applied/rejected/cancelled progression
+**In everyday language:** Pending/approved/applied/rejected/cancelled progression.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “pending” means Awaiting the required decision or next action.
+
+Technical definition: Pending/approved/applied/rejected/cancelled progression
 
 | Property | Definition |
 |---|---|
@@ -11198,7 +14554,13 @@ Database rules (including conditions shared with other fields):
 
 ### current_company_id
 
-Reference linking this record’s current company id to FOREIGN KEY (current_company_id) REFERENCES core.companies(id).
+**In everyday language:** Identifies current company connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct current company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s current company id to FOREIGN KEY (current_company_id) REFERENCES core.companies(id).
 
 | Property | Definition |
 |---|---|
@@ -11218,7 +14580,13 @@ Database rules (including conditions shared with other fields):
 
 ### current_department_id
 
-Reference linking this record’s current department id to FOREIGN KEY (current_department_id) REFERENCES core.departments(id).
+**In everyday language:** Identifies current department connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct current department, so related details can be checked together.
+
+**Example:** This record points to an existing entry in departments instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s current department id to FOREIGN KEY (current_department_id) REFERENCES core.departments(id).
 
 | Property | Definition |
 |---|---|
@@ -11238,7 +14606,13 @@ Database rules (including conditions shared with other fields):
 
 ### current_location_id
 
-Reference linking this record’s current location id to FOREIGN KEY (current_location_id) REFERENCES core.locations(id).
+**In everyday language:** Identifies current location connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct current location, so related details can be checked together.
+
+**Example:** This record points to an existing entry in locations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s current location id to FOREIGN KEY (current_location_id) REFERENCES core.locations(id).
 
 | Property | Definition |
 |---|---|
@@ -11258,7 +14632,13 @@ Database rules (including conditions shared with other fields):
 
 ### current_designation_id
 
-Reference linking this record’s current designation id to FOREIGN KEY (current_designation_id) REFERENCES core.designations(id).
+**In everyday language:** Identifies current designation connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct current designation, so related details can be checked together.
+
+**Example:** This record points to an existing entry in designations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s current designation id to FOREIGN KEY (current_designation_id) REFERENCES core.designations(id).
 
 | Property | Definition |
 |---|---|
@@ -11278,7 +14658,13 @@ Database rules (including conditions shared with other fields):
 
 ### current_grade_id
 
-Reference linking this record’s current grade id to FOREIGN KEY (current_grade_id) REFERENCES core.grades(id).
+**In everyday language:** Identifies current grade connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct current grade, so related details can be checked together.
+
+**Example:** This record points to an existing entry in grades instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s current grade id to FOREIGN KEY (current_grade_id) REFERENCES core.grades(id).
 
 | Property | Definition |
 |---|---|
@@ -11298,7 +14684,13 @@ Database rules (including conditions shared with other fields):
 
 ### current_reporting_manager_id
 
-Reference linking this record’s current reporting manager id to FOREIGN KEY (current_reporting_manager_id) REFERENCES core.employees(id).
+**In everyday language:** Identifies current reporting manager connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct current reporting manager, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s current reporting manager id to FOREIGN KEY (current_reporting_manager_id) REFERENCES core.employees(id).
 
 | Property | Definition |
 |---|---|
@@ -11318,7 +14710,13 @@ Database rules (including conditions shared with other fields):
 
 ### current_ecode
 
-Before-movement code snapshot
+**In everyday language:** Before-movement code copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Before-movement code snapshot
 
 | Property | Definition |
 |---|---|
@@ -11336,7 +14734,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### target_company_id
 
-Reference linking this record’s target company id to FOREIGN KEY (target_company_id) REFERENCES core.companies(id).
+**In everyday language:** Identifies target company connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct target company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s target company id to FOREIGN KEY (target_company_id) REFERENCES core.companies(id).
 
 | Property | Definition |
 |---|---|
@@ -11356,7 +14760,13 @@ Database rules (including conditions shared with other fields):
 
 ### target_department_id
 
-Reference linking this record’s target department id to FOREIGN KEY (target_department_id) REFERENCES core.departments(id).
+**In everyday language:** Identifies target department connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct target department, so related details can be checked together.
+
+**Example:** This record points to an existing entry in departments instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s target department id to FOREIGN KEY (target_department_id) REFERENCES core.departments(id).
 
 | Property | Definition |
 |---|---|
@@ -11376,7 +14786,13 @@ Database rules (including conditions shared with other fields):
 
 ### target_location_id
 
-Reference linking this record’s target location id to FOREIGN KEY (target_location_id) REFERENCES core.locations(id).
+**In everyday language:** Identifies target location connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct target location, so related details can be checked together.
+
+**Example:** This record points to an existing entry in locations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s target location id to FOREIGN KEY (target_location_id) REFERENCES core.locations(id).
 
 | Property | Definition |
 |---|---|
@@ -11396,7 +14812,13 @@ Database rules (including conditions shared with other fields):
 
 ### target_designation_id
 
-Reference linking this record’s target designation id to FOREIGN KEY (target_designation_id) REFERENCES core.designations(id).
+**In everyday language:** Identifies target designation connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct target designation, so related details can be checked together.
+
+**Example:** This record points to an existing entry in designations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s target designation id to FOREIGN KEY (target_designation_id) REFERENCES core.designations(id).
 
 | Property | Definition |
 |---|---|
@@ -11416,7 +14838,13 @@ Database rules (including conditions shared with other fields):
 
 ### target_grade_id
 
-Reference linking this record’s target grade id to FOREIGN KEY (target_grade_id) REFERENCES core.grades(id).
+**In everyday language:** Identifies target grade connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct target grade, so related details can be checked together.
+
+**Example:** This record points to an existing entry in grades instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s target grade id to FOREIGN KEY (target_grade_id) REFERENCES core.grades(id).
 
 | Property | Definition |
 |---|---|
@@ -11436,7 +14864,13 @@ Database rules (including conditions shared with other fields):
 
 ### target_reporting_manager_id
 
-Reference linking this record’s target reporting manager id to FOREIGN KEY (target_reporting_manager_id) REFERENCES core.employees(id).
+**In everyday language:** Identifies target reporting manager connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct target reporting manager, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s target reporting manager id to FOREIGN KEY (target_reporting_manager_id) REFERENCES core.employees(id).
 
 | Property | Definition |
 |---|---|
@@ -11456,7 +14890,13 @@ Database rules (including conditions shared with other fields):
 
 ### target_ecode
 
-After-movement allocated entity code snapshot
+**In everyday language:** After-movement allocated entity code copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: After-movement allocated entity code snapshot
 
 | Property | Definition |
 |---|---|
@@ -11474,7 +14914,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### salary_revision_amount
 
-Proposed compensation revision requiring approved effective salary transaction
+**In everyday language:** Proposed compensation revision requiring approved effective salary transaction.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Proposed compensation revision requiring approved effective salary transaction
 
 | Property | Definition |
 |---|---|
@@ -11494,7 +14940,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### leave_treatment
 
-Policy selection for carrying or settling leave in entity move
+**In everyday language:** Policy selection for carrying or settling leave in entity move.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “transfer” means Transfer.
+
+Technical definition: Policy selection for carrying or settling leave in entity move
 
 | Property | Definition |
 |---|---|
@@ -11519,7 +14971,13 @@ Database rules (including conditions shared with other fields):
 
 ### reason
 
-Movement justification
+**In everyday language:** Movement justification.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Movement justification
 
 | Property | Definition |
 |---|---|
@@ -11537,7 +14995,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### remarks
 
-Additional movement context
+**In everyday language:** Additional movement context.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A reviewer reads the saved explanation to understand the particular case before taking the next action.
+
+Technical definition: Additional movement context
 
 | Property | Definition |
 |---|---|
@@ -11555,7 +15019,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### approved_by
 
-Reference linking this record’s approved by to FOREIGN KEY (approved_by) REFERENCES core.users(id).
+**In everyday language:** Identifies approved by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct approved by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s approved by to FOREIGN KEY (approved_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -11575,7 +15045,13 @@ Database rules (including conditions shared with other fields):
 
 ### approved_at
 
-Workflow approval instant
+**In everyday language:** Workflow approval instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Workflow approval instant
 
 | Property | Definition |
 |---|---|
@@ -11593,7 +15069,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### notified_at
 
-Transfer notification enqueue/receipt marker, must not imply external delivery without proof
+**In everyday language:** Transfer notification enqueue/receipt marker, must not imply external delivery without proof.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Transfer notification enqueue/receipt marker, must not imply external delivery without proof
 
 | Property | Definition |
 |---|---|
@@ -11611,7 +15093,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -11631,7 +15119,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -11649,7 +15143,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -11667,7 +15167,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### workflow_request_id
 
-Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
+**In everyday language:** Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database link to another record is present.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This record points to an existing entry in requests instead of copying all of that entry’s details.
+
+Technical definition: Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
 
 | Property | Definition |
 |---|---|
@@ -11696,13 +15202,21 @@ Table indexes and lifecycle triggers:
 
 ## core.user_roles
 
+Records the access roles assigned to each login account.
+
 User roles records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -11722,7 +15236,13 @@ Database rules (including conditions shared with other fields):
 
 ### user_id
 
-Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id) ON DELETE CASCADE.
+**In everyday language:** Identifies the login account connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct login account, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -11742,7 +15262,13 @@ Database rules (including conditions shared with other fields):
 
 ### role_id
 
-Reference linking this record’s role id to FOREIGN KEY (role_id) REFERENCES core.roles(id) ON DELETE CASCADE.
+**In everyday language:** Identifies role connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct role, so related details can be checked together.
+
+**Example:** This record points to an existing entry in roles instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s role id to FOREIGN KEY (role_id) REFERENCES core.roles(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -11762,7 +15288,13 @@ Database rules (including conditions shared with other fields):
 
 ### scope_org_unit_id
 
-Reference linking this record’s scope org unit id to FOREIGN KEY (scope_org_unit_id) REFERENCES core.org_units(id).
+**In everyday language:** Identifies scope org unit connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct scope org unit, so related details can be checked together.
+
+**Example:** This record points to an existing entry in org units instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s scope org unit id to FOREIGN KEY (scope_org_unit_id) REFERENCES core.org_units(id).
 
 | Property | Definition |
 |---|---|
@@ -11782,7 +15314,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -11800,7 +15338,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -11828,13 +15372,21 @@ Table indexes and lifecycle triggers:
 
 ## core.users
 
+Keeps login accounts; a login account and an employee record are different things.
+
 core.users — auth accounts (docs/03 §1).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -11854,7 +15406,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -11874,7 +15432,13 @@ Database rules (including conditions shared with other fields):
 
 ### email
 
-Unique login principal identifier
+**In everyday language:** Unique login principal identifier.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An illustrative address is sample@example.com. Its purpose depends on whether this is a login or contact record.
+
+Technical definition: Unique login principal identifier
 
 | Property | Definition |
 |---|---|
@@ -11894,7 +15458,13 @@ Database rules (including conditions shared with other fields):
 
 ### password_hash
 
-Bcrypt authentication secret digest
+**In everyday language:** Bcrypt authentication secret digital fingerprint.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Bcrypt authentication secret digest
 
 | Property | Definition |
 |---|---|
@@ -11912,7 +15482,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Login authorization availability, distinct from employee/alumni lifecycle
+**In everyday language:** Login authorization availability, distinct from employee/alumni progress from creation to closure.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Login authorization availability, distinct from employee/alumni lifecycle
 
 | Property | Definition |
 |---|---|
@@ -11935,7 +15511,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### last_login_at
 
-Last successful login instant
+**In everyday language:** Last successful login instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Last successful login instant
 
 | Property | Definition |
 |---|---|
@@ -11953,7 +15535,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### failed_attempts
 
-Serialized authentication failure count
+**In everyday language:** Serialized authentication failure count.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Serialized authentication failure count
 
 | Property | Definition |
 |---|---|
@@ -11971,7 +15559,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### locked_until
 
-Authentication backoff cutoff
+**In everyday language:** Authentication backoff cutoff.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** If sign-in is locked until a recorded time, access remains restricted under the account rules until the restriction is cleared or expires.
+
+Technical definition: Authentication backoff cutoff
 
 | Property | Definition |
 |---|---|
@@ -11989,7 +15583,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -12007,7 +15607,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -12025,7 +15631,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### must_change_password
 
-Mandatory password-change gate
+**In everyday language:** Mandatory password-change gate.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Mandatory password-change gate
 
 | Property | Definition |
 |---|---|
@@ -12048,7 +15660,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### password_changed_at
 
-Current password version/effective instant
+**In everyday language:** Current password version/effective instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Current password version/effective instant
 
 | Property | Definition |
 |---|---|
@@ -12066,7 +15684,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### deactivated_at
 
-Account disable provenance; reactivation semantics need consistency with is_active
+**In everyday language:** Account disable where the information came from; reactivation semantics need consistency with is_active.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Account disable provenance; reactivation semantics need consistency with is_active
 
 | Property | Definition |
 |---|---|

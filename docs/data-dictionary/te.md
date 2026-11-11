@@ -4,13 +4,21 @@
 
 ## te.advances
 
+Tracks money requested or provided before business travel.
+
 Advances records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### trip_id
 
-Reference linking this record’s trip id to FOREIGN KEY (trip_id) REFERENCES te.trips(id).
+**In everyday language:** Identifies trip connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct trip, so related details can be checked together.
+
+**Example:** This record points to an existing entry in trips instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s trip id to FOREIGN KEY (trip_id) REFERENCES te.trips(id).
 
 | Property | Definition |
 |---|---|
@@ -50,7 +64,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -70,7 +90,13 @@ Database rules (including conditions shared with other fields):
 
 ### amount_paise
 
-Monetary amount stored as integer paise (100 paise = one Indian rupee).
+**In everyday language:** Monetary amount stored as whole numbers of paise (100 paise = one Indian rupee).
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Monetary amount stored as integer paise (100 paise = one Indian rupee).
 
 | Property | Definition |
 |---|---|
@@ -92,7 +118,13 @@ Database rules (including conditions shared with other fields):
 
 ### purpose
 
-Declared business purpose of this request, processing activity or consent.
+**In everyday language:** Declared business purpose of this request, processing activity or consent.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A privacy or travel record explains the particular reason information is used or a trip is requested.
+
+Technical definition: Declared business purpose of this request, processing activity or consent.
 
 | Property | Definition |
 |---|---|
@@ -110,7 +142,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+**In everyday language:** Current progress from creation to closure state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “requested” means Record is requested in this progress from creation to closure.
+
+Technical definition: Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
 
 | Property | Definition |
 |---|---|
@@ -139,7 +177,13 @@ Database rules (including conditions shared with other fields):
 
 ### workflow_request_id
 
-Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
+**In everyday language:** Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database link to another record is present.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
 
 | Property | Definition |
 |---|---|
@@ -157,7 +201,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### disbursed_at
 
-Instant of disbursed for this record.
+**In everyday language:** Date and time of disbursed for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of disbursed for this record.
 
 | Property | Definition |
 |---|---|
@@ -175,7 +225,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -193,7 +249,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -217,13 +279,21 @@ Table indexes and lifecycle triggers:
 
 ## te.budget_reservations
 
+Tracks amounts reserved against or released back to travel budgets.
+
 Budget reservations records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -243,7 +313,13 @@ Database rules (including conditions shared with other fields):
 
 ### trip_id
 
-Reference linking this record’s trip id to FOREIGN KEY (trip_id) REFERENCES te.trips(id).
+**In everyday language:** Identifies trip connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct trip, so related details can be checked together.
+
+**Example:** This record points to an existing entry in trips instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s trip id to FOREIGN KEY (trip_id) REFERENCES te.trips(id).
 
 | Property | Definition |
 |---|---|
@@ -263,7 +339,13 @@ Database rules (including conditions shared with other fields):
 
 ### claim_id
 
-Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES te.claims(id).
+**In everyday language:** Identifies the expense claim connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct expense claim, so related details can be checked together.
+
+**Example:** This record points to an existing entry in claims instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES te.claims(id).
 
 | Property | Definition |
 |---|---|
@@ -283,7 +365,13 @@ Database rules (including conditions shared with other fields):
 
 ### movement
 
-Ledger movement classification controlling reservation or release; permitted codes are listed in the database rules.
+**In everyday language:** history of additions and deductions movement classification controlling reservation or release; permitted codes are listed in the database rules.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “reserve” means Reserve classification for movement.
+
+Technical definition: Ledger movement classification controlling reservation or release; permitted codes are listed in the database rules.
 
 | Property | Definition |
 |---|---|
@@ -308,7 +396,13 @@ Database rules (including conditions shared with other fields):
 
 ### amount_paise
 
-Monetary amount stored as integer paise (100 paise = one Indian rupee).
+**In everyday language:** Monetary amount stored as whole numbers of paise (100 paise = one Indian rupee).
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Monetary amount stored as integer paise (100 paise = one Indian rupee).
 
 | Property | Definition |
 |---|---|
@@ -330,7 +424,13 @@ Database rules (including conditions shared with other fields):
 
 ### reason
 
-Recorded business justification for the operation or decision.
+**In everyday language:** Recorded business justification for the operation or decision.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Recorded business justification for the operation or decision.
 
 | Property | Definition |
 |---|---|
@@ -348,7 +448,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### actor_user_id
 
-Reference linking this record’s actor user id to FOREIGN KEY (actor_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies actor user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct actor user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s actor user id to FOREIGN KEY (actor_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -368,7 +474,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -393,13 +505,21 @@ Table indexes and lifecycle triggers:
 
 ## te.budgets
 
+Defines travel entitlement limits by grade and travel category.
+
 Budgets records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -419,7 +539,13 @@ Database rules (including conditions shared with other fields):
 
 ### grade_level
 
-Employee grade selector used for travel entitlement limits.
+**In everyday language:** Employee grade selector used for travel entitlement limits.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the grade level shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Employee grade selector used for travel entitlement limits.
 
 | Property | Definition |
 |---|---|
@@ -439,7 +565,13 @@ Database rules (including conditions shared with other fields):
 
 ### travel_type
 
-Domestic or international travel classification used for entitlement and routing.
+**In everyday language:** Domestic or international travel classification used for entitlement and routing.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “domestic” means Domestic classification for travel type.
+
+Technical definition: Domestic or international travel classification used for entitlement and routing.
 
 | Property | Definition |
 |---|---|
@@ -465,7 +597,13 @@ Database rules (including conditions shared with other fields):
 
 ### flight_class
 
-Permitted flight cabin class under the travel entitlement rule.
+**In everyday language:** Permitted flight cabin class under the travel entitlement rule.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the flight class.
+
+Technical definition: Permitted flight cabin class under the travel entitlement rule.
 
 | Property | Definition |
 |---|---|
@@ -483,7 +621,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### hotel_per_night_paise
 
-Hotel allowance/budget per night in integer paise.
+**In everyday language:** Hotel allowance/budget per night in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Hotel allowance/budget per night in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -503,7 +647,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### daily_allowance_paise
 
-Daily allowance entitlement in integer paise.
+**In everyday language:** Daily allowance entitlement in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Daily allowance entitlement in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -523,7 +673,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### local_conveyance_paise
 
-Local conveyance entitlement in integer paise.
+**In everyday language:** Local conveyance entitlement in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Local conveyance entitlement in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -543,7 +699,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Whether this catalog or account record is currently available for use; historical references remain.
+**In everyday language:** Whether this list of available choices or account record is currently available for use; historical references remain.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether this catalog or account record is currently available for use; historical references remain.
 
 | Property | Definition |
 |---|---|
@@ -571,13 +733,21 @@ Table indexes and lifecycle triggers:
 
 ## te.claim_items
 
+Keeps individual expenses submitted in a travel claim.
+
 Claim items records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -597,7 +767,13 @@ Database rules (including conditions shared with other fields):
 
 ### claim_id
 
-Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES te.claims(id) ON DELETE CASCADE.
+**In everyday language:** Identifies the expense claim connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct expense claim, so related details can be checked together.
+
+**Example:** This record points to an existing entry in claims instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES te.claims(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -617,7 +793,13 @@ Database rules (including conditions shared with other fields):
 
 ### category
 
-Business classification used by this record/report; its allowed values are table-specific.
+**In everyday language:** Business classification used by this record/report; its allowed values are table-specific.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “flight” means Flight classification for category.
+
+Technical definition: Business classification used by this record/report; its allowed values are table-specific.
 
 | Property | Definition |
 |---|---|
@@ -649,7 +831,13 @@ Database rules (including conditions shared with other fields):
 
 ### item_date
 
-Calendar date on which the travel expense was incurred.
+**In everyday language:** Calendar date on which the travel expense was incurred.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Calendar date on which the travel expense was incurred.
 
 | Property | Definition |
 |---|---|
@@ -667,7 +855,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### amount_paise
 
-Monetary amount stored as integer paise (100 paise = one Indian rupee).
+**In everyday language:** Monetary amount stored as whole numbers of paise (100 paise = one Indian rupee).
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Monetary amount stored as integer paise (100 paise = one Indian rupee).
 
 | Property | Definition |
 |---|---|
@@ -687,7 +881,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### currency
 
-Currency code in which the associated original amount is expressed.
+**In everyday language:** Currency code in which the associated original amount is expressed.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** INR denotes Indian rupees. Other currencies require their own configured treatment.
+
+Technical definition: Currency code in which the associated original amount is expressed.
 
 | Property | Definition |
 |---|---|
@@ -705,7 +905,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### fx_rate_to_inr
 
-Conversion multiplier from one unit of the original currency to Indian rupees; monetary conversion uses exact decimal arithmetic.
+**In everyday language:** Conversion multiplier from one unit of the original currency to Indian rupees; monetary conversion uses exact decimal arithmetic.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Illustration only: at ₹80 per currency unit, 10 units convert to ₹800 before any applicable rounding.
+
+Technical definition: Conversion multiplier from one unit of the original currency to Indian rupees; monetary conversion uses exact decimal arithmetic.
 
 | Property | Definition |
 |---|---|
@@ -723,7 +929,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### inr_amount_paise
 
-Converted Indian-rupee value of the expense, stored in integer paise.
+**In everyday language:** Converted Indian-rupee value of the expense, stored in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Converted Indian-rupee value of the expense, stored in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -743,7 +955,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### receipt_document_id
 
-Document-registry identity of the supporting receipt; inspect constraints for FK enforcement.
+**In everyday language:** Document-register identity of the supporting receipt; inspect constraints for link to another record enforcement.
+
+**Why it is kept:** Keeps this record connected to the correct receipt document, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Document-registry identity of the supporting receipt; inspect constraints for FK enforcement.
 
 | Property | Definition |
 |---|---|
@@ -761,7 +979,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### receipt_url
 
-Stored receipt reference; presence does not establish that access is public or that bytes are archived.
+**In everyday language:** Stored receipt reference; presence does not establish that access is public or that bytes are archived.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A claim can refer to a supporting receipt; the existence of a reference does not make the receipt public.
+
+Technical definition: Stored receipt reference; presence does not establish that access is public or that bytes are archived.
 
 | Property | Definition |
 |---|---|
@@ -779,7 +1003,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### description
 
-Human-readable description of this record.
+**In everyday language:** Human-readable description of this record.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Human-readable description of this record.
 
 | Property | Definition |
 |---|---|
@@ -797,7 +1027,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -820,13 +1056,21 @@ Table indexes and lifecycle triggers:
 
 ## te.claims
 
+Tracks travel reimbursement claims and adjustment of advances.
+
 Claims records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -846,7 +1090,13 @@ Database rules (including conditions shared with other fields):
 
 ### reference_no
 
-Human-readable travel request/claim reference.
+**In everyday language:** Human-readable travel request/claim reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Human-readable travel request/claim reference.
 
 | Property | Definition |
 |---|---|
@@ -866,7 +1116,13 @@ Database rules (including conditions shared with other fields):
 
 ### trip_id
 
-Reference linking this record’s trip id to FOREIGN KEY (trip_id) REFERENCES te.trips(id).
+**In everyday language:** Identifies trip connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct trip, so related details can be checked together.
+
+**Example:** This record points to an existing entry in trips instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s trip id to FOREIGN KEY (trip_id) REFERENCES te.trips(id).
 
 | Property | Definition |
 |---|---|
@@ -886,7 +1142,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -906,7 +1168,13 @@ Database rules (including conditions shared with other fields):
 
 ### total_claimed_paise
 
-Aggregate claimed travel expense in integer paise.
+**In everyday language:** Aggregate claimed travel expense in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Aggregate claimed travel expense in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -926,7 +1194,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### approved_amount_paise
 
-Approved travel expense amount in integer paise.
+**In everyday language:** Approved travel expense amount in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Approved travel expense amount in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -946,7 +1220,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### advance_adjusted_paise
 
-Travel advance amount offset against this claim in integer paise.
+**In everyday language:** Travel advance amount offset against this claim in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Travel advance amount offset against this claim in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -966,7 +1246,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### net_payable_paise
 
-Net amount payable to the employee in integer paise after advance adjustment.
+**In everyday language:** Net amount payable to the employee in whole numbers of paise after advance adjustment.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Net amount payable to the employee in integer paise after advance adjustment.
 
 | Property | Definition |
 |---|---|
@@ -986,7 +1272,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### net_recoverable_paise
 
-Net amount recoverable from the employee in integer paise after settlement.
+**In everyday language:** Net amount recoverable from the employee in whole numbers of paise after settlement.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Net amount recoverable from the employee in integer paise after settlement.
 
 | Property | Definition |
 |---|---|
@@ -1006,7 +1298,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+**In everyday language:** Current progress from creation to closure state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “draft” means Editable draft before submission/preparation.
+
+Technical definition: Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
 
 | Property | Definition |
 |---|---|
@@ -1035,7 +1333,13 @@ Database rules (including conditions shared with other fields):
 
 ### settlement_status
 
-State of financial settlement, separate from approval status.
+**In everyday language:** State of financial settlement, separate from approval status.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “unsettled” means Record is unsettled in this progress from creation to closure.
+
+Technical definition: State of financial settlement, separate from approval status.
 
 | Property | Definition |
 |---|---|
@@ -1060,7 +1364,13 @@ Database rules (including conditions shared with other fields):
 
 ### workflow_request_id
 
-Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
+**In everyday language:** Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database link to another record is present.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
 
 | Property | Definition |
 |---|---|
@@ -1078,7 +1388,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1096,7 +1412,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -1114,7 +1436,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### summary_document_id
 
-Reference linking this record’s summary document id to FOREIGN KEY (summary_document_id) REFERENCES core.documents(id).
+**In everyday language:** Identifies summary document connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct summary document, so related details can be checked together.
+
+**Example:** This record points to an existing entry in documents instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s summary document id to FOREIGN KEY (summary_document_id) REFERENCES core.documents(id).
 
 | Property | Definition |
 |---|---|
@@ -1134,7 +1462,13 @@ Database rules (including conditions shared with other fields):
 
 ### summary_document_url
 
-Reference to the generated claim summary document.
+**In everyday language:** Reference to the generated claim summary document.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Reference to the generated claim summary document.
 
 | Property | Definition |
 |---|---|
@@ -1152,7 +1486,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### period_from
 
-First calendar date of the covered period.
+**In everyday language:** First calendar date of the covered period.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: First calendar date of the covered period.
 
 | Property | Definition |
 |---|---|
@@ -1170,7 +1510,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### period_to
 
-Last calendar date of the covered period; see constraints and service for boundary validation.
+**In everyday language:** Last calendar date of the covered period; see constraints and service for boundary validation.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Last calendar date of the covered period; see constraints and service for boundary validation.
 
 | Property | Definition |
 |---|---|
@@ -1195,13 +1541,21 @@ Table indexes and lifecycle triggers:
 
 ## te.settlements
 
+Records the final travel amount payable to or recoverable from an employee.
+
 Settlements records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1221,7 +1575,13 @@ Database rules (including conditions shared with other fields):
 
 ### claim_id
 
-Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES te.claims(id).
+**In everyday language:** Identifies the expense claim connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct expense claim, so related details can be checked together.
+
+**Example:** This record points to an existing entry in claims instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES te.claims(id).
 
 | Property | Definition |
 |---|---|
@@ -1241,7 +1601,13 @@ Database rules (including conditions shared with other fields):
 
 ### trip_id
 
-Reference linking this record’s trip id to FOREIGN KEY (trip_id) REFERENCES te.trips(id).
+**In everyday language:** Identifies trip connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct trip, so related details can be checked together.
+
+**Example:** This record points to an existing entry in trips instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s trip id to FOREIGN KEY (trip_id) REFERENCES te.trips(id).
 
 | Property | Definition |
 |---|---|
@@ -1261,7 +1627,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -1281,7 +1653,13 @@ Database rules (including conditions shared with other fields):
 
 ### settlement_mode
 
-Configured payment or recovery method for settling the claim.
+**In everyday language:** Configured payment or recovery method for settling the claim.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “AUTO” means Auto.
+
+Technical definition: Configured payment or recovery method for settling the claim.
 
 | Property | Definition |
 |---|---|
@@ -1306,7 +1684,13 @@ Database rules (including conditions shared with other fields):
 
 ### claimed_amount_paise
 
-Expense amount used in settlement, in integer paise.
+**In everyday language:** Expense amount used in settlement, in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Expense amount used in settlement, in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -1326,7 +1710,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### advance_amount_paise
 
-Advance amount used in settlement, in integer paise.
+**In everyday language:** Advance amount used in settlement, in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Advance amount used in settlement, in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -1346,7 +1736,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### net_payable_paise
 
-Net amount payable to the employee in integer paise after advance adjustment.
+**In everyday language:** Net amount payable to the employee in whole numbers of paise after advance adjustment.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Net amount payable to the employee in integer paise after advance adjustment.
 
 | Property | Definition |
 |---|---|
@@ -1366,7 +1762,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### net_recoverable_paise
 
-Net amount recoverable from the employee in integer paise after settlement.
+**In everyday language:** Net amount recoverable from the employee in whole numbers of paise after settlement.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Net amount recoverable from the employee in integer paise after settlement.
 
 | Property | Definition |
 |---|---|
@@ -1386,7 +1788,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### recovery_channel
 
-Configured channel through which excess advance is to be recovered.
+**In everyday language:** Configured channel through which excess advance is to be recovered.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “payroll_deduction” means Recover through authorized payroll deduction.
+
+Technical definition: Configured channel through which excess advance is to be recovered.
 
 | Property | Definition |
 |---|---|
@@ -1412,7 +1820,13 @@ Database rules (including conditions shared with other fields):
 
 ### settled_by
 
-Reference linking this record’s settled by to FOREIGN KEY (settled_by) REFERENCES core.users(id).
+**In everyday language:** Identifies settled by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct settled by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s settled by to FOREIGN KEY (settled_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -1432,7 +1846,13 @@ Database rules (including conditions shared with other fields):
 
 ### settled_at
 
-Instant of settled for this record.
+**In everyday language:** Date and time of settled for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of settled for this record.
 
 | Property | Definition |
 |---|---|
@@ -1450,7 +1870,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+**In everyday language:** Current progress from creation to closure state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “pending” means Awaiting the required decision or next action.
+
+Technical definition: Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
 
 | Property | Definition |
 |---|---|
@@ -1482,13 +1908,21 @@ Table indexes and lifecycle triggers:
 
 ## te.trip_itineraries
 
+Keeps travel segments, bookings and accommodation arrangements.
+
 Trip itineraries records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1508,7 +1942,13 @@ Database rules (including conditions shared with other fields):
 
 ### trip_id
 
-Reference linking this record’s trip id to FOREIGN KEY (trip_id) REFERENCES te.trips(id) ON DELETE CASCADE.
+**In everyday language:** Identifies trip connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct trip, so related details can be checked together.
+
+**Example:** This record points to an existing entry in trips instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s trip id to FOREIGN KEY (trip_id) REFERENCES te.trips(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -1528,7 +1968,13 @@ Database rules (including conditions shared with other fields):
 
 ### segment_type
 
-Transport/accommodation category of the itinerary segment.
+**In everyday language:** Transport/accommodation category of the itinerary segment.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “flight” means Flight.
+
+Technical definition: Transport/accommodation category of the itinerary segment.
 
 | Property | Definition |
 |---|---|
@@ -1557,7 +2003,13 @@ Database rules (including conditions shared with other fields):
 
 ### origin
 
-Departure location for this itinerary segment.
+**In everyday language:** Departure location for this itinerary segment.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Kolkata could be the departure city of an illustrative travel segment.
+
+Technical definition: Departure location for this itinerary segment.
 
 | Property | Definition |
 |---|---|
@@ -1575,7 +2027,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### destination
 
-Arrival location for this itinerary segment.
+**In everyday language:** Arrival location for this itinerary segment.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Delhi could be the destination city of an illustrative travel segment.
+
+Technical definition: Arrival location for this itinerary segment.
 
 | Property | Definition |
 |---|---|
@@ -1593,7 +2051,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### departure_date
 
-Planned departure date of the itinerary segment.
+**In everyday language:** Planned departure date of the itinerary segment.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A time such as 9 AM describes the timing of this particular activity; whether a calendar date is also stored depends on the field.
+
+Technical definition: Planned departure date of the itinerary segment.
 
 | Property | Definition |
 |---|---|
@@ -1611,7 +2075,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### arrival_date
 
-Planned arrival date of the itinerary segment.
+**In everyday language:** Planned arrival date of the itinerary segment.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A time such as 9 AM describes the timing of this particular activity; whether a calendar date is also stored depends on the field.
+
+Technical definition: Planned arrival date of the itinerary segment.
 
 | Property | Definition |
 |---|---|
@@ -1629,7 +2099,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### provider
 
-Airline, hotel or other service provider for the itinerary segment.
+**In everyday language:** Airline, hotel or other service provider for the itinerary segment.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This could identify an airline for a flight segment or a hotel for accommodation.
+
+Technical definition: Airline, hotel or other service provider for the itinerary segment.
 
 | Property | Definition |
 |---|---|
@@ -1647,7 +2123,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### booking_reference
 
-Supplier's reservation or booking confirmation reference.
+**In everyday language:** Supplier's reservation or booking confirmation reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A reservation reference connects an itinerary segment to the provider’s booking.
+
+Technical definition: Supplier's reservation or booking confirmation reference.
 
 | Property | Definition |
 |---|---|
@@ -1665,7 +2147,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### estimated_cost_paise
 
-Estimated itinerary cost in integer paise.
+**In everyday language:** Estimated itinerary cost in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Estimated itinerary cost in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -1685,7 +2173,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### actual_cost_paise
 
-Actual itinerary cost in integer paise.
+**In everyday language:** Actual itinerary cost in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Actual itinerary cost in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -1705,7 +2199,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1728,13 +2228,21 @@ Table indexes and lifecycle triggers:
 
 ## te.trips
 
+Tracks business-trip requests, plans, budgets and approvals.
+
 Trips records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1754,7 +2262,13 @@ Database rules (including conditions shared with other fields):
 
 ### reference_no
 
-Human-readable travel request/claim reference.
+**In everyday language:** Human-readable travel request/claim reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Human-readable travel request/claim reference.
 
 | Property | Definition |
 |---|---|
@@ -1774,7 +2288,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -1794,7 +2314,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -1814,7 +2340,13 @@ Database rules (including conditions shared with other fields):
 
 ### trip_name
 
-Human-readable title of the proposed trip.
+**In everyday language:** Human-readable title of the proposed trip.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the trip name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Human-readable title of the proposed trip.
 
 | Property | Definition |
 |---|---|
@@ -1832,7 +2364,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### travel_type
 
-Domestic or international travel classification used for entitlement and routing.
+**In everyday language:** Domestic or international travel classification used for entitlement and routing.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “domestic” means Domestic classification for travel type.
+
+Technical definition: Domestic or international travel classification used for entitlement and routing.
 
 | Property | Definition |
 |---|---|
@@ -1857,7 +2395,13 @@ Database rules (including conditions shared with other fields):
 
 ### purpose
 
-Declared business purpose of this request, processing activity or consent.
+**In everyday language:** Declared business purpose of this request, processing activity or consent.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A privacy or travel record explains the particular reason information is used or a trip is requested.
+
+Technical definition: Declared business purpose of this request, processing activity or consent.
 
 | Property | Definition |
 |---|---|
@@ -1875,7 +2419,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### destination_country
 
-Destination country used for travel classification and entitlement.
+**In everyday language:** Destination country used for travel classification and entitlement.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the destination country shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Destination country used for travel classification and entitlement.
 
 | Property | Definition |
 |---|---|
@@ -1893,7 +2443,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### destination_city
 
-Destination city of the proposed trip.
+**In everyday language:** Destination city of the proposed trip.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Delhi could be the destination city of an illustrative business trip.
+
+Technical definition: Destination city of the proposed trip.
 
 | Property | Definition |
 |---|---|
@@ -1911,7 +2467,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### start_date
 
-First date of the proposed trip.
+**In everyday language:** First date of the proposed trip.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: First date of the proposed trip.
 
 | Property | Definition |
 |---|---|
@@ -1929,7 +2491,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### end_date
 
-Last date of the proposed trip.
+**In everyday language:** Last date of the proposed trip.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Last date of the proposed trip.
 
 | Property | Definition |
 |---|---|
@@ -1947,7 +2515,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### visa_required
 
-Whether the journey requires visa arrangements.
+**In everyday language:** Whether the journey requires visa arrangements.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether the journey requires visa arrangements.
 
 | Property | Definition |
 |---|---|
@@ -1970,7 +2544,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### visa_status
 
-Recorded visa-processing state for the trip.
+**In everyday language:** Recorded visa-processing state for the trip.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “not_applicable” means Record is not applicable in this progress from creation to closure.
+
+Technical definition: Recorded visa-processing state for the trip.
 
 | Property | Definition |
 |---|---|
@@ -1997,7 +2577,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+**In everyday language:** Current progress from creation to closure state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “draft” means Editable draft before submission/preparation.
+
+Technical definition: Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
 
 | Property | Definition |
 |---|---|
@@ -2027,7 +2613,13 @@ Database rules (including conditions shared with other fields):
 
 ### estimated_budget_paise
 
-Proposed total trip budget in integer paise.
+**In everyday language:** Proposed total trip budget in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Proposed total trip budget in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -2047,7 +2639,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### approved_budget_paise
 
-Authorized total trip budget in integer paise.
+**In everyday language:** Authorized total trip budget in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Authorized total trip budget in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -2067,7 +2665,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### cancellation_reason
 
-Recorded explanation for cancelling the trip.
+**In everyday language:** Recorded explanation for cancelling the trip.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Recorded explanation for cancelling the trip.
 
 | Property | Definition |
 |---|---|
@@ -2085,7 +2689,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### cancellation_cost_paise
 
-Cost incurred due to cancellation, in integer paise.
+**In everyday language:** Cost incurred due to cancellation, in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Cost incurred due to cancellation, in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -2105,7 +2715,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### workflow_request_id
 
-Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
+**In everyday language:** Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database link to another record is present.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
 
 | Property | Definition |
 |---|---|
@@ -2123,7 +2739,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -2141,7 +2763,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -2159,7 +2787,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### destination_region
 
-Destination region used to select travel entitlement limits.
+**In everyday language:** Destination region used to select travel entitlement limits.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “domestic” means Domestic.
+
+Technical definition: Destination region used to select travel entitlement limits.
 
 | Property | Definition |
 |---|---|
@@ -2189,7 +2823,13 @@ Database rules (including conditions shared with other fields):
 
 ### travel_month
 
-Travel period key used for reporting and entitlement/budget allocation.
+**In everyday language:** Travel period key used for reporting and entitlement/budget allocation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the travel month.
+
+Technical definition: Travel period key used for reporting and entitlement/budget allocation.
 
 | Property | Definition |
 |---|---|
@@ -2209,7 +2849,13 @@ Database rules (including conditions shared with other fields):
 
 ### origin_city
 
-Starting city of the proposed trip.
+**In everyday language:** Starting city of the proposed trip.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Kolkata could be the starting city of an illustrative business trip.
+
+Technical definition: Starting city of the proposed trip.
 
 | Property | Definition |
 |---|---|
@@ -2227,7 +2873,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### airfare_paise
 
-Budgeted airfare in integer paise.
+**In everyday language:** Budgeted airfare in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Budgeted airfare in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -2249,7 +2901,13 @@ Database rules (including conditions shared with other fields):
 
 ### hotel_per_night_paise
 
-Hotel allowance/budget per night in integer paise.
+**In everyday language:** Hotel allowance/budget per night in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Hotel allowance/budget per night in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -2271,7 +2929,13 @@ Database rules (including conditions shared with other fields):
 
 ### hotel_nights
 
-Number of hotel nights included in the trip estimate.
+**In everyday language:** Number of hotel nights included in the trip estimate.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Number of hotel nights included in the trip estimate.
 
 | Property | Definition |
 |---|---|
@@ -2291,7 +2955,13 @@ Database rules (including conditions shared with other fields):
 
 ### daily_allowance_per_day_paise
 
-Budgeted allowance per travel day in integer paise.
+**In everyday language:** Budgeted allowance per travel day in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Budgeted allowance per travel day in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -2313,7 +2983,13 @@ Database rules (including conditions shared with other fields):
 
 ### visa_cost_paise
 
-Budgeted visa cost in integer paise.
+**In everyday language:** Budgeted visa cost in whole numbers of paise.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Budgeted visa cost in integer paise.
 
 | Property | Definition |
 |---|---|
@@ -2335,7 +3011,13 @@ Database rules (including conditions shared with other fields):
 
 ### over_limit_justification
 
-Business justification for travel costs above the normal entitlement.
+**In everyday language:** Business justification for travel costs above the normal entitlement.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An explanation such as “required meeting location has limited accommodation” can support review; it does not itself approve an exception.
+
+Technical definition: Business justification for travel costs above the normal entitlement.
 
 | Property | Definition |
 |---|---|
@@ -2360,13 +3042,21 @@ Table indexes and lifecycle triggers:
 
 ## te.wallet_transactions
 
+Keeps individual travel-wallet movements so balances can be checked.
+
 Wallet transactions records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -2386,7 +3076,13 @@ Database rules (including conditions shared with other fields):
 
 ### wallet_id
 
-Reference linking this record’s wallet id to FOREIGN KEY (wallet_id) REFERENCES te.wallets(id).
+**In everyday language:** Identifies wallet connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct wallet, so related details can be checked together.
+
+**Example:** This record points to an existing entry in wallets instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s wallet id to FOREIGN KEY (wallet_id) REFERENCES te.wallets(id).
 
 | Property | Definition |
 |---|---|
@@ -2406,7 +3102,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -2426,7 +3128,13 @@ Database rules (including conditions shared with other fields):
 
 ### trip_id
 
-Reference linking this record’s trip id to FOREIGN KEY (trip_id) REFERENCES te.trips(id).
+**In everyday language:** Identifies trip connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct trip, so related details can be checked together.
+
+**Example:** This record points to an existing entry in trips instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s trip id to FOREIGN KEY (trip_id) REFERENCES te.trips(id).
 
 | Property | Definition |
 |---|---|
@@ -2446,7 +3154,13 @@ Database rules (including conditions shared with other fields):
 
 ### source
 
-Origin system or process supplying this record; exact accepted values depend on the table.
+**In everyday language:** Origin system or process supplying this record; exact accepted values depend on the table.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “ADVANCE” means Advance classification for source.
+
+Technical definition: Origin system or process supplying this record; exact accepted values depend on the table.
 
 | Property | Definition |
 |---|---|
@@ -2473,7 +3187,13 @@ Database rules (including conditions shared with other fields):
 
 ### type
 
-Wallet movement category determining the financial meaning of this transaction.
+**In everyday language:** Wallet movement category determining the financial meaning of this transaction.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “credit” means Credit movement; sign and amount are governed by the history of additions and deductions rules.
+
+Technical definition: Wallet movement category determining the financial meaning of this transaction.
 
 | Property | Definition |
 |---|---|
@@ -2498,7 +3218,13 @@ Database rules (including conditions shared with other fields):
 
 ### amount_paise
 
-Monetary amount stored as integer paise (100 paise = one Indian rupee).
+**In everyday language:** Monetary amount stored as whole numbers of paise (100 paise = one Indian rupee).
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Monetary amount stored as integer paise (100 paise = one Indian rupee).
 
 | Property | Definition |
 |---|---|
@@ -2520,7 +3246,13 @@ Database rules (including conditions shared with other fields):
 
 ### balance_after_paise
 
-Stored wallet balance after this movement in integer paise; reconcile against immutable transaction history.
+**In everyday language:** Stored wallet balance after this movement in whole numbers of paise; reconcile against protected against later changes transaction history.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Stored wallet balance after this movement in integer paise; reconcile against immutable transaction history.
 
 | Property | Definition |
 |---|---|
@@ -2542,7 +3274,13 @@ Database rules (including conditions shared with other fields):
 
 ### transaction_reference
 
-External/source transaction reference used to identify the wallet movement.
+**In everyday language:** External/source transaction reference used to identify the wallet movement.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: External/source transaction reference used to identify the wallet movement.
 
 | Property | Definition |
 |---|---|
@@ -2562,7 +3300,13 @@ Database rules (including conditions shared with other fields):
 
 ### notes
 
-Free-text business context associated with this record.
+**In everyday language:** Free-text business context associated with this record.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Free-text business context associated with this record.
 
 | Property | Definition |
 |---|---|
@@ -2580,7 +3324,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -2606,13 +3356,21 @@ Table indexes and lifecycle triggers:
 
 ## te.wallets
 
+Keeps the employee’s travel-wallet record and stored balance.
+
 Wallets records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -2632,7 +3390,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -2653,7 +3417,13 @@ Database rules (including conditions shared with other fields):
 
 ### balance_paise
 
-Stored current wallet balance in integer paise; transaction ledger is the reconciliation authority.
+**In everyday language:** Stored current wallet balance in whole numbers of paise; transaction history of additions and deductions is the reconciliation authority.
+
+**Why it is kept:** Keeps this amount in the smallest rupee unit so calculations can preserve paise accurately.
+
+**Example:** 10,050 paise represents ₹100.50. This illustrates the unit, not a policy limit.
+
+Technical definition: Stored current wallet balance in integer paise; transaction ledger is the reconciliation authority.
 
 | Property | Definition |
 |---|---|
@@ -2675,7 +3445,13 @@ Database rules (including conditions shared with other fields):
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|

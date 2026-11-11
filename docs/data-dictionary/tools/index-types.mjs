@@ -1,6 +1,7 @@
 /** Read-only TypeScript symbol index; no application imports or DB connections. */
 import ts from '../../../backend/node_modules/typescript/lib/typescript.js';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, relative } from 'node:path';
 const root = resolve('..');
 const file = resolve('src/core/db/types.ts');
@@ -33,3 +34,15 @@ const output = resolve('../docs/data-dictionary/sources');
 await mkdir(output, { recursive: true });
 await writeFile(resolve(output, 'type-symbols.json'), JSON.stringify(result, null, 2) + '\n');
 await writeFile(resolve(output, 'type-table-purposes.json'), JSON.stringify(purposes, null, 2) + '\n');
+
+// Bind the extracted declarations to the source snapshot; build.py refuses stale indexes.
+const sourceHashes = {};
+for (const name of (await readdir(resolve('src/core/db'))).filter(name => /^types.*\.ts$/.test(name)).sort()) {
+  const path = resolve('src/core/db', name);
+  sourceHashes[relative(root, path)] = createHash('sha256').update(await readFile(path)).digest('hex');
+}
+const indexHashes = {};
+for (const name of ['type-symbols.json', 'type-table-purposes.json']) {
+  indexHashes[name] = createHash('sha256').update(await readFile(resolve(output, name))).digest('hex');
+}
+await writeFile(resolve(output, 'type-index-fingerprint.json'), JSON.stringify({source_hashes: sourceHashes, index_hashes: indexHashes}, null, 2) + '\n');

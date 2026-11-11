@@ -4,6 +4,8 @@ Prepared 11 Nov 2026 · CORE-08 / NFR-04 · Phase 0, Stage 0.2 documentation del
 
 Every observed database field has a definition: **1843 fields across 165 logical tables and views**. This includes 1840 application fields and three migration-bookkeeping fields. All current application type fields match the captured database. Physical child partitions inherit the parent definitions and are not repeated; PostgreSQL catalogs and the pg-boss vendor schema are excluded.
 
+For nontechnical readers, start with [HRMS explained for everyone](plain-language/README.md). Every field includes an everyday explanation, why it is kept and an illustrative example. The same columns appear first in the CSV.
+
 Start with the module files below, or open [all fields as CSV](all-fields.csv) in Excel and filter by field name. [Structured JSON](all-fields.json) preserves constraints and allowed-value sources; [coverage evidence](coverage.json) records counts and source hashes.
 
 | Database schema | Tables/views | Defined fields |
@@ -63,4 +65,4 @@ cd ..
 python3 docs/data-dictionary/tools/build.py
 ```
 
-The existing local runner rejects non-loopback/non-HRMS targets. Regeneration fails when a new field lacks a definition or a typed field is missing in the database. Edit the scoped definitions in `tools/definitions.txt` when a meaning changes. Re-check new enum codes and structured payloads against the owning specification/service before publication. The source hashes in coverage.json detect later declaration drift.
+The existing local runner rejects non-loopback/non-HRMS targets. Regeneration fails when a new field lacks a definition or a typed field is missing in the database. Edit the scoped definitions in `tools/definitions.txt` when a meaning changes. Re-check new enum codes and structured payloads against the owning specification/service before publication. The generator verifies the type index against its source and output fingerprints before publishing; regenerate the index after changing declarations. The source hashes in coverage.json record the verified declaration snapshot.

@@ -4,13 +4,21 @@
 
 ## hd.categories
 
+Defines helpdesk categories and their handling rules.
+
 HD-01 routing + SLA as runtime data; includes the HRMS-platform channel (docs/07 §4b)
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### code
 
-Stable helpdesk routing category
+**In everyday language:** Stable helpdesk routing category.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Stable helpdesk routing category
 
 | Property | Definition |
 |---|---|
@@ -50,7 +64,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Category display label
+**In everyday language:** Category display label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Category display label
 
 | Property | Definition |
 |---|---|
@@ -68,7 +88,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### assignee_role_code
 
-Configured initial agent role name; no FK to role code
+**In everyday language:** Configured initial agent role name; no link to another record to role code.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the assignee role code shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Configured initial agent role name; no FK to role code
 
 | Property | Definition |
 |---|---|
@@ -86,7 +112,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### sla_hours
 
-Category response/resolution deadline baseline
+**In everyday language:** Category response/resolution deadline baseline.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Category response/resolution deadline baseline
 
 | Property | Definition |
 |---|---|
@@ -106,7 +138,13 @@ Database rules (including conditions shared with other fields):
 
 ### escalate_after_hours
 
-Interval between subsequent escalation attempts
+**In everyday language:** Interval between subsequent escalation attempts.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Interval between subsequent escalation attempts
 
 | Property | Definition |
 |---|---|
@@ -126,7 +164,13 @@ Database rules (including conditions shared with other fields):
 
 ### is_active
 
-Category available for new tickets
+**In everyday language:** Category available for new tickets.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Category available for new tickets
 
 | Property | Definition |
 |---|---|
@@ -149,7 +193,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -167,7 +217,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -185,7 +241,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### escalate_to_role_code
 
-Configured higher escalation role; no FK to role code
+**In everyday language:** Configured higher escalation role; no link to another record to role code.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the escalate to role code shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Configured higher escalation role; no FK to role code
 
 | Property | Definition |
 |---|---|
@@ -208,13 +270,21 @@ Table indexes and lifecycle triggers:
 
 ## hd.ticket_messages
 
+Keeps the conversation and attachments within a helpdesk request.
+
 SOW-9.4 append-only query log
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -234,7 +304,13 @@ Database rules (including conditions shared with other fields):
 
 ### ticket_id
 
-Reference linking this record’s ticket id to FOREIGN KEY (ticket_id) REFERENCES hd.tickets(id).
+**In everyday language:** Identifies ticket connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct ticket, so related details can be checked together.
+
+**Example:** This record points to an existing entry in tickets instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s ticket id to FOREIGN KEY (ticket_id) REFERENCES hd.tickets(id).
 
 | Property | Definition |
 |---|---|
@@ -254,7 +330,13 @@ Database rules (including conditions shared with other fields):
 
 ### author_user_id
 
-Reference linking this record’s author user id to FOREIGN KEY (author_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies author user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct author user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s author user id to FOREIGN KEY (author_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -274,7 +356,13 @@ Database rules (including conditions shared with other fields):
 
 ### body
 
-Immutable reply/internal note content
+**In everyday language:** protected against later changes reply/internal note content.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Immutable reply/internal note content
 
 | Property | Definition |
 |---|---|
@@ -292,7 +380,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_internal
 
-Agent-only note discriminator; requester must not read internal notes
+**In everyday language:** Agent-only note choice that tells the system which kind this is; requester must not read internal notes.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Agent-only note discriminator; requester must not read internal notes
 
 | Property | Definition |
 |---|---|
@@ -315,7 +409,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -339,13 +439,21 @@ Table indexes and lifecycle triggers:
 
 ## hd.tickets
 
+Tracks employee helpdesk requests from opening to closure.
+
 HD-01 tickets; sla_due_at NOT NULL so every ticket has a clock
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -365,7 +473,13 @@ Database rules (including conditions shared with other fields):
 
 ### ticket_no
 
-Human sequence-generated reference
+**In everyday language:** Human sequence-generated reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Human sequence-generated reference
 
 | Property | Definition |
 |---|---|
@@ -385,7 +499,13 @@ Database rules (including conditions shared with other fields):
 
 ### raised_by
 
-Reference linking this record’s raised by to FOREIGN KEY (raised_by) REFERENCES core.users(id).
+**In everyday language:** Identifies raised by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct raised by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s raised by to FOREIGN KEY (raised_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -405,7 +525,13 @@ Database rules (including conditions shared with other fields):
 
 ### category_id
 
-Reference linking this record’s category id to FOREIGN KEY (category_id) REFERENCES hd.categories(id).
+**In everyday language:** Identifies category connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct category, so related details can be checked together.
+
+**Example:** This record points to an existing entry in categories instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s category id to FOREIGN KEY (category_id) REFERENCES hd.categories(id).
 
 | Property | Definition |
 |---|---|
@@ -425,7 +551,13 @@ Database rules (including conditions shared with other fields):
 
 ### subject
 
-Ticket summary
+**In everyday language:** Ticket summary.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the subject shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Ticket summary
 
 | Property | Definition |
 |---|---|
@@ -443,7 +575,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### body
 
-Original issue description
+**In everyday language:** Original issue description.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Original issue description
 
 | Property | Definition |
 |---|---|
@@ -461,7 +599,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### assignee_user_id
 
-Reference linking this record’s assignee user id to FOREIGN KEY (assignee_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies assignee user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct assignee user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s assignee user id to FOREIGN KEY (assignee_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -481,7 +625,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Open/pending/resolved/closed state
+**In everyday language:** Open/pending/resolved/closed state.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “open” means Record is open in this progress from creation to closure.
+
+Technical definition: Open/pending/resolved/closed state
 
 | Property | Definition |
 |---|---|
@@ -509,7 +659,13 @@ Database rules (including conditions shared with other fields):
 
 ### priority
 
-Urgency classification currently feeding hardcoded SLA multipliers
+**In everyday language:** Urgency classification currently feeding hardcoded target time for completing the action multipliers.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “low” means Low.
+
+Technical definition: Urgency classification currently feeding hardcoded SLA multipliers
 
 | Property | Definition |
 |---|---|
@@ -536,7 +692,13 @@ Database rules (including conditions shared with other fields):
 
 ### sla_due_at
 
-Persisted deadline from category/priority policy
+**In everyday language:** Persisted deadline from category/priority policy.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Persisted deadline from category/priority policy
 
 | Property | Definition |
 |---|---|
@@ -554,7 +716,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### escalated_level
 
-Escalation progression marker, not permission authority
+**In everyday language:** Escalation progression marker, not permission authority.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Read this number using the specific measure described above. A percentage, version number and priority order have different meanings.
+
+Technical definition: Escalation progression marker, not permission authority
 
 | Property | Definition |
 |---|---|
@@ -574,7 +742,13 @@ Database rules (including conditions shared with other fields):
 
 ### escalated_at
 
-Last escalation attempt instant
+**In everyday language:** Last escalation attempt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Last escalation attempt instant
 
 | Property | Definition |
 |---|---|
@@ -592,7 +766,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### acknowledged_at
 
-Ticket acknowledgement enqueue instant; not proof of SMTP delivery
+**In everyday language:** Ticket acknowledgement enqueue instant; not proof of SMTP delivery.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Ticket acknowledgement enqueue instant; not proof of SMTP delivery
 
 | Property | Definition |
 |---|---|
@@ -610,7 +790,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### resolved_at
 
-Resolution/closure instant
+**In everyday language:** Resolution/closure instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Resolution/closure instant
 
 | Property | Definition |
 |---|---|
@@ -630,7 +816,13 @@ Database rules (including conditions shared with other fields):
 
 ### resolution
 
-Required resolution explanation
+**In everyday language:** Required resolution explanation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A reviewer reads the saved explanation to understand the particular case before taking the next action.
+
+Technical definition: Required resolution explanation
 
 | Property | Definition |
 |---|---|
@@ -650,7 +842,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -668,7 +866,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -686,7 +890,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### first_response_at
 
-First agent response instant for SLA reporting
+**In everyday language:** First agent response instant for target time for completing the action reporting.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: First agent response instant for SLA reporting
 
 | Property | Definition |
 |---|---|
@@ -704,7 +914,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### reopen_count
 
-Count of recorded reopen transitions; event/audit must agree
+**In everyday language:** Count of recorded reopen transitions; event/audit must agree.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** Read this number using the specific measure described above. A percentage, version number and priority order have different meanings.
+
+Technical definition: Count of recorded reopen transitions; event/audit must agree
 
 | Property | Definition |
 |---|---|
@@ -722,7 +938,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### escalated_to_user_id
 
-Reference linking this record’s escalated to user id to FOREIGN KEY (escalated_to_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies escalated to user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct escalated to user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s escalated to user id to FOREIGN KEY (escalated_to_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|

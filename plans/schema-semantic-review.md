@@ -20,3 +20,19 @@ Completion means every field has a reviewed disposition, including justified gap
 This completes the requested persisted-field dictionary. It does **not** complete the broader semantic implementation/disposition audit above, certify every nested JSON payload/HTTP field, advance a release gate, or establish production parity. Historical purpose explanations are documentation inputs, not current runtime acceptance evidence. Verification outcome is recorded with the dictionary's coverage evidence.
 
 Validation: dictionary coverage/link/format checks pass; backend verification passes typecheck and ESLint, then stops at knip's existing unused `absenceRun` export in `attendance/absence.service.ts:54`. Full verification is not green; later gates were not reached. See [verification record](../docs/data-dictionary/VERIFICATION.md).
+
+## Nontechnical explanations — 11 Nov 2026
+
+- [x] Add an everyday-language explanation, reason for keeping the detail and illustrative example for all 1,843 fields, alongside the technical definition in module pages, JSON and CSV.
+- [x] Publish [HRMS explained for everyone](../docs/data-dictionary/plain-language/README.md), with 17 subject guides, a purpose statement for all 165 tables/views, a plain-language glossary and available choice meanings.
+- [x] Verify all 1,843 fields appear once in the reader guides; explanation/reason/example coverage matches CSV and JSON; all local document links resolve and documentation generators compile.
+
+This increment changes documentation and its generation tools only. It preserves the existing catalog snapshot and technical rules; examples explain meaning and do not establish policy rates, new features or production acceptance. No backend or frontend application code changed in this increment, so the earlier backend verification result remains recorded without another application test run.
+
+## Verification of sponsor's dictionary changes — 11 Nov 2026
+
+- [x] Independently regenerate the current type index and dictionary; check exact catalog/JSON/CSV and reader-guide field coverage, links and syntax.
+- [x] Correct day-count units, non-FK reference examples and expiry/deadline wording; require source/index provenance before generation and derive reader counts dynamically.
+- [x] Exercise stale-source and modified-index rejection; confirm `git diff --check` passes after CSV line-ending correction.
+
+Evidence: [dictionary verification](../docs/data-dictionary/VERIFICATION.md). Application code/schema were unchanged. Backend knip still reports the existing unused `absenceRun` export; no full-green application verification or complete runtime semantic disposition review is claimed.

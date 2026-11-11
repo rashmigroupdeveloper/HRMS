@@ -27,6 +27,7 @@ const RULES: readonly [prefix: string, anyOf: readonly string[]][] = [
   ['/attendance/devices', ['admin.devices']],
   ['/attendance/muster', ['attendance.muster.export', 'attendance.team.read']],
   ['/admin/workflows', ['admin.workflows', 'workflow.routing_holds']],
+  ['/admin/beta-feedback', ['beta.feedback.review']],
   ['/admin/settings', ['admin.settings']],
   ['/admin/users', ['admin.users', 'admin.roles']],
   ['/admin/org-masters', ['org.masters.manage']],

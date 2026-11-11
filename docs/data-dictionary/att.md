@@ -4,13 +4,21 @@
 
 ## att.absence_cases
 
+Tracks extended unexplained absence and the follow-up needed from HR.
+
 att.absence_cases — ATT-10 continuous-absence engine; one open case per employee.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -50,7 +64,13 @@ Database rules (including conditions shared with other fields):
 
 ### start_date
 
-First date in the continuous absence case
+**In everyday language:** First date in the continuous absence case.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: First date in the continuous absence case
 
 | Property | Definition |
 |---|---|
@@ -68,7 +88,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### days_absent
 
-Derived streak length for case progression, not a leave/pay balance
+**In everyday language:** worked out from other saved information streak length for case progression, not a leave/pay balance.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Derived streak length for case progression, not a leave/pay balance
 
 | Property | Definition |
 |---|---|
@@ -86,7 +112,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### stage
 
-Configured disciplinary monitoring stage
+**In everyday language:** Configured disciplinary monitoring stage.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “watch” means Record is watch in this progress from creation to closure.
+
+Technical definition: Configured disciplinary monitoring stage
 
 | Property | Definition |
 |---|---|
@@ -113,7 +145,13 @@ Database rules (including conditions shared with other fields):
 
 ### letter_id
 
-Reference linking this record’s letter id to FOREIGN KEY (letter_id) REFERENCES core.letters(id).
+**In everyday language:** Identifies letter connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct letter, so related details can be checked together.
+
+**Example:** This record points to an existing entry in letters instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s letter id to FOREIGN KEY (letter_id) REFERENCES core.letters(id).
 
 | Property | Definition |
 |---|---|
@@ -133,7 +171,13 @@ Database rules (including conditions shared with other fields):
 
 ### hr_owner_id
 
-Reference linking this record’s hr owner id to FOREIGN KEY (hr_owner_id) REFERENCES core.users(id).
+**In everyday language:** Identifies hr owner connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct hr owner, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s hr owner id to FOREIGN KEY (hr_owner_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -153,7 +197,13 @@ Database rules (including conditions shared with other fields):
 
 ### resolution
 
-Case closure cause: returned, regularized or exited
+**In everyday language:** Case closure cause: returned, regularized or exited.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “returned” means Returned.
+
+Technical definition: Case closure cause: returned, regularized or exited
 
 | Property | Definition |
 |---|---|
@@ -180,7 +230,13 @@ Database rules (including conditions shared with other fields):
 
 ### closed_at
 
-Case closure instant
+**In everyday language:** Case closure instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Case closure instant
 
 | Property | Definition |
 |---|---|
@@ -200,7 +256,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -218,7 +280,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -242,13 +310,21 @@ Table indexes and lifecycle triggers:
 
 ## att.coverage_targets
 
+Records how many people are needed for each staffing group and shift.
+
 Coverage targets records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -268,7 +344,13 @@ Database rules (including conditions shared with other fields):
 
 ### location_id
 
-Reference linking this record’s location id to FOREIGN KEY (location_id) REFERENCES core.locations(id).
+**In everyday language:** Identifies location connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct location, so related details can be checked together.
+
+**Example:** This record points to an existing entry in locations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s location id to FOREIGN KEY (location_id) REFERENCES core.locations(id).
 
 | Property | Definition |
 |---|---|
@@ -288,7 +370,13 @@ Database rules (including conditions shared with other fields):
 
 ### department_id
 
-Reference linking this record’s department id to FOREIGN KEY (department_id) REFERENCES core.departments(id).
+**In everyday language:** Identifies department connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct department, so related details can be checked together.
+
+**Example:** This record points to an existing entry in departments instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s department id to FOREIGN KEY (department_id) REFERENCES core.departments(id).
 
 | Property | Definition |
 |---|---|
@@ -308,7 +396,13 @@ Database rules (including conditions shared with other fields):
 
 ### shift_id
 
-Reference linking this record’s shift id to FOREIGN KEY (shift_id) REFERENCES att.shifts(id).
+**In everyday language:** Identifies shift connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct shift, so related details can be checked together.
+
+**Example:** This record points to an existing entry in shifts instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s shift id to FOREIGN KEY (shift_id) REFERENCES att.shifts(id).
 
 | Property | Definition |
 |---|---|
@@ -328,7 +422,13 @@ Database rules (including conditions shared with other fields):
 
 ### weekday
 
-Day-of-week selector for sanctioned staffing
+**In everyday language:** Day-of-week selector for sanctioned staffing.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A staffing requirement can apply to Monday while a different requirement applies to Sunday; the stored weekday code selects the day.
+
+Technical definition: Day-of-week selector for sanctioned staffing
 
 | Property | Definition |
 |---|---|
@@ -348,7 +448,13 @@ Database rules (including conditions shared with other fields):
 
 ### sanctioned
 
-Configured required headcount for location/department/shift coverage
+**In everyday language:** Configured required headcount for location/department/shift coverage.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A required staffing count of 5 means five people are planned for that coverage group.
+
+Technical definition: Configured required headcount for location/department/shift coverage
 
 | Property | Definition |
 |---|---|
@@ -368,7 +474,13 @@ Database rules (including conditions shared with other fields):
 
 ### updated_by
 
-User who last updated this record.
+**In everyday language:** User who last updated this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who last changed the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who last updated this record.
 
 | Property | Definition |
 |---|---|
@@ -388,7 +500,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -406,7 +524,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -430,13 +554,21 @@ Table indexes and lifecycle triggers:
 
 ## att.day_records
 
+Keeps the processed attendance result for one employee on one working date.
+
 att.day_records — PROCESSED attendance; recomputable until locked (ATT-03/05/15).
 
 Relation kind: table.
 
 ### id
 
-Processed attendance row identity for read/audit/lock operations.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Processed attendance row identity for read/audit/lock operations.
 
 | Property | Definition |
 |---|---|
@@ -456,7 +588,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee whose attendance facts are represented.
+**In everyday language:** Employee whose attendance facts are represented.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee whose attendance facts are represented.
 
 | Property | Definition |
 |---|---|
@@ -477,7 +615,13 @@ Database rules (including conditions shared with other fields):
 
 ### work_date
 
-Shift-attribution date, including overnight shifts; not necessarily a swipe calendar date.
+**In everyday language:** Shift-attribution date, including overnight shifts; not necessarily a swipe calendar date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Shift-attribution date, including overnight shifts; not necessarily a swipe calendar date.
 
 | Property | Definition |
 |---|---|
@@ -497,7 +641,13 @@ Database rules (including conditions shared with other fields):
 
 ### shift_id
 
-Resolved shift used for calculation.
+**In everyday language:** Resolved shift used for calculation.
+
+**Why it is kept:** Keeps this record connected to the correct shift, so related details can be checked together.
+
+**Example:** This record points to an existing entry in shifts instead of copying all of that entry’s details.
+
+Technical definition: Resolved shift used for calculation.
 
 | Property | Definition |
 |---|---|
@@ -517,7 +667,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Whole-day attendance summary, separate from ordered half-session detail.
+**In everyday language:** Whole-day attendance summary, separate from ordered half-session detail.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** Staff read the saved stage to see where this particular record has reached.
+
+Technical definition: Whole-day attendance summary, separate from ordered half-session detail.
 
 | Property | Definition |
 |---|---|
@@ -535,7 +691,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### leave_type_id
 
-Approved leave provenance; prevents recomputation from overwriting leave-owned attendance.
+**In everyday language:** Approved leave where the information came from; prevents recomputation from overwriting leave-owned attendance.
+
+**Why it is kept:** Keeps this record connected to the correct leave type, so related details can be checked together.
+
+**Example:** This record points to an existing entry in leave types instead of copying all of that entry’s details.
+
+Technical definition: Approved leave provenance; prevents recomputation from overwriting leave-owned attendance.
 
 | Property | Definition |
 |---|---|
@@ -555,7 +717,13 @@ Database rules (including conditions shared with other fields):
 
 ### first_in
 
-Selected earliest explicit IN, with unknown-direction fallback only when needed.
+**In everyday language:** The first qualifying entry punch selected for the employee’s working date.
+
+**Why it is kept:** Shows which arrival time was used to work out attendance.
+
+**Example:** A first qualifying entry might be 9:02 AM; the original punches remain available separately.
+
+Technical definition: Selected earliest explicit IN, with unknown-direction fallback only when needed.
 
 | Property | Definition |
 |---|---|
@@ -573,7 +741,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### last_out
 
-Selected latest explicit OUT after the selected IN; not any later IN.
+**In everyday language:** The last qualifying exit punch selected for the employee’s working date.
+
+**Why it is kept:** Shows which departure time was used to work out attendance.
+
+**Example:** A final qualifying exit might be 6:07 PM; it is an actual selected punch, not an assumed departure.
+
+Technical definition: Selected latest explicit OUT after the selected IN; not any later IN.
 
 | Property | Definition |
 |---|---|
@@ -591,7 +765,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### worked_minutes
 
-Derived worked duration from owned swipes and configured windows/breaks; not a mutable running counter.
+**In everyday language:** worked out from other saved information worked duration from owned swipes and configured windows/breaks; not a mutable running counter.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Derived worked duration from owned swipes and configured windows/breaks; not a mutable running counter.
 
 | Property | Definition |
 |---|---|
@@ -611,7 +791,13 @@ Database rules (including conditions shared with other fields):
 
 ### late_minutes
 
-Derived arrival delay beyond configured grace.
+**In everyday language:** worked out from other saved information arrival delay beyond configured grace.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Derived arrival delay beyond configured grace.
 
 | Property | Definition |
 |---|---|
@@ -629,7 +815,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### early_exit_minutes
 
-Derived departure shortfall beyond configured grace.
+**In everyday language:** worked out from other saved information departure shortfall beyond configured grace.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Derived departure shortfall beyond configured grace.
 
 | Property | Definition |
 |---|---|
@@ -647,7 +839,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### ot_minutes
 
-Detected overtime minutes; does not by itself mean approved or payable OT.
+**In everyday language:** Detected overtime minutes; does not by itself mean approved or payable overtime.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Detected overtime minutes; does not by itself mean approved or payable OT.
 
 | Property | Definition |
 |---|---|
@@ -665,7 +863,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### weekoff_paid
 
-Week-close eligibility result; does not invent a new attendance/payable policy.
+**In everyday language:** Whether this weekly off qualifies as paid under the applicable attendance rules.
+
+**Why it is kept:** Lets payroll distinguish a paid weekly off from one that counts as loss of pay.
+
+**Example:** Two weekly-off dates may have different payment treatment because the qualifying attendance differs.
+
+Technical definition: Week-close eligibility result; does not invent a new attendance/payable policy.
 
 | Property | Definition |
 |---|---|
@@ -688,7 +892,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### session_statuses
 
-Ordered first/second-half facts; preserve P/A/O/OD and mixed-half display.
+**In everyday language:** Ordered first/second-half facts; preserve P/A/O/approved on-duty time and mixed-half display.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the session statuses.
+
+Technical definition: Ordered first/second-half facts; preserve P/A/O/OD and mixed-half display.
 
 | Property | Definition |
 |---|---|
@@ -713,7 +923,13 @@ END)`
 
 ### scheme_code
 
-Resolved scheme/shift label stored with the processed result.
+**In everyday language:** Resolved scheme/shift label stored with the processed result.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Resolved scheme/shift label stored with the processed result.
 
 | Property | Definition |
 |---|---|
@@ -731,7 +947,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### penalty_flag
 
-Compatibility indicator for any recorded penalty finding, not a day quantity. When snapshot exists, DB requires flag=(findings nonempty). Legacy true without snapshot is explicitly unexplained.
+**In everyday language:** Compatibility indicator for any recorded penalty finding, not a day quantity. When copy saved at that point in time exists, DB requires flag=(findings nonempty). Legacy true without copy saved at that point in time is explicitly unexplained.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Compatibility indicator for any recorded penalty finding, not a day quantity. When snapshot exists, DB requires flag=(findings nonempty). Legacy true without snapshot is explicitly unexplained.
 
 | Property | Definition |
 |---|---|
@@ -756,7 +978,13 @@ Database rules (including conditions shared with other fields):
 
 ### source
 
-Auto/manual/regularized provenance that controls safe recomputation.
+**In everyday language:** Auto/manual/regularized where the information came from that controls safe recomputation.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “auto” means Auto classification for source.
+
+Technical definition: Auto/manual/regularized provenance that controls safe recomputation.
 
 | Property | Definition |
 |---|---|
@@ -783,7 +1011,13 @@ Database rules (including conditions shared with other fields):
 
 ### override_reason
 
-Required explanation for HR manual correction.
+**In everyday language:** Required explanation for HR manual correction.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Required explanation for HR manual correction.
 
 | Property | Definition |
 |---|---|
@@ -803,7 +1037,13 @@ Database rules (including conditions shared with other fields):
 
 ### is_locked
 
-Payroll attendance lock, enforced at the database as well as the API.
+**In everyday language:** Payroll attendance lock, enforced at the database as well as the API.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Payroll attendance lock, enforced at the database as well as the API.
 
 | Property | Definition |
 |---|---|
@@ -826,7 +1066,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### computed_at
 
-Time this derived result was calculated.
+**In everyday language:** Time this worked out from other saved information result was calculated.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Time this derived result was calculated.
 
 | Property | Definition |
 |---|---|
@@ -844,7 +1090,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Creation provenance.
+**In everyday language:** Creation where the information came from.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Creation provenance.
 
 | Property | Definition |
 |---|---|
@@ -862,7 +1114,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Last modification provenance.
+**In everyday language:** Last modification where the information came from.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Last modification provenance.
 
 | Property | Definition |
 |---|---|
@@ -880,7 +1138,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### penalty_evaluation
 
-SHF-01: frozen rule findings, separate from attendance/pay. NULL = not evaluated.
+**In everyday language:** The saved details of any late-arrival or early-leaving rule that matched that day.
+
+**Why it is kept:** Explains a separate attendance finding without changing the actual presence or absence result.
+
+**Example:** A person can remain marked present while a separate late-arrival finding is shown. This field alone does not reduce salary.
+
+Technical definition: SHF-01: frozen rule findings, separate from attendance/pay. NULL = not evaluated.
 
 | Property | Definition |
 |---|---|
@@ -911,13 +1175,21 @@ Table indexes and lifecycle triggers:
 
 ## att.device_watermarks
 
+Records how far each attendance device has confirmed its data is complete.
+
 att.device_watermarks — per-door completeness cursor (doc 14 §8.5).
 
 Relation kind: table.
 
 ### device_id
 
-FK to actual device, distinct from source cursor.
+**In everyday language:** link to another record to actual device, distinct from source cursor.
+
+**Why it is kept:** Keeps this record connected to the correct device, so related details can be checked together.
+
+**Example:** This record points to an existing entry in devices instead of copying all of that entry’s details.
+
+Technical definition: FK to actual device, distinct from source cursor.
 
 | Property | Definition |
 |---|---|
@@ -938,7 +1210,13 @@ Database rules (including conditions shared with other fields):
 
 ### watermark_ts
 
-Connector-proven gap-free completeness instant; monotonic DB rule prevents regression. Heartbeats alone cannot advance it.
+**In everyday language:** Connector-proven gap-free completeness instant; monotonic DB rule prevents regression. Heartbeats alone cannot advance it.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** If data is confirmed complete only up to 5 PM, the system must not assume a later shift’s missing punches prove absence.
+
+Technical definition: Connector-proven gap-free completeness instant; monotonic DB rule prevents regression. Heartbeats alone cannot advance it.
 
 | Property | Definition |
 |---|---|
@@ -956,7 +1234,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Completeness receipt persistence timestamp, distinct from proved-through instant.
+**In everyday language:** Completeness receipt persistence timestamp, distinct from proved-through instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Completeness receipt persistence timestamp, distinct from proved-through instant.
 
 | Property | Definition |
 |---|---|
@@ -980,13 +1264,21 @@ Table indexes and lifecycle triggers:
 
 ## att.devices
 
+Lists biometric attendance devices and their operating details.
+
 att.devices — door health board (ATT-02).
 
 Relation kind: table.
 
 ### id
 
-Internal door identity used by per-door completeness FK.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal door identity used by per-door completeness FK.
 
 | Property | Definition |
 |---|---|
@@ -1006,7 +1298,13 @@ Database rules (including conditions shared with other fields):
 
 ### source
 
-Connector provenance for health/ingestion diagnostics.
+**In everyday language:** Connector where the information came from for health/ingestion diagnostics.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the source.
+
+Technical definition: Connector provenance for health/ingestion diagnostics.
 
 | Property | Definition |
 |---|---|
@@ -1024,7 +1322,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### door_code
 
-Unique source door identity linked by raw punches and connector reports.
+**In everyday language:** Unique source door identity linked by raw punches and connector reports.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A code such as GATE-A distinguishes the gate where the punch was recorded.
+
+Technical definition: Unique source door identity linked by raw punches and connector reports.
 
 | Property | Definition |
 |---|---|
@@ -1044,7 +1348,13 @@ Database rules (including conditions shared with other fields):
 
 ### location_id
 
-Configured physical location FK for health/scope/reconciliation; must not reject legitimate cross-plant punches.
+**In everyday language:** Configured physical location link to another record for health/scope/reconciliation; must not reject legitimate cross-plant punches.
+
+**Why it is kept:** Keeps this record connected to the correct location, so related details can be checked together.
+
+**Example:** This record points to an existing entry in locations instead of copying all of that entry’s details.
+
+Technical definition: Configured physical location FK for health/scope/reconciliation; must not reject legitimate cross-plant punches.
 
 | Property | Definition |
 |---|---|
@@ -1064,7 +1374,13 @@ Database rules (including conditions shared with other fields):
 
 ### last_seen_at
 
-Latest source contact/receipt heartbeat. Never proves ingestion completeness.
+**In everyday language:** Latest source contact/receipt heartbeat. Never proves ingestion completeness.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Latest source contact/receipt heartbeat. Never proves ingestion completeness.
 
 | Property | Definition |
 |---|---|
@@ -1082,7 +1398,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### expected_hourly_swipes
 
-Expected hourly swipe-traffic baseline recorded for device anomaly review; a configured baseline is not evidence that monitoring consumes it.
+**In everyday language:** Expected hourly swipe-traffic baseline recorded for device anomaly review; a configured baseline is not evidence that monitoring consumes it.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A baseline of 20 means twenty punches are expected in an hour for comparison; it is not twenty employees or twenty hours.
+
+Technical definition: Expected hourly swipe-traffic baseline recorded for device anomaly review; a configured baseline is not evidence that monitoring consumes it.
 
 | Property | Definition |
 |---|---|
@@ -1100,7 +1422,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Configured active-device population for health/completeness checks.
+**In everyday language:** Configured active-device population for health/completeness checks.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Configured active-device population for health/completeness checks.
 
 | Property | Definition |
 |---|---|
@@ -1123,7 +1451,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Device registry provenance timestamp.
+**In everyday language:** Device register where the information came from timestamp.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Device registry provenance timestamp.
 
 | Property | Definition |
 |---|---|
@@ -1141,7 +1475,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Device registry modification provenance timestamp.
+**In everyday language:** Device register modification where the information came from timestamp.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Device registry modification provenance timestamp.
 
 | Property | Definition |
 |---|---|
@@ -1159,7 +1499,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### alerted_silent_at
 
-Last silent-device alert receipt/cooldown marker; re-arms only after renewed contact.
+**In everyday language:** Last silent-device alert receipt/cooldown marker; re-arms only after renewed contact.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Last silent-device alert receipt/cooldown marker; re-arms only after renewed contact.
 
 | Property | Definition |
 |---|---|
@@ -1183,13 +1529,21 @@ Table indexes and lifecycle triggers:
 
 ## att.employee_shifts
 
+Records which shift arrangement applies to an employee over time.
+
 att.employee_shifts — weekday vs Saturday scheme per employee (09 §4).
 
 Relation kind: table.
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -1210,7 +1564,13 @@ Database rules (including conditions shared with other fields):
 
 ### weekday_shift_id
 
-Reference linking this record’s weekday shift id to FOREIGN KEY (weekday_shift_id) REFERENCES att.shifts(id).
+**In everyday language:** Identifies weekday shift connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct weekday shift, so related details can be checked together.
+
+**Example:** This record points to an existing entry in shifts instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s weekday shift id to FOREIGN KEY (weekday_shift_id) REFERENCES att.shifts(id).
 
 | Property | Definition |
 |---|---|
@@ -1230,7 +1590,13 @@ Database rules (including conditions shared with other fields):
 
 ### saturday_shift_id
 
-Reference linking this record’s saturday shift id to FOREIGN KEY (saturday_shift_id) REFERENCES att.shifts(id).
+**In everyday language:** Identifies saturday shift connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct saturday shift, so related details can be checked together.
+
+**Example:** This record points to an existing entry in shifts instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s saturday shift id to FOREIGN KEY (saturday_shift_id) REFERENCES att.shifts(id).
 
 | Property | Definition |
 |---|---|
@@ -1250,7 +1616,13 @@ Database rules (including conditions shared with other fields):
 
 ### updated_by
 
-User who last updated this record.
+**In everyday language:** User who last updated this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who last changed the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who last updated this record.
 
 | Property | Definition |
 |---|---|
@@ -1270,7 +1642,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1288,7 +1666,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -1311,13 +1695,21 @@ Table indexes and lifecycle triggers:
 
 ## att.holidays
 
+Lists holidays and the employee groups or places to which they apply.
+
 Holidays records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1337,7 +1729,13 @@ Database rules (including conditions shared with other fields):
 
 ### location_id
 
-Reference linking this record’s location id to FOREIGN KEY (location_id, company_id) REFERENCES core.locations(id, company_id); FOREIGN KEY (location_id) REFERENCES core.locations(id).
+**In everyday language:** Identifies location connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct location, so related details can be checked together.
+
+**Example:** This record points to an existing entry in locations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s location id to FOREIGN KEY (location_id, company_id) REFERENCES core.locations(id, company_id); FOREIGN KEY (location_id) REFERENCES core.locations(id).
 
 | Property | Definition |
 |---|---|
@@ -1359,7 +1757,13 @@ Database rules (including conditions shared with other fields):
 
 ### holiday_date
 
-Calendar date subject to holiday scope
+**In everyday language:** Calendar date subject to holiday scope.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Calendar date subject to holiday scope
 
 | Property | Definition |
 |---|---|
@@ -1377,7 +1781,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### name
 
-Holiday display label
+**In everyday language:** Holiday display label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Holiday display label
 
 | Property | Definition |
 |---|---|
@@ -1395,7 +1805,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1413,7 +1829,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -1431,7 +1853,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### company_id
 
-C-35 scope: NULL company = whole group; plant/location narrow it further (all non-null columns must match).
+**In everyday language:** C-35 scope: not recorded company = whole group; plant/location narrow it further (all non-null columns must match).
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: C-35 scope: NULL company = whole group; plant/location narrow it further (all non-null columns must match).
 
 | Property | Definition |
 |---|---|
@@ -1454,7 +1882,13 @@ Database rules (including conditions shared with other fields):
 
 ### plant_id
 
-Reference linking this record’s plant id to FOREIGN KEY (plant_id, company_id) REFERENCES core.plants(id, company_id); FOREIGN KEY (plant_id) REFERENCES core.plants(id).
+**In everyday language:** Identifies plant connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct plant, so related details can be checked together.
+
+**Example:** This record points to an existing entry in plants instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s plant id to FOREIGN KEY (plant_id, company_id) REFERENCES core.plants(id, company_id); FOREIGN KEY (plant_id) REFERENCES core.plants(id).
 
 | Property | Definition |
 |---|---|
@@ -1483,13 +1917,21 @@ Table indexes and lifecycle triggers:
 
 ## att.ingest_watermarks
 
+Records progress when receiving attendance data from an external source.
+
 Ingest watermarks records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### source
 
-Connector stream identity and cursor primary key.
+**In everyday language:** Connector stream identity and cursor primary key.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the source.
+
+Technical definition: Connector stream identity and cursor primary key.
 
 | Property | Definition |
 |---|---|
@@ -1509,7 +1951,13 @@ Database rules (including conditions shared with other fields):
 
 ### watermark_ts
 
-Source received-time fetch cursor committed with ingestion; does not authorize final absence.
+**In everyday language:** Source received-time fetch cursor committed with ingestion; does not authorize final absence.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** If data is confirmed complete only up to 5 PM, the system must not assume a later shift’s missing punches prove absence.
+
+Technical definition: Source received-time fetch cursor committed with ingestion; does not authorize final absence.
 
 | Property | Definition |
 |---|---|
@@ -1527,7 +1975,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Cursor persistence timestamp, not device completeness.
+**In everyday language:** Cursor persistence timestamp, not device completeness.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Cursor persistence timestamp, not device completeness.
 
 | Property | Definition |
 |---|---|
@@ -1549,13 +2003,21 @@ Table indexes and lifecycle triggers:
 
 ## att.kent_unknown_faces
 
+Keeps biometric events that could not be matched to an employee for investigation.
+
 att.kent_unknown_faces — webhook type:0 events, never swipes.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1575,7 +2037,13 @@ Database rules (including conditions shared with other fields):
 
 ### batch_id
 
-Reference linking this record’s batch id to FOREIGN KEY (batch_id) REFERENCES att.kent_webhook_batches(id) ON DELETE CASCADE.
+**In everyday language:** Identifies the payment group connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct payment group, so related details can be checked together.
+
+**Example:** This record points to an existing entry in kent webhook batches instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s batch id to FOREIGN KEY (batch_id) REFERENCES att.kent_webhook_batches(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -1595,7 +2063,13 @@ Database rules (including conditions shared with other fields):
 
 ### event_ts
 
-Unmatched biometric capture instant
+**In everyday language:** Unmatched biometric capture instant.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A device event may happen at 9 AM but reach HRMS later; this is the event’s own time.
+
+Technical definition: Unmatched biometric capture instant
 
 | Property | Definition |
 |---|---|
@@ -1613,7 +2087,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### device_id
 
-External Kent device identifier, not HRMS internal device FK
+**In everyday language:** External Kent device identifier, not HRMS internal device link to another record.
+
+**Why it is kept:** Keeps this record connected to the correct device, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: External Kent device identifier, not HRMS internal device FK
 
 | Property | Definition |
 |---|---|
@@ -1631,7 +2111,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### device_name
 
-Source device display label
+**In everyday language:** Source device display label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the device name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Source device display label
 
 | Property | Definition |
 |---|---|
@@ -1649,7 +2135,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### location_name
 
-Source location label for investigation
+**In everyday language:** Source location label for investigation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the location name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Source location label for investigation
 
 | Property | Definition |
 |---|---|
@@ -1667,7 +2159,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### image_url
 
-Source face-image reference; sensitive, not proof bytes are locally archived
+**In everyday language:** Source face-image reference; sensitive, not proof bytes are locally archived.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A source image reference tells an authorized reviewer where an image was referenced; it does not prove HRMS stores a permanent copy.
+
+Technical definition: Source face-image reference; sensitive, not proof bytes are locally archived
 
 | Property | Definition |
 |---|---|
@@ -1685,7 +2183,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### raw
 
-Original unmatched source record for reconciliation; restricted sensitive payload
+**In everyday language:** Original unmatched source record for reconciliation; restricted sensitive saved request or message details.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the raw.
+
+Technical definition: Original unmatched source record for reconciliation; restricted sensitive payload
 
 | Property | Definition |
 |---|---|
@@ -1703,7 +2207,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1726,13 +2236,21 @@ Table indexes and lifecycle triggers:
 
 ## att.kent_webhook_batches
 
+Records groups of attendance events received from Kent and their processing results.
+
 att.kent_webhook_batches — raw Kent webhook POSTs (KENT_RESEARCH §5.1).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1752,7 +2270,13 @@ Database rules (including conditions shared with other fields):
 
 ### received_at
 
-HRMS webhook receipt instant
+**In everyday language:** HRMS webhook receipt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: HRMS webhook receipt instant
 
 | Property | Definition |
 |---|---|
@@ -1770,7 +2294,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### remote_ip
 
-Source network provenance
+**In everyday language:** Source network where the information came from.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A saved browser or connection detail can help an authorized administrator investigate which sign-in or submission produced the event.
+
+Technical definition: Source network provenance
 
 | Property | Definition |
 |---|---|
@@ -1788,7 +2318,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### raw_body
 
-Original webhook payload retained for replay/audit; may contain personal data
+**In everyday language:** Original webhook saved request or message details retained for replay/audit; may contain personal data.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Original webhook payload retained for replay/audit; may contain personal data
 
 | Property | Definition |
 |---|---|
@@ -1806,7 +2342,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### records
 
-Source batch record count
+**In everyday language:** Source batch record count.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Source batch record count
 
 | Property | Definition |
 |---|---|
@@ -1824,7 +2366,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### accepted
 
-Accepted/rejected processing gate for batch
+**In everyday language:** Accepted/rejected processing gate for batch.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An accepted incoming batch passed its processing gate; that does not mean an employee request was approved.
+
+Technical definition: Accepted/rejected processing gate for batch
 
 | Property | Definition |
 |---|---|
@@ -1842,7 +2390,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### inserted
 
-Successfully persisted swipe count
+**In everyday language:** Successfully persisted swipe count.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A count of 12 means twelve source punches were saved from this incoming batch.
+
+Technical definition: Successfully persisted swipe count
 
 | Property | Definition |
 |---|---|
@@ -1860,7 +2414,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### unknown_faces
 
-Count routed to unmatched-face evidence
+**In everyday language:** Count routed to unmatched-face evidence.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A count of 3 means three unmatched-face events need investigation; it is not three confirmed absences.
+
+Technical definition: Count routed to unmatched-face evidence
 
 | Property | Definition |
 |---|---|
@@ -1878,7 +2438,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### rejected
 
-Invalid source-record count
+**In everyday language:** Invalid source-record count.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A count of 2 means two incoming records failed validation; it is a count here, not a request status.
+
+Technical definition: Invalid source-record count
 
 | Property | Definition |
 |---|---|
@@ -1896,7 +2462,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### processed_at
 
-Completed batch-processing instant
+**In everyday language:** Completed batch-processing instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Completed batch-processing instant
 
 | Property | Definition |
 |---|---|
@@ -1914,7 +2486,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### error
 
-Bounded processing error explanation; must not contain payload secrets
+**In everyday language:** Bounded processing error explanation; must not contain saved request or message details secrets.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A message explaining which import step failed helps staff correct the source rather than retry blindly.
+
+Technical definition: Bounded processing error explanation; must not contain payload secrets
 
 | Property | Definition |
 |---|---|
@@ -1937,13 +2515,21 @@ Table indexes and lifecycle triggers:
 
 ## att.leave_blackouts
 
+Lists dates on which leave restrictions apply.
+
 Leave blackouts records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1963,7 +2549,13 @@ Database rules (including conditions shared with other fields):
 
 ### blackout_date
 
-Calendar date on which leave policy blocks/flags requests
+**In everyday language:** Calendar date on which leave policy blocks/flags requests.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Calendar date on which leave policy blocks/flags requests
 
 | Property | Definition |
 |---|---|
@@ -1983,7 +2575,13 @@ Database rules (including conditions shared with other fields):
 
 ### location_id
 
-Reference linking this record’s location id to FOREIGN KEY (location_id) REFERENCES core.locations(id).
+**In everyday language:** Identifies location connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct location, so related details can be checked together.
+
+**Example:** This record points to an existing entry in locations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s location id to FOREIGN KEY (location_id) REFERENCES core.locations(id).
 
 | Property | Definition |
 |---|---|
@@ -2004,7 +2602,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Reason/name of the blackout
+**In everyday language:** Reason/name of the blackout.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Reason/name of the blackout
 
 | Property | Definition |
 |---|---|
@@ -2022,7 +2626,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -2040,7 +2650,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -2064,13 +2680,21 @@ Table indexes and lifecycle triggers:
 
 ## att.manager_month_approvals
 
+Keeps managers’ monthly attendance approvals and later withdrawals of those approvals.
+
 ATT-12 manager attendance approval ledger — prerequisite for month lock when policy enabled
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -2090,7 +2714,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -2110,7 +2740,13 @@ Database rules (including conditions shared with other fields):
 
 ### month
 
-Payroll attendance period key
+**In everyday language:** Payroll attendance period key.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Payroll attendance period key
 
 | Property | Definition |
 |---|---|
@@ -2128,7 +2764,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### manager_employee_id
 
-Reference linking this record’s manager employee id to FOREIGN KEY (manager_employee_id) REFERENCES core.employees(id).
+**In everyday language:** Identifies manager employee connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct manager employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s manager employee id to FOREIGN KEY (manager_employee_id) REFERENCES core.employees(id).
 
 | Property | Definition |
 |---|---|
@@ -2148,7 +2790,13 @@ Database rules (including conditions shared with other fields):
 
 ### approved_by_user_id
 
-Reference linking this record’s approved by user id to FOREIGN KEY (approved_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies approved by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct approved by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s approved by user id to FOREIGN KEY (approved_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -2168,7 +2816,13 @@ Database rules (including conditions shared with other fields):
 
 ### approved_at
 
-Attestation event instant
+**In everyday language:** Attestation event instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Attestation event instant
 
 | Property | Definition |
 |---|---|
@@ -2186,7 +2840,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### note
 
-Approval/invalidation explanation
+**In everyday language:** Approval/invalidation explanation.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Approval/invalidation explanation
 
 | Property | Definition |
 |---|---|
@@ -2204,7 +2864,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -2222,7 +2888,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### event_type
 
-Append-only approve/invalidate event; latest event determines current attestation
+**In everyday language:** kept as history, with new entries added rather than old entries overwritten approve/invalidate event; latest event determines current attestation.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “approve” means Approve.
+
+Technical definition: Append-only approve/invalidate event; latest event determines current attestation
 
 | Property | Definition |
 |---|---|
@@ -2254,13 +2926,21 @@ Table indexes and lifecycle triggers:
 
 ## att.month_locks
 
+Records when a company’s attendance period is frozen for payroll.
+
 att.month_locks — ATT-15 payroll precondition.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -2280,7 +2960,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -2301,7 +2987,13 @@ Database rules (including conditions shared with other fields):
 
 ### month
 
-Company payroll period key, not arbitrary work-date month
+**In everyday language:** Company payroll period key, not arbitrary work-date month.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Company payroll period key, not arbitrary work-date month
 
 | Property | Definition |
 |---|---|
@@ -2322,7 +3014,13 @@ Database rules (including conditions shared with other fields):
 
 ### locked_by
 
-Reference linking this record’s locked by to FOREIGN KEY (locked_by) REFERENCES core.users(id).
+**In everyday language:** Identifies locked by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct locked by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s locked by to FOREIGN KEY (locked_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -2342,7 +3040,13 @@ Database rules (including conditions shared with other fields):
 
 ### locked_at
 
-Attendance freeze instant
+**In everyday language:** Attendance freeze instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Attendance freeze instant
 
 | Property | Definition |
 |---|---|
@@ -2360,7 +3064,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### checklist
 
-Readiness facts captured at lock
+**In everyday language:** Readiness facts captured at lock.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the checklist.
+
+Technical definition: Readiness facts captured at lock
 
 | Property | Definition |
 |---|---|
@@ -2378,7 +3088,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -2396,7 +3112,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### period_from
 
-Inclusive beginning of the frozen attendance window; paired with exclusive period_until. NULL legacy boundaries use the calendar-month fallback.
+**In everyday language:** The beginning of the attendance period frozen for payroll; this boundary is included.
+
+**Why it is kept:** Establishes which attendance dates belong to the frozen period.
+
+**Example:** If the period begins on 01 Nov, that date is included. Older records without saved boundaries use their defined calendar-month rule.
+
+Technical definition: Inclusive beginning of the frozen attendance window; paired with exclusive period_until. NULL legacy boundaries use the calendar-month fallback.
 
 | Property | Definition |
 |---|---|
@@ -2416,7 +3138,13 @@ Database rules (including conditions shared with other fields):
 
 ### period_until
 
-Exclusive upper boundary of the frozen attendance window [period_from, period_until). NULL legacy boundaries use the calendar-month fallback.
+**In everyday language:** The first instant after the frozen attendance period. It is not included in that period.
+
+**Why it is kept:** Makes the end of one attendance period and the start of the next unambiguous.
+
+**Example:** For a period ending just before 01 Dec 2026, 01 Dec belongs to the next period.
+
+Technical definition: Exclusive upper boundary of the frozen attendance window [period_from, period_until). NULL legacy boundaries use the calendar-month fallback.
 
 | Property | Definition |
 |---|---|
@@ -2442,13 +3170,21 @@ Table indexes and lifecycle triggers:
 
 ## att.overtime_entries
 
+Tracks detected overtime, the manager’s decision and whether it is paid or converted to leave.
+
 att.overtime_entries — the 48-hour rule (ATT-08).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -2468,7 +3204,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -2489,7 +3231,13 @@ Database rules (including conditions shared with other fields):
 
 ### work_date
 
-Attendance date supplying the OT obligation
+**In everyday language:** Attendance date supplying the overtime obligation.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Attendance date supplying the OT obligation
 
 | Property | Definition |
 |---|---|
@@ -2509,7 +3257,13 @@ Database rules (including conditions shared with other fields):
 
 ### detected_minutes
 
-Processor's observed overtime before claim/approval
+**In everyday language:** Processor's observed overtime before claim/approval.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Processor's observed overtime before claim/approval
 
 | Property | Definition |
 |---|---|
@@ -2529,7 +3283,13 @@ Database rules (including conditions shared with other fields):
 
 ### claimed_minutes
 
-Configured rounded duration submitted for decision
+**In everyday language:** Configured rounded duration submitted for decision.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Configured rounded duration submitted for decision
 
 | Property | Definition |
 |---|---|
@@ -2550,7 +3310,13 @@ Database rules (including conditions shared with other fields):
 
 ### approved_minutes
 
-Manager-authorized duration; not merely detected time
+**In everyday language:** Manager-authorized duration; not merely detected time.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Manager-authorized duration; not merely detected time
 
 | Property | Definition |
 |---|---|
@@ -2570,7 +3336,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Pending/approved/rejected/lapsed/comp-off obligation state
+**In everyday language:** Pending/approved/rejected/lapsed/comp-off obligation state.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “pending” means Awaiting the required decision or next action.
+
+Technical definition: Pending/approved/rejected/lapsed/comp-off obligation state
 
 | Property | Definition |
 |---|---|
@@ -2598,7 +3370,13 @@ Database rules (including conditions shared with other fields):
 
 ### manager_id
 
-Reference linking this record’s manager id to FOREIGN KEY (manager_id) REFERENCES core.employees(id).
+**In everyday language:** Identifies manager connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct manager, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s manager id to FOREIGN KEY (manager_id) REFERENCES core.employees(id).
 
 | Property | Definition |
 |---|---|
@@ -2618,7 +3396,13 @@ Database rules (including conditions shared with other fields):
 
 ### decided_at
 
-Decision receipt instant
+**In everyday language:** Decision receipt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Decision receipt instant
 
 | Property | Definition |
 |---|---|
@@ -2636,7 +3420,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### deadline_at
 
-Configured hard decision deadline
+**In everyday language:** Configured hard decision deadline.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Configured hard decision deadline
 
 | Property | Definition |
 |---|---|
@@ -2654,7 +3444,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### workflow_request_id
 
-Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
+**In everyday language:** Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database link to another record is present.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This record points to an existing entry in requests instead of copying all of that entry’s details.
+
+Technical definition: Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
 
 | Property | Definition |
 |---|---|
@@ -2674,7 +3470,13 @@ Database rules (including conditions shared with other fields):
 
 ### comp_off_credit_id
 
-Reference linking this record’s comp off credit id to FOREIGN KEY (comp_off_credit_id) REFERENCES lv.ledger(id).
+**In everyday language:** Identifies comp off credit connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct comp off credit, so related details can be checked together.
+
+**Example:** This record points to an existing entry in ledger instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s comp off credit id to FOREIGN KEY (comp_off_credit_id) REFERENCES lv.ledger(id).
 
 | Property | Definition |
 |---|---|
@@ -2695,7 +3497,13 @@ Database rules (including conditions shared with other fields):
 
 ### payroll_item_id
 
-Intended consuming payslip header; link lacks a live FK and requires exactly-once consumption proof
+**In everyday language:** Intended consuming payslip header; link lacks a live link to another record and requires exactly-once consumption proof.
+
+**Why it is kept:** Keeps this record connected to the correct payroll item, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Intended consuming payslip header; link lacks a live FK and requires exactly-once consumption proof
 
 | Property | Definition |
 |---|---|
@@ -2715,7 +3523,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -2733,7 +3547,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -2759,13 +3579,21 @@ Table indexes and lifecycle triggers:
 
 ## att.quarantined_swipes
 
+Separates questionable attendance punches for investigation.
+
 att.quarantined_swipes — implausible timestamps parked for review (doc 14 §8.4).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -2785,7 +3613,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_no
 
-Original source e-code for quarantined event
+**In everyday language:** Original source e-code for quarantined event.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The employee number received with the punch is matched to the employee master before it can be trusted as an employee link.
+
+Technical definition: Original source e-code for quarantined event
 
 | Property | Definition |
 |---|---|
@@ -2805,7 +3639,13 @@ Database rules (including conditions shared with other fields):
 
 ### swipe_ts
 
-Implausible source punch instant
+**In everyday language:** Implausible source punch instant.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A punch made at 9 AM keeps that time even if the device uploads it later.
+
+Technical definition: Implausible source punch instant
 
 | Property | Definition |
 |---|---|
@@ -2825,7 +3665,13 @@ Database rules (including conditions shared with other fields):
 
 ### door_code
 
-Source door identity
+**In everyday language:** Source door identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A code such as GATE-A distinguishes the gate where the punch was recorded.
+
+Technical definition: Source door identity
 
 | Property | Definition |
 |---|---|
@@ -2845,7 +3691,13 @@ Database rules (including conditions shared with other fields):
 
 ### direction
 
-Source IN/OUT direction when supplied
+**In everyday language:** Source IN/OUT direction when supplied.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An IN punch records entry and an OUT punch records exit; a missing direction must not be treated as a known OUT.
+
+Technical definition: Source IN/OUT direction when supplied
 
 | Property | Definition |
 |---|---|
@@ -2863,7 +3715,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### swipe_type
 
-Source biometric technology tag
+**In everyday language:** Source biometric technology tag.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the swipe type.
+
+Technical definition: Source biometric technology tag
 
 | Property | Definition |
 |---|---|
@@ -2881,7 +3739,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### received_at
 
-Trusted source receipt used to measure drift
+**In everyday language:** Trusted source receipt used to measure drift.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Trusted source receipt used to measure drift
 
 | Property | Definition |
 |---|---|
@@ -2899,7 +3763,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### source
 
-Connector stream provenance
+**In everyday language:** Connector stream where the information came from.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the source.
+
+Technical definition: Connector stream provenance
 
 | Property | Definition |
 |---|---|
@@ -2919,7 +3789,13 @@ Database rules (including conditions shared with other fields):
 
 ### reason
 
-Why the event was quarantined
+**In everyday language:** Why the event was quarantined.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Why the event was quarantined
 
 | Property | Definition |
 |---|---|
@@ -2937,7 +3813,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### reviewed
 
-Exception-review marker; review/replay workflow must establish evidence
+**In everyday language:** Exception-review marker; review/replay workflow must establish evidence.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Exception-review marker; review/replay workflow must establish evidence
 
 | Property | Definition |
 |---|---|
@@ -2960,7 +3842,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -2984,13 +3872,21 @@ Table indexes and lifecycle triggers:
 
 ## att.recompute_queue
 
+Lists attendance dates waiting to be calculated again after a relevant change.
+
 Recompute queue records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### employee_id
 
-Dirty attendance subject; live FK absent
+**In everyday language:** Dirty attendance subject; live link to another record absent.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Dirty attendance subject; live FK absent
 
 | Property | Definition |
 |---|---|
@@ -3010,7 +3906,13 @@ Database rules (including conditions shared with other fields):
 
 ### work_date
 
-Dirty attendance day needing recomputation
+**In everyday language:** Dirty attendance day needing recomputation.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Dirty attendance day needing recomputation
 
 | Property | Definition |
 |---|---|
@@ -3030,7 +3932,13 @@ Database rules (including conditions shared with other fields):
 
 ### queued_at
 
-Earliest eligible recompute instant, including future-half hold
+**In everyday language:** Earliest eligible recompute instant, including future-half hold.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Earliest eligible recompute instant, including future-half hold
 
 | Property | Definition |
 |---|---|
@@ -3052,13 +3960,21 @@ Table indexes and lifecycle triggers:
 
 ## att.regularizations
 
+Records requests to correct attendance or record approved on-duty time.
+
 att.regularizations — AR (past-only) / OD (future ok) / PERMISSION (time-bound) (ATT-06/07).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -3078,7 +3994,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -3098,7 +4020,13 @@ Database rules (including conditions shared with other fields):
 
 ### kind
 
-AR, official duty or short permission request type
+**In everyday language:** attendance correction request, official duty or short permission request type.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “AR” means Attendance regularization.
+
+Technical definition: AR, official duty or short permission request type
 
 | Property | Definition |
 |---|---|
@@ -3125,7 +4053,13 @@ Database rules (including conditions shared with other fields):
 
 ### from_date
 
-Inclusive first requested date
+**In everyday language:** Inclusive first requested date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Inclusive first requested date
 
 | Property | Definition |
 |---|---|
@@ -3146,7 +4080,13 @@ Database rules (including conditions shared with other fields):
 
 ### to_date
 
-Inclusive last requested date
+**In everyday language:** Inclusive last requested date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Inclusive last requested date
 
 | Property | Definition |
 |---|---|
@@ -3167,7 +4107,13 @@ Database rules (including conditions shared with other fields):
 
 ### from_time
 
-Requested/configured start clock time, distinct from raw swipe
+**In everyday language:** Requested/configured start clock time, distinct from raw swipe.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A partial-day request may start at 2 PM; that start time does not by itself mean the whole day was approved.
+
+Technical definition: Requested/configured start clock time, distinct from raw swipe
 
 | Property | Definition |
 |---|---|
@@ -3187,14 +4133,20 @@ Database rules (including conditions shared with other fields):
 
 ### to_time
 
-Requested end clock time of partial attendance coverage.
+**In everyday language:** Requested/configured end clock time, distinct from raw swipe.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A time-bounded request may end at 4 PM; the recorded end is part of its requested coverage.
+
+Technical definition: Requested/configured end clock time, distinct from raw swipe
 
 | Property | Definition |
 |---|---|
 | SQL type | `time without time zone` |
 | Required | No (NULL allowed; NULL is distinct from zero/false/empty) |
 | Default | No database default |
-| Definition basis | dictionary supplement; docs/03, docs/04 and current catalog |
+| Definition basis | reviewer-authored field meaning (19 Oct 2026) |
 | Code declaration | `to_time: string \| null;` |
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
@@ -3207,7 +4159,13 @@ Database rules (including conditions shared with other fields):
 
 ### reason
 
-Employee justification
+**In everyday language:** Employee justification.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Employee justification
 
 | Property | Definition |
 |---|---|
@@ -3225,7 +4183,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### requested_status
 
-Requested approved coverage result, never automatic consent
+**In everyday language:** Requested approved coverage result, never automatic consent.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the requested status.
+
+Technical definition: Requested approved coverage result, never automatic consent
 
 | Property | Definition |
 |---|---|
@@ -3243,7 +4207,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### workflow_request_id
 
-Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
+**In everyday language:** Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database link to another record is present.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This record points to an existing entry in requests instead of copying all of that entry’s details.
+
+Technical definition: Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
 
 | Property | Definition |
 |---|---|
@@ -3263,7 +4233,13 @@ Database rules (including conditions shared with other fields):
 
 ### applied
 
-Domain write-back marker after approved workflow effects
+**In everyday language:** Domain write-back marker after approved workflow effects.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Domain write-back marker after approved workflow effects
 
 | Property | Definition |
 |---|---|
@@ -3286,7 +4262,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -3304,7 +4286,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -3322,7 +4310,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### day_portion
 
-Full day, first half or second half coverage owner
+**In everyday language:** Full day, first half or second half coverage owner.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “full_day” means Both configured attendance halves on each covered date.
+
+Technical definition: Full day, first half or second half coverage owner
 
 | Property | Definition |
 |---|---|
@@ -3356,13 +4350,21 @@ Table indexes and lifecycle triggers:
 
 ## att.roster_publications
 
+Records when a work schedule is published.
+
 Roster publications records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -3382,7 +4384,13 @@ Database rules (including conditions shared with other fields):
 
 ### manager_employee_id
 
-Reference linking this record’s manager employee id to FOREIGN KEY (manager_employee_id) REFERENCES core.employees(id).
+**In everyday language:** Identifies manager employee connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct manager employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s manager employee id to FOREIGN KEY (manager_employee_id) REFERENCES core.employees(id).
 
 | Property | Definition |
 |---|---|
@@ -3402,7 +4410,13 @@ Database rules (including conditions shared with other fields):
 
 ### period_from
 
-Published roster interval beginning
+**In everyday language:** Published roster interval beginning.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Published roster interval beginning
 
 | Property | Definition |
 |---|---|
@@ -3422,7 +4436,13 @@ Database rules (including conditions shared with other fields):
 
 ### period_to
 
-Published roster interval ending
+**In everyday language:** Published roster interval ending.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Published roster interval ending
 
 | Property | Definition |
 |---|---|
@@ -3442,7 +4462,13 @@ Database rules (including conditions shared with other fields):
 
 ### published_at
 
-Publication receipt instant
+**In everyday language:** Publication receipt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Publication receipt instant
 
 | Property | Definition |
 |---|---|
@@ -3460,7 +4486,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### published_by
 
-Reference linking this record’s published by to FOREIGN KEY (published_by) REFERENCES core.users(id).
+**In everyday language:** Identifies published by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct published by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s published by to FOREIGN KEY (published_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -3480,7 +4512,13 @@ Database rules (including conditions shared with other fields):
 
 ### revision
 
-Publication revision number, not an employee counter
+**In everyday language:** Publication revision number, not an employee counter.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Revision 2 identifies a later saved version than revision 1.
+
+Technical definition: Publication revision number, not an employee counter
 
 | Property | Definition |
 |---|---|
@@ -3498,7 +4536,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### reason
 
-Reason for publishing/revising
+**In everyday language:** Reason for publishing/revising.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Reason for publishing/revising
 
 | Property | Definition |
 |---|---|
@@ -3521,13 +4565,21 @@ Table indexes and lifecycle triggers:
 
 ## att.roster_revisions
 
+Keeps the history of work-schedule changes.
+
 Roster revisions records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -3547,7 +4599,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -3567,7 +4625,13 @@ Database rules (including conditions shared with other fields):
 
 ### work_date
 
-Roster day changed after publication
+**In everyday language:** Roster day changed after publication.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Roster day changed after publication
 
 | Property | Definition |
 |---|---|
@@ -3585,7 +4649,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### old_shift_id
 
-Reference linking this record’s old shift id to FOREIGN KEY (old_shift_id) REFERENCES att.shifts(id).
+**In everyday language:** Identifies old shift connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct old shift, so related details can be checked together.
+
+**Example:** This record points to an existing entry in shifts instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s old shift id to FOREIGN KEY (old_shift_id) REFERENCES att.shifts(id).
 
 | Property | Definition |
 |---|---|
@@ -3605,7 +4675,13 @@ Database rules (including conditions shared with other fields):
 
 ### new_shift_id
 
-Reference linking this record’s new shift id to FOREIGN KEY (new_shift_id) REFERENCES att.shifts(id).
+**In everyday language:** Identifies new shift connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct new shift, so related details can be checked together.
+
+**Example:** This record points to an existing entry in shifts instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s new shift id to FOREIGN KEY (new_shift_id) REFERENCES att.shifts(id).
 
 | Property | Definition |
 |---|---|
@@ -3625,7 +4701,13 @@ Database rules (including conditions shared with other fields):
 
 ### old_week_off
 
-Before-image off-day assignment
+**In everyday language:** Before-image off-day assignment.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Before-image off-day assignment
 
 | Property | Definition |
 |---|---|
@@ -3648,7 +4730,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### new_week_off
 
-After-image off-day assignment
+**In everyday language:** After-image off-day assignment.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: After-image off-day assignment
 
 | Property | Definition |
 |---|---|
@@ -3671,7 +4759,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### reason
 
-Mandatory post-publication change reason
+**In everyday language:** Mandatory post-publication change reason.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Mandatory post-publication change reason
 
 | Property | Definition |
 |---|---|
@@ -3689,7 +4783,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### changed_by
 
-Reference linking this record’s changed by to FOREIGN KEY (changed_by) REFERENCES core.users(id).
+**In everyday language:** Identifies changed by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct changed by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s changed by to FOREIGN KEY (changed_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -3709,7 +4809,13 @@ Database rules (including conditions shared with other fields):
 
 ### changed_at
 
-Revision receipt instant
+**In everyday language:** Revision receipt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Revision receipt instant
 
 | Property | Definition |
 |---|---|
@@ -3732,13 +4838,21 @@ Table indexes and lifecycle triggers:
 
 ## att.rosters
 
+Records an employee’s planned shift or weekly off for a date.
+
 Rosters records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -3758,7 +4872,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -3779,7 +4899,13 @@ Database rules (including conditions shared with other fields):
 
 ### work_date
 
-Employee's roster calendar date
+**In everyday language:** Employee's roster calendar date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Employee's roster calendar date
 
 | Property | Definition |
 |---|---|
@@ -3799,7 +4925,13 @@ Database rules (including conditions shared with other fields):
 
 ### shift_id
 
-Reference linking this record’s shift id to FOREIGN KEY (shift_id) REFERENCES att.shifts(id).
+**In everyday language:** Identifies shift connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct shift, so related details can be checked together.
+
+**Example:** This record points to an existing entry in shifts instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s shift id to FOREIGN KEY (shift_id) REFERENCES att.shifts(id).
 
 | Property | Definition |
 |---|---|
@@ -3820,7 +4952,13 @@ Database rules (including conditions shared with other fields):
 
 ### is_week_off
 
-Explicit off-day assignment; not inference from missing shift
+**In everyday language:** Explicit off-day assignment; not inference from missing shift.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Explicit off-day assignment; not inference from missing shift
 
 | Property | Definition |
 |---|---|
@@ -3845,7 +4983,13 @@ Database rules (including conditions shared with other fields):
 
 ### set_by
 
-Reference linking this record’s set by to FOREIGN KEY (set_by) REFERENCES core.users(id).
+**In everyday language:** Identifies set by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct set by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s set by to FOREIGN KEY (set_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -3865,7 +5009,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -3883,7 +5033,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -3908,13 +5064,21 @@ Table indexes and lifecycle triggers:
 
 ## att.shift_patterns
 
+Defines repeating arrangements of work shifts and days off.
+
 Shift patterns records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -3934,7 +5098,13 @@ Database rules (including conditions shared with other fields):
 
 ### code
 
-Reusable rotation identity
+**In everyday language:** Reusable rotation identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Reusable rotation identity
 
 | Property | Definition |
 |---|---|
@@ -3954,7 +5124,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Rotation display label
+**In everyday language:** Rotation display label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Rotation display label
 
 | Property | Definition |
 |---|---|
@@ -3972,7 +5148,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### cycle
 
-Ordered shift/off-day cycle used by pattern application; must validate every referenced shift
+**In everyday language:** Ordered shift/off-day cycle used by pattern application; must validate every referenced shift.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the cycle.
+
+Technical definition: Ordered shift/off-day cycle used by pattern application; must validate every referenced shift
 
 | Property | Definition |
 |---|---|
@@ -3992,7 +5174,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -4012,7 +5200,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -4030,7 +5224,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -4054,13 +5254,21 @@ Table indexes and lifecycle triggers:
 
 ## att.shift_swaps
 
+Tracks requests to exchange scheduled shifts.
+
 Shift swaps records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Domain request identity.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Domain request identity.
 
 | Property | Definition |
 |---|---|
@@ -4080,7 +5288,13 @@ Database rules (including conditions shared with other fields):
 
 ### requester_employee_id
 
-First employee whose roster would change.
+**In everyday language:** First employee whose roster would change.
+
+**Why it is kept:** Keeps this record connected to the correct requester employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: First employee whose roster would change.
 
 | Property | Definition |
 |---|---|
@@ -4100,7 +5314,13 @@ Database rules (including conditions shared with other fields):
 
 ### counterpart_employee_id
 
-Second affected employee; both need approval scope.
+**In everyday language:** Second affected employee; both need approval scope.
+
+**Why it is kept:** Keeps this record connected to the correct counterpart employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Second affected employee; both need approval scope.
 
 | Property | Definition |
 |---|---|
@@ -4120,7 +5340,13 @@ Database rules (including conditions shared with other fields):
 
 ### work_date
 
-Roster date affected by the exchange/bid.
+**In everyday language:** Roster date affected by the exchange/bid.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Roster date affected by the exchange/bid.
 
 | Property | Definition |
 |---|---|
@@ -4138,7 +5364,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### requester_shift_id
 
-Original first-person shift snapshot; week-off snapshot lives in existing workflow payload.
+**In everyday language:** Original first-person shift copy saved at that point in time; week-off copy saved at that point in time lives in existing workflow saved request or message details.
+
+**Why it is kept:** Keeps this record connected to the correct requester shift, so related details can be checked together.
+
+**Example:** This record points to an existing entry in shifts instead of copying all of that entry’s details.
+
+Technical definition: Original first-person shift snapshot; week-off snapshot lives in existing workflow payload.
 
 | Property | Definition |
 |---|---|
@@ -4158,7 +5390,13 @@ Database rules (including conditions shared with other fields):
 
 ### counterpart_shift_id
 
-Original counterpart shift snapshot.
+**In everyday language:** Original counterpart shift copy saved at that point in time.
+
+**Why it is kept:** Keeps this record connected to the correct counterpart shift, so related details can be checked together.
+
+**Example:** This record points to an existing entry in shifts instead of copying all of that entry’s details.
+
+Technical definition: Original counterpart shift snapshot.
 
 | Property | Definition |
 |---|---|
@@ -4178,7 +5416,13 @@ Database rules (including conditions shared with other fields):
 
 ### kind
 
-Exchange versus bid operation; must not be inferred from missing people.
+**In everyday language:** Exchange versus bid operation; must not be inferred from missing people.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “swap” means Swap classification for kind.
+
+Technical definition: Exchange versus bid operation; must not be inferred from missing people.
 
 | Property | Definition |
 |---|---|
@@ -4203,7 +5447,13 @@ Database rules (including conditions shared with other fields):
 
 ### workflow_request_id
 
-Approval-chain link; generic creation cannot manufacture an unattached swap.
+**In everyday language:** Approval-chain link; generic creation cannot manufacture an unattached swap.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This record points to an existing entry in requests instead of copying all of that entry’s details.
+
+Technical definition: Approval-chain link; generic creation cannot manufacture an unattached swap.
 
 | Property | Definition |
 |---|---|
@@ -4223,7 +5473,13 @@ Database rules (including conditions shared with other fields):
 
 ### applied
 
-Idempotent final-effect marker committed with both roster changes, not a substitute for workflow approval.
+**In everyday language:** safe to repeat without making duplicates final-effect marker committed with both roster changes, not a substitute for workflow approval.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Idempotent final-effect marker committed with both roster changes, not a substitute for workflow approval.
 
 | Property | Definition |
 |---|---|
@@ -4246,7 +5502,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Request provenance timestamp.
+**In everyday language:** Request where the information came from timestamp.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Request provenance timestamp.
 
 | Property | Definition |
 |---|---|
@@ -4269,13 +5531,21 @@ Table indexes and lifecycle triggers:
 
 ## att.shifts
 
+Defines working times, breaks and attendance rules for each shift.
+
 att.shifts — shift catalog; every time/threshold is a row, never code (ATT-04).
 
 Relation kind: table.
 
 ### id
 
-Catalog row identity referenced by employee schemes, rosters and processed days.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Catalog row identity referenced by employee schemes, rosters and processed days.
 
 | Property | Definition |
 |---|---|
@@ -4295,7 +5565,13 @@ Database rules (including conditions shared with other fields):
 
 ### code
 
-Unique business shift code, used by configuration and fallback resolution.
+**In everyday language:** Unique business shift code, used by configuration and alternative handling when the main information is missing resolution.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Unique business shift code, used by configuration and fallback resolution.
 
 | Property | Definition |
 |---|---|
@@ -4315,7 +5591,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Human-readable shift label.
+**In everyday language:** Human-readable shift label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Human-readable shift label.
 
 | Property | Definition |
 |---|---|
@@ -4333,7 +5615,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### start_time
 
-Primary session start in IST wall-clock time.
+**In everyday language:** Primary session start in IST wall-clock time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A shift may start at 9 AM; attendance compares the relevant punches against the configured shift.
+
+Technical definition: Primary session start in IST wall-clock time.
 
 | Property | Definition |
 |---|---|
@@ -4354,7 +5642,13 @@ Database rules (including conditions shared with other fields):
 
 ### end_time
 
-Primary session end; second session, when configured, has its own end.
+**In everyday language:** Primary session end; second session, when configured, has its own end.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A shift may end at 6 PM; a shift crossing midnight needs its own configured interpretation.
+
+Technical definition: Primary session end; second session, when configured, has its own end.
 
 | Property | Definition |
 |---|---|
@@ -4376,7 +5670,13 @@ Database rules (including conditions shared with other fields):
 
 ### crosses_midnight
 
-Primary session end is on the following calendar day; attribution stays on the shift date.
+**In everyday language:** Primary session end is on the following calendar day; attribution stays on the shift date.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Primary session end is on the following calendar day; attribution stays on the shift date.
 
 | Property | Definition |
 |---|---|
@@ -4403,7 +5703,13 @@ Database rules (including conditions shared with other fields):
 
 ### session_split
 
-Boundary dividing one continuous shift into two attendance halves; mutually exclusive with separate second-session fields.
+**In everyday language:** Boundary dividing one continuous shift into two attendance halves; only one can apply at a time with separate second-session fields.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A configured 1 PM boundary separates the first and second attendance halves; HRMS must not invent a midpoint.
+
+Technical definition: Boundary dividing one continuous shift into two attendance halves; mutually exclusive with separate second-session fields.
 
 | Property | Definition |
 |---|---|
@@ -4424,7 +5730,13 @@ Database rules (including conditions shared with other fields):
 
 ### grace_in_minutes
 
-Configured grace subtracted from late duration under docs04 §1.1; does not manufacture present-half coverage.
+**In everyday language:** Configured grace subtracted from late duration under docs04 §1.1; does not manufacture present-half coverage.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Configured grace subtracted from late duration under docs04 §1.1; does not manufacture present-half coverage.
 
 | Property | Definition |
 |---|---|
@@ -4444,7 +5756,13 @@ Database rules (including conditions shared with other fields):
 
 ### grace_out_minutes
 
-Configured grace subtracted from early-exit duration under docs04 §1.1.
+**In everyday language:** Configured grace subtracted from early-exit duration under docs04 §1.1.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Configured grace subtracted from early-exit duration under docs04 §1.1.
 
 | Property | Definition |
 |---|---|
@@ -4464,7 +5782,13 @@ Database rules (including conditions shared with other fields):
 
 ### min_half_day_hours
 
-Configured worked-hours threshold for a non-session half-day summary.
+**In everyday language:** Configured worked-hours threshold for a non-session half-day summary.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Configured worked-hours threshold for a non-session half-day summary.
 
 | Property | Definition |
 |---|---|
@@ -4485,7 +5809,13 @@ Database rules (including conditions shared with other fields):
 
 ### min_full_day_hours
 
-Configured worked-hours threshold for a non-session full-day summary; cannot be less than half-day threshold.
+**In everyday language:** Configured worked-hours threshold for a non-session full-day summary; cannot be less than half-day threshold.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Configured worked-hours threshold for a non-session full-day summary; cannot be less than half-day threshold.
 
 | Property | Definition |
 |---|---|
@@ -4506,7 +5836,13 @@ Database rules (including conditions shared with other fields):
 
 ### break_minutes
 
-Configured break deduction when the break is unpaid.
+**In everyday language:** Configured break deduction when the break is unpaid.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Configured break deduction when the break is unpaid.
 
 | Property | Definition |
 |---|---|
@@ -4526,7 +5862,13 @@ Database rules (including conditions shared with other fields):
 
 ### is_active
 
-Catalog availability for new assignments.
+**In everyday language:** list of available choices availability for new assignments.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Catalog availability for new assignments.
 
 | Property | Definition |
 |---|---|
@@ -4549,7 +5891,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Catalog creation provenance.
+**In everyday language:** list of available choices creation where the information came from.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Catalog creation provenance.
 
 | Property | Definition |
 |---|---|
@@ -4567,7 +5915,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Catalog modification provenance.
+**In everyday language:** list of available choices modification where the information came from.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Catalog modification provenance.
 
 | Property | Definition |
 |---|---|
@@ -4585,7 +5939,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### break_paid
 
-Controls whether break_minutes is deducted; now connected to computation and HTTP persistence.
+**In everyday language:** Controls whether break_minutes is deducted; now connected to computation and HTTP persistence.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Controls whether break_minutes is deducted; now connected to computation and HTTP persistence.
 
 | Property | Definition |
 |---|---|
@@ -4608,7 +5968,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### ot_start_offset_minutes
 
-Configured delay after the final shift end before detected overtime starts; actual OT approval/pay remains a separate flow.
+**In everyday language:** Configured delay after the final shift end before detected overtime starts; actual overtime approval/pay remains a separate flow.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Configured delay after the final shift end before detected overtime starts; actual OT approval/pay remains a separate flow.
 
 | Property | Definition |
 |---|---|
@@ -4628,7 +5994,13 @@ Database rules (including conditions shared with other fields):
 
 ### late_slabs
 
-Approved model for late policy tiers. Nonempty half-day penalty activation remains blocked pending the sponsor’s half-session/penalty contract.
+**In everyday language:** Approved model for late policy tiers. Nonempty half-day penalty activation remains blocked pending the sponsor’s half-session/penalty contract.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the late slabs.
+
+Technical definition: Approved model for late policy tiers. Nonempty half-day penalty activation remains blocked pending the sponsor’s half-session/penalty contract.
 
 | Property | Definition |
 |---|---|
@@ -4648,7 +6020,13 @@ Database rules (including conditions shared with other fields):
 
 ### early_exit_slabs
 
-Approved model for early-exit policy tiers; same pending contract as late_slabs. Stored representation is an array.
+**In everyday language:** Approved model for early-exit policy tiers; same pending contract as late_slabs. Stored representation is an array.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the early exit slabs.
+
+Technical definition: Approved model for early-exit policy tiers; same pending contract as late_slabs. Stored representation is an array.
 
 | Property | Definition |
 |---|---|
@@ -4668,7 +6046,13 @@ Database rules (including conditions shared with other fields):
 
 ### allowance_component_code
 
-Reserved link to a payroll earning component; consumption/FK validation is not complete, so nonempty activation is refused.
+**In everyday language:** Reserved link to a payroll earning component; consumption/link to another record validation is not complete, so nonempty activation is refused.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Reserved link to a payroll earning component; consumption/FK validation is not complete, so nonempty activation is refused.
 
 | Property | Definition |
 |---|---|
@@ -4686,7 +6070,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### session2_start
 
-Start of a separate second session; its preceding gap is not worked coverage.
+**In everyday language:** Start of a separate second session; its preceding gap is not worked coverage.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A split shift may have a second work interval starting at 2 PM after a gap.
+
+Technical definition: Start of a separate second session; its preceding gap is not worked coverage.
 
 | Property | Definition |
 |---|---|
@@ -4708,7 +6098,13 @@ Database rules (including conditions shared with other fields):
 
 ### session2_end
 
-End of the separate second session; also extends biometric completeness and request schedule through the final session.
+**In everyday language:** End of the separate second session; also extends biometric completeness and request schedule through the final session.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** If the second interval ends at 6 PM, that is the final work boundary for the split shift.
+
+Technical definition: End of the separate second session; also extends biometric completeness and request schedule through the final session.
 
 | Property | Definition |
 |---|---|
@@ -4735,13 +6131,21 @@ Table indexes and lifecycle triggers:
 
 ## att.swipe_events
 
+Keeps original attendance punches received from devices or other approved sources.
+
 att.swipe_events — RAW immutable swipes, monthly-partitioned (ATT-01).
 
 Relation kind: partitioned parent table.
 
 ### id
 
-Raw immutable event identity; partitioned uniqueness pairs identity with event timestamp.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Raw immutable event identity; partitioned uniqueness pairs identity with event timestamp.
 
 | Property | Definition |
 |---|---|
@@ -4761,7 +6165,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Resolved employee FK; NULL retains unmatched evidence for HR reconciliation, not an invented employee.
+**In everyday language:** Resolved employee link to another record; not recorded retains unmatched evidence for HR reconciliation, not an invented employee.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Resolved employee FK; NULL retains unmatched evidence for HR reconciliation, not an invented employee.
 
 | Property | Definition |
 |---|---|
@@ -4779,7 +6189,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### employee_no
 
-Verbatim external e-code retained alongside resolved FK for reconciliation and idempotency.
+**In everyday language:** Verbatim external e-code retained alongside resolved link to another record for reconciliation and duplicate-prevention.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The employee number received with the punch is matched to the employee master before it can be trusted as an employee link.
+
+Technical definition: Verbatim external e-code retained alongside resolved FK for reconciliation and idempotency.
 
 | Property | Definition |
 |---|---|
@@ -4799,7 +6215,13 @@ Database rules (including conditions shared with other fields):
 
 ### access_card
 
-Source card identifier retained as evidence; employee identity resolution currently uses external e-code.
+**In everyday language:** Source card identifier retained as evidence; employee identity resolution currently uses external e-code.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A card reference connects a device event to the card presented; it is not itself an attendance approval.
+
+Technical definition: Source card identifier retained as evidence; employee identity resolution currently uses external e-code.
 
 | Property | Definition |
 |---|---|
@@ -4817,7 +6239,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### shift_label
 
-Source diagnostic label, never authority over configured roster. Documented passthrough but current RawSwipe interface/ingest does not populate it.
+**In everyday language:** Source diagnostic label, never authority over configured roster. Documented passthrough but current RawSwipe interface/ingest does not populate it.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the shift label.
+
+Technical definition: Source diagnostic label, never authority over configured roster. Documented passthrough but current RawSwipe interface/ingest does not populate it.
 
 | Property | Definition |
 |---|---|
@@ -4835,7 +6263,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### swipe_ts
 
-Device event instant; drives partition, employee-day attribution and unique event key.
+**In everyday language:** Device event instant; drives partition, employee-day attribution and unique event key.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A punch made at 9 AM keeps that time even if the device uploads it later.
+
+Technical definition: Device event instant; drives partition, employee-day attribution and unique event key.
 
 | Property | Definition |
 |---|---|
@@ -4856,7 +6290,13 @@ Database rules (including conditions shared with other fields):
 
 ### door_code
 
-External door identity; ties heartbeat/location and event idempotency. Cross-plant punches remain valid.
+**In everyday language:** External door identity; ties heartbeat/location and event duplicate-prevention. Cross-plant punches remain valid.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A code such as GATE-A distinguishes the gate where the punch was recorded.
+
+Technical definition: External door identity; ties heartbeat/location and event idempotency. Cross-plant punches remain valid.
 
 | Property | Definition |
 |---|---|
@@ -4876,7 +6316,13 @@ Database rules (including conditions shared with other fields):
 
 ### longitude
 
-ATT-14 mobile/geolocation evidence. Required planned scope; current RawSwipe pipeline does not carry it.
+**In everyday language:** ATT-14 mobile/geolocation evidence. Required planned scope; current RawSwipe pipeline does not carry it.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Longitude describes east/west position. A recorded position does not by itself prove the employee was at an approved site.
+
+Technical definition: ATT-14 mobile/geolocation evidence. Required planned scope; current RawSwipe pipeline does not carry it.
 
 | Property | Definition |
 |---|---|
@@ -4894,7 +6340,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### latitude
 
-ATT-14 mobile/geolocation evidence paired with longitude. Required planned scope; current RawSwipe pipeline does not carry it.
+**In everyday language:** ATT-14 mobile/geolocation evidence paired with longitude. Required planned scope; current RawSwipe pipeline does not carry it.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Latitude describes north/south position. It is location information and should be viewed only by authorized people.
+
+Technical definition: ATT-14 mobile/geolocation evidence paired with longitude. Required planned scope; current RawSwipe pipeline does not carry it.
 
 | Property | Definition |
 |---|---|
@@ -4912,7 +6364,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### location_type
 
-Source check-in location category retained for Kent export/mobile provenance; distinct from the employee's current assigned placement.
+**In everyday language:** Source check-in location category retained for Kent export/mobile where the information came from; distinct from the employee's current assigned placement.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the location type shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Source check-in location category retained for Kent export/mobile provenance; distinct from the employee's current assigned placement.
 
 | Property | Definition |
 |---|---|
@@ -4930,7 +6388,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### mobile_device_name
 
-ATT-14 source mobile device diagnostic/fraud evidence. Current RawSwipe pipeline does not populate it.
+**In everyday language:** ATT-14 source mobile device diagnostic/fraud evidence. Current RawSwipe pipeline does not populate it.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the mobile device name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: ATT-14 source mobile device diagnostic/fraud evidence. Current RawSwipe pipeline does not populate it.
 
 | Property | Definition |
 |---|---|
@@ -4948,7 +6412,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### mobile_device_id
 
-ATT-14 source mobile device identity/fraud evidence. Current RawSwipe pipeline does not populate it.
+**In everyday language:** ATT-14 source mobile device identity/fraud evidence. Current RawSwipe pipeline does not populate it.
+
+**Why it is kept:** Keeps this record connected to the correct mobile device, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: ATT-14 source mobile device identity/fraud evidence. Current RawSwipe pipeline does not populate it.
 
 | Property | Definition |
 |---|---|
@@ -4966,7 +6436,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### swipe_type
 
-Biometric/source event technology tag preserved by ingestion, not shift authority.
+**In everyday language:** Biometric/source event technology tag preserved by ingestion, not shift authority.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the swipe type.
+
+Technical definition: Biometric/source event technology tag preserved by ingestion, not shift authority.
 
 | Property | Definition |
 |---|---|
@@ -4984,7 +6460,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### direction
 
-Known IN/OUT constrains FILO boundaries; NULL permits unknown-direction fallback, not a manufactured known punch.
+**In everyday language:** Whether the source says this was an entry punch or an exit punch. A missing direction stays unknown.
+
+**Why it is kept:** Helps select arrival and departure without pretending an unknown punch is a confirmed exit.
+
+**Example:** IN means entry, OUT means exit. A punch with no direction needs the configured handling for unknown punches.
+
+Technical definition: Known IN/OUT constrains FILO boundaries; NULL permits unknown-direction fallback, not a manufactured known punch.
 
 | Property | Definition |
 |---|---|
@@ -5002,7 +6484,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### remarks
 
-Verbatim Kent diagnostic text required for source parity; current RawSwipe contract does not carry it.
+**In everyday language:** Verbatim Kent diagnostic text required for source parity; current RawSwipe contract does not carry it.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A reviewer reads the saved explanation to understand the particular case before taking the next action.
+
+Technical definition: Verbatim Kent diagnostic text required for source parity; current RawSwipe contract does not carry it.
 
 | Property | Definition |
 |---|---|
@@ -5020,7 +6508,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### permission_reason
 
-Source permission evidence for parity, not approval authority. Current RawSwipe contract does not carry it.
+**In everyday language:** Source permission evidence for parity, not approval authority. Current RawSwipe contract does not carry it.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Source permission evidence for parity, not approval authority. Current RawSwipe contract does not carry it.
 
 | Property | Definition |
 |---|---|
@@ -5038,7 +6532,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### signed_by
 
-Source signatory evidence for parity, not runtime HRMS authorization. Current RawSwipe contract does not carry it.
+**In everyday language:** Source signatory evidence for parity, not runtime HRMS authorization. Current RawSwipe contract does not carry it.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the signed by.
+
+Technical definition: Source signatory evidence for parity, not runtime HRMS authorization. Current RawSwipe contract does not carry it.
 
 | Property | Definition |
 |---|---|
@@ -5056,7 +6556,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### received_at
 
-Source receipt instant drives source-cursor progression and clock-drift quarantine; distinct from event time and DB creation.
+**In everyday language:** Source receipt instant drives source-cursor progression and clock-drift quarantine; distinct from event time and DB creation.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Source receipt instant drives source-cursor progression and clock-drift quarantine; distinct from event time and DB creation.
 
 | Property | Definition |
 |---|---|
@@ -5074,7 +6580,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### source
 
-Connector provenance separates Kent/manual/mobile sources; retained with immutable event.
+**In everyday language:** Connector where the information came from separates Kent/manual/mobile sources; retained with protected against later changes event.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the source.
+
+Technical definition: Connector provenance separates Kent/manual/mobile sources; retained with immutable event.
 
 | Property | Definition |
 |---|---|
@@ -5092,7 +6604,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Database ingestion provenance, distinct from device event and source receipt timestamps.
+**In everyday language:** Database ingestion where the information came from, distinct from device event and source receipt timestamps.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Database ingestion provenance, distinct from device event and source receipt timestamps.
 
 | Property | Definition |
 |---|---|

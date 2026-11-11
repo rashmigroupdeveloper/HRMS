@@ -6,6 +6,8 @@
   "total_fields": 1843,
   "application_fields": 1840,
   "application_tables_and_views": 164,
+  "type_index_provenance_verified": true,
+  "plain_explanations": 1843,
   "defined_fields": 1843,
   "duplicate_fields": 0,
   "typed_fields_missing_from_database": [],

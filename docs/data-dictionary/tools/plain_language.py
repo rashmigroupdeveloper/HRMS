@@ -1,5 +1,6 @@
 """Reader explanations for the existing field dictionary; no application behavior."""
 import re
+from reader_examples import EXAMPLES
 
 # Describes the work represented by each table, rather than repeating its SQL name.
 TABLES = {
@@ -170,8 +171,20 @@ TABLES = {
 'wf.requests':'Tracks an individual request through its approval process.',
 }
 
+SCHEMAS = {
+'ast':'Company assets and repairs', 'att':'Attendance, shifts and overtime',
+'cmp':'Compliance obligations', 'core':'People, companies and HR records',
+'doc':'Document categories', 'eng':'Announcements, polls and surveys',
+'hd':'Employee helpdesk', 'ird':'Confidential complaints and investigations',
+'lv':'Leave and optional holidays', 'med':'Medical information',
+'pay':'Salary, loans and reimbursements', 'prv':'Privacy and personal information',
+'public':'Technical maintenance history', 'reporting':'Prepared attendance and management reports',
+'sec':'Sign-in and protected access', 'te':'Business travel and travel expenses',
+'wf':'Approvals and notifications',
+}
+
 REPLACE = {
-'FK':'link to another record', 'JSONB':'a set of related details', 'JSON':'a set of related details',
+'employee master':'main employee register', 'Instant':'Date and time', 'integer paise':'whole numbers of paise', 'binary floating-point':'computer rounding approximations', 'frozen':'closed to ordinary changes', 'effective-dated':'dated so the correct version applies', 'mutually exclusive':'only one can apply at a time', 'derived':'worked out from other saved information', 'FILO':'first-entry and last-exit', 'fallback':'alternative handling when the main information is missing', 'HMAC':'a protected digital fingerprint', 'deduplication':'preventing duplicate submissions', 'dedupe':'avoid duplicate submissions', 'DB CHECK':'saved-data rule', 'SQL type':'technical storage format', 'FK':'link to another record', 'JSONB':'a set of related details', 'JSON':'a set of related details',
 'NUMERIC':'an exact number', 'NULL':'not recorded', 'boolean':'yes/no choice',
 'provenance':'where the information came from', 'discriminator':'choice that tells the system which kind this is',
 'canonical':'main', 'idempotency':'duplicate-prevention', 'idempotent':'safe to repeat without making duplicates',
@@ -198,6 +211,16 @@ REPLACE = {
 }
 
 SPECIAL = {
+'att.day_records.first_in':('The first qualifying entry punch selected for the employee’s working date.','Shows which arrival time was used to work out attendance.','A first qualifying entry might be 9:02 AM; the original punches remain available separately.'),
+'att.day_records.last_out':('The last qualifying exit punch selected for the employee’s working date.','Shows which departure time was used to work out attendance.','A final qualifying exit might be 6:07 PM; it is an actual selected punch, not an assumed departure.'),
+'att.swipe_events.direction':('Whether the source says this was an entry punch or an exit punch. A missing direction stays unknown.','Helps select arrival and departure without pretending an unknown punch is a confirmed exit.','IN means entry, OUT means exit. A punch with no direction needs the configured handling for unknown punches.'),
+'att.month_locks.period_from':('The beginning of the attendance period frozen for payroll; this boundary is included.','Establishes which attendance dates belong to the frozen period.','If the period begins on 01 Nov, that date is included. Older records without saved boundaries use their defined calendar-month rule.'),
+'doc.types.code':('The short code identifying a recognized document category.','Keeps documents classified consistently even when their filenames differ.','Two files with different filenames can belong to the same document category.'),
+'lv.applications.ledger_txn_id':('The leave-balance movement linked to this leave request.','Allows the leave deduction or adjustment to be traced back to the request.','An approved leave request can be checked against the leave days deducted for it.'),
+'pay.arrears.for_month':('The earlier salary month to which this adjustment belongs.','Separates the month being corrected from the month in which the adjustment is paid.','An adjustment for October can be paid in November while still identifying October as the original period.'),
+'eng.poll_responses.respondent_hash':('A protected reference that helps prevent the same person answering the same anonymous poll twice.','Supports the poll’s duplicate-answer check without saving the person’s direct user link in the anonymous response.','The system can recognize a repeated submission for that poll without displaying the respondent’s name in the response.'),
+'eng.survey_responses.respondent_hash':('A protected reference used to recognize repeat answers to an anonymous survey.','Helps prevent duplicate responses while keeping the stored survey response separate from a direct identity reference.','A repeated submission can be checked without putting a person’s name in the answer record.'),
+'pay.statutory_rates.value':('The configured number used for this particular statutory parameter. Read it together with the scheme and parameter name.','Distinguishes rates, rupee ceilings and other limits so a number is not used in the wrong way.','A value for a percentage rate has a different meaning from a value for a rupee ceiling; the number alone is not enough.'),
 'core.employees.id':('A number the system uses to recognize this employee internally. It is separate from the employee code HR normally quotes.','Keeps this person’s attendance, leave and salary connected to the same employee.','An attendance entry linked to employee 123 belongs to that employee, even if the display name changes.'),
 'core.employees.ecode':('The employee code used by HR and employees to identify a person.','Helps staff find the right employee and match records across approved systems.','HR searches using the employee’s assigned company code rather than relying on the name alone.'),
 'core.employees.doj':('The date the employee actually joined.','Establishes when employment starts for the processes that use joining date.','A joining date of 11 Nov 2026 means employment starts on that date.'),
@@ -221,6 +244,7 @@ SPECIAL = {
 }
 
 def simplify(text):
+    text=text.replace('; exact database NUMERIC, never binary floating-point','; kept accurately to the recorded decimal places')
     text=re.sub(r'FOREIGN KEY.*?(?=;|$)', 'the related record',text)
     text=re.sub(r'\b(?:docs|backend|outputs)/\S+', 'the supporting technical reference',text)
     for word, phrase in REPLACE.items():
@@ -241,14 +265,14 @@ def explain(c, meaning, values):
             example='If two records have the same display name, their internal numbers still tell them apart.'
         elif any(k['kind']=='f' for k in c['constraints']) or name.endswith('_id'):
             target=next((re.search(r'REFERENCES ([\w.]+)',k['definition']).group(1) for k in c['constraints'] if k['kind']=='f' and re.search(r'REFERENCES ([\w.]+)',k['definition'])),None)
-            subject={'employee_id':'the employee','company_id':'the legal company','user_id':'the login account','candidate_id':'the candidate','created_by':'the person who created the record','updated_by':'the person who last changed the record'}.get(name,name.removesuffix('_id').replace('_',' '))
+            subject={'employee_id':'the employee','company_id':'the legal company','user_id':'the login account','candidate_id':'the candidate','created_by':'the person who created the record','updated_by':'the person who last changed the record','run_id':'the payroll calculation','paid_in_run_id':'the payroll calculation that paid the amount','workflow_request_id':'the approval request','source_salary_id':'the earlier salary arrangement','structure_id':'the salary arrangement','claim_id':'the expense claim','batch_id':'the payment group','source_run_id':'the earlier payroll calculation','parent_id':'the parent entry','component_code':'the pay head'}.get(name,name.removesuffix('_id').replace('_',' '))
             if meaning.startswith('Reference linking'):
                 plain='Identifies '+subject+' connected to this record.'
             why='Keeps this record connected to the correct '+subject.removeprefix('the ')+', so related details can be checked together.'
-            example='This record points to an existing entry'+(' in '+target.split('.')[-1].replace('_',' ') if target else '')+' instead of copying all of that entry’s details.'
+            example=('This record points to an existing entry in '+target.split('.')[-1].replace('_',' ')+' instead of copying all of that entry’s details.' if target else 'This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.')
         elif name in ('created_at','updated_at') or name.endswith('_at'):
-            why='Helps staff reconstruct when this step happened and follow up in the right order.'
-            example='A saved time might show 11 Nov 2026, 10:30 AM IST. A missing time means that event has not been recorded.'
+            why='Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.'
+            example='A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.'
         elif c['data_type']=='boolean':
             why='Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.'
             example='Yes means the condition described here is true; No means it is false.'
@@ -283,4 +307,31 @@ def explain(c, meaning, values):
         else:
             why='Keeps this specific detail with the record so staff can identify, explain or check it in context.'
             example='Use the meaning above when reading the saved value; it describes this field’s particular detail, not the whole employee or request.'
-    return {'plain_explanation':plain,'why_it_matters':why,'example':example,'friendly_name':name.replace('_',' ').capitalize()}
+    if key not in SPECIAL:
+        generic_starts=('Use the meaning','A value of 2','Read this as')
+        if example.startswith(generic_starts):
+            if name in EXAMPLES:
+                example=EXAMPLES[name]
+            elif re.search(r'hash|sha256|digest|secret|token|password|nonce|challenge',name):
+                example='The actual security value is omitted. The system compares it to check the correct credential or exact information.'
+            elif re.search(r'email',name):
+                example='An invented contact such as sample@example.com shows an email address; use only the authorized contact for the purpose described above.'
+            elif re.search(r'name|title|subject|employer|organization|org$|designation|department|location|role|grade|region|country|city|authority|recipients',name):
+                example='This is the '+name.replace('_',' ')+' shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.'
+            elif re.search(r'code|reference|_ref$|_no$|number|key|sid|certificate',name):
+                example='This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.'
+            elif re.search(r'ip$|user_agent|device_label',name):
+                example='A saved browser or connection detail can help an authorized administrator investigate which sign-in or submission produced the event.'
+            elif re.search(r'path|url|uri',name):
+                example='An authorized process follows this reference to find the associated file or destination. The reference alone does not grant access.'
+            elif re.search(r'reason|note|comment|remark|resolution|error|purpose|justification',name):
+                example='A reviewer reads the saved explanation to understand the particular case before taking the next action.'
+            elif re.search(r'percent|_pct|rate|score|level|revision|version|seq|order|index|count|step|depth|number|max_',name):
+                example='Read this number using the specific measure described above. A percentage, version number and priority order have different meanings.'
+            elif c['data_type'] in ('smallint','integer','bigint') or 'numeric' in c['data_type']:
+                example='This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.'
+            elif 'time' in c['data_type']:
+                example='A time such as 9 AM describes the timing of this particular activity; whether a calendar date is also stored depends on the field.'
+            else:
+                example='When reviewing this record, staff read this saved detail alongside its other details to understand the '+name.replace('_',' ')+'.'
+    return {'plain_explanation':plain,'why_it_matters':why,'example':example,'friendly_name':{'id':'Internal record number','employee_id':'Employee linked to this record','company_id':'Company linked to this record','created_at':'When the record was created','updated_at':'When the record was last changed','ecode':'Employee code'}.get(name,name.replace('_',' ').capitalize())}

@@ -4,13 +4,21 @@
 
 ## reporting.kpi_daily
 
+Keeps prepared daily figures for management dashboards.
+
 RPT-03 nightly KPI snapshot; NULL value = not computable (reason in unavailable_reason)
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### snapshot_date
 
-Calendar date represented by the precomputed KPI snapshot.
+**In everyday language:** Calendar date represented by the precomputed KPI copy saved at that point in time.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Calendar date represented by the precomputed KPI snapshot.
 
 | Property | Definition |
 |---|---|
@@ -50,7 +64,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -71,7 +91,13 @@ Database rules (including conditions shared with other fields):
 
 ### category
 
-Business classification used by this record/report; its allowed values are table-specific.
+**In everyday language:** Business classification used by this record/report; its allowed values are table-specific.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The saved category helps a reviewer group similar records; its meaning depends on the register being viewed.
+
+Technical definition: Business classification used by this record/report; its allowed values are table-specific.
 
 | Property | Definition |
 |---|---|
@@ -91,7 +117,13 @@ Database rules (including conditions shared with other fields):
 
 ### metric
 
-Machine-readable KPI key identifying the measured quantity.
+**In everyday language:** Machine-readable KPI key identifying the measured quantity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the metric.
+
+Technical definition: Machine-readable KPI key identifying the measured quantity.
 
 | Property | Definition |
 |---|---|
@@ -111,7 +143,13 @@ Database rules (including conditions shared with other fields):
 
 ### value
 
-NULL means NOT COMPUTABLE — never conflate with zero.
+**In everyday language:** not recorded means NOT COMPUTABLE — never conflate with zero.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Read this together with the named parameter: a rate, a wage ceiling and a rupee cap can all be numbers but have different meanings.
+
+Technical definition: NULL means NOT COMPUTABLE — never conflate with zero.
 
 | Property | Definition |
 |---|---|
@@ -129,7 +167,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### unavailable_reason
 
-Explanation for a KPI whose source facts are unavailable; prevents presenting a missing value as zero.
+**In everyday language:** Explanation for a KPI whose source facts are unavailable; prevents presenting a missing value as zero.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Explanation for a KPI whose source facts are unavailable; prevents presenting a missing value as zero.
 
 | Property | Definition |
 |---|---|
@@ -147,7 +191,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### computed_at
 
-Instant of computed for this record.
+**In everyday language:** Date and time of computed for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of computed for this record.
 
 | Property | Definition |
 |---|---|
@@ -171,13 +221,21 @@ Table indexes and lifecycle triggers:
 
 ## reporting.muster_month
 
+Keeps the prepared monthly employee-attendance report.
+
 reporting.muster_month — precomputed R1 muster (RPT-01).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -197,7 +255,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -218,7 +282,13 @@ Database rules (including conditions shared with other fields):
 
 ### month
 
-Payroll/reporting period key; inspect its SQL type for DATE versus text representation.
+**In everyday language:** Payroll/reporting period key; inspect its technical storage format for DATE versus text representation.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Payroll/reporting period key; inspect its SQL type for DATE versus text representation.
 
 | Property | Definition |
 |---|---|
@@ -238,7 +308,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -259,7 +335,13 @@ Database rules (including conditions shared with other fields):
 
 ### ecode
 
-Employee display code copied into the reporting snapshot; distinct from the internal employee primary key.
+**In everyday language:** Employee display code copied into the reporting copy saved at that point in time; distinct from the internal employee primary key.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Employee display code copied into the reporting snapshot; distinct from the internal employee primary key.
 
 | Property | Definition |
 |---|---|
@@ -277,7 +359,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### employee_name
 
-Employee's display name copied into the report snapshot.
+**In everyday language:** Employee's display name copied into the report copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the employee name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Employee's display name copied into the report snapshot.
 
 | Property | Definition |
 |---|---|
@@ -295,7 +383,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### reporting_manager
 
-Reporting-manager display value stored for the report snapshot.
+**In everyday language:** Reporting-manager display value stored for the report copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the reporting manager.
+
+Technical definition: Reporting-manager display value stored for the report snapshot.
 
 | Property | Definition |
 |---|---|
@@ -313,7 +407,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### functional_manager
 
-Functional-manager display value stored for the report snapshot.
+**In everyday language:** Functional-manager display value stored for the report copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the functional manager.
+
+Technical definition: Functional-manager display value stored for the report snapshot.
 
 | Property | Definition |
 |---|---|
@@ -331,7 +431,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### department
 
-Department display value stored for the report snapshot.
+**In everyday language:** Department display value stored for the report copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the department shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Department display value stored for the report snapshot.
 
 | Property | Definition |
 |---|---|
@@ -349,7 +455,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### designation
 
-Designation display value stored for the report snapshot.
+**In everyday language:** Designation display value stored for the report copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the designation shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Designation display value stored for the report snapshot.
 
 | Property | Definition |
 |---|---|
@@ -367,7 +479,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### org_unit
 
-Organization-unit display value stored for the report snapshot.
+**In everyday language:** Organization-unit display value stored for the report copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the org unit.
+
+Technical definition: Organization-unit display value stored for the report snapshot.
 
 | Property | Definition |
 |---|---|
@@ -385,7 +503,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### cost_center
 
-Cost-center display value stored for the report snapshot.
+**In everyday language:** Cost-center display value stored for the report copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the cost center.
+
+Technical definition: Cost-center display value stored for the report snapshot.
 
 | Property | Definition |
 |---|---|
@@ -403,7 +527,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### contact
 
-Employee contact value stored for the report snapshot; personal information.
+**In everyday language:** Employee contact value stored for the report copy saved at that point in time; personal information.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the contact.
+
+Technical definition: Employee contact value stored for the report snapshot; personal information.
 
 | Property | Definition |
 |---|---|
@@ -421,7 +551,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### category
 
-Business classification used by this record/report; its allowed values are table-specific.
+**In everyday language:** Business classification used by this record/report; its allowed values are table-specific.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The saved category helps a reviewer group similar records; its meaning depends on the register being viewed.
+
+Technical definition: Business classification used by this record/report; its allowed values are table-specific.
 
 | Property | Definition |
 |---|---|
@@ -439,7 +575,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### day_statuses
 
-Per-date attendance/session labels stored for the monthly muster; preserves mixed-session outcomes.
+**In everyday language:** Per-date attendance/session labels stored for the monthly muster; preserves mixed-session outcomes.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the day statuses.
+
+Technical definition: Per-date attendance/session labels stored for the monthly muster; preserves mixed-session outcomes.
 
 | Property | Definition |
 |---|---|
@@ -457,7 +599,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### present
 
-Count of present days represented in the muster snapshot.
+**In everyday language:** Count of present days represented in the muster copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Count of present days represented in the muster snapshot.
 
 | Property | Definition |
 |---|---|
@@ -475,7 +623,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### absent
 
-Count of absent days represented in the muster snapshot.
+**In everyday language:** Count of absent days represented in the muster copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Count of absent days represented in the muster snapshot.
 
 | Property | Definition |
 |---|---|
@@ -493,7 +647,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### half_days
 
-Count of half-attended days represented in the muster snapshot.
+**In everyday language:** Count of half-attended days represented in the muster copy saved at that point in time.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Count of half-attended days represented in the muster snapshot.
 
 | Property | Definition |
 |---|---|
@@ -511,7 +671,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### weekoffs
 
-Count of week-off days represented in the muster snapshot.
+**In everyday language:** Count of week-off days represented in the muster copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Count of week-off days represented in the muster snapshot.
 
 | Property | Definition |
 |---|---|
@@ -529,7 +695,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### weekoffs_unpaid
 
-Count of week-off days classified unpaid in the muster snapshot.
+**In everyday language:** Count of week-off days classified unpaid in the muster copy saved at that point in time.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Count of week-off days classified unpaid in the muster snapshot.
 
 | Property | Definition |
 |---|---|
@@ -547,7 +719,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### holidays
 
-Count of holiday days represented in the muster snapshot.
+**In everyday language:** Count of holiday days represented in the muster copy saved at that point in time.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Count of holiday days represented in the muster snapshot.
 
 | Property | Definition |
 |---|---|
@@ -565,7 +743,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### leave_days
 
-Count of leave days represented in the muster snapshot.
+**In everyday language:** Count of leave days represented in the muster copy saved at that point in time.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Count of leave days represented in the muster snapshot.
 
 | Property | Definition |
 |---|---|
@@ -577,13 +761,21 @@ Count of leave days represented in the muster snapshot.
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
 
+Units: Days; fractional values represent part of a day.
+
 Value domain: no finite value list extracted. Use the SQL/code type and the complete rules below. Foreign-key values come from the referenced catalog; free text and extensible JSON have no invented fixed list.
 
 Database rules: no column-linked constraint in the captured catalog beyond the type/nullability/default above.
 
 ### od_days
 
-Count of on-duty days represented in the muster snapshot.
+**In everyday language:** Count of on-duty days represented in the muster copy saved at that point in time.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Count of on-duty days represented in the muster snapshot.
 
 | Property | Definition |
 |---|---|
@@ -601,7 +793,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### co_days
 
-Count of compensatory-off days represented in the muster snapshot.
+**In everyday language:** Count of compensatory-off days represented in the muster copy saved at that point in time.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Count of compensatory-off days represented in the muster snapshot.
 
 | Property | Definition |
 |---|---|
@@ -619,7 +817,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### uab_days
 
-Count of unauthorized-absence days represented in the muster snapshot.
+**In everyday language:** Count of unauthorized-absence days represented in the muster copy saved at that point in time.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Count of unauthorized-absence days represented in the muster snapshot.
 
 | Property | Definition |
 |---|---|
@@ -637,7 +841,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### lop_days
 
-Loss-of-pay days used by the stored payroll/report result.
+**In everyday language:** Loss-of-pay days used by the stored payroll/report result.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Loss-of-pay days used by the stored payroll/report result.
 
 | Property | Definition |
 |---|---|
@@ -649,13 +859,21 @@ Loss-of-pay days used by the stored payroll/report result.
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
 
+Units: Days; fractional values represent part of a day.
+
 Value domain: no finite value list extracted. Use the SQL/code type and the complete rules below. Foreign-key values come from the referenced catalog; free text and extensible JSON have no invented fixed list.
 
 Database rules: no column-linked constraint in the captured catalog beyond the type/nullability/default above.
 
 ### ot_hours
 
-Overtime duration expressed in hours in the muster snapshot.
+**In everyday language:** Overtime duration expressed in hours in the muster copy saved at that point in time.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Overtime duration expressed in hours in the muster snapshot.
 
 | Property | Definition |
 |---|---|
@@ -673,7 +891,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### built_at
 
-Instant of built for this record.
+**In everyday language:** Date and time of built for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of built for this record.
 
 | Property | Definition |
 |---|---|

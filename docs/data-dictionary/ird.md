@@ -4,13 +4,21 @@
 
 ## ird.grievances
 
+Keeps confidential employee grievance records.
+
 ird.grievances — IR Code redressal cases (separate from POSH).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### case_ref
 
-Human grievance reference derived from inserted identity
+**In everyday language:** Human grievance reference worked out from other saved information from inserted identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Human grievance reference derived from inserted identity
 
 | Property | Definition |
 |---|---|
@@ -50,7 +64,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Grievance lifecycle; current implementation primarily intake/list
+**In everyday language:** Grievance progress from creation to closure; current implementation primarily intake/list.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “submitted” means Record is submitted in this progress from creation to closure.
+
+Technical definition: Grievance lifecycle; current implementation primarily intake/list
 
 | Property | Definition |
 |---|---|
@@ -78,7 +98,13 @@ Database rules (including conditions shared with other fields):
 
 ### filed_at
 
-Grievance filing instant
+**In everyday language:** Grievance filing instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Grievance filing instant
 
 | Property | Definition |
 |---|---|
@@ -96,7 +122,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### filed_by_user_id
 
-Reference linking this record’s filed by user id to FOREIGN KEY (filed_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies filed by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct filed by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s filed by user id to FOREIGN KEY (filed_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -116,7 +148,13 @@ Database rules (including conditions shared with other fields):
 
 ### summary
 
-Restricted grievance content
+**In everyday language:** Restricted grievance content.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Restricted grievance content
 
 | Property | Definition |
 |---|---|
@@ -136,7 +174,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -159,13 +203,21 @@ Table indexes and lifecycle triggers:
 
 ## ird.ic_members
 
+Lists members of the Internal Committee that handles POSH complaints.
+
 POSH Internal Committee. Seed ZERO members — sponsor appoints (do not invent).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -185,7 +237,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -205,7 +263,13 @@ Database rules (including conditions shared with other fields):
 
 ### role
 
-Presiding officer/member/external membership designation
+**In everyday language:** Presiding officer/member/external membership designation.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “presiding_officer” means Presiding officer.
+
+Technical definition: Presiding officer/member/external membership designation
 
 | Property | Definition |
 |---|---|
@@ -231,7 +295,13 @@ Database rules (including conditions shared with other fields):
 
 ### active
 
-Current membership flag
+**In everyday language:** Current membership flag.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Current membership flag
 
 | Property | Definition |
 |---|---|
@@ -254,7 +324,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### appointed_on
 
-Appointment calendar date
+**In everyday language:** Appointment calendar date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Appointment calendar date
 
 | Property | Definition |
 |---|---|
@@ -272,7 +348,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -295,13 +377,21 @@ Table indexes and lifecycle triggers:
 
 ## ird.posh_case_access_log
 
+Records who accessed a confidential POSH case.
+
 ird.posh_case_access_log — append-only; every case open is recorded.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -321,7 +411,13 @@ Database rules (including conditions shared with other fields):
 
 ### case_id
 
-Reference linking this record’s case id to FOREIGN KEY (case_id) REFERENCES ird.posh_cases(id).
+**In everyday language:** Identifies case connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct case, so related details can be checked together.
+
+**Example:** This record points to an existing entry in posh cases instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s case id to FOREIGN KEY (case_id) REFERENCES ird.posh_cases(id).
 
 | Property | Definition |
 |---|---|
@@ -341,7 +437,13 @@ Database rules (including conditions shared with other fields):
 
 ### actor_user_id
 
-Reference linking this record’s actor user id to FOREIGN KEY (actor_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies actor user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct actor user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s actor user id to FOREIGN KEY (actor_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -361,7 +463,13 @@ Database rules (including conditions shared with other fields):
 
 ### opened_at
 
-Append-only access-attempt instant
+**In everyday language:** kept as history, with new entries added rather than old entries overwritten access-attempt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Append-only access-attempt instant
 
 | Property | Definition |
 |---|---|
@@ -379,7 +487,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### ip
 
-Attempt network provenance
+**In everyday language:** Attempt network where the information came from.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A saved browser or connection detail can help an authorized administrator investigate which sign-in or submission produced the event.
+
+Technical definition: Attempt network provenance
 
 | Property | Definition |
 |---|---|
@@ -397,7 +511,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### outcome
 
-Opened versus refused result
+**In everyday language:** Opened versus refused result.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “opened” means Record is opened in this progress from creation to closure.
+
+Technical definition: Opened versus refused result
 
 | Property | Definition |
 |---|---|
@@ -427,13 +547,21 @@ Table indexes and lifecycle triggers:
 
 ## ird.posh_case_assignments
 
+Records which authorized people are assigned to a POSH case.
+
 Assigned-case isolation for POSH inquiries — non-assigned handlers receive 403.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -453,7 +581,13 @@ Database rules (including conditions shared with other fields):
 
 ### case_id
 
-Reference linking this record’s case id to FOREIGN KEY (case_id) REFERENCES ird.posh_cases(id) ON DELETE CASCADE.
+**In everyday language:** Identifies case connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct case, so related details can be checked together.
+
+**Example:** This record points to an existing entry in posh cases instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s case id to FOREIGN KEY (case_id) REFERENCES ird.posh_cases(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -474,7 +608,13 @@ Database rules (including conditions shared with other fields):
 
 ### user_id
 
-Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies the login account connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct login account, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -495,7 +635,13 @@ Database rules (including conditions shared with other fields):
 
 ### role
 
-Assigned case-handling role
+**In everyday language:** Assigned case-handling role.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “presiding_officer” means Presiding officer.
+
+Technical definition: Assigned case-handling role
 
 | Property | Definition |
 |---|---|
@@ -521,7 +667,13 @@ Database rules (including conditions shared with other fields):
 
 ### assigned_by_user_id
 
-Reference linking this record’s assigned by user id to FOREIGN KEY (assigned_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies assigned by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct assigned by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s assigned by user id to FOREIGN KEY (assigned_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -541,7 +693,13 @@ Database rules (including conditions shared with other fields):
 
 ### assigned_at
 
-Case assignment creation instant
+**In everyday language:** Case assignment creation instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Case assignment creation instant
 
 | Property | Definition |
 |---|---|
@@ -559,7 +717,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### active
 
-Current case-access grant flag
+**In everyday language:** Current case-access grant flag.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Current case-access grant flag
 
 | Property | Definition |
 |---|---|
@@ -588,6 +752,8 @@ Table indexes and lifecycle triggers:
 
 ## ird.posh_cases
 
+Keeps confidential complaints under the prevention of sexual harassment process.
+
 ird.posh_cases — confidential POSH intake.
 `summary_encrypted_or_text` is plain text for v1; encryption is a follow-up.
 
@@ -595,7 +761,13 @@ Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -615,7 +787,13 @@ Database rules (including conditions shared with other fields):
 
 ### case_ref
 
-Human confidential case reference
+**In everyday language:** Human confidential case reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Human confidential case reference
 
 | Property | Definition |
 |---|---|
@@ -635,7 +813,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Confidential POSH complaint lifecycle state; access remains restricted independently of the state.
+**In everyday language:** Confidential POSH complaint progress from creation to closure state; access remains restricted independently of the state.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “submitted” means Record is submitted in this progress from creation to closure.
+
+Technical definition: Confidential POSH complaint lifecycle state; access remains restricted independently of the state.
 
 | Property | Definition |
 |---|---|
@@ -662,7 +846,13 @@ Database rules (including conditions shared with other fields):
 
 ### filed_at
 
-Case submission instant
+**In everyday language:** Case submission instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Case submission instant
 
 | Property | Definition |
 |---|---|
@@ -680,7 +870,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### filed_by_user_id
 
-Reference linking this record’s filed by user id to FOREIGN KEY (filed_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies filed by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct filed by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s filed by user id to FOREIGN KEY (filed_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -701,7 +897,13 @@ Database rules (including conditions shared with other fields):
 
 ### is_anonymous
 
-Whether a filer account may be retained
+**In everyday language:** Whether a filer account may be retained.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether a filer account may be retained
 
 | Property | Definition |
 |---|---|
@@ -726,7 +928,13 @@ Database rules (including conditions shared with other fields):
 
 ### summary_encrypted_or_text
 
-Restricted complaint text; current implementation is plaintext, not encryption
+**In everyday language:** Restricted complaint text; current implementation is plaintext, not encryption.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Restricted complaint text; current implementation is plaintext, not encryption
 
 | Property | Definition |
 |---|---|
@@ -746,7 +954,13 @@ Database rules (including conditions shared with other fields):
 
 ### anonymous_token_hash
 
-Hash of opaque bearer receipt used for anonymous status lookup
+**In everyday language:** Hash of opaque bearer receipt used for anonymous status lookup.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Hash of opaque bearer receipt used for anonymous status lookup
 
 | Property | Definition |
 |---|---|
@@ -766,7 +980,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -790,13 +1010,21 @@ Table indexes and lifecycle triggers:
 
 ## ird.whistleblower_reports
 
+Keeps confidential reports of suspected wrongdoing.
+
 Anonymous whistleblower intake. No PII columns — only a token hash for claim-code follow-up.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -816,7 +1044,13 @@ Database rules (including conditions shared with other fields):
 
 ### anonymous_token_hash
 
-Opaque receipt hash; never store plaintext receipt token
+**In everyday language:** Opaque receipt hash; never store plaintext receipt token.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Opaque receipt hash; never store plaintext receipt token
 
 | Property | Definition |
 |---|---|
@@ -836,7 +1070,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Lifecycle state of the confidential whistleblower report.
+**In everyday language:** progress from creation to closure state of the confidential whistleblower report.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “submitted” means Record is submitted in this progress from creation to closure.
+
+Technical definition: Lifecycle state of the confidential whistleblower report.
 
 | Property | Definition |
 |---|---|
@@ -863,7 +1103,13 @@ Database rules (including conditions shared with other fields):
 
 ### filed_at
 
-Report receipt instant
+**In everyday language:** Report receipt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Report receipt instant
 
 | Property | Definition |
 |---|---|
@@ -881,7 +1127,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### summary
 
-Restricted whistleblower report content
+**In everyday language:** Restricted whistleblower report content.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Restricted whistleblower report content
 
 | Property | Definition |
 |---|---|
@@ -901,7 +1153,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|

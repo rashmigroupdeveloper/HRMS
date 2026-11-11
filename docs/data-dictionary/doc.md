@@ -4,13 +4,21 @@
 
 ## doc.types
 
+Lists recognized document categories and their collection and retention rules.
+
 doc.types — which document kinds exist, and whether they expire / are mandatory.
 
 Relation kind: table.
 
 ### code
 
-Canonical document classification key; existing core.documents.doc_type FK, legacy kind fallback only.
+**In everyday language:** The short code identifying a recognized document category.
+
+**Why it is kept:** Keeps documents classified consistently even when their filenames differ.
+
+**Example:** Two files with different filenames can belong to the same document category.
+
+Technical definition: Canonical document classification key; existing core.documents.doc_type FK, legacy kind fallback only.
 
 | Property | Definition |
 |---|---|
@@ -31,7 +39,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Employee/HR-facing catalog label.
+**In everyday language:** Employee/HR-facing list of available choices label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Employee/HR-facing catalog label.
 
 | Property | Definition |
 |---|---|
@@ -51,7 +65,13 @@ Database rules (including conditions shared with other fields):
 
 ### typically_expires
 
-Requires expiry at vault upload; classifies attention on read, not delivered reminders.
+**In everyday language:** Requires expiry at vault upload; classifies attention on read, not delivered reminders.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Requires expiry at vault upload; classifies attention on read, not delivered reminders.
 
 | Property | Definition |
 |---|---|
@@ -74,7 +94,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### retention_class
 
-Document purpose/security class; statutory_id and health classes require extra field authority. Retention/purge enforcement remains open.
+**In everyday language:** Document purpose/security class; statutory_id and health classes require extra field authority. how long information is kept/purge enforcement remains open.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the retention class.
+
+Technical definition: Document purpose/security class; statutory_id and health classes require extra field authority. Retention/purge enforcement remains open.
 
 | Property | Definition |
 |---|---|
@@ -92,7 +118,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### mandatory_for
 
-Comma-separated employment categories; empty = never mandatory by category.
+**In everyday language:** Comma-separated employment categories; empty = never mandatory by category.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the mandatory for.
+
+Technical definition: Comma-separated employment categories; empty = never mandatory by category.
 
 | Property | Definition |
 |---|---|
@@ -110,7 +142,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### sort_order
 
-Stable catalog/checklist presentation order, not policy priority.
+**In everyday language:** Stable list of available choices/checklist presentation order, not policy priority.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An entry with order 1 can be shown before an entry with order 2.
+
+Technical definition: Stable catalog/checklist presentation order, not policy priority.
 
 | Property | Definition |
 |---|---|
@@ -128,7 +166,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Catalog availability for new uploads/active vault reads; retirement lifecycle/history handling requires full acceptance.
+**In everyday language:** list of available choices availability for new uploads/active vault reads; retirement progress from creation to closure/history handling requires full acceptance.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Catalog availability for new uploads/active vault reads; retirement lifecycle/history handling requires full acceptance.
 
 | Property | Definition |
 |---|---|
@@ -151,7 +195,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Catalog provenance timestamp.
+**In everyday language:** list of available choices where the information came from timestamp.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Catalog provenance timestamp.
 
 | Property | Definition |
 |---|---|
@@ -169,7 +219,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Catalog modification timestamp; not a versioned retention policy.
+**In everyday language:** list of available choices modification timestamp; not a versioned how long information is kept policy.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Catalog modification timestamp; not a versioned retention policy.
 
 | Property | Definition |
 |---|---|
@@ -187,7 +243,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### joining_checklist
 
-Shown on the joining document checklist (REQ-004).
+**In everyday language:** Shown on the joining document checklist (REQ-004).
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Shown on the joining document checklist (REQ-004).
 
 | Property | Definition |
 |---|---|
@@ -210,7 +272,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### max_files
 
-Documented joining checklist per-type file limit; current recovered vault does not enforce it. Define scope/version semantics before connecting; do not claim active constraint.
+**In everyday language:** Documented joining checklist per-type file limit; current recovered vault does not enforce it. Define scope/version semantics before connecting; do not claim active constraint.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A limit of 2 means up to two files may be collected for that document category, where the configured rule is applied.
+
+Technical definition: Documented joining checklist per-type file limit; current recovered vault does not enforce it. Define scope/version semantics before connecting; do not claim active constraint.
 
 | Property | Definition |
 |---|---|

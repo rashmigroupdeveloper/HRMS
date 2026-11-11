@@ -4,13 +4,21 @@
 
 ## med.access_log
 
+Records access to sensitive employee medical information.
+
 Access log records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### questionnaire_id
 
-Reference linking this record’s questionnaire id to FOREIGN KEY (questionnaire_id) REFERENCES med.questionnaires(id).
+**In everyday language:** Identifies questionnaire connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct questionnaire, so related details can be checked together.
+
+**Example:** This record points to an existing entry in questionnaires instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s questionnaire id to FOREIGN KEY (questionnaire_id) REFERENCES med.questionnaires(id).
 
 | Property | Definition |
 |---|---|
@@ -50,7 +64,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -70,7 +90,13 @@ Database rules (including conditions shared with other fields):
 
 ### actor_user_id
 
-Reference linking this record’s actor user id to FOREIGN KEY (actor_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies actor user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct actor user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s actor user id to FOREIGN KEY (actor_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -90,7 +116,13 @@ Database rules (including conditions shared with other fields):
 
 ### action
 
-Operation or decision recorded by this event; permitted codes are listed with the field constraints.
+**In everyday language:** Operation or decision recorded by this event; permitted codes are listed with the field constraints.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “read” means Read classification for action.
+
+Technical definition: Operation or decision recorded by this event; permitted codes are listed with the field constraints.
 
 | Property | Definition |
 |---|---|
@@ -117,7 +149,13 @@ Database rules (including conditions shared with other fields):
 
 ### reason
 
-Recorded business justification for the operation or decision.
+**In everyday language:** Recorded business justification for the operation or decision.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Recorded business justification for the operation or decision.
 
 | Property | Definition |
 |---|---|
@@ -135,7 +173,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### ip
 
-Client IP address captured as access or submission provenance; personal/security metadata.
+**In everyday language:** Client IP address captured as access or submission where the information came from; personal/security descriptive information.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A saved browser or connection detail can help an authorized administrator investigate which sign-in or submission produced the event.
+
+Technical definition: Client IP address captured as access or submission provenance; personal/security metadata.
 
 | Property | Definition |
 |---|---|
@@ -153,7 +197,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### occurred_at
 
-Instant of occurred for this record.
+**In everyday language:** Date and time of occurred for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of occurred for this record.
 
 | Property | Definition |
 |---|---|
@@ -177,13 +227,21 @@ Table indexes and lifecycle triggers:
 
 ## med.questionnaires
 
+Keeps submitted medical questionnaires and their consent information.
+
 Questionnaires records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -203,7 +261,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -224,7 +288,13 @@ Database rules (including conditions shared with other fields):
 
 ### candidate_id
 
-Reference linking this record’s candidate id to FOREIGN KEY (candidate_id) REFERENCES core.onboarding_candidates(id) ON DELETE SET NULL.
+**In everyday language:** Identifies the candidate connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct candidate, so related details can be checked together.
+
+**Example:** This record points to an existing entry in onboarding candidates instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s candidate id to FOREIGN KEY (candidate_id) REFERENCES core.onboarding_candidates(id) ON DELETE SET NULL.
 
 | Property | Definition |
 |---|---|
@@ -245,7 +315,13 @@ Database rules (including conditions shared with other fields):
 
 ### consent_declaration_id
 
-Reference linking this record’s consent declaration id to FOREIGN KEY (consent_declaration_id) REFERENCES prv.declarations(id).
+**In everyday language:** Identifies consent declaration connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct consent declaration, so related details can be checked together.
+
+**Example:** This record points to an existing entry in declarations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s consent declaration id to FOREIGN KEY (consent_declaration_id) REFERENCES prv.declarations(id).
 
 | Property | Definition |
 |---|---|
@@ -265,7 +341,13 @@ Database rules (including conditions shared with other fields):
 
 ### answers
 
-Submitted questionnaire answers keyed by the questionnaire's question definitions; sensitive medical information here.
+**In everyday language:** Submitted questionnaire answers keyed by the questionnaire's question definitions; sensitive medical information here.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the answers.
+
+Technical definition: Submitted questionnaire answers keyed by the questionnaire's question definitions; sensitive medical information here.
 
 | Property | Definition |
 |---|---|
@@ -285,7 +367,13 @@ Database rules (including conditions shared with other fields):
 
 ### height_cm
 
-Declared height in centimetres.
+**In everyday language:** Declared height in centimetres.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** 170 means a height of 170 centimetres; it is sensitive medical information.
+
+Technical definition: Declared height in centimetres.
 
 | Property | Definition |
 |---|---|
@@ -306,7 +394,13 @@ Database rules (including conditions shared with other fields):
 
 ### weight_kg
 
-Declared weight in kilograms.
+**In everyday language:** Declared weight in kilograms.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** 65 means a weight of 65 kilograms; it is sensitive medical information.
+
+Technical definition: Declared weight in kilograms.
 
 | Property | Definition |
 |---|---|
@@ -327,7 +421,13 @@ Database rules (including conditions shared with other fields):
 
 ### bmi
 
-Body mass index recorded with the medical questionnaire; sensitive health information.
+**In everyday language:** Body mass index recorded with the medical questionnaire; sensitive health information.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a recorded body-mass index figure; it is not a medical conclusion or fitness decision by itself.
+
+Technical definition: Body mass index recorded with the medical questionnaire; sensitive health information.
 
 | Property | Definition |
 |---|---|
@@ -345,7 +445,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### retention_class
 
-Data-retention policy class used to determine retention handling.
+**In everyday language:** Data-how long information is kept policy class used to determine how long information is kept handling.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the retention class.
+
+Technical definition: Data-retention policy class used to determine retention handling.
 
 | Property | Definition |
 |---|---|
@@ -363,7 +469,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+**In everyday language:** Current progress from creation to closure state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “active” means Record is active in this progress from creation to closure.
+
+Technical definition: Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
 
 | Property | Definition |
 |---|---|
@@ -389,7 +501,13 @@ Database rules (including conditions shared with other fields):
 
 ### withdrawn_at
 
-Instant of withdrawn for this record.
+**In everyday language:** Date and time of withdrawn for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of withdrawn for this record.
 
 | Property | Definition |
 |---|---|
@@ -407,7 +525,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### submitted_by_user_id
 
-Reference linking this record’s submitted by user id to FOREIGN KEY (submitted_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies submitted by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct submitted by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s submitted by user id to FOREIGN KEY (submitted_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -427,7 +551,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -445,7 +575,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|

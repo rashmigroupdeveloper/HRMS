@@ -1,0 +1,28 @@
+{
+  "deployedAt": "2026-11-11T05:41:25.396Z",
+  "backup": "/home/hrms/backups/beta-feedback-20261111",
+  "sourceBaseline": "778c49bbefc41e07e19fe313925bc33c4d4a3f9e",
+  "feature": "BETA-01",
+  "sourceFiles": [
+    "backend/migrations/1753200000000_beta-feedback.ts",
+    "backend/src/core/db/types.feedback.ts",
+    "backend/src/modules/feedback/feedback.router.ts",
+    "backend/src/modules/feedback/feedback.service.ts",
+    "backend/src/modules/feedback/index.ts",
+    "backend/tests/beta-feedback.integration.test.ts",
+    "frontend/src/app/feedback/BetaFeedback.tsx",
+    "frontend/src/app/feedback/screenshot.ts",
+    "frontend/src/pages/admin/BetaFeedbackPage.tsx",
+    "backend/src/api/router.ts",
+    "backend/src/core/db/types.ts",
+    "backend/src/core/rbac/seed-data.ts",
+    "backend/src/modules/notifications/notifications.service.ts",
+    "frontend/src/app/AppShell.tsx",
+    "frontend/src/app/router.tsx",
+    "frontend/src/app/route-guard.ts",
+    "frontend/src/app/nav-config.ts"
+  ],
+  "smtpSender": "globalhr@rashmigroup.com",
+  "smtpDestination": "core_developers@rashmigroup.com",
+  "ready": true
+}

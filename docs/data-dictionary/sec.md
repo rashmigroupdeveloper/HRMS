@@ -4,13 +4,21 @@
 
 ## sec.access_events
 
+Records access to protected employee information.
+
 sec.access_events — who read whose sensitive data and WHY (SEC-10/11).
 
 Relation kind: partitioned parent table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### occurred_at
 
-Instant of occurred for this record.
+**In everyday language:** Date and time of occurred for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of occurred for this record.
 
 | Property | Definition |
 |---|---|
@@ -50,7 +64,13 @@ Database rules (including conditions shared with other fields):
 
 ### actor_user_id
 
-Reference linking this record’s actor user id to FOREIGN KEY (actor_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies actor user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct actor user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s actor user id to FOREIGN KEY (actor_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -70,7 +90,13 @@ Database rules (including conditions shared with other fields):
 
 ### session_sid
 
-Canonical login-session identifier associated with this access/grant event.
+**In everyday language:** main login-session identifier associated with this access/grant event.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Canonical login-session identifier associated with this access/grant event.
 
 | Property | Definition |
 |---|---|
@@ -88,7 +114,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### subject_employee_id
 
-Employee whose data was accessed; distinct from the user who performed the access.
+**In everyday language:** Employee whose data was accessed; distinct from the user who performed the access.
+
+**Why it is kept:** Keeps this record connected to the correct subject employee, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Employee whose data was accessed; distinct from the user who performed the access.
 
 | Property | Definition |
 |---|---|
@@ -106,7 +138,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### resource
 
-Resource/table/document identifier describing what was accessed.
+**In everyday language:** Resource/table/document identifier describing what was accessed.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the resource.
+
+Technical definition: Resource/table/document identifier describing what was accessed.
 
 | Property | Definition |
 |---|---|
@@ -124,7 +162,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### field_class
 
-Sensitivity class of the accessed fields.
+**In everyday language:** Sensitivity class of the accessed fields.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the field class.
+
+Technical definition: Sensitivity class of the accessed fields.
 
 | Property | Definition |
 |---|---|
@@ -142,7 +186,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### purpose
 
-Declared business purpose of this request, processing activity or consent.
+**In everyday language:** Declared business purpose of this request, processing activity or consent.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A privacy or travel record explains the particular reason information is used or a trip is requested.
+
+Technical definition: Declared business purpose of this request, processing activity or consent.
 
 | Property | Definition |
 |---|---|
@@ -162,7 +212,13 @@ Database rules (including conditions shared with other fields):
 
 ### record_count
 
-Number of records represented or accessed in this batch/event.
+**In everyday language:** Number of records represented or accessed in this batch/event.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** Read this number using the specific measure described above. A percentage, version number and priority order have different meanings.
+
+Technical definition: Number of records represented or accessed in this batch/event.
 
 | Property | Definition |
 |---|---|
@@ -182,7 +238,13 @@ Database rules (including conditions shared with other fields):
 
 ### ip
 
-Client IP address captured as access or submission provenance; personal/security metadata.
+**In everyday language:** Client IP address captured as access or submission where the information came from; personal/security descriptive information.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A saved browser or connection detail can help an authorized administrator investigate which sign-in or submission produced the event.
+
+Technical definition: Client IP address captured as access or submission provenance; personal/security metadata.
 
 | Property | Definition |
 |---|---|
@@ -207,13 +269,21 @@ Table indexes and lifecycle triggers:
 
 ## sec.app_links
 
+Connects an HRMS login account to a verified account in another approved application.
+
 D4/NFR-03: identities are immutable; nonce rotates to prevent relink resurrecting old sessions.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -233,7 +303,13 @@ Database rules (including conditions shared with other fields):
 
 ### user_id
 
-Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies the login account connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct login account, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -254,7 +330,13 @@ Database rules (including conditions shared with other fields):
 
 ### client_id
 
-Configured external application/client identifier participating in linked sign-in.
+**In everyday language:** Configured external application/client identifier participating in linked sign-in.
+
+**Why it is kept:** Keeps this record connected to the correct client, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Configured external application/client identifier participating in linked sign-in.
 
 | Property | Definition |
 |---|---|
@@ -276,7 +358,13 @@ Database rules (including conditions shared with other fields):
 
 ### external_subject
 
-External application's account identifier; not an HRMS employee code or role.
+**In everyday language:** External application's account identifier; not an HRMS employee code or role.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the external subject shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: External application's account identifier; not an HRMS employee code or role.
 
 | Property | Definition |
 |---|---|
@@ -297,7 +385,13 @@ Database rules (including conditions shared with other fields):
 
 ### is_active
 
-Whether this catalog or account record is currently available for use; historical references remain.
+**In everyday language:** Whether this list of available choices or account record is currently available for use; historical references remain.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether this catalog or account record is currently available for use; historical references remain.
 
 | Property | Definition |
 |---|---|
@@ -320,7 +414,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### link_nonce
 
-Random link-version identifier rotated on unlink/re-enable to invalidate earlier grants.
+**In everyday language:** Random link-version identifier rotated on unlink/re-enable to invalidate earlier grants.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Random link-version identifier rotated on unlink/re-enable to invalidate earlier grants.
 
 | Property | Definition |
 |---|---|
@@ -338,7 +438,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -358,7 +464,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -383,13 +495,21 @@ Table indexes and lifecycle triggers:
 
 ## sec.mfa_enrolments
 
+Retains extra sign-in verification setup for compatibility; this feature is outside the current approved scope.
+
 sec.mfa_enrolments — one active TOTP enrolment per user (SEC-02/03).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -409,7 +529,13 @@ Database rules (including conditions shared with other fields):
 
 ### user_id
 
-Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies the login account connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct login account, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -429,7 +555,13 @@ Database rules (including conditions shared with other fields):
 
 ### secret
 
-Retained MFA enrolment secret material; MFA is excluded from the approved current scope. Restrict access; never export values.
+**In everyday language:** Retained MFA enrolment secret material; MFA is excluded from the approved current scope. Restrict access; never export values.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Retained MFA enrolment secret material; MFA is excluded from the approved current scope. Restrict access; never export values.
 
 | Property | Definition |
 |---|---|
@@ -447,7 +579,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### confirmed_at
 
-Instant of confirmed for this record.
+**In everyday language:** Date and time of confirmed for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of confirmed for this record.
 
 | Property | Definition |
 |---|---|
@@ -465,7 +603,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### disabled_at
 
-Instant of disabled for this record.
+**In everyday language:** Date and time of disabled for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of disabled for this record.
 
 | Property | Definition |
 |---|---|
@@ -483,7 +627,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### disabled_by_user_id
 
-Reference linking this record’s disabled by user id to FOREIGN KEY (disabled_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies disabled by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct disabled by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s disabled by user id to FOREIGN KEY (disabled_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -503,7 +653,13 @@ Database rules (including conditions shared with other fields):
 
 ### last_used_step
 
-Replay guard — a TOTP step may be spent exactly once.
+**In everyday language:** Replay guard — a TOTP step may be spent exactly once.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Read this number using the specific measure described above. A percentage, version number and priority order have different meanings.
+
+Technical definition: Replay guard — a TOTP step may be spent exactly once.
 
 | Property | Definition |
 |---|---|
@@ -521,7 +677,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -539,7 +701,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -563,13 +731,21 @@ Table indexes and lifecycle triggers:
 
 ## sec.mfa_recovery_codes
 
+Retains recovery-code information for extra sign-in verification; this feature is outside the current approved scope.
+
 sec.mfa_recovery_codes — hashed, single-use.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -589,7 +765,13 @@ Database rules (including conditions shared with other fields):
 
 ### enrolment_id
 
-Reference linking this record’s enrolment id to FOREIGN KEY (enrolment_id) REFERENCES sec.mfa_enrolments(id) ON DELETE CASCADE.
+**In everyday language:** Identifies enrolment connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct enrolment, so related details can be checked together.
+
+**Example:** This record points to an existing entry in mfa enrolments instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s enrolment id to FOREIGN KEY (enrolment_id) REFERENCES sec.mfa_enrolments(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -609,7 +791,13 @@ Database rules (including conditions shared with other fields):
 
 ### code_hash
 
-Hash of a one-time credential/code; plaintext credentials must not be exposed.
+**In everyday language:** Hash of a one-time credential/code; plaintext credentials must not be exposed.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Hash of a one-time credential/code; plaintext credentials must not be exposed.
 
 | Property | Definition |
 |---|---|
@@ -627,7 +815,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### used_at
 
-Instant of used for this record.
+**In everyday language:** Date and time of used for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of used for this record.
 
 | Property | Definition |
 |---|---|
@@ -645,7 +839,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -668,13 +868,21 @@ Table indexes and lifecycle triggers:
 
 ## sec.password_history
 
+Keeps password fingerprints needed to check password history without exposing previous passwords.
+
 sec.password_history — hashes only, so reuse is refusable (SEC-01).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -694,7 +902,13 @@ Database rules (including conditions shared with other fields):
 
 ### user_id
 
-Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies the login account connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct login account, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -714,7 +928,13 @@ Database rules (including conditions shared with other fields):
 
 ### password_hash
 
-Stored password digest; never a recoverable password and never returned in normal APIs or logs.
+**In everyday language:** Stored password digital fingerprint; never a recoverable password and never returned in normal APIs or logs.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Stored password digest; never a recoverable password and never returned in normal APIs or logs.
 
 | Property | Definition |
 |---|---|
@@ -732,7 +952,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### changed_at
 
-Instant of changed for this record.
+**In everyday language:** Date and time of changed for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of changed for this record.
 
 | Property | Definition |
 |---|---|
@@ -750,7 +976,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### changed_by_user_id
 
-Reference linking this record’s changed by user id to FOREIGN KEY (changed_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies changed by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct changed by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s changed by user id to FOREIGN KEY (changed_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -775,13 +1007,21 @@ Table indexes and lifecycle triggers:
 
 ## sec.sessions
 
+Tracks individual sign-ins, their expiry and whether access has been ended.
+
 sec.sessions — a session is a ROW, so revoke takes effect next request.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -801,7 +1041,13 @@ Database rules (including conditions shared with other fields):
 
 ### sid
 
-Unique canonical login-session identifier.
+**In everyday language:** Unique main login-session identifier.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Unique canonical login-session identifier.
 
 | Property | Definition |
 |---|---|
@@ -821,7 +1067,13 @@ Database rules (including conditions shared with other fields):
 
 ### user_id
 
-Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies the login account connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct login account, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s user id to FOREIGN KEY (user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -841,7 +1093,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -861,7 +1119,13 @@ Database rules (including conditions shared with other fields):
 
 ### last_seen_at
 
-Instant of last seen for this record.
+**In everyday language:** Date and time of last seen for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of last seen for this record.
 
 | Property | Definition |
 |---|---|
@@ -879,7 +1143,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### expires_at
 
-Instant of expires for this record.
+**In everyday language:** Date and time of expires for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of expires for this record.
 
 | Property | Definition |
 |---|---|
@@ -899,7 +1169,13 @@ Database rules (including conditions shared with other fields):
 
 ### revoked_at
 
-Instant of revoked for this record.
+**In everyday language:** Date and time of revoked for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of revoked for this record.
 
 | Property | Definition |
 |---|---|
@@ -919,7 +1195,13 @@ Database rules (including conditions shared with other fields):
 
 ### revoked_by_user_id
 
-Reference linking this record’s revoked by user id to FOREIGN KEY (revoked_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies revoked by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct revoked by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s revoked by user id to FOREIGN KEY (revoked_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -939,7 +1221,13 @@ Database rules (including conditions shared with other fields):
 
 ### revoke_reason
 
-Reason this session was terminated before expiry.
+**In everyday language:** Reason this session was terminated before expiry.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Reason this session was terminated before expiry.
 
 | Property | Definition |
 |---|---|
@@ -959,7 +1247,13 @@ Database rules (including conditions shared with other fields):
 
 ### ip
 
-Client IP address captured as access or submission provenance; personal/security metadata.
+**In everyday language:** Client IP address captured as access or submission where the information came from; personal/security descriptive information.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A saved browser or connection detail can help an authorized administrator investigate which sign-in or submission produced the event.
+
+Technical definition: Client IP address captured as access or submission provenance; personal/security metadata.
 
 | Property | Definition |
 |---|---|
@@ -977,7 +1271,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### user_agent
 
-Client/browser user-agent captured as submission or session provenance.
+**In everyday language:** Client/browser user-agent captured as submission or session where the information came from.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A saved browser or connection detail can help an authorized administrator investigate which sign-in or submission produced the event.
+
+Technical definition: Client/browser user-agent captured as submission or session provenance.
 
 | Property | Definition |
 |---|---|
@@ -995,7 +1295,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### device_label
 
-Human-readable device/browser label for session administration.
+**In everyday language:** Human-readable device/browser label for session administration.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A saved browser or connection detail can help an authorized administrator investigate which sign-in or submission produced the event.
+
+Technical definition: Human-readable device/browser label for session administration.
 
 | Property | Definition |
 |---|---|
@@ -1013,7 +1319,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### stepped_up_at
 
-Instant of stepped up for this record.
+**In everyday language:** Date and time of stepped up for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of stepped up for this record.
 
 | Property | Definition |
 |---|---|
@@ -1033,7 +1345,13 @@ Database rules (including conditions shared with other fields):
 
 ### stepped_up_until
 
-Expiry of elevated session assurance retained for compatibility; MFA is excluded from current scope.
+**In everyday language:** Expiry of elevated session assurance retained for compatibility; MFA is excluded from current scope.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This retains the end time of extra sign-in assurance for compatibility; it does not enable the excluded MFA feature.
+
+Technical definition: Expiry of elevated session assurance retained for compatibility; MFA is excluded from current scope.
 
 | Property | Definition |
 |---|---|
@@ -1053,7 +1371,13 @@ Database rules (including conditions shared with other fields):
 
 ### refresh_token_hash
 
-SHA-256 digest of the currently redeemable refresh token; replaced atomically on redemption. NULL legacy rows cannot refresh.
+**In everyday language:** a digital fingerprint used to check that information matches digital fingerprint of the currently redeemable refresh token; replaced atomically on redemption. not recorded legacy rows cannot refresh.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: SHA-256 digest of the currently redeemable refresh token; replaced atomically on redemption. NULL legacy rows cannot refresh.
 
 | Property | Definition |
 |---|---|
@@ -1080,13 +1404,21 @@ Table indexes and lifecycle triggers:
 
 ## sec.sso_grants
 
+Keeps short-lived proof used to sign into an approved linked application.
+
 One-use authorization credential; plaintext code/verifier/tokens never persist.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1106,7 +1438,13 @@ Database rules (including conditions shared with other fields):
 
 ### code_hash
 
-Hash of a one-time credential/code; plaintext credentials must not be exposed.
+**In everyday language:** Hash of a one-time credential/code; plaintext credentials must not be exposed.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Hash of a one-time credential/code; plaintext credentials must not be exposed.
 
 | Property | Definition |
 |---|---|
@@ -1127,7 +1465,13 @@ Database rules (including conditions shared with other fields):
 
 ### link_id
 
-Reference linking this record’s link id to FOREIGN KEY (link_id) REFERENCES sec.app_links(id).
+**In everyday language:** Identifies link connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct link, so related details can be checked together.
+
+**Example:** This record points to an existing entry in app links instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s link id to FOREIGN KEY (link_id) REFERENCES sec.app_links(id).
 
 | Property | Definition |
 |---|---|
@@ -1147,7 +1491,13 @@ Database rules (including conditions shared with other fields):
 
 ### link_nonce
 
-Random link-version identifier rotated on unlink/re-enable to invalidate earlier grants.
+**In everyday language:** Random link-version identifier rotated on unlink/re-enable to invalidate earlier grants.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: Random link-version identifier rotated on unlink/re-enable to invalidate earlier grants.
 
 | Property | Definition |
 |---|---|
@@ -1165,7 +1515,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### session_sid
 
-Canonical login-session identifier associated with this access/grant event.
+**In everyday language:** main login-session identifier associated with this access/grant event.
+
+**Why it is kept:** Keeps this record connected to the correct session sid, so related details can be checked together.
+
+**Example:** This record points to an existing entry in sessions instead of copying all of that entry’s details.
+
+Technical definition: Canonical login-session identifier associated with this access/grant event.
 
 | Property | Definition |
 |---|---|
@@ -1185,7 +1541,13 @@ Database rules (including conditions shared with other fields):
 
 ### redirect_uri
 
-Exact registered redirect destination bound to the one-time SSO grant.
+**In everyday language:** Exact registered redirect destination bound to the one-time sign-in shared with an approved application grant.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An authorized process follows this reference to find the associated file or destination. The reference alone does not grant access.
+
+Technical definition: Exact registered redirect destination bound to the one-time SSO grant.
 
 | Property | Definition |
 |---|---|
@@ -1205,7 +1567,13 @@ Database rules (including conditions shared with other fields):
 
 ### challenge
 
-S256 PKCE challenge bound to the SSO grant, verified against the redeemer's verifier.
+**In everyday language:** S256 a security check linking the sign-in request to the same requesting application challenge bound to the sign-in shared with an approved application grant, verified against the redeemer's verifier.
+
+**Why it is kept:** Supports identity checks or information-integrity checks without exposing a reusable secret to ordinary readers.
+
+**Example:** The actual security value is deliberately omitted. A fingerprint is compared by the system rather than read as a password.
+
+Technical definition: S256 PKCE challenge bound to the SSO grant, verified against the redeemer's verifier.
 
 | Property | Definition |
 |---|---|
@@ -1225,7 +1593,13 @@ Database rules (including conditions shared with other fields):
 
 ### expires_at
 
-Instant of expires for this record.
+**In everyday language:** Date and time of expires for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of expires for this record.
 
 | Property | Definition |
 |---|---|
@@ -1245,7 +1619,13 @@ Database rules (including conditions shared with other fields):
 
 ### consumed_at
 
-Instant of consumed for this record.
+**In everyday language:** Date and time of consumed for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of consumed for this record.
 
 | Property | Definition |
 |---|---|
@@ -1265,7 +1645,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|

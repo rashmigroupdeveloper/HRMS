@@ -1,3 +1,4 @@
+import { BetaFeedback } from './feedback/BetaFeedback';
 /**
  * App shell — Crextio masthead + center pill nav (docs/05 §3, 12 §7).
  * Wordmark (+ company scope for group roles) left, dark-active pills center,
@@ -344,6 +345,7 @@ export function AppShell({ user, onSignedOut }: AppShellProps) {
         }}
         user={user}
       />
+      <BetaFeedback user={user} />
       <Toaster />
     </div>
   );

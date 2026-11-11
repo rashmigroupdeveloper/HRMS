@@ -32,6 +32,7 @@ import {
   LifeBuoy,
   Mail,
   Megaphone,
+  MessageSquare,
   Palette,
   Palmtree,
   Plane,
@@ -269,6 +270,7 @@ export function navForUser(user: SessionUser): NavItem[] {
     );
   }
 
+  if (hasPermission(user, 'beta.feedback.review')) push(grouped('Workplace', { label: 'Beta feedback', to: '/admin/beta-feedback', icon: MessageSquare }));
   // Workplace
   push(grouped('Workplace', { label: 'Policies', to: '/policies', icon: ScrollText }));
   if (hasPermission(user, 'assets.manage')) {

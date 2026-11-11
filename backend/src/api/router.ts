@@ -1,3 +1,4 @@
+import { feedbackRouter } from '../modules/feedback/index.js';
 /**
  * The application router — every module's procedures assembled in one tree.
  * This object's shape IS the API; the OpenAPI spec is generated from it.
@@ -47,6 +48,7 @@ export const appRouter = {
   atsBridge: atsBridgeRouter,
   sso:ssoRouter,
   system: systemRouter,
+  feedback: feedbackRouter,
   core: coreRouter,
   masters: mastersRouter,
   auth: authRouter,

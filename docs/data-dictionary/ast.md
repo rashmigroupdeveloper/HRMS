@@ -4,13 +4,21 @@
 
 ## ast.assets
 
+Lists company property such as laptops, phones and vehicles.
+
 AST-01 asset registry; warranty_till accepts past dates (AST-02)
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### asset_no
 
-Unique human asset tag used by search and allocation
+**In everyday language:** Unique human asset tag used by search and allocation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An asset tag such as LAP-001 lets Admin find one particular laptop.
+
+Technical definition: Unique human asset tag used by search and allocation
 
 | Property | Definition |
 |---|---|
@@ -50,7 +64,13 @@ Database rules (including conditions shared with other fields):
 
 ### category
 
-Asset class used by register filters
+**In everyday language:** Asset class used by register filters.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The saved category helps a reviewer group similar records; its meaning depends on the register being viewed.
+
+Technical definition: Asset class used by register filters
 
 | Property | Definition |
 |---|---|
@@ -68,7 +88,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### description
 
-Human description of the physical asset
+**In everyday language:** Human description of the physical asset.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Human description of the physical asset
 
 | Property | Definition |
 |---|---|
@@ -86,7 +112,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### serial_no
 
-Manufacturer serial used by search
+**In everyday language:** Manufacturer serial used by search.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The manufacturer’s serial number helps identify the physical device even when its company tag is replaced.
+
+Technical definition: Manufacturer serial used by search
 
 | Property | Definition |
 |---|---|
@@ -104,7 +136,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### purchase_date
 
-Acquisition calendar date
+**In everyday language:** Acquisition calendar date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Acquisition calendar date
 
 | Property | Definition |
 |---|---|
@@ -122,7 +160,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### warranty_till
 
-Warranty expiry date; legitimately may be in the past
+**In everyday language:** Warranty expiry date; legitimately may be in the past.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Warranty expiry date; legitimately may be in the past
 
 | Property | Definition |
 |---|---|
@@ -140,7 +184,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Registry availability/loss/maintenance state; must agree with custody
+**In everyday language:** register availability/loss/maintenance state; must agree with custody.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “in_stock” means Record is in stock in this progress from creation to closure.
+
+Technical definition: Registry availability/loss/maintenance state; must agree with custody
 
 | Property | Definition |
 |---|---|
@@ -168,7 +218,13 @@ Database rules (including conditions shared with other fields):
 
 ### location_id
 
-Reference linking this record’s location id to FOREIGN KEY (location_id) REFERENCES core.locations(id).
+**In everyday language:** Identifies location connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct location, so related details can be checked together.
+
+**Example:** This record points to an existing entry in locations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s location id to FOREIGN KEY (location_id) REFERENCES core.locations(id).
 
 | Property | Definition |
 |---|---|
@@ -188,7 +244,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -208,7 +270,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -228,7 +296,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -246,7 +320,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -274,13 +354,21 @@ Table indexes and lifecycle triggers:
 
 ## ast.assignments
 
+Records who has been given each company asset and whether it has been returned.
+
 AST-03 employee/third-party allocation; open row = still held (AST-04/05)
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -300,7 +388,13 @@ Database rules (including conditions shared with other fields):
 
 ### asset_id
 
-Reference linking this record’s asset id to FOREIGN KEY (asset_id) REFERENCES ast.assets(id).
+**In everyday language:** Identifies asset connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct asset, so related details can be checked together.
+
+**Example:** This record points to an existing entry in assets instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s asset id to FOREIGN KEY (asset_id) REFERENCES ast.assets(id).
 
 | Property | Definition |
 |---|---|
@@ -320,7 +414,13 @@ Database rules (including conditions shared with other fields):
 
 ### holder_kind
 
-Employee versus third-party custody discriminator
+**In everyday language:** Employee versus third-party custody choice that tells the system which kind this is.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “employee” means Employee classification for holder kind.
+
+Technical definition: Employee versus third-party custody discriminator
 
 | Property | Definition |
 |---|---|
@@ -346,7 +446,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -367,7 +473,13 @@ Database rules (including conditions shared with other fields):
 
 ### third_party_name
 
-Named non-employee holder; mutually exclusive with employee FK
+**In everyday language:** Named non-employee holder; only one can apply at a time with employee link to another record.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the third party name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Named non-employee holder; mutually exclusive with employee FK
 
 | Property | Definition |
 |---|---|
@@ -387,7 +499,13 @@ Database rules (including conditions shared with other fields):
 
 ### third_party_org
 
-External holder's organization
+**In everyday language:** External holder's organization.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the third party org shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: External holder's organization
 
 | Property | Definition |
 |---|---|
@@ -405,7 +523,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### assigned_at
 
-Physical custody issuance instant
+**In everyday language:** Physical custody issuance instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Physical custody issuance instant
 
 | Property | Definition |
 |---|---|
@@ -423,7 +547,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### returned_at
 
-Physical return/closure instant; must not claim return for missing property
+**In everyday language:** Physical return/closure instant; must not claim return for missing property.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Physical return/closure instant; must not claim return for missing property
 
 | Property | Definition |
 |---|---|
@@ -443,7 +573,13 @@ Database rules (including conditions shared with other fields):
 
 ### return_condition
 
-Condition or non-return outcome requiring stock/clearance reconciliation
+**In everyday language:** Condition or non-return outcome requiring stock/clearance reconciliation.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “ok” means Ok.
+
+Technical definition: Condition or non-return outcome requiring stock/clearance reconciliation
 
 | Property | Definition |
 |---|---|
@@ -470,7 +606,13 @@ Database rules (including conditions shared with other fields):
 
 ### notes
 
-Issuance/return context retained with custody
+**In everyday language:** Issuance/return context retained with custody.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Issuance/return context retained with custody
 
 | Property | Definition |
 |---|---|
@@ -488,7 +630,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### assigned_by
 
-Reference linking this record’s assigned by to FOREIGN KEY (assigned_by) REFERENCES core.users(id).
+**In everyday language:** Identifies assigned by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct assigned by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s assigned by to FOREIGN KEY (assigned_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -508,7 +656,13 @@ Database rules (including conditions shared with other fields):
 
 ### returned_by
 
-Reference linking this record’s returned by to FOREIGN KEY (returned_by) REFERENCES core.users(id).
+**In everyday language:** Identifies returned by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct returned by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s returned by to FOREIGN KEY (returned_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -528,7 +682,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -552,13 +712,21 @@ Table indexes and lifecycle triggers:
 
 ## ast.maintenance
 
+Keeps the service, repair and damage history of company assets.
+
 AST-06 maintenance, incident, damage and loss trail
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -578,7 +746,13 @@ Database rules (including conditions shared with other fields):
 
 ### asset_id
 
-Reference linking this record’s asset id to FOREIGN KEY (asset_id) REFERENCES ast.assets(id).
+**In everyday language:** Identifies asset connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct asset, so related details can be checked together.
+
+**Example:** This record points to an existing entry in assets instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s asset id to FOREIGN KEY (asset_id) REFERENCES ast.assets(id).
 
 | Property | Definition |
 |---|---|
@@ -598,7 +772,13 @@ Database rules (including conditions shared with other fields):
 
 ### kind
 
-Scheduled service, incident, damage or loss category
+**In everyday language:** Scheduled service, incident, damage or loss category.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “scheduled” means Scheduled classification for kind.
+
+Technical definition: Scheduled service, incident, damage or loss category
 
 | Property | Definition |
 |---|---|
@@ -625,7 +805,13 @@ Database rules (including conditions shared with other fields):
 
 ### scheduled_for
 
-Planned service calendar date
+**In everyday language:** Planned service calendar date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Planned service calendar date
 
 | Property | Definition |
 |---|---|
@@ -643,7 +829,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### reported_by
 
-Reference linking this record’s reported by to FOREIGN KEY (reported_by) REFERENCES core.users(id).
+**In everyday language:** Identifies reported by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct reported by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s reported by to FOREIGN KEY (reported_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -663,7 +855,13 @@ Database rules (including conditions shared with other fields):
 
 ### description
 
-Reported service/incident details
+**In everyday language:** Reported service/incident details.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Reported service/incident details
 
 | Property | Definition |
 |---|---|
@@ -681,7 +879,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### resolved_at
 
-Instant the recorded asset maintenance/incident was resolved.
+**In everyday language:** Date and time the recorded asset maintenance/incident was resolved.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant the recorded asset maintenance/incident was resolved.
 
 | Property | Definition |
 |---|---|
@@ -699,7 +903,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### resolution
 
-Explanation of the recorded asset maintenance/incident resolution.
+**In everyday language:** Explanation of the recorded asset maintenance/incident resolution.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A reviewer reads the saved explanation to understand the particular case before taking the next action.
+
+Technical definition: Explanation of the recorded asset maintenance/incident resolution.
 
 | Property | Definition |
 |---|---|
@@ -717,7 +927,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### cost
 
-Recorded service cost in rupees NUMERIC; not a payable ledger
+**In everyday language:** Recorded service cost in rupees an exact number; not a payable history of additions and deductions.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Recorded service cost in rupees NUMERIC; not a payable ledger
 
 | Property | Definition |
 |---|---|
@@ -739,7 +955,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|

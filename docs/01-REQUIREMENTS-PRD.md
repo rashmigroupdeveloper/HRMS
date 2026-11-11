@@ -275,3 +275,6 @@ The permanent, better version of RML's approved T&E system. Full corporate trave
 - ~~Travel & expense~~ — **now IN scope** as M13 (absorbs the approved Yatra Avedan system); this former non-goal is retracted (doc 11 direction)
 - Statutory e-filing automation (we generate portal-ready files — ECR, 24Q data, challan registers; filing stays a human action on govt portals)
 - Multi-language UI
+
+### BETA-01 — sponsor request, 11 Nov 2026
+Every signed-in employee can open/close a right-edge beta feedback panel, enter text, capture or upload an optional screenshot, preview/remove it and submit. Reports capture the page path/title and server-verified name, employee code and roles. Query strings/fragments are excluded. Reports and screenshots are private to the reporter and authorized IT/admin reviewers; the reviewer inbox supports resolve/reopen and pagination. Notify `core_developers@rashmigroup.com` through the configured notification audience with a private inbox link. Retries do not duplicate reports or email. Closing the panel preserves the in-memory draft.

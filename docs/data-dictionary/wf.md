@@ -4,13 +4,21 @@
 
 ## wf.definitions
 
+Defines the approval steps to follow for each request category.
+
 wf.definitions — approval chains as runtime-editable data (WF-01).
 
 Relation kind: table.
 
 ### code
 
-Stable machine-readable business code identifying this catalog entry.
+**In everyday language:** Stable machine-readable business code identifying this list of available choices entry.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Stable machine-readable business code identifying this catalog entry.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Human-readable display name of this catalog record.
+**In everyday language:** Human-readable display name of this list of available choices record.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Human-readable display name of this catalog record.
 
 | Property | Definition |
 |---|---|
@@ -48,7 +62,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### steps
 
-Ordered approval-chain configuration containing approver selectors and SLA/escalation behavior; distinct from resolved request-step history.
+**In everyday language:** The planned order of approvals and the rules for choosing each approver.
+
+**Why it is kept:** Tells the approval process whom to approach and what to do if a step is delayed.
+
+**Example:** A configured process can ask the reporting manager first and HR next.
+
+Technical definition: Ordered approval-chain configuration containing approver selectors and SLA/escalation behavior; distinct from resolved request-step history.
 
 | Property | Definition |
 |---|---|
@@ -66,7 +86,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Whether this catalog or account record is currently available for use; historical references remain.
+**In everyday language:** Whether this list of available choices or account record is currently available for use; historical references remain.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether this catalog or account record is currently available for use; historical references remain.
 
 | Property | Definition |
 |---|---|
@@ -89,7 +115,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -107,7 +139,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -130,13 +168,21 @@ Table indexes and lifecycle triggers:
 
 ## wf.delegations
 
+Records who may handle another person’s approvals while they are away.
+
 Delegations records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -156,7 +202,13 @@ Database rules (including conditions shared with other fields):
 
 ### from_user_id
 
-Reference linking this record’s from user id to FOREIGN KEY (from_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies from user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct from user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s from user id to FOREIGN KEY (from_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -177,7 +229,13 @@ Database rules (including conditions shared with other fields):
 
 ### to_user_id
 
-Reference linking this record’s to user id to FOREIGN KEY (to_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies to user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct to user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s to user id to FOREIGN KEY (to_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -198,7 +256,13 @@ Database rules (including conditions shared with other fields):
 
 ### from_date
 
-First date of the approval delegation's validity.
+**In everyday language:** First date of the approval delegation's validity.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: First date of the approval delegation's validity.
 
 | Property | Definition |
 |---|---|
@@ -218,7 +282,13 @@ Database rules (including conditions shared with other fields):
 
 ### to_date
 
-Last date of the approval delegation's validity.
+**In everyday language:** Last date of the approval delegation's validity.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Last date of the approval delegation's validity.
 
 | Property | Definition |
 |---|---|
@@ -238,7 +308,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -256,7 +332,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -279,13 +361,21 @@ Table indexes and lifecycle triggers:
 
 ## wf.event_subscriptions
 
+Defines who should be notified when specified business events happen.
+
 wf.event_subscriptions — per-event recipient matrix as data (PP-26).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -305,7 +395,13 @@ Database rules (including conditions shared with other fields):
 
 ### event_code
 
-Workflow/domain event key used to select configured notification recipients.
+**In everyday language:** Workflow/domain event key used to select configured notification recipients.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Workflow/domain event key used to select configured notification recipients.
 
 | Property | Definition |
 |---|---|
@@ -325,7 +421,13 @@ Database rules (including conditions shared with other fields):
 
 ### recipient_kind
 
-Discriminator identifying whether the subscription targets a role, user or email address.
+**In everyday language:** choice that tells the system which kind this is identifying whether the subscription targets a role, user or email address.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “role” means Role classification for recipient kind.
+
+Technical definition: Discriminator identifying whether the subscription targets a role, user or email address.
 
 | Property | Definition |
 |---|---|
@@ -352,7 +454,13 @@ Database rules (including conditions shared with other fields):
 
 ### recipient_ref
 
-Role code, user identifier or email address interpreted according to recipient_kind.
+**In everyday language:** Role code, user identifier or email address interpreted according to recipient_kind.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Role code, user identifier or email address interpreted according to recipient_kind.
 
 | Property | Definition |
 |---|---|
@@ -372,7 +480,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -390,7 +504,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -414,13 +534,21 @@ Table indexes and lifecycle triggers:
 
 ## wf.notifications
 
+Tracks messages waiting to be sent and their delivery results.
+
 wf.notifications — queue with retry + dead-letter (WF-02, docs/03 §8).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -440,7 +568,13 @@ Database rules (including conditions shared with other fields):
 
 ### recipient_user_id
 
-Reference linking this record’s recipient user id to FOREIGN KEY (recipient_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies recipient user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct recipient user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s recipient user id to FOREIGN KEY (recipient_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -461,7 +595,13 @@ Database rules (including conditions shared with other fields):
 
 ### recipient_email
 
-Destination email address, including external recipients who may have no HRMS account.
+**In everyday language:** Destination email address, including external recipients who may have no HRMS account.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An invented contact such as sample@example.com shows an email address; use only the authorized contact for the purpose described above.
+
+Technical definition: Destination email address, including external recipients who may have no HRMS account.
 
 | Property | Definition |
 |---|---|
@@ -481,7 +621,13 @@ Database rules (including conditions shared with other fields):
 
 ### channel
 
-Notification delivery medium, such as email or in-app.
+**In everyday language:** Notification delivery medium, such as email or in-app.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “in_app” means In app classification for channel.
+
+Technical definition: Notification delivery medium, such as email or in-app.
 
 | Property | Definition |
 |---|---|
@@ -506,7 +652,13 @@ Database rules (including conditions shared with other fields):
 
 ### template_code
 
-Notification template identifier used to render the message.
+**In everyday language:** Notification template identifier used to render the message.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Notification template identifier used to render the message.
 
 | Property | Definition |
 |---|---|
@@ -524,7 +676,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### payload
 
-Structured event/request snapshot supplied to the notification template; shape depends on template/event.
+**In everyday language:** Structured event/request copy saved at that point in time supplied to the notification template; shape depends on template/event.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the payload.
+
+Technical definition: Structured event/request snapshot supplied to the notification template; shape depends on template/event.
 
 | Property | Definition |
 |---|---|
@@ -542,7 +700,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+**In everyday language:** Current progress from creation to closure state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “queued” means Waiting for background processing or delivery.
+
+Technical definition: Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
 
 | Property | Definition |
 |---|---|
@@ -569,7 +733,13 @@ Database rules (including conditions shared with other fields):
 
 ### attempts
 
-Number of delivery attempts recorded for the queued notification.
+**In everyday language:** Number of delivery attempts recorded for the queued notification.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Number of delivery attempts recorded for the queued notification.
 
 | Property | Definition |
 |---|---|
@@ -587,7 +757,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### last_error
 
-Latest bounded notification-delivery failure explanation; must not contain secrets or sensitive payloads.
+**In everyday language:** Latest bounded notification-delivery failure explanation; must not contain secrets or sensitive payloads.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An email delivery error can explain why the message needs another attempt; it should not expose its confidential contents.
+
+Technical definition: Latest bounded notification-delivery failure explanation; must not contain secrets or sensitive payloads.
 
 | Property | Definition |
 |---|---|
@@ -605,7 +781,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### sent_at
 
-Instant of sent for this record.
+**In everyday language:** Date and time of sent for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of sent for this record.
 
 | Property | Definition |
 |---|---|
@@ -623,7 +805,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### read_at
 
-Instant of read for this record.
+**In everyday language:** Date and time of read for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of read for this record.
 
 | Property | Definition |
 |---|---|
@@ -641,7 +829,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -659,7 +853,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -684,13 +884,21 @@ Table indexes and lifecycle triggers:
 
 ## wf.request_steps
 
+Keeps the actual approvers, decisions and notification times for an individual request.
+
 wf.request_steps — the timeline; notified_at NOT NULL is the PP-14 receipt.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -710,7 +918,13 @@ Database rules (including conditions shared with other fields):
 
 ### request_id
 
-Reference linking this record’s request id to FOREIGN KEY (request_id) REFERENCES wf.requests(id).
+**In everyday language:** Identifies request connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct request, so related details can be checked together.
+
+**Example:** This record points to an existing entry in requests instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s request id to FOREIGN KEY (request_id) REFERENCES wf.requests(id).
 
 | Property | Definition |
 |---|---|
@@ -730,7 +944,13 @@ Database rules (including conditions shared with other fields):
 
 ### step_no
 
-Position of this resolved approver step in the request's approval timeline.
+**In everyday language:** Position of this resolved approver step in the request's approval timeline.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Step 2 identifies the second stage in that request’s configured approval sequence.
+
+Technical definition: Position of this resolved approver step in the request's approval timeline.
 
 | Property | Definition |
 |---|---|
@@ -748,7 +968,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### approver_user_id
 
-Reference linking this record’s approver user id to FOREIGN KEY (approver_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies approver user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct approver user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s approver user id to FOREIGN KEY (approver_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -768,7 +994,13 @@ Database rules (including conditions shared with other fields):
 
 ### delegated_from
 
-Reference linking this record’s delegated from to FOREIGN KEY (delegated_from) REFERENCES core.users(id).
+**In everyday language:** Identifies delegated from connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct delegated from, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s delegated from to FOREIGN KEY (delegated_from) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -788,7 +1020,13 @@ Database rules (including conditions shared with other fields):
 
 ### action
 
-Operation or decision recorded by this event; permitted codes are listed with the field constraints.
+**In everyday language:** Operation or decision recorded by this event; permitted codes are listed with the field constraints.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “approved” means Authorized by the applicable approval process.
+
+Technical definition: Operation or decision recorded by this event; permitted codes are listed with the field constraints.
 
 | Property | Definition |
 |---|---|
@@ -816,7 +1054,13 @@ Database rules (including conditions shared with other fields):
 
 ### comment
 
-Approver's recorded decision comment.
+**In everyday language:** Approver's recorded decision comment.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Approver's recorded decision comment.
 
 | Property | Definition |
 |---|---|
@@ -834,7 +1078,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### notified_at
 
-Instant of notified for this record.
+**In everyday language:** The time at which this approver was recorded as notified about the request.
+
+**Why it is kept:** Provides evidence of the notification step instead of assuming the approver knew about it.
+
+**Example:** HR can check whether and when an approval notification was recorded; the time does not prove the person read it.
+
+Technical definition: Instant of notified for this record.
 
 | Property | Definition |
 |---|---|
@@ -852,7 +1102,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### acted_at
 
-Instant of acted for this record.
+**In everyday language:** Date and time of acted for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of acted for this record.
 
 | Property | Definition |
 |---|---|
@@ -870,7 +1126,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### sla_due_at
 
-Instant of sla due for this record.
+**In everyday language:** Date and time of sla due for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of sla due for this record.
 
 | Property | Definition |
 |---|---|
@@ -888,7 +1150,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -906,7 +1174,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### approver_spec
 
-Original configured approver selector retained alongside the resolved approver identity.
+**In everyday language:** Original configured approver selector retained alongside the resolved approver identity.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the approver spec.
+
+Technical definition: Original configured approver selector retained alongside the resolved approver identity.
 
 | Property | Definition |
 |---|---|
@@ -932,13 +1206,21 @@ Table indexes and lifecycle triggers:
 
 ## wf.requests
 
+Tracks an individual request through its approval process.
+
 Requests records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Workflow identity referenced by domain rows, steps and audit.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Workflow identity referenced by domain rows, steps and audit.
 
 | Property | Definition |
 |---|---|
@@ -958,7 +1240,13 @@ Database rules (including conditions shared with other fields):
 
 ### definition_code
 
-Configured chain type; domain-owned definitions are reserved from generic creation.
+**In everyday language:** Configured chain type; domain-owned definitions are reserved from generic creation.
+
+**Why it is kept:** Keeps this record connected to the correct definition code, so related details can be checked together.
+
+**Example:** This record points to an existing entry in definitions instead of copying all of that entry’s details.
+
+Technical definition: Configured chain type; domain-owned definitions are reserved from generic creation.
 
 | Property | Definition |
 |---|---|
@@ -978,7 +1266,13 @@ Database rules (including conditions shared with other fields):
 
 ### subject_employee_id
 
-Primary subject used by authorization and locking; multi-person domains add all affected subjects before locking.
+**In everyday language:** Primary subject used by authorization and locking; multi-person domains add all affected subjects before locking.
+
+**Why it is kept:** Keeps this record connected to the correct subject employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Primary subject used by authorization and locking; multi-person domains add all affected subjects before locking.
 
 | Property | Definition |
 |---|---|
@@ -998,7 +1292,13 @@ Database rules (including conditions shared with other fields):
 
 ### requested_by
 
-Account that submitted the request, distinct from its approver.
+**In everyday language:** Account that submitted the request, distinct from its approver.
+
+**Why it is kept:** Keeps this record connected to the correct requested by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Account that submitted the request, distinct from its approver.
 
 | Property | Definition |
 |---|---|
@@ -1018,7 +1318,13 @@ Database rules (including conditions shared with other fields):
 
 ### payload
 
-Versioned request context. For swaps it now records both original shift/week-off pairs so approval cannot silently apply changed rosters; no duplicate table columns are needed.
+**In everyday language:** Versioned request context. For swaps it now records both original shift/week-off pairs so approval cannot silently apply changed rosters; no duplicate table columns are needed.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the payload.
+
+Technical definition: Versioned request context. For swaps it now records both original shift/week-off pairs so approval cannot silently apply changed rosters; no duplicate table columns are needed.
 
 | Property | Definition |
 |---|---|
@@ -1036,7 +1342,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### current_step
 
-Current step cursor, not a list of approvals.
+**In everyday language:** Current step cursor, not a list of approvals.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The current step identifies which approval stage the request has reached; it is not the total number of approvals.
+
+Technical definition: Current step cursor, not a list of approvals.
 
 | Property | Definition |
 |---|---|
@@ -1054,7 +1366,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Workflow state with controlled transitions.
+**In everyday language:** Workflow state with controlled transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “pending” means Awaiting the required decision or next action.
+
+Technical definition: Workflow state with controlled transitions.
 
 | Property | Definition |
 |---|---|
@@ -1083,7 +1401,13 @@ Database rules (including conditions shared with other fields):
 
 ### decided_at
 
-Final decision instant, not submission time.
+**In everyday language:** Final decision instant, not submission time.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Final decision instant, not submission time.
 
 | Property | Definition |
 |---|---|
@@ -1101,7 +1425,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Submission provenance.
+**In everyday language:** Submission where the information came from.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Submission provenance.
 
 | Property | Definition |
 |---|---|
@@ -1119,7 +1449,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Workflow mutation provenance.
+**In everyday language:** Workflow mutation where the information came from.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Workflow mutation provenance.
 
 | Property | Definition |
 |---|---|

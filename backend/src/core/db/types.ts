@@ -4,6 +4,7 @@
  * vice versa) is a bug.
  */
 import type { ColumnType, Generated } from 'kysely';
+import type { BetaFeedbackTable } from './types.feedback.js';
 import type { CoreBulkJobsTable, CoreDepartmentHeadsTable } from './types.bulk.js';
 import type {
   CmpCalendarItemsTable,
@@ -1241,6 +1242,7 @@ export interface KpiDailyTable {
 }
 
 export interface Database {
+  'hd.beta_feedback': BetaFeedbackTable;
   'sec.app_links': AppLinksTable;
   'sec.sso_grants': SsoGrantsTable;
   'core.ats_acceptance_receipts': AtsAcceptanceReceiptsTable;

@@ -156,6 +156,13 @@ Regenerated on 14 Oct from all 176 original scored rows. IDs below are physical 
 ---
 
 ## Stage 3.4 — Helpdesk & workplace engagement (Cards W02, W03) — reopened; verified delivery pending
+
+**11 Nov 2026 — BETA-01 beta feedback deployed to the existing live HRMS:** all signed-in role holders can open/close the right-edge panel, retain an in-memory draft, submit page path/title, server-verified employee identity/roles, feedback text and an optional previewed PNG/JPEG capture/upload. Screenshots use private document storage; query/fragment data is excluded. IT/Super Admin reviewers have a paginated inbox, direct report links and audited resolve/reopen. UUID retries do not duplicate reports, files or email; changed drafts cannot reuse an existing identifier. Mail audience is `core_developers@rashmigroup.com`, sender `globalhr@rashmigroup.com` via Microsoft 365 SMTP. Credentials are only in protected server configuration, not source/evidence.
+
+Local validation: 417 frontend tests and 17 focused feedback/SMTP tests passed; builds and dependency boundaries passed. Shared-checkout full verify still encounters pre-existing knip exports (`DraftKind`, `absenceRun`), so the release was checked against the actual clean live-code baseline: backend typecheck/lint/build/knip/dependency checks and frontend full verify (385 tests) passed. This was a build workspace only; the deployed app remains `/home/hrms/hrms`, public site `https://one.rashmimetaliks.com`. Applied only migration1753200000000 plus the feedback source changes, preserving unrelated local work. Database/runtime/public backups: `/home/hrms/backups/beta-feedback-20261111`; release manifest/source overlay: `/home/hrms/imports/beta-feedback-release-20261111`.
+
+Live evidence: browser report1 captured `/people`, Raju Pandit/RML000813 and employee+IT roles, uploaded and decoded a synthetic screenshot via the private API, opened the email-linked inbox and resolved the report, with zero browser errors. Worker sent notification1 to the configured development address, sent_at `2026-11-11T05:44:33.520Z`, zero retries/errors. An ordinary employee can open reporting context but receives403 for another reporter's screenshot and the review inbox. Audit chain and app readiness rechecked. The labeled setup report remains resolved for traceability. Evidence: `outputs/beta-feedback-2026-11-11/`. This increment does not close the broader Stage3.4 helpdesk/engagement acceptance gates.
+
 **Goal:** employee service request ticketing with strict SLA auto-escalation, and company-wide communication with targeted audience delivery.
 **Depends on:** Phase 1 workflow engine; Stage 0.4 notifications.
 **Tasks:**

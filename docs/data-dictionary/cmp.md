@@ -4,13 +4,21 @@
 
 ## cmp.calendar_items
 
+Tracks compliance obligations and their due dates.
+
 cmp.calendar_items — every recurring statutory obligation, with an owner.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -50,7 +64,13 @@ Database rules (including conditions shared with other fields):
 
 ### obligation_code
 
-Configured obligation identity, not evidence law was verified
+**In everyday language:** Configured obligation identity, not evidence law was verified.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Configured obligation identity, not evidence law was verified
 
 | Property | Definition |
 |---|---|
@@ -68,7 +88,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### title
 
-Filing task label
+**In everyday language:** Filing task label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the title shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Filing task label
 
 | Property | Definition |
 |---|---|
@@ -86,7 +112,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### frequency
 
-Recurrence category; rows do not themselves generate subsequent periods
+**In everyday language:** Recurrence category; rows do not themselves generate subsequent periods.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “monthly” means Monthly.
+
+Technical definition: Recurrence category; rows do not themselves generate subsequent periods
 
 | Property | Definition |
 |---|---|
@@ -114,7 +146,13 @@ Database rules (including conditions shared with other fields):
 
 ### period_label
 
-Human filing-period label
+**In everyday language:** Human filing-period label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the period label.
+
+Technical definition: Human filing-period label
 
 | Property | Definition |
 |---|---|
@@ -132,7 +170,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### due_on
 
-Required filing calendar deadline
+**In everyday language:** Required filing calendar deadline.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Required filing calendar deadline
 
 | Property | Definition |
 |---|---|
@@ -150,7 +194,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### owner_user_id
 
-Reference linking this record’s owner user id to FOREIGN KEY (owner_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies owner user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct owner user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s owner user id to FOREIGN KEY (owner_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -170,7 +220,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Due/filed/waived state; overdue is derived
+**In everyday language:** Due/filed/waived state; overdue is worked out from other saved information.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “due” means Record is due in this progress from creation to closure.
+
+Technical definition: Due/filed/waived state; overdue is derived
 
 | Property | Definition |
 |---|---|
@@ -198,7 +254,13 @@ Database rules (including conditions shared with other fields):
 
 ### registration_id
 
-Reference linking this record’s registration id to FOREIGN KEY (registration_id) REFERENCES cmp.registrations(id).
+**In everyday language:** Identifies registration connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct registration, so related details can be checked together.
+
+**Example:** This record points to an existing entry in registrations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s registration id to FOREIGN KEY (registration_id) REFERENCES cmp.registrations(id).
 
 | Property | Definition |
 |---|---|
@@ -218,7 +280,13 @@ Database rules (including conditions shared with other fields):
 
 ### filed_at
 
-Recorded filing instant; must agree with evidence and status
+**In everyday language:** Recorded filing instant; must agree with evidence and status.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Recorded filing instant; must agree with evidence and status
 
 | Property | Definition |
 |---|---|
@@ -238,7 +306,13 @@ Database rules (including conditions shared with other fields):
 
 ### filed_by_user_id
 
-Reference linking this record’s filed by user id to FOREIGN KEY (filed_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies filed by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct filed by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s filed by user id to FOREIGN KEY (filed_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -259,7 +333,13 @@ Database rules (including conditions shared with other fields):
 
 ### waived_reason
 
-Explicit reason an obligation was waived
+**In everyday language:** Explicit reason an obligation was waived.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Explicit reason an obligation was waived
 
 | Property | Definition |
 |---|---|
@@ -279,7 +359,13 @@ Database rules (including conditions shared with other fields):
 
 ### waived_by_user_id
 
-Reference linking this record’s waived by user id to FOREIGN KEY (waived_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies waived by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct waived by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s waived by user id to FOREIGN KEY (waived_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -300,7 +386,13 @@ Database rules (including conditions shared with other fields):
 
 ### waived_at
 
-Waiver receipt instant
+**In everyday language:** Waiver receipt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Waiver receipt instant
 
 | Property | Definition |
 |---|---|
@@ -320,7 +412,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -338,7 +436,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -363,13 +467,21 @@ Table indexes and lifecycle triggers:
 
 ## cmp.filing_evidence
 
+Links compliance filings to the evidence of submission.
+
 cmp.filing_evidence — append-only proof that a filing actually happened.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -389,7 +501,13 @@ Database rules (including conditions shared with other fields):
 
 ### calendar_item_id
 
-Reference linking this record’s calendar item id to FOREIGN KEY (calendar_item_id) REFERENCES cmp.calendar_items(id).
+**In everyday language:** Identifies calendar item connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct calendar item, so related details can be checked together.
+
+**Example:** This record points to an existing entry in calendar items instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s calendar item id to FOREIGN KEY (calendar_item_id) REFERENCES cmp.calendar_items(id).
 
 | Property | Definition |
 |---|---|
@@ -409,7 +527,13 @@ Database rules (including conditions shared with other fields):
 
 ### reference
 
-External filing acknowledgement/reference
+**In everyday language:** External filing acknowledgement/reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: External filing acknowledgement/reference
 
 | Property | Definition |
 |---|---|
@@ -429,7 +553,13 @@ Database rules (including conditions shared with other fields):
 
 ### document_path
 
-Optional evidence-object reference; not validated document ownership by FK
+**In everyday language:** Optional evidence-object reference; not validated document ownership by link to another record.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A bill can be linked to a privately stored receipt so the authorized reviewer can inspect its evidence.
+
+Technical definition: Optional evidence-object reference; not validated document ownership by FK
 
 | Property | Definition |
 |---|---|
@@ -447,7 +577,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### remark
 
-Filing explanation
+**In everyday language:** Filing explanation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A reviewer reads the saved explanation to understand the particular case before taking the next action.
+
+Technical definition: Filing explanation
 
 | Property | Definition |
 |---|---|
@@ -465,7 +601,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### filed_by_user_id
 
-Reference linking this record’s filed by user id to FOREIGN KEY (filed_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies filed by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct filed by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s filed by user id to FOREIGN KEY (filed_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -485,7 +627,13 @@ Database rules (including conditions shared with other fields):
 
 ### recorded_at
 
-Append-only evidence receipt instant
+**In everyday language:** kept as history, with new entries added rather than old entries overwritten evidence receipt instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Append-only evidence receipt instant
 
 | Property | Definition |
 |---|---|
@@ -509,13 +657,21 @@ Table indexes and lifecycle triggers:
 
 ## cmp.registrations
 
+Keeps the company’s statutory registrations and licence details.
+
 cmp.registrations — what we are registered/licensed for, and until when.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -535,7 +691,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -555,7 +717,13 @@ Database rules (including conditions shared with other fields):
 
 ### location_id
 
-NULL = held at entity level (a PF code); set = belongs to one plant.
+**In everyday language:** not recorded = held at entity level (a provident fund code); set = belongs to one plant.
+
+**Why it is kept:** Keeps this record connected to the correct location, so related details can be checked together.
+
+**Example:** This record points to an existing entry in locations instead of copying all of that entry’s details.
+
+Technical definition: NULL = held at entity level (a PF code); set = belongs to one plant.
 
 | Property | Definition |
 |---|---|
@@ -575,7 +743,13 @@ Database rules (including conditions shared with other fields):
 
 ### kind
 
-Registration/licence class
+**In everyday language:** Registration/licence class.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “pf” means Provident fund.
+
+Technical definition: Registration/licence class
 
 | Property | Definition |
 |---|---|
@@ -607,7 +781,13 @@ Database rules (including conditions shared with other fields):
 
 ### registration_no
 
-Establishment registration identifier
+**In everyday language:** Establishment registration identifier.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Establishment registration identifier
 
 | Property | Definition |
 |---|---|
@@ -627,7 +807,13 @@ Database rules (including conditions shared with other fields):
 
 ### issuing_authority
 
-Source authority label
+**In everyday language:** Source authority label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the issuing authority shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Source authority label
 
 | Property | Definition |
 |---|---|
@@ -645,7 +831,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### valid_from
 
-Registration validity beginning
+**In everyday language:** Registration validity beginning.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Registration validity beginning
 
 | Property | Definition |
 |---|---|
@@ -665,7 +857,13 @@ Database rules (including conditions shared with other fields):
 
 ### valid_to
 
-NULL = perpetual. Never measure a perpetual registration against a threshold.
+**In everyday language:** not recorded = perpetual. Never measure a perpetual registration against a threshold.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: NULL = perpetual. Never measure a perpetual registration against a threshold.
 
 | Property | Definition |
 |---|---|
@@ -685,7 +883,13 @@ Database rules (including conditions shared with other fields):
 
 ### renewal_owner_user_id
 
-Reference linking this record’s renewal owner user id to FOREIGN KEY (renewal_owner_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies renewal owner user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct renewal owner user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s renewal owner user id to FOREIGN KEY (renewal_owner_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -705,7 +909,13 @@ Database rules (including conditions shared with other fields):
 
 ### document_path
 
-Licence document reference; storage integrity/ownership not proven by this text
+**In everyday language:** Licence document reference; storage integrity/ownership not proven by this text.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A bill can be linked to a privately stored receipt so the authorized reviewer can inspect its evidence.
+
+Technical definition: Licence document reference; storage integrity/ownership not proven by this text
 
 | Property | Definition |
 |---|---|
@@ -723,7 +933,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### notes
 
-Renewal/operator context
+**In everyday language:** Renewal/operator context.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Renewal/operator context
 
 | Property | Definition |
 |---|---|
@@ -741,7 +957,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Retired-versus-current registration flag
+**In everyday language:** Retired-versus-current registration flag.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Retired-versus-current registration flag
 
 | Property | Definition |
 |---|---|
@@ -764,7 +986,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -782,7 +1010,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|

@@ -54,6 +54,8 @@ export const ROLES: readonly RoleSeed[] = [
 ] as const;
 
 export const PERMISSIONS = [
+  'beta.feedback.submit',
+  'beta.feedback.review',
   'doc.vault.own',
   'doc.vault.manage',
   'auth.sso',
@@ -151,6 +153,7 @@ function grants(perms: readonly PermissionCode[], scope: Scope, note?: string): 
 /** docs/08 §2 — the permission grid, row-faithful. */
 export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
   employee: [
+    { permission: 'beta.feedback.submit', scope: 'all' },
     { permission: 'employee.read', scope: 'own' },
     { permission: 'employee.compensation.read', scope: 'own', note: 'own payslip only' },
     { permission: 'employee.statutory_ids.read', scope: 'own' },
@@ -320,6 +323,8 @@ export const ROLE_GRANTS: Readonly<Record<RoleCode, readonly Grant[]>> = {
     { permission: 'reports.ceo', scope: 'all' },
   ],
   it_admin: [
+    { permission: 'beta.feedback.submit', scope: 'all' },
+    { permission: 'beta.feedback.review', scope: 'all' },
     { permission: 'lifecycle.onboard.tasks', scope: 'all', note: 'Own stakeholder tasks only; no HR conversion authority' },
     { permission: 'employee.read', scope: 'readonly', note: 'directory basics; NO salary/statutory visibility' },
     { permission: 'auth.sso', scope: 'all' },

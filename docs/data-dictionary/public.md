@@ -4,13 +4,21 @@
 
 ## public.pgmigrations
 
+Records database maintenance updates applied by the technical migration tool.
+
 Pgmigrations records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Migration-runner bookkeeping row identity; not an employee or business identifier.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Migration-runner bookkeeping row identity; not an employee or business identifier.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Migration file/version name recorded by the migration runner; infrastructure bookkeeping, not a business catalog name.
+**In everyday language:** Migration file/version name recorded by the migration runner; infrastructure bookkeeping, not a business list of available choices name.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Migration file/version name recorded by the migration runner; infrastructure bookkeeping, not a business catalog name.
 
 | Property | Definition |
 |---|---|
@@ -48,7 +62,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### run_on
 
-Instant the migration runner recorded execution of this migration.
+**In everyday language:** Date and time the migration runner recorded execution of this migration.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A time such as 9 AM describes the timing of this particular activity; whether a calendar date is also stored depends on the field.
+
+Technical definition: Instant the migration runner recorded execution of this migration.
 
 | Property | Definition |
 |---|---|

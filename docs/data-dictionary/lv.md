@@ -4,13 +4,21 @@
 
 ## lv.applications
 
+Tracks employee leave requests and approval decisions.
+
 lv.applications — LV-03 / LV-06 / LV-08 / LV-09.
 
 Relation kind: table.
 
 ### id
 
-Leave application identity.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Leave application identity.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee requesting leave.
+**In everyday language:** Employee requesting leave.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee requesting leave.
 
 | Property | Definition |
 |---|---|
@@ -50,7 +64,13 @@ Database rules (including conditions shared with other fields):
 
 ### leave_type_id
 
-Configured leave category/policy.
+**In everyday language:** Configured leave category/policy.
+
+**Why it is kept:** Keeps this record connected to the correct leave type, so related details can be checked together.
+
+**Example:** This record points to an existing entry in leave types instead of copying all of that entry’s details.
+
+Technical definition: Configured leave category/policy.
 
 | Property | Definition |
 |---|---|
@@ -70,7 +90,13 @@ Database rules (including conditions shared with other fields):
 
 ### from_date
 
-Inclusive first leave date.
+**In everyday language:** Inclusive first leave date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Inclusive first leave date.
 
 | Property | Definition |
 |---|---|
@@ -90,7 +116,13 @@ Database rules (including conditions shared with other fields):
 
 ### to_date
 
-Inclusive final leave date.
+**In everyday language:** Inclusive final leave date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Inclusive final leave date.
 
 | Property | Definition |
 |---|---|
@@ -110,7 +142,13 @@ Database rules (including conditions shared with other fields):
 
 ### from_half
 
-Whether the first date is a half-day for quantity calculation. The exact session coverage contract still needs end-to-end review.
+**In everyday language:** Whether the first date is a half-day for quantity calculation. The exact session coverage contract still needs end-to-end review.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether the first date is a half-day for quantity calculation. The exact session coverage contract still needs end-to-end review.
 
 | Property | Definition |
 |---|---|
@@ -133,7 +171,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### to_half
 
-Whether the last date is a half-day for quantity calculation; does not by itself establish an ordered P/A display.
+**In everyday language:** Whether the last date is a half-day for quantity calculation; does not by itself establish an ordered P/A display.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether the last date is a half-day for quantity calculation; does not by itself establish an ordered P/A display.
 
 | Property | Definition |
 |---|---|
@@ -156,7 +200,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### days
 
-Validated requested units derived from dates, half flags and calendar; balance still comes from immutable ledger rows.
+**In everyday language:** Validated requested units worked out from other saved information from dates, half flags and calendar; balance still comes from protected against later changes history of additions and deductions rows.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Validated requested units derived from dates, half flags and calendar; balance still comes from immutable ledger rows.
 
 | Property | Definition |
 |---|---|
@@ -168,6 +218,8 @@ Validated requested units derived from dates, half flags and calendar; balance s
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
 
+Units: Days; fractional values represent part of a day.
+
 Value domain: no finite value list extracted. Use the SQL/code type and the complete rules below. Foreign-key values come from the referenced catalog; free text and extensible JSON have no invented fixed list.
 
 Database rules (including conditions shared with other fields):
@@ -176,7 +228,13 @@ Database rules (including conditions shared with other fields):
 
 ### reason
 
-Application explanation.
+**In everyday language:** Application explanation.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Application explanation.
 
 | Property | Definition |
 |---|---|
@@ -194,7 +252,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Domain application state linked to workflow state.
+**In everyday language:** Domain application state linked to workflow state.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “pending” means Awaiting the required decision or next action.
+
+Technical definition: Domain application state linked to workflow state.
 
 | Property | Definition |
 |---|---|
@@ -221,7 +285,13 @@ Database rules (including conditions shared with other fields):
 
 ### workflow_request_id
 
-Original approval workflow.
+**In everyday language:** Original approval workflow.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This record points to an existing entry in requests instead of copying all of that entry’s details.
+
+Technical definition: Original approval workflow.
 
 | Property | Definition |
 |---|---|
@@ -241,7 +311,13 @@ Database rules (including conditions shared with other fields):
 
 ### cancel_workflow_request_id
 
-Separate cancellation approval, preserving the original decision.
+**In everyday language:** Separate cancellation approval, preserving the original decision.
+
+**Why it is kept:** Keeps this record connected to the correct cancel workflow request, so related details can be checked together.
+
+**Example:** This record points to an existing entry in requests instead of copying all of that entry’s details.
+
+Technical definition: Separate cancellation approval, preserving the original decision.
 
 | Property | Definition |
 |---|---|
@@ -261,7 +337,13 @@ Database rules (including conditions shared with other fields):
 
 ### ledger_txn_id
 
-Immutable leave-ledger posting provenance; no mutable balance counter.
+**In everyday language:** The leave-balance movement linked to this leave request.
+
+**Why it is kept:** Allows the leave deduction or adjustment to be traced back to the request.
+
+**Example:** An approved leave request can be checked against the leave days deducted for it.
+
+Technical definition: Immutable leave-ledger posting provenance; no mutable balance counter.
 
 | Property | Definition |
 |---|---|
@@ -281,7 +363,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Submission provenance.
+**In everyday language:** Submission where the information came from.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Submission provenance.
 
 | Property | Definition |
 |---|---|
@@ -299,7 +387,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Last application change provenance.
+**In everyday language:** Last application change where the information came from.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Last application change provenance.
 
 | Property | Definition |
 |---|---|
@@ -325,13 +419,21 @@ Table indexes and lifecycle triggers:
 
 ## lv.leave_types
 
+Defines leave categories and their entitlement rules.
+
 lv.leave_types — LV-01 (live greytHR six + ML + RH).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -351,7 +453,13 @@ Database rules (including conditions shared with other fields):
 
 ### code
 
-Stable leave type used by requests and reports
+**In everyday language:** Stable leave type used by requests and reports.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Stable leave type used by requests and reports
 
 | Property | Definition |
 |---|---|
@@ -371,7 +479,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Leave display label
+**In everyday language:** Leave display label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Leave display label
 
 | Property | Definition |
 |---|---|
@@ -389,7 +503,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_paid
 
-Whether approved leave supplies a paid half/day
+**In everyday language:** Whether approved leave supplies a paid half/day.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether approved leave supplies a paid half/day
 
 | Property | Definition |
 |---|---|
@@ -412,7 +532,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### accrual_per_month
 
-Configured monthly immutable-ledger credit amount
+**In everyday language:** Configured monthly protected against later changes-history of additions and deductions credit amount.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A configured value of 1 means one day earned per month for this leave type, subject to its eligibility rules.
+
+Technical definition: Configured monthly immutable-ledger credit amount
 
 | Property | Definition |
 |---|---|
@@ -430,7 +556,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### accrual_requires_service_months
 
-Minimum service before accrual begins
+**In everyday language:** Minimum service before earned entitlement begins.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Minimum service before accrual begins
 
 | Property | Definition |
 |---|---|
@@ -448,7 +580,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### max_carry_forward
 
-Year-end permitted carry amount; NULL means unlimited
+**In everyday language:** Year-end permitted carry amount; not recorded means unlimited.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A configured value of 5 would cap leave carried into the next period at five days; it is an illustration, not the company’s actual policy.
+
+Technical definition: Year-end permitted carry amount; NULL means unlimited
 
 | Property | Definition |
 |---|---|
@@ -466,7 +604,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### encashable
 
-Eligibility for encashment processes
+**In everyday language:** Eligibility for encashment processes.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Eligibility for encashment processes
 
 | Property | Definition |
 |---|---|
@@ -489,7 +633,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### max_per_request
 
-Configured request-duration ceiling
+**In everyday language:** Configured request-duration ceiling.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A configured value of 3 would limit a single request to three days under that rule.
+
+Technical definition: Configured request-duration ceiling
 
 | Property | Definition |
 |---|---|
@@ -507,7 +657,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### allow_half_day
 
-Whether partial-day applications are permitted
+**In everyday language:** Whether partial-day applications are permitted.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether partial-day applications are permitted
 
 | Property | Definition |
 |---|---|
@@ -530,7 +686,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### sandwich_rule
 
-Include/exclude holidays and off-days in request duration
+**In everyday language:** Include/exclude holidays and off-days in request duration.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “include” means Include.
+
+Technical definition: Include/exclude holidays and off-days in request duration
 
 | Property | Definition |
 |---|---|
@@ -555,7 +717,13 @@ Database rules (including conditions shared with other fields):
 
 ### applicable_categories
 
-Allowed employment categories
+**In everyday language:** Allowed employment categories.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the applicable categories.
+
+Technical definition: Allowed employment categories
 
 | Property | Definition |
 |---|---|
@@ -573,7 +741,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### applicable_gender
 
-Allowed gender population for type-specific eligibility
+**In everyday language:** Allowed gender population for type-specific eligibility.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the applicable gender.
+
+Technical definition: Allowed gender population for type-specific eligibility
 
 | Property | Definition |
 |---|---|
@@ -591,7 +765,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Availability for new requests/accrual; do not destroy history
+**In everyday language:** Availability for new requests/earned entitlement; do not destroy history.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Availability for new requests/accrual; do not destroy history
 
 | Property | Definition |
 |---|---|
@@ -614,7 +794,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -632,7 +818,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -656,13 +848,21 @@ Table indexes and lifecycle triggers:
 
 ## lv.ledger
 
+Keeps individual additions and deductions from leave entitlement; balances are worked out from these movements.
+
 lv.ledger — immutable; balance = SUM(delta) (LV-05).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -682,7 +882,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -702,7 +908,13 @@ Database rules (including conditions shared with other fields):
 
 ### leave_type_id
 
-Reference linking this record’s leave type id to FOREIGN KEY (leave_type_id) REFERENCES lv.leave_types(id).
+**In everyday language:** Identifies leave type connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct leave type, so related details can be checked together.
+
+**Example:** This record points to an existing entry in leave types instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s leave type id to FOREIGN KEY (leave_type_id) REFERENCES lv.leave_types(id).
 
 | Property | Definition |
 |---|---|
@@ -722,7 +934,13 @@ Database rules (including conditions shared with other fields):
 
 ### txn_type
 
-Immutable movement reason determining debit/credit purpose
+**In everyday language:** protected against later changes movement reason determining debit/credit purpose.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “accrual” means Periodic leave entitlement credit.
+
+Technical definition: Immutable movement reason determining debit/credit purpose
 
 | Property | Definition |
 |---|---|
@@ -754,7 +972,13 @@ Database rules (including conditions shared with other fields):
 
 ### delta
 
-Signed leave quantity; balance is a SUM of movements
+**In everyday language:** Signed leave quantity; balance is a SUM of movements.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A leave movement of +1 adds one day; -1 removes one day. The balance is checked from all relevant movements.
+
+Technical definition: Signed leave quantity; balance is a SUM of movements
 
 | Property | Definition |
 |---|---|
@@ -774,7 +998,13 @@ Database rules (including conditions shared with other fields):
 
 ### effective_date
 
-Business date at which movement affects entitlement
+**In everyday language:** Business date at which movement affects entitlement.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Business date at which movement affects entitlement
 
 | Property | Definition |
 |---|---|
@@ -792,7 +1022,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### expiry_date
 
-Optional credit expiry used for comp-off consumption
+**In everyday language:** Optional credit expiry used for comp-off consumption.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Optional credit expiry used for comp-off consumption
 
 | Property | Definition |
 |---|---|
@@ -810,7 +1046,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### reference_id
 
-Polymorphic application/OT/accrual reference; intended non-FK needs type/context discipline
+**In everyday language:** Polymorphic application/overtime/earned entitlement reference; intended non-link to another record needs type/context discipline.
+
+**Why it is kept:** Keeps this record connected to the correct reference, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Polymorphic application/OT/accrual reference; intended non-FK needs type/context discipline
 
 | Property | Definition |
 |---|---|
@@ -828,7 +1070,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### note
 
-Movement explanation, mandatory for manual adjustment
+**In everyday language:** Movement explanation, mandatory for manual adjustment.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Movement explanation, mandatory for manual adjustment
 
 | Property | Definition |
 |---|---|
@@ -848,7 +1096,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -868,7 +1122,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -893,13 +1153,21 @@ Table indexes and lifecycle triggers:
 
 ## lv.restricted_holidays
 
+Lists optional holidays employees may choose under policy.
+
 lv.restricted_holidays — optional/floating holiday list (LV-09).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -919,7 +1187,13 @@ Database rules (including conditions shared with other fields):
 
 ### holiday_date
 
-Optional holiday calendar date
+**In everyday language:** Optional holiday calendar date.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Optional holiday calendar date
 
 | Property | Definition |
 |---|---|
@@ -939,7 +1213,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Employee-facing optional holiday label
+**In everyday language:** Employee-facing optional holiday label.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Employee-facing optional holiday label
 
 | Property | Definition |
 |---|---|
@@ -959,7 +1239,13 @@ Database rules (including conditions shared with other fields):
 
 ### location_id
 
-Reference linking this record’s location id to FOREIGN KEY (location_id) REFERENCES core.locations(id).
+**In everyday language:** Identifies location connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct location, so related details can be checked together.
+
+**Example:** This record points to an existing entry in locations instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s location id to FOREIGN KEY (location_id) REFERENCES core.locations(id).
 
 | Property | Definition |
 |---|---|
@@ -979,7 +1265,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1002,13 +1294,21 @@ Table indexes and lifecycle triggers:
 
 ## lv.rh_selections
 
+Records which optional holidays an employee has selected.
+
 Rh selections records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1028,7 +1328,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -1049,7 +1355,13 @@ Database rules (including conditions shared with other fields):
 
 ### restricted_holiday_id
 
-Reference linking this record’s restricted holiday id to FOREIGN KEY (restricted_holiday_id) REFERENCES lv.restricted_holidays(id).
+**In everyday language:** Identifies restricted holiday connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct restricted holiday, so related details can be checked together.
+
+**Example:** This record points to an existing entry in restricted holidays instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s restricted holiday id to FOREIGN KEY (restricted_holiday_id) REFERENCES lv.restricted_holidays(id).
 
 | Property | Definition |
 |---|---|
@@ -1070,7 +1382,13 @@ Database rules (including conditions shared with other fields):
 
 ### workflow_request_id
 
-Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
+**In everyday language:** Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database link to another record is present.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This record points to an existing entry in requests instead of copying all of that entry’s details.
+
+Technical definition: Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
 
 | Property | Definition |
 |---|---|
@@ -1090,7 +1408,13 @@ Database rules (including conditions shared with other fields):
 
 ### applied
 
-Approved optional holiday written to attendance
+**In everyday language:** Approved optional holiday written to attendance.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Approved optional holiday written to attendance
 
 | Property | Definition |
 |---|---|
@@ -1113,7 +1437,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1131,7 +1461,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|

@@ -1,0 +1,15 @@
+{
+  "reportId": 1,
+  "page": "/people",
+  "reporter": "Raju Pandit",
+  "roles": [
+    "employee",
+    "it_admin"
+  ],
+  "liveBrowserSubmission": true,
+  "screenshotUpload": true,
+  "privateInbox": true,
+  "privateScreenshotDecoded": true,
+  "resolvedViaInbox": true,
+  "browserErrors": []
+}

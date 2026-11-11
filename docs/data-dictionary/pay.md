@@ -4,13 +4,21 @@
 
 ## pay.arrears
 
+Records salary adjustments relating to an earlier payroll period.
+
 Arrears records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -50,7 +64,13 @@ Database rules (including conditions shared with other fields):
 
 ### source_salary_id
 
-Reference linking this record’s source salary id to FOREIGN KEY (source_salary_id) REFERENCES pay.employee_salaries(id).
+**In everyday language:** Identifies the earlier salary arrangement connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct earlier salary arrangement, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employee salaries instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s source salary id to FOREIGN KEY (source_salary_id) REFERENCES pay.employee_salaries(id).
 
 | Property | Definition |
 |---|---|
@@ -70,7 +90,13 @@ Database rules (including conditions shared with other fields):
 
 ### for_month
 
-Original payroll period to which this arrears adjustment relates, separate from the paying run.
+**In everyday language:** The earlier salary month to which this adjustment belongs.
+
+**Why it is kept:** Separates the month being corrected from the month in which the adjustment is paid.
+
+**Example:** An adjustment for October can be paid in November while still identifying October as the original period.
+
+Technical definition: Original payroll period to which this arrears adjustment relates, separate from the paying run.
 
 | Property | Definition |
 |---|---|
@@ -88,7 +114,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### paid_in_run_id
 
-Reference linking this record’s paid in run id to FOREIGN KEY (paid_in_run_id) REFERENCES pay.payroll_runs(id).
+**In everyday language:** Identifies the payroll calculation that paid the amount connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct payroll calculation that paid the amount, so related details can be checked together.
+
+**Example:** This record points to an existing entry in payroll runs instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s paid in run id to FOREIGN KEY (paid_in_run_id) REFERENCES pay.payroll_runs(id).
 
 | Property | Definition |
 |---|---|
@@ -108,7 +140,13 @@ Database rules (including conditions shared with other fields):
 
 ### component_code
 
-Salary-component business code used to classify this amount or accounting mapping.
+**In everyday language:** Salary-component business code used to classify this amount or accounting mapping.
+
+**Why it is kept:** Keeps this record connected to the correct pay head, so related details can be checked together.
+
+**Example:** This record points to an existing entry in salary components instead of copying all of that entry’s details.
+
+Technical definition: Salary-component business code used to classify this amount or accounting mapping.
 
 | Property | Definition |
 |---|---|
@@ -128,7 +166,13 @@ Database rules (including conditions shared with other fields):
 
 ### amount
 
-Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
+**In everyday language:** Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; kept accurately to the recorded decimal places.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
 
 | Property | Definition |
 |---|---|
@@ -148,7 +192,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -171,13 +221,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.bank_batches
 
+Groups salary payments into bank-payment files.
+
 Bank batches records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -197,7 +255,13 @@ Database rules (including conditions shared with other fields):
 
 ### run_id
 
-Reference linking this record’s run id to FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id).
+**In everyday language:** Identifies the payroll calculation connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct payroll calculation, so related details can be checked together.
+
+**Example:** This record points to an existing entry in payroll runs instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s run id to FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id).
 
 | Property | Definition |
 |---|---|
@@ -217,7 +281,13 @@ Database rules (including conditions shared with other fields):
 
 ### file_document_id
 
-Reference linking this record’s file document id to FOREIGN KEY (file_document_id) REFERENCES core.documents(id).
+**In everyday language:** Identifies file document connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct file document, so related details can be checked together.
+
+**Example:** This record points to an existing entry in documents instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s file document id to FOREIGN KEY (file_document_id) REFERENCES core.documents(id).
 
 | Property | Definition |
 |---|---|
@@ -237,7 +307,13 @@ Database rules (including conditions shared with other fields):
 
 ### total_amount
 
-Aggregate monetary amount represented by the batch, in rupees.
+**In everyday language:** Aggregate monetary amount represented by the batch, in rupees.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Aggregate monetary amount represented by the batch, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -257,7 +333,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### record_count
 
-Number of records represented or accessed in this batch/event.
+**In everyday language:** Number of records represented or accessed in this batch/event.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** Read this number using the specific measure described above. A percentage, version number and priority order have different meanings.
+
+Technical definition: Number of records represented or accessed in this batch/event.
 
 | Property | Definition |
 |---|---|
@@ -275,7 +357,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### generated_by
 
-Reference linking this record’s generated by to FOREIGN KEY (generated_by) REFERENCES core.users(id).
+**In everyday language:** Identifies generated by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct generated by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s generated by to FOREIGN KEY (generated_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -295,7 +383,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -313,7 +407,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### superseded_at
 
-Null while this is the one active file for the run. A later file supersedes it.
+**In everyday language:** Null while this is the one active file for the run. A later file supersedes it.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Null while this is the one active file for the run. A later file supersedes it.
 
 | Property | Definition |
 |---|---|
@@ -336,13 +436,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.budget_categories
 
+Breaks a reimbursement budget into expense categories and their allowances.
+
 Budget categories records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -362,7 +470,13 @@ Database rules (including conditions shared with other fields):
 
 ### budget_id
 
-Reference linking this record’s budget id to FOREIGN KEY (budget_id) REFERENCES pay.budgets(id) ON DELETE CASCADE.
+**In everyday language:** Identifies budget connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct budget, so related details can be checked together.
+
+**Example:** This record points to an existing entry in budgets instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s budget id to FOREIGN KEY (budget_id) REFERENCES pay.budgets(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -383,7 +497,13 @@ Database rules (including conditions shared with other fields):
 
 ### claim_type_id
 
-Reference linking this record’s claim type id to FOREIGN KEY (claim_type_id) REFERENCES pay.claim_types(id).
+**In everyday language:** Identifies claim type connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct claim type, so related details can be checked together.
+
+**Example:** This record points to an existing entry in claim types instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s claim type id to FOREIGN KEY (claim_type_id) REFERENCES pay.claim_types(id).
 
 | Property | Definition |
 |---|---|
@@ -404,7 +524,13 @@ Database rules (including conditions shared with other fields):
 
 ### allowance
 
-Rupee allowance allocated to this claim category within its budget; this is an amount, not a boolean flag.
+**In everyday language:** Rupee allowance allocated to this claim category within its budget; this is an amount, not a yes/no choice flag.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Rupee allowance allocated to this claim category within its budget; this is an amount, not a boolean flag.
 
 | Property | Definition |
 |---|---|
@@ -431,6 +557,8 @@ Table indexes and lifecycle triggers:
 
 ## pay.budgets
 
+Tracks proposed and approved expense budgets.
+
 The budget IS the travel request (live recon §1): the EMS `trips` collection
 is empty because IBudget carries the itinerary itself.
 
@@ -438,7 +566,13 @@ Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -458,7 +592,13 @@ Database rules (including conditions shared with other fields):
 
 ### reference
 
-Human-readable business reference used to identify this request.
+**In everyday language:** Human-readable business reference used to identify this request.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Human-readable business reference used to identify this request.
 
 | Property | Definition |
 |---|---|
@@ -478,7 +618,13 @@ Database rules (including conditions shared with other fields):
 
 ### title
 
-Human-readable title of this request or published content.
+**In everyday language:** Human-readable title of this request or published content.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the title shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Human-readable title of this request or published content.
 
 | Property | Definition |
 |---|---|
@@ -496,7 +642,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### purpose
 
-Declared business purpose of this request, processing activity or consent.
+**In everyday language:** Declared business purpose of this request, processing activity or consent.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A privacy or travel record explains the particular reason information is used or a trip is requested.
+
+Technical definition: Declared business purpose of this request, processing activity or consent.
 
 | Property | Definition |
 |---|---|
@@ -514,7 +666,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -534,7 +692,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -554,7 +718,13 @@ Database rules (including conditions shared with other fields):
 
 ### cost_center_id
 
-Reference linking this record’s cost center id to FOREIGN KEY (cost_center_id) REFERENCES core.cost_centers(id).
+**In everyday language:** Identifies cost center connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct cost center, so related details can be checked together.
+
+**Example:** This record points to an existing entry in cost centers instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s cost center id to FOREIGN KEY (cost_center_id) REFERENCES core.cost_centers(id).
 
 | Property | Definition |
 |---|---|
@@ -574,7 +744,13 @@ Database rules (including conditions shared with other fields):
 
 ### period_from
 
-First calendar date of the covered period.
+**In everyday language:** First calendar date of the covered period.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: First calendar date of the covered period.
 
 | Property | Definition |
 |---|---|
@@ -594,7 +770,13 @@ Database rules (including conditions shared with other fields):
 
 ### period_to
 
-Last calendar date of the covered period; see constraints and service for boundary validation.
+**In everyday language:** Last calendar date of the covered period; see constraints and service for boundary validation.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Last calendar date of the covered period; see constraints and service for boundary validation.
 
 | Property | Definition |
 |---|---|
@@ -614,7 +796,13 @@ Database rules (including conditions shared with other fields):
 
 ### travel_type
 
-Domestic or international travel classification used for entitlement and routing.
+**In everyday language:** Domestic or international travel classification used for entitlement and routing.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “domestic” means Domestic classification for travel type.
+
+Technical definition: Domestic or international travel classification used for entitlement and routing.
 
 | Property | Definition |
 |---|---|
@@ -639,7 +827,13 @@ Database rules (including conditions shared with other fields):
 
 ### region
 
-Travel region used when selecting applicable budget/entitlement rules.
+**In everyday language:** Travel region used when selecting applicable budget/entitlement rules.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the region shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Travel region used when selecting applicable budget/entitlement rules.
 
 | Property | Definition |
 |---|---|
@@ -657,7 +851,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### from_location
 
-Origin location of the proposed travel.
+**In everyday language:** Origin location of the proposed travel.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the from location shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Origin location of the proposed travel.
 
 | Property | Definition |
 |---|---|
@@ -675,7 +875,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### to_location
 
-Destination location of the proposed travel.
+**In everyday language:** Destination location of the proposed travel.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the to location shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Destination location of the proposed travel.
 
 | Property | Definition |
 |---|---|
@@ -693,7 +899,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### travel_start
 
-First planned date of travel.
+**In everyday language:** First planned date of travel.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: First planned date of travel.
 
 | Property | Definition |
 |---|---|
@@ -713,7 +925,13 @@ Database rules (including conditions shared with other fields):
 
 ### travel_end
 
-Last planned date of travel.
+**In everyday language:** Last planned date of travel.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Last planned date of travel.
 
 | Property | Definition |
 |---|---|
@@ -733,7 +951,13 @@ Database rules (including conditions shared with other fields):
 
 ### nights
 
-Number of hotel nights budgeted for the journey.
+**In everyday language:** Number of hotel nights budgeted for the journey.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Number of hotel nights budgeted for the journey.
 
 | Property | Definition |
 |---|---|
@@ -753,7 +977,13 @@ Database rules (including conditions shared with other fields):
 
 ### desk_books_air
 
-Whether the travel desk is responsible for flight booking.
+**In everyday language:** Whether the travel desk is responsible for flight booking.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether the travel desk is responsible for flight booking.
 
 | Property | Definition |
 |---|---|
@@ -776,7 +1006,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### desk_books_hotel
 
-Whether the travel desk is responsible for hotel booking.
+**In everyday language:** Whether the travel desk is responsible for hotel booking.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether the travel desk is responsible for hotel booking.
 
 | Property | Definition |
 |---|---|
@@ -799,7 +1035,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### desk_books_visa
 
-Whether the travel desk is responsible for visa arrangements.
+**In everyday language:** Whether the travel desk is responsible for visa arrangements.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether the travel desk is responsible for visa arrangements.
 
 | Property | Definition |
 |---|---|
@@ -822,7 +1064,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### own_arrangement_reason
 
-Explanation for arrangements made outside the travel desk.
+**In everyday language:** Explanation for arrangements made outside the travel desk.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Explanation for arrangements made outside the travel desk.
 
 | Property | Definition |
 |---|---|
@@ -840,7 +1088,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### limit_exceed_reason
 
-Justification for exceeding the configured entitlement limit.
+**In everyday language:** Justification for exceeding the configured entitlement limit.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Justification for exceeding the configured entitlement limit.
 
 | Property | Definition |
 |---|---|
@@ -858,7 +1112,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### allowance
 
-Requested total. The ledger draws on `approved_allowance` once approved.
+**In everyday language:** Requested total. The history of additions and deductions draws on approved_allowance once approved.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Requested total. The ledger draws on `approved_allowance` once approved.
 
 | Property | Definition |
 |---|---|
@@ -880,7 +1140,13 @@ Database rules (including conditions shared with other fields):
 
 ### approved_allowance
 
-Approved allowance amount for the budget.
+**In everyday language:** Approved allowance amount for the budget.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Approved allowance amount for the budget.
 
 | Property | Definition |
 |---|---|
@@ -903,7 +1169,13 @@ Database rules (including conditions shared with other fields):
 
 ### currency
 
-Currency code in which the associated original amount is expressed.
+**In everyday language:** Currency code in which the associated original amount is expressed.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** INR denotes Indian rupees. Other currencies require their own configured treatment.
+
+Technical definition: Currency code in which the associated original amount is expressed.
 
 | Property | Definition |
 |---|---|
@@ -921,7 +1193,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### fx_rate_to_inr
 
-Conversion multiplier from one unit of the original currency to Indian rupees; monetary conversion uses exact decimal arithmetic.
+**In everyday language:** Conversion multiplier from one unit of the original currency to Indian rupees; monetary conversion uses exact decimal arithmetic.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Illustration only: at ₹80 per currency unit, 10 units convert to ₹800 before any applicable rounding.
+
+Technical definition: Conversion multiplier from one unit of the original currency to Indian rupees; monetary conversion uses exact decimal arithmetic.
 
 | Property | Definition |
 |---|---|
@@ -941,7 +1219,13 @@ Database rules (including conditions shared with other fields):
 
 ### fx_rate_date
 
-Calendar date associated with the exchange-rate snapshot.
+**In everyday language:** Calendar date associated with the exchange-rate copy saved at that point in time.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Calendar date associated with the exchange-rate snapshot.
 
 | Property | Definition |
 |---|---|
@@ -959,7 +1243,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+**In everyday language:** Current progress from creation to closure state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “draft” means Editable draft before submission/preparation.
+
+Technical definition: Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
 
 | Property | Definition |
 |---|---|
@@ -990,7 +1280,13 @@ Database rules (including conditions shared with other fields):
 
 ### overspend_allowed
 
-Whether the approved budget permits spending above its normal limit.
+**In everyday language:** Whether the approved budget permits spending above its normal limit.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether the approved budget permits spending above its normal limit.
 
 | Property | Definition |
 |---|---|
@@ -1013,7 +1309,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### workflow_request_id
 
-Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
+**In everyday language:** Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database link to another record is present.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
 
 | Property | Definition |
 |---|---|
@@ -1031,7 +1333,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### approved_by_user_id
 
-Reference linking this record’s approved by user id to FOREIGN KEY (approved_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies approved by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct approved by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s approved by user id to FOREIGN KEY (approved_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -1052,7 +1360,13 @@ Database rules (including conditions shared with other fields):
 
 ### approved_at
 
-Instant of approved for this record.
+**In everyday language:** Date and time of approved for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of approved for this record.
 
 | Property | Definition |
 |---|---|
@@ -1072,7 +1386,13 @@ Database rules (including conditions shared with other fields):
 
 ### rejection_reason
 
-Explanation recorded when the request is rejected.
+**In everyday language:** Explanation recorded when the request is rejected.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Explanation recorded when the request is rejected.
 
 | Property | Definition |
 |---|---|
@@ -1092,7 +1412,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1110,7 +1436,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -1136,13 +1468,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.claim_bills
 
+Keeps bills submitted to support reimbursement claims.
+
 Claim bills records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1162,7 +1502,13 @@ Database rules (including conditions shared with other fields):
 
 ### claim_id
 
-Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES pay.claims(id) ON DELETE CASCADE.
+**In everyday language:** Identifies the expense claim connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct expense claim, so related details can be checked together.
+
+**Example:** This record points to an existing entry in claims instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES pay.claims(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -1182,7 +1528,13 @@ Database rules (including conditions shared with other fields):
 
 ### document_id
 
-Reference linking this record’s document id to FOREIGN KEY (document_id) REFERENCES core.documents(id).
+**In everyday language:** Identifies document connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct document, so related details can be checked together.
+
+**Example:** This record points to an existing entry in documents instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s document id to FOREIGN KEY (document_id) REFERENCES core.documents(id).
 
 | Property | Definition |
 |---|---|
@@ -1202,7 +1554,13 @@ Database rules (including conditions shared with other fields):
 
 ### bill_no
 
-Supplier's bill or receipt reference.
+**In everyday language:** Supplier's bill or receipt reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Supplier's bill or receipt reference.
 
 | Property | Definition |
 |---|---|
@@ -1220,7 +1578,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### bill_date
 
-Calendar date printed on the bill or receipt.
+**In everyday language:** Calendar date printed on the bill or receipt.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Calendar date printed on the bill or receipt.
 
 | Property | Definition |
 |---|---|
@@ -1238,7 +1602,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### amount
 
-Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
+**In everyday language:** Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; kept accurately to the recorded decimal places.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
 
 | Property | Definition |
 |---|---|
@@ -1258,7 +1628,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### verified
 
-Legacy bill verification flag; review current verified_by/verified_at authority before relying on this flag alone.
+**In everyday language:** Legacy bill verification flag; review current verified_by/verified_at authority before relying on this flag alone.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Legacy bill verification flag; review current verified_by/verified_at authority before relying on this flag alone.
 
 | Property | Definition |
 |---|---|
@@ -1281,7 +1657,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### verified_by
 
-Reference linking this record’s verified by to FOREIGN KEY (verified_by) REFERENCES core.users(id).
+**In everyday language:** Identifies verified by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct verified by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s verified by to FOREIGN KEY (verified_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -1301,7 +1683,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1323,13 +1711,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.claim_entitlements
 
+Records an employee’s configured reimbursement entitlement.
+
 Claim entitlements records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1349,7 +1745,13 @@ Database rules (including conditions shared with other fields):
 
 ### claim_type_id
 
-Reference linking this record’s claim type id to FOREIGN KEY (claim_type_id) REFERENCES pay.claim_types(id).
+**In everyday language:** Identifies claim type connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct claim type, so related details can be checked together.
+
+**Example:** This record points to an existing entry in claim types instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s claim type id to FOREIGN KEY (claim_type_id) REFERENCES pay.claim_types(id).
 
 | Property | Definition |
 |---|---|
@@ -1369,7 +1771,13 @@ Database rules (including conditions shared with other fields):
 
 ### grade_id
 
-Reference linking this record’s grade id to FOREIGN KEY (grade_id) REFERENCES core.grades(id).
+**In everyday language:** Identifies grade connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct grade, so related details can be checked together.
+
+**Example:** This record points to an existing entry in grades instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s grade id to FOREIGN KEY (grade_id) REFERENCES core.grades(id).
 
 | Property | Definition |
 |---|---|
@@ -1389,7 +1797,13 @@ Database rules (including conditions shared with other fields):
 
 ### amount
 
-Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
+**In everyday language:** Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; kept accurately to the recorded decimal places.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
 
 | Property | Definition |
 |---|---|
@@ -1409,7 +1823,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### effective_from
 
-Date from which this version or rule applies.
+**In everyday language:** Date from which this version or rule applies.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Date from which this version or rule applies.
 
 | Property | Definition |
 |---|---|
@@ -1427,7 +1847,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1449,13 +1875,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.claim_lines
 
+Keeps the individual expenses within a reimbursement claim.
+
 Claim lines records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1475,7 +1909,13 @@ Database rules (including conditions shared with other fields):
 
 ### claim_id
 
-Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES pay.claims(id) ON DELETE CASCADE.
+**In everyday language:** Identifies the expense claim connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct expense claim, so related details can be checked together.
+
+**Example:** This record points to an existing entry in claims instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES pay.claims(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -1495,7 +1935,13 @@ Database rules (including conditions shared with other fields):
 
 ### claim_type_id
 
-Reference linking this record’s claim type id to FOREIGN KEY (claim_type_id) REFERENCES pay.claim_types(id).
+**In everyday language:** Identifies claim type connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct claim type, so related details can be checked together.
+
+**Example:** This record points to an existing entry in claim types instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s claim type id to FOREIGN KEY (claim_type_id) REFERENCES pay.claim_types(id).
 
 | Property | Definition |
 |---|---|
@@ -1515,7 +1961,13 @@ Database rules (including conditions shared with other fields):
 
 ### description
 
-Human-readable description of this record.
+**In everyday language:** Human-readable description of this record.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Human-readable description of this record.
 
 | Property | Definition |
 |---|---|
@@ -1533,7 +1985,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### spent_on
 
-Calendar date on which the claimed expense was incurred.
+**In everyday language:** Calendar date on which the claimed expense was incurred.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Calendar date on which the claimed expense was incurred.
 
 | Property | Definition |
 |---|---|
@@ -1551,7 +2009,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### bill_no
 
-Supplier's bill or receipt reference.
+**In everyday language:** Supplier's bill or receipt reference.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Supplier's bill or receipt reference.
 
 | Property | Definition |
 |---|---|
@@ -1569,7 +2033,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### original_amount
 
-Expense amount expressed in its original currency before conversion to INR.
+**In everyday language:** Expense amount expressed in its original currency before conversion to INR.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Expense amount expressed in its original currency before conversion to INR.
 
 | Property | Definition |
 |---|---|
@@ -1591,7 +2061,13 @@ Database rules (including conditions shared with other fields):
 
 ### original_currency
 
-Currency code of the expense before INR conversion.
+**In everyday language:** Currency code of the expense before INR conversion.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An overseas receipt may be in USD before it is converted to Indian rupees.
+
+Technical definition: Currency code of the expense before INR conversion.
 
 | Property | Definition |
 |---|---|
@@ -1609,7 +2085,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### fx_rate_to_inr
 
-Conversion multiplier from one unit of the original currency to Indian rupees; monetary conversion uses exact decimal arithmetic.
+**In everyday language:** Conversion multiplier from one unit of the original currency to Indian rupees; monetary conversion uses exact decimal arithmetic.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Illustration only: at ₹80 per currency unit, 10 units convert to ₹800 before any applicable rounding.
+
+Technical definition: Conversion multiplier from one unit of the original currency to Indian rupees; monetary conversion uses exact decimal arithmetic.
 
 | Property | Definition |
 |---|---|
@@ -1629,7 +2111,13 @@ Database rules (including conditions shared with other fields):
 
 ### amount
 
-Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
+**In everyday language:** Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; kept accurately to the recorded decimal places.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
 
 | Property | Definition |
 |---|---|
@@ -1651,7 +2139,13 @@ Database rules (including conditions shared with other fields):
 
 ### document_path
 
-Private stored-document/object key for supporting evidence; not a public download URL.
+**In everyday language:** Private stored-document/object key for supporting evidence; not a public download URL.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A bill can be linked to a privately stored receipt so the authorized reviewer can inspect its evidence.
+
+Technical definition: Private stored-document/object key for supporting evidence; not a public download URL.
 
 | Property | Definition |
 |---|---|
@@ -1669,7 +2163,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -1692,13 +2192,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.claim_reservations
 
+Tracks amounts reserved against or released back to expense budgets.
+
 Append-only. A release is a NEW row, never an update to the reserve row.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1718,7 +2226,13 @@ Database rules (including conditions shared with other fields):
 
 ### budget_id
 
-Reference linking this record’s budget id to FOREIGN KEY (budget_id) REFERENCES pay.budgets(id).
+**In everyday language:** Identifies budget connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct budget, so related details can be checked together.
+
+**Example:** This record points to an existing entry in budgets instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s budget id to FOREIGN KEY (budget_id) REFERENCES pay.budgets(id).
 
 | Property | Definition |
 |---|---|
@@ -1738,7 +2252,13 @@ Database rules (including conditions shared with other fields):
 
 ### claim_id
 
-Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES pay.claims(id).
+**In everyday language:** Identifies the expense claim connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct expense claim, so related details can be checked together.
+
+**Example:** This record points to an existing entry in claims instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES pay.claims(id).
 
 | Property | Definition |
 |---|---|
@@ -1758,7 +2278,13 @@ Database rules (including conditions shared with other fields):
 
 ### movement
 
-Ledger movement classification controlling reservation or release; permitted codes are listed in the database rules.
+**In everyday language:** history of additions and deductions movement classification controlling reservation or release; permitted codes are listed in the database rules.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “reserve” means Reserve classification for movement.
+
+Technical definition: Ledger movement classification controlling reservation or release; permitted codes are listed in the database rules.
 
 | Property | Definition |
 |---|---|
@@ -1783,7 +2309,13 @@ Database rules (including conditions shared with other fields):
 
 ### amount
 
-Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
+**In everyday language:** Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; kept accurately to the recorded decimal places.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
 
 | Property | Definition |
 |---|---|
@@ -1805,7 +2337,13 @@ Database rules (including conditions shared with other fields):
 
 ### by_category
 
-Per-category breakdown, mirroring the live budgetReserved{} snapshot.
+**In everyday language:** Per-category breakdown, mirroring the live budgetReserved{} copy saved at that point in time.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the by category.
+
+Technical definition: Per-category breakdown, mirroring the live budgetReserved{} snapshot.
 
 | Property | Definition |
 |---|---|
@@ -1823,7 +2361,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### reason
 
-Recorded business justification for the operation or decision.
+**In everyday language:** Recorded business justification for the operation or decision.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Recorded business justification for the operation or decision.
 
 | Property | Definition |
 |---|---|
@@ -1841,7 +2385,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### actor_user_id
 
-Reference linking this record’s actor user id to FOREIGN KEY (actor_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies actor user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct actor user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s actor user id to FOREIGN KEY (actor_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -1861,7 +2411,13 @@ Database rules (including conditions shared with other fields):
 
 ### occurred_at
 
-Instant of occurred for this record.
+**In everyday language:** Date and time of occurred for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of occurred for this record.
 
 | Property | Definition |
 |---|---|
@@ -1886,13 +2442,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.claim_types
 
+Defines reimbursement categories and their supporting-document and tax policies.
+
 Claim types records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -1912,7 +2476,13 @@ Database rules (including conditions shared with other fields):
 
 ### code
 
-Stable machine-readable business code identifying this catalog entry.
+**In everyday language:** Stable machine-readable business code identifying this list of available choices entry.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Stable machine-readable business code identifying this catalog entry.
 
 | Property | Definition |
 |---|---|
@@ -1932,7 +2502,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Human-readable display name of this catalog record.
+**In everyday language:** Human-readable display name of this list of available choices record.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Human-readable display name of this catalog record.
 
 | Property | Definition |
 |---|---|
@@ -1950,7 +2526,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### requires_bill
 
-Bill-required flag retained in the claim-type catalog; distinct from bill_required and subject to the current service's authority.
+**In everyday language:** Bill-required flag retained in the claim-type list of available choices; distinct from bill_required and subject to the current service's authority.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Bill-required flag retained in the claim-type catalog; distinct from bill_required and subject to the current service's authority.
 
 | Property | Definition |
 |---|---|
@@ -1973,7 +2555,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_taxable
 
-Taxability flag retained in the claim-type catalog; distinct from conditional substantiation policy.
+**In everyday language:** Taxability flag retained in the claim-type list of available choices; distinct from conditional substantiation policy.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Taxability flag retained in the claim-type catalog; distinct from conditional substantiation policy.
 
 | Property | Definition |
 |---|---|
@@ -1996,7 +2584,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Whether this catalog or account record is currently available for use; historical references remain.
+**In everyday language:** Whether this list of available choices or account record is currently available for use; historical references remain.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether this catalog or account record is currently available for use; historical references remain.
 
 | Property | Definition |
 |---|---|
@@ -2019,7 +2613,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### sort_order
 
-Numeric ordering used when displaying catalog entries.
+**In everyday language:** Numeric ordering used when displaying list of available choices entries.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An entry with order 1 can be shown before an entry with order 2.
+
+Technical definition: Numeric ordering used when displaying catalog entries.
 
 | Property | Definition |
 |---|---|
@@ -2037,7 +2637,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -2055,7 +2661,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -2073,7 +2685,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### entitlement_basis
 
-Basis on which the claim type's entitlement is evaluated.
+**In everyday language:** Basis on which the claim type's entitlement is evaluated.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the entitlement basis shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Basis on which the claim type's entitlement is evaluated.
 
 | Property | Definition |
 |---|---|
@@ -2091,7 +2709,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### bill_required
 
-Claim-type policy indicating whether supporting bill evidence is required; distinct from legacy requires_bill.
+**In everyday language:** Claim-type policy indicating whether supporting bill evidence is required; distinct from legacy requires_bill.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Claim-type policy indicating whether supporting bill evidence is required; distinct from legacy requires_bill.
 
 | Property | Definition |
 |---|---|
@@ -2114,7 +2738,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### taxable_if_unsubstantiated
 
-Whether unsupported reimbursement becomes taxable under the configured claim-type policy.
+**In everyday language:** Whether unsupported reimbursement becomes taxable under the configured claim-type policy.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether unsupported reimbursement becomes taxable under the configured claim-type policy.
 
 | Property | Definition |
 |---|---|
@@ -2137,7 +2767,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### payout_component_code
 
-Configured salary-component reference retained for the older combined-payment model; current reimbursements use independent batches.
+**In everyday language:** Configured salary-component reference retained for the older combined-payment model; current reimbursements use independent batches.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Configured salary-component reference retained for the older combined-payment model; current reimbursements use independent batches.
 
 | Property | Definition |
 |---|---|
@@ -2161,13 +2797,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.claims
 
+Tracks reimbursement requests, review decisions and payment links.
+
 Claims records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -2187,7 +2831,13 @@ Database rules (including conditions shared with other fields):
 
 ### reference
 
-Human-readable business reference used to identify this request.
+**In everyday language:** Human-readable business reference used to identify this request.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Human-readable business reference used to identify this request.
 
 | Property | Definition |
 |---|---|
@@ -2207,7 +2857,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -2227,7 +2883,13 @@ Database rules (including conditions shared with other fields):
 
 ### funding_kind
 
-Whether the claim draws on a budget or another configured entitlement source.
+**In everyday language:** Whether the claim draws on a budget or another configured entitlement source.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “budget” means Budget classification for funding kind.
+
+Technical definition: Whether the claim draws on a budget or another configured entitlement source.
 
 | Property | Definition |
 |---|---|
@@ -2253,7 +2915,13 @@ Database rules (including conditions shared with other fields):
 
 ### budget_id
 
-Reference linking this record’s budget id to FOREIGN KEY (budget_id) REFERENCES pay.budgets(id).
+**In everyday language:** Identifies budget connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct budget, so related details can be checked together.
+
+**Example:** This record points to an existing entry in budgets instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s budget id to FOREIGN KEY (budget_id) REFERENCES pay.budgets(id).
 
 | Property | Definition |
 |---|---|
@@ -2274,7 +2942,13 @@ Database rules (including conditions shared with other fields):
 
 ### reserved_budget_id
 
-Reference linking this record’s reserved budget id to FOREIGN KEY (reserved_budget_id) REFERENCES pay.budgets(id).
+**In everyday language:** Identifies reserved budget connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct reserved budget, so related details can be checked together.
+
+**Example:** This record points to an existing entry in budgets instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s reserved budget id to FOREIGN KEY (reserved_budget_id) REFERENCES pay.budgets(id).
 
 | Property | Definition |
 |---|---|
@@ -2294,7 +2968,13 @@ Database rules (including conditions shared with other fields):
 
 ### period_from
 
-First calendar date of the covered period.
+**In everyday language:** First calendar date of the covered period.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: First calendar date of the covered period.
 
 | Property | Definition |
 |---|---|
@@ -2314,7 +2994,13 @@ Database rules (including conditions shared with other fields):
 
 ### period_to
 
-Last calendar date of the covered period; see constraints and service for boundary validation.
+**In everyday language:** Last calendar date of the covered period; see constraints and service for boundary validation.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Last calendar date of the covered period; see constraints and service for boundary validation.
 
 | Property | Definition |
 |---|---|
@@ -2334,7 +3020,13 @@ Database rules (including conditions shared with other fields):
 
 ### claimed_amount
 
-Total amount requested by the claimant, in rupees.
+**In everyday language:** Total amount requested by the claimant, in rupees.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Total amount requested by the claimant, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -2358,7 +3050,13 @@ Database rules (including conditions shared with other fields):
 
 ### approved_amount
 
-Amount authorized after review, in rupees; may differ from claimed amount.
+**In everyday language:** Amount authorized after review, in rupees; may differ from claimed amount.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Amount authorized after review, in rupees; may differ from claimed amount.
 
 | Property | Definition |
 |---|---|
@@ -2381,7 +3079,13 @@ Database rules (including conditions shared with other fields):
 
 ### display_currency
 
-Currency selected for presenting the claim to users.
+**In everyday language:** Currency selected for presenting the claim to users.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A claim can be shown in the selected currency while retaining the amounts and exchange-rate details needed for checking.
+
+Technical definition: Currency selected for presenting the claim to users.
 
 | Property | Definition |
 |---|---|
@@ -2399,7 +3103,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### fx_rates_to_inr
 
-Snapshot mapping original currencies to INR conversion rates used for this claim.
+**In everyday language:** copy saved at that point in time mapping original currencies to INR conversion rates used for this claim.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** A claim with multiple currencies can save a separate INR conversion rate for each currency.
+
+Technical definition: Snapshot mapping original currencies to INR conversion rates used for this claim.
 
 | Property | Definition |
 |---|---|
@@ -2417,7 +3127,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### fx_rate_date
 
-Calendar date associated with the exchange-rate snapshot.
+**In everyday language:** Calendar date associated with the exchange-rate copy saved at that point in time.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Calendar date associated with the exchange-rate snapshot.
 
 | Property | Definition |
 |---|---|
@@ -2435,7 +3151,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### settlement_status
 
-State of financial settlement, separate from approval status.
+**In everyday language:** State of financial settlement, separate from approval status.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “unsettled” means Record is unsettled in this progress from creation to closure.
+
+Technical definition: State of financial settlement, separate from approval status.
 
 | Property | Definition |
 |---|---|
@@ -2461,7 +3183,13 @@ Database rules (including conditions shared with other fields):
 
 ### settlement_mode
 
-Configured payment or recovery method for settling the claim.
+**In everyday language:** Configured payment or recovery method for settling the claim.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “AUTO” means Auto.
+
+Technical definition: Configured payment or recovery method for settling the claim.
 
 | Property | Definition |
 |---|---|
@@ -2487,7 +3215,13 @@ Database rules (including conditions shared with other fields):
 
 ### settlement_amount
 
-Amount recorded for settlement in rupees.
+**In everyday language:** Amount recorded for settlement in rupees.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Amount recorded for settlement in rupees.
 
 | Property | Definition |
 |---|---|
@@ -2511,7 +3245,13 @@ Database rules (including conditions shared with other fields):
 
 ### net_payable
 
-Net rupee amount due after the applicable earnings, adjustments and deductions.
+**In everyday language:** Net rupee amount due after the applicable earnings, adjustments and deductions.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Net rupee amount due after the applicable earnings, adjustments and deductions.
 
 | Property | Definition |
 |---|---|
@@ -2531,7 +3271,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### settled_by_user_id
 
-Reference linking this record’s settled by user id to FOREIGN KEY (settled_by_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies settled by user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct settled by user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s settled by user id to FOREIGN KEY (settled_by_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -2552,7 +3298,13 @@ Database rules (including conditions shared with other fields):
 
 ### settled_at
 
-Instant of settled for this record.
+**In everyday language:** Date and time of settled for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of settled for this record.
 
 | Property | Definition |
 |---|---|
@@ -2572,7 +3324,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+**In everyday language:** Current progress from creation to closure state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “draft” means Editable draft before submission/preparation.
+
+Technical definition: Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
 
 | Property | Definition |
 |---|---|
@@ -2605,7 +3363,13 @@ Database rules (including conditions shared with other fields):
 
 ### workflow_request_id
 
-Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
+**In everyday language:** Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database link to another record is present.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
 
 | Property | Definition |
 |---|---|
@@ -2623,7 +3387,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### rejection_reason
 
-Explanation recorded when the request is rejected.
+**In everyday language:** Explanation recorded when the request is rejected.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Explanation recorded when the request is rejected.
 
 | Property | Definition |
 |---|---|
@@ -2643,7 +3413,13 @@ Database rules (including conditions shared with other fields):
 
 ### submitted_at
 
-Instant of submitted for this record.
+**In everyday language:** Date and time of submitted for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of submitted for this record.
 
 | Property | Definition |
 |---|---|
@@ -2661,7 +3437,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### decided_at
 
-Instant of decided for this record.
+**In everyday language:** Date and time of decided for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of decided for this record.
 
 | Property | Definition |
 |---|---|
@@ -2679,7 +3461,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -2697,7 +3485,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -2715,7 +3509,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### claim_type_id
 
-Reference linking this record’s claim type id to FOREIGN KEY (claim_type_id) REFERENCES pay.claim_types(id).
+**In everyday language:** Identifies claim type connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct claim type, so related details can be checked together.
+
+**Example:** This record points to an existing entry in claim types instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s claim type id to FOREIGN KEY (claim_type_id) REFERENCES pay.claim_types(id).
 
 | Property | Definition |
 |---|---|
@@ -2735,7 +3535,13 @@ Database rules (including conditions shared with other fields):
 
 ### advance_loan_id
 
-Reference linking this record’s advance loan id to FOREIGN KEY (advance_loan_id) REFERENCES pay.loans(id).
+**In everyday language:** Identifies advance loan connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct advance loan, so related details can be checked together.
+
+**Example:** This record points to an existing entry in loans instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s advance loan id to FOREIGN KEY (advance_loan_id) REFERENCES pay.loans(id).
 
 | Property | Definition |
 |---|---|
@@ -2755,7 +3561,13 @@ Database rules (including conditions shared with other fields):
 
 ### paid_in_run_id
 
-Historical combined-payment payroll-run destination. New independent reimbursements do not populate this link; retained for reconciliation without inferred backfill.
+**In everyday language:** The older salary run through which this claim was paid, where such a historical link exists.
+
+**Why it is kept:** Preserves the explanation of historical combined payments.
+
+**Example:** An old claim can be traced to its original salary payment without creating another payment.
+
+Technical definition: Historical combined-payment payroll-run destination. New independent reimbursements do not populate this link; retained for reconciliation without inferred backfill.
 
 | Property | Definition |
 |---|---|
@@ -2776,7 +3588,13 @@ Database rules (including conditions shared with other fields):
 
 ### paid_in_batch_id
 
-Historical salary bank-batch destination. New reimbursements use reimbursement_batch_id; legacy links must not cause automatic re-payment.
+**In everyday language:** The older salary bank-payment batch linked to this claim, where recorded.
+
+**Why it is kept:** Supports checking historical combined payments.
+
+**Example:** Finance compares an old claim with the bank batch that paid it.
+
+Technical definition: Historical salary bank-batch destination. New reimbursements use reimbursement_batch_id; legacy links must not cause automatic re-payment.
 
 | Property | Definition |
 |---|---|
@@ -2797,7 +3615,13 @@ Database rules (including conditions shared with other fields):
 
 ### reimbursement_batch_id
 
-Independent reimbursement batch paying this claim. Kept separate from salary runs and salary bank batches; at most one legacy/new destination is permitted.
+**In everyday language:** The group of reimbursement payments in which this approved claim is being paid.
+
+**Why it is kept:** Connects an expense repayment to its own payment record, separately from salary.
+
+**Example:** An approved expense claim appears in a reimbursement payment batch rather than becoming a salary item.
+
+Technical definition: Independent reimbursement batch paying this claim. Kept separate from salary runs and salary bank batches; at most one legacy/new destination is permitted.
 
 | Property | Definition |
 |---|---|
@@ -2828,13 +3652,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.employee_salaries
 
+Keeps salary arrangements and the dates on which each version applies.
+
 Employee salaries records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -2854,7 +3686,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -2875,7 +3713,13 @@ Database rules (including conditions shared with other fields):
 
 ### structure_id
 
-Reference linking this record’s structure id to FOREIGN KEY (structure_id) REFERENCES pay.salary_structures(id).
+**In everyday language:** Identifies the salary arrangement connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct salary arrangement, so related details can be checked together.
+
+**Example:** This record points to an existing entry in salary structures instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s structure id to FOREIGN KEY (structure_id) REFERENCES pay.salary_structures(id).
 
 | Property | Definition |
 |---|---|
@@ -2895,7 +3739,13 @@ Database rules (including conditions shared with other fields):
 
 ### effective_from
 
-Date from which this version or rule applies.
+**In everyday language:** Date from which this version or rule applies.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Date from which this version or rule applies.
 
 | Property | Definition |
 |---|---|
@@ -2915,7 +3765,13 @@ Database rules (including conditions shared with other fields):
 
 ### effective_to
 
-End of this version's applicability; NULL represents no recorded end. Exact range/exclusion rules appear in constraints.
+**In everyday language:** End of this version's applicability; not recorded represents no recorded end. Exact range/exclusion rules appear in constraints.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: End of this version's applicability; NULL represents no recorded end. Exact range/exclusion rules appear in constraints.
 
 | Property | Definition |
 |---|---|
@@ -2935,7 +3791,13 @@ Database rules (including conditions shared with other fields):
 
 ### annual_ctc
 
-Annual cost-to-company amount in rupees for this salary version.
+**In everyday language:** The employee’s annual cost to the company under this salary arrangement.
+
+**Why it is kept:** Records the annual employment-cost basis for that salary version.
+
+**Example:** An annual cost-to-company figure is not the same as the employee’s monthly bank payment.
+
+Technical definition: Annual cost-to-company amount in rupees for this salary version.
 
 | Property | Definition |
 |---|---|
@@ -2955,7 +3817,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### phase
 
-Salary phase distinguishing probation from confirmed employment.
+**In everyday language:** Salary phase distinguishing probation from confirmed employment.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “probation” means Probation.
+
+Technical definition: Salary phase distinguishing probation from confirmed employment.
 
 | Property | Definition |
 |---|---|
@@ -2980,7 +3848,13 @@ Database rules (including conditions shared with other fields):
 
 ### component_amounts
 
-Monthly integer paise snapshot written by salary assignment (PAY-02).
+**In everyday language:** Monthly whole numbers of paise copy saved at that point in time written by salary assignment (PAY-02).
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the component amounts.
+
+Technical definition: Monthly integer paise snapshot written by salary assignment (PAY-02).
 
 | Property | Definition |
 |---|---|
@@ -2998,7 +3872,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### probation_percent
 
-Configured percentage of confirmed salary payable during probation.
+**In everyday language:** Configured percentage of confirmed salary payable during probation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** An illustrative 80% means the configured probation proportion, not an additional 80% payment.
+
+Technical definition: Configured percentage of confirmed salary payable during probation.
 
 | Property | Definition |
 |---|---|
@@ -3016,7 +3896,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### revision_reason
 
-Business explanation for the effective-dated salary revision.
+**In everyday language:** Business explanation for the dated so the correct version applies salary revision.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “joining” means Joining.
+
+Technical definition: Business explanation for the effective-dated salary revision.
 
 | Property | Definition |
 |---|---|
@@ -3045,7 +3931,13 @@ Database rules (including conditions shared with other fields):
 
 ### approved_by
 
-Reference linking this record’s approved by to FOREIGN KEY (approved_by) REFERENCES core.users(id).
+**In everyday language:** Identifies approved by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct approved by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s approved by to FOREIGN KEY (approved_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -3065,7 +3957,13 @@ Database rules (including conditions shared with other fields):
 
 ### approved_at
 
-Instant of approved for this record.
+**In everyday language:** Date and time of approved for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of approved for this record.
 
 | Property | Definition |
 |---|---|
@@ -3083,7 +3981,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -3107,13 +4011,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.fnf_settlements
 
+Keeps the final calculation of amounts payable and recoverable when an employee leaves.
+
 Fnf settlements records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -3133,7 +4045,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -3153,7 +4071,13 @@ Database rules (including conditions shared with other fields):
 
 ### separation_id
 
-Identity of the separation case for which final settlement is calculated.
+**In everyday language:** Identity of the separation case for which final settlement is calculated.
+
+**Why it is kept:** Keeps this record connected to the correct separation, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Identity of the separation case for which final settlement is calculated.
 
 | Property | Definition |
 |---|---|
@@ -3171,7 +4095,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### run_id
 
-Reference linking this record’s run id to FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id).
+**In everyday language:** Identifies the payroll calculation connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct payroll calculation, so related details can be checked together.
+
+**Example:** This record points to an existing entry in payroll runs instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s run id to FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id).
 
 | Property | Definition |
 |---|---|
@@ -3191,7 +4121,13 @@ Database rules (including conditions shared with other fields):
 
 ### last_working_day
 
-Approved last working date used as the final-settlement calculation boundary.
+**In everyday language:** Approved last working date used as the final-settlement calculation boundary.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Approved last working date used as the final-settlement calculation boundary.
 
 | Property | Definition |
 |---|---|
@@ -3209,7 +4145,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### days_payable
 
-Number of days eligible for salary in the final settlement.
+**In everyday language:** Number of days eligible for salary in the final settlement.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Number of days eligible for salary in the final settlement.
 
 | Property | Definition |
 |---|---|
@@ -3221,7 +4163,7 @@ Number of days eligible for salary in the final settlement.
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
 
-Units: Rupees unless an explicit currency field/definition says otherwise.
+Units: Days; fractional values represent part of a day.
 
 Value domain: no finite value list extracted. Use the SQL/code type and the complete rules below. Foreign-key values come from the referenced catalog; free text and extensible JSON have no invented fixed list.
 
@@ -3229,7 +4171,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### leave_encash_days
 
-Eligible unused leave days selected for encashment.
+**In everyday language:** Eligible unused leave days selected for encashment.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Eligible unused leave days selected for encashment.
 
 | Property | Definition |
 |---|---|
@@ -3241,7 +4189,7 @@ Eligible unused leave days selected for encashment.
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
 
-Units: Rupees unless an explicit currency field/definition says otherwise.
+Units: Days; fractional values represent part of a day.
 
 Value domain: no finite value list extracted. Use the SQL/code type and the complete rules below. Foreign-key values come from the referenced catalog; free text and extensible JSON have no invented fixed list.
 
@@ -3249,7 +4197,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### notice_recovery_days
 
-Notice-period shortfall days selected for recovery.
+**In everyday language:** Notice-period shortfall days selected for recovery.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Notice-period shortfall days selected for recovery.
 
 | Property | Definition |
 |---|---|
@@ -3261,13 +4215,21 @@ Notice-period shortfall days selected for recovery.
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
 
+Units: Days; fractional values represent part of a day.
+
 Value domain: no finite value list extracted. Use the SQL/code type and the complete rules below. Foreign-key values come from the referenced catalog; free text and extensible JSON have no invented fixed list.
 
 Database rules: no column-linked constraint in the captured catalog beyond the type/nullability/default above.
 
 ### gratuity_amount
 
-Calculated gratuity payable in rupees under the selected policy.
+**In everyday language:** Calculated gratuity payable in rupees under the selected policy.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Calculated gratuity payable in rupees under the selected policy.
 
 | Property | Definition |
 |---|---|
@@ -3287,7 +4249,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### other_payments
 
-Aggregate additional final-settlement payments in rupees, stored as exact NUMERIC.
+**In everyday language:** Aggregate additional final-settlement payments in rupees, stored as exact an exact number.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Aggregate additional final-settlement payments in rupees, stored as exact NUMERIC.
 
 | Property | Definition |
 |---|---|
@@ -3305,7 +4273,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### other_deductions
 
-Aggregate additional final-settlement deductions in rupees, stored as exact NUMERIC.
+**In everyday language:** Aggregate additional final-settlement deductions in rupees, stored as exact an exact number.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Aggregate additional final-settlement deductions in rupees, stored as exact NUMERIC.
 
 | Property | Definition |
 |---|---|
@@ -3325,7 +4299,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### held_salary_released
 
-Previously held salary released into the final settlement, in rupees.
+**In everyday language:** Previously held salary released into the final settlement, in rupees.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Previously held salary released into the final settlement, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -3345,7 +4325,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+**In everyday language:** Current progress from creation to closure state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “draft” means Editable draft before submission/preparation.
+
+Technical definition: Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
 
 | Property | Definition |
 |---|---|
@@ -3373,7 +4359,13 @@ Database rules (including conditions shared with other fields):
 
 ### tat_due_date
 
-Target completion date under the configured final-settlement turnaround policy.
+**In everyday language:** Target completion date under the configured final-settlement turnaround policy.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Target completion date under the configured final-settlement turnaround policy.
 
 | Property | Definition |
 |---|---|
@@ -3391,7 +4383,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -3409,7 +4407,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### leave_encash_amount
 
-Rupee value of eligible leave encashment.
+**In everyday language:** Rupee value of eligible leave encashment.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Rupee value of eligible leave encashment.
 
 | Property | Definition |
 |---|---|
@@ -3429,7 +4433,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### notice_recovery_amount
 
-Rupee value recovered for notice-period shortfall.
+**In everyday language:** Rupee value recovered for notice-period shortfall.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Rupee value recovered for notice-period shortfall.
 
 | Property | Definition |
 |---|---|
@@ -3449,7 +4459,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### gross_payable
 
-Total final-settlement earnings before deductions, in rupees.
+**In everyday language:** Total final-settlement earnings before deductions, in rupees.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Total final-settlement earnings before deductions, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -3469,7 +4485,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### total_deductions
 
-Total deductions from the associated payroll result or settlement, in rupees.
+**In everyday language:** Total deductions from the associated payroll result or settlement, in rupees.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Total deductions from the associated payroll result or settlement, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -3489,7 +4511,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### net_payable
 
-Net rupee amount due after the applicable earnings, adjustments and deductions.
+**In everyday language:** Net rupee amount due after the applicable earnings, adjustments and deductions.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Net rupee amount due after the applicable earnings, adjustments and deductions.
 
 | Property | Definition |
 |---|---|
@@ -3509,7 +4537,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### paid_at
 
-Instant of paid for this record.
+**In everyday language:** Date and time of paid for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of paid for this record.
 
 | Property | Definition |
 |---|---|
@@ -3527,7 +4561,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### relieving_letter_id
 
-Reference linking this record’s relieving letter id to FOREIGN KEY (relieving_letter_id) REFERENCES core.letters(id).
+**In everyday language:** Identifies relieving letter connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct relieving letter, so related details can be checked together.
+
+**Example:** This record points to an existing entry in letters instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s relieving letter id to FOREIGN KEY (relieving_letter_id) REFERENCES core.letters(id).
 
 | Property | Definition |
 |---|---|
@@ -3547,7 +4587,13 @@ Database rules (including conditions shared with other fields):
 
 ### service_certificate_id
 
-Reference linking this record’s service certificate id to FOREIGN KEY (service_certificate_id) REFERENCES core.letters(id).
+**In everyday language:** Identifies service certificate connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct service certificate, so related details can be checked together.
+
+**Example:** This record points to an existing entry in letters instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s service certificate id to FOREIGN KEY (service_certificate_id) REFERENCES core.letters(id).
 
 | Property | Definition |
 |---|---|
@@ -3567,7 +4613,13 @@ Database rules (including conditions shared with other fields):
 
 ### calc_breakdown
 
-Stored explanation and component breakdown of the settlement calculation; a result snapshot rather than a new policy source.
+**In everyday language:** Stored explanation and component breakdown of the settlement calculation; a result copy saved at that point in time rather than a new policy source.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the calc breakdown.
+
+Technical definition: Stored explanation and component breakdown of the settlement calculation; a result snapshot rather than a new policy source.
 
 | Property | Definition |
 |---|---|
@@ -3589,13 +4641,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.gl_accounts
 
+Maps payroll components to Finance’s accounting codes.
+
 Gl accounts records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -3615,7 +4675,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_code
 
-Legal-entity code used for accounting integration mapping.
+**In everyday language:** Legal-entity code used for accounting integration mapping.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Legal-entity code used for accounting integration mapping.
 
 | Property | Definition |
 |---|---|
@@ -3635,7 +4701,13 @@ Database rules (including conditions shared with other fields):
 
 ### plant_code
 
-Plant code used for accounting integration mapping.
+**In everyday language:** Plant code used for accounting integration mapping.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Plant code used for accounting integration mapping.
 
 | Property | Definition |
 |---|---|
@@ -3655,7 +4727,13 @@ Database rules (including conditions shared with other fields):
 
 ### cost_center_code
 
-Cost-center code used for accounting integration mapping.
+**In everyday language:** Cost-center code used for accounting integration mapping.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Cost-center code used for accounting integration mapping.
 
 | Property | Definition |
 |---|---|
@@ -3675,7 +4753,13 @@ Database rules (including conditions shared with other fields):
 
 ### component_code
 
-Salary-component business code used to classify this amount or accounting mapping.
+**In everyday language:** Salary-component business code used to classify this amount or accounting mapping.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Salary-component business code used to classify this amount or accounting mapping.
 
 | Property | Definition |
 |---|---|
@@ -3695,7 +4779,13 @@ Database rules (including conditions shared with other fields):
 
 ### gl_code
 
-General-ledger account code used for the accounting/JV export.
+**In everyday language:** General-history of additions and deductions account code used for the accounting/JV export.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: General-ledger account code used for the accounting/JV export.
 
 | Property | Definition |
 |---|---|
@@ -3715,7 +4805,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -3739,13 +4835,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.inputs
 
+Keeps approved monthly salary additions or deductions outside the normal salary arrangement.
+
 Inputs records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -3765,7 +4869,13 @@ Database rules (including conditions shared with other fields):
 
 ### run_id
 
-Reference linking this record’s run id to FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id).
+**In everyday language:** Identifies the payroll calculation connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct payroll calculation, so related details can be checked together.
+
+**Example:** This record points to an existing entry in payroll runs instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s run id to FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id).
 
 | Property | Definition |
 |---|---|
@@ -3785,7 +4895,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -3805,7 +4921,13 @@ Database rules (including conditions shared with other fields):
 
 ### component_code
 
-Salary-component business code used to classify this amount or accounting mapping.
+**In everyday language:** Salary-component business code used to classify this amount or accounting mapping.
+
+**Why it is kept:** Keeps this record connected to the correct pay head, so related details can be checked together.
+
+**Example:** This record points to an existing entry in salary components instead of copying all of that entry’s details.
+
+Technical definition: Salary-component business code used to classify this amount or accounting mapping.
 
 | Property | Definition |
 |---|---|
@@ -3825,7 +4947,13 @@ Database rules (including conditions shared with other fields):
 
 ### amount
 
-Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
+**In everyday language:** Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; kept accurately to the recorded decimal places.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
 
 | Property | Definition |
 |---|---|
@@ -3845,7 +4973,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### note
 
-Free-text explanation attached to this input, adjustment or ledger record.
+**In everyday language:** Free-text explanation attached to this input, adjustment or history of additions and deductions record.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Free-text explanation attached to this input, adjustment or ledger record.
 
 | Property | Definition |
 |---|---|
@@ -3863,7 +4997,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### entered_by
 
-Reference linking this record’s entered by to FOREIGN KEY (entered_by) REFERENCES core.users(id).
+**In everyday language:** Identifies entered by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct entered by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s entered by to FOREIGN KEY (entered_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -3883,7 +5023,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -3901,7 +5047,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### claim_id
 
-Historical claim provenance for the superseded combined-payment model. Nullable for manual/legacy inputs; new reimbursements do not create salary-input rows.
+**In everyday language:** An older link showing which reimbursement claim produced a salary adjustment.
+
+**Why it is kept:** Allows old combined salary-and-claim payments to be checked later; new reimbursements use separate payments.
+
+**Example:** Finance checks an old salary record against the claim it originally paid. This link is not an instruction to pay it again.
+
+Technical definition: Historical claim provenance for the superseded combined-payment model. Nullable for manual/legacy inputs; new reimbursements do not create salary-input rows.
 
 | Property | Definition |
 |---|---|
@@ -3927,13 +5079,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.investment_declarations
 
+Keeps employees’ tax-saving declarations and amounts accepted after review.
+
 Investment declarations records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -3953,7 +5113,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -3974,7 +5140,13 @@ Database rules (including conditions shared with other fields):
 
 ### fy
 
-Indian financial-year key identifying the tax year to which this record applies.
+**In everyday language:** Indian financial-year key identifying the tax year to which this record applies.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A value such as 2026-27 identifies an Indian financial year; use the stored year format defined by the system.
+
+Technical definition: Indian financial-year key identifying the tax year to which this record applies.
 
 | Property | Definition |
 |---|---|
@@ -3994,7 +5166,13 @@ Database rules (including conditions shared with other fields):
 
 ### section
 
-Income-tax deduction/exemption section under which the investment is declared.
+**In everyday language:** Income-tax deduction/exemption section under which the investment is declared.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the section.
+
+Technical definition: Income-tax deduction/exemption section under which the investment is declared.
 
 | Property | Definition |
 |---|---|
@@ -4014,7 +5192,13 @@ Database rules (including conditions shared with other fields):
 
 ### declared_amount
 
-Rupee amount declared by the employee before verification.
+**In everyday language:** Rupee amount declared by the employee before verification.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Rupee amount declared by the employee before verification.
 
 | Property | Definition |
 |---|---|
@@ -4034,7 +5218,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### proof_document_id
 
-Reference linking this record’s proof document id to FOREIGN KEY (proof_document_id) REFERENCES core.documents(id).
+**In everyday language:** Identifies proof document connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct proof document, so related details can be checked together.
+
+**Example:** This record points to an existing entry in documents instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s proof document id to FOREIGN KEY (proof_document_id) REFERENCES core.documents(id).
 
 | Property | Definition |
 |---|---|
@@ -4054,7 +5244,13 @@ Database rules (including conditions shared with other fields):
 
 ### verified_amount
 
-Rupee amount accepted after document review.
+**In everyday language:** Rupee amount accepted after document review.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Rupee amount accepted after document review.
 
 | Property | Definition |
 |---|---|
@@ -4074,7 +5270,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### verified_by
 
-Reference linking this record’s verified by to FOREIGN KEY (verified_by) REFERENCES core.users(id).
+**In everyday language:** Identifies verified by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct verified by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s verified by to FOREIGN KEY (verified_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -4094,7 +5296,13 @@ Database rules (including conditions shared with other fields):
 
 ### verified_at
 
-Instant of verified for this record.
+**In everyday language:** Date and time of verified for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of verified for this record.
 
 | Property | Definition |
 |---|---|
@@ -4112,7 +5320,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -4135,13 +5349,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.it_slabs
 
+Keeps configured income-tax bands and related calculation parameters.
+
 It slabs records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -4161,7 +5383,13 @@ Database rules (including conditions shared with other fields):
 
 ### fy
 
-Indian financial-year key identifying the tax year to which this record applies.
+**In everyday language:** Indian financial-year key identifying the tax year to which this record applies.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A value such as 2026-27 identifies an Indian financial year; use the stored year format defined by the system.
+
+Technical definition: Indian financial-year key identifying the tax year to which this record applies.
 
 | Property | Definition |
 |---|---|
@@ -4179,7 +5407,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### regime
 
-Income-tax regime used to select slabs and deductions.
+**In everyday language:** Income-tax regime used to select slabs and deductions.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “old” means Old income-tax regime.
+
+Technical definition: Income-tax regime used to select slabs and deductions.
 
 | Property | Definition |
 |---|---|
@@ -4204,7 +5438,13 @@ Database rules (including conditions shared with other fields):
 
 ### slab_from
 
-Lower taxable-income boundary of the income-tax slab, in rupees.
+**In everyday language:** Lower taxable-income boundary of the income-tax slab, in rupees.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Lower taxable-income boundary of the income-tax slab, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -4222,7 +5462,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### slab_to
 
-Upper taxable-income boundary of the income-tax slab, in rupees; NULL may represent an open upper band.
+**In everyday language:** Upper taxable-income boundary of the income-tax slab, in rupees; not recorded may represent an open upper band.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Upper taxable-income boundary of the income-tax slab, in rupees; NULL may represent an open upper band.
 
 | Property | Definition |
 |---|---|
@@ -4240,7 +5486,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### rate
 
-Decimal tax/contribution multiplier, subject to the stored precision and constraints.
+**In everyday language:** Decimal tax/contribution multiplier, subject to the stored precision and constraints.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A rate is a multiplier or percentage representation, not a rupee amount; read it using the particular rule’s units.
+
+Technical definition: Decimal tax/contribution multiplier, subject to the stored precision and constraints.
 
 | Property | Definition |
 |---|---|
@@ -4258,7 +5510,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### surcharge_rules
 
-Structured surcharge bands and calculation parameters for this tax regime/year.
+**In everyday language:** Structured surcharge bands and calculation parameters for this tax regime/year.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the surcharge rules.
+
+Technical definition: Structured surcharge bands and calculation parameters for this tax regime/year.
 
 | Property | Definition |
 |---|---|
@@ -4276,7 +5534,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### cess_rate
 
-Decimal cess multiplier applied by the income-tax calculation.
+**In everyday language:** Decimal cess multiplier applied by the income-tax calculation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A decimal multiplier of 0.04 illustrates 4%; it is an example of representation, not a statement of the applicable legal rate.
+
+Technical definition: Decimal cess multiplier applied by the income-tax calculation.
 
 | Property | Definition |
 |---|---|
@@ -4294,7 +5558,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### standard_deduction
 
-Configured standard deduction amount in rupees for the regime/year.
+**In everyday language:** Configured standard deduction amount in rupees for the regime/year.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Configured standard deduction amount in rupees for the regime/year.
 
 | Property | Definition |
 |---|---|
@@ -4314,7 +5584,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### rebate_87a
 
-Structured Section 87A rebate parameters for the tax regime/year.
+**In everyday language:** Structured Section 87A rebate parameters for the tax regime/year.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the rebate 87a.
+
+Technical definition: Structured Section 87A rebate parameters for the tax regime/year.
 
 | Property | Definition |
 |---|---|
@@ -4332,7 +5608,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -4354,13 +5636,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.loan_postings
 
+Keeps individual loan repayment movements and their principal and interest parts.
+
 Loan postings records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -4380,7 +5670,13 @@ Database rules (including conditions shared with other fields):
 
 ### loan_id
 
-Reference linking this record’s loan id to FOREIGN KEY (loan_id) REFERENCES pay.loans(id).
+**In everyday language:** Identifies loan connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct loan, so related details can be checked together.
+
+**Example:** This record points to an existing entry in loans instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s loan id to FOREIGN KEY (loan_id) REFERENCES pay.loans(id).
 
 | Property | Definition |
 |---|---|
@@ -4400,7 +5696,13 @@ Database rules (including conditions shared with other fields):
 
 ### run_id
 
-Reference linking this record’s run id to FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id).
+**In everyday language:** Identifies the payroll calculation connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct payroll calculation, so related details can be checked together.
+
+**Example:** This record points to an existing entry in payroll runs instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s run id to FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id).
 
 | Property | Definition |
 |---|---|
@@ -4420,7 +5722,13 @@ Database rules (including conditions shared with other fields):
 
 ### principal_part
 
-Loan principal repaid by this posting, in rupees.
+**In everyday language:** Loan principal repaid by this posting, in rupees.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Loan principal repaid by this posting, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -4440,7 +5748,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### interest_part
 
-Loan interest paid by this posting, in rupees.
+**In everyday language:** Loan interest paid by this posting, in rupees.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Loan interest paid by this posting, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -4458,7 +5772,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### perquisite_value
 
-Taxable loan-benefit value attributed to this posting, in rupees.
+**In everyday language:** Taxable loan-benefit value attributed to this posting, in rupees.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the taxable value of an employment benefit, not necessarily cash transferred to the employee.
+
+Technical definition: Taxable loan-benefit value attributed to this posting, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -4476,7 +5796,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -4499,13 +5825,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.loans
 
+Tracks employee loans or salary advances and their repayment arrangements.
+
 Loans records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -4525,7 +5859,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -4545,7 +5885,13 @@ Database rules (including conditions shared with other fields):
 
 ### loan_type
 
-Business category of the employee loan or salary advance.
+**In everyday language:** Business category of the employee loan or salary advance.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “loan_diminishing” means Loan using diminishing-balance interest.
+
+Technical definition: Business category of the employee loan or salary advance.
 
 | Property | Definition |
 |---|---|
@@ -4573,7 +5919,13 @@ Database rules (including conditions shared with other fields):
 
 ### principal
 
-Original sanctioned loan principal in rupees.
+**In everyday language:** Original sanctioned loan principal in rupees.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Original sanctioned loan principal in rupees.
 
 | Property | Definition |
 |---|---|
@@ -4596,7 +5948,13 @@ Database rules (including conditions shared with other fields):
 
 ### interest_rate
 
-Configured interest rate for the loan; its exact representation is retained in the source declaration and constraints.
+**In everyday language:** Configured interest rate for the loan; its exact representation is retained in the source declaration and constraints.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The rate is interpreted using this loan’s configured calculation convention; it is not the rupee amount of interest itself.
+
+Technical definition: Configured interest rate for the loan; its exact representation is retained in the source declaration and constraints.
 
 | Property | Definition |
 |---|---|
@@ -4616,7 +5974,13 @@ Database rules (including conditions shared with other fields):
 
 ### emi
 
-Scheduled equated monthly instalment in rupees.
+**In everyday language:** Scheduled equated monthly repayment instalment in rupees.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Scheduled equated monthly instalment in rupees.
 
 | Property | Definition |
 |---|---|
@@ -4638,7 +6002,13 @@ Database rules (including conditions shared with other fields):
 
 ### start_month
 
-First payroll month in which this loan repayment or salary hold applies.
+**In everyday language:** First payroll month in which this loan repayment or salary hold applies.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: First payroll month in which this loan repayment or salary hold applies.
 
 | Property | Definition |
 |---|---|
@@ -4656,7 +6026,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### tenure_months
 
-Scheduled duration of loan repayment in months.
+**In everyday language:** Scheduled duration of loan repayment in months.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Scheduled duration of loan repayment in months.
 
 | Property | Definition |
 |---|---|
@@ -4676,7 +6052,13 @@ Database rules (including conditions shared with other fields):
 
 ### outstanding
 
-Stored loan outstanding balance in rupees; ledger postings must be reconciled before treating a stored balance as authoritative.
+**In everyday language:** Stored loan outstanding balance in rupees; history of additions and deductions postings must be reconciled before treating a stored balance as authoritative.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A remaining loan balance is checked against the history of disbursement and repayments; the stored balance is not a second independent account.
+
+Technical definition: Stored loan outstanding balance in rupees; ledger postings must be reconciled before treating a stored balance as authoritative.
 
 | Property | Definition |
 |---|---|
@@ -4696,7 +6078,13 @@ Database rules (including conditions shared with other fields):
 
 ### perquisite_applicable
 
-Whether the loan is subject to taxable perquisite calculation.
+**In everyday language:** Whether the loan is subject to taxable perquisite calculation.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether the loan is subject to taxable perquisite calculation.
 
 | Property | Definition |
 |---|---|
@@ -4719,7 +6107,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### source
 
-Origin system or process supplying this record; exact accepted values depend on the table.
+**In everyday language:** Origin system or process supplying this record; exact accepted values depend on the table.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “hrms” means Native HRMS-origin record.
+
+Technical definition: Origin system or process supplying this record; exact accepted values depend on the table.
 
 | Property | Definition |
 |---|---|
@@ -4744,7 +6138,13 @@ Database rules (including conditions shared with other fields):
 
 ### workflow_request_id
 
-Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
+**In everyday language:** Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database link to another record is present.
+
+**Why it is kept:** Keeps this record connected to the correct approval request, so related details can be checked together.
+
+**Example:** This saved reference identifies the related item in the context described above. It may belong to another system or to different record types; no database foreign-key guarantee is shown here.
+
+Technical definition: Identifier connecting this domain request to the approval workflow instance; inspect the relationship rules for whether a database FK is present.
 
 | Property | Definition |
 |---|---|
@@ -4762,7 +6162,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### status
 
-Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+**In everyday language:** Current progress from creation to closure state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “pending” means Awaiting the required decision or next action.
+
+Technical definition: Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
 
 | Property | Definition |
 |---|---|
@@ -4791,7 +6197,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -4809,7 +6221,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### source_reference
 
-Reference linking the loan to its originating external/source-system record.
+**In everyday language:** Reference linking the loan to its originating external/source-system record.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Reference linking the loan to its originating external/source-system record.
 
 | Property | Definition |
 |---|---|
@@ -4834,13 +6252,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.payroll_item_lines
 
+Explains each earning, deduction or employer contribution within an employee’s salary calculation.
+
 Payroll item lines records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -4860,7 +6286,13 @@ Database rules (including conditions shared with other fields):
 
 ### item_id
 
-Reference linking this record’s item id to FOREIGN KEY (item_id) REFERENCES pay.payroll_items(id) ON DELETE CASCADE.
+**In everyday language:** Identifies item connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct item, so related details can be checked together.
+
+**Example:** This record points to an existing entry in payroll items instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s item id to FOREIGN KEY (item_id) REFERENCES pay.payroll_items(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -4880,7 +6312,13 @@ Database rules (including conditions shared with other fields):
 
 ### component_code
 
-Salary-component business code used to classify this amount or accounting mapping.
+**In everyday language:** Salary-component business code used to classify this amount or accounting mapping.
+
+**Why it is kept:** Keeps this record connected to the correct pay head, so related details can be checked together.
+
+**Example:** This record points to an existing entry in salary components instead of copying all of that entry’s details.
+
+Technical definition: Salary-component business code used to classify this amount or accounting mapping.
 
 | Property | Definition |
 |---|---|
@@ -4900,7 +6338,13 @@ Database rules (including conditions shared with other fields):
 
 ### amount
 
-Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
+**In everyday language:** Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; kept accurately to the recorded decimal places.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
 
 | Property | Definition |
 |---|---|
@@ -4920,7 +6364,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### calc_note
 
-Human-readable explanation of how the payroll line amount was calculated.
+**In everyday language:** The written explanation of how one payslip amount was worked out.
+
+**Why it is kept:** Helps an employee or payroll reviewer understand the amount rather than seeing only a number.
+
+**Example:** A line explains that an allowance was adjusted because only part of the month was payable.
+
+Technical definition: Human-readable explanation of how the payroll line amount was calculated.
 
 | Property | Definition |
 |---|---|
@@ -4938,7 +6388,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -4956,7 +6412,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### loan_id
 
-Reference linking this record’s loan id to FOREIGN KEY (loan_id) REFERENCES pay.loans(id).
+**In everyday language:** Identifies loan connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct loan, so related details can be checked together.
+
+**Example:** This record points to an existing entry in loans instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s loan id to FOREIGN KEY (loan_id) REFERENCES pay.loans(id).
 
 | Property | Definition |
 |---|---|
@@ -4976,7 +6438,13 @@ Database rules (including conditions shared with other fields):
 
 ### carry_forward_id
 
-Reference linking this record’s carry forward id to FOREIGN KEY (carry_forward_id) REFERENCES pay.recovery_carry_forwards(id) ON DELETE SET NULL.
+**In everyday language:** Identifies carry forward connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct carry forward, so related details can be checked together.
+
+**Example:** This record points to an existing entry in recovery carry forwards instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s carry forward id to FOREIGN KEY (carry_forward_id) REFERENCES pay.recovery_carry_forwards(id) ON DELETE SET NULL.
 
 | Property | Definition |
 |---|---|
@@ -5001,13 +6469,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.payroll_items
 
+Keeps one employee’s result within a payroll run.
+
 Payroll items records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -5027,7 +6503,13 @@ Database rules (including conditions shared with other fields):
 
 ### run_id
 
-Reference linking this record’s run id to FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id) ON DELETE CASCADE.
+**In everyday language:** Identifies the payroll calculation connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct payroll calculation, so related details can be checked together.
+
+**Example:** This record points to an existing entry in payroll runs instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s run id to FOREIGN KEY (run_id) REFERENCES pay.payroll_runs(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -5048,7 +6530,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -5069,7 +6557,13 @@ Database rules (including conditions shared with other fields):
 
 ### days_in_month
 
-Payroll day divisor selected by policy for this employee/month; not necessarily the calendar month's day count.
+**In everyday language:** Payroll day divisor selected by policy for this employee/month; not necessarily the calendar month's day count.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Payroll day divisor selected by policy for this employee/month; not necessarily the calendar month's day count.
 
 | Property | Definition |
 |---|---|
@@ -5081,13 +6575,21 @@ Payroll day divisor selected by policy for this employee/month; not necessarily 
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
 
+Units: Days; fractional values represent part of a day.
+
 Value domain: no finite value list extracted. Use the SQL/code type and the complete rules below. Foreign-key values come from the referenced catalog; free text and extensible JSON have no invented fixed list.
 
 Database rules: no column-linked constraint in the captured catalog beyond the type/nullability/default above.
 
 ### payable_days
 
-Payable attendance days used for payroll proration.
+**In everyday language:** The number of days counted for payment in this payroll calculation.
+
+**Why it is kept:** Supplies the day count used when salary is adjusted for attendance.
+
+**Example:** A period can have 30 calendar days while fewer days qualify for salary.
+
+Technical definition: Payable attendance days used for payroll proration.
 
 | Property | Definition |
 |---|---|
@@ -5099,7 +6601,7 @@ Payable attendance days used for payroll proration.
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
 
-Units: Rupees unless an explicit currency field/definition says otherwise.
+Units: Days; fractional values represent part of a day.
 
 Value domain: no finite value list extracted. Use the SQL/code type and the complete rules below. Foreign-key values come from the referenced catalog; free text and extensible JSON have no invented fixed list.
 
@@ -5107,7 +6609,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### lop_days
 
-Loss-of-pay days used by the stored payroll/report result.
+**In everyday language:** Loss-of-pay days used by the stored payroll/report result.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Loss-of-pay days used by the stored payroll/report result.
 
 | Property | Definition |
 |---|---|
@@ -5119,13 +6627,21 @@ Loss-of-pay days used by the stored payroll/report result.
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
 
+Units: Days; fractional values represent part of a day.
+
 Value domain: no finite value list extracted. Use the SQL/code type and the complete rules below. Foreign-key values come from the referenced catalog; free text and extensible JSON have no invented fixed list.
 
 Database rules: no column-linked constraint in the captured catalog beyond the type/nullability/default above.
 
 ### lop_reversal_days
 
-Previously deducted loss-of-pay days reversed in this result.
+**In everyday language:** Previously deducted loss-of-pay days reversed in this result.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Previously deducted loss-of-pay days reversed in this result.
 
 | Property | Definition |
 |---|---|
@@ -5137,13 +6653,21 @@ Previously deducted loss-of-pay days reversed in this result.
 | Code source | [backend/src/core/db/types.ts](../../backend/src/core/db/types.ts) |
 | Scope | Defined; documentation does not certify end-to-end implementation |
 
+Units: Days; fractional values represent part of a day.
+
 Value domain: no finite value list extracted. Use the SQL/code type and the complete rules below. Foreign-key values come from the referenced catalog; free text and extensible JSON have no invented fixed list.
 
 Database rules: no column-linked constraint in the captured catalog beyond the type/nullability/default above.
 
 ### ot_minutes
 
-Approved overtime duration in minutes included in the payroll result.
+**In everyday language:** Approved overtime duration in minutes included in the payroll result.
+
+**Why it is kept:** Records the quantity or duration described here so it can be checked using the correct unit.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Approved overtime duration in minutes included in the payroll result.
 
 | Property | Definition |
 |---|---|
@@ -5161,7 +6685,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### gross
 
-Gross payroll earnings in rupees, derived from the applicable component flags.
+**In everyday language:** Gross payroll earnings in rupees, worked out from other saved information from the applicable component flags.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Gross payroll earnings in rupees, derived from the applicable component flags.
 
 | Property | Definition |
 |---|---|
@@ -5181,7 +6711,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### total_deductions
 
-Total deductions from the associated payroll result or settlement, in rupees.
+**In everyday language:** Total deductions from the associated payroll result or settlement, in rupees.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Total deductions from the associated payroll result or settlement, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -5201,7 +6737,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### net_pay
 
-Net employee salary payable in rupees after deductions.
+**In everyday language:** The salary amount left for the employee after deductions.
+
+**Why it is kept:** Shows the result of the salary calculation before any separate payment or hold checks.
+
+**Example:** Illustration: ₹30,000 earnings minus ₹2,000 deductions leaves ₹28,000 net pay.
+
+Technical definition: Net employee salary payable in rupees after deductions.
 
 | Property | Definition |
 |---|---|
@@ -5221,7 +6763,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### payment_status
 
-Payment/hold/review state of this payroll result, separate from payroll-run status.
+**In everyday language:** Payment/hold/review state of this payroll result, separate from payroll-run status.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “payable” means Record is payable in this progress from creation to closure.
+
+Technical definition: Payment/hold/review state of this payroll result, separate from payroll-run status.
 
 | Property | Definition |
 |---|---|
@@ -5247,7 +6795,13 @@ Database rules (including conditions shared with other fields):
 
 ### payslip_document_id
 
-Reference linking this record’s payslip document id to FOREIGN KEY (payslip_document_id) REFERENCES core.documents(id).
+**In everyday language:** Identifies payslip document connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct payslip document, so related details can be checked together.
+
+**Example:** This record points to an existing entry in documents instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s payslip document id to FOREIGN KEY (payslip_document_id) REFERENCES core.documents(id).
 
 | Property | Definition |
 |---|---|
@@ -5267,7 +6821,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -5285,7 +6845,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### employer_cost
 
-Employer-side payroll cost in rupees associated with this result.
+**In everyday language:** Employer-side payroll cost in rupees associated with this result.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Employer-side payroll cost in rupees associated with this result.
 
 | Property | Definition |
 |---|---|
@@ -5313,13 +6879,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.payroll_runs
 
+Tracks a company’s payroll calculation and approval process for a period.
+
 Payroll runs records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -5339,7 +6913,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -5360,7 +6940,13 @@ Database rules (including conditions shared with other fields):
 
 ### month
 
-Payroll/reporting period key; inspect its SQL type for DATE versus text representation.
+**In everyday language:** Payroll/reporting period key; inspect its technical storage format for DATE versus text representation.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Payroll/reporting period key; inspect its SQL type for DATE versus text representation.
 
 | Property | Definition |
 |---|---|
@@ -5380,7 +6966,13 @@ Database rules (including conditions shared with other fields):
 
 ### run_type
 
-Category of payroll run, such as regular, overtime or another permitted run category.
+**In everyday language:** Category of payroll run, such as regular, overtime or another permitted run category.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “regular” means Regular.
+
+Technical definition: Category of payroll run, such as regular, overtime or another permitted run category.
 
 | Property | Definition |
 |---|---|
@@ -5409,7 +7001,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+**In everyday language:** Current progress from creation to closure state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “draft” means Editable draft before submission/preparation.
+
+Technical definition: Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
 
 | Property | Definition |
 |---|---|
@@ -5443,7 +7041,13 @@ Database rules (including conditions shared with other fields):
 
 ### attendance_lock_id
 
-Reference linking this record’s attendance lock id to FOREIGN KEY (attendance_lock_id) REFERENCES att.month_locks(id).
+**In everyday language:** Identifies attendance lock connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct attendance lock, so related details can be checked together.
+
+**Example:** This record points to an existing entry in month locks instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s attendance lock id to FOREIGN KEY (attendance_lock_id) REFERENCES att.month_locks(id).
 
 | Property | Definition |
 |---|---|
@@ -5464,7 +7068,13 @@ Database rules (including conditions shared with other fields):
 
 ### computed_at
 
-Instant of computed for this record.
+**In everyday language:** Date and time of computed for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of computed for this record.
 
 | Property | Definition |
 |---|---|
@@ -5482,7 +7092,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### approved_at
 
-Instant of approved for this record.
+**In everyday language:** Date and time of approved for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of approved for this record.
 
 | Property | Definition |
 |---|---|
@@ -5500,7 +7116,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### approved_by
 
-Reference linking this record’s approved by to FOREIGN KEY (approved_by) REFERENCES core.users(id).
+**In everyday language:** Identifies approved by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct approved by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s approved by to FOREIGN KEY (approved_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -5520,7 +7142,13 @@ Database rules (including conditions shared with other fields):
 
 ### finalized_at
 
-Instant of finalized for this record.
+**In everyday language:** Date and time of finalized for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of finalized for this record.
 
 | Property | Definition |
 |---|---|
@@ -5538,7 +7166,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### finalized_by
 
-Reference linking this record’s finalized by to FOREIGN KEY (finalized_by) REFERENCES core.users(id).
+**In everyday language:** Identifies finalized by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct finalized by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s finalized by to FOREIGN KEY (finalized_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -5558,7 +7192,13 @@ Database rules (including conditions shared with other fields):
 
 ### notes
 
-Free-text business context associated with this record.
+**In everyday language:** Free-text business context associated with this record.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Free-text business context associated with this record.
 
 | Property | Definition |
 |---|---|
@@ -5576,7 +7216,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -5594,7 +7240,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -5619,13 +7271,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.pt_slabs
 
+Keeps configured professional-tax bands.
+
 Pt slabs records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -5645,7 +7305,13 @@ Database rules (including conditions shared with other fields):
 
 ### state_code
 
-State/jurisdiction code used for statutory slab selection.
+**In everyday language:** State/jurisdiction code used for statutory slab selection.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A stored state code selects the applicable state or address jurisdiction; it does not represent a company code.
+
+Technical definition: State/jurisdiction code used for statutory slab selection.
 
 | Property | Definition |
 |---|---|
@@ -5663,7 +7329,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### min_monthly
 
-Lower monthly wage boundary for professional-tax slab selection, in rupees.
+**In everyday language:** Lower monthly wage boundary for professional-tax slab selection, in rupees.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the recorded quantity for the meaning described above. A missing value is different from a recorded zero.
+
+Technical definition: Lower monthly wage boundary for professional-tax slab selection, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -5681,7 +7353,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### max_monthly
 
-Upper monthly wage boundary for professional-tax slab selection, in rupees.
+**In everyday language:** Upper monthly wage boundary for professional-tax slab selection, in rupees.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Read this number using the specific measure described above. A percentage, version number and priority order have different meanings.
+
+Technical definition: Upper monthly wage boundary for professional-tax slab selection, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -5699,7 +7377,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### amount
 
-Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
+**In everyday language:** Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; kept accurately to the recorded decimal places.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
 
 | Property | Definition |
 |---|---|
@@ -5719,7 +7403,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### effective_from
 
-Date from which this version or rule applies.
+**In everyday language:** Date from which this version or rule applies.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Date from which this version or rule applies.
 
 | Property | Definition |
 |---|---|
@@ -5737,7 +7427,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### basis
 
-Wage basis on which professional tax is assessed.
+**In everyday language:** Wage basis on which professional tax is assessed.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “earned_monthly” means Earned monthly.
+
+Technical definition: Wage basis on which professional tax is assessed.
 
 | Property | Definition |
 |---|---|
@@ -5767,13 +7463,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.recovery_carry_forwards
 
+Tracks deductions that must be recovered through a later payroll result.
+
 Recovery carry forwards records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -5793,7 +7497,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -5814,7 +7524,13 @@ Database rules (including conditions shared with other fields):
 
 ### component_code
 
-Salary-component business code used to classify this amount or accounting mapping.
+**In everyday language:** Salary-component business code used to classify this amount or accounting mapping.
+
+**Why it is kept:** Keeps this record connected to the correct pay head, so related details can be checked together.
+
+**Example:** This record points to an existing entry in salary components instead of copying all of that entry’s details.
+
+Technical definition: Salary-component business code used to classify this amount or accounting mapping.
 
 | Property | Definition |
 |---|---|
@@ -5835,7 +7551,13 @@ Database rules (including conditions shared with other fields):
 
 ### amount
 
-Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
+**In everyday language:** Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; kept accurately to the recorded decimal places.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
 
 | Property | Definition |
 |---|---|
@@ -5857,7 +7579,13 @@ Database rules (including conditions shared with other fields):
 
 ### from_run_id
 
-Reference linking this record’s from run id to FOREIGN KEY (from_run_id) REFERENCES pay.payroll_runs(id) ON DELETE CASCADE.
+**In everyday language:** Identifies from run connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct from run, so related details can be checked together.
+
+**Example:** This record points to an existing entry in payroll runs instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s from run id to FOREIGN KEY (from_run_id) REFERENCES pay.payroll_runs(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -5878,7 +7606,13 @@ Database rules (including conditions shared with other fields):
 
 ### consumed_run_id
 
-Reference linking this record’s consumed run id to FOREIGN KEY (consumed_run_id) REFERENCES pay.payroll_runs(id) ON DELETE SET NULL.
+**In everyday language:** Identifies consumed run connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct consumed run, so related details can be checked together.
+
+**Example:** This record points to an existing entry in payroll runs instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s consumed run id to FOREIGN KEY (consumed_run_id) REFERENCES pay.payroll_runs(id) ON DELETE SET NULL.
 
 | Property | Definition |
 |---|---|
@@ -5898,7 +7632,13 @@ Database rules (including conditions shared with other fields):
 
 ### note
 
-Free-text explanation attached to this input, adjustment or ledger record.
+**In everyday language:** Free-text explanation attached to this input, adjustment or history of additions and deductions record.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Free-text explanation attached to this input, adjustment or ledger record.
 
 | Property | Definition |
 |---|---|
@@ -5916,7 +7656,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -5940,13 +7686,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.reimbursement_batch_items
 
+Lists the approved claims included in a reimbursement payment batch.
+
 Reimbursement batch items records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -5966,7 +7720,13 @@ Database rules (including conditions shared with other fields):
 
 ### batch_id
 
-Reference linking this record’s batch id to FOREIGN KEY (batch_id) REFERENCES pay.reimbursement_batches(id).
+**In everyday language:** Identifies the payment group connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct payment group, so related details can be checked together.
+
+**Example:** This record points to an existing entry in reimbursement batches instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s batch id to FOREIGN KEY (batch_id) REFERENCES pay.reimbursement_batches(id).
 
 | Property | Definition |
 |---|---|
@@ -5987,7 +7747,13 @@ Database rules (including conditions shared with other fields):
 
 ### claim_id
 
-Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES pay.claims(id).
+**In everyday language:** Identifies the expense claim connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct expense claim, so related details can be checked together.
+
+**Example:** This record points to an existing entry in claims instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s claim id to FOREIGN KEY (claim_id) REFERENCES pay.claims(id).
 
 | Property | Definition |
 |---|---|
@@ -6008,7 +7774,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -6028,7 +7800,13 @@ Database rules (including conditions shared with other fields):
 
 ### amount
 
-Approved claim amount frozen into this reimbursement batch item, in rupees; a payment snapshot, not a fresh claim approval.
+**In everyday language:** Approved claim amount closed to ordinary changes into this reimbursement batch item, in rupees; a payment copy saved at that point in time, not a fresh claim approval.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Approved claim amount frozen into this reimbursement batch item, in rupees; a payment snapshot, not a fresh claim approval.
 
 | Property | Definition |
 |---|---|
@@ -6057,13 +7835,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.reimbursement_batches
 
+Groups reimbursement payments separately from salary payment batches.
+
 CLM-04: separate from salary runs, salary bank batches and salary payslips.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -6083,7 +7869,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -6103,7 +7895,13 @@ Database rules (including conditions shared with other fields):
 
 ### status
 
-Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+**In everyday language:** Current progress from creation to closure state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
+
+**Why it is kept:** Shows what has already happened and what may still need follow-up. An approval status and a payment status can represent different steps.
+
+**Example:** “draft” means Editable draft before submission/preparation.
+
+Technical definition: Current lifecycle state of this record. Exact accepted states and coupled conditions are listed under database rules; this alone does not authorize transitions.
 
 | Property | Definition |
 |---|---|
@@ -6132,7 +7930,13 @@ Database rules (including conditions shared with other fields):
 
 ### total_amount
 
-Aggregate monetary amount represented by the batch, in rupees.
+**In everyday language:** Aggregate monetary amount represented by the batch, in rupees.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Aggregate monetary amount represented by the batch, in rupees.
 
 | Property | Definition |
 |---|---|
@@ -6154,7 +7958,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -6174,7 +7984,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -6192,7 +8008,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### bank_document_id
 
-Reference linking this record’s bank document id to FOREIGN KEY (bank_document_id) REFERENCES core.documents(id).
+**In everyday language:** Identifies bank document connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct bank document, so related details can be checked together.
+
+**Example:** This record points to an existing entry in documents instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s bank document id to FOREIGN KEY (bank_document_id) REFERENCES core.documents(id).
 
 | Property | Definition |
 |---|---|
@@ -6213,7 +8035,13 @@ Database rules (including conditions shared with other fields):
 
 ### paid_by
 
-Reference linking this record’s paid by to FOREIGN KEY (paid_by) REFERENCES core.users(id).
+**In everyday language:** Identifies paid by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct paid by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s paid by to FOREIGN KEY (paid_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -6234,7 +8062,13 @@ Database rules (including conditions shared with other fields):
 
 ### paid_at
 
-Instant of paid for this record.
+**In everyday language:** Date and time of paid for this record.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant of paid for this record.
 
 | Property | Definition |
 |---|---|
@@ -6254,7 +8088,13 @@ Database rules (including conditions shared with other fields):
 
 ### payment_reference
 
-External bank/payment transaction reference recorded when the reimbursement batch is paid.
+**In everyday language:** External bank/payment transaction reference recorded when the reimbursement batch is paid.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** Finance records the bank’s transaction reference so the payment can be checked later.
+
+Technical definition: External bank/payment transaction reference recorded when the reimbursement batch is paid.
 
 | Property | Definition |
 |---|---|
@@ -6279,13 +8119,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.salary_components
 
+Defines pay heads such as earnings, deductions and employer contributions.
+
 Salary components records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### code
 
-Stable machine-readable business code identifying this catalog entry.
+**In everyday language:** Stable machine-readable business code identifying this list of available choices entry.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Stable machine-readable business code identifying this catalog entry.
 
 | Property | Definition |
 |---|---|
@@ -6305,7 +8153,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Human-readable display name of this catalog record.
+**In everyday language:** Human-readable display name of this list of available choices record.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Human-readable display name of this catalog record.
 
 | Property | Definition |
 |---|---|
@@ -6323,7 +8177,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### kind
 
-Classification of this record; exact accepted codes and conditions are listed in its database rules.
+**In everyday language:** Classification of this record; exact accepted codes and conditions are listed in its database rules.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “earning” means Earning classification for kind.
+
+Technical definition: Classification of this record; exact accepted codes and conditions are listed in its database rules.
 
 | Property | Definition |
 |---|---|
@@ -6349,7 +8209,13 @@ Database rules (including conditions shared with other fields):
 
 ### formula
 
-Configured salary-component expression evaluated by the salary calculation engine.
+**In everyday language:** Configured salary-component expression evaluated by the salary calculation engine.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A rule can calculate one pay head using another pay head. The configured expression explains the dependency.
+
+Technical definition: Configured salary-component expression evaluated by the salary calculation engine.
 
 | Property | Definition |
 |---|---|
@@ -6367,7 +8233,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### rounding
 
-Rounding policy code applied to the salary component's calculated amount.
+**In everyday language:** Rounding policy code applied to the salary component's calculated amount.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “round” means Round to nearest configured unit.
+
+Technical definition: Rounding policy code applied to the salary component's calculated amount.
 
 | Property | Definition |
 |---|---|
@@ -6394,7 +8266,13 @@ Database rules (including conditions shared with other fields):
 
 ### taxable
 
-Whether this salary component contributes taxable income.
+**In everyday language:** Whether this salary component contributes taxable income.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether this salary component contributes taxable income.
 
 | Property | Definition |
 |---|---|
@@ -6417,7 +8295,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### part_of_gross
 
-Whether this component contributes to the configured gross wage base.
+**In everyday language:** Whether this component contributes to the configured gross wage base.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether this component contributes to the configured gross wage base.
 
 | Property | Definition |
 |---|---|
@@ -6440,7 +8324,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### part_of_pf_wages
 
-Whether this component contributes to the configured provident-fund wage base.
+**In everyday language:** Whether this pay head is included in the wage amount used for provident-fund calculation.
+
+**Why it is kept:** Lets the configured salary calculation select its provident-fund wage base.
+
+**Example:** A pay head included in provident-fund wages can affect that calculation; the payable rate comes from separate rules.
+
+Technical definition: Whether this component contributes to the configured provident-fund wage base.
 
 | Property | Definition |
 |---|---|
@@ -6463,7 +8353,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### prorate_on_lop
 
-Whether the component is reduced according to loss-of-pay proration.
+**In everyday language:** Whether this pay head is reduced when part of the period is unpaid.
+
+**Why it is kept:** Tells payroll which amounts should follow the payable-day adjustment.
+
+**Example:** A monthly allowance marked this way is adjusted when some days count as loss of pay.
+
+Technical definition: Whether the component is reduced according to loss-of-pay proration.
 
 | Property | Definition |
 |---|---|
@@ -6486,7 +8382,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### display_order
 
-Numeric ordering for displaying this catalog/component entry.
+**In everyday language:** Numeric ordering for displaying this list of available choices/component entry.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A pay head with order 1 can appear before one with order 2 on the display.
+
+Technical definition: Numeric ordering for displaying this catalog/component entry.
 
 | Property | Definition |
 |---|---|
@@ -6504,7 +8406,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Whether this catalog or account record is currently available for use; historical references remain.
+**In everyday language:** Whether this list of available choices or account record is currently available for use; historical references remain.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether this catalog or account record is currently available for use; historical references remain.
 
 | Property | Definition |
 |---|---|
@@ -6527,7 +8435,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -6549,13 +8463,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.salary_holds
 
+Records instructions to hold salary calculation or salary payment.
+
 Salary holds records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -6575,7 +8497,13 @@ Database rules (including conditions shared with other fields):
 
 ### employee_id
 
-Employee to whom this record belongs; references the permanent employee master.
+**In everyday language:** Employee to whom this record belongs; references the permanent main employee register.
+
+**Why it is kept:** Keeps this record connected to the correct employee, so related details can be checked together.
+
+**Example:** This record points to an existing entry in employees instead of copying all of that entry’s details.
+
+Technical definition: Employee to whom this record belongs; references the permanent employee master.
 
 | Property | Definition |
 |---|---|
@@ -6595,7 +8523,13 @@ Database rules (including conditions shared with other fields):
 
 ### hold_type
 
-Salary-hold category determining whether processing or payment is held.
+**In everyday language:** Salary-hold category determining whether processing or payment is held.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “payment” means Payment.
+
+Technical definition: Salary-hold category determining whether processing or payment is held.
 
 | Property | Definition |
 |---|---|
@@ -6620,7 +8554,13 @@ Database rules (including conditions shared with other fields):
 
 ### reason
 
-Recorded business justification for the operation or decision.
+**In everyday language:** Recorded business justification for the operation or decision.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Recorded business justification for the operation or decision.
 
 | Property | Definition |
 |---|---|
@@ -6638,7 +8578,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### start_month
 
-First payroll month in which this loan repayment or salary hold applies.
+**In everyday language:** First payroll month in which this loan repayment or salary hold applies.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: First payroll month in which this loan repayment or salary hold applies.
 
 | Property | Definition |
 |---|---|
@@ -6656,7 +8602,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### released_month
 
-Payroll period in which this salary hold was released.
+**In everyday language:** Payroll period in which this salary hold was released.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Payroll period in which this salary hold was released.
 
 | Property | Definition |
 |---|---|
@@ -6674,7 +8626,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -6694,7 +8652,13 @@ Database rules (including conditions shared with other fields):
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -6717,13 +8681,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.salary_structures
 
+Defines reusable arrangements of salary components.
+
 Salary structures records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -6743,7 +8715,13 @@ Database rules (including conditions shared with other fields):
 
 ### name
 
-Human-readable display name of this catalog record.
+**In everyday language:** Human-readable display name of this list of available choices record.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the name shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Human-readable display name of this catalog record.
 
 | Property | Definition |
 |---|---|
@@ -6763,7 +8741,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -6783,7 +8767,13 @@ Database rules (including conditions shared with other fields):
 
 ### description
 
-Human-readable description of this record.
+**In everyday language:** Human-readable description of this record.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Human-readable description of this record.
 
 | Property | Definition |
 |---|---|
@@ -6801,7 +8791,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### components
 
-Structured salary-structure component configuration, including component expressions/amounts; source shape is retained with the field.
+**In everyday language:** Structured salary-structure component configuration, including component expressions/amounts; source shape is retained with the field.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the components.
+
+Technical definition: Structured salary-structure component configuration, including component expressions/amounts; source shape is retained with the field.
 
 | Property | Definition |
 |---|---|
@@ -6819,7 +8815,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Whether this catalog or account record is currently available for use; historical references remain.
+**In everyday language:** Whether this list of available choices or account record is currently available for use; historical references remain.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Whether this catalog or account record is currently available for use; historical references remain.
 
 | Property | Definition |
 |---|---|
@@ -6842,7 +8844,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -6860,7 +8868,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|
@@ -6884,13 +8898,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.statutory_rates
 
+Keeps dated statutory calculation parameters and their recorded sources.
+
 Statutory rates records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -6910,7 +8932,13 @@ Database rules (including conditions shared with other fields):
 
 ### scheme
 
-Statutory scheme code selecting the contribution/tax parameter family.
+**In everyday language:** Statutory scheme code selecting the contribution/tax parameter family.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the scheme.
+
+Technical definition: Statutory scheme code selecting the contribution/tax parameter family.
 
 | Property | Definition |
 |---|---|
@@ -6928,7 +8956,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### param
 
-Parameter name within the statutory scheme, such as a rate, ceiling or cap.
+**In everyday language:** Parameter name within the statutory scheme, such as a rate, ceiling or cap.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the param.
+
+Technical definition: Parameter name within the statutory scheme, such as a rate, ceiling or cap.
 
 | Property | Definition |
 |---|---|
@@ -6946,7 +8980,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### value
 
-Exact configured statutory parameter value; units depend on scheme and parameter, not on the numeric SQL type alone.
+**In everyday language:** The configured number used for this particular statutory parameter. Read it together with the scheme and parameter name.
+
+**Why it is kept:** Distinguishes rates, rupee ceilings and other limits so a number is not used in the wrong way.
+
+**Example:** A value for a percentage rate has a different meaning from a value for a rupee ceiling; the number alone is not enough.
+
+Technical definition: Exact configured statutory parameter value; units depend on scheme and parameter, not on the numeric SQL type alone.
 
 | Property | Definition |
 |---|---|
@@ -6964,7 +9004,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### effective_from
 
-Date from which this version or rule applies.
+**In everyday language:** Date from which this version or rule applies.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Date from which this version or rule applies.
 
 | Property | Definition |
 |---|---|
@@ -6982,7 +9028,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### source_note
 
-Recorded source/justification for the effective-dated statutory parameter.
+**In everyday language:** Recorded source/justification for the dated so the correct version applies statutory parameter.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Recorded source/justification for the effective-dated statutory parameter.
 
 | Property | Definition |
 |---|---|
@@ -7000,7 +9052,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -7023,13 +9081,21 @@ Table indexes and lifecycle triggers:
 
 ## pay.tds_challans
 
+Keeps payment references for income tax deducted from salaries and remitted to government.
+
 Tds challans records; consult the field definitions and governing module specification.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -7049,7 +9115,13 @@ Database rules (including conditions shared with other fields):
 
 ### company_id
 
-Legal entity that owns or scopes this record.
+**In everyday language:** Legal entity that owns or scopes this record.
+
+**Why it is kept:** Keeps this record connected to the correct legal company, so related details can be checked together.
+
+**Example:** This record points to an existing entry in companies instead of copying all of that entry’s details.
+
+Technical definition: Legal entity that owns or scopes this record.
 
 | Property | Definition |
 |---|---|
@@ -7069,7 +9141,13 @@ Database rules (including conditions shared with other fields):
 
 ### month
 
-Payroll/reporting period key; inspect its SQL type for DATE versus text representation.
+**In everyday language:** Payroll/reporting period key; inspect its technical storage format for DATE versus text representation.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Payroll/reporting period key; inspect its SQL type for DATE versus text representation.
 
 | Property | Definition |
 |---|---|
@@ -7087,7 +9165,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### amount
 
-Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
+**In everyday language:** Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; kept accurately to the recorded decimal places.
+
+**Why it is kept:** Keeps the specific money figure described here available for calculation, review or payment checking.
+
+**Example:** ₹100.50 illustrates how a rupee amount is read; it is not an entitlement, rate or required payment.
+
+Technical definition: Monetary amount for this record in rupees unless an explicit currency field specifies otherwise; exact database NUMERIC, never binary floating-point.
 
 | Property | Definition |
 |---|---|
@@ -7107,7 +9191,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### challan_no
 
-Government challan/payment acknowledgment reference for remitted TDS.
+**In everyday language:** Government challan/payment acknowledgment reference for remitted income tax deducted from salary.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Government challan/payment acknowledgment reference for remitted TDS.
 
 | Property | Definition |
 |---|---|
@@ -7125,7 +9215,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### bsr_code
 
-Bank branch BSR code associated with the TDS challan.
+**In everyday language:** Bank branch BSR code associated with the income tax deducted from salary challan.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is a reference staff or the system can match to the related item. Two items with similar descriptions can have different references.
+
+Technical definition: Bank branch BSR code associated with the TDS challan.
 
 | Property | Definition |
 |---|---|
@@ -7143,7 +9239,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### paid_on
 
-Calendar date on which the remittance was made.
+**In everyday language:** Calendar date on which the remittance was made.
+
+**Why it is kept:** Places the information on the correct calendar date or applicable period.
+
+**Example:** 11 Nov 2026 is a calendar date. Any start/end-date rules still apply.
+
+Technical definition: Calendar date on which the remittance was made.
 
 | Property | Definition |
 |---|---|
@@ -7161,7 +9263,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|

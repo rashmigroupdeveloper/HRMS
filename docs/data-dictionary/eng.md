@@ -4,13 +4,21 @@
 
 ## eng.announcements
 
+Keeps announcements and the audiences that should receive them.
+
 eng.announcements — audience-filtered broadcast (EN-01).
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -30,7 +38,13 @@ Database rules (including conditions shared with other fields):
 
 ### title
 
-Publication headline
+**In everyday language:** Publication headline.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the title shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Publication headline
 
 | Property | Definition |
 |---|---|
@@ -48,7 +62,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### body
 
-Announcement content
+**In everyday language:** Announcement content.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Announcement content
 
 | Property | Definition |
 |---|---|
@@ -66,7 +86,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### audience
 
-Employee-category/department/location targeting rule
+**In everyday language:** Employee-category/department/location targeting rule.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the audience.
+
+Technical definition: Employee-category/department/location targeting rule
 
 | Property | Definition |
 |---|---|
@@ -84,7 +110,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### published_by
 
-Reference linking this record’s published by to FOREIGN KEY (published_by) REFERENCES core.users(id).
+**In everyday language:** Identifies published by connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct published by, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s published by to FOREIGN KEY (published_by) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -104,7 +136,13 @@ Database rules (including conditions shared with other fields):
 
 ### published_at
 
-Publication instant; currently defaults at creation
+**In everyday language:** Publication instant; currently defaults at creation.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Publication instant; currently defaults at creation
 
 | Property | Definition |
 |---|---|
@@ -122,7 +160,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### expires_at
 
-Optional visibility end instant
+**In everyday language:** Optional visibility end instant.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Optional visibility end instant
 
 | Property | Definition |
 |---|---|
@@ -140,7 +184,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Withdrawal flag preserving the original publication
+**In everyday language:** Withdrawal flag preserving the original publication.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Withdrawal flag preserving the original publication
 
 | Property | Definition |
 |---|---|
@@ -163,7 +213,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -181,7 +237,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### attachment_document_id
 
-Reference linking this record’s attachment document id to FOREIGN KEY (attachment_document_id) REFERENCES core.documents(id).
+**In everyday language:** Identifies attachment document connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct attachment document, so related details can be checked together.
+
+**Example:** This record points to an existing entry in documents instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s attachment document id to FOREIGN KEY (attachment_document_id) REFERENCES core.documents(id).
 
 | Property | Definition |
 |---|---|
@@ -206,13 +268,21 @@ Table indexes and lifecycle triggers:
 
 ## eng.poll_responses
 
+Records answers to employee polls.
+
 eng.poll_responses — respondent is NULL when the poll is anonymous.
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -232,7 +302,13 @@ Database rules (including conditions shared with other fields):
 
 ### poll_id
 
-Reference linking this record’s poll id to FOREIGN KEY (poll_id) REFERENCES eng.polls(id).
+**In everyday language:** Identifies poll connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct poll, so related details can be checked together.
+
+**Example:** This record points to an existing entry in polls instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s poll id to FOREIGN KEY (poll_id) REFERENCES eng.polls(id).
 
 | Property | Definition |
 |---|---|
@@ -252,7 +328,13 @@ Database rules (including conditions shared with other fields):
 
 ### respondent_user_id
 
-Reference linking this record’s respondent user id to FOREIGN KEY (respondent_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies respondent user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct respondent user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s respondent user id to FOREIGN KEY (respondent_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -273,7 +355,13 @@ Database rules (including conditions shared with other fields):
 
 ### option_index
 
-Zero-based selected option; upper bound relies on poll validation
+**In everyday language:** Zero-based selected option; upper bound relies on poll validation.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** The saved choice position points to one of the poll’s offered answers; its numbering follows the poll definition.
+
+Technical definition: Zero-based selected option; upper bound relies on poll validation
 
 | Property | Definition |
 |---|---|
@@ -293,7 +381,13 @@ Database rules (including conditions shared with other fields):
 
 ### comment
 
-Optional respondent feedback; content can self-identify even when account identity is removed
+**In everyday language:** Optional respondent feedback; content can self-identify even when account identity is removed.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Optional respondent feedback; content can self-identify even when account identity is removed
 
 | Property | Definition |
 |---|---|
@@ -311,7 +405,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -329,7 +429,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### respondent_hash
 
-Salted HMAC of (poll, user) — set instead of `respondent_user_id` on an
+**In everyday language:** A protected reference that helps prevent the same person answering the same anonymous poll twice.
+
+**Why it is kept:** Supports the poll’s duplicate-answer check without saving the person’s direct user link in the anonymous response.
+
+**Example:** The system can recognize a repeated submission for that poll without displaying the respondent’s name in the response.
+
+Technical definition: Salted HMAC of (poll, user) — set instead of `respondent_user_id` on an
 anonymous poll so responses dedupe without storing identity (docs/03 §9).
 A DB CHECK enforces exactly one of the two.
 
@@ -358,13 +464,21 @@ Table indexes and lifecycle triggers:
 
 ## eng.polls
 
+Defines employee polls and their choices.
+
 EN-02/03 polls and pulse surveys; anonymity is fixed at creation
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -384,7 +498,13 @@ Database rules (including conditions shared with other fields):
 
 ### question
 
-Poll question text
+**In everyday language:** Poll question text.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A poll might ask “Which training topic would help you most?” with a configured list of answers.
+
+Technical definition: Poll question text
 
 | Property | Definition |
 |---|---|
@@ -402,7 +522,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### options
 
-Ordered choice labels defining option-index meaning
+**In everyday language:** Ordered choice labels defining option-index meaning.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the options.
+
+Technical definition: Ordered choice labels defining option-index meaning
 
 | Property | Definition |
 |---|---|
@@ -420,7 +546,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### kind
 
-Poll or pulse classification
+**In everyday language:** Poll or pulse classification.
+
+**Why it is kept:** Gives staff and the system a consistent choice for the classification described here.
+
+**Example:** “poll” means Poll classification for kind.
+
+Technical definition: Poll or pulse classification
 
 | Property | Definition |
 |---|---|
@@ -445,7 +577,13 @@ Database rules (including conditions shared with other fields):
 
 ### is_anonymous
 
-Creation-time promise controlling identity storage and reporting
+**In everyday language:** Creation-time promise controlling identity storage and reporting.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Creation-time promise controlling identity storage and reporting
 
 | Property | Definition |
 |---|---|
@@ -468,7 +606,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### audience
 
-Target employee population
+**In everyday language:** Target employee population.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the audience.
+
+Technical definition: Target employee population
 
 | Property | Definition |
 |---|---|
@@ -486,7 +630,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -506,7 +656,13 @@ Database rules (including conditions shared with other fields):
 
 ### opens_at
 
-First participation instant; currently database default
+**In everyday language:** First participation instant; currently database default.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: First participation instant; currently database default
 
 | Property | Definition |
 |---|---|
@@ -524,7 +680,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### closes_at
 
-Optional participation cutoff
+**In everyday language:** Optional participation cutoff.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Optional participation cutoff
 
 | Property | Definition |
 |---|---|
@@ -542,7 +704,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Closure flag
+**In everyday language:** Closure flag.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Closure flag
 
 | Property | Definition |
 |---|---|
@@ -565,7 +733,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -587,13 +761,21 @@ Table indexes and lifecycle triggers:
 
 ## eng.survey_responses
 
+Keeps submitted survey answers.
+
 Survey responses with salted HMAC dedupe for anonymous ballots
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -613,7 +795,13 @@ Database rules (including conditions shared with other fields):
 
 ### survey_id
 
-Reference linking this record’s survey id to FOREIGN KEY (survey_id) REFERENCES eng.surveys(id) ON DELETE CASCADE.
+**In everyday language:** Identifies survey connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct survey, so related details can be checked together.
+
+**Example:** This record points to an existing entry in surveys instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s survey id to FOREIGN KEY (survey_id) REFERENCES eng.surveys(id) ON DELETE CASCADE.
 
 | Property | Definition |
 |---|---|
@@ -633,7 +821,13 @@ Database rules (including conditions shared with other fields):
 
 ### respondent_user_id
 
-Reference linking this record’s respondent user id to FOREIGN KEY (respondent_user_id) REFERENCES core.users(id).
+**In everyday language:** Identifies respondent user connected to this record.
+
+**Why it is kept:** Keeps this record connected to the correct respondent user, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: Reference linking this record’s respondent user id to FOREIGN KEY (respondent_user_id) REFERENCES core.users(id).
 
 | Property | Definition |
 |---|---|
@@ -654,7 +848,13 @@ Database rules (including conditions shared with other fields):
 
 ### respondent_hash
 
-Purpose-separated anonymous survey HMAC used for deduplication
+**In everyday language:** A protected reference used to recognize repeat answers to an anonymous survey.
+
+**Why it is kept:** Helps prevent duplicate responses while keeping the stored survey response separate from a direct identity reference.
+
+**Example:** A repeated submission can be checked without putting a person’s name in the answer record.
+
+Technical definition: Purpose-separated anonymous survey HMAC used for deduplication
 
 | Property | Definition |
 |---|---|
@@ -674,7 +874,13 @@ Database rules (including conditions shared with other fields):
 
 ### answers
 
-Question-ID keyed answer collection requiring validation against that survey's question definitions
+**In everyday language:** Question-ID keyed answer collection requiring validation against that survey's question definitions.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the answers.
+
+Technical definition: Question-ID keyed answer collection requiring validation against that survey's question definitions
 
 | Property | Definition |
 |---|---|
@@ -692,7 +898,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -716,13 +928,21 @@ Table indexes and lifecycle triggers:
 
 ## eng.surveys
 
+Defines employee surveys and their questions.
+
 EN-03 multi-question pulse surveys (C34, docs/03 §9)
 
 Relation kind: table.
 
 ### id
 
-Internal unique identity of this record; distinct from display codes and external identifiers.
+**In everyday language:** The unique number the system gives this particular record. It is used to tell it apart from every other record in the same register.
+
+**Why it is kept:** Allows the correct record to be found and linked without relying on a name or description.
+
+**Example:** If two records have the same display name, their internal numbers still tell them apart.
+
+Technical definition: Internal unique identity of this record; distinct from display codes and external identifiers.
 
 | Property | Definition |
 |---|---|
@@ -742,7 +962,13 @@ Database rules (including conditions shared with other fields):
 
 ### title
 
-Survey headline
+**In everyday language:** Survey headline.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** This is the title shown when staff read this record. For example, the same named person or place can appear in several records without making those records the same item.
+
+Technical definition: Survey headline
 
 | Property | Definition |
 |---|---|
@@ -760,7 +986,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### description
 
-Survey instructions
+**In everyday language:** Survey instructions.
+
+**Why it is kept:** Preserves the explanation so another person can understand the record later.
+
+**Example:** The saved wording answers the question described above; it should explain the specific case rather than just say “done”.
+
+Technical definition: Survey instructions
 
 | Property | Definition |
 |---|---|
@@ -778,7 +1010,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### questions
 
-Version-sensitive rating/choice/text question definitions
+**In everyday language:** Version-sensitive rating/choice/text question definitions.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the questions.
+
+Technical definition: Version-sensitive rating/choice/text question definitions
 
 | Property | Definition |
 |---|---|
@@ -796,7 +1034,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### audience
 
-Target employee population
+**In everyday language:** Target employee population.
+
+**Why it is kept:** Keeps related details together when a single short answer would not describe the event or result.
+
+**Example:** When reviewing this record, staff read this saved detail alongside its other details to understand the audience.
+
+Technical definition: Target employee population
 
 | Property | Definition |
 |---|---|
@@ -814,7 +1058,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_by
 
-User who created this record.
+**In everyday language:** User who created this record.
+
+**Why it is kept:** Keeps this record connected to the correct person who created the record, so related details can be checked together.
+
+**Example:** This record points to an existing entry in users instead of copying all of that entry’s details.
+
+Technical definition: User who created this record.
 
 | Property | Definition |
 |---|---|
@@ -834,7 +1084,13 @@ Database rules (including conditions shared with other fields):
 
 ### open_from
 
-Participation opening instant
+**In everyday language:** Participation opening instant.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A time such as 9 AM describes the timing of this particular activity; whether a calendar date is also stored depends on the field.
+
+Technical definition: Participation opening instant
 
 | Property | Definition |
 |---|---|
@@ -852,7 +1108,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### open_till
 
-Optional response deadline
+**In everyday language:** Optional response deadline.
+
+**Why it is kept:** Keeps this specific detail with the record so staff can identify, explain or check it in context.
+
+**Example:** A time such as 9 AM describes the timing of this particular activity; whether a calendar date is also stored depends on the field.
+
+Technical definition: Optional response deadline
 
 | Property | Definition |
 |---|---|
@@ -870,7 +1132,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_anonymous
 
-Creation-time respondent-identity promise
+**In everyday language:** Creation-time respondent-identity promise.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Creation-time respondent-identity promise
 
 | Property | Definition |
 |---|---|
@@ -893,7 +1161,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### is_active
 
-Survey closure flag
+**In everyday language:** Survey closure flag.
+
+**Why it is kept:** Lets the relevant process distinguish “yes” from “no” for this specific rule or condition.
+
+**Example:** Yes means the condition described here is true; No means it is false.
+
+Technical definition: Survey closure flag
 
 | Property | Definition |
 |---|---|
@@ -916,7 +1190,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### created_at
 
-Instant this record was created.
+**In everyday language:** Date and time this record was created.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was created.
 
 | Property | Definition |
 |---|---|
@@ -934,7 +1214,13 @@ Database rules: no column-linked constraint in the captured catalog beyond the t
 
 ### updated_at
 
-Instant this record was last updated; not a complete change history.
+**In everyday language:** Date and time this record was last updated; not a complete change history.
+
+**Why it is kept:** Establishes the recorded timing or time boundary for this detail, so staff can interpret the record in the right order.
+
+**Example:** A saved time might show 11 Nov 2026, 10:30 AM IST. For an expiry or deadline, this is a boundary, not evidence that an event happened. NULL means no time is recorded.
+
+Technical definition: Instant this record was last updated; not a complete change history.
 
 | Property | Definition |
 |---|---|

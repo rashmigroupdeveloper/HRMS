@@ -1,0 +1,17 @@
+{
+  "source_hashes": {
+    "backend/src/core/db/types.bulk.ts": "e3ae7bf26cf00e9f1dace0ed68282c75365baa9aea0be73eaafc6cb599e70c03",
+    "backend/src/core/db/types.cmp.ts": "2d54b4d51356959deb1613181abf3f96a48df951db49220a36663bedc0ee621d",
+    "backend/src/core/db/types.doc.ts": "f3705f13288df17ae2eb0b44bbfc13dbdeb898d3854781079217d1cd6da71c81",
+    "backend/src/core/db/types.ird.ts": "129a4372e63fceccb33833646802a287492773939e95da5df74774d85ae5a9b3",
+    "backend/src/core/db/types.joining.ts": "e7ee7c7ec2316e52507bd6653da340e4db604326deb7904a58a2141c0c727a1e",
+    "backend/src/core/db/types.org.ts": "5b4b462e22fc4b71ff4b9276bbc1a094771c7df7a8fff92fd71dfce1c50039cd",
+    "backend/src/core/db/types.pay-claims.ts": "13090be6623e4ba60021e4e182b1e85886421c5ef672a6abfc9385e9e56b7d66",
+    "backend/src/core/db/types.prv.ts": "a92af2f235836b988880ed73354b2d1a4be415805c4eaa80050eb570fa29fe8c",
+    "backend/src/core/db/types.ts": "76156f4bad5007b2454c5611f397043c9253ee137d9c7c167d5b9542bbf1e36d"
+  },
+  "index_hashes": {
+    "type-symbols.json": "418032d45b9fcc7a27ff0ae73496ef18979ba2d8564428b50156a2a5e1e8dd8d",
+    "type-table-purposes.json": "514c43416808195724d1d5d16082e36215d8b1304806324d5d3b937e7de4941f"
+  }
+}

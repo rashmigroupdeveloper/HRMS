@@ -76,6 +76,7 @@ const LifecyclePage = lazy(() => import('../pages/lifecycle/LifecyclePage').then
 const PrejoinPortalPage = lazy(() => import('../pages/lifecycle/PrejoinPortalPage').then((m) => ({ default: m.PrejoinPortalPage })));
 const AlumniPortalPage = lazy(() => import('../pages/lifecycle/AlumniPortalPage').then((m) => ({ default: m.AlumniPortalPage })));
 const AssetsPage = lazy(() => import('../pages/workplace/AssetsPage').then((m) => ({ default: m.AssetsPage })));
+const BetaFeedbackPage = lazy(() => import('../pages/admin/BetaFeedbackPage').then(m => ({ default: m.BetaFeedbackPage })));
 const HelpdeskPage = lazy(() => import('../pages/workplace/HelpdeskPage').then((m) => ({ default: m.HelpdeskPage })));
 const EngagementPage = lazy(() => import('../pages/workplace/EngagementPage').then((m) => ({ default: m.EngagementPage })));
 const ExecutivePage = lazy(() => import('../pages/executive/ExecutivePage').then((m) => ({ default: m.ExecutivePage })));
@@ -142,6 +143,7 @@ export function AppRouter({ user, onSignedOut }: AppRouterProps) {
         <Route path="onboard/prejoin" element={<PrejoinPortalPage />} />
         <Route path="alumni" element={<AlumniPortalPage />} />
         <Route path="assets" element={<AssetsPage />} />
+        <Route path="admin/beta-feedback" element={<BetaFeedbackPage />} />
         <Route path="helpdesk" element={<HelpdeskPage user={user} />} />
         <Route path="engagement" element={<EngagementPage user={user} />} />
         <Route path="compliance" element={<CompliancePage />} />

@@ -29,6 +29,9 @@ export interface NotificationTransport {
 /** Development transport — structured log line instead of a real send. */
 export const devLogTransport: NotificationTransport = {
   send(n) {
+    if (n.channel === 'email' && n.template_code === 'beta_feedback') {
+      return Promise.reject(new Error('SMTP is not configured; beta feedback email was not sent'));
+    }
     logger.info(
       { id: n.id, channel: n.channel, template: n.template_code, to: n.recipient_user_id ?? n.recipient_email },
       'notification (dev transport)',
