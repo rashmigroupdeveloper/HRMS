@@ -255,6 +255,7 @@ the frontend shows pages and buttons with `useAccess().can(area, level)`.
 **Where every kind of file goes, naming, and the dependency rules are defined in [CLAUDE.md](CLAUDE.md)
 (section 1, "Folder structure").** They apply to everyone - people and AI assistants. Follow them for every change;
 the structure itself only changes by agreement, and then CLAUDE.md is updated in the same change.
+Codex and other AI agents start from [AGENTS.md](AGENTS.md), which sends them to the same CLAUDE.md.
 
 Errors: throw `new ORPCError('NOT_FOUND', { message: 'Department not found' })` for expected failures.
 Invalid input (400 with a list of field issues) and common Prisma errors (duplicate -> 409, missing -> 404) are

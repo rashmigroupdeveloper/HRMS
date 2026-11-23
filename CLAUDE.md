@@ -20,7 +20,9 @@ Every file you create, edit, or move must fit the structure below.
 
 ```
 HRMS_NEW/
-├─ CLAUDE.md          these rules
+├─ CLAUDE.md          these rules - for everyone: people, Claude Code, Codex and other AI agents
+├─ AGENTS.md          (added 2026-11-23) entry point for Codex / other agents: points here, plus what Claude's
+│                     .claude/ hooks and agents do automatically, and the team's working preferences
 ├─ README.md          stack, setup, commands
 ├─ API_TRACKER.md     every API: path, access, input, output, behaviour, errors (see section 7)
 ├─ BACKLOG.md         work deferred for later + open questions for HR (see section 2)
