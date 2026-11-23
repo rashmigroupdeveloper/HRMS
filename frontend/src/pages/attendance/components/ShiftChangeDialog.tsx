@@ -15,7 +15,7 @@ import { todayDay } from './labels'
 
 // Asking for a shift change on one day: another shift (or off), or a swap with a colleague. The manager approves, then
 // HR; only then does the roster change.
-export function ShiftChangeDialog({ initialDate, onClose }: { initialDate?: Date; onClose: () => void }) {
+export function ShiftChangeDialog({ initialDate, onClose, onSent }: { initialDate?: Date; onClose: () => void; onSent?: (message: string) => void }) {
   const queryClient = useQueryClient()
   const shifts = useQuery(orpc.attendance.shifts.list.queryOptions({ input: {} }))
   const [startDate] = useState(() => toDateInput(initialDate && initialDate >= todayDay() ? initialDate : todayDay()))
@@ -28,6 +28,7 @@ export function ShiftChangeDialog({ initialDate, onClose }: { initialDate?: Date
     orpc.attendance.shiftChanges.create.mutationOptions({
       onSuccess: () => {
         void queryClient.invalidateQueries({ queryKey: orpc.attendance.key() })
+        onSent?.('Shift change sent. It is with your manager.')
         onClose()
       },
     }),

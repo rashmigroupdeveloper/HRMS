@@ -24,12 +24,11 @@ export function MyAttendancePage() {
   if (moved) return <Navigate to={moved} replace />
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Time &amp; shifts</p>
-          <h1 className="mt-1 text-3xl font-light tracking-tight sm:text-4xl">My attendance</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">Your days from the biometric punches, and your shift changes.</p>
+          <h1 className="text-3xl font-light tracking-tight sm:text-4xl">My attendance</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Your time, shifts and attendance requests.</p>
         </div>
         {overview.data ? <TodayCard today={overview.data.today} /> : !overview.error && <TodayCardSkeleton label="Loading today's attendance" />}
       </header>

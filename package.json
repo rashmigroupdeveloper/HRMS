@@ -22,6 +22,7 @@
     "import:vbms": "npm run import:vbms -w backend --",
     "set-password": "npm run set-password -w backend --",
     "create-admin": "npm run create-admin -w backend --",
+    "create-role-employees": "npm run create-role-employees -w backend",
     "check:api-tracker": "npm run check:api-tracker -w backend",
     "check:data-access": "npm run check:data-access -w backend",
     "test": "npm run test -w backend"

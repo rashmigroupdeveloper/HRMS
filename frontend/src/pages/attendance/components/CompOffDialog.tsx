@@ -13,13 +13,14 @@ import { compOffDays, hours, type MonthDay } from './labels'
 // Claiming comp-off for work on a weekly off / holiday (the user, 2026-11-22): the day's punches decide (compOffDays).
 // Approved by the manager, the comp-off is credited and used later like any leave; it expires 90 days after the day worked.
 
-export function CompOffDialog({ day, onClose }: { day: MonthDay; onClose: () => void }) {
+export function CompOffDialog({ day, onClose, onSent }: { day: MonthDay; onClose: () => void; onSent?: (message: string) => void }) {
   const queryClient = useQueryClient()
   const [reason, setReason] = useState('')
   const claim = useMutation(
     orpc.leave.compOff.claim.mutationOptions({
       onSuccess: () => {
         void queryClient.invalidateQueries({ queryKey: orpc.leave.key() })
+        onSent?.('Comp-off claim sent. It is with your manager.')
         onClose()
       },
     }),

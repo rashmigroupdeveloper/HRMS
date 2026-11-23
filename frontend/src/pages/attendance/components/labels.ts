@@ -103,7 +103,7 @@ export const REQUEST_STATUS: Record<ShiftChange['status'], { label: string; tone
   CANCELLED: { label: 'Cancelled', tone: 'neutral' },
 }
 
-// A month's totals, in this order (MonthTotals and its loading placeholder)
+// A month's counts. MonthTotals leads with hours, then Present / Absent / Leave; these labels are the quiet line and the key.
 export const TOTAL_LABELS = ['Present', 'Half days', 'Absent', 'Missed punch', 'Leave', 'On duty', 'Late', 'Hours worked']
 
 // "Tuesday, November 2026" (the day panel and its loading placeholder)

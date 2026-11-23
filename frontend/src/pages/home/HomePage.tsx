@@ -25,7 +25,7 @@ import { orpc } from '@/lib/orpc'
 import { formatDate } from '@/lib/utils'
 
 // The employee's own home after signing in: who they are and where they work, quick links into their profile, and
-// the areas their roles give them, and today's attendance. (Leave and payslips come with their modules.)
+// the areas their roles give them, and today's attendance.
 export function HomePage() {
   const { me, can } = useAccess()
   // read once when the page opens
@@ -134,7 +134,6 @@ export function HomePage() {
         </section>
       )}
 
-      <p className="u-hatch rounded-2xl px-4 py-2.5 text-sm text-muted-foreground">Leave and payslips are coming next - your leave balance and payslips will appear here as those modules are built.</p>
     </div>
   )
 }
