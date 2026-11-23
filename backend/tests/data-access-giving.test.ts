@@ -114,3 +114,53 @@ describe('saved data access comes back the way requests read it', () => {
     expect(me.dataAccess.EMPLOYEES).toEqual({ READ: [{ companyId: companyA, plantId: plantA, departmentId: null }], WRITE: [{ companyId: companyA, plantId: plantA, departmentId: null }] })
   })
 })
+
+// Found in the 2026-11-23 review: changing a role reaches everyone who has it, over their own rows - before, only the
+// areas were compared with the editor's best level anywhere, so an editor with Salary for one company could add Salary
+// to a role held over every company (by themselves or by someone they gave an empty role to).
+describe('changing a role stays within the editor\'s data access over its holders', () => {
+  let editor: ReturnType<typeof userWith>
+  let wideRoleId: number
+  let narrowRoleId: number
+
+  beforeAll(async () => {
+    const companyA = (await createCompany()).id
+    const plantA = (await createPlant(companyA)).id
+    const editorEmployee = await createEmployee({ companyId: companyA, plantId: plantA })
+    const wideHolder = await createEmployee({ companyId: companyA, plantId: plantA })
+    const narrowHolder = await createEmployee({ companyId: companyA, plantId: plantA })
+    const superAdmin = userWith(editorEmployee, [], { isSuperAdmin: true })
+    wideRoleId = (await rolesService.createRole({ name: `Wide ${wideHolder.employeeCode}`, access: { EMPLOYEES: 'READ' } }, superAdmin)).id
+    narrowRoleId = (await rolesService.createRole({ name: `Narrow ${narrowHolder.employeeCode}`, access: { EMPLOYEES: 'READ' } }, superAdmin)).id
+    for (const [code, roleId, rows] of [
+      [wideHolder.employeeCode, wideRoleId, [row(null, null, null)]],
+      [narrowHolder.employeeCode, narrowRoleId, [row(companyA, null, null)]],
+    ] as const) {
+      await accountsService.createLogin(superAdmin, { employeeCode: code })
+      await accountsService.setAccountRoles({ employeeCode: code, roles: [{ roleId, dataAccess: [...rows] }] }, superAdmin)
+    }
+    // Roles & access Edit for every company; Salary View only for company A
+    editor = userWith(editorEmployee, [
+      { access: { ACCESS: 'WRITE', EMPLOYEES: 'READ' }, rows: [row(null, null, null)] },
+      { access: { SALARY: 'READ' }, rows: [row(companyA, null, null)] },
+    ])
+  })
+
+  it('refuses adding an area the editor has only for some companies to a role held over every company', async () => {
+    await expect(rolesService.updateRole({ id: wideRoleId, access: { EMPLOYEES: 'READ', SALARY: 'READ' } }, editor)).rejects.toThrow('data access beyond yours for: Employee · Salary')
+  })
+
+  it('allows it when every holder is inside the editor\'s data access', async () => {
+    const saved = await rolesService.updateRole({ id: narrowRoleId, access: { EMPLOYEES: 'READ', SALARY: 'READ' } }, editor)
+    expect(saved.access).toEqual({ EMPLOYEES: 'READ', SALARY: 'READ' })
+  })
+
+  it('still allows changes that touch no area (a new description)', async () => {
+    await expect(rolesService.updateRole({ id: wideRoleId, description: 'Read-only directory' }, editor)).resolves.toBeDefined()
+  })
+
+  it('refuses changing a role the editor has themselves', async () => {
+    const holder = { ...editor, roles: [{ id: narrowRoleId, name: 'Narrow' }] }
+    await expect(rolesService.updateRole({ id: narrowRoleId, description: 'mine' }, holder)).rejects.toThrow('a role you have yourself')
+  })
+})

@@ -1,8 +1,9 @@
+import { outsideTransaction } from '#core/audit/capture'
 import { prisma, SYSTEM_ACTOR } from '#core/db/prisma'
 import { writeWorkbook } from '#core/excel/workbook'
 import { approvalsService } from '#modules/approvals'
 import { employeesService } from '#modules/employees'
-import { designationsService, positionsService, salaryComponentsService } from '#modules/organization'
+import { costCentersService, designationsService, positionsService, salaryComponentsService } from '#modules/organization'
 import { readStoredFile } from '#core/storage/file-storage'
 import { changeHistoryService } from '#modules/change-history'
 import { employeeDocumentsService } from '#modules/employees'
@@ -73,6 +74,54 @@ describe('job changes', () => {
     await expect(ask(employee.employeeCode, date(2026, 3, 1), { designationId: engineer })).rejects.toThrow('already has a job change waiting for approval')
     // nothing changes before it applies
     expect((await employeesService.getByCode(employee.employeeCode)).designation).toBeNull()
+  })
+
+  // Found in the 2026-11-23 review: a cancel read "waiting" (or "approved"), then wrote CANCELLED over an approval or an
+  // apply that finished a moment before - a cancelled request whose change was applied. Played out step by step: the
+  // row is held (as a decision landing at the same moment holds it), the cancel runs into it, the row moves on, then
+  // the cancel goes ahead - and must see that it moved on.
+  const racing = async (table: string, id: number, newStatus: string, cancel: () => Promise<unknown>) => {
+    let outcome!: Promise<unknown>
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRawUnsafe(`SELECT id FROM ${table} WHERE id = ${id} FOR UPDATE`)
+        outcome = outsideTransaction(cancel).then(
+          () => 'done',
+          (error: Error) => error.message,
+        )
+        // until the cancel waits for the row
+        for (let tries = 0; tries < 100; tries++) {
+          const [waiting] = await outsideTransaction(() =>
+            prisma.$queryRawUnsafe<{ n: number }[]>(`SELECT count(*)::int AS n FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND datname = current_database()`),
+          )
+          if (waiting!.n > 0) break
+          await new Promise((resolve) => setTimeout(resolve, 50))
+        }
+        await tx.$executeRawUnsafe(`UPDATE ${table} SET status = '${newStatus}' WHERE id = ${id}`)
+      },
+      { timeout: 20_000 },
+    )
+    return outcome
+  }
+
+  it('refuses a cancel when the approval closed the request a moment before', async () => {
+    const employee = await createEmployee({ companyId: companyA, plantId: plantA })
+    const change = await ask(employee.employeeCode, date(2026, 2, 1))
+    const outcome = await racing('approval_requests', change.approvalRequestId, 'APPROVED', () =>
+      jobChangesService.cancelJobChange(hr, { id: change.id, reason: 'Changed our mind' }),
+    )
+    expect(outcome).toContain('decided a moment ago')
+    expect((await approvalsService.statusOf([change.approvalRequestId])).get(change.approvalRequestId)?.status).toBe('APPROVED')
+    expect((await jobChangesService.getJobChange(hr, change.id)).status).toBe('PENDING')
+  })
+
+  it('refuses cancelling an approved change that was applied a moment before', async () => {
+    const employee = await createEmployee({ companyId: companyA, plantId: plantA })
+    const change = await ask(employee.employeeCode, date(2099, 1, 1))
+    expect((await approve(change.id)).status).toBe('APPROVED')
+    const outcome = await racing('job_change_requests', change.id, 'APPLIED', () => jobChangesService.cancelJobChange(hr, { id: change.id }))
+    expect(outcome).toContain('applied a moment ago')
+    expect((await jobChangesService.getJobChange(hr, change.id)).status).toBe('APPLIED')
   })
 
   it('needs "Request job changes" to ask - Employees Edit alone no longer does (2026-11-21)', async () => {
@@ -314,6 +363,10 @@ describe('job changes', () => {
     const hrBoth = userWith(hrEmployee, [{ access: { EMPLOYEES: 'WRITE', JOB_CHANGE_REQUEST: 'WRITE' }, rows: [row(companyA, null, null), row(companyC.id, null, null)] }])
     await expect(jobChangesService.createJobChange({ ...transfer, kind: 'TRANSFER' }, hrBoth)).rejects.toThrow('is a company transfer')
     await expect(jobChangesService.createJobChange({ ...transfer, plantId: undefined }, hrBoth)).rejects.toThrow('plant and department of the new company')
+    // found in the 2026-11-23 review: the old company's cost centre, kept selected, passed as "unchanged"
+    const oldCostCenter = await costCentersService.createCostCenter({ companyId: companyA, code: `CC${tag}`, name: 'Old company' }, SYSTEM_ACTOR)
+    await prisma.employee.update({ where: { id: employee.id }, data: { costCenterId: oldCostCenter.id } })
+    await expect(jobChangesService.createJobChange({ ...transfer, costCenterId: oldCostCenter.id }, hrBoth)).rejects.toThrow(/cost cent/i)
 
     await chainsService.saveChain(admin, { kind: 'JOB_CHANGE', companyId: companyA, steps: [{ approverType: 'ROLE', roleId: role.id, seesConfidential: false }] })
     try {

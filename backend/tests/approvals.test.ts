@@ -134,6 +134,31 @@ describe('the approval service', () => {
     expect((await approvalsService.listToDecide(adminViewer)).map((r) => r.id)).toContain(second.approvalId)
   })
 
+  // found in the 2026-11-23 review: a role step whose only holder lost the role after it opened waited for nobody, unseen
+  it('holds a role step whose approvers are all gone, and sends it to the fallback approver once there is one', async () => {
+    const companyG = (await createCompany()).id
+    const plantG = (await createPlant(companyG)).id
+    const gAdmin = userWith({ id: 0, employeeCode: 'GADMIN' }, [{ access: { APPROVAL_CHAINS: 'WRITE', EMPLOYEES: 'WRITE', JOB_CHANGE_REQUEST: 'WRITE' }, rows: [row(companyG, null, null)] }])
+    const onlyRole = await createRole()
+    const holder = await createEmployee({ companyId: companyG, plantId: plantG })
+    const login = await giveLogin(holder.id, [{ roleId: onlyRole.id, companyId: companyG }])
+    await chainsService.saveChain(gAdmin, { kind: 'JOB_CHANGE', companyId: companyG, steps: [{ approverType: 'ROLE', roleId: onlyRole.id, seesConfidential: false }] })
+    const { approvalId } = await raise(companyG, plantG)
+    expect((await approvalsService.getRequest(gAdmin, approvalId)).steps[0]).toMatchObject({ status: 'OPEN', byFallback: false })
+    // the only holder loses the role
+    await prisma.userAccountRole.deleteMany({ where: { accountId: login.id } })
+    await approvalsService.runDaily({ requestIds: [approvalId] })
+    const held = await approvalsService.getRequest(gAdmin, approvalId)
+    expect(held.held?.reason).toContain('not even the fallback approver')
+    expect(held.steps[0]).toMatchObject({ status: 'WAITING' })
+    expect((await approvalsService.listHeld(gAdmin)).map((r) => r.id)).toContain(approvalId)
+    // a fallback approver for company G: sent through again, it is theirs - never approved by itself
+    const admin = await createEmployee({ companyId: companyG, plantId: plantG })
+    await giveLogin(admin.id, [{ roleId: await fallbackRoleId(), companyId: companyG }])
+    const retried = await approvalsService.retryRouting(gAdmin, approvalId)
+    expect([retried.status, retried.held, retried.steps[0]!.status, retried.steps[0]!.byFallback]).toEqual(['PENDING', null, 'OPEN', true])
+  })
+
   it('rejects only with a reason, lets the requester cancel, and takes one decision per step', async () => {
     const first = await raise(companyA, plantA)
     await expect(approvalsService.decide(approver, { id: first.approvalId, approve: false })).rejects.toThrow('reason')

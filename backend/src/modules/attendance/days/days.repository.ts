@@ -109,6 +109,14 @@ export function listOpenLocks(db: DbClient = prisma) {
 }
 
 // The results of one employee's days from..to replace the ones kept
+// Holds these employees' attendance days until the transaction ends (in id order, so two batches never wait on each other
+// in a circle) - a recompute reads and writes them only while it holds them (2026-11-23)
+export async function lockEmployees(employeeIds: number[], db: DbClient) {
+  if (!employeeIds.length) return
+  const ids = [...new Set(employeeIds)].sort((a, b) => a - b)
+  await db.$queryRaw`SELECT count(pg_advisory_xact_lock(hashtext('attendance-days'), id))::int AS locked FROM unnest(${ids}::int[]) AS id`
+}
+
 export async function replaceDays(employeeId: number, from: Date, to: Date, rows: DayRow[], db: DbClient = prisma) {
   await db.attendanceDay.deleteMany({ where: { employeeId, date: { gte: from, lte: to } } })
   if (rows.length) await db.attendanceDay.createMany({ data: rows.map((row) => ({ ...row, ...createdBy(SYSTEM_ACTOR) })) })

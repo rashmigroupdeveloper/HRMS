@@ -122,6 +122,24 @@ export function updateResetCode(
 }
 
 // Wrong passwords in a row, and the lock (null = not locked).
+// One more wrong password, counted in the database itself - parallel wrong passwords each count (2026-11-23: each read
+// the same count and wrote count + 1). Returns the count with this one.
+export async function addLoginFailure(accountId: number, actorId: ActorId, db: DbClient = prisma) {
+  const row = await db.userAccount.update({ where: { id: accountId }, data: { failedLoginCount: { increment: 1 }, ...updatedBy(actorId) }, select: { failedLoginCount: true } })
+  return row.failedLoginCount
+}
+
+// Takes one try of the live reset code (`resetCodeHash`) before it is compared - null when none is left, or the code was
+// replaced or used meanwhile. Counted in the database itself, as addLoginFailure. Returns the tries used, with this one.
+export async function takeResetCodeTry(accountId: number, resetCodeHash: string, maxTries: number, actorId: ActorId, db: DbClient = prisma) {
+  const [row] = await db.userAccount.updateManyAndReturn({
+    where: { id: accountId, resetCodeHash, resetCodeFailedAttempts: { lt: maxTries } },
+    data: { resetCodeFailedAttempts: { increment: 1 }, ...updatedBy(actorId) },
+    select: { resetCodeFailedAttempts: true },
+  })
+  return row?.resetCodeFailedAttempts ?? null
+}
+
 export function setLoginFailures(
   accountId: number,
   data: { failedLoginCount: number; lockedUntil: Date | null },

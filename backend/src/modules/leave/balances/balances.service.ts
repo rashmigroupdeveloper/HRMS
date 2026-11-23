@@ -208,22 +208,10 @@ export async function creditDue(asOf: Date = today(), only?: { employeeIds: numb
   const types = (await typesService.allTypes()).filter((t) => t.isPaid)
   let credited = 0
   let lapsed = 0
-  // the year end first: every year ended since the type was added
-  for (const type of types.filter((t) => t.maxCarryForward !== null)) {
-    for (let year = type.createdAt.getUTCFullYear(); Date.UTC(year + 1, 0, 1) <= asOf.getTime(); year++) {
-      const yearEnd = new Date(Date.UTC(year, 11, 31))
-      const balances = (await balancesRepository.sumTypeForEveryone(type.id, yearEnd)).filter((b) => !only || only.employeeIds.includes(b.employeeId))
-      lapsed += await balancesRepository.addEntries(
-        balances
-          .filter((b) => round2(b.days - type.maxCarryForward!) > 0)
-          .map((b) => ({ employeeId: b.employeeId, leaveTypeId: type.id, kind: 'LAPSE' as const, days: -round2(b.days - type.maxCarryForward!), effectiveDate: yearEnd, period: String(year) })),
-        SYSTEM_ACTOR,
-      )
-    }
-  }
   // the monthly credits: every 1st since the type was added, up to asOf
   const peopleOn = new Map<string, Person[]>()
-  for (const type of types.filter((t) => t.creditPerMonth > 0)) {
+  // not for a retired type: its days can no longer be applied for (2026-11-23: retired types kept being credited)
+  for (const type of types.filter((t) => t.creditPerMonth > 0 && t.isActive)) {
     for (let day = firstCreditDay(type.createdAt); day <= asOf; day = addMonths(day, 1)) {
       const month = monthKey(day)
       if (!peopleOn.has(month)) {
@@ -232,6 +220,25 @@ export async function creditDue(asOf: Date = today(), only?: { employeeIds: numb
       const due = peopleOn.get(month)!.filter((p) => p.status !== 'EXITED' && addMonths(p.dateOfJoining, type.creditAfterMonths) <= day && leaveService.typeAppliesTo(type, p))
       credited += await balancesRepository.addEntries(
         due.map((p) => ({ employeeId: p.id, leaveTypeId: type.id, kind: 'CREDIT' as const, days: type.creditPerMonth, effectiveDate: day, period: month })),
+        SYSTEM_ACTOR,
+      )
+    }
+  }
+  // then the year end: every year ended since the type was added - after the credits, so a December credit caught up
+  // late (the job was not running on 1 December) is in the balance that lapses (2026-11-23: it was added after the lapse
+  // and never lapsed); January's credits are dated in the new year and do not count
+  for (const type of types.filter((t) => t.maxCarryForward !== null)) {
+    for (let year = type.createdAt.getUTCFullYear(); Date.UTC(year + 1, 0, 1) <= asOf.getTime(); year++) {
+      const yearEnd = new Date(Date.UTC(year, 11, 31))
+      const balances = (await balancesRepository.sumTypeForEveryone(type.id, yearEnd, new Date(Date.UTC(year + 1, 0, 1)))).filter((b) => !only || only.employeeIds.includes(b.employeeId))
+      // leave of the new year approved in the old one (applied in December for January) was checked against the whole
+      // balance - it is paid from the old year's days first, and only what is left above the carry-forward lapses (the
+      // user, 2026-11-23: before, those days lapsed too and the balance went below zero)
+      const lapsing = (b: (typeof balances)[number]) => round2(b.days + b.takenLater - type.maxCarryForward!)
+      lapsed += await balancesRepository.addEntries(
+        balances
+          .filter((b) => lapsing(b) > 0)
+          .map((b) => ({ employeeId: b.employeeId, leaveTypeId: type.id, kind: 'LAPSE' as const, days: -lapsing(b), effectiveDate: yearEnd, period: String(year) })),
         SYSTEM_ACTOR,
       )
     }

@@ -153,7 +153,9 @@ export async function createJobChange(input: z.infer<typeof createJobChangeInput
         message: now.latestEntryFrom ? `The change must apply after the latest entry of the job timeline (${day(after)})` : `The change must apply after the date of joining (${day(after)})`,
       })
     }
-    await jobHistoryService.checkJobChange(employee.id, companyAfter, toCompany !== null ? { ...base, plantId: 0, departmentId: 0 } : base, next)
+    // a company transfer: the place and the cost centre are all checked against the new company (2026-11-23: the old
+    // company's cost centre, kept selected, passed as "unchanged")
+    await jobHistoryService.checkJobChange(employee.id, companyAfter, toCompany !== null ? { ...base, plantId: 0, departmentId: 0, costCenterId: null } : base, next)
   }
   let salary: (SalaryInput & { currency: string }) | null = null
   if (input.salary) {
@@ -245,6 +247,9 @@ approvalsService.registerFeature('JOB_CHANGE', {
 
 // --- Apply (on its day) ---
 
+// The change was applied or cancelled by someone else while this apply ran - everything it wrote is undone, quietly
+class AlreadyHandled extends Error {}
+
 // Applies an approved change whose day has come, in a transaction of its own - everything checked again first. One that
 // cannot be applied stays approved with the reason (applyError); the daily job tries it again.
 export async function applyNow(id: number, actorId: ActorId) {
@@ -261,7 +266,7 @@ export async function applyNow(id: number, actorId: ActorId) {
       if (record.changedFields.length || record.companyId !== null) {
         const next = merged(now.details, record)
         const toCompany = record.companyId !== null && record.companyId !== now.companyId ? record.companyId : null
-        await jobHistoryService.checkJobChange(record.employeeId, toCompany ?? now.companyId, toCompany !== null ? { ...now.details, plantId: 0, departmentId: 0 } : now.details, next, tx)
+        await jobHistoryService.checkJobChange(record.employeeId, toCompany ?? now.companyId, toCompany !== null ? { ...now.details, plantId: 0, departmentId: 0, costCenterId: null } : now.details, next, tx)
         const result = await jobHistoryService.applyJobChange(
           record.employeeId,
           { details: next, companyId: toCompany, effectiveFrom: record.effectiveFrom, kind: record.kind, note: record.reason, jobChangeRequestId: record.id },
@@ -299,14 +304,18 @@ export async function applyNow(id: number, actorId: ActorId) {
           tx,
         )
       }
-      await jobChangesRepository.update(record.id, { status: 'APPLIED', appliedAt: new Date(), appliedById: actorId, applyError: null, before }, actorId, tx)
+      // still approved now that everything above is written (cancelled or applied by someone else in the meantime: undo it all)
+      const marked = await jobChangesRepository.updateIfStatus(record.id, 'APPROVED', { status: 'APPLIED', appliedAt: new Date(), appliedById: actorId, applyError: null, before }, actorId, tx)
+      if (!marked) throw new AlreadyHandled()
       return true
     })
   } catch (error) {
     // nothing was saved: the copies go, the reason is kept
     for (const key of files.newKeys) await deleteFile(key).catch(() => undefined)
+    if (error instanceof AlreadyHandled) return false
     const message = error instanceof Error ? error.message : String(error)
-    await jobChangesRepository.update(id, { applyError: message }, actorId).catch(() => undefined)
+    // only on a change still waiting to be applied (never "not applied because" on one applied or cancelled meanwhile)
+    await jobChangesRepository.updateIfStatus(id, 'APPROVED', { applyError: message }, actorId).catch(() => undefined)
     return false
   }
   // saved - what follows never undoes it (the rows point at the copies now)
@@ -322,8 +331,8 @@ export async function applyDue() {
   const failed: string[] = []
   for (const record of await jobChangesRepository.listDue(today())) {
     if (record.employee.status === 'EXITED') {
-      await jobChangesRepository.update(record.id, { status: 'CANCELLED', cancelledAt: new Date(), cancelledById: SYSTEM_ACTOR, cancelReason: 'The employee has left' }, SYSTEM_ACTOR)
-      cancelled++
+      // only while still approved (not over one applied or cancelled a moment before)
+      if (await jobChangesRepository.updateIfStatus(record.id, 'APPROVED', { status: 'CANCELLED', cancelledAt: new Date(), cancelledById: SYSTEM_ACTOR, cancelReason: 'The employee has left' }, SYSTEM_ACTOR)) cancelled++
       continue
     }
     if (await applyNow(record.id, SYSTEM_ACTOR)) applied++
@@ -563,6 +572,12 @@ export async function cancelJobChange(viewer: CurrentUser, { id, reason }: z.inf
   }
   if (record.status !== 'APPROVED') throw new ORPCError('CONFLICT', { message: `This change is ${STATUS_LABEL[record.status].toLowerCase()} - it cannot be cancelled` })
   if (!hasLevelAt(viewer, 'EMPLOYEES', placementOf(record), 'WRITE')) throw new ORPCError('FORBIDDEN', { message: 'Cancelling an approved change needs Employees: Edit for the employee' })
-  await jobChangesRepository.update(id, { status: 'CANCELLED', cancelledAt: new Date(), cancelledById: viewer.employeeId, cancelReason: reason ?? null }, viewer.employeeId)
+  const cancelled = await jobChangesRepository.updateIfStatus(
+    id,
+    'APPROVED',
+    { status: 'CANCELLED', cancelledAt: new Date(), cancelledById: viewer.employeeId, cancelReason: reason ?? null },
+    viewer.employeeId,
+  )
+  if (!cancelled) throw new ORPCError('CONFLICT', { message: 'This change was applied a moment ago - it cannot be cancelled now' })
   return getJobChange(viewer, id)
 }

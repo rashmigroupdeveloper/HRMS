@@ -155,3 +155,9 @@ export function listUnconfirmedJoining(from: Date, to: Date, db: DbClient = pris
     },
   })
 }
+
+// Every joining-form session of the candidate (candidates.portal) - ended when HR sends a new link (2026-11-23). Here, not in
+// portal.repository: the offer letters (which send the link) cannot depend on the portal, which depends on them.
+export function deletePortalSessions(candidateId: number, db: DbClient = prisma) {
+  return db.candidateSession.deleteMany({ where: { candidateId } })
+}

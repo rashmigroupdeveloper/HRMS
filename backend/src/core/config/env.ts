@@ -1,8 +1,10 @@
 import { existsSync } from 'node:fs'
 import { z } from 'zod'
 
-// Load backend/.env in development (Node built-in). In production the real environment is used.
-if (existsSync('.env')) process.loadEnvFile('.env')
+// Load backend/.env in development (Node built-in). In production the real environment is used. Not in the tests: vitest.config.ts
+// has loaded it already and taken SMTP_HOST out so tests never send real e-mail - loading it again here put it back
+// (found 2026-11-23: test runs were talking to the real mail server).
+if (existsSync('.env') && process.env.NODE_ENV !== 'test') process.loadEnvFile('.env')
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

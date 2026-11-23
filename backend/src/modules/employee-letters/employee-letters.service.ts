@@ -196,13 +196,14 @@ async function emailLetter(details: Details, kind: EmployeeLetterKind, letterNum
   const to = e.workEmail ?? e.personalEmail
   if (!to) return null
   try {
-    await sendMail({
+    const result = await sendMail({
       to,
       subject: `${KIND_NAME[kind]} - ${e.company.name}`,
       text: [`Dear ${details.name},`, '', `Please find attached your ${KIND_NAME[kind].toLowerCase()} (${letterNumber}).`, '', 'You can also see it in HRMS under My profile > Letters.'].join('\n'),
       attachments: [{ filename: fileNameOf(kind, letterNumber), content: Buffer.from(pdf), contentType: 'application/pdf' }],
     })
-    return to
+    // no mail server (only saved in the outbox folder): not e-mailed - the letter is not marked as sent (2026-11-23)
+    return result === 'SAVED_TO_OUTBOX' ? null : to
   } catch (error) {
     console.error(`[mail] ${kind} ${letterNumber} to ${e.employeeCode} failed:`, error)
     return null

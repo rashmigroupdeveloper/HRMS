@@ -109,6 +109,8 @@ export async function assignShift({ employeeCodes, patternId, startWeek, policyI
   const patternDay = patternDayOf(effectiveFrom, startWeek, pattern.days.length)
   // the policy named must be in use (none: the default policy)
   if (policyId) await policiesService.getActivePolicy(policyId)
+  // a schedule reaches every day from its date on: not across a locked attendance month (2026-11-23)
+  await daysService.assertNothingLockedFrom(effectiveFrom)
   const ids = await employeesService.mapCodesToIds(employeeCodes)
   const unknown = [...new Set(employeeCodes)].filter((code) => !ids.has(code))
   if (unknown.length) throw new ORPCError('BAD_REQUEST', { message: `No employee found with code ${unknown.slice(0, 5).join(', ')}` })

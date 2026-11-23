@@ -159,7 +159,7 @@ function assertCanPlace(viewer: CurrentUser, placement: Placement) {
 }
 
 // Whether the viewer's access in an area covers the candidate (e.g. the medical part of the joining form)
-export function viewerHasAt(viewer: CurrentUser, candidate: Parameters<typeof placementOf>[0], area: 'MEDICAL', level: AccessLevel) {
+export function viewerHasAt(viewer: CurrentUser, candidate: Parameters<typeof placementOf>[0], area: 'MEDICAL' | 'EMPLOYEE_IDS_BANK' | 'SALARY', level: AccessLevel) {
   return hasLevelAt(viewer, area, placementOf(candidate), level)
 }
 
@@ -509,6 +509,11 @@ export async function recordJoiningFormOpened(id: number, actorId: ActorId, db?:
   const candidate = await getCandidate(id, db)
   if (candidate.joiningFormOpenedAt) return candidate
   return candidatesRepository.update(id, { joiningFormOpenedAt: new Date(), joiningFormOpenedById: actorId }, actorId, db)
+}
+
+// Signs the candidate out of their joining-form page everywhere (a new link was sent: the old one's sessions end)
+export async function endPortalSessions(candidateId: number, db?: DbClient) {
+  await candidatesRepository.deletePortalSessions(candidateId, db)
 }
 
 // OFFERED -> DECLINED, answered online by the candidate (System)

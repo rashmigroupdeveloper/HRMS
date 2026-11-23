@@ -574,6 +574,8 @@ region (on the work location), the work location's address, lay offs, and the jo
   2026-11-22): **comp-off claims** - work on a weekly off / holiday is claimed from My attendance, the punches decide (8 h
   = a day, 4 h = half a day), within 30 days, approved by the manager (kind COMP_OFF), credited to the comp-off type (the
   seeded CO) and expiring 90 days after the day worked (the nightly leave job lapses it).
+- **Settled with the user (2026-11-23):** a leave of the new year approved in the old one is paid from the old year's
+  days before they lapse (only what is left above the carry-forward lapses on 1 January).
 - **Settled with the user (2026-11-22):** the leave year is the calendar year; leave and regularization are approved by the
   reporting manager only (as seeded); the seeded leave types stay until HR gives the real ones (changed on Team leave >
   Leave types, no code needed).
@@ -591,6 +593,55 @@ region (on the work location), the work location's address, lay offs, and the jo
   days block the lock).
 - **Ask HR:** see "Questions to settle with HR" (the real leave types and days, 30 days back for a regularization; comp-off:
   8 h / 4 h, 30 days to claim and 90 days to use - the old HRMS's numbers, the user chose them for now).
+
+### 30. Bugs found in the code review of 2026-11-23 - not fixed yet
+A read-through of every module built so far. **Fixed the same day:** editing a role now checks the holders' data access (and
+nobody edits a role they have); a cancel racing an approval or an apply no longer leaves a cancelled request with its change
+applied; punch files with "Date" + "Punch Time", impossible months, CSVs named without .csv; the new-login and letter
+e-mails no longer say "e-mailed" when only saved in the outbox; the tests no longer reach the real mail server; a January
+leave approved in December is paid from the old year's days at the lapse (the user's rule), so the balance never goes below
+zero. **Fixed the same day, the medium list (the user approved the order):** the pre-employment medical needs Medical;
+candidate ID / bank / medical documents and the signed joining form / offer letter need the matching access; every code
+try, wrong password and reset-code try is counted in the database (parallel guesses each count; a login's tries count
+across its code, e-mail and former codes); only the newest letter's link opens the joining form and a new link signs the
+candidate out everywhere; a leave starts and ends on a working day (the user's rule); retired types get no credits; the
+credits run before the year-end lapse; one leave / one comp-off claim per double click; two recomputes of one employee
+wait for each other; one lock per month; two taps within 5 minutes are one punch; a company transfer checks the cost
+centre against the new company; the import checks managers again against the saved data; the day board shows a day to
+come as "not in yet"; holidays and schedules are refused inside a locked month; a role step whose approvers are all gone
+goes to the fallback approver (or is held). **Waiting** (each fixed with a test when picked up; most severe first):
+- **Ask the user:** (a) a monthly credit switched on later (or a type made to apply to more people) credits every month back
+  to when the type was made - from the change, or back-dated? (b) a holiday added on an approved leave day - give the day
+  back? (c) comp-off: a leave uses the days closest to expiry first, across all of an employee's comp-off - also comp-off
+  earned after the leave (so HR's days given earlier, once used, can keep a later comp-off from lapsing) - or only the days
+  that existed on the leave's date? (d) shift / pattern edits rework days already worked out - needs the shifts and patterns
+  kept by version (a schema change, to propose); (e) a daily cap on forgot-password codes per login - needs a column.
+- **Leave:** comp-off expiry has no once-only key; credits a month late for joiners on the 29th-31st; two cancel requests at
+  once.
+- **Attendance:** a night-shift punch is lock-checked by its calendar day; correcting one half wipes the other half's
+  correction; the 48-hour roster warning counts only the days on screen.
+- **Approvals / job changes:** the daily job writes from an old snapshot (reassigning a step decided a moment before).
+- **Employees / onboarding:** out-of-scope employees can be told apart by their error messages.
+- **Everywhere:** "today" is the server's clock with no time zone set - on a UTC server every date rule is a day behind
+  from 00:00 to 05:30 IST. **Needs:** TZ=Asia/Kolkata on the server, or today() in IST.
+- **Low:** forgot-password answers tell real codes apart ("4 tries left" vs generic); a reset code works on a turned-off
+  login; an admin reset lets HR sign in as a manager / HOD (design question); a lay-off does not affect approval routing;
+  layoffs can be recorded for an exited employee, and their update checks overlap outside a transaction; an AUTO_APPROVE
+  step can approve with no human; the old manager can still decide until the 07:30 hand-over; HODs can be appointed to
+  retired plant-departments; retired departments / companies / masters can still be set through the API; the import
+  matches master names loosely and loses leading zeros of numeric codes, and treats former and current codes of one
+  employee as two rows; rich-text hyperlink cells read as "[object Object]"; document downloads by id name the owner's
+  code when out of scope; a failed portal submit uses up the signing code; portal uploads have no count limit; the
+  offer page shows ACCEPTED after a withdrawal; HR's reminder lists joinings they can no longer confirm; one error stops
+  the nightly offer expiry; a step failing after saving a letter deletes its PDF; a candidate's accept and HR's withdraw
+  at once (last write wins); comp-off approved late can expire at once; an approved leave in a past year can be cancelled
+  and its days come back; a night-to-morning shift pair can swap punches; a 4-day pattern assigned from a Thursday
+  starts on its day 4; `attendance.punches.addManual` answers 409 where the tracker says 400; the day board / Today card
+  around midnight on a UTC server.
+- **Found while fixing:** a role-change race - giving someone an area-less role with wide rows while another editor adds
+  areas to that role: each check passes on its own snapshot; the test setup runs `npx prisma migrate deploy`, which
+  fetches the newest Prisma (a pre-release) when the packages are not installed - it should call the installed one.
+- **Not reviewed yet:** the frontend (only the backend was read).
 
 ## Questions to settle with HR
 

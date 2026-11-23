@@ -74,7 +74,8 @@ function parseText(value: string): { wall: Date } | { instant: Date } | null {
   if (ampm === 'PM' && hour < 12) hour += 12
   if (ampm === 'AM' && hour === 12) hour = 0
   const wall = new Date(Date.UTC(y, mo - 1, d, hour, Number(m[5]), Number(m[6] ?? 0)))
-  return wall.getUTCDate() === d && hour < 24 ? { wall } : null
+  // the day and the month as written (13-12-2025 read as month 13 would roll over into the next January)
+  return wall.getUTCDate() === d && wall.getUTCMonth() === mo - 1 && hour < 24 ? { wall } : null
 }
 
 // A date cell / text and a time cell / text together
@@ -104,7 +105,8 @@ function joinDateTime(date: CellValue, time: CellValue): { wall: Date } | null {
 export async function uploadPunches({ file }: z.infer<typeof uploadPunchesInput>, viewer: CurrentUser) {
   const actorId = viewer.employeeId
   const bytes = new Uint8Array(await file.arrayBuffer())
-  const isCsv = /\.(csv|txt)$/i.test(file.name) || (bytes[0] !== 0x50 && bytes[1] !== 0x4b)
+  // an Excel file starts with "PK" (a zip); anything else is read as CSV text - also a CSV whose first letter is a P
+  const isCsv = /\.(csv|txt)$/i.test(file.name) || bytes[0] !== 0x50 || bytes[1] !== 0x4b
   let sheet
   try {
     sheet = isCsv ? parseCsv(new TextDecoder().decode(bytes)) : await readFirstSheet(bytes)
@@ -146,13 +148,20 @@ export async function uploadPunches({ file }: z.infer<typeof uploadPunchesInput>
       continue
     }
     const zone = (employeeId && zoneOf.get(employeeId)) || DEFAULT_ZONE
-    const cell = dateTimeHeader ? values[dateTimeHeader] : null
     let punchedAt: Date | null = null
-    if (cell instanceof Date) punchedAt = wallClockToInstant(cell, zone)
+    // the date-time column, when its cell really holds a date and a time (it wins: a night shift's out punch can be the
+    // day after the file's "Date")
+    const cell = dateTimeHeader ? values[dateTimeHeader] : null
+    // a time-only Excel cell comes as a day of 1899 - not a date and a time
+    if (cell instanceof Date && cell.getUTCFullYear() >= 2000) punchedAt = wallClockToInstant(cell, zone)
     else if (typeof cell === 'string') {
       const parsed = parseText(cell)
       punchedAt = parsed ? ('instant' in parsed ? parsed.instant : wallClockToInstant(parsed.wall, zone)) : null
-    } else if (dateHeader && timeHeader) {
+    }
+    // otherwise a "Date" column and a time column together - also when the time column is called "Punch time" or "Log
+    // time", which are date-time names too (2026-11-23: "Date" + "Punch Time", the usual machine export, was read as a
+    // date-time column alone - time-only cells became punches of 30-12-1899, text times were all refused)
+    if (!punchedAt && dateHeader && timeHeader) {
       const joined = joinDateTime(values[dateHeader] ?? null, values[timeHeader] ?? null)
       punchedAt = joined ? wallClockToInstant(joined.wall, zone) : null
     }

@@ -413,7 +413,8 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
   tick that everything of the joining is done - not `completedAt`, the record being created), `payrollUpdatedAt` /
   `payrollUpdatedBy`, `idCardIssuedAt` / `idCardIssuedBy`,
   `inductionDate`, and the pre-employment medical copied from onboarding (`medicalResult`, `medicalExamDate`,
-  `medicalExaminer`, `medicalRestrictions`);
+  `medicalExaminer`, `medicalRestrictions` - only with Medical covering the employee, else null with
+  `medicalHidden: true` when one is recorded - 2026-11-23);
   plus `addresses[]`, `emergencyContacts[]`, `identityDocuments[]` (`type`, **`numberLast4`**, `nameOnDocument`,
   `issuingCountry`, `validFrom`, `validUntil`), `bankAccounts[]` (`bankName`, `branch`, `accountHolderName`,
   **`accountNumberLast4`**, `ifsc`, `accountType`, `isSalaryAccount`), `statutory` (all EPF / ESIC answers, UAN, PF and
@@ -628,11 +629,14 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 ### `employees.documents.download`
 - **HTTP:** `POST /api/rpc/employees/documents/download` · **Code:** `backend/src/modules/employees/documents/`
 - **Access:** as `employees.documents.list`.
-- **Scope:** one's own record; anyone else's: Employee · Documents & letters View and Employee · Directory & job View covering the employee (else `404`); a sensitive type also needs its area covering.
+- **Scope:** one's own record; anyone else's: Employee · Documents & letters View and Employee · Directory & job View covering the employee (else `404`); a sensitive type also needs its area covering (ID / bank copies, EPF / ESIC forms and - since 2026-11-23 -
+  the signed joining form: IDs, bank & statutory; medical documents: Medical; the signed forms pack: both; since 2026-11-23
+  the signed offer letter: Salary).
 - **Input:** `{ id: number }`
 - **Returns:** the file (`File`, with its original name and type).
 - **What it does:** downloads one employee document.
-- **Errors:** `403` someone else's without Employees: View · `404 NOT_FOUND` unknown document.
+- **Errors:** `403 FORBIDDEN` a sensitive type without its area ("This document also needs the ... access") · `404
+  NOT_FOUND` unknown document, or someone else's outside the data access.
 
 ### `employees.documents.upload`
 - **HTTP:** `POST /api/rpc/employees/documents/upload` · **Code:** `backend/src/modules/employees/documents/`
@@ -791,7 +795,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
   centres, and a **Functional manager code** that is not an employee nor another row, has left, or is the employee
   (2026-11-19). With `save: true` and no row in error, all rows are saved in one
   transaction (all or none): new `ACTIVE` employees keeping the code given (an empty one takes the next of the company's
-  series) and the updates, then the reporting and functional managers (a manager may be a later row; a loop is refused).
+  series) and the updates, then the reporting and functional managers (a manager may be a later row; a loop is refused - checked again against the saved data once every row is in, so a loop through a manager's saved manager, or a manager row who has left, refuses the whole file, 2026-11-23).
   A new employee's job timeline starts with its joining entry; an update is a correction of the entry in force (as
   `employees.update`). No logins are
   created (as in the old HRMS). Each employee's HOD post is the plant-department the row places them in (2026-11-19). Every saved file and every file with errors is kept in the history
@@ -981,7 +985,9 @@ access.
   the IP and browser, for the Sessions lists), sets the login's `lastLoginAt` and removes this account's expired
   sessions. Only `ACTIVE` / `ON_NOTICE` employees with a login that is not turned off can log in.
   **Lockout:** 5 wrong passwords in a row lock the login for 15 minutes (an admin can unlock it earlier with
-  `accounts.unlock`); a correct password resets the count. With a temporary password `mustChangePassword` is true.
+  `accounts.unlock`); a correct password resets the count. Each wrong password is counted in the database, so wrong
+  passwords sent at the same moment each count; the 5 tries a minute apply per login too, whatever name it is reached by
+  (code, work e-mail, a former code) - 2026-11-23. With a temporary password `mustChangePassword` is true.
   The change history records the sign-in - or the failed attempt as System, with what was typed and the reason (no
   such code / e-mail, no login, not active, wrong password, locked, turned off) - 2026-11-16. `accounts.logout`
   records the sign-out.
@@ -1048,8 +1054,8 @@ access.
 - **Scope:** not limited by data access (public).
 - **Input:** `{ employeeCode: string, code: string (6 digits), newPassword: string }`
 - **Returns:** `{ changed: true }`
-- **What it does:** checks the code (a wrong one counts; after 5 wrong tries the code stops working - ask for a new
-  one), then sets the new password with the `changePassword` rules (10+ characters, a letter and a digit, not the
+- **What it does:** checks the code (a wrong one counts - each try is counted in the database before the check, so
+  guesses at the same moment each count, 2026-11-23; after 5 wrong tries the code stops working - ask for a new one), then sets the new password with the `changePassword` rules (10+ characters, a letter and a digit, not the
   employee code, not one of the last 5). The password is no longer temporary, the login is unlocked and logged out everywhere, and the code
   is cleared. Changed "by" System - the employee is not logged in.
 - **Errors:** `400` the code is wrong / expired / not asked for ("Ask for a new code"), wrong code with the tries
@@ -1283,12 +1289,16 @@ access.
   the mark moves from any other role; `false` takes it away). Only the fields sent are changed.
 - **Returns:** the updated role.
 - **What it does:** renames a role or changes its access - at once for everyone who has it. Someone who is not a
-  super admin can only change roles within their own access (before and after the change).
+  super admin can only change roles within their own access (before and after the change). Since 2026-11-23 the change
+  is also checked over the people who have the role: every area whose level changes (added, raised, lowered, taken
+  away) must be within the caller's access over **each holder's data-access rows** - the same rule as giving them the
+  role (`403` "People who have this role have data access beyond yours for: ..."); and nobody but a super admin
+  changes a role they have themselves (`403` "You cannot change a role you have yourself").
 - **Re-entered password (2026-11-16):** needs the caller's password confirmed in this session in the last 10 minutes
   (`accounts.confirmPassword`) - else `403 FORBIDDEN` "Enter your password to confirm this change" with
   `data.passwordConfirmationRequired: true`.
-- **Errors:** `400` invalid input · `403 FORBIDDEN` the Super Admin role, or beyond own access · `404 NOT_FOUND`
-  unknown id · `409 CONFLICT` name already used.
+- **Errors:** `400` invalid input · `403 FORBIDDEN` the Super Admin role, beyond own access (also over the holders'
+  data access), or a role the caller has · `404 NOT_FOUND` unknown id · `409 CONFLICT` name already used.
 
 ### `accounts.roles.delete`
 - **HTTP:** `POST /api/rpc/accounts/roles/delete` · **Code:** `backend/src/modules/accounts/roles/`
@@ -1581,7 +1591,9 @@ together with their time, e.g. when a changed offer goes back to draft). Calenda
   codes. After acceptance (`ACCEPTED`) it is the **joining-form link** `APP_URL/joining-form/<token>`: the
   e-mail asks the candidate to fill in their joining form (no letter attached) - and it **opens the joining form** when
   it was not open yet (`joiningFormOpenedAt` / `...ById` = the HR person; an offer with `joiningFormOnAcceptance` false
-  waits for this, 2026-11-20).
+  waits for this, 2026-11-20). A joining-form link also signs the candidate out of every open joining-form session (the
+  old link's - 2026-11-23). Only the newest letter's link opens the joining form: an accepted Letter of Intent's link
+  shows the letter only (2026-11-23).
 - **Errors:** `404 NOT_FOUND` · `409 CONFLICT` the offer is not `OFFERED` / `ACCEPTED`, or has expired.
 
 ### `candidates.offerResponse.view`
@@ -1638,7 +1650,8 @@ together with their time, e.g. when a changed offer goes back to draft). Calenda
 - **Input:** `{ token: string, code: string (6 digits), name: string (1-300) }`
 - **Returns:** the page view (as `view`), `state: ACCEPTED`.
 - **What it does:** the candidate's electronic acceptance: the right code (10 minutes; after 5 wrong tries it stops
-  working) and their full name typed as on the letter (case and spaces ignored). In one transaction the letter records
+  working - every try is counted in the database before the check, so guesses at the same moment each count, 2026-11-23;
+  the same for `decline` and `portal.signIn`) and their full name typed as on the letter (case and spaces ignored). In one transaction the letter records
   the answer and its proof (typed name, time, IP, browser) - the used code is cleared and the count of codes sent starts
   again (2026-11-20), so the codes asked for while answering do not use up the joining form's - and the candidate becomes `ACCEPTED` by System (a Letter of
   Intent: `LOI_ACCEPTED` - the e-mail then says the full offer follows, with no joining-form link). Then the
@@ -1895,11 +1908,15 @@ together with their time, e.g. when a changed offer goes back to draft). Calenda
 ### `candidates.documents.download`
 - **HTTP:** `POST /api/rpc/candidates/documents/download` · **Code:** `backend/src/modules/candidates/documents/`
 - **Access:** Onboarding: View.
-- **Scope:** Onboarding View covering the candidate's company / plant / department (else `404` "No candidate found").
+- **Scope:** Onboarding View covering the candidate's company / plant / department (else `404` "No candidate found"); a
+  sensitive type also needs its area covering the candidate, as on the employee (2026-11-23): ID / bank copies, EPF Form 11,
+  ESIC Form 1 and the signed joining form - Employee · IDs, bank & statutory; medical documents - Employee · Medical; the
+  signed forms pack - both; the signed offer letter - Employee · Salary.
 - **Input:** `{ id: number }` (document id)
 - **Returns:** the file (`File` with the original name and type).
 - **What it does:** reads the file from storage. Works in every status.
-- **Errors:** `400` invalid input · `404 NOT_FOUND` unknown document.
+- **Errors:** `400` invalid input · `403 FORBIDDEN` "This document also needs the ... access" · `404 NOT_FOUND` unknown
+  document.
 
 ### `candidates.documents.review`
 - **HTTP:** `POST /api/rpc/candidates/documents/review` · **Code:** `backend/src/modules/candidates/documents/`
@@ -2064,7 +2081,8 @@ together with their time, e.g. when a changed offer goes back to draft). Calenda
 - **Login (2026-11-15):** in the same transaction the employee gets a login with a temporary password (changed at
   the first sign-in); after it is saved, the employee code, the temporary password and the sign-in address are
   e-mailed to the personal e-mail. The result also has `login: { emailedTo, temporaryPassword }` - `emailedTo` the
-  masked address it went to; when there is no personal e-mail or the e-mail failed, `emailedTo` is null and
+  masked address it went to; when there is no personal e-mail, the e-mail failed, or there is no mail server (only
+  saved in the outbox folder - 2026-11-23, before it was wrongly reported as e-mailed), `emailedTo` is null and
   `temporaryPassword` is given (shown to HR once, to hand over).
 - **Joining tasks (2026-11-16, rules 2026-11-20):** checked before anything is saved: every active task type for the
   joining type (`joiningTasks.types.*`) that HR did not leave out (`skipTaskTypeIds`) must go to a holder of its team role
@@ -2769,7 +2787,8 @@ profile's Letters tab (and on one's own `/me`).
 - **Input:** as `preview`.
 - **Returns:** the letter (shape of `list`), with `emailedTo`.
 - **What it does:** in one transaction gives the next letter number, writes the PDF, stores it and records the letter;
-  then e-mails it with the PDF attached (a mail failure does not undo the letter - `emailedTo` stays null).
+  then e-mails it with the PDF attached (a mail failure does not undo the letter - `emailedTo` stays null; so does an
+  e-mail only saved in the outbox folder when there is no mail server - 2026-11-23).
 - **Errors:** `400` the template is not of this kind / retired / has no complete letterhead, "The letter needs: ..."
   (missing details, e.g. the designation), a confirmation letter without the employee's confirmation date, an
   experience / relieving letter without `lastWorkingDay` or with one before the date of joining, an appointment letter or
@@ -2902,7 +2921,7 @@ Sunday off); rotating employees get a roster built by their manager (reporting t
 (`rosters.*`). **Which shift applies on a day:** a holiday (every company / the company / the location) first, then a
 published roster day, then the default shift. **A day:** the punches go to the day whose shift they are nearest (4h
 before the start to 8h after the end - a night shift's morning punch is the night before's); a working day with no punch
-= absent, one punch = missed punch, else first in -> last out minus the unpaid break: full day = present, half day =
+= absent, one punch = missed punch (punches within 5 minutes of the first are the same tap - 2026-11-23), else first in -> last out minus the unpaid break: full day = present, half day =
 half day, less = absent; late = in after start + grace, early = out before end - grace. Worked out when punches arrive,
 when a default shift / roster / holiday changes and every night at 02:00 for yesterday (worker job
 `attendance.closeYesterday`). HR's correction wins (`days.correct`). Changing a published day: the employee asks, the
@@ -2943,7 +2962,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Scope:** TEAM: the caller's reporting tree; DEPARTMENT: the employees of the places the caller heads as HOD (relationships, not data-access rows); ALL: only employees inside the caller's Attendance View data access.
 - **Input:** `scope` `TEAM` (default - the viewer's reporting tree, every level), `DEPARTMENT` (the employees whose HOD the viewer is) or `ALL` (Attendance: View), `companyIds?`, `workLocationIds?`, `departmentIds?`, `search?` (code or name), `date`
 - **Returns:** `{ date, isToday, items: [{ employeeCode, name, company, department, designation, state, ...day (as `myMonth`, with its halves and covers) }], summary { total, in, late, notIn, absent, off, leave, onDuty } }` - `state` the day's status, or `NOT_IN` today before the first punch (`LEAVE` / `ON_DUTY` when approved leave / on duty covers a day not worked out yet - 2026-11-22).
-- **What it does:** who is in / late / not in yet / absent / off on a day.
+- **What it does:** who is in / late / not in yet / absent / off on a day. A working day with no punch is "not in yet" today and on a day to come, absent only once it has passed (2026-11-23: a day to come showed everyone absent).
 - **Errors:** `400` · `403`.
 
 ### `attendance.days.muster`
@@ -3025,7 +3044,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Input:** `{ employeeCodes (1-2000), patternId (an active schedule pattern), startWeek? (1-8, default 1: which week of the pattern the start date's week is), policyId? (an active attendance policy; null / left out = the default policy - 2026-11-22), effectiveFrom }`
 - **Returns:** `{ assigned }`.
 - **What it does:** the schedule of employees from a date (until the next one; one per employee per date - the user, 2026-11-23): the pattern decides every day (a shift, its first half only, or off), repeating; a 7 / 14 / 21-day pattern lines up with Monday-Sunday - the day of the pattern stored is worked out from `startWeek` and the start date's weekday. And the attendance policy. A half day ends where the shift's first half ends; present = stayed at least the policy's half-day hours from the first in. The days already passed from that date are worked out again. Without one: the default pattern (counted from Monday 1 Jan 2024), the default policy.
-- **Errors:** `400` unknown code, retired policy, `startWeek` past the pattern's weeks · `404` unknown policy or pattern.
+- **Errors:** `400` unknown code, retired policy, `startWeek` past the pattern's weeks · `404` unknown policy or pattern · `409` a locked attendance month on or after the date (its planned days would change - 2026-11-23).
 
 ### `attendance.shifts.assignments`
 - **HTTP:** `POST /api/rpc/attendance/shifts/assignments` · **Code:** `backend/src/modules/attendance/shifts/`
@@ -3123,7 +3142,8 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Scope:** the whole group (`403` otherwise).
 - **Input:** `{ year, month }`
 - **Returns:** the checklist, `locked: true`.
-- **What it does:** works the month's days out once more for everyone employed in it, then locks it (`attendance_month_locks`): its days are not worked out again, and punches (left out of an upload), HR's corrections, roster days and shift changes (asked or approved) for its days are refused until it is opened again.
+- **What it does:** works the month's days out once more for everyone employed in it, then locks it (`attendance_month_locks`): its days are not worked out again, and punches (left out of an upload), HR's corrections, roster days and shift changes (asked or approved) for its days are refused until it is opened again. Two locks of the same month at the
+  same moment make one (checked and saved while the month is held - 2026-11-23).
 - **Errors:** `400` the month is not over yet · `403` · `409` already locked.
 
 ### `attendance.locks.unlock`
@@ -3160,7 +3180,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Input:** `{ date, name, companyId? (empty = every company), workLocationId? (empty = every location) }`
 - **Returns:** the holiday.
 - **What it does:** adds a holiday; a day already passed is worked out again for everyone. Leave will use the same calendar.
-- **Errors:** `400` · `409` the same holiday (date + company + location) already there.
+- **Errors:** `400` · `409` the same holiday (date + company + location) already there, or the date is in a locked attendance month (2026-11-23).
 
 ### `attendance.holidays.update`
 - **HTTP:** `POST /api/rpc/attendance/holidays/update` · **Code:** `backend/src/modules/attendance/holidays/`
@@ -3168,7 +3188,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Scope:** the company it was for and the one it will be for: Attendance setup Edit for that whole company - for every company, all companies (`403`).
 - **Input:** `{ id, ...the fields of create (optional) }`
 - **Returns:** the holiday.
-- **What it does:** changes a holiday (both the old and new dates are worked out again).
+- **What it does:** changes a holiday (both the old and new dates are worked out again). Moving it or giving it to other people needs both dates in open months; a new name alone may be fixed in a locked month (2026-11-23).
 - **Errors:** as `create` · `404`.
 
 ### `attendance.holidays.delete`
@@ -3177,8 +3197,8 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Scope:** a company's holiday: Attendance setup Edit for that whole company; a holiday for every company: for all companies (`403`).
 - **Input:** `{ id }`
 - **Returns:** `{ deleted: true }`.
-- **What it does:** removes a holiday (the day is worked out again).
-- **Errors:** `404`.
+- **What it does:** removes a holiday (the day is worked out again) - not in a locked attendance month (2026-11-23).
+- **Errors:** `404` · `409` a locked month.
 
 ### `attendance.punches.upload`
 - **HTTP:** `POST /api/rpc/attendance/punches/upload` · **Code:** `backend/src/modules/attendance/punches/`
@@ -3186,7 +3206,10 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Scope:** punches only for employees inside the uploader's Attendance **Edit** data access - other rows are left out ("employee code X cannot be used here", without saying whose it is).
 - **Input:** `{ file: File (.xlsx or .csv, up to 10 MB, 50 000 rows) }`
 - **Returns:** `{ uploadId, rowCount, added, duplicates, unmatchedCodes, skipped, errors[] (first 50) }`.
-- **What it does:** the biometric machines' export until the Kent feed is connected. Columns found by header: the employee code (Employee code / Emp Code / EmpId...), the time (Punch time / Date time... - or a Date and a Time column), the machine (Device / Door..., optional). A time without a zone is the clock of the employee's work location (else Asia/Kolkata). The same punch (code + time) is kept once; a code that is no employee waits in `unmatched` (a code an employee had before a company transfer still matches them - 2026-11-20); a future time or an unreadable row is skipped. The days of the punches are worked out at once. Punches are not in the change history (the upload is).
+- **What it does:** the biometric machines' export until the Kent feed is connected. Columns found by header: the employee code (Employee code / Emp Code / EmpId...), the time (Punch time / Date time... - or a Date and a Time column; when a "Punch time" / "Log time" column holds only a
+time of day next to a Date column - the usual machine export - the two are read together, and a full date and time in it
+wins over the Date column - 2026-11-23); a date is read as day-month-year (or year-month-day) and a day or month that does
+not exist is skipped, not rolled over; a file is read as Excel only when it is one (else as CSV text), the machine (Device / Door..., optional). A time without a zone is the clock of the employee's work location (else Asia/Kolkata). The same punch (code + time) is kept once; a code that is no employee waits in `unmatched` (a code an employee had before a company transfer still matches them - 2026-11-20); a future time or an unreadable row is skipped. The days of the punches are worked out at once. Punches are not in the change history (the upload is).
 - **Errors:** `400` not readable, no code / time column, no rows, too many rows · `403`.
 
 ### `attendance.punches.uploads`
@@ -3335,7 +3358,7 @@ HOD step with nobody to decide it is **skipped** with the reason; a role / acces
 approver** (the role marked so - seeded "Admin" - covering the employee). The chains and the held requests are their own access area, **Approval chains** (2026-11-20); a request whose every step was skipped gets a
 fallback step. If even the fallback approver has nobody, the request is **held** - never approved by itself - until its
 routing is repaired and it is sent through again (the daily job `approvals.daily` retries held ones, gives steps to a new
-manager / HOD, and cancels requests of employees who left; reminders follow each step's SLA). Nobody decides a request about
+manager / HOD, and cancels requests of employees who left; a role / access / fallback step whose approvers are all gone - left, lost the login, the role or the data access - goes to the fallback approver, or the request is held, 2026-11-23; reminders follow each step's SLA). Nobody decides a request about
 themselves or one they raised.
 
 **SLA** (2026-11-20, the old HRMS's SLA plus "wait"): each chain step has SLA hours and an action on breach - `WAIT`
@@ -3423,8 +3446,11 @@ already raised go on.
 - **Scope:** as above; not visible to the viewer `404`.
 - **Input:** `{ id: number, reason?: string (1-500) }`
 - **Returns:** the request.
-- **What it does:** takes back a request still waiting - its steps end and the feature records it as cancelled.
-- **Errors:** `400` · `403` · `404` · `409` already decided.
+- **What it does:** takes back a request still waiting - its steps end and the feature records it as cancelled. The
+  request is closed only if it is still waiting at that moment (2026-11-23: a cancel landing just after the last
+  approval used to write "cancelled" over it while the change was applied).
+- **Errors:** `400` · `403` · `404` · `409` already decided (also "decided a moment ago" when an approval closed it
+  while the cancel ran).
 
 ### `approvals.listHeld`
 - **HTTP:** `POST /api/rpc/approvals/listHeld` · **Code:** `backend/src/modules/approvals/`
@@ -3516,7 +3542,7 @@ salary figures). One open change per employee at a time (waiting for approval, o
   | `companyId` | number | for `COMPANY_TRANSFER` | another active company with a code series; then `plantId` and `departmentId` are required |
   | `plantId`, `departmentId` | number | no | a plant of the (new) company - a newly chosen one active; the department runs there |
   | `workLocationId`, `designationId`, `gradeId`, `positionId` | number \| null | no | `null` clears |
-  | `costCenterId` | number \| null | no | an active cost centre of the (new) company; a company transfer without one clears it |
+  | `costCenterId` | number \| null | no | an active cost centre of the (new) company - on a company transfer always checked against the new company, also when it is the employee's present one (2026-11-23); a company transfer without one clears it |
   | `reportingManagerCode` | string \| null | no | an employee who has not left, not the employee, no loop |
   | `functionalManagerCode` | string \| null | no | an employee who has not left, not the employee |
   | `employmentType`, `workforceCategory` | enum | no | |
@@ -3578,8 +3604,10 @@ salary figures). One open change per employee at a time (waiting for approval, o
 - **Input:** `{ id: number, reason?: string (1-500) }`
 - **Returns:** the change, as `get`.
 - **What it does:** cancels a change not in force yet - one waiting for approval cancels its approval too. The employee's
-  slot for a new change is free again.
-- **Errors:** `403` · `404` · `409` in force, rejected or cancelled already.
+  slot for a new change is free again. An approved change is cancelled only if it is still approved at that moment, and
+  applying one only if it is still approved (2026-11-23 - a cancel and the apply landing together no longer leave a
+  cancelled change in force).
+- **Errors:** `403` · `404` · `409` in force, rejected or cancelled already (also "applied a moment ago").
 
 ## leave
 
@@ -3666,7 +3694,7 @@ leave year is the calendar year.
 - **Scope:** every company's employees - Leave Edit for all companies (`assertGroupWide`).
 - **Input:** none
 - **Returns:** `{ credited, lapsed, expired }` - rows added.
-- **What it does:** what the nightly job `leave.creditDue` does, now: every type's monthly credit for each 1st due since the type was added (to everyone employed that day, whose service is long enough - `creditAfterMonths` - and whom the type applies to; no part credit for a joiner's month - old HRMS) and, for each year ended, the balance above the type's `maxCarryForward` lapses (on 31 Dec); and comp-off not used within 90 days of the day worked expires (2026-11-22: what is above the comp-off credits still valid and HR's positive adjustments lapses - expired credits are spent first, as the old HRMS). Each month / year / expiry once per employee and type - running it again adds nothing.
+- **What it does:** what the nightly job `leave.creditDue` does, now: every type's monthly credit for each 1st due since the type was added (to everyone employed that day, whose service is long enough - `creditAfterMonths` - and whom the type applies to; no part credit for a joiner's month - old HRMS) and, for each year ended, the balance above the type's `maxCarryForward` lapses (on 31 Dec) - leave of the new year already approved in the old one (applied in December for January) is paid from the old year's days first, so only what is left above the carry-forward lapses (the user, 2026-11-23: the balance never goes below zero at the lapse); and comp-off not used within 90 days of the day worked expires (2026-11-22: what is above the comp-off credits still valid and HR's positive adjustments lapses - expired credits are spent first, as the old HRMS). Not for a retired type (2026-11-23 - its days can no longer be applied for; its year end still lapses). The credits run before the year end, so a December credit caught up late lapses with the rest (2026-11-23). Each month / year / expiry once per employee and type - running it again adds nothing.
 - **Errors:** `403`.
 
 ### `leave.balances.importTemplate`
@@ -3702,7 +3730,9 @@ leave year is the calendar year.
 - **Scope:** not limited by data access - the caller's own.
 - **Input:** as `preview` + `reason` (3-500).
 - **Returns:** the application `{ id, employee {employeeCode, name}, leaveType {id, code, name, isPaid}, fromDate, toDate, fromSecondHalf, toFirstHalf, days, reason, status (PENDING | APPROVED | REJECTED | CANCELLED), approvalRequestId, approval {status, held, closedAt, closedById, step} | null, cancelRequest {approvalRequestId, status, held, closedAt, closedById, step} | null, cancelReason, createdAt }`.
-- **What it does:** counts the days by the attendance plan (each working half 0.5; a half-day weekday's second half is off; weekly offs / holidays count only for a type with `countsOffDays`) and raises its approval request (kind `LEAVE`; seeded: the reporting manager, 48 h, then escalated to their manager). Refused: a retired type or one that does not apply to the employee; half days on a whole-day type; not employed every day; a locked attendance month; any half already on leave or with a regularization / on-duty request (approved or waiting); more than `maxPerRequest`; for a paid type more than the balance less what waits. When approved: the days are counted again (changed: refused - apply again), the balance must still cover them, a TAKEN row is added and the attendance days show the leave (days already come are worked out again).
+- **What it does:** counts the days by the attendance plan (each working half 0.5; a half-day weekday's second half is off; weekly offs / holidays count only for a type with `countsOffDays`; a leave must start and end on a working day - never on a weekly off or a holiday, the user 2026-11-23) and raises its approval request (kind `LEAVE`; seeded: the reporting manager, 48 h, then escalated to their manager). Refused: a retired type or one that does not apply to the employee; half days on a whole-day type; not employed every day; a locked attendance month; any half already on leave or with a regularization / on-duty request (approved or waiting); more than `maxPerRequest`; for a paid type more than the balance less what waits. When approved: the days are counted again (changed: refused - apply again), the balance must still cover them, a TAKEN row is added and the attendance days show the leave (days already come are worked out again).
+- **Double submit (2026-11-23):** applications of one employee are saved one at a time and checked again then - a double
+  click makes one leave (the second: `409` overlap).
 - **Errors:** `400` the rules above · `404` · `409` overlap, not enough balance, a locked month, the chain switched off.
 
 ### `leave.applications.cancel`
@@ -3747,7 +3777,7 @@ leave year is the calendar year.
 - **Scope:** not limited by data access - the caller's own.
 - **Input:** `{ workDate, reason (3-500) }`
 - **Returns:** the claim `{ id, employee {employeeCode, name}, workDate, days (0.5 | 1), reason, status (PENDING | APPROVED | REJECTED | CANCELLED), expiresOn (approved), approvalRequestId, approval {status, held, closedAt, closedById, step} | null, createdAt }`.
-- **What it does:** (the user, 2026-11-22) the employee worked on a weekly off or a holiday and claims comp-off: the day's punches decide - at least 8 h worked = 1 day, at least 4 h = half a day (the old HRMS's thresholds); raises its approval request (kind `COMP_OFF`; seeded: the reporting manager, 48 h, then their manager). Approved, the hours are counted again and the days credited to the comp-off leave type (`isCompOff` - the seeded CO) as a COMP_OFF row expiring 90 days after the day worked; then it is applied for like any leave. Refused: a working day, a day not over or more than 30 days ago, under 4 h, a second claim for the day, no comp-off type / one that does not apply to the employee.
+- **What it does:** (the user, 2026-11-22) the employee worked on a weekly off or a holiday and claims comp-off (one claim per day: two sent at the same moment make one - 2026-11-23): the day's punches decide - at least 8 h worked = 1 day, at least 4 h = half a day (the old HRMS's thresholds); raises its approval request (kind `COMP_OFF`; seeded: the reporting manager, 48 h, then their manager). Approved, the hours are counted again and the days credited to the comp-off leave type (`isCompOff` - the seeded CO) as a COMP_OFF row expiring 90 days after the day worked; then it is applied for like any leave. Refused: a working day, a day not over or more than 30 days ago, under 4 h, a second claim for the day, no comp-off type / one that does not apply to the employee.
 - **Errors:** `400` the rules above · `409` already claimed, no comp-off type, the chain switched off.
 
 ### `leave.compOff.cancel`

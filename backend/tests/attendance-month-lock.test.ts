@@ -1,6 +1,7 @@
 import { prisma } from '#core/db/prisma'
 import { afterAll, describe, expect, it } from 'vitest'
 import * as daysService from '../src/modules/attendance/days/days.service.js'
+import * as holidaysService from '../src/modules/attendance/holidays/holidays.service.js'
 import * as locksService from '../src/modules/attendance/locks/locks.service.js'
 import { createCompany } from './helpers/organization.js'
 import { row, userWith } from './helpers/users.js'
@@ -39,6 +40,10 @@ describe('the attendance month lock', () => {
     await expect(daysService.correctDay({ employeeCode: 'HRLOCK', date: d(2025, 6, 10), firstHalf: 'PRESENT', reason: 'Test' }, hr)).rejects.toThrow('locked attendance month')
     // a day of the next month is not
     await expect(daysService.assertOpenDays([d(2025, 6, 26)])).resolves.toBeUndefined()
+    // found in the 2026-11-23 review: a holiday, or a schedule from an earlier date, changed the locked month's plan
+    await expect(holidaysService.createHoliday({ date: d(2025, 6, 12), name: 'Test holiday', companyId: null }, hr)).rejects.toThrow('locked attendance month')
+    await expect(daysService.assertNothingLockedFrom(d(2025, 6, 1))).rejects.toThrow('June 2025 is a locked attendance month')
+    await expect(daysService.assertNothingLockedFrom(d(2025, 6, 26))).resolves.toBeUndefined()
     // the start day cannot change while a month is locked
     await expect(locksService.setCycleStart(hr, { cycleStartDay: 1 })).rejects.toThrow('Open the locked months again first')
     const months = await locksService.listMonths(hr, 2025)
@@ -59,5 +64,15 @@ describe('the attendance month lock', () => {
     await expect(locksService.lockMonth(hr, current)).rejects.toThrow('not over yet')
     const companyHr = userWith({ id: 0, employeeCode: 'HRCO' }, [{ access: { ATTENDANCE: 'WRITE', ATTENDANCE_SETUP: 'WRITE' }, rows: [row((await createCompany()).id, null, null)] }])
     await expect(locksService.lockMonth(companyHr, { year: 2025, month: 7 })).rejects.toThrow('shared by every company')
+  })
+
+  // found in the 2026-11-23 review: two locks at once both passed "already locked" - one unlock left the month locked
+  it('makes one lock of two at the same moment', async () => {
+    const month = { year: 2024, month: 3 }
+    const results = await Promise.allSettled([locksService.lockMonth(hr, month), locksService.lockMonth(hr, month)])
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+    expect(await prisma.attendanceMonthLock.count({ where: { ...month, unlockedAt: null } })).toBe(1)
+    await locksService.unlockMonth(hr, { ...month, reason: 'Test over' })
+    expect((await locksService.getChecklist(hr, month)).locked).toBe(false)
   })
 })

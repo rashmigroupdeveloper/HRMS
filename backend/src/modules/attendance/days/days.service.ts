@@ -1,6 +1,6 @@
 import { hasLevelAt, type Placement, scopeOf, SYSTEM_SCOPE } from '#core/auth/scope'
 import { assertAccess } from '#core/auth/access'
-import { prisma, type DayStatus } from '#core/db/prisma'
+import { prisma, type DayStatus, type DbClient } from '#core/db/prisma'
 import { writeWorkbook } from '#core/excel/workbook'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { employeesService, hodsService } from '#modules/employees'
@@ -182,6 +182,19 @@ export async function assertOpenDays(days: Date[], state?: LockState) {
   }
 }
 
+// Refuses a change that reaches every day from `from` on (a schedule from a date) when a locked attendance month lies in
+// that stretch - its planned days would change under the lock (2026-11-23)
+export async function assertNothingLockedFrom(from: Date) {
+  const lock = await loadLockState()
+  const lockedAfter = [...lock.locked]
+    .map((key) => key.split('-').map(Number) as [number, number])
+    .filter(([year, month]) => cycleRange(year, month, lock.startDay).to >= from)
+    .sort(([y1, m1], [y2, m2]) => y1 - y2 || m1 - m2)[0]
+  if (lockedAfter) {
+    throw new ORPCError('CONFLICT', { message: `${monthName(lockedAfter[0], lockedAfter[1])} is a locked attendance month - start the change after it, or open it again first` })
+  }
+}
+
 // --- who may see whom ---
 
 type PeopleFilter = z.infer<typeof peopleFilterSchema>
@@ -344,13 +357,18 @@ function punchesByDay(punches: Date[], days: Date[], plans: Map<string, Plan>, t
 
 // One day's result from its plan and punches: each half as the punches and the policy give it (`auto`), with the reasons
 // of any rule (`notes`) - the late penalty of the month and HR's corrections are added by `finish`
+// punches this close to the first one are the same tap repeated
+const SAME_TAP_MINUTES = 5
+
 function computeDay(day: Date, plan: Plan, punches: Date[], timeZone: string) {
   const s = plan.shift
   const policy = plan.policy
   const { start, end, split, shiftMinutes } = spanOf(day, plan.shift, timeZone, plan.halfDay)
   const sorted = [...punches].sort((a, b) => a.getTime() - b.getTime())
   const firstIn = sorted[0] ?? null
-  const lastOut = sorted.length > 1 ? sorted.at(-1)! : null
+  // an out punch only when it is more than a few minutes after the in punch: two taps at the door (09:00 and 09:01) are one
+  // punch, so a forgotten out punch is a missed punch, not a 1-minute day marked absent (2026-11-23)
+  const lastOut = firstIn && sorted.length > 1 && sorted.at(-1)!.getTime() - firstIn.getTime() > SAME_TAP_MINUTES * MINUTE_MS ? sorted.at(-1)! : null
   const minutes = (ms: number) => Math.max(0, Math.round(ms / MINUTE_MS))
   const span = firstIn && lastOut ? minutes(lastOut.getTime() - firstIn.getTime()) : 0
   // the hours worked shown: the time stayed less the unpaid break (none on a half day - it is the lunch of a full day);
@@ -446,9 +464,21 @@ export async function recompute(employeeIds: number[], fromDay: Date, toDay: Dat
   const monthEnd = cycleRange(lastCycle.year, lastCycle.month, state.startDay).to
   const last = monthEnd < now ? monthEnd : now
   if (!employeeIds.length || from > last) return
-  for (let i = 0; i < employeeIds.length; i += 300) {
-    const people = await employeesService.listAttendancePeople({ scope: SYSTEM_SCOPE, ids: employeeIds.slice(i, i + 300), from, to: last })
-    if (!people.length) continue
+  // a batch at a time, each in one transaction that first holds its employees' days: a second recompute of the same
+  // employee (the nightly close and HR's correction, two uploads) waits and then reads what the first saved - before
+  // (2026-11-23) both read, then both wrote: one failed on the duplicate days, or older results replaced newer ones
+  for (let i = 0; i < employeeIds.length; i += RECOMPUTE_BATCH) {
+    await prisma.$transaction((tx) => recomputeBatch(tx, employeeIds.slice(i, i + RECOMPUTE_BATCH), from, last, now, state), { timeout: 120_000 })
+  }
+}
+
+const RECOMPUTE_BATCH = 100
+
+async function recomputeBatch(tx: DbClient, batch: number[], from: Date, last: Date, now: Date, state: LockState) {
+  {
+    await daysRepository.lockEmployees(batch, tx)
+    const people = await employeesService.listAttendancePeople({ scope: SYSTEM_SCOPE, ids: batch, from, to: last })
+    if (!people.length) return
     const ids = people.map((p) => p.id)
     const plans = await loadPlans(people, addDays(from, -1), addDays(last, 1))
     const [punches, corrections, covers] = await Promise.all([
@@ -479,10 +509,9 @@ export async function recompute(employeeIds: number[], fromDay: Date, toDay: Dat
         for (const c of computed) if (!isLockedDay(c.date, state)) rows.push(finish(person.id, c.computed, correctionOf.get(dayKey(c.date)), c.covers))
       }
       // only the open months' days are replaced
-      const open = openRanges(from, last, state)
-      await prisma.$transaction(async (tx) => {
-        for (const range of open) await daysRepository.replaceDays(person.id, range.from, range.to, rows.filter((r) => r.date >= range.from && r.date <= range.to), tx)
-      })
+      for (const range of openRanges(from, last, state)) {
+        await daysRepository.replaceDays(person.id, range.from, range.to, rows.filter((r) => r.date >= range.from && r.date <= range.to), tx)
+      }
     }
   }
 }
@@ -660,9 +689,10 @@ export async function getBoard(viewer: CurrentUser, { date, ...filter }: z.infer
       corrections.find((c) => c.employeeId === person.id),
       covers.get(`${person.id}:${dayKey(date)}`),
     )
-    // today, a working day with no punch yet is "not in yet" - unless leave / on duty covers it (2026-11-22)
+    // today (or a day to come - 2026-11-23: shown as absent before), a working day with no punch yet is "not in yet" -
+    // unless leave / on duty covers it (2026-11-22)
     const covered = view.covers.find((c) => c.status !== 'PRESENT')?.status
-    const state = view.status ?? (view.planned === 'WORK' ? (covered ?? (isToday ? 'NOT_IN' : 'ABSENT')) : view.planned === 'HOLIDAY' ? 'HOLIDAY' : 'WEEKLY_OFF')
+    const state = view.status ?? (view.planned === 'WORK' ? (covered ?? (date >= today() ? 'NOT_IN' : 'ABSENT')) : view.planned === 'HOLIDAY' ? 'HOLIDAY' : 'WEEKLY_OFF')
     return {
       employeeCode: person.employeeCode,
       name: person.name,

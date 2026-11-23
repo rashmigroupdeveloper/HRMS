@@ -18,6 +18,11 @@ export function countOpenLocks(db: DbClient = prisma) {
   return db.attendanceMonthLock.count({ where: { unlockedAt: null } })
 }
 
+// Holds one attendance month until the transaction ends (locking it is checked and saved only while held)
+export async function holdMonth(year: number, month: number, db: DbClient) {
+  await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('attendance-month-lock'), ${year * 100 + month}::int)::text AS locked`
+}
+
 export function createLock(data: { year: number; month: number; lockedAt: Date; lockedById: number }, actorId: ActorId, db: DbClient = prisma) {
   return db.attendanceMonthLock.create({ data: { ...data, ...createdBy(actorId) }, select: lockSelect })
 }

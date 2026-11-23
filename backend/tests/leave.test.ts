@@ -87,6 +87,34 @@ describe('leave', () => {
     expect((await balanceOf()).balance).toBe(5)
   })
 
+  // the user, 2026-11-23: a leave starts and ends on a working day (a type counting off days took a day for a Sunday alone)
+  it('refuses a leave that starts or ends on a weekly off - also for a type that counts off days', async () => {
+    const sunday = plus(monday(3), 6)
+    const countingOffDays = await typesService.createType(hr, {
+      code: `O${tag}`,
+      name: `Off-days test ${tag}`,
+      isPaid: true,
+      creditPerMonth: 0,
+      creditAfterMonths: 0,
+      maxCarryForward: null,
+      maxPerRequest: null,
+      allowHalfDay: true,
+      countsOffDays: true,
+      genders: [],
+      employmentTypes: [],
+    })
+    for (const leaveTypeId of [typeId, countingOffDays.id]) {
+      const alone = await applicationsService.preview(self, { leaveTypeId, fromDate: sunday, toDate: sunday, fromSecondHalf: false, toFirstHalf: false })
+      expect(alone.problems.join(' ')).toContain('a leave starts and ends on a working day')
+      const endsOnSunday = await applicationsService.preview(self, { leaveTypeId, fromDate: plus(sunday, -1), toDate: sunday, fromSecondHalf: false, toFirstHalf: false })
+      expect(endsOnSunday.problems.join(' ')).toContain('a leave starts and ends on a working day')
+    }
+    // Saturday to Monday: the Sunday inside counts only for the type that counts off days
+    const across = (leaveTypeId: number) => applicationsService.preview(self, { leaveTypeId, fromDate: plus(sunday, -1), toDate: plus(sunday, 1), fromSecondHalf: false, toFirstHalf: false })
+    expect((await across(typeId)).days).toBe(2)
+    expect((await across(countingOffDays.id)).days).toBe(3)
+  })
+
   it('counts working days only (a weekly off inside does not count), halves as 0.5', async () => {
     const fri = plus(monday(3), 4)
     // Friday, Saturday, (Sunday off), Monday
@@ -164,5 +192,114 @@ describe('leave', () => {
     expect(daysService.dayStatusOf('ON_DUTY', 'PRESENT')).toBe('PRESENT')
     expect(daysService.dayStatusOf('ON_DUTY', 'ABSENT')).toBe('HALF_DAY')
     expect(daysService.dayStatusOf('PRESENT', 'ABSENT')).toBe('HALF_DAY')
+  })
+
+  // found in the 2026-11-23 review: both checks ran before either was saved, so a double click made two leaves
+  it('makes one leave of a double click', async () => {
+    const day = monday(7)
+    const input = { leaveTypeId: typeId, fromDate: day, toDate: day, fromSecondHalf: false, toFirstHalf: false, reason: 'Family function' }
+    const results = await Promise.allSettled([applicationsService.apply(self, input), applicationsService.apply(self, input)])
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+    expect(String((results.find((r) => r.status === 'rejected') as PromiseRejectedResult).reason)).toContain('already has leave')
+  })
+})
+
+// Found in the 2026-11-23 review: a leave of the new year approved in December was checked against the whole balance, but
+// the 1 January lapse took the old year's days without it - the balance went below zero. The user's rule (2026-11-23):
+// such a leave is paid from the old year's days first; only what is left above the carry-forward lapses.
+describe('the year end with next year\'s leave already approved', () => {
+  it('pays the January leave from the old year\'s days, so the balance never goes below zero', async () => {
+    const companyId = (await createCompany()).id
+    const employee = await createEmployee({ companyId, plantId: (await createPlant(companyId)).id })
+    const hr = userWith({ id: 0, employeeCode: 'HR' }, [{ access: { LEAVE: 'WRITE' }, rows: [row(null, null, null)] }])
+    const tag = Math.random().toString(36).slice(2, 7).toUpperCase()
+    // lapses every day above 0 at the year end, as the seeded CL
+    const type = await typesService.createType(hr, {
+      code: `Y${tag}`,
+      name: `Year-end test ${tag}`,
+      isPaid: true,
+      creditPerMonth: 0,
+      creditAfterMonths: 0,
+      maxCarryForward: 0,
+      maxPerRequest: null,
+      allowHalfDay: true,
+      countsOffDays: false,
+      genders: [],
+      employmentTypes: [],
+    })
+    const year = new Date().getUTCFullYear()
+    const entry = (kind: 'ADJUSTMENT' | 'TAKEN', days: number, effectiveDate: Date, createdAt?: Date) =>
+      prisma.leaveLedgerEntry.create({
+        data: { employeeId: employee.id, leaveTypeId: type.id, kind, days, effectiveDate, ...(createdAt && { createdAt }), note: 'test', createdById: 0, updatedById: 0 },
+      })
+    // 10 days in December; a 1-day leave on 5 January approved on 20 December
+    await entry('ADJUSTMENT', 10, new Date(Date.UTC(year, 11, 1)))
+    await entry('TAKEN', -1, new Date(Date.UTC(year + 1, 0, 5)), new Date(Date.UTC(year, 11, 20)))
+
+    const asOf = new Date(Date.UTC(year + 1, 0, 2))
+    await balancesService.creditDue(asOf, { employeeIds: [employee.id] })
+    await balancesService.creditDue(asOf, { employeeIds: [employee.id] })
+    const rows = await prisma.leaveLedgerEntry.findMany({ where: { employeeId: employee.id, leaveTypeId: type.id }, select: { kind: true, days: true } })
+    expect(rows.filter((r) => r.kind === 'LAPSE').map((r) => r.days.toNumber())).toEqual([-9])
+    expect(rows.reduce((sum, r) => sum + r.days.toNumber(), 0)).toBe(0)
+  })
+})
+
+// Found in the 2026-11-23 review: retired types kept getting the monthly credit - days nobody can apply for
+describe('a retired leave type', () => {
+  it('gets no monthly credits', async () => {
+    const companyId = (await createCompany()).id
+    const employee = await createEmployee({ companyId, plantId: (await createPlant(companyId)).id })
+    const hr = userWith({ id: 0, employeeCode: 'HR' }, [{ access: { LEAVE: 'WRITE' }, rows: [row(null, null, null)] }])
+    const tag = Math.random().toString(36).slice(2, 7).toUpperCase()
+    const type = await typesService.createType(hr, {
+      code: `R${tag}`,
+      name: `Retired test ${tag}`,
+      isPaid: true,
+      creditPerMonth: 1,
+      creditAfterMonths: 0,
+      maxCarryForward: null,
+      maxPerRequest: null,
+      allowHalfDay: true,
+      countsOffDays: false,
+      genders: [],
+      employmentTypes: [],
+      isActive: false,
+    })
+    const now = new Date()
+    await balancesService.creditDue(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 3, 1)), { employeeIds: [employee.id] })
+    expect(await prisma.leaveLedgerEntry.count({ where: { employeeId: employee.id, leaveTypeId: type.id } })).toBe(0)
+  })
+})
+
+// Found in the 2026-11-23 review: when the job was not running on 1 December and caught up in January, the year end lapsed
+// first and the December credit came after it - that credit never lapsed
+describe('catching up across the year end', () => {
+  it('credits the missed December before the year end lapses', async () => {
+    const companyId = (await createCompany()).id
+    const employee = await createEmployee({ companyId, plantId: (await createPlant(companyId)).id })
+    const hr = userWith({ id: 0, employeeCode: 'HR' }, [{ access: { LEAVE: 'WRITE' }, rows: [row(null, null, null)] }])
+    const tag = Math.random().toString(36).slice(2, 7).toUpperCase()
+    const type = await typesService.createType(hr, {
+      code: `C${tag}`,
+      name: `Catch-up test ${tag}`,
+      isPaid: true,
+      creditPerMonth: 1,
+      creditAfterMonths: 0,
+      maxCarryForward: 0,
+      maxPerRequest: null,
+      allowHalfDay: true,
+      countsOffDays: false,
+      genders: [],
+      employmentTypes: [],
+    })
+    // test data: the type was added in November 2026, so its first credit is 1 December
+    await prisma.leaveType.update({ where: { id: type.id }, data: { createdAt: new Date(Date.UTC(2026, 10, 15)) } })
+    // the job runs again only on 2 January
+    await balancesService.creditDue(new Date(Date.UTC(2027, 0, 2)), { employeeIds: [employee.id] })
+    const rows = await prisma.leaveLedgerEntry.findMany({ where: { employeeId: employee.id, leaveTypeId: type.id }, select: { kind: true, days: true, period: true } })
+    // December's credit lapsed at the year end; January's stays
+    expect(rows.filter((r) => r.kind === 'LAPSE').map((r) => r.days.toNumber())).toEqual([-1])
+    expect(rows.reduce((sum, r) => sum + r.days.toNumber(), 0)).toBe(1)
   })
 })

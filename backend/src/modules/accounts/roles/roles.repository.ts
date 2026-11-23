@@ -73,6 +73,15 @@ export function update(
   })
 }
 
+// data access: changing a role changes the access of everyone who has it, in every company - the editor's own access is
+// checked against all of their data-access rows (roles.update, 2026-11-23)
+export function listHolderRows(roleId: number, db: DbClient = prisma) {
+  return db.userAccountRoleScope.findMany({
+    where: { accountRole: { roleId } },
+    select: { companyId: true, plantId: true, departmentId: true, level: true },
+  })
+}
+
 // Takes the fallback-approver mark from every role but this one (one role at most carries it)
 export function clearApprovalFallback(exceptId: number, actorId: ActorId, db: DbClient = prisma) {
   return db.role.updateMany({ where: { isApprovalFallback: true, id: { not: exceptId } }, data: { isApprovalFallback: false, ...updatedBy(actorId) } })

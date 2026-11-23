@@ -1,7 +1,7 @@
 import { ACCESS_AREAS, assertAccess, hasAccess, higherLevel, type AccessMap } from '#core/auth/access'
 import { assertPasswordConfirmed } from '#core/auth/confirm'
 import { ALL_OF_GROUP, beyondGiver, hasLevelAt, levelOver, type Placement, type RoleGrant, scopeAllows, scopeOf, type ScopeRow, sliceCovers } from '#core/auth/scope'
-import { countPasswordTry } from '#core/auth/rate-limit'
+import { countAccountTry, countPasswordTry } from '#core/auth/rate-limit'
 import { generatePassword, hashPassword, verifyPassword } from '#core/auth/password'
 import { clearSessionCookie, hashSessionToken, newSessionToken, readSessionToken, writeSessionCookie } from '#core/auth/session'
 import { env } from '#core/config/env'
@@ -126,6 +126,16 @@ async function toMe(
   }
 }
 
+// A wrong password (signing in or re-entering it): counted; at maxFailedLogins the login locks for lockMinutes and the count
+// starts again. Recorded as System: a wrong password may not be the employee at all.
+async function recordWrongPassword(accountId: number) {
+  const rules = await securityService.getRules()
+  const failed = await accountsRepository.addLoginFailure(accountId, SYSTEM_ACTOR)
+  const lockedUntil = failed >= rules.maxFailedLogins ? new Date(Date.now() + rules.lockMinutes * 60_000) : null
+  if (lockedUntil) await accountsRepository.setLoginFailures(accountId, { failedLoginCount: 0, lockedUntil }, SYSTEM_ACTOR)
+  return { failed, lockedUntil, rules }
+}
+
 // Checks the employee code or work e-mail + password, starts a session and sets its cookie.
 // maxFailedLogins wrong passwords in a row lock the login for lockMinutes (security rules); a correct password resets
 // the count.
@@ -145,17 +155,15 @@ export async function login(
     await failedSignIn('Login locked')
     throw new ORPCError('UNAUTHORIZED', { message: lockedMessage(account.lockedUntil) })
   }
+  // the employee code, the work e-mail and former codes reach the same login: its own count of tries too (2026-11-23)
+  if (account) countAccountTry('signIn', account.id)
   const passwordOk = await verifyPassword(password, account?.passwordHash ?? (await (dummyHash ??= hashPassword('-'))))
   if (!employee || !account || !CAN_LOG_IN.includes(employee.status)) {
     await failedSignIn(!employee ? 'No such employee code / e-mail' : !account ? 'No login' : `Employee is ${employee.status}`)
     throw new ORPCError('UNAUTHORIZED', { message: INVALID_LOGIN })
   }
   if (!passwordOk) {
-    const failed = account.failedLoginCount + 1
-    const rules = await securityService.getRules()
-    const lockedUntil = failed >= rules.maxFailedLogins ? new Date(Date.now() + rules.lockMinutes * 60_000) : null
-    // recorded as System: a wrong password may not be the employee at all
-    await accountsRepository.setLoginFailures(account.id, { failedLoginCount: lockedUntil ? 0 : failed, lockedUntil }, SYSTEM_ACTOR)
+    const { lockedUntil } = await recordWrongPassword(account.id)
     await failedSignIn(lockedUntil ? 'Wrong password - login locked' : 'Wrong password')
     throw new ORPCError('UNAUTHORIZED', { message: lockedUntil ? lockedMessage(lockedUntil) : INVALID_LOGIN })
   }
@@ -326,16 +334,14 @@ export async function resetPasswordWithCode({ employeeCode, code, newPassword }:
   const employee = await employeesService.findContactByCode(employeeCode)
   const account = employee && CAN_LOG_IN.includes(employee.status) ? await accountsRepository.findResetCode(employee.id) : null
   if (!employee || !account?.resetCodeHash || !account.resetCodeValidUntil || account.resetCodeValidUntil < new Date()) badRequest(RESET_CODE_WRONG)
+  // every try is counted before the code is compared (in the database: parallel guesses each count - 2026-11-23)
+  const failed = await accountsRepository.takeResetCodeTry(account.id, account.resetCodeHash, MAX_WRONG_RESET_CODES, SYSTEM_ACTOR)
+  if (failed === null) badRequest('Wrong code. Too many wrong tries - ask for a new code.')
   const expected = Buffer.from(account.resetCodeHash, 'hex')
   const given = Buffer.from(resetCodeHash(account.id, code), 'hex')
   if (!timingSafeEqual(expected, given)) {
-    const failed = account.resetCodeFailedAttempts + 1
     const dead = failed >= MAX_WRONG_RESET_CODES
-    await accountsRepository.updateResetCode(
-      account.id,
-      { resetCodeFailedAttempts: failed, ...(dead && { resetCodeHash: null, resetCodeValidUntil: null }) },
-      SYSTEM_ACTOR,
-    )
+    if (dead) await accountsRepository.updateResetCode(account.id, { resetCodeHash: null, resetCodeValidUntil: null }, SYSTEM_ACTOR)
     badRequest(dead ? 'Wrong code. Too many wrong tries - ask for a new code.' : `Wrong code. ${MAX_WRONG_RESET_CODES - failed} tries left.`)
   }
   await assertGoodPassword(newPassword, employee.employeeCode, await recentPasswords(account))
@@ -359,12 +365,13 @@ export async function createJoinerLogin(employeeId: number, actorId: number, db?
 }
 
 // E-mails a new employee their employee code, the temporary password and where to sign in. Returns whether it went
-// out (false: no e-mail address, or the mail server refused - then HR passes the password on).
+// out (null: no e-mail address, no mail server - only saved in the outbox - or the mail server refused; then HR passes the
+// password on).
 export async function emailNewLogin(employeeCode: string, temporaryPassword: string): Promise<{ emailedTo: string | null }> {
   const employee = await employeesService.findContactByCode(employeeCode)
   if (!employee?.personalEmail) return { emailedTo: null }
   try {
-    await sendMail({
+    const result = await sendMail({
       to: employee.personalEmail,
       subject: `Welcome to ${employee.company.name} - your HRMS login`,
       text: [
@@ -380,6 +387,8 @@ export async function emailNewLogin(employeeCode: string, temporaryPassword: str
         'Forgot your password later? Use "Forgot password?" on the sign-in page.',
       ].join('\n'),
     })
+    // no mail server (only saved in the outbox folder): nothing reached the employee - HR is shown the password (2026-11-23)
+    if (result === 'SAVED_TO_OUTBOX') return { emailedTo: null }
     return { emailedTo: maskEmail(employee.personalEmail) }
   } catch (error) {
     console.error(`[mail] the login e-mail for ${employee.employeeCode} failed:`, error)
@@ -678,10 +687,7 @@ export async function confirmPassword(user: CurrentUser, { password }: z.infer<t
   const account = await accountsRepository.findLoginByEmployeeId(user.employeeId)
   if (!account) throw new ORPCError('NOT_FOUND', { message: 'Login not found' })
   if (!(await verifyPassword(password, account.passwordHash))) {
-    const failed = account.failedLoginCount + 1
-    const rules = await securityService.getRules()
-    const lockedUntil = failed >= rules.maxFailedLogins ? new Date(Date.now() + rules.lockMinutes * 60_000) : null
-    await accountsRepository.setLoginFailures(account.id, { failedLoginCount: lockedUntil ? 0 : failed, lockedUntil }, SYSTEM_ACTOR)
+    const { failed, lockedUntil, rules } = await recordWrongPassword(account.id)
     if (lockedUntil) {
       await accountsRepository.deleteSessions(account.id, { onlyExpired: false })
       throw new ORPCError('UNAUTHORIZED', { message: lockedMessage(lockedUntil) })
