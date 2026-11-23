@@ -46,7 +46,7 @@ describe('leave', () => {
     const role = await createRole()
     const a = await createEmployee({ companyId: companyA, plantId: plantA })
     await giveLogin(a.id, [{ roleId: role.id, companyId: companyA }])
-    approver = userWith(a, [{ access: {}, rows: [row(companyA, null, null)] }])
+    approver = { ...userWith(a, [{ access: {}, rows: [row(companyA, null, null)] }]), activeRoleId: role.id }
     const chainsAdmin = userWith({ id: 0, employeeCode: 'CHAINS' }, [{ access: { APPROVAL_CHAINS: 'WRITE' }, rows: [row(companyA, null, null)] }])
     for (const kind of ['LEAVE', 'LEAVE_CANCEL', 'REGULARIZATION', 'ON_DUTY'] as const) {
       await chainsService.saveChain(chainsAdmin, { kind, companyId: companyA, steps: [{ approverType: 'ROLE', roleId: role.id, seesConfidential: false }] })

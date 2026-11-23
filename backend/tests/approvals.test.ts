@@ -59,8 +59,8 @@ describe('the approval service', () => {
     const b = await createEmployee({ companyId: companyB, plantId: plantB })
     await giveLogin(a.id, [{ roleId: role.id, companyId: companyA }])
     await giveLogin(b.id, [{ roleId: role.id, companyId: companyB }])
-    approver = viewerOf(a, companyA)
-    approverB = viewerOf(b, companyB)
+    approver = { ...viewerOf(a, companyA), activeRoleId: role.id }
+    approverB = { ...viewerOf(b, companyB), activeRoleId: role.id }
     chainsAdmin = userWith({ id: 0, employeeCode: 'CHAINS' }, [{ access: { APPROVAL_CHAINS: 'WRITE' }, rows: [row(companyA, null, null), row(companyB, null, null)] }])
     for (const companyId of [companyA, companyB]) {
       await chainsService.saveChain(chainsAdmin, { kind: 'JOB_CHANGE', companyId, steps: [{ approverType: 'REPORTING_MANAGER', seesConfidential: false }, { approverType: 'ROLE', roleId: role.id, seesConfidential: false }] })
@@ -123,7 +123,7 @@ describe('the approval service', () => {
     await giveLogin(admin.id, [{ roleId: await fallbackRoleId(), companyId: companyF }])
     const retried = await approvalsService.retryRouting(fAdmin, approvalId)
     expect([retried.status, retried.held, retried.steps.at(-1)!.status]).toEqual(['PENDING', null, 'OPEN'])
-    const adminViewer = viewerOf(admin, companyF)
+    const adminViewer = { ...viewerOf(admin, companyF), activeRoleId: await fallbackRoleId(), activeRoleIsFallback: true }
     expect((await approvalsService.listToDecide(adminViewer)).map((r) => r.id)).toContain(approvalId)
     expect((await approvalsService.decide(adminViewer, { id: approvalId, approve: true })).status).toBe('APPROVED')
 
@@ -189,6 +189,16 @@ describe('the approval service', () => {
     await expect(approvalsService.decide(approver, { id: inB.approvalId, approve: true })).rejects.toThrow('No approval request found')
   })
 
+  it('requires the assigned approval role to be active for both the inbox and the decision', async () => {
+    const { approvalId } = await raise(companyA, plantA)
+    const inactive = { ...approver, activeRoleId: -999, activeRoleIsFallback: false }
+    expect((await approvalsService.listToDecide(inactive)).map((r) => r.id)).not.toContain(approvalId)
+    await expect(approvalsService.decide(inactive, { id: approvalId, approve: true })).rejects.toThrow()
+    const active = { ...approver, activeRoleId: role.id, activeRoleIsFallback: false }
+    expect((await approvalsService.listToDecide(active)).map((r) => r.id)).toContain(approvalId)
+    expect((await approvalsService.decide(active, { id: approvalId, approve: true })).status).toBe('APPROVED')
+  })
+
   it('merges two chains keeping each one\'s order, asking the same approver once', () => {
     const step = (approverType: 'REPORTING_MANAGER' | 'HOD' | 'ROLE', roleId: number | null = null, seesConfidential = false) => ({ approverType, roleId, roleName: null, accessArea: null, approverId: null, seesConfidential, slaHours: null, onBreach: 'WAIT' as const, escalateRoleId: null, escalateRoleName: null })
     const job = [step('REPORTING_MANAGER'), step('ROLE', 1), step('ROLE', 2)]
@@ -223,17 +233,17 @@ describe('the approval service', () => {
     const first = await raise(companyN, plantN)
     const request = await approvalsService.getRequest(nAdmin, first.approvalId)
     expect(request.steps[0]).toMatchObject({ status: 'OPEN', byFallback: false, approver: { employeeCode: p1!.employeeCode } })
-    expect((await approvalsService.listToDecide(viewerOf(p1!, companyN))).map((r) => r.id)).toContain(first.approvalId)
-    expect((await approvalsService.listToDecide(viewerOf(p2!, companyN))).map((r) => r.id)).not.toContain(first.approvalId)
+    expect((await approvalsService.listToDecide({ ...viewerOf(p1!, companyN), activeRoleId: nRole.id })).map((r) => r.id)).toContain(first.approvalId)
+    expect((await approvalsService.listToDecide({ ...viewerOf(p2!, companyN), activeRoleId: nRole.id })).map((r) => r.id)).not.toContain(first.approvalId)
     // the role's other holder does not even see it
-    await expect(approvalsService.decide(viewerOf(p2!, companyN), { id: first.approvalId, approve: true })).rejects.toThrow('No approval request found')
+    await expect(approvalsService.decide({ ...viewerOf(p2!, companyN), activeRoleId: nRole.id }, { id: first.approvalId, approve: true })).rejects.toThrow('No approval request found')
     // their login is switched off: a new request goes to the fallback approver, not to the role's other holder
     await prisma.userAccount.updateMany({ where: { employeeId: p1!.id }, data: { disabledAt: new Date() } })
     const second = await raise(companyN, plantN)
     const fallen = await approvalsService.getRequest(nAdmin, second.approvalId)
     expect(fallen.steps[0]).toMatchObject({ status: 'OPEN', byFallback: true, note: expect.stringContaining('the fallback approver decides it') })
-    expect((await approvalsService.listToDecide(viewerOf(admin!, companyN))).map((r) => r.id)).toContain(second.approvalId)
-    expect((await approvalsService.listToDecide(viewerOf(p2!, companyN))).map((r) => r.id)).not.toContain(second.approvalId)
+    expect((await approvalsService.listToDecide({ ...viewerOf(admin!, companyN), activeRoleId: await fallbackRoleId(), activeRoleIsFallback: true })).map((r) => r.id)).toContain(second.approvalId)
+    expect((await approvalsService.listToDecide({ ...viewerOf(p2!, companyN), activeRoleId: nRole.id })).map((r) => r.id)).not.toContain(second.approvalId)
   })
 
   it('changes chains and repairs held requests only inside the data access', async () => {

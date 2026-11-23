@@ -56,7 +56,7 @@ let dummyHash: Promise<string> | undefined
 
 type AccountRoles = {
   roles: {
-    role: { id: number; name: string; isSuperAdmin: boolean; isApprovalFallback?: boolean; permissions: { area: AccessArea; level: AccessLevel }[] }
+    role: { id: number; name: string; isSuperAdmin: boolean; isApprovalFallback: boolean; permissions: { area: AccessArea; level: AccessLevel }[] }
     scopes: ScopeRow[]
   }[]
 }
@@ -100,16 +100,31 @@ function accessFromRoles(account: AccountRoles): Pick<CurrentUser, 'roles' | 'is
   }
 }
 
+// A role selection can only narrow an authenticated account's existing grants. Unknown / revoked selections
+// have no role permissions, so a stale tab never silently regains another role's privileges.
+function selectActiveRole(account: AccountRoles, selection?: string) {
+  const assigned = [...account.roles].sort((a, b) => a.role.id - b.role.id)
+  const selected = selection === undefined ? assigned[0] : assigned.find((given) => String(given.role.id) === selection)
+  return {
+    ...accessFromRoles({ roles: selected ? [selected] : [] }),
+    availableRoles: assigned.map(({ role }) => ({ id: role.id, name: role.name })),
+    activeRoleId: selected?.role.id ?? null,
+    activeRoleIsFallback: selected?.role.isApprovalFallback ?? false,
+  }
+}
+
 // What the frontend gets about the logged-in employee. Pages and menus are shown from `access`.
 async function toMe(
-  user: Pick<CurrentUser, 'employeeId' | 'employeeCode' | 'name' | 'roles' | 'isSuperAdmin' | 'access' | 'grants' | 'mustChangePassword' | 'passwordConfirmedUntil'>,
+  user: Pick<CurrentUser, 'employeeId' | 'employeeCode' | 'name' | 'roles' | 'isSuperAdmin' | 'access' | 'grants' | 'mustChangePassword' | 'passwordConfirmedUntil' | 'availableRoles' | 'activeRoleId'>,
 ) {
   return {
     // what the password pages say a new password needs (security rules)
     passwordRule: await securityService.passwordRule(),
     employeeCode: user.employeeCode,
     name: user.name,
-    roles: user.roles.map((r) => r.name),
+    roles: user.availableRoles.map((r) => r.name),
+    availableRoles: user.availableRoles,
+    activeRoleId: user.activeRoleId ?? null,
     isSuperAdmin: user.isSuperAdmin,
     access: user.access,
     // whose records each area covers, to view (READ) and to change (WRITE): 'ALL' or slices of the group (null = every
@@ -193,7 +208,7 @@ export async function login(
     name: fullName(employee),
     mustChangePassword: account.mustChangePassword,
     passwordConfirmedUntil: null,
-    ...accessFromRoles(account),
+    ...selectActiveRole(account),
   })
 }
 
@@ -234,7 +249,7 @@ export async function resolveUser(headers: IncomingHttpHeaders): Promise<Current
     name: fullName(employee),
     mustChangePassword: session.account.mustChangePassword,
     passwordConfirmedUntil: session.confirmedUntil && session.confirmedUntil > now ? session.confirmedUntil : null,
-    ...accessFromRoles(session.account),
+    ...selectActiveRole(session.account, typeof headers['x-hrms-role'] === 'string' ? headers['x-hrms-role'] : undefined),
   }
 }
 

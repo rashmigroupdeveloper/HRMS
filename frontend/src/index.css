@@ -458,3 +458,25 @@
     outline: 2px solid var(--color-ring);
   }
 }
+
+/* Navigation carries the selected position; unsupported View Transitions keep normal routing. */
+.nav-control { transition: color 150ms, background-color 150ms, transform 150ms cubic-bezier(.16,1,.3,1); }
+.nav-control:active { transform: scale(.97); }
+.nav-dropdown > svg { transition: transform 180ms cubic-bezier(.16,1,.3,1); }
+.nav-dropdown[data-popup-open] > svg { transform: rotate(180deg); }
+.nav-active-surface { view-transition-name: hrms-nav-pill; }
+::view-transition-group(hrms-nav-pill) { animation-duration: 260ms; animation-timing-function: cubic-bezier(.16,1,.3,1); }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+@keyframes role-transition-enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes role-transition-name { from { opacity: .4; transform: translateX(8px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes role-transition-mark { from { transform: rotate(-25deg) scale(.9); } to { transform: rotate(0) scale(1); } }
+.role-transition { animation: role-transition-enter 140ms ease-out both; }
+.role-transition-name { animation: role-transition-name 220ms cubic-bezier(.16,1,.3,1) both; }
+.role-transition-mark { animation: role-transition-mark 220ms cubic-bezier(.16,1,.3,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .nav-control, .nav-dropdown > svg { transition: color 100ms, background-color 100ms; }
+  .nav-control:active, .nav-dropdown[data-popup-open] > svg { transform: none; }
+  .nav-active-surface { view-transition-name: none; }
+  .role-transition, .role-transition-name, .role-transition-mark, .nav-popup { animation: none; }
+  ::view-transition-group(*) { animation-duration: 0s; }
+}

@@ -34,6 +34,10 @@ export function AccountSkeleton() {
         </span>
         <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
       </div>
+      <span role="status" aria-label="Loading role" className="flex h-10 items-center gap-2 rounded-full bg-card px-3 shadow-card xl:hidden">
+        <Skeleton className="h-4 w-20 rounded-full" />
+        <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
+      </span>
       <span className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-card px-4 text-sm font-medium text-muted-foreground shadow-card xl:hidden">
         <Menu className="size-4" aria-hidden />
         Menu

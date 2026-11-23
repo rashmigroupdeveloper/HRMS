@@ -2,7 +2,7 @@ import { ORPCError } from '@orpc/server'
 import { AccessArea, type AccessLevel } from '../db/prisma.js'
 
 // What a logged-in employee may do: the level they have per area (missing = no access).
-// Built from all of their roles; the super admin has WRITE on every area.
+// On authenticated requests, built from the active role; an active super admin has WRITE on every area.
 export type AccessMap = Partial<Record<AccessArea, AccessLevel>>
 
 export const ACCESS_AREAS = Object.values(AccessArea)

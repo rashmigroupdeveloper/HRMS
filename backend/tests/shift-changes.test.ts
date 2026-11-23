@@ -38,8 +38,8 @@ describe('shift changes through the approval service', () => {
     const b = await createEmployee({ companyId: companyB, plantId: plantB })
     await giveLogin(a.id, [{ roleId: role.id, companyId: companyA }])
     await giveLogin(b.id, [{ roleId: role.id, companyId: companyB }])
-    approver = userWith(a, [{ access: {}, rows: [row(companyA, null, null)] }])
-    approverOfB = userWith(b, [{ access: {}, rows: [row(companyB, null, null)] }])
+    approver = { ...userWith(a, [{ access: {}, rows: [row(companyA, null, null)] }]), activeRoleId: role.id }
+    approverOfB = { ...userWith(b, [{ access: {}, rows: [row(companyB, null, null)] }]), activeRoleId: role.id }
     const chainsAdmin = userWith({ id: 0, employeeCode: 'CHAINS' }, [{ access: { APPROVAL_CHAINS: 'WRITE' }, rows: [row(companyA, null, null)] }])
     await chainsService.saveChain(chainsAdmin, { kind: 'SHIFT_CHANGE', companyId: companyA, steps: [{ approverType: 'ROLE', roleId: role.id, seesConfidential: false }] })
   })

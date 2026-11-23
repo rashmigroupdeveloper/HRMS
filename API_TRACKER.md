@@ -40,7 +40,12 @@ change - includes View). Written below as e.g. "Onboarding: Edit".
   `EMPLOYEES` View as well; one's own record needs none.
   Each API checks one with `accessProcedure(area, level)`.
 - **Roles are data**, made on the "Roles & access" page (`accounts.roles.*`): each role has a level per area. An
-  employee can have several roles and gets the highest level any of them gives. No role = self-service only.
+  employee can have several roles; only the selected role contributes permissions and data access. The browser sends
+  its per-tab choice in `x-hrms-role` (assigned role ID). Without the header the lowest assigned role ID is selected.
+  An unknown or revoked ID gives no role permissions, without silently selecting another role. No role = self-service only.
+  Selection is validated against current assignments on every request; it never grants a new role. Switching reloads
+  Home and clears cached records. Own records, reporting-manager/HOD relationships and manager/HOD/person approval steps
+  remain identity-based. Role/access/fallback approval pools require the corresponding active role.
 - The built-in **Super Admin** role has Edit on every area, including areas added later, and cannot be changed or
   deleted. Roles are read on every request, so a change applies at once.
 
@@ -1017,12 +1022,14 @@ access.
 - **Scope:** not limited by data access - the caller's own login; returns the caller's own data access (`dataAccess`).
 - **Input:** none
 - **Returns:** `{ employeeCode, name, roles: string[] (role names), isSuperAdmin, access, dataAccess, hodPosts, mustChangePassword,
-  passwordConfirmedUntil, passwordRule }` - `dataAccess` (2026-11-18): per area of `access`, `{ READ, WRITE }` - whose
+  passwordConfirmedUntil, passwordRule, availableRoles, activeRoleId }` - `dataAccess` (2026-11-18): per area of `access`, `{ READ, WRITE }` - whose
   records it covers to view / change: `'ALL'` or slices `{ companyId, plantId, departmentId }` (null = every ...), so forms
   offer only what may be chosen; `passwordConfirmedUntil`: until when the password counts as re-entered
   (`accounts.confirmPassword`), else null; `passwordRule` `{ minLength, history }` what a new password needs (the
   security rules - `accounts.security.*`, 2026-11-16);
-  `access` is what all the roles add up to (highest level per area; the super admin gets Edit on every area);
+  `roles` lists all assigned role names; `availableRoles: { id, name }[]` lists the choices and
+  `activeRoleId: number | null` identifies the selection. `access`, `dataAccess` and `isSuperAdmin` come only from
+  the selected role (the selected super admin gets Edit on every area);
   `mustChangePassword` = signed in with a temporary password (the frontend sends them to "Change password");
   `hodPosts` (2026-11-18) how many places (plant + department) the caller heads now as HOD (0: no "My department" page).
 - **What it does:** tells the frontend who is logged in and which pages, menus and buttons to show. The frontend
