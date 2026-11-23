@@ -38,6 +38,7 @@
     "import:vbms": "node --conditions=development --import tsx scripts/import-vbms-masters.ts",
     "set-password": "node --conditions=development --import tsx scripts/set-password.ts",
     "create-admin": "node --conditions=development --import tsx scripts/create-admin.ts",
+    "create-role-employees": "node --conditions=development --import tsx scripts/create-role-employees.ts",
     "rename-stored-files": "node --conditions=development --import tsx scripts/rename-stored-files.ts",
     "backfill-job-records": "node --conditions=development --import tsx scripts/backfill-job-records.ts",
     "check:api-tracker": "node --conditions=development --import tsx scripts/check-api-tracker.ts",

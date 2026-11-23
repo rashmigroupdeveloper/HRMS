@@ -1,18 +1,51 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarPlus, FileClock, Repeat } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
 import { MonthSkeleton } from '@/components/skeletons/attendance/MonthSkeleton'
+import { AttendanceRequestsSkeleton } from '@/components/skeletons/attendance/AttendanceRequestsSkeleton'
 import { Button } from '@/components/ui/button'
 import { orpc } from '@/lib/orpc'
 import { formatDate } from '@/lib/utils'
 import { compOffDays, cycleRange, type MonthDay, REQUEST_STATUS, todayDay, type Regularization } from './labels'
 import { useAttendanceMonth, useCycleStartDay } from './useAttendanceMonth'
-import { MonthCalendar, MonthPicker, MonthTotals } from './MonthCalendar'
+import { MOTION_EASE, MonthCalendar, MonthPicker, MonthTotals, prefersReducedMotion } from './MonthCalendar'
 import { CompOffDialog } from './CompOffDialog'
 import { RegularizationDialog } from './RegularizationDialog'
 import { ShiftChangeDialog } from './ShiftChangeDialog'
+
+// A new month enters from the side of the arrow. The controls stay put. Reduced motion keeps a short fade.
+function MonthStage({ stamp, direction, children }: { stamp: string; direction: 1 | -1; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const seen = useRef(stamp)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || seen.current === stamp) return
+    const dir = direction
+    seen.current = stamp
+    const reduced = prefersReducedMotion()
+    el.animate(reduced ? [{ opacity: 0.72 }, { opacity: 1 }] : [{ opacity: 0, transform: `translateX(${dir * 12}px)` }, { opacity: 1, transform: 'translateX(0)' }], {
+      duration: reduced ? 120 : 280,
+      easing: MOTION_EASE,
+    })
+  }, [stamp, direction])
+  return <div ref={ref}>{children}</div>
+}
+
+function SentNotice({ text }: { text: string }) {
+  const ref = useRef<HTMLParagraphElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || prefersReducedMotion()) return
+    el.animate([{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }], { duration: 160, easing: MOTION_EASE })
+  }, [text])
+  return (
+    <p ref={ref} role="status" className="text-sm font-medium text-positive-ink">
+      {text}
+    </p>
+  )
+}
 
 // The employee's own attendance: the month calendar with the totals, their shift-change requests and their regularization /
 // on-duty requests (2026-11-22).
@@ -20,8 +53,11 @@ export function MyAttendance() {
   const queryClient = useQueryClient()
   const now = todayDay()
   // the attendance month today is in (26th to 25th)
-  const [ym, setYm] = useState(useAttendanceMonth())
-  const month = useQuery({ ...orpc.attendance.days.myMonth.queryOptions({ input: ym }), placeholderData: keepPreviousData })
+  const currentMonth = useAttendanceMonth()
+  // Follow the server's attendance cycle until the employee explicitly chooses a month.
+  const [chosenMonth, setYm] = useState<typeof currentMonth | null>(null)
+  const ym = chosenMonth ?? currentMonth
+  const month = useQuery(orpc.attendance.days.myMonth.queryOptions({ input: ym }))
   // the month's days before they load (26 Oct - 25 Nov with RML's start day) - the picker's line and the placeholder
   const range = cycleRange(ym.year, ym.month, useCycleStartDay())
   const requests = useQuery(orpc.attendance.shiftChanges.mine.queryOptions())
@@ -32,6 +68,24 @@ export function MyAttendance() {
   const [regularizing, setRegularizing] = useState<{ date?: Date } | null>(null)
   // comp-off (2026-11-22): a weekly off / holiday already over (up to 30 days back) worked at least 4 hours
   const [claiming, setClaiming] = useState<MonthDay | null>(null)
+  const [notice, setNotice] = useState<{ id: number; text: string } | null>(null)
+  const noticeId = useRef(0)
+  const [direction, setDirection] = useState<1 | -1>(1)
+  const sent = (text: string) => {
+    noticeId.current += 1
+    setNotice({ id: noticeId.current, text })
+  }
+  const showMonth = (year: number, month: number) => {
+    const next = year * 12 + month
+    const current = ym.year * 12 + ym.month
+    setDirection(next >= current ? 1 : -1)
+    setYm({ year, month })
+  }
+  useEffect(() => {
+    if (!notice) return
+    const timeout = window.setTimeout(() => setNotice(null), 4000)
+    return () => window.clearTimeout(timeout)
+  }, [notice])
   const claimable = (day: MonthDay) =>
     (day.planned === 'WEEKLY_OFF' || day.planned === 'HOLIDAY') && day.date < now && day.date.getTime() >= now.getTime() - 30 * 86_400_000 && compOffDays(day.workedMinutes) > 0
   // a day can be regularized when it has come (up to 30 days back) and was not worked in full; on duty for days to come
@@ -42,36 +96,52 @@ export function MyAttendance() {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h2 className="mr-auto text-lg font-light tracking-tight">My month</h2>
-          {/* a phone: the title and the button on one line, the month under them */}
-          <div className="order-last flex w-full justify-center sm:order-none sm:w-auto">
-            <MonthPicker year={ym.year} month={ym.month} onChange={(year, month) => setYm({ year, month })} range={month.data ?? range} locked={month.data?.locked} />
+      <section aria-label="My attendance month" className="space-y-4 rounded-3xl bg-card p-3 shadow-card sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:gap-4">
+            <h2 className="text-lg font-light tracking-tight">My month</h2>
+            <MonthPicker year={ym.year} month={ym.month} onChange={showMonth} range={month.data ?? range} locked={month.data?.locked} />
+            {chosenMonth && (chosenMonth.year !== currentMonth.year || chosenMonth.month !== currentMonth.month) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const next = currentMonth.year * 12 + currentMonth.month
+                  const current = ym.year * 12 + ym.month
+                  setDirection(next >= current ? 1 : -1)
+                  setYm(null)
+                }}
+              >
+                Current month
+              </Button>
+            )}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setRegularizing({})}>
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto [&>button]:min-h-9">
+            <Button variant="gold" size="sm" onClick={() => setRegularizing({})}>
               <FileClock /> Regularize / on duty
             </Button>
             <Button variant="secondary" size="sm" onClick={() => setAsking({})}>
-              <Repeat /> Ask for a shift change
+              <Repeat /> Shift change
             </Button>
           </div>
         </div>
         <FormError error={month.error} />
-        {month.isPending && <MonthSkeleton year={ym.year} month={ym.month} range={range} label="Loading the month" />}
-        {month.data && (
-          <>
-            <MonthTotals totals={month.data.totals} />
-            <MonthCalendar
-              data={month.data}
-              actions={(day) => {
+        {month.isError && <Button variant="secondary" size="sm" onClick={() => void month.refetch()}>Retry month</Button>}
+        {notice && <SentNotice key={notice.id} text={notice.text} />}
+        <MonthStage stamp={`${ym.year}-${ym.month}`} direction={direction}>
+          {month.isPending && <MonthSkeleton year={ym.year} month={ym.month} range={range} label="Loading the month" />}
+          {month.data && (
+            <>
+              <MonthTotals totals={month.data.totals} />
+              <MonthCalendar
+                data={month.data}
+                actions={(day) => {
                 const change = day.date >= now && day.planned !== 'HOLIDAY'
                 const regularize = regularizable(day)
                 const compOff = claimable(day)
                 if (!change && !regularize && !compOff) return null
                 return (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 [&>button]:min-h-9">
                     {compOff && (
                       <Button variant="secondary" size="sm" onClick={() => setClaiming(day)}>
                         <CalendarPlus /> Claim comp-off
@@ -91,16 +161,21 @@ export function MyAttendance() {
                 )
               }}
             />
-          </>
-        )}
+            </>
+          )}
+        </MonthStage>
       </section>
 
-      {!!requests.data?.length && (
+      <div className="grid items-start gap-3 lg:grid-cols-2">
         <section className="space-y-2 rounded-3xl bg-card p-4 shadow-card sm:p-5">
           <h2 className="text-lg font-light tracking-tight">My shift-change requests</h2>
+          <FormError error={requests.error} />
+          {requests.isError && <Button variant="secondary" size="sm" onClick={() => void requests.refetch()}>Retry shift requests</Button>}
+          {requests.isPending && <AttendanceRequestsSkeleton label="Loading shift-change requests" />}
+          {requests.data?.length === 0 && <p className="py-1 text-sm text-muted-foreground">No shift-change requests yet.</p>}
           <FormError error={cancel.error} />
           <ul className="divide-y">
-            {requests.data.map((r) => (
+            {requests.data?.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
                 <div className="min-w-0">
                   <p className="font-medium">
@@ -126,13 +201,15 @@ export function MyAttendance() {
             ))}
           </ul>
         </section>
-      )}
-      {!!regularizations.data?.length && (
         <section className="space-y-2 rounded-3xl bg-card p-4 shadow-card sm:p-5">
           <h2 className="text-lg font-light tracking-tight">My regularization &amp; on-duty requests</h2>
+          <FormError error={regularizations.error} />
+          {regularizations.isError && <Button variant="secondary" size="sm" onClick={() => void regularizations.refetch()}>Retry attendance requests</Button>}
+          {regularizations.isPending && <AttendanceRequestsSkeleton label="Loading regularization and on-duty requests" />}
+          {regularizations.data?.length === 0 && <p className="py-1 text-sm text-muted-foreground">No regularization or on-duty requests yet.</p>}
           <FormError error={withdraw.error} />
           <ul className="divide-y">
-            {regularizations.data.map((r) => (
+            {regularizations.data?.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
                 <div className="min-w-0">
                   <p className="font-medium">
@@ -156,10 +233,10 @@ export function MyAttendance() {
             ))}
           </ul>
         </section>
-      )}
-      {asking && <ShiftChangeDialog initialDate={asking.date} onClose={() => setAsking(null)} />}
-      {claiming && <CompOffDialog day={claiming} onClose={() => setClaiming(null)} />}
-      {regularizing && <RegularizationDialog initialDate={regularizing.date} onClose={() => setRegularizing(null)} />}
+      </div>
+      {asking && <ShiftChangeDialog initialDate={asking.date} onClose={() => setAsking(null)} onSent={sent} />}
+      {claiming && <CompOffDialog day={claiming} onClose={() => setClaiming(null)} onSent={sent} />}
+      {regularizing && <RegularizationDialog initialDate={regularizing.date} onClose={() => setRegularizing(null)} onSent={sent} />}
     </div>
   )
 }

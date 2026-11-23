@@ -1,12 +1,22 @@
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Fingerprint, Lock, Pencil } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
 import { PunchesSkeleton } from '@/components/skeletons/attendance/PunchesSkeleton'
 import { Button } from '@/components/ui/button'
 import { orpc } from '@/lib/orpc'
 import { cn, formatDoneBy } from '@/lib/utils'
 import { coversText, dayMark, dayName, hours, MONTHS, type Month, type MonthDay, sameDay, STATUS, todayDay, TOTAL_LABELS, WEEKDAYS, splitFill } from './labels'
+
+// Motion on this calendar: the selection frame travels between days, the day's details fade inside a stable panel,
+// and My attendance slides a new month in from the direction of the arrow. Reduced motion keeps a short fade and
+// drops the travel. Durations: selection 180ms, details 180ms, month 280ms.
+export const MOTION_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)'
+
+export function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
 
 // One employee's month as a calendar (Monday-first weeks): each day's status, in / out times and shift; the totals above.
 // The chosen day's details (the shift and its times, in / out, worked, late / early, every punch and its machine, HR's
@@ -15,7 +25,7 @@ import { coversText, dayMark, dayName, hours, MONTHS, type Month, type MonthDay,
 // day (HR's correction, asking for a change).
 
 // `disabled`: the loading placeholder shows the picker without letting it move. `range`: the attendance month's days (RML's
-// 26th to 25th - 2026-11-22) shown under its name; `locked`: the month is locked (nothing in it changes)
+// 26th to 25th - 2026-11-22). The pill says that range; a month that starts on the 1st says its name. `locked`: nothing in it changes.
 export function MonthPicker({
   year,
   month,
@@ -31,55 +41,74 @@ export function MonthPicker({
   range?: { from: Date; to: Date }
   locked?: boolean
 }) {
-  const short = (d: Date) => d.toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short' })
   const move = (step: number) => {
     const d = new Date(Date.UTC(year, month - 1 + step, 1))
     onChange(d.getUTCFullYear(), d.getUTCMonth() + 1)
   }
+  const sameMonth = range && range.from.getUTCFullYear() === range.to.getUTCFullYear() && range.from.getUTCMonth() === range.to.getUTCMonth()
+  const dayMonth = (d: Date, withYear = false) => d.toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short', year: withYear ? 'numeric' : undefined })
+  const crossYear = !!range && range.from.getUTCFullYear() !== range.to.getUTCFullYear()
+  const label = !range || (range.from.getUTCDate() === 1 && sameMonth) ? `${MONTHS[month - 1]} ${year}` : `${dayMonth(range.from, crossYear)} – ${dayMonth(range.to, crossYear)}`
   return (
-    <div className="flex items-center gap-1">
-      <Button variant="ghost" size="icon" aria-label="Previous month" disabled={disabled} onClick={() => move(-1)}>
+    <div className="inline-flex h-9 items-center rounded-full bg-surface-2">
+      <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Previous month" disabled={disabled} onClick={() => move(-1)}>
         <ChevronLeft />
       </Button>
-      <span className="min-w-32 text-center text-sm leading-tight font-medium tabular-nums">
-        <span className="inline-flex items-center gap-1">
-          {MONTHS[month - 1]} {year}
-          {locked && <Lock className="size-3.5 text-muted-foreground" aria-label="Locked" />}
-        </span>
-        {range && range.from.getUTCDate() !== 1 && (
-          <span className="block text-xs font-normal text-muted-foreground">
-            {short(range.from)} – {short(range.to)}
-          </span>
-        )}
+      <span className="inline-flex min-w-36 items-center justify-center gap-1 px-1 text-sm font-medium tabular-nums">
+        {label}
+        {locked && <Lock className="size-3.5 text-muted-foreground" aria-label="Locked" />}
       </span>
-      <Button variant="ghost" size="icon" aria-label="Next month" disabled={disabled} onClick={() => move(1)}>
+      <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Next month" disabled={disabled} onClick={() => move(1)}>
         <ChevronRight />
       </Button>
     </div>
   )
 }
 
+// The month summary, in the shape of the Crextio salary calendar (crextio-011 desktop, crextio-025 phone):
+// one light hours figure, then three segments — present, absent, leave. The other counts stay as a quiet line.
+// Change MonthSkeleton's summary together with this.
+export const MONTH_BARS = [
+  { label: 'Present', bar: 'bg-gold' },
+  { label: 'Absent', bar: 'bg-hero' },
+  { label: 'Leave', bar: 'bg-foreground/15' },
+] as const
+
 export function MonthTotals({ totals }: { totals: Month['totals'] }) {
-  // a count is coloured only when there is something to see - a zero stays in normal ink (same order as TOTAL_LABELS)
-  const values: [number | string, string | false][] = [
-    [totals.present, totals.present > 0 && 'text-positive-ink'],
-    [totals.halfDay, totals.halfDay > 0 && 'text-warning-ink'],
-    [totals.absent, totals.absent > 0 && 'text-negative-ink'],
-    [totals.missedPunch, totals.missedPunch > 0 && 'text-warning-ink'],
-    [totals.leave, false],
-    [totals.onDuty, false],
-    [totals.late, false],
-    [totals.workedMinutes ? hours(totals.workedMinutes) : '0h', false],
+  const parts = [
+    { ...MONTH_BARS[0], value: totals.present },
+    { ...MONTH_BARS[1], value: totals.absent },
+    { ...MONTH_BARS[2], value: totals.leave },
   ]
-  const tiles = TOTAL_LABELS.map((label, i) => [label, ...values[i]!] as const)
+  const quiet = [
+    [TOTAL_LABELS[1], totals.halfDay],
+    [TOTAL_LABELS[3], totals.missedPunch],
+    [TOTAL_LABELS[5], totals.onDuty],
+    [TOTAL_LABELS[6], totals.late],
+  ] as const
   return (
-    <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-      {tiles.map(([label, value, ink]) => (
-        <div key={label} className="rounded-xl bg-surface-2/60 px-3 py-2">
-          <p className="truncate text-xs text-muted-foreground">{label}</p>
-          <p className={cn('text-lg leading-6 font-light tabular-nums', ink || 'text-foreground')}>{value}</p>
-        </div>
-      ))}
+    <div className="space-y-3">
+      <p className="text-4xl leading-none font-light tracking-tight tabular-nums">
+        {totals.workedMinutes ? hours(totals.workedMinutes) : '0h'}
+        <span className="ml-2 align-middle text-sm font-normal text-muted-foreground">worked</span>
+      </p>
+      <div className="flex gap-1" role="img" aria-label={parts.map((part) => `${part.label} ${part.value}`).join(', ')}>
+        {parts.map((part) => (
+          <div key={part.label} className="min-w-16" style={{ flexGrow: Math.max(part.value, 0.4) }}>
+            <div className="text-xs text-muted-foreground">{part.label}</div>
+            <div className="text-sm font-medium tabular-nums">{part.value}</div>
+            <div className={cn('mt-1 h-8 rounded-full', part.bar)} />
+          </div>
+        ))}
+      </div>
+      <dl className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
+        {quiet.map(([label, value]) => (
+          <div key={label} className="flex items-center gap-2">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="font-medium tabular-nums">{value}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   )
 }
@@ -93,8 +122,9 @@ const LEGEND: [string, string, string, string?][] = [
   ['P | WO', 'Half day + half off', 'text-foreground', splitFill('PRESENT', 'WEEKLY_OFF')],
   ['MP', 'Missed punch', STATUS.MISSED_PUNCH.cell],
   ['A', 'Absent', STATUS.ABSENT.cell],
-  ['WO', 'Weekly off', 'bg-surface-2 text-foreground/70'],
-  ['H', 'Holiday', 'bg-surface-2 text-foreground/70'],
+  ['WO', 'Weekly off', 'u-hatch bg-surface-2 text-foreground/70'],
+  ['H', 'Holiday', 'u-hatch bg-surface-2 text-foreground/70'],
+  [' ', 'No result yet', 'u-hatch bg-surface-2/60'],
   // (2026-11-22) a leave shows its type's code
   ['CL', 'On leave (its type)', STATUS.LEAVE.cell],
   ['OD', 'On duty', STATUS.ON_DUTY.cell],
@@ -103,7 +133,9 @@ const LEGEND: [string, string, string, string?][] = [
 // What the marks in the cells mean (also under the loading placeholder's calendar)
 export function MonthLegend() {
   return (
-    <ul className="flex flex-wrap gap-x-3 gap-y-1.5 pt-1 text-xs text-foreground/70">
+    <details className="group text-xs text-muted-foreground">
+      <summary className="min-h-9 cursor-pointer py-2 font-medium text-foreground focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-ring">Attendance key</summary>
+      <ul className="flex flex-wrap gap-x-3 gap-y-2 pb-1">
       {LEGEND.map(([mark, label, cell, fill]) => (
         <li key={mark} className="flex items-center gap-1.5">
           <span aria-hidden className={cn('grid h-5 min-w-6 place-items-center rounded-md px-1 font-semibold', cell)} style={fill ? { background: fill } : undefined}>
@@ -122,7 +154,8 @@ export function MonthLegend() {
         <Pencil aria-hidden className="size-3" />
         corrected by HR
       </li>
-    </ul>
+      </ul>
+    </details>
   )
 }
 
@@ -134,20 +167,76 @@ function firstChoice(days: MonthDay[], today: Date) {
 export function MonthCalendar({ data, actions }: { data: Month; actions?: (day: MonthDay) => React.ReactNode }) {
   const today = todayDay()
   const [picked, setPicked] = useState<Date | null>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const ringRef = useRef<HTMLSpanElement>(null)
+  const ringBox = useRef<{ x: number; y: number; w: number; h: number } | null>(null)
+  const seenMonthRef = useRef<string | null>(null)
+  const monthId = `${data.year}-${data.month}`
   // the picked day of THIS month (after a month change it falls back to the first choice)
   const open = data.days.find((d) => picked && sameDay(d.date, picked) && d.employed) ?? firstChoice(data.days, today)
+  const openId = open ? open.date.getTime() : null
+
+  const syncRing = useCallback((animate: boolean) => {
+    const grid = gridRef.current
+    const ring = ringRef.current
+    if (!grid || !ring) return
+    const cell = grid.querySelector<HTMLElement>('[data-selected="true"]')
+    if (!cell) {
+      ring.hidden = true
+      ringBox.current = null
+      return
+    }
+    const gridBox = grid.getBoundingClientRect()
+    const cellBox = cell.getBoundingClientRect()
+    const next = { x: cellBox.left - gridBox.left, y: cellBox.top - gridBox.top, w: cellBox.width, h: cellBox.height }
+    const prev = ringBox.current
+    ringBox.current = next
+    ring.hidden = false
+    ring.style.width = `${next.w}px`
+    ring.style.height = `${next.h}px`
+    ring.style.borderRadius = getComputedStyle(cell).borderRadius
+    const to = `translate3d(${next.x}px, ${next.y}px, 0)`
+    const same = !!prev && Math.abs(prev.x - next.x) < 0.5 && Math.abs(prev.y - next.y) < 0.5 && Math.abs(prev.w - next.w) < 0.5 && Math.abs(prev.h - next.h) < 0.5
+    // a resize during the travel must not cancel it; a month change snaps, it does not fly across a new grid
+    if (!animate && ring.getAnimations().length && same) return
+    if (!animate || !prev || same || prefersReducedMotion()) {
+      ring.getAnimations().forEach((animation) => animation.cancel())
+      ring.style.transform = to
+      return
+    }
+    const from = getComputedStyle(ring).transform
+    ring.getAnimations().forEach((animation) => animation.cancel())
+    ring.style.transform = to
+    ring.animate([{ transform: from === 'none' ? `translate3d(${prev.x}px, ${prev.y}px, 0)` : from }, { transform: to }], { duration: 180, easing: MOTION_EASE })
+  }, [])
+
+  useLayoutEffect(() => {
+    const monthChanged = seenMonthRef.current !== null && seenMonthRef.current !== monthId
+    seenMonthRef.current = monthId
+    syncRing(!monthChanged)
+  }, [openId, monthId, syncRing])
+
+  useEffect(() => {
+    const grid = gridRef.current
+    if (!grid) return
+    const observer = new ResizeObserver(() => syncRing(false))
+    observer.observe(grid)
+    return () => observer.disconnect()
+  }, [syncRing])
   // blank cells before the 1st (the grid starts on Monday)
-  const lead = (data.days[0]!.date.getUTCDay() + 6) % 7
+  const lead = data.days[0] ? (data.days[0].date.getUTCDay() + 6) % 7 : 0
   return (
     <div className="@container">
-      <div className="grid gap-3 @4xl:grid-cols-[minmax(0,1fr)_19rem] @4xl:items-start @4xl:gap-4">
+      {data.days.length > 0 && !data.days.some((day) => day.employed) && <p className="mb-3 rounded-xl bg-surface-2 px-3 py-2 text-sm text-muted-foreground">This period is outside your employment dates. Choose another month to see attendance.</p>}
+      <div className="grid gap-3 @4xl:grid-cols-[minmax(0,1fr)_20rem] @4xl:items-start @4xl:gap-5">
         <div className="space-y-2">
           <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground sm:gap-1.5">
             {WEEKDAYS.map((w) => (
               <span key={w.key}>{w.short}</span>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+          <div ref={gridRef} className="relative grid grid-cols-7 gap-1 sm:gap-1.5">
+            <span ref={ringRef} aria-hidden className="pointer-events-none absolute top-0 left-0 z-10 outline-2 -outline-offset-2 outline-foreground" />
             {Array.from({ length: lead }, (_, i) => (
               <span key={`lead-${i}`} />
             ))}
@@ -170,41 +259,47 @@ export function MonthCalendar({ data, actions }: { data: Month; actions?: (day: 
               const line = times ?? day.holiday ?? shiftCode
               // halves that differ: half and half, the first half on the left (2026-11-23)
               const split = !atWork && day.firstHalf && day.secondHalf && day.firstHalf !== day.secondHalf ? splitFill(day.firstHalf, day.secondHalf) : null
+              // a day with nothing worked out yet: still shows its date and shift, hatched like an off day so it is not a blank
+              const noResult = day.employed && !isToday && !atWork && !split && !off && !status && !ahead
               return (
                 <button
                   key={day.date.toISOString()}
                   type="button"
                   disabled={!day.employed}
                   aria-pressed={isOpen}
+                  data-selected={isOpen ? 'true' : undefined}
+                  aria-current={isToday ? 'date' : undefined}
+                  aria-label={`${day.date.toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}: ${!day.employed ? 'Outside employment' : atWork ? 'At work' : status?.label ?? ahead?.label ?? (off ? (kind === 'HOLIDAY' ? 'Holiday' : 'Weekly off') : future ? 'Scheduled' : isToday ? 'Not in yet' : 'Not worked out yet')}${day.firstHalf && day.secondHalf && day.firstHalf !== day.secondHalf ? `; first half ${STATUS[day.firstHalf].label}, second half ${STATUS[day.secondHalf].label}` : ''}`}
                   onClick={() => setPicked(day.date)}
                   style={split ? { background: split } : undefined}
                   className={cn(
-                    'flex min-h-12 min-w-0 flex-col items-stretch rounded-lg p-1 text-left text-xs transition-shadow hover:shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60 disabled:opacity-40 sm:min-h-16 sm:rounded-xl sm:px-2 sm:py-1.5',
+                    'flex min-h-12 min-w-0 flex-col items-stretch rounded-lg p-1 text-left text-xs transition-shadow hover:shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60 disabled:opacity-60 sm:min-h-16 sm:rounded-xl sm:px-2 sm:py-1.5',
                     atWork
                       ? 'bg-positive/10 text-positive-ink'
                       : split
                         ? 'text-foreground'
                         : off
-                        ? 'bg-surface-2 text-foreground/70'
+                        ? 'u-hatch bg-surface-2 text-foreground/70'
                         : status
                           ? status.cell
                           : ahead
                             ? STATUS[ahead.status].cell
-                            : future
-                            ? 'ring-1 ring-border/60 ring-inset'
-                            : 'ring-1 ring-border ring-inset',
-                    // the day whose details are shown (an outline: the cards' shadow would hide a ring)
-                    isOpen && 'outline-2 -outline-offset-2 outline-hero',
+                            : noResult
+                            ? 'u-hatch bg-surface-2/60 text-muted-foreground'
+                            : 'bg-surface-2/70',
                   )}
                 >
                   <span className="flex min-w-0 flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <span
-                      className={cn(
-                        'grid h-6 place-items-center self-start text-sm font-semibold tabular-nums',
-                        isToday ? '-ml-0.5 w-6 rounded-full bg-hero text-hero-foreground' : (off || (future && !status)) && 'font-medium text-muted-foreground',
-                      )}
-                    >
-                      {day.date.getUTCDate()}
+                    <span className="flex items-center gap-1">
+                      <span
+                        className={cn(
+                          'grid h-6 place-items-center text-sm font-semibold tabular-nums',
+                          isOpen ? 'w-6 rounded-full bg-gold text-gold-foreground' : isToday ? 'w-6 rounded-full bg-hero text-hero-foreground' : (off || noResult) && 'font-medium text-muted-foreground',
+                        )}
+                      >
+                        {day.date.getUTCDate()}
+                      </span>
+                      {(day.date.getUTCDate() === 1 || day === data.days[0]) && <span className="text-xs font-normal text-muted-foreground">{day.date.toLocaleDateString('en-IN', { timeZone: 'UTC', month: 'short' })}</span>}
                     </span>
                     {mark && (
                       <span className="flex items-center gap-1 font-semibold">
@@ -227,19 +322,41 @@ export function MonthCalendar({ data, actions }: { data: Month; actions?: (day: 
           </div>
           <MonthLegend />
         </div>
-        {open && <DayPanel day={open} employeeCode={data.employee.employeeCode} actions={actions?.(open)} />}
+        {open && <DayPanel day={open} employeeCode={data.employee.employeeCode} actions={actions?.(open)} motion={!!picked && sameDay(picked, open.date)} />}
       </div>
     </div>
   )
 }
 
 // The chosen day: its shift with the times, the numbers, every punch and the machine it came from, HR's correction
-function DayPanel({ day, employeeCode, actions }: { day: MonthDay; employeeCode: string; actions?: React.ReactNode }) {
+function DayPanel({ day, employeeCode, actions, motion = false }: { day: MonthDay; employeeCode: string; actions?: React.ReactNode; motion?: boolean }) {
+  return (
+    <section aria-label="The day's details" className="rounded-3xl bg-hero p-4 text-hero-foreground shadow-card sm:p-5 @4xl:sticky @4xl:top-24">
+      <DayDetails key={`${employeeCode}:${day.date.toISOString()}`} day={day} employeeCode={employeeCode} actions={actions} motion={motion} />
+    </section>
+  )
+}
+
+function DayDetails({ day, employeeCode, actions, motion }: { day: MonthDay; employeeCode: string; actions?: React.ReactNode; motion: boolean }) {
+  // captured once: the parent turns motion on after the first paint, and that must not replay this fade
+  const [playMotion] = useState(motion)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const el = bodyRef.current
+    if (!el || !playMotion) return
+    const reduced = prefersReducedMotion()
+    el.animate([{ opacity: reduced ? 0.72 : 0 }, { opacity: 1 }], { duration: reduced ? 120 : 180, easing: MOTION_EASE })
+  }, [playMotion])
   const punches = useQuery({ ...orpc.attendance.days.punches.queryOptions({ input: { employeeCode, date: day.date } }), enabled: day.punchCount > 0 })
   // the day carries the shift's name; the times come from the shift list (open to every employee)
   const shifts = useQuery(orpc.attendance.shifts.list.queryOptions({ input: {} }))
   const shift = day.shift?.id ? shifts.data?.find((s) => s.id === day.shift?.id) : undefined
   const status = day.status ? STATUS[day.status] : null
+  const isToday = sameDay(day.date, todayDay())
+  const atWork = isToday && !!day.inAt && !day.outAt
+  const plannedStatus = day.planned === 'WEEKLY_OFF' || day.planned === 'HOLIDAY' ? STATUS[day.planned] : null
+  const cover = day.covers.find((c) => c.status !== 'PRESENT')
+  const state = atWork ? { label: 'At work', tone: 'positive' as const } : status ?? (cover ? STATUS[cover.status] : plannedStatus)
   const future = day.date > todayDay()
   const kind = day.holiday ? `Holiday - ${day.holiday}` : day.planned === 'WEEKLY_OFF' ? 'Weekly off' : null
   // the two halves when they differ (2026-11-22)
@@ -250,20 +367,20 @@ function DayPanel({ day, employeeCode, actions }: { day: MonthDay; employeeCode:
     ['First in', day.inAt ?? '—'],
     ['Last out', day.outAt ?? '—'],
     ['Worked', hours(day.workedMinutes)],
-    ['Late in', day.lateMinutes ? `${day.lateMinutes}m` : '—', day.lateMinutes ? 'text-negative-ink' : undefined],
-    ['Early out', day.earlyMinutes ? `${day.earlyMinutes}m` : '—', day.earlyMinutes ? 'text-negative-ink' : undefined],
+    ['Late in', day.lateMinutes ? `${day.lateMinutes}m` : '—', day.lateMinutes ? 'font-medium text-hero-foreground' : undefined],
+    ['Early out', day.earlyMinutes ? `${day.earlyMinutes}m` : '—', day.earlyMinutes ? 'font-medium text-hero-foreground' : undefined],
     ['Punches', String(day.punchCount || '—')],
   ]
   return (
-    <section aria-label="The day's details" className="space-y-3 rounded-2xl bg-surface-2/60 p-3 @4xl:sticky @4xl:top-24">
+    <div ref={bodyRef} className="space-y-4">
       <div className="flex items-start gap-3">
-        <div className="grid w-12 shrink-0 place-items-center rounded-xl bg-card py-1 shadow-card">
+        <div className="grid w-12 shrink-0 place-items-center rounded-2xl bg-hero-foreground/10 py-1">
           <span className="text-xl leading-7 font-light tabular-nums">{day.date.getUTCDate()}</span>
-          <span className="text-xs text-muted-foreground">{day.date.toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'short' })}</span>
+          <span className="text-xs text-hero-foreground/70">{day.date.toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'short' })}</span>
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            {status ? <Pill tone={status.tone}>{status.label}</Pill> : <Pill tone="neutral">{future ? 'Still to come' : 'Not worked out yet'}</Pill>}
+            {state ? <Pill tone={state.tone} className="bg-hero-foreground/10 text-hero-foreground">{state.label}</Pill> : <Pill tone="neutral" className="bg-hero-foreground/10 text-hero-foreground">{future ? 'Scheduled' : isToday ? 'Not in yet' : 'Not worked out yet'}</Pill>}
             {day.correction && (
               <Pill tone="info">
                 <Pencil className="size-3" /> Corrected
@@ -276,12 +393,14 @@ function DayPanel({ day, employeeCode, actions }: { day: MonthDay; employeeCode:
             </p>
           )}
           {covered.length > 0 && <p className="mt-1 text-xs font-medium">{covered.join(' · ')}</p>}
-          <p className="mt-1 truncate text-xs text-muted-foreground">{dayName(day.date)}</p>
+          <p className="mt-1 truncate text-xs text-hero-foreground/70">{dayName(day.date)}</p>
         </div>
       </div>
 
+      <FormError error={shifts.error} />
+
       {/* the shift: what the day is measured against */}
-      <div className="rounded-xl bg-card px-3 py-2 text-sm shadow-card">
+      <div className="rounded-xl bg-hero-foreground/5 px-3 py-2.5 text-sm">
         {kind ? (
           <p className="font-medium">{kind}</p>
         ) : (
@@ -294,7 +413,7 @@ function DayPanel({ day, employeeCode, actions }: { day: MonthDay; employeeCode:
                 </span>
               )}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-hero-foreground/70">
               {day.rostered ? 'Roster change' : (day.pattern ?? 'Schedule')}
               {/* a half day: only the first half is worked, no break (e.g. Saturday) */}
               {day.halfDay ? ` · half day - first half only${shift ? `, to ${shift.halfSplit ?? 'the middle'}` : ''}` : shift && ` · break ${shift.breakMinutes}m`}
@@ -308,7 +427,7 @@ function DayPanel({ day, employeeCode, actions }: { day: MonthDay; employeeCode:
       <dl className="grid grid-cols-3 gap-2 text-sm">
         {numbers.map(([label, value, ink]) => (
           <div key={label} className="min-w-0">
-            <dt className="truncate text-xs text-muted-foreground">{label}</dt>
+            <dt className="truncate text-xs text-hero-foreground/70">{label}</dt>
             <dd className={cn('tabular-nums', ink)}>{value}</dd>
           </div>
         ))}
@@ -317,31 +436,33 @@ function DayPanel({ day, employeeCode, actions }: { day: MonthDay; employeeCode:
       {/* every punch of the day, with the machine it came from */}
       {day.punchCount > 0 && (
         <div>
-          <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-hero-foreground/70">
             <Fingerprint className="size-3.5" aria-hidden /> Punches
           </p>
+          <FormError error={punches.error} />
+          {punches.isError && <Button variant="secondary" size="sm" onClick={() => void punches.refetch()}>Retry punches</Button>}
           {punches.data ? (
-            <ol className="divide-y divide-border/70 rounded-xl bg-card px-3 shadow-card">
+            <ol className="divide-y divide-hero-foreground/10 rounded-xl bg-hero-foreground/5 px-3">
               {punches.data.map((p, i) => (
                 <li key={p.at.toISOString()} className="flex items-baseline gap-3 py-1.5 text-sm">
-                  <span className="w-4 text-xs text-muted-foreground tabular-nums">{i + 1}</span>
+                  <span className="w-4 text-xs text-hero-foreground/70 tabular-nums">{i + 1}</span>
                   <span className="font-medium tabular-nums">{p.time}</span>
-                  <span className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground" title={p.device ?? undefined}>
+                  <span className="min-w-0 flex-1 truncate text-right text-xs text-hero-foreground/70" title={p.device ?? undefined}>
                     {p.device ?? '—'}
                   </span>
                 </li>
               ))}
             </ol>
-          ) : (
+          ) : punches.isPending ? (
             <PunchesSkeleton count={day.punchCount} label="Loading punches" />
-          )}
+          ) : null}
         </div>
       )}
 
       {/* why a policy rule made a half absent, e.g. "3rd late this month - first half absent" */}
-      {day.note && <p className="rounded-xl bg-warning/15 px-3 py-2 text-xs text-warning-ink">{day.note}</p>}
+      {day.note && <p className="rounded-xl bg-warning/20 px-3 py-2 text-xs text-hero-foreground">{day.note}</p>}
       {day.correction && (
-        <p className="rounded-xl bg-card px-3 py-2 text-xs shadow-card">
+        <p className="rounded-xl bg-hero-foreground/5 px-3 py-2 text-xs">
           Corrected:{' '}
           <strong>
             {[day.correction.firstHalf && `first half ${STATUS[day.correction.firstHalf].label.toLowerCase()}`, day.correction.secondHalf && `second half ${STATUS[day.correction.secondHalf].label.toLowerCase()}`]
@@ -349,10 +470,10 @@ function DayPanel({ day, employeeCode, actions }: { day: MonthDay; employeeCode:
               .join(', ')}
           </strong>{' '}
           {formatDoneBy(day.correction.at, day.correction.by)} - {day.correction.reason}
-          {day.autoStatus && <span className="text-muted-foreground"> (the punches gave {STATUS[day.autoStatus].label.toLowerCase()})</span>}
+          {day.autoStatus && <span className="text-hero-foreground/70"> (the punches gave {STATUS[day.autoStatus].label.toLowerCase()})</span>}
         </p>
       )}
       {actions}
-    </section>
+    </div>
   )
 }

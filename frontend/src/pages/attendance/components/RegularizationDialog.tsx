@@ -31,7 +31,7 @@ const PORTIONS: [Portion, string][] = [
 const chip = (active: boolean) =>
   cn('rounded-full px-3 py-2.5 text-xs leading-4 font-medium sm:py-1.5', active ? 'bg-card text-foreground shadow-card' : 'text-muted-foreground hover:text-foreground')
 
-export function RegularizationDialog({ initialDate, onClose }: { initialDate?: Date; onClose: () => void }) {
+export function RegularizationDialog({ initialDate, onClose, onSent }: { initialDate?: Date; onClose: () => void; onSent?: (message: string) => void }) {
   const queryClient = useQueryClient()
   const today = todayDay()
   const start = initialDate ?? today
@@ -45,6 +45,7 @@ export function RegularizationDialog({ initialDate, onClose }: { initialDate?: D
     orpc.attendance.regularizations.create.mutationOptions({
       onSuccess: () => {
         void queryClient.invalidateQueries({ queryKey: orpc.attendance.key() })
+        onSent?.(kind === 'ON_DUTY' ? 'On-duty request sent. It is with your manager.' : 'Regularization sent. It is with your manager.')
         onClose()
       },
     }),
