@@ -256,7 +256,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 175 | `attendance.days.removeCorrection` | Attendance: Edit | takes HR's correction away; the day goes back to what the punches give |
 | 176 | `attendance.shifts.list` | any logged-in employee (retired ones: Attendance setup: View) | the shifts |
 | 177 | `attendance.shifts.create` | Attendance setup: Edit | adds a shift |
-| 178 | `attendance.shifts.update` | Attendance setup: Edit | changes or retires a shift - days already worked out keep what they had |
+| 178 | `attendance.shifts.update` | Attendance setup: Edit | changes or retires a shift; new times apply from a date (dated) |
 | 179 | `attendance.shifts.assign` | Attendance setup: Edit | the schedule pattern and attendance policy of employees from a date |
 | 180 | `attendance.shifts.assignments` | own, or Attendance setup: View | one employee's schedules |
 | 181 | `attendance.shifts.schedules` | Attendance setup: View | who follows which schedule pattern and policy today |
@@ -1044,8 +1044,8 @@ access.
   2026-11-16) - always the same sentence, whatever the code is, so employee codes and e-mail addresses
   cannot be discovered by asking.
 - **What it does:** when the employee can log in (`ACTIVE` / `ON_NOTICE`), has a login and a personal e-mail, e-mails a
-  6-digit code valid 10 minutes (only its SHA-256 is kept on the login; a new one at most once a minute - otherwise
-  nothing is sent). The e-mail goes out in the background; a failure is only logged on the server.
+  6-digit code valid 10 minutes (only its SHA-256 is kept on the login; a new one at most once a minute and 5 a day per
+  login - the Indian calendar day, 2026-11-23 - otherwise nothing is sent; several asks at the same moment send one code). The e-mail goes out in the background; a failure is only logged on the server.
 - **Errors:** `400` invalid input.
 
 ### `accounts.resetPasswordWithCode`
@@ -3015,8 +3015,8 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Access:** any logged-in employee (retired ones: Attendance setup: View).
 - **Scope:** not limited by data access (one list for every company).
 - **Input:** `{ includeInactive?: boolean }` (optional)
-- **Returns:** `[{ id, code, name, startMinute, endMinute, start, end ("09:00"), crossesMidnight, lengthMinutes, breakMinutes, halfSplitMinute, halfSplit ("13:00" or null = the middle), isActive }]` by start time - the timing only (grace and the day's hours are the attendance policy, 2026-11-22).
-- **What it does:** the shifts - their timing only; which days people work which shift is the schedule patterns (2026-11-23).
+- **Returns:** `[{ id, code, name, startMinute, endMinute, start, end ("09:00"), crossesMidnight, lengthMinutes, breakMinutes, halfSplitMinute, halfSplit ("13:00" or null = the middle), isActive, from (the date the timing in force today runs from - 2000-01-01 = from the start), versions: [{ effectiveFrom, startMinute, endMinute, start, end, crossesMidnight, lengthMinutes, breakMinutes, halfSplitMinute, halfSplit, current, upcoming, by: { employeeCode, name } | null, at }] }]` by today's start time - the timing only (grace and the day's hours are the attendance policy, 2026-11-22).
+- **What it does:** the shifts - their timing only; which days people work which shift is the schedule patterns (2026-11-23). The timing is dated (2026-11-23): each version runs from its date until the next; a day follows the version in force on it.
 - **Errors:** `403`.
 
 ### `attendance.shifts.create`
@@ -3024,18 +3024,18 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Access:** Attendance setup: Edit.
 - **Scope:** shared by every company - needs Attendance setup Edit for **all companies** (`403`).
 - **Input:** `{ code (1-10 letters/digits, unique), name (unique), start, end ("HH:MM"; end not after start = ends the next day), breakMinutes 0-240 (unpaid - only taken off the hours worked shown), halfSplit? ("HH:MM" where the first half ends, inside the shift; null = the middle - 2026-11-22) }`
-- **Returns:** the shift.
-- **What it does:** adds a shift (used in schedule patterns).
+- **Returns:** the shift (as in `list`).
+- **What it does:** adds a shift (used in schedule patterns) - its timing is its first version, from the start.
 - **Errors:** `400` same start and end, the break longer than the shift, the first half ending outside the shift · `409` code / name used.
 
 ### `attendance.shifts.update`
 - **HTTP:** `POST /api/rpc/attendance/shifts/update` · **Code:** `backend/src/modules/attendance/shifts/`
 - **Access:** Attendance setup: Edit.
 - **Scope:** shared by every company - needs Attendance setup Edit for **all companies** (`403`).
-- **Input:** `{ id, ...the fields of create (optional), isActive? }`
-- **Returns:** the shift.
-- **What it does:** changes or retires a shift - days already worked out keep what they had. A shift that a schedule pattern in use names cannot be retired (2026-11-23).
-- **Errors:** as `create` · `404` · `409` retiring a shift a pattern in use names.
+- **Input:** `{ id, ...the fields of create (optional), effectiveFrom?: date (required when start / end / breakMinutes / halfSplit change), isActive? }`
+- **Returns:** the shift (as in `list`).
+- **What it does:** changes the code / name or retires a shift, and changes its timing **from a date** (dated shifts - the user, 2026-11-23; the review found an edit reworked days already passed): the version in force that day with the changes becomes the version from that date (one on the same date is replaced; later ones stay). The days before keep their times, also when worked out again later. From a day already passed, the days worked out on this shift since then are worked out again at once. A shift that a pattern in use names - today or in a later version - cannot be retired.
+- **Errors:** as `create` · `400` new times without `effectiveFrom` · `404` · `409` retiring a shift a pattern names; a locked attendance month on or after `effectiveFrom`.
 
 ### `attendance.shifts.assign`
 - **HTTP:** `POST /api/rpc/attendance/shifts/assign` · **Code:** `backend/src/modules/attendance/shifts/`
@@ -3069,7 +3069,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Access:** any logged-in employee (retired: Attendance setup: View).
 - **Scope:** not limited by data access (one list for every company).
 - **Input:** `{ includeInactive? }` (optional)
-- **Returns:** `[{ id, name, days (a shift id per day, 0 = off), halfDays (the days, 1 = the first, worked in their first half only), isDefault, isActive }]` - the default first, then by name.
+- **Returns:** `[{ id, name, days (a shift id per day, 0 = off), halfDays (the days, 1 = the first, worked in their first half only), isDefault, isActive, from (the date the days in force today run from - 2000-01-01 = from the start), versions: [{ effectiveFrom, days, halfDays, current, upcoming, by: { employeeCode, name } | null, at }] }]` - the default first, then by name. `days` / `halfDays` are the ones in force today; the days are dated (2026-11-23).
 - **What it does:** the schedule patterns (the user, 2026-11-23): weeks of Monday-Sunday that repeat - one idea for fixed and rotating staff alike; the default one is for everyone never given a schedule (a General week - six days, Sunday off - was made from the default shift).
 - **Errors:** `401`.
 
@@ -3078,18 +3078,18 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Access:** Attendance setup: Edit.
 - **Scope:** shared by every company - needs Attendance setup Edit for **all companies** (`403`).
 - **Input:** `{ name (unique), days: number[] 1-56 (a shift id, or 0 = off - usually 7, 14 or 21), halfDays?: number[] (the days, 1 = the first, worked in their first half only - each a day with a shift) }`
-- **Returns:** the pattern.
-- **What it does:** adds a pattern, e.g. Mon A, Tue B, Wed C, Thu GEN, Fri GEN, Sat GEN ½, Sun off. A half day counts half worked and half off (leave on it 0.5).
+- **Returns:** the pattern (as in `list`).
+- **What it does:** adds a pattern (its days are its first version, from the start), e.g. Mon A, Tue B, Wed C, Thu GEN, Fri GEN, Sat GEN ½, Sun off. A half day counts half worked and half off (leave on it 0.5).
 - **Errors:** `400` an unknown / retired shift, no working day, a half day without a shift · `409` name used.
 
 ### `attendance.shifts.patterns.update`
 - **HTTP:** `POST /api/rpc/attendance/shifts/patterns/update` · **Code:** `backend/src/modules/attendance/shifts/`
 - **Access:** Attendance setup: Edit.
 - **Scope:** shared by every company - needs Attendance setup Edit for **all companies** (`403`).
-- **Input:** `{ id, name?, days?, halfDays?, isDefault?: true, isActive? }`
-- **Returns:** the pattern.
-- **What it does:** changes or retires a pattern - days already worked out keep what they had. `isDefault: true` makes it the default (the star - the others lose the flag). There is always exactly one default - no schedule is built into the code - so the default cannot be retired, only moved.
-- **Errors:** as `create` · `404` · `409` retiring the default · `400` starring a retired pattern.
+- **Input:** `{ id, name?, days?, halfDays?, effectiveFrom?: date (required when days / halfDays change), isDefault?: true, isActive? }`
+- **Returns:** the pattern (as in `list`).
+- **What it does:** changes the name or retires a pattern, and changes its days **from a date** (dated patterns - the user, 2026-11-23): the version in force that day with the changes becomes the version from that date (one on the same date is replaced; later ones stay). The days before keep what they had, also when worked out again later; the cycle keeps counting from each schedule's start. From a day already passed, the days of everyone given the pattern (for the default one: everyone) are worked out again from then. `isDefault: true` makes it the default (the star - the others lose the flag). There is always exactly one default - no schedule is built into the code - so the default cannot be retired, only moved.
+- **Errors:** as `create` · `400` new days without `effectiveFrom`, starring a retired pattern · `404` · `409` retiring the default; a locked attendance month on or after `effectiveFrom`.
 
 ### `attendance.policies.list`
 - **HTTP:** `POST /api/rpc/attendance/policies/list` · **Code:** `backend/src/modules/attendance/policies/`

@@ -7,32 +7,51 @@
 // Approved leave (leave.prisma) and missed-punch / on-duty requests (RegularizationRequest, 2026-11-22) cover the days.
 
 // A shift: when work starts and ends (its timing only - how a day is judged is the attendance policy, 2026-11-22). A night
-// shift ends the next day (end <= start).
+// shift ends the next day (end <= start). The timing is dated (ShiftVersion - the user, 2026-11-23: "fix it", the review
+// found that editing a shift reworked days already passed), like the policy's rules.
 model Shift {
   id             Int      @id @default(autoincrement())
   // short code shown on the roster grid, e.g. GEN, A, B, NIGHT
   code           String   @unique
   name           String   @unique
-  // minutes from midnight in the employee's work-location time, e.g. 540 = 09:00
-  startMinute    Int      @map("start_minute") @db.SmallInt
-  endMinute      Int      @map("end_minute") @db.SmallInt
-  // an unpaid break - taken off the hours worked shown (lunch punches are not needed)
-  breakMinutes   Int      @map("break_minutes") @db.SmallInt
-  // where the first half ends and the second begins, minutes from midnight (null: the middle of the shift) - the halves
-  // of a day (the user, 2026-11-22: RML's Saturday is a half day, 09:00-13:00 of GEN 09:00-18:00); on a half day the
-  // day ends here
-  halfSplitMinute Int?    @map("half_split_minute") @db.SmallInt
   isActive       Boolean  @default(true) @map("is_active")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById    Int      @map("created_by_id")
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
   updatedById    Int      @map("updated_by_id")
 
+  versions       ShiftVersion[]
   rosterEntries  RosterEntry[]
   days           AttendanceDay[]
   changeRequests ShiftChangeRequest[]
 
   @@map("shifts")
+}
+
+// A shift's timing from a date until its next version (2026-11-23): a day follows the version in force on it, so working a
+// day out again later never moves it to the new times. A new shift's first version runs from the start (2000-01-01).
+model ShiftVersion {
+  id              Int      @id @default(autoincrement())
+  shiftId         Int      @map("shift_id")
+  effectiveFrom   DateTime @map("effective_from") @db.Date
+  // minutes from midnight in the employee's work-location time, e.g. 540 = 09:00
+  startMinute     Int      @map("start_minute") @db.SmallInt
+  endMinute       Int      @map("end_minute") @db.SmallInt
+  // an unpaid break - taken off the hours worked shown (lunch punches are not needed)
+  breakMinutes    Int      @map("break_minutes") @db.SmallInt
+  // where the first half ends and the second begins, minutes from midnight (null: the middle of the shift) - the halves
+  // of a day (the user, 2026-11-22: RML's Saturday is a half day, 09:00-13:00 of GEN 09:00-18:00); on a half day the
+  // day ends here
+  halfSplitMinute Int?     @map("half_split_minute") @db.SmallInt
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById     Int      @map("created_by_id")
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById     Int      @map("updated_by_id")
+
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@unique([shiftId, effectiveFrom])
+  @@map("shift_versions")
 }
 
 
@@ -115,15 +134,10 @@ model ShiftAssignment {
 // A schedule pattern (the user, 2026-11-23 - one idea for everyone, e.g. Mon A, Tue B, Wed C, Thu GEN, Fri GEN, Sat GEN
 // first half, Sun off): a list of days repeating for ever - usually 7, 14 or 21, shown as weeks of Monday-Sunday. The
 // default one is for employees with no schedule given. Worked out live each day (the old HRMS copied patterns into the
-// roster for a range).
+// roster for a range). Its days are dated (RosterPatternVersion, 2026-11-23), like a shift's timing.
 model RosterPattern {
   id          Int      @id @default(autoincrement())
   name        String   @unique
-  // the cycle, one item per day: a shift id, or 0 = off
-  days        Int[]
-  // the days (1 = the first) worked in their first half only - the second half is off (the user, 2026-11-23: a half-day
-  // Saturday counts half a day worked and half off, so leave on it is 0.5); always days with a shift
-  halfDays    Int[]    @default([]) @map("half_days")
   // the pattern of employees with no schedule given (exactly one - it cannot be retired, only moved)
   isDefault   Boolean  @default(false) @map("is_default")
   isActive    Boolean  @default(true) @map("is_active")
@@ -132,9 +146,33 @@ model RosterPattern {
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
   updatedById Int      @map("updated_by_id")
 
+  versions    RosterPatternVersion[]
   assignments ShiftAssignment[]
 
   @@map("roster_patterns")
+}
+
+// A pattern's days from a date until its next version (2026-11-23): a day follows the version in force on it. The cycle
+// keeps counting from each schedule's start, whatever version. A new pattern's first version runs from the start
+// (2000-01-01).
+model RosterPatternVersion {
+  id            Int      @id @default(autoincrement())
+  patternId     Int      @map("pattern_id")
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  // the cycle, one item per day: a shift id, or 0 = off
+  days          Int[]
+  // the days (1 = the first) worked in their first half only - the second half is off (the user, 2026-11-23: a half-day
+  // Saturday counts half a day worked and half off, so leave on it is 0.5); always days with a shift
+  halfDays      Int[]    @default([]) @map("half_days")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int      @map("created_by_id")
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int      @map("updated_by_id")
+
+  pattern RosterPattern @relation(fields: [patternId], references: [id], onDelete: Cascade)
+
+  @@unique([patternId, effectiveFrom])
+  @@map("roster_pattern_versions")
 }
 
 // One rostered day of an employee: a shift or off - only a rare, short change from the default (2026-11-22, the user):

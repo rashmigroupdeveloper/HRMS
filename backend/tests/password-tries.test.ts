@@ -32,3 +32,49 @@ describe('wrong passwords at the same moment', () => {
     else expect(account.failedLoginCount).toBe(burst)
   })
 })
+
+// Forgot-password codes (2026-11-23, the review): only the minute's gap held them back - 1,440 codes a day, 5 guesses each.
+// Now at most 5 a day per login, and two asks at the same moment send one code.
+describe('forgot-password codes', () => {
+  async function loginWithEmail() {
+    const companyId = (await createCompany()).id
+    const employee = await createEmployee({ companyId, plantId: (await createPlant(companyId)).id })
+    await accountsService.setPassword(employee.employeeCode, 'A-good-long-password-1')
+    // test data: the personal e-mail the code goes to (no mail server in the tests - only the outbox)
+    await prisma.employee.update({ where: { id: employee.id }, data: { personalEmail: `reset.${employee.employeeCode.toLowerCase()}@example.com` } })
+    return { employeeCode: employee.employeeCode, employeeId: employee.id }
+  }
+  const stateOf = (employeeId: number) => prisma.userAccount.findUniqueOrThrow({ where: { employeeId }, select: { resetCodeHash: true, resetCodeSentAt: true, resetCodesSentToday: true } })
+  // test data: the last code sent `ago` milliseconds back, `count` sent that day
+  const sentBefore = (employeeId: number, ago: number, count: number) =>
+    prisma.userAccount.update({ where: { employeeId }, data: { resetCodeSentAt: new Date(Date.now() - ago), resetCodesSentToday: count, resetCodeHash: 'x'.repeat(64) } })
+
+  it('sends at most 5 a day per login', async () => {
+    const { employeeCode, employeeId } = await loginWithEmail()
+    // 5 sent today, the last over a minute ago: the 6th is not sent (the same answer)
+    await sentBefore(employeeId, 61_000, 5)
+    await accountsService.requestPasswordReset({ employeeCode }, '198.51.100.20')
+    expect(await stateOf(employeeId)).toMatchObject({ resetCodeHash: 'x'.repeat(64), resetCodesSentToday: 5 })
+    // 4 sent today: the 5th is
+    await sentBefore(employeeId, 61_000, 4)
+    await accountsService.requestPasswordReset({ employeeCode }, '198.51.100.20')
+    const fifth = await stateOf(employeeId)
+    expect(fifth.resetCodesSentToday).toBe(5)
+    expect(fifth.resetCodeHash).not.toBe('x'.repeat(64))
+    // a new day starts again at 1
+    await sentBefore(employeeId, 25 * 60 * 60_000, 5)
+    await accountsService.requestPasswordReset({ employeeCode }, '198.51.100.20')
+    expect((await stateOf(employeeId)).resetCodesSentToday).toBe(1)
+  })
+
+  it('sends one code when asked several times at once', async () => {
+    const { employeeCode, employeeId } = await loginWithEmail()
+    const { id: accountId } = await prisma.userAccount.findUniqueOrThrow({ where: { employeeId }, select: { id: true } })
+    const start = new Date()
+    await Promise.all([1, 2, 3].map((n) => accountsService.requestPasswordReset({ employeeCode }, `198.51.100.${30 + n}`)))
+    expect((await stateOf(employeeId)).resetCodesSentToday).toBe(1)
+    // each code stored is one e-mail: the change history shows how many were stored
+    const stored = await prisma.auditLog.findMany({ where: { model: 'UserAccount', recordId: accountId, createdAt: { gte: start } }, select: { changes: true } })
+    expect(stored.filter((r) => r.changes && typeof r.changes === 'object' && 'resetCodeHash' in r.changes)).toHaveLength(1)
+  })
+})

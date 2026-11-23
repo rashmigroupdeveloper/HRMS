@@ -1,33 +1,54 @@
-import { createdBy, prisma, updatedBy, type ActorId, type DbClient, type NewRow, type Prisma } from '#core/db/prisma'
+import { createdBy, prisma, updatedBy, type ActorId, type DbClient, type Prisma } from '#core/db/prisma'
 
 // Database access for shifts, schedule patterns and who follows which (shift assignments).
+
+// a shift's timing (dated - 2026-11-23: each version runs from a date until the next)
+const timingSelect = { startMinute: true, endMinute: true, breakMinutes: true, halfSplitMinute: true } satisfies Prisma.ShiftVersionSelect
+export type Timing = Prisma.ShiftVersionGetPayload<{ select: typeof timingSelect }>
 
 export const shiftSelect = {
   id: true,
   code: true,
   name: true,
-  startMinute: true,
-  endMinute: true,
-  breakMinutes: true,
-  halfSplitMinute: true,
   isActive: true,
+  versions: { orderBy: { effectiveFrom: 'asc' }, select: { id: true, effectiveFrom: true, ...timingSelect, updatedAt: true, updatedById: true } },
 } satisfies Prisma.ShiftSelect
 export type ShiftRow = Prisma.ShiftGetPayload<{ select: typeof shiftSelect }>
 
 export function listShifts(includeInactive: boolean, db: DbClient = prisma) {
-  return db.shift.findMany({ where: includeInactive ? {} : { isActive: true }, orderBy: [{ startMinute: 'asc' }, { code: 'asc' }], select: shiftSelect })
+  return db.shift.findMany({ where: includeInactive ? {} : { isActive: true }, orderBy: { code: 'asc' }, select: shiftSelect })
 }
 
 export function findShift(id: number, db: DbClient = prisma) {
   return db.shift.findUnique({ where: { id }, select: shiftSelect })
 }
 
-export function createShift(data: NewRow<Prisma.ShiftUncheckedCreateInput>, actorId: ActorId, db: DbClient = prisma) {
-  return db.shift.create({ data: { ...data, ...createdBy(actorId) }, select: shiftSelect })
+// a new shift and its first timing
+export async function createShift(data: { code: string; name: string }, timing: Timing, effectiveFrom: Date, actorId: ActorId, db: DbClient = prisma) {
+  const shift = await db.shift.create({ data: { ...data, ...createdBy(actorId) }, select: { id: true } })
+  await db.shiftVersion.create({ data: { shiftId: shift.id, effectiveFrom, ...timing, ...createdBy(actorId) } })
+  return shift.id
 }
 
-export function updateShift(id: number, data: Prisma.ShiftUncheckedUpdateInput, actorId: ActorId, db: DbClient = prisma) {
-  return db.shift.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: shiftSelect })
+export function updateShift(id: number, data: { code?: string; name?: string; isActive?: boolean }, actorId: ActorId, db: DbClient = prisma) {
+  return db.shift.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: { id: true } })
+}
+
+// the timing from a date (one from the same date is replaced)
+export function upsertShiftVersion(shiftId: number, effectiveFrom: Date, timing: Timing, actorId: ActorId, db: DbClient = prisma) {
+  return db.shiftVersion.upsert({
+    where: { shiftId_effectiveFrom: { shiftId, effectiveFrom } },
+    create: { shiftId, effectiveFrom, ...timing, ...createdBy(actorId) },
+    update: { ...timing, ...updatedBy(actorId) },
+    select: { id: true },
+  })
+}
+
+// data access: a shift's timing changed from a date - whoever had a day worked out on it since then, in every company
+// (the change is group-wide; only the days are worked out again, nothing is returned)
+export async function listEmployeeIdsWithShiftFrom(shiftId: number, from: Date, db: DbClient = prisma) {
+  const rows = await db.attendanceDay.findMany({ where: { shiftId, date: { gte: from } }, distinct: ['employeeId'], select: { employeeId: true } })
+  return rows.map((r) => r.employeeId)
 }
 
 
@@ -64,7 +85,18 @@ export function upsertAssignment(
 
 // --- schedule patterns ---
 
-const patternSelect = { id: true, name: true, days: true, halfDays: true, isDefault: true, isActive: true } satisfies Prisma.RosterPatternSelect
+// a pattern's days (dated - 2026-11-23)
+const cycleSelect = { days: true, halfDays: true } satisfies Prisma.RosterPatternVersionSelect
+export type Cycle = Prisma.RosterPatternVersionGetPayload<{ select: typeof cycleSelect }>
+
+const patternSelect = {
+  id: true,
+  name: true,
+  isDefault: true,
+  isActive: true,
+  versions: { orderBy: { effectiveFrom: 'asc' }, select: { id: true, effectiveFrom: true, ...cycleSelect, updatedAt: true, updatedById: true } },
+} satisfies Prisma.RosterPatternSelect
+export type PatternRow = Prisma.RosterPatternGetPayload<{ select: typeof patternSelect }>
 
 export function listPatterns(includeInactive: boolean, db: DbClient = prisma) {
   return db.rosterPattern.findMany({ where: includeInactive ? {} : { isActive: true }, orderBy: [{ isDefault: 'desc' }, { name: 'asc' }], select: patternSelect })
@@ -74,12 +106,32 @@ export function findPattern(id: number, db: DbClient = prisma) {
   return db.rosterPattern.findUnique({ where: { id }, select: patternSelect })
 }
 
-export function createPattern(data: { name: string; days: number[]; halfDays: number[] }, actorId: ActorId, db: DbClient = prisma) {
-  return db.rosterPattern.create({ data: { ...data, ...createdBy(actorId) }, select: patternSelect })
+// a new pattern and its first days
+export async function createPattern(name: string, cycle: Cycle, effectiveFrom: Date, actorId: ActorId, db: DbClient = prisma) {
+  const pattern = await db.rosterPattern.create({ data: { name, ...createdBy(actorId) }, select: { id: true } })
+  await db.rosterPatternVersion.create({ data: { patternId: pattern.id, effectiveFrom, ...cycle, ...createdBy(actorId) } })
+  return pattern.id
 }
 
-export function updatePattern(id: number, data: Prisma.RosterPatternUpdateInput, actorId: ActorId, db: DbClient = prisma) {
-  return db.rosterPattern.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: patternSelect })
+export function updatePattern(id: number, data: { name?: string; isDefault?: boolean; isActive?: boolean }, actorId: ActorId, db: DbClient = prisma) {
+  return db.rosterPattern.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: { id: true } })
+}
+
+// the days from a date (one from the same date is replaced)
+export function upsertPatternVersion(patternId: number, effectiveFrom: Date, cycle: Cycle, actorId: ActorId, db: DbClient = prisma) {
+  return db.rosterPatternVersion.upsert({
+    where: { patternId_effectiveFrom: { patternId, effectiveFrom } },
+    create: { patternId, effectiveFrom, ...cycle, ...createdBy(actorId) },
+    update: { ...cycle, ...updatedBy(actorId) },
+    select: { id: true },
+  })
+}
+
+// data access: a pattern's days changed from a date - everyone given it on a schedule, in every company (the change is
+// group-wide; only the days are worked out again, nothing is returned)
+export async function listEmployeeIdsOnPattern(patternId: number, db: DbClient = prisma) {
+  const rows = await db.shiftAssignment.findMany({ where: { patternId }, distinct: ['employeeId'], select: { employeeId: true } })
+  return rows.map((r) => r.employeeId)
 }
 
 // Only one default pattern: the others lose the flag

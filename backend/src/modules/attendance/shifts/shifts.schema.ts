@@ -21,16 +21,24 @@ export const createShiftInput = z.object({
   halfSplit: clockSchema.nullable().optional(),
 })
 
-export const updateShiftInput = z.object({
-  id: idSchema,
-  code: shiftCodeSchema.optional(),
-  name: nameSchema.optional(),
-  start: clockSchema.optional(),
-  end: clockSchema.optional(),
-  breakMinutes: minutesSchema(240).optional(),
-  halfSplit: clockSchema.nullable().optional(),
-  isActive: z.boolean().optional(),
-})
+// a change of the timing needs the date it applies from: the days before it keep the times they had (dated shifts -
+// 2026-11-23)
+export const updateShiftInput = z
+  .object({
+    id: idSchema,
+    code: shiftCodeSchema.optional(),
+    name: nameSchema.optional(),
+    start: clockSchema.optional(),
+    end: clockSchema.optional(),
+    breakMinutes: minutesSchema(240).optional(),
+    halfSplit: clockSchema.nullable().optional(),
+    effectiveFrom: z.date().optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine((v) => v.effectiveFrom !== undefined || (v.start === undefined && v.end === undefined && v.breakMinutes === undefined && v.halfSplit === undefined), {
+    message: 'Give the date the new times apply from',
+    path: ['effectiveFrom'],
+  })
 
 // The schedule of several employees from a date (HR, in bulk): a pattern, the week of it the start date falls in (a
 // 7 / 14 / 21-day pattern lines up with Monday-Sunday), and the attendance policy
@@ -67,12 +75,16 @@ export const createPatternInput = z.object({
   // the days (1 = the first) worked in their first half only (e.g. a half-day Saturday)
   halfDays: z.array(z.number().int().min(1).max(56)).max(56).default([]),
 })
-export const updatePatternInput = z.object({
-  id: idSchema,
-  name: nameSchema.optional(),
-  days: createPatternInput.shape.days.optional(),
-  halfDays: createPatternInput.shape.halfDays.optional(),
-  // makes it the default pattern (the one of employees with no schedule given; the others lose the flag)
-  isDefault: z.literal(true).optional(),
-  isActive: z.boolean().optional(),
-})
+// a change of the days needs the date it applies from: the days before it keep what they had (dated patterns - 2026-11-23)
+export const updatePatternInput = z
+  .object({
+    id: idSchema,
+    name: nameSchema.optional(),
+    days: createPatternInput.shape.days.optional(),
+    halfDays: z.array(z.number().int().min(1).max(56)).max(56).optional(),
+    effectiveFrom: z.date().optional(),
+    // makes it the default pattern (the one of employees with no schedule given; the others lose the flag)
+    isDefault: z.literal(true).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine((v) => v.effectiveFrom !== undefined || (v.days === undefined && v.halfDays === undefined), { message: 'Give the date the new days apply from', path: ['effectiveFrom'] })

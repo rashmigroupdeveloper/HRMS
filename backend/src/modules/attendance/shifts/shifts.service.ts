@@ -15,26 +15,50 @@ import type { assignShiftInput, createPatternInput, createShiftInput, listSchedu
 // Shifts, schedule patterns and who follows which (attendance, 2026-11-16; one pattern idea for everyone - the user,
 // 2026-11-23). Shifts are read by everyone (rosters, one's own
 // attendance); set up with Attendance setup: Edit. A night shift ends the next day (its end is not after its start).
+// Dated (2026-11-23, like the policies): a shift's timing and a pattern's days are versions, each from a date - a day
+// follows the version in force on it, so the days before a change keep what they had even when worked out again later.
+// A change from a day already passed works those days out again at once (never across a locked month).
+
+// a new shift's / pattern's first version - from the start
+const FROM_THE_START = new Date(Date.UTC(2000, 0, 1))
+// the version in force on a day (the first one before it starts)
+const versionOn = <T extends { effectiveFrom: Date }>(versions: T[], day: Date) => versions.filter((v) => v.effectiveFrom <= day).at(-1) ?? versions[0]!
 
 const clock = (minute: number) => `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`
 const lengthOf = (s: { startMinute: number; endMinute: number }) => (s.endMinute > s.startMinute ? s.endMinute - s.startMinute : s.endMinute + 1440 - s.startMinute)
 
-// For the API: the times as "09:00", whether it crosses midnight, how long it is
-export function toShift(s: shiftsRepository.ShiftRow) {
-  return {
-    ...s,
-    start: clock(s.startMinute),
-    end: clock(s.endMinute),
-    // where the first half ends (null: the middle of the shift)
-    halfSplit: s.halfSplitMinute === null ? null : clock(s.halfSplitMinute),
-    crossesMidnight: s.endMinute <= s.startMinute,
-    lengthMinutes: lengthOf(s),
-  }
+const timingOf = (v: shiftsRepository.Timing): shiftsRepository.Timing => ({ startMinute: v.startMinute, endMinute: v.endMinute, breakMinutes: v.breakMinutes, halfSplitMinute: v.halfSplitMinute })
+const clocks = (t: shiftsRepository.Timing) => ({
+  ...t,
+  start: clock(t.startMinute),
+  end: clock(t.endMinute),
+  // where the first half ends (null: the middle of the shift)
+  halfSplit: t.halfSplitMinute === null ? null : clock(t.halfSplitMinute),
+  crossesMidnight: t.endMinute <= t.startMinute,
+  lengthMinutes: lengthOf(t),
+})
+
+// For the API: the timing in force today - the times as "09:00", whether it crosses midnight, how long it is - with the
+// date it runs from, and every version (who set it)
+async function toShifts(rows: shiftsRepository.ShiftRow[]) {
+  const person = await employeesService.lookupPeople(rows.flatMap((r) => r.versions.map((v) => v.updatedById)))
+  const now = today()
+  return rows.map(({ versions, ...shift }) => {
+    const current = versionOn(versions, now)
+    return {
+      ...shift,
+      ...clocks(timingOf(current)),
+      // the date the timing in force today runs from (2000-01-01 = from the start)
+      from: current.effectiveFrom,
+      versions: versions.map((v) => ({ effectiveFrom: v.effectiveFrom, ...clocks(timingOf(v)), current: v.id === current.id, upcoming: v.effectiveFrom > now, by: person(v.updatedById), at: v.updatedAt })),
+    }
+  })
 }
 
 export async function listShifts(viewer: CurrentUser, includeInactive = false) {
   if (includeInactive) assertAccess(viewer.access, 'ATTENDANCE_SETUP', 'READ')
-  return (await shiftsRepository.listShifts(includeInactive)).map(toShift)
+  // earliest start first (the timing in force today)
+  return (await toShifts(await shiftsRepository.listShifts(includeInactive))).sort((a, b) => a.startMinute - b.startMinute || a.code.localeCompare(b.code))
 }
 
 async function getShift(id: number) {
@@ -57,37 +81,56 @@ function checkTimes(s: { startMinute: number; endMinute: number; breakMinutes: n
 }
 
 // Shifts and patterns are the same for every company: changing them needs Attendance setup Edit for all companies (A4, 2026-11-18)
-export async function createShift({ start, end, halfSplit, ...input }: z.infer<typeof createShiftInput>, viewer: CurrentUser) {
+export async function createShift({ start, end, halfSplit, code, name, breakMinutes }: z.infer<typeof createShiftInput>, viewer: CurrentUser) {
   assertGroupWide(viewer, 'ATTENDANCE_SETUP', 'A shift')
-  const data = { ...input, startMinute: start, endMinute: end, halfSplitMinute: halfSplit ?? null }
-  checkTimes(data)
-  return toShift(await shiftsRepository.createShift(data, viewer.employeeId))
+  const timing = { startMinute: start, endMinute: end, breakMinutes, halfSplitMinute: halfSplit ?? null }
+  checkTimes(timing)
+  const id = await prisma.$transaction((tx) => shiftsRepository.createShift({ code, name }, timing, FROM_THE_START, viewer.employeeId, tx))
+  const [shift] = await toShifts([await getShift(id)])
+  return shift!
 }
 
-// A change applies to the days worked out from now on (days already worked out keep what they had)
-export async function updateShift({ id, start, end, halfSplit, ...changes }: z.infer<typeof updateShiftInput>, viewer: CurrentUser) {
+// The code, name, retired - and the timing from a date: the version in force that day with the changes, kept as the
+// version from that date (one on the same date is replaced); later versions stay. From a day already passed: the days
+// worked out on this shift since then are worked out again (never across a locked month).
+export async function updateShift({ id, start, end, halfSplit, breakMinutes, effectiveFrom, code, name, isActive }: z.infer<typeof updateShiftInput>, viewer: CurrentUser) {
   assertGroupWide(viewer, 'ATTENDANCE_SETUP', 'A shift')
   const actorId = viewer.employeeId
   const current = await getShift(id)
-  const next = {
-    ...current,
-    ...changes,
-    startMinute: start ?? current.startMinute,
-    endMinute: end ?? current.endMinute,
-    halfSplitMinute: halfSplit === undefined ? current.halfSplitMinute : halfSplit,
+  const changesTiming = start !== undefined || end !== undefined || halfSplit !== undefined || breakMinutes !== undefined
+  if (changesTiming && !effectiveFrom) throw new ORPCError('BAD_REQUEST', { message: 'Give the date the new times apply from' })
+  let timing: shiftsRepository.Timing | null = null
+  if (changesTiming && effectiveFrom) {
+    const base = timingOf(versionOn(current.versions, effectiveFrom))
+    timing = {
+      startMinute: start ?? base.startMinute,
+      endMinute: end ?? base.endMinute,
+      breakMinutes: breakMinutes ?? base.breakMinutes,
+      halfSplitMinute: halfSplit === undefined ? base.halfSplitMinute : halfSplit,
+    }
+    checkTimes(timing)
+    // the new times reach every day from that date on: not across a locked attendance month
+    await daysService.assertNothingLockedFrom(effectiveFrom)
   }
-  checkTimes(next)
-  // a shift that a pattern in use names stays in use (the pattern would point at a retired shift)
-  if (changes.isActive === false) {
-    const using = (await shiftsRepository.listPatterns(false)).filter((p) => p.days.includes(id))
+  // a shift that a pattern in use names (today, or from a later version) stays in use (the pattern would point at a
+  // retired shift)
+  if (isActive === false) {
+    const now = today()
+    const using = (await shiftsRepository.listPatterns(false)).filter((p) => p.versions.some((v) => (v.effectiveFrom > now || v.id === versionOn(p.versions, now).id) && v.days.includes(id)))
     if (using.length) throw new ORPCError('CONFLICT', { message: `${current.name} is used by ${using.map((p) => p.name).join(', ')} - change ${using.length === 1 ? 'that pattern' : 'those patterns'} first` })
   }
-  const shift = await shiftsRepository.updateShift(
-    id,
-    { ...changes, ...(start !== undefined && { startMinute: start }), ...(end !== undefined && { endMinute: end }), ...(halfSplit !== undefined && { halfSplitMinute: halfSplit }) },
-    actorId,
-  )
-  return toShift(shift)
+  await prisma.$transaction(async (tx) => {
+    if (code !== undefined || name !== undefined || isActive !== undefined) {
+      await shiftsRepository.updateShift(id, { ...(code !== undefined && { code }), ...(name !== undefined && { name }), ...(isActive !== undefined && { isActive }) }, actorId, tx)
+    }
+    if (timing && effectiveFrom) await shiftsRepository.upsertShiftVersion(id, effectiveFrom, timing, actorId, tx)
+  })
+  // the days already passed from that date follow the new times
+  if (timing && effectiveFrom && effectiveFrom <= today()) {
+    await daysService.recompute(await shiftsRepository.listEmployeeIdsWithShiftFrom(id, effectiveFrom), effectiveFrom, today())
+  }
+  const [shift] = await toShifts([await getShift(id)])
+  return shift!
 }
 
 // --- schedules (who follows which pattern) ---
@@ -104,9 +147,11 @@ export function patternDayOf(date: Date, startWeek: number, length: number) {
 export async function assignShift({ employeeCodes, patternId, startWeek, policyId, effectiveFrom }: z.infer<typeof assignShiftInput>, viewer: CurrentUser) {
   const actorId = viewer.employeeId
   const pattern = await getPattern(patternId)
-  const weeks = Math.ceil(pattern.days.length / 7)
+  // the pattern's days on the schedule's first day (dated patterns - 2026-11-23)
+  const { days } = versionOn(pattern.versions, effectiveFrom)
+  const weeks = Math.ceil(days.length / 7)
   if (startWeek > weeks) throw new ORPCError('BAD_REQUEST', { message: `${pattern.name} has only ${weeks} week${weeks === 1 ? '' : 's'}` })
-  const patternDay = patternDayOf(effectiveFrom, startWeek, pattern.days.length)
+  const patternDay = patternDayOf(effectiveFrom, startWeek, days.length)
   // the policy named must be in use (none: the default policy)
   if (policyId) await policiesService.getActivePolicy(policyId)
   // a schedule reaches every day from its date on: not across a locked attendance month (2026-11-23)
@@ -196,10 +241,27 @@ export async function listEmployeeAssignments(viewer: CurrentUser, employeeCode:
 
 // --- schedule patterns ---
 
+// For the API: the days in force today, with the date they run from, and every version (who set it)
+async function toPatterns(rows: shiftsRepository.PatternRow[]) {
+  const person = await employeesService.lookupPeople(rows.flatMap((r) => r.versions.map((v) => v.updatedById)))
+  const now = today()
+  return rows.map(({ versions, ...pattern }) => {
+    const current = versionOn(versions, now)
+    return {
+      ...pattern,
+      days: current.days,
+      halfDays: current.halfDays,
+      // the date the days in force today run from (2000-01-01 = from the start)
+      from: current.effectiveFrom,
+      versions: versions.map((v) => ({ effectiveFrom: v.effectiveFrom, days: v.days, halfDays: v.halfDays, current: v.id === current.id, upcoming: v.effectiveFrom > now, by: person(v.updatedById), at: v.updatedAt })),
+    }
+  })
+}
+
 // Read by whoever builds rosters (managers and Attendance); the retired ones with Attendance setup: View
 export async function listPatterns(viewer: CurrentUser, includeInactive = false) {
   if (includeInactive && !hasAccess(viewer.access, 'ATTENDANCE_SETUP', 'READ')) includeInactive = false
-  return shiftsRepository.listPatterns(includeInactive)
+  return toPatterns(await shiftsRepository.listPatterns(includeInactive))
 }
 
 async function checkPatternDays(days: number[], halfDays: number[]) {
@@ -211,30 +273,56 @@ async function checkPatternDays(days: number[], halfDays: number[]) {
   if (halfDays.some((n) => n > days.length || days[n - 1] === 0)) throw new ORPCError('BAD_REQUEST', { message: 'A half day must be a day with a shift' })
 }
 
-export async function createPattern({ halfDays, ...input }: z.infer<typeof createPatternInput>, viewer: CurrentUser) {
-  assertGroupWide(viewer, 'ATTENDANCE_SETUP', 'A schedule pattern')
-  const half = [...new Set(halfDays)].sort((a, b) => a - b)
-  await checkPatternDays(input.days, half)
-  return shiftsRepository.createPattern({ ...input, halfDays: half }, viewer.employeeId)
+async function toPattern(id: number) {
+  const row = await shiftsRepository.findPattern(id)
+  if (!row) throw new ORPCError('NOT_FOUND', { message: `No schedule pattern with id ${id}` })
+  const [pattern] = await toPatterns([row])
+  return pattern!
 }
 
-// A change applies to the days worked out from now on (days already worked out keep what they had); `isDefault` moves
-// the default here - there is always exactly one, so the default cannot be retired
-export async function updatePattern({ id, ...changes }: z.infer<typeof updatePatternInput>, viewer: CurrentUser) {
+export async function createPattern({ halfDays, days, name }: z.infer<typeof createPatternInput>, viewer: CurrentUser) {
+  assertGroupWide(viewer, 'ATTENDANCE_SETUP', 'A schedule pattern')
+  const half = [...new Set(halfDays)].sort((a, b) => a - b)
+  await checkPatternDays(days, half)
+  const id = await prisma.$transaction((tx) => shiftsRepository.createPattern(name, { days, halfDays: half }, FROM_THE_START, viewer.employeeId, tx))
+  return toPattern(id)
+}
+
+// The name, default, retired - and the days from a date: the version in force that day with the changes, kept as the
+// version from that date (one on the same date is replaced); later versions stay. From a day already passed: the days of
+// the employees following it are worked out again from then (never across a locked month). `isDefault` moves the default
+// here - there is always exactly one, so the default cannot be retired.
+export async function updatePattern({ id, effectiveFrom, days: newDays, halfDays: newHalfDays, ...changes }: z.infer<typeof updatePatternInput>, viewer: CurrentUser) {
   assertGroupWide(viewer, 'ATTENDANCE_SETUP', 'A schedule pattern')
   const actorId = viewer.employeeId
   const current = await shiftsRepository.findPattern(id)
   if (!current) throw new ORPCError('NOT_FOUND', { message: `No schedule pattern with id ${id}` })
   if (changes.isActive === false && current.isDefault) throw new ORPCError('CONFLICT', { message: 'The default pattern cannot be retired - star another pattern first' })
   if (changes.isDefault && (changes.isActive === false || !current.isActive)) throw new ORPCError('BAD_REQUEST', { message: 'A retired pattern cannot be the default' })
-  const days = changes.days ?? current.days
-  const halfDays = changes.halfDays ? [...new Set(changes.halfDays)].sort((a, b) => a - b) : current.halfDays
-  if (changes.days || changes.halfDays) await checkPatternDays(days, halfDays)
-  return prisma.$transaction(async (tx) => {
-    const pattern = await shiftsRepository.updatePattern(id, { ...changes, ...(changes.halfDays && { halfDays }) }, actorId, tx)
+  const changesDays = newDays !== undefined || newHalfDays !== undefined
+  if (changesDays && !effectiveFrom) throw new ORPCError('BAD_REQUEST', { message: 'Give the date the new days apply from' })
+  let cycle: shiftsRepository.Cycle | null = null
+  if (changesDays && effectiveFrom) {
+    const base = versionOn(current.versions, effectiveFrom)
+    cycle = { days: newDays ?? base.days, halfDays: newHalfDays ? [...new Set(newHalfDays)].sort((a, b) => a - b) : base.halfDays }
+    await checkPatternDays(cycle.days, cycle.halfDays)
+    // the new days reach every day from that date on: not across a locked attendance month
+    await daysService.assertNothingLockedFrom(effectiveFrom)
+  }
+  await prisma.$transaction(async (tx) => {
+    if (changes.name !== undefined || changes.isDefault || changes.isActive !== undefined) await shiftsRepository.updatePattern(id, changes, actorId, tx)
     if (changes.isDefault) await shiftsRepository.clearDefaultPattern(id, actorId, tx)
-    return pattern
+    if (cycle && effectiveFrom) await shiftsRepository.upsertPatternVersion(id, effectiveFrom, cycle, actorId, tx)
   })
+  // the days already passed from that date follow the new days: everyone given the pattern - and, for the default one,
+  // everyone never given a schedule
+  if (cycle && effectiveFrom && effectiveFrom <= today()) {
+    const ids = current.isDefault
+      ? (await employeesService.listAttendancePeople({ scope: SYSTEM_SCOPE, from: effectiveFrom, to: today() })).map((p) => p.id)
+      : await shiftsRepository.listEmployeeIdsOnPattern(id)
+    await daysService.recompute(ids, effectiveFrom, today())
+  }
+  return toPattern(id)
 }
 
 export async function getPattern(id: number) {
