@@ -1,4 +1,4 @@
-import { KeyRound, LogOut, PowerOff, UserCog } from 'lucide-react'
+import { Ellipsis, UserCog } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -13,7 +13,8 @@ const ROLE = ['w-44', 'w-36', 'w-52', 'w-28']
 export function LoginsTableSkeleton({ rows = 7, canChange = false, label = 'Loading' }: { rows?: number; canChange?: boolean; label?: string }) {
   return (
     <div role="status" aria-label={label}>
-      <Table>
+      <ul className="divide-y divide-border sm:hidden">{Array.from({ length: rows }, (_, r) => <li key={r} className="space-y-3 py-4 first:pt-1"><div className="flex items-start justify-between gap-3"><div className="space-y-1.5"><Skeleton className="h-4 w-32 rounded-full" /><Skeleton className="h-3 w-20 rounded-full" /></div><Skeleton className="h-6 w-16 rounded-full" /></div><Skeleton className="h-5 w-28 rounded-full" /><Skeleton className="h-3 w-44 max-w-full rounded-full" /><div className="flex flex-wrap items-center justify-between gap-2"><span className="flex items-center gap-1 text-xs text-muted-foreground">Last login:<Skeleton className="h-3 w-20 rounded-full" /></span>{canChange && <div className="flex gap-1"><Button variant="ghost" size="icon" disabled aria-label="Account actions"><Ellipsis /></Button><Button variant="secondary" size="sm" disabled><UserCog />Change roles</Button></div>}</div></li>)}</ul>
+      <div className="max-sm:hidden"><Table>
         <TableHeader>
           <TableRow>
             <TableHead>Employee</TableHead>
@@ -50,15 +51,7 @@ export function LoginsTableSkeleton({ rows = 7, canChange = false, label = 'Load
               <TableCell className="text-right whitespace-nowrap">
                 {canChange && (
                   <div className="flex justify-end gap-1">
-                    <Button variant="ghost" size="sm" disabled>
-                      <KeyRound /> Reset password
-                    </Button>
-                    <Button variant="ghost" size="sm" disabled>
-                      <PowerOff /> Turn off
-                    </Button>
-                    <Button variant="ghost" size="sm" disabled>
-                      <LogOut /> Log out everywhere
-                    </Button>
+                    <Button variant="ghost" size="icon" disabled aria-label="Account actions"><Ellipsis /></Button>
                     <Button variant="secondary" size="sm" disabled>
                       <UserCog /> Change roles
                     </Button>
@@ -68,7 +61,7 @@ export function LoginsTableSkeleton({ rows = 7, canChange = false, label = 'Load
             </TableRow>
           ))}
         </TableBody>
-      </Table>
+      </Table></div>
     </div>
   )
 }
