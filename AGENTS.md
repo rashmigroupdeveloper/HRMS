@@ -28,7 +28,28 @@ Claude Code runs hooks from `.claude/settings.json`. Codex does not, so do their
 
 The full "before finishing" list is still CLAUDE.md section 6. Every command in it must pass.
 
-## 3. How to work with the team
+## 3. Keep the docs true - in the same change
+
+The rule is in CLAUDE.md section 6 ("The docs stay true"). No check catches a doc that is wrong, so do this by hand
+before you finish:
+
+- **Search the docs for what you changed** - the rule, the function, the behaviour, the old wording - e.g.
+  `grep -n -i "several roles" CLAUDE.md README.md BACKLOG.md API_TRACKER.md` - and fix every hit that describes the old
+  way. Where to look:
+  - `CLAUDE.md` - a rule or how something works (access, data access, approvals, layers, files, UI rules).
+  - `README.md` - setup, commands (`package.json` scripts), the structure tree, the short "Access" / layer notes.
+  - `BACKLOG.md` - an item your change finishes (delete it), changes (rewrite it, dated) or leaves half-done (add what is
+    left: why it waits and what it needs).
+  - `API_TRACKER.md` - every API change (`npm run check:api-tracker` checks only that entries exist).
+  - The comment at the top of a touched `prisma/schema/*.prisma` file, and comments in the touched code.
+- Test-run notes in `docs/test-runs/` are a record of what you did, not the rules - they never replace these updates.
+- **List the docs you updated in your final report**, or say "no docs affected" and why.
+
+Example of what went wrong once: on 2026-11-23 access changed from "all of a person's roles combined" to "one active role
+at a time". `API_TRACKER.md` was updated, but `CLAUDE.md` section 4, `README.md` and `BACKLOG.md` item 3a still described
+combined roles until they were fixed by hand afterwards.
+
+## 4. How to work with the team
 
 These are the working preferences Claude follows on this project. Follow them too.
 

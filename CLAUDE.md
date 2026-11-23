@@ -248,12 +248,18 @@ frontend/src/
   `sessionProcedure` (also allowed with a temporary password) is ONLY for `accounts.me`, `accounts.logout` and
   `accounts.changePassword`.
 - **Roles are data, areas are code.** Roles are created on the "Roles & access" page and give a level per area; an
-  employee can have several. Code never names a role. A new module adds its area to `AccessArea`
+  employee can have several. **One role at a time** (decided 2026-11-23): the user picks the active role in the account
+  menu (per browser tab, sent as the `x-hrms-role` header); `resolveUser` checks it against the roles actually given and
+  builds `context.user.access` and `grants` (data access) from that role alone - roles are never combined. No header = the
+  lowest role id given; an unknown or removed role = no role access (never another role silently). One's own record, the
+  reporting tree, the HOD and approval steps naming a person work whatever role is active; approval steps for a role, an
+  area or the "Admin" fallback need that role active. Code never names a role. A new module adds its area to `AccessArea`
   (`prisma/schema/access.prisma`) and its View / Edit text to `AREA_INFO` (`modules/accounts/roles/roles.service.ts`).
   Reading APIs use READ, changing APIs use WRITE. A rule that depends on the input (e.g. "own record, or EMPLOYEES
   READ") goes in the service with `assertAccess` from `#core/auth/access`.
 - **Data access - whose records (decided 2026-11-18, BACKLOG 3a).** Each role given to an employee has rows of company ->
-  plant -> department ("all" at any level) at View / Edit, worked out only by `core/auth/scope.ts`. Every API that
+  plant -> department ("all" at any level) at View / Edit, worked out only by `core/auth/scope.ts`; only the active role's
+  rows count. Every API that
   reads or changes people's records follows **section 8** - read it before writing or changing any API.
 - The frontend decides what to show with `useAccess().can(area, level)` and `useAccess().covers(area, level, where)` (from
   `accounts.me`), never with role names; the backend checks the same access on every call.
@@ -317,6 +323,11 @@ frontend/src/
 - Every new or moved file matches section 1. If the structure changed (with the user's approval), this file and the
   README structure are updated in the same change.
 - If any API changed, `API_TRACKER.md` is updated in the same change (section 7).
+- **The docs stay true** (the user, 2026-11-23). When a change makes anything written in `CLAUDE.md`, `README.md`,
+  `BACKLOG.md`, `API_TRACKER.md` or a schema / code comment untrue, that text is updated in the same change - search the
+  docs for the rule or behaviour you changed and fix every place that describes the old way. Changing a decision that is
+  written as "decided" / "agreed" needs the user's approval first; then the old text is rewritten to the new rule with
+  its date, never left standing next to it. The final report lists the docs updated, or says none were affected.
 - Every new or changed page / section that loads data shows a skeleton that looks like the real UI while loading
   (section 5) - checked by comparing a loaded and a loading screenshot - and "Loading…" text or hand-drawn
   `animate-pulse` boxes in a touched page are replaced.

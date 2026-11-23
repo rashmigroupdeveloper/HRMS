@@ -249,7 +249,8 @@ export const departmentsRouter = {
 Then add the router to `backend/src/router.ts` (`employees: employeesRouter`).
 
 **Access:** reading APIs use `accessProcedure(area, 'READ')`, changing APIs `accessProcedure(area, 'WRITE')`.
-Roles are data (the "Roles & access" page), so code never names a role. A new module adds its area to
+Roles are data (the "Roles & access" page), so code never names a role. Someone with several roles works in one at a
+time: they pick it in the account menu (per tab), and only that role's areas and data access count. A new module adds its area to
 `AccessArea` in `access.prisma` and its View / Edit text to `AREA_INFO` in `modules/accounts/roles/roles.service.ts`;
 the frontend shows pages and buttons with `useAccess().can(area, level)`.
 

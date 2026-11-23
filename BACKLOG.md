@@ -80,8 +80,9 @@ and the "Reports to" filter.
 Compared with the old HRMS (org units, fails open, gaps) and VBMS (company -> plant -> department tree, leaks through
 forgotten filters and grant hand-outs) on 2026-11-17. A role says WHAT (areas, View / Edit); data access says WHOSE.
 - **Rows per role given to a login** (not per login): company, plant, department - each "all" or one - and View / Edit,
-  so one person can be "HR for RML" and "Payroll for the whole group". For an area, the level for an employee is the
-  best, over the roles giving that area, of the lower of the role's level and that role's row level. No rows = nothing
+  so one person can be "HR for RML" and "Payroll for the whole group". **Changed 2026-11-23 (the user): one role at a
+  time** - the person picks the active role in the account menu, and for an area their level is the lower of that role's
+  level and its row level; roles are no longer combined (the old rule took the best over all roles). No rows = nothing
   (own record, own team and own department still work). An employee with no department is covered only by
   "all departments" rows. Super Admin = everything, decided in one place.
 - **Records** (employees, candidates and what hangs on them) by their company / plant / department. **Belongs to one
@@ -105,6 +106,11 @@ forgotten filters and grant hand-outs) on 2026-11-17. A role says WHAT (areas, V
   imports and punch uploads, and the punch codes that matched no employee - **needs:** a company on those rows.
 - **Not clicked through in the browser yet:** the "Data access" rows on Roles & access, the forms offering only what the
   user may choose, the Plant filter on the directory.
+- **One role at a time - e-mails still look at every role (2026-11-23):** `accountsService.mailRecipients` /
+  `mailRecipientsFor` (reminders, approval and HR notices) pick everyone whom *any* of their roles covers, while the pages
+  use only the active role. So someone can be e-mailed about a request they see only after switching to the right role.
+  Kept for now (being told is better than missing it). **Later:** say in the e-mail which role to switch to, or decide
+  with the user that e-mails follow something else.
 - **Narrowing goes top-down:** someone can only manage logins whose roles and data access are within their own. After the
   deploy every role covers every company, so the first narrowing of each person must be done by someone with all
   companies (in practice the Super Admin); an HR person narrowed to RML cannot then reset or re-role people still on
