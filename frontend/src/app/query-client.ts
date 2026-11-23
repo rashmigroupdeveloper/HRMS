@@ -12,7 +12,11 @@ function onUnauthorized(error: unknown, query?: Query<unknown, unknown, unknown,
   const passwordChangeRequired =
     error instanceof ORPCError && (error.data as { passwordChangeRequired?: boolean } | undefined)?.passwordChangeRequired === true
   if (!isUnauthorized(error) && !passwordChangeRequired) return
-  if (query && matchQuery({ queryKey: orpc.accounts.me.key() }, query)) return
+  if (query && matchQuery({ queryKey: orpc.accounts.me.key() }, query)) {
+    // the session is gone: drop the user's data; accounts.me stays with its error, which sends RequireLogin to /login
+    if (isUnauthorized(error)) queryClient.removeQueries({ predicate: (q) => !matchQuery({ queryKey: orpc.accounts.me.key() }, q) })
+    return
+  }
   void queryClient.invalidateQueries({ queryKey: orpc.accounts.me.key() })
 }
 

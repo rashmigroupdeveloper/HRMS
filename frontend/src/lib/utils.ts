@@ -10,6 +10,13 @@ export function toDateInput(date: Date | null | undefined): string {
   return date ? date.toISOString().slice(0, 10) : ''
 }
 
+// Today as a calendar day where the viewer is (UTC midnight, like the API's dates) - never new Date() through toISOString,
+// which gives yesterday before 5:30 am in India
+export function todayDay() {
+  const now = new Date()
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+}
+
 export function fromDateInput(value: string): Date | undefined {
   return value ? new Date(`${value}T00:00:00Z`) : undefined
 }

@@ -41,9 +41,9 @@ export function listPolicies(db: DbClient = prisma) {
   })
 }
 
-// The default schedule pattern in use (exactly one - for employees with no schedule given)
-export function findDefaultPattern(db: DbClient = prisma) {
-  return db.rosterPattern.findFirst({ where: { isDefault: true, isActive: true }, select: patternSelect })
+// Which pattern was the default (for employees with no schedule given) from which day - with its dated days (2026-11-23)
+export function listDefaultPatterns(db: DbClient = prisma) {
+  return db.defaultPatternChange.findMany({ orderBy: { effectiveFrom: 'asc' }, select: { effectiveFrom: true, pattern: { select: patternSelect } } })
 }
 
 // Published roster days (drafts do not count)
@@ -73,11 +73,13 @@ export function listCorrections(employeeIds: number[], from: Date, to: Date, db:
 }
 
 // a half left null keeps following the punches
-export function upsertCorrection(data: { employeeId: number; date: Date; firstHalf: DayStatus | null; secondHalf: DayStatus | null; reason: string }, actorId: ActorId, db: DbClient = prisma) {
+// A half left out (undefined) keeps its correction - correcting one half never wipes the other's (2026-11-23, the review);
+// null clears it (back to the punches)
+export function upsertCorrection(data: { employeeId: number; date: Date; firstHalf?: DayStatus | null; secondHalf?: DayStatus | null; reason: string }, actorId: ActorId, db: DbClient = prisma) {
   return db.attendanceCorrection.upsert({
     where: { employeeId_date: { employeeId: data.employeeId, date: data.date } },
-    create: { ...data, ...createdBy(actorId) },
-    update: { firstHalf: data.firstHalf, secondHalf: data.secondHalf, reason: data.reason, ...updatedBy(actorId) },
+    create: { employeeId: data.employeeId, date: data.date, firstHalf: data.firstHalf ?? null, secondHalf: data.secondHalf ?? null, reason: data.reason, ...createdBy(actorId) },
+    update: { ...(data.firstHalf !== undefined && { firstHalf: data.firstHalf }), ...(data.secondHalf !== undefined && { secondHalf: data.secondHalf }), reason: data.reason, ...updatedBy(actorId) },
     select: correctionSelect,
   })
 }

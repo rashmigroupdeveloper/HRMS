@@ -16,7 +16,8 @@ export type NewEntry = {
   compOffClaimId?: number | null
 }
 
-// Adds rows; a credit / lapse already there for its period is skipped (the job may run twice) - returns how many were added
+// Adds rows; a credit / lapse / comp-off expiry already there for its period is skipped (the job may run twice) - returns
+// how many were added
 export async function addEntries(rows: NewEntry[], actorId: ActorId, db: DbClient = prisma) {
   if (!rows.length) return 0
   const { count } = await db.leaveLedgerEntry.createMany({ data: rows.map((r) => ({ ...r, ...createdBy(actorId) })), skipDuplicates: true })

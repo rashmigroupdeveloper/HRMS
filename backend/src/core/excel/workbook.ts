@@ -12,6 +12,8 @@ export type ExcelColumn = {
   date?: boolean
   // a moment (date and time) column, shown in the server's local time as dd-mm-yyyy hh:mm
   dateTime?: boolean
+  // a text column (codes, phone numbers): what is typed stays as typed - Excel keeps the leading zeros of 007
+  text?: boolean
   // the allowed values: a dropdown in every row of the sheet (the list is kept on a hidden "Lists" sheet)
   list?: string[]
   // a hint shown as a comment on the header cell
@@ -49,6 +51,7 @@ export async function writeWorkbook(sheets: ExcelSheet[]): Promise<Uint8Array> {
       const col = ws.getColumn(index + 1)
       if (column.date) col.numFmt = DATE_FORMAT
       if (column.dateTime) col.numFmt = `${DATE_FORMAT} hh:mm`
+      if (column.text) col.numFmt = '@'
       if (column.note) ws.getCell(1, index + 1).note = column.note
       if (column.list?.length && lists) {
         // the list in its own column of the hidden sheet, referenced by every cell's dropdown
@@ -92,7 +95,8 @@ export async function readFirstSheet(bytes: Uint8Array): Promise<{ headers: stri
     let any = false
     headers.forEach((header, i) => {
       if (!header) return
-      const value = cellValue(row.getCell(i + 1).value)
+      const cell = row.getCell(i + 1)
+      const value = cellValue(cell.value, cell.numFmt)
       values[header] = value
       if (value !== null) any = true
     })
@@ -101,20 +105,34 @@ export async function readFirstSheet(bytes: Uint8Array): Promise<{ headers: stri
   return { headers: headers.filter(Boolean), rows }
 }
 
-// A cell's value without Excel's wrappers: rich text, hyperlinks (e-mails often become links), formula results
-function cellValue(value: ExcelJS.CellValue): CellValue {
+// A cell's value without Excel's wrappers: rich text, hyperlinks (e-mails often become links - their text can be rich text
+// too), formula results; anything else Excel can hold reads as empty, never as "[object Object]" (2026-11-23, the review).
+// `format`: the cell's number format - a whole number it shows with leading zeros is read as the text shown.
+function cellValue(value: ExcelJS.CellValue, format?: string): CellValue {
   if (value === null || value === undefined) return null
   if (value instanceof Date) return value
-  if (typeof value === 'number') return value
+  if (typeof value === 'number') return shownAsText(value, format) ?? value
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE'
   if (typeof value === 'string') return value.trim() || null
   if (typeof value === 'object') {
-    if ('richText' in value) return value.richText.map((part) => part.text).join('').trim() || null
-    if ('text' in value && typeof value.text === 'string') return value.text.trim() || null
-    if ('result' in value) return cellValue(value.result as ExcelJS.CellValue)
-    if ('error' in value) return null
+    if ('richText' in value && Array.isArray(value.richText)) return value.richText.map((part) => part.text).join('').trim() || null
+    if ('text' in value) return cellValue(value.text as ExcelJS.CellValue, format)
+    if ('result' in value) return cellValue(value.result as ExcelJS.CellValue, format)
   }
-  return String(value).trim() || null
+  return null
+}
+
+// A whole number whose format pads it with zeros or adds fixed text - e.g. 7 in a 000 cell shows as 007, in a "RML"000000
+// cell as RML000007 - as the text shown: it is a code, and the zeros are part of it (2026-11-23, the review). Any other
+// format (0, 0.00, dates, several sections): null - read as the number.
+function shownAsText(value: number, format: string | undefined): string | null {
+  if (!format || !Number.isInteger(value) || value < 0) return null
+  const parts = format.match(/^((?:"[^"]*"|\\.)*)(0+)((?:"[^"]*"|\\.)*)$/)
+  if (!parts) return null
+  const [, before = '', zeros = '', after = ''] = parts
+  if (zeros.length < 2 && !before && !after) return null
+  const literal = (part: string) => part.replace(/"([^"]*)"|\\(.)/g, (_, quoted: string | undefined, char: string | undefined) => quoted ?? char ?? '')
+  return `${literal(before)}${String(value).padStart(zeros.length, '0')}${literal(after)}`
 }
 
 // 1 -> A, 27 -> AA

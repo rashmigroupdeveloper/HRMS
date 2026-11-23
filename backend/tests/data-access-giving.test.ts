@@ -1,9 +1,11 @@
 import { prisma } from '#core/db/prisma'
 import { accountsService } from '#modules/accounts'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import * as rolesRepository from '../src/modules/accounts/roles/roles.repository.js'
 import * as rolesService from '../src/modules/accounts/roles/roles.service.js'
 import { createCompany, createEmployee, createPlant } from './helpers/organization.js'
 import { row, userWith } from './helpers/users.js'
+import { asAsync } from './helpers/spies.js'
 
 // Data access (2026-11-18): giving roles with data access stays within the giver's own access; employees outside the
 // giver's range are "not found"; roles - shared by every company - need Edit for all companies.
@@ -162,5 +164,65 @@ describe('changing a role stays within the editor\'s data access over its holder
   it('refuses changing a role the editor has themselves', async () => {
     const holder = { ...editor, roles: [{ id: narrowRoleId, name: 'Narrow' }] }
     await expect(rolesService.updateRole({ id: narrowRoleId, description: 'mine' }, holder)).rejects.toThrow('a role you have yourself')
+  })
+})
+
+// Found in the 2026-11-23 review: giving a role with no areas but wide data-access rows while another editor added areas
+// to it - each check passed on what the other had not saved yet. Both now hold the role and check it again inside.
+describe('a role changed while it is given', () => {
+  let companyA: number
+  let editor: ReturnType<typeof userWith>
+  let superAdmin: ReturnType<typeof userWith>
+  const salary = { SALARY: 'READ' } as const
+
+  const setup = async () => {
+    const plantA = (await createPlant(companyA)).id
+    const holder = await createEmployee({ companyId: companyA, plantId: plantA })
+    await accountsService.createLogin(superAdmin, { employeeCode: holder.employeeCode })
+    const roleId = (await rolesService.createRole({ name: `Empty ${holder.employeeCode}`, access: {} }, superAdmin)).id
+    return { holderCode: holder.employeeCode, roleId }
+  }
+
+  beforeAll(async () => {
+    companyA = (await createCompany()).id
+    const someone = await createEmployee({ companyId: companyA, plantId: (await createPlant(companyA)).id })
+    superAdmin = userWith(someone, [], { isSuperAdmin: true })
+    // Roles & access Edit for every company; Salary View only for company A
+    editor = userWith(someone, [
+      { access: { ACCESS: 'WRITE', EMPLOYEES: 'READ' }, rows: [row(null, null, null)] },
+      { access: salary, rows: [row(companyA, null, null)] },
+    ])
+  })
+
+  it('refuses giving it over every company when Salary was added after the giver read it', async () => {
+    const { holderCode, roleId } = await setup()
+    const read = rolesService.getRolesByIds
+    const spy = vi.spyOn(rolesService, 'getRolesByIds').mockImplementationOnce(async (...args) => {
+      const roles = await read(...args)
+      await rolesService.updateRole({ id: roleId, access: salary }, superAdmin)
+      return roles
+    })
+    try {
+      await expect(accountsService.setAccountRoles({ employeeCode: holderCode, roles: [{ roleId, dataAccess: [row(null, null, null)] }] }, editor)).rejects.toThrow(
+        'your data access does not cover',
+      )
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('refuses adding Salary when it was given over every company after the editor read its holders', async () => {
+    const { holderCode, roleId } = await setup()
+    const read = rolesRepository.listHolderRows
+    const spy = vi.spyOn(asAsync(rolesRepository), 'listHolderRows').mockImplementationOnce(async (...args) => {
+      const rows = await read(...args)
+      await accountsService.setAccountRoles({ employeeCode: holderCode, roles: [{ roleId, dataAccess: [row(null, null, null)] }] }, superAdmin)
+      return rows
+    })
+    try {
+      await expect(rolesService.updateRole({ id: roleId, access: salary }, editor)).rejects.toThrow('data access beyond yours')
+    } finally {
+      spy.mockRestore()
+    }
   })
 })

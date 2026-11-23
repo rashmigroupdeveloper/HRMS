@@ -8,8 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { orpc } from '@/lib/orpc'
-import { cn, fromDateInput, toDateInput } from '@/lib/utils'
-import { todayDay } from './labels'
+import { cn, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
 
 // Asking for a missed punch to count as present (days already come, up to 30 days back), or to be marked on official duty
 // outside the office (days to come too) - the whole day(s) or one half of a single day. Approved through the approval chain

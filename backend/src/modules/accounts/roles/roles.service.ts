@@ -247,6 +247,12 @@ export async function getRolesByIds(ids: number[], db?: DbClient) {
   return roles.map(toRole)
 }
 
+// Holds these roles until the transaction ends - giving roles takes it too, so a role's change and its giving never pass
+// their checks on what the other has not saved yet (2026-11-23, the review)
+export function lockRoles(roleIds: number[], tx: DbClient) {
+  return rolesRepository.lockRoles(roleIds, tx)
+}
+
 // The role with this name (any upper / lower case); throws NOT_FOUND. Used by scripts/set-password.ts.
 export async function getRoleByName(name: string) {
   const role = await rolesRepository.findByName(name.trim())
@@ -280,6 +286,12 @@ export async function updateRole(input: z.infer<typeof updateRoleInput>, user: C
   if (input.name !== undefined) await assertNameFree(input.name, role.id)
   // Access is read fresh on every request, so the change applies to everyone with this role straight away
   const updated = await prisma.$transaction(async (tx) => {
+    // one change or giving of this role at a time, its areas and holders checked again now that the one before is saved
+    // (2026-11-23, the review: giving the role with wide data access while its areas were added passed both checks)
+    await rolesRepository.lockRoles([role.id], tx)
+    const fresh = await getRole(role.id, tx)
+    assertWithinOwnAccess(user, accessOf(fresh))
+    await assertChangeWithinHolders(user, fresh, input, tx)
     // one fallback approver role at most: marking this one takes the mark from the other
     if (input.isApprovalFallback === true) await rolesRepository.clearApprovalFallback(role.id, user.employeeId, tx)
     return rolesRepository.update(
@@ -299,7 +311,7 @@ export async function updateRole(input: z.infer<typeof updateRoleInput>, user: C
 //   holder's rows - the same rule as giving the role to them.
 // (The fallback-approver mark needs no check of its own: changing a role already needs Roles & access Edit for all
 // companies, which covers every holder's rows - the rule for giving rows in setAccountRoles.)
-async function assertChangeWithinHolders(user: CurrentUser, role: RoleRow, input: z.infer<typeof updateRoleInput>) {
+async function assertChangeWithinHolders(user: CurrentUser, role: RoleRow, input: z.infer<typeof updateRoleInput>, db?: DbClient) {
   if (user.isSuperAdmin) return
   if (user.roles.some((r) => r.id === role.id)) {
     throw new ORPCError('FORBIDDEN', { message: 'You cannot change a role you have yourself - ask someone else with Roles & access' })
@@ -311,7 +323,7 @@ async function assertChangeWithinHolders(user: CurrentUser, role: RoleRow, input
     if (before[area] !== after[area]) changed[area] = higherLevel(before[area], after[area])
   }
   if (Object.keys(changed).length) {
-    const beyond = beyondGiver(user, changed, await rolesRepository.listHolderRows(role.id))
+    const beyond = beyondGiver(user, changed, await rolesRepository.listHolderRows(role.id, db))
     if (beyond.length) {
       throw new ORPCError('FORBIDDEN', {
         message: `People who have this role have data access beyond yours for: ${beyond.map((a) => AREA_INFO[a].label).join(', ')} - you can only change what your own data access covers`,

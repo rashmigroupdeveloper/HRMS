@@ -82,6 +82,14 @@ export function listHolderRows(roleId: number, db: DbClient = prisma) {
   })
 }
 
+// Holds these roles until the transaction ends (one at a time, lowest id first - two callers never wait for each other):
+// a role's change and its giving to someone each check the other's data, read again after it (2026-11-23, the review)
+export async function lockRoles(roleIds: number[], db: DbClient) {
+  for (const id of [...new Set(roleIds)].sort((a, b) => a - b)) {
+    await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('roles'), ${id}::int)::text AS locked`
+  }
+}
+
 // Takes the fallback-approver mark from every role but this one (one role at most carries it)
 export function clearApprovalFallback(exceptId: number, actorId: ActorId, db: DbClient = prisma) {
   return db.role.updateMany({ where: { isApprovalFallback: true, id: { not: exceptId } }, data: { isApprovalFallback: false, ...updatedBy(actorId) } })

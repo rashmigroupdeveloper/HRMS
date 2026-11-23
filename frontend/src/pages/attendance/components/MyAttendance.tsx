@@ -7,8 +7,8 @@ import { MonthSkeleton } from '@/components/skeletons/attendance/MonthSkeleton'
 import { AttendanceRequestsSkeleton } from '@/components/skeletons/attendance/AttendanceRequestsSkeleton'
 import { Button } from '@/components/ui/button'
 import { orpc } from '@/lib/orpc'
-import { formatDate } from '@/lib/utils'
-import { compOffDays, cycleRange, type MonthDay, REQUEST_STATUS, todayDay, type Regularization } from './labels'
+import { formatDate, todayDay } from '@/lib/utils'
+import { compOffDays, cycleRange, type MonthDay, REQUEST_STATUS, type Regularization } from './labels'
 import { useAttendanceMonth, useCycleStartDay } from './useAttendanceMonth'
 import { MonthCalendar, MonthPicker, MonthTotals } from './MonthCalendar'
 import { CompOffDialog } from './CompOffDialog'
@@ -36,6 +36,9 @@ export function MyAttendance() {
   const [regularizing, setRegularizing] = useState<{ date?: Date } | null>(null)
   // comp-off (2026-11-22): a weekly off / holiday already over (up to 30 days back) worked at least 4 hours
   const [claiming, setClaiming] = useState<MonthDay | null>(null)
+  // the days already claimed (waiting or approved) - one claim per day; a claim reloads these (leave.*)
+  const claims = useQuery(orpc.leave.compOff.mine.queryOptions())
+  const claimed = new Set((claims.data ?? []).filter((c) => c.status === 'PENDING' || c.status === 'APPROVED').map((c) => c.workDate.getTime()))
   const [notice, setNotice] = useState<{ id: number; text: string } | null>(null)
   const noticeId = useRef(0)
   const sent = (text: string) => {
@@ -53,7 +56,7 @@ export function MyAttendance() {
     return () => window.clearTimeout(timeout)
   }, [notice])
   const claimable = (day: MonthDay) =>
-    (day.planned === 'WEEKLY_OFF' || day.planned === 'HOLIDAY') && day.date < now && day.date.getTime() >= now.getTime() - 30 * 86_400_000 && compOffDays(day.workedMinutes) > 0
+    (day.planned === 'WEEKLY_OFF' || day.planned === 'HOLIDAY') && day.date < now && day.date.getTime() >= now.getTime() - 30 * 86_400_000 && compOffDays(day.workedMinutes) > 0 && claims.isSuccess && !claimed.has(day.date.getTime())
   // any working day already come, today included, back 30 days — the same limit as the request — can be regularized,
   // whatever the punches currently say. A working day still to come is on duty. Weekly offs and holidays are not.
   const regularizable = (day: MonthDay) => {

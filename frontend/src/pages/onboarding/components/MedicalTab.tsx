@@ -8,7 +8,7 @@ import { client, orpc } from '@/lib/orpc'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import { FieldsGrid, SectionTitle } from '@/components/FormFields'
 import { type FieldDef, fromFormValues, toFormValues } from '@/lib/form-values'
-import { type Candidate, joiningDatePassed, joiningDayCome, MEDICAL_RESULT, toOptions } from './labels'
+import { type Candidate, candidatePlace, joiningDatePassed, joiningDayCome, MEDICAL_RESULT, toOptions } from './labels'
 import { Pill } from '@/components/Pill'
 
 type MedicalInput = Parameters<typeof client.candidates.recordMedical>[0]
@@ -25,7 +25,7 @@ export function MedicalTab({ candidate }: { candidate: Candidate }) {
   const queryClient = useQueryClient()
   const refresh = () => queryClient.invalidateQueries({ queryKey: orpc.candidates.key() })
   // Changes only before joining, and only with edit access to onboarding
-  const canChange = useAccess().can('ONBOARDING', 'WRITE')
+  const canChange = useAccess().covers('ONBOARDING', 'WRITE', candidatePlace(candidate))
   const editable = candidate.status === 'ACCEPTED' && canChange
   const [values, setValues] = useState(() =>
     toFormValues(MEDICAL_FIELDS, {

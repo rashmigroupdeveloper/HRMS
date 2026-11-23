@@ -108,6 +108,16 @@ describe('half-day sessions', () => {
     await punch(wednesday, '09:00', '13:30')
     await work()
     expect(await dayOf(wednesday)).toMatchObject({ firstHalf: 'PRESENT', secondHalf: 'PRESENT', status: 'PRESENT' })
+    // correcting the first half later keeps the second half's correction (2026-11-23, the review: it was wiped)
+    await daysService.correctDay({ employeeCode: employee.employeeCode, date: wednesday, firstHalf: 'ON_DUTY', reason: 'At the plant gate meeting' }, hr)
+    const kept = await prisma.attendanceCorrection.findUniqueOrThrow({ where: { employeeId_date: { employeeId: employee.id, date: wednesday } }, select: { firstHalf: true, secondHalf: true } })
+    expect(kept).toEqual({ firstHalf: 'ON_DUTY', secondHalf: 'PRESENT' })
+    // the first half back to the punches (null); then the second too - no correction is left
+    await daysService.correctDay({ employeeCode: employee.employeeCode, date: wednesday, firstHalf: null, reason: 'Was not on duty after all' }, hr)
+    const where = { employeeId_date: { employeeId: employee.id, date: wednesday } }
+    expect(await prisma.attendanceCorrection.findUniqueOrThrow({ where, select: { firstHalf: true, secondHalf: true } })).toEqual({ firstHalf: null, secondHalf: 'PRESENT' })
+    await daysService.correctDay({ employeeCode: employee.employeeCode, date: wednesday, secondHalf: null, reason: 'The punches are right' }, hr)
+    expect(await prisma.attendanceCorrection.findUnique({ where })).toBeNull()
   })
 
   it('a holiday on a Saturday is a holiday; a Saturday set on the roster is a whole day', async () => {

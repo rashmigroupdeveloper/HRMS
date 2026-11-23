@@ -271,3 +271,36 @@ describe('an HOD above their own manager', () => {
     await expect(hodsService.appointHod({ employeeCode: other.employeeCode, postIds: [adminPost, itPost] }, admin)).rejects.toThrow(/Untick .* to go on with the other places/)
   })
 })
+
+// A retired place (2026-11-23, the review): HODs could be appointed to a plant-department retired at the plant, a retired
+// plant or a retired department. Now refused; one heading it can still be ended.
+describe('HODs of retired places', () => {
+  afterAll(() => prisma.$disconnect())
+  it('appoints nobody to a retired plant-department, plant or department, and still ends one heading it', async () => {
+    const companyId = (await createCompany()).id
+    const plantId = (await createPlant(companyId)).id
+    const hod = await createEmployee({ companyId, plantId })
+    const hr = userWith(hod, [{ access: { HOD_APPOINTMENTS: 'WRITE' }, rows: [row(null, null, null)] }])
+    const place = async () => {
+      const departmentId = (await createDepartment()).id
+      await plantsService.addPlantDepartments(plantId, [departmentId], SYSTEM_ACTOR)
+      return { departmentId, postId: (await plantsService.findPlantDepartmentId(plantId, departmentId))! }
+    }
+    // test data: retired straight in the database (the Organization page refuses it while employees are placed there)
+    const link = await place()
+    await prisma.plantDepartment.update({ where: { id: link.postId }, data: { isActive: false, updatedById: 0 } })
+    await expect(hodsService.appointHod({ employeeCode: hod.employeeCode, postIds: [link.postId] }, hr)).rejects.toThrow('is retired')
+    const department = await place()
+    await prisma.department.update({ where: { id: department.departmentId }, data: { isActive: false, updatedById: 0 } })
+    await expect(hodsService.appointHod({ employeeCode: hod.employeeCode, postIds: [department.postId] }, hr)).rejects.toThrow('is retired')
+    // heading it already, then the plant is retired: the appointment can still be ended
+    const heads = await place()
+    await hodsService.appointHod({ employeeCode: hod.employeeCode, postIds: [heads.postId] }, hr)
+    await prisma.plant.update({ where: { id: plantId }, data: { isActive: false, updatedById: 0 } })
+    const another = await place()
+    await expect(hodsService.appointHod({ employeeCode: hod.employeeCode, postIds: [another.postId] }, hr)).rejects.toThrow('is retired')
+    // the place they head already: left as it is
+    await expect(hodsService.appointHod({ employeeCode: hod.employeeCode, postIds: [heads.postId] }, hr)).resolves.toMatchObject({ unchanged: 1 })
+    await expect(hodsService.endHod({ employeeCode: hod.employeeCode, postIds: [heads.postId] }, hr)).resolves.toMatchObject({ ended: 1 })
+  })
+})

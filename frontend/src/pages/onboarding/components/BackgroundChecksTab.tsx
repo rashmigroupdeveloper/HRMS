@@ -11,7 +11,7 @@ import { client, orpc } from '@/lib/orpc'
 import { errorMessage, formatDoneBy } from '@/lib/utils'
 import { FieldsGrid, SectionTitle } from '@/components/FormFields'
 import { changedValues, type FieldDef, fromFormValues, toFormValues } from '@/lib/form-values'
-import { type BackgroundCheck, BGV_STATUS, BGV_TONE, BGV_TYPE, type Candidate, toOptions } from './labels'
+import { type BackgroundCheck, BGV_STATUS, BGV_TONE, BGV_TYPE, type Candidate, candidatePlace, toOptions } from './labels'
 import { Pill } from '@/components/Pill'
 
 type CreateInput = Parameters<typeof client.candidates.backgroundChecks.create>[0]
@@ -38,7 +38,7 @@ export function BackgroundChecksTab({ candidate }: { candidate: Candidate }) {
   const documents = useQuery(orpc.candidates.documents.list.queryOptions({ input: { candidateId: candidate.id } }))
   const refresh = () => queryClient.invalidateQueries({ queryKey: orpc.candidates.key() })
   // Changes only before joining, and only with edit access to onboarding
-  const canChange = useAccess().can('ONBOARDING', 'WRITE')
+  const canChange = useAccess().covers('ONBOARDING', 'WRITE', candidatePlace(candidate))
   // People may join while checks are running, so checks stay open after joining
   const editable = (candidate.status === 'ACCEPTED' || candidate.status === 'JOINED') && canChange
   const hasConsent = documents.data?.some((d) => d.type === 'BGV_CONSENT_FORM' && d.verificationStatus !== 'REJECTED')

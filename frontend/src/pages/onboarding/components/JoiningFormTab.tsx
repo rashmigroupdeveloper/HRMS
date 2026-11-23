@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
 import { cn, errorMessage, formatDateTime, formatDoneBy } from '@/lib/utils'
-import { type Candidate, fullName } from './labels'
+import { type Candidate, candidatePlace, fullName } from './labels'
 import { MovedToEmployee } from './MovedToEmployee'
 import { LinkDialog, type LinkResult } from './OfferLetters'
 import { ReasonDialog } from './ReasonDialog'
@@ -88,8 +88,8 @@ export function JoiningFormTab({ candidate }: { candidate: Candidate }) {
     }),
   )
   // Changes only before joining, and only with edit access to onboarding
-  const { can } = useAccess()
-  const canChange = can('ONBOARDING', 'WRITE')
+  const { can, covers } = useAccess()
+  const canChange = covers('ONBOARDING', 'WRITE', candidatePlace(candidate))
   // the medical information is health data: only with the "Employee · Medical" access
   const canSeeMedical = can('MEDICAL', 'READ')
   const editable = candidate.status === 'ACCEPTED' && canChange

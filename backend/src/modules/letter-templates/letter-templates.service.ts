@@ -5,6 +5,7 @@ import { markupToDocument, renderLetterPdf, type LetterNode, type PdfBlock, type
 import { copyFile, deleteFile, isOldKey, namedOwner, readStoredFile, saveFile, type FilePlace } from '#core/storage/file-storage'
 import { employeesService } from '#modules/employees'
 import { cleanFileName, detectFileType } from '#shared/utils/file-type'
+import { today } from '#shared/utils/dates'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as letterTemplatesRepository from './letter-templates.repository.js'
@@ -143,7 +144,8 @@ const NUMBER_CODE: Record<LetterKind, string> = {
 // The next number of a letter of this kind for the company: <e-code prefix>/<kind code>/<year>/<running number of the
 // company, kind and year> - one series per kind (2026-11-16). Call it in the transaction that saves the letter.
 export async function nextLetterNumber(company: { id: number; ecodePrefix: string }, kind: LetterKind, actorId: ActorId, db?: DbClient) {
-  const year = new Date().getFullYear()
+  // India's year (a letter issued on 1 January after midnight IST is the new year's)
+  const year = today().getUTCFullYear()
   const next = await letterTemplatesRepository.nextNumber(company.id, kind, year, actorId, db)
   return `${company.ecodePrefix}/${NUMBER_CODE[kind]}/${year}/${String(next).padStart(4, '0')}`
 }

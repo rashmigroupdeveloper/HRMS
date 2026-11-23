@@ -22,8 +22,9 @@ export const correctDayInput = z
   .object({
     employeeCode: employeeCodeSchema,
     date: z.date(),
-    firstHalf: halfStatusSchema.optional(),
-    secondHalf: halfStatusSchema.optional(),
+    // a half: a status, null = back to the punches (its correction removed - 2026-11-23), left out = kept as it is
+    firstHalf: halfStatusSchema.nullable().optional(),
+    secondHalf: halfStatusSchema.nullable().optional(),
     reason: z.string().trim().min(3, 'Give the reason').max(500),
   })
   .refine((v) => v.firstHalf !== undefined || v.secondHalf !== undefined, { message: 'Set the first half, the second half or both', path: ['firstHalf'] })

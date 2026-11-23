@@ -153,8 +153,9 @@ async function issue({ employeeCode, kind, templateId, letterDate, lastWorkingDa
   checkCanWrite(kind, details, lastWorkingDay)
   const e = details.employee
   let storageKey: string | undefined
+  let saved
   try {
-    const { letter, pdf } = await prisma.$transaction(
+    saved = await prisma.$transaction(
       async (tx) => {
         const company = await companiesService.getCompany(e.company.id, tx)
         const letterNumber = await letterTemplatesService.nextLetterNumber(company, kind, actorId, tx)
@@ -181,13 +182,16 @@ async function issue({ employeeCode, kind, templateId, letterDate, lastWorkingDa
       },
       { timeout: 30_000 },
     )
-    const emailedTo = await emailLetter(details, kind, letter.letterNumber, pdf)
-    if (emailedTo) await lettersRepository.setEmailedTo(letter.id, emailedTo, actorId)
-    return { ...letter, emailedTo }
   } catch (error) {
-    if (storageKey) await deleteFile(storageKey).catch(() => undefined) // no row -> no orphan file
+    // the letter's row rolled back -> no orphan file. Only here: once saved, the row points at the file, so a step
+    // failing after it (recording the e-mail) never deletes it (2026-11-23, the review)
+    if (storageKey) await deleteFile(storageKey).catch(() => undefined)
     throw error
   }
+  const { letter, pdf } = saved
+  const emailedTo = await emailLetter(details, kind, letter.letterNumber, pdf)
+  if (emailedTo) await lettersRepository.setEmailedTo(letter.id, emailedTo, actorId)
+  return { ...letter, emailedTo }
 }
 
 // E-mails the letter as an attachment; returns where it went, or null (no address, or the e-mail failed - logged)

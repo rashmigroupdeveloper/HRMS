@@ -28,21 +28,23 @@ import { IMPORT_COLUMNS, MAX_IMPORT_ROWS, type ImportColumnKey, type uploadImpor
 
 const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
-// The masters the dropdowns offer and the rows are matched against (active ones only)
+// The masters the rows are matched against - retired ones too, so a row keeping one an employee already has passes and
+// a row choosing one anew is told it is retired (2026-11-23, the review); the template's dropdowns offer the active ones
 async function loadMasters() {
   const [companies, plants, plantDepartments, workLocations, departments, designations, grades, positions, costCenters] = await Promise.all([
-    companiesService.listCompanies(),
-    plantsService.listPlants(undefined),
+    companiesService.listCompanies(true),
+    plantsService.listPlants({ includeInactive: true }),
     plantsService.listPlantDepartmentKeys(),
-    workLocationsService.listWorkLocations(undefined),
-    departmentsService.listDepartments(),
-    designationsService.listDesignations(),
-    gradesService.listGrades(),
-    positionsService.listPositions(),
-    costCentersService.listCostCenters({}),
+    workLocationsService.listWorkLocations({ includeInactive: true }),
+    departmentsService.listDepartments(true),
+    designationsService.listDesignations(true),
+    gradesService.listGrades(true),
+    positionsService.listPositions(true),
+    costCentersService.listCostCenters({ includeInactive: true }),
   ])
   return { companies, plants, plantDepartments, workLocations, departments, designations, grades, positions, costCenters }
 }
+const inUse = <T extends { isActive: boolean }>(list: T[]) => list.filter((m) => m.isActive)
 
 // The template: one column per field (dropdowns for fixed values and masters), and a sheet that explains the columns.
 export async function importTemplate() {
@@ -50,14 +52,14 @@ export async function importTemplate() {
   const lists: Partial<Record<ImportColumnKey, string[]>> = {
     salutation: Object.values(SALUTATION_LABEL),
     gender: Object.values(GENDER_LABEL),
-    company: masters.companies.map((c) => c.code),
-    plant: [...new Set(masters.plants.map((p) => p.plantCode))],
-    workLocation: masters.workLocations.map((l) => l.name),
-    department: masters.departments.map((d) => d.name),
-    designation: masters.designations.map((d) => d.name),
-    grade: masters.grades.map((g) => g.name),
-    position: masters.positions.map((p) => p.name),
-    costCenter: [...new Set(masters.costCenters.map((c) => c.code))],
+    company: inUse(masters.companies).map((c) => c.code),
+    plant: [...new Set(inUse(masters.plants).map((p) => p.plantCode))],
+    workLocation: inUse(masters.workLocations).map((l) => l.name),
+    department: inUse(masters.departments).map((d) => d.name),
+    designation: inUse(masters.designations).map((d) => d.name),
+    grade: inUse(masters.grades).map((g) => g.name),
+    position: inUse(masters.positions).map((p) => p.name),
+    costCenter: [...new Set(inUse(masters.costCenters).map((c) => c.code))],
     joiningType: Object.values(JOINING_TYPE_LABEL),
     employmentType: Object.values(EMPLOYMENT_TYPE_LABEL),
     workforceCategory: Object.values(WORKFORCE_LABEL),
@@ -70,6 +72,7 @@ export async function importTemplate() {
         key: c.key,
         width: Math.max(14, c.header.length + 4),
         date: 'date' in c && c.date,
+        text: 'text' in c && c.text,
         list: lists[c.key],
         note: [('required' in c && c.required ? 'Required.' : 'Optional.'), 'note' in c ? c.note : ''].filter(Boolean).join(' '),
       })),
@@ -163,7 +166,16 @@ export async function uploadImport({ file, save }: z.infer<typeof uploadImportIn
   for (const row of parsed) {
     const input = row.keys
     const err = (message: string) => row.result.errors.push(message)
-    if (input.employeeCode && codes.filter((c) => c === input.employeeCode).length > 1) err(`Employee code ${input.employeeCode} is on more than one row`)
+    // (a row may name an employee by a former code - 2026-11-20: rows naming one employee by different codes are found too)
+    const sameEmployee = input.employeeCode ? parsed.filter((other) => other.keys.employeeCode === input.employeeCode) : []
+    if (sameEmployee.length > 1) {
+      const given = [...new Set(sameEmployee.map((other) => other.result.employeeCode))]
+      err(
+        given.length > 1
+          ? `Employee codes ${given.join(' and ')} name the same employee (a former code and the code now) - keep one row`
+          : `Employee code ${input.employeeCode} is on more than one row`,
+      )
+    }
     if (input.workEmail) {
       const owner = usedEmails.get(input.workEmail)
       // (an employee being updated may keep their own work e-mail)
@@ -310,6 +322,7 @@ export async function errorReport(id: number) {
 }
 
 type Masters = Awaited<ReturnType<typeof loadMasters>>
+type Master = { id: number; name: string; code?: string | null; plantCode?: string; isActive: boolean }
 
 // One row turned into the "Add employee" input, with the problems found (by column)
 // `keys`: what the row says for the checks across the file (code, work e-mail, manager), even when it has problems
@@ -344,30 +357,39 @@ function parseRow(
     if (!found) errors.push(`${label(key)}: "${value}" is not one of ${Object.values(labels).join(', ')}`)
     return found?.[0]
   }
-  // a master by name (a company also by its code)
-  const master = (key: ImportColumnKey, list: { id: number; name: string; code?: string | null }[]) => {
-    const value = text(key)
+  // a master by its name or code, exactly as on the Organization page but for case and extra spaces - never a guess
+  // ("Sales East" is not "Sales-East"; 2026-11-23, the review). Several matches, or a retired one the row chooses anew
+  // (`now`: what the employee has), are reported.
+  const pick = (key: ImportColumnKey, list: Master[], value: string | undefined, now: number | null | undefined, missing: string) => {
     if (!value) return undefined
-    const wanted = norm(value)
-    const found = list.find((m) => norm(m.name) === wanted || (m.code && norm(m.code) === wanted))
-    if (!found) errors.push(`${label(key)}: "${value}" is not in the list (Organization page)`)
+    const wanted = same(value)
+    const matches = list.filter((m) => [m.name, m.code, m.plantCode].some((v) => v && same(v) === wanted))
+    const inUseOnly = matches.length > 1 ? matches.filter((m) => m.isActive) : matches
+    const found = inUseOnly.length === 1 ? inUseOnly[0]! : undefined
+    if (matches.length > 1 && !found) errors.push(`${label(key)}: "${value}" matches more than one - use the code`)
+    else if (!found) errors.push(`${label(key)}: "${value}" ${missing}`)
+    else if (!found.isActive && found.id !== now) errors.push(`${label(key)}: "${value}" is retired - choose one in use (Organization page)`)
     return found?.id
   }
+  const master = (key: ImportColumnKey, list: Master[], now?: number | null) => pick(key, list, text(key), now, 'is not in the list (Organization page)')
 
+  const givenCode = text('employeeCode')?.toUpperCase()
+  // the employee the row names - by their code, or a former one (then the row is theirs, under their code now)
+  const current = givenCode ? existing.get(givenCode) : undefined
   const raw = {
-    employeeCode: text('employeeCode')?.toUpperCase(),
+    employeeCode: current?.employeeCode ?? givenCode,
     salutation: choice('salutation', SALUTATION_LABEL),
     firstName: text('firstName'),
     middleName: text('middleName'),
     lastName: text('lastName'),
     gender: choice('gender', GENDER_LABEL),
     dateOfBirth: date('dateOfBirth'),
-    companyId: master('company', masters.companies),
-    workLocationId: master('workLocation', masters.workLocations),
-    departmentId: master('department', masters.departments),
-    designationId: master('designation', masters.designations),
-    gradeId: master('grade', masters.grades),
-    positionId: master('position', masters.positions),
+    companyId: master('company', masters.companies, current?.companyId),
+    workLocationId: master('workLocation', masters.workLocations, current?.workLocationId),
+    departmentId: master('department', masters.departments, current?.departmentId),
+    designationId: master('designation', masters.designations, current?.designationId),
+    gradeId: master('grade', masters.grades, current?.gradeId),
+    positionId: master('position', masters.positions, current?.positionId),
     dateOfJoining: date('dateOfJoining'),
     joiningType: choice('joiningType', JOINING_TYPE_LABEL),
     employmentType: choice('employmentType', EMPLOYMENT_TYPE_LABEL),
@@ -380,16 +402,13 @@ function parseRow(
     reportingManagerCode: text('reportingManagerCode')?.toUpperCase(),
     functionalManagerCode: text('functionalManagerCode')?.toUpperCase(),
   }
-  const current = raw.employeeCode ? existing.get(raw.employeeCode) : undefined
   // the plant: by its code (or name) among the plants of the row's company - an employee being updated keeps theirs
   const companyOfRow = raw.companyId ?? current?.companyId
   const plantText = text('plant')
   let plantId: number | undefined
   if (plantText && companyOfRow !== undefined) {
-    const wanted = norm(plantText)
-    const found = masters.plants.find((p) => p.company.id === companyOfRow && (norm(p.plantCode) === wanted || norm(p.name) === wanted))
-    if (!found) errors.push(`${label('plant')}: "${plantText}" is not an active plant of the company (Organization page)`)
-    plantId = found?.id
+    const plants = masters.plants.filter((p) => p.company.id === companyOfRow)
+    plantId = pick('plant', plants, plantText, current?.plantId, 'is not a plant of the company (Organization page)')
   }
   // the department must run at the plant (as it will be after the row is saved) - checked when the row chooses either
   // anew; one the employee already has may have been retired at the plant since
@@ -404,7 +423,7 @@ function parseRow(
   // data access: an employee being updated must be inside the viewer's Edit range (else the code cannot be used - without
   // saying whose it is), and where the row places someone too
   if (current && !canPlace({ companyId: current.companyId, plantId: current.plantId, departmentId: current.departmentId })) {
-    errors.push(`${label('employeeCode')}: "${raw.employeeCode}" cannot be used - give another code, or leave it empty for the next of the company's series`)
+    errors.push(`${label('employeeCode')}: "${givenCode}" cannot be used - give another code, or leave it empty for the next of the company's series`)
   } else if (companyOfRow !== undefined && plantAfter !== undefined && (choosesAnew || !current)) {
     if (!canPlace({ companyId: companyOfRow, plantId: plantAfter, departmentId: departmentAfter ?? null })) {
       errors.push(`${label('plant')}: you can only place employees in a company / plant / department inside your data access`)
@@ -414,14 +433,13 @@ function parseRow(
   const costCenterText = text('costCenter')
   let costCenterId: number | undefined
   if (costCenterText && companyOfRow !== undefined) {
-    const wanted = norm(costCenterText)
-    const found = masters.costCenters.find((c) => c.company.id === companyOfRow && (norm(c.code) === wanted || norm(c.name) === wanted))
-    if (!found) errors.push(`${label('costCenter')}: "${costCenterText}" is not an active cost centre of the company (Organization page)`)
-    costCenterId = found?.id
+    const costCenters = masters.costCenters.filter((c) => c.company.id === companyOfRow)
+    costCenterId = pick('costCenter', costCenters, costCenterText, current?.costCenterId, 'is not a cost centre of the company (Organization page)')
   }
   const raw2 = { ...raw, plantId, costCenterId }
   const name = [raw.firstName, raw.middleName, raw.lastName].filter(Boolean).join(' ')
-  const result: RowResult = { rowNumber, employeeCode: raw.employeeCode ?? null, name, action: current ? 'UPDATE' : 'ADD', errors }
+  // (the code as the file gives it - the checks across the file name the employee by their code now)
+  const result: RowResult = { rowNumber, employeeCode: givenCode ?? null, name, action: current ? 'UPDATE' : 'ADD', errors }
   const keys = {
     ...(raw.employeeCode && { employeeCode: raw.employeeCode }),
     ...(raw.workEmail && { workEmail: raw.workEmail.trim().toLowerCase() }),
@@ -512,7 +530,10 @@ function parseUpdate(
   return { result, add: null, update: checked.success && !errors.length ? { id: current.id, changes: checked.data } : null, keys }
 }
 
+// fixed values (gender, employment type...): any case, spaces or punctuation ("white collar" = WHITE_COLLAR)
 const norm = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '')
+// masters: the same name or code, but for case and spaces at the ends / between words
+const same = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase()
 
 // A calendar date (UTC midnight) from a date cell, an Excel day number, or text like 25-03-2024 / 25/03/2024 / 2024-03-25
 function toDate(value: CellValue): Date | undefined {

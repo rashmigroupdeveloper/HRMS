@@ -24,7 +24,8 @@ export function ChangePasswordPage() {
   const change = useMutation(
     orpc.accounts.changePassword.mutationOptions({
       onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: orpc.accounts.me.key() })
+        // everything, not only accounts.me: the layout's own calls (attendance, approvals) failed on the temporary password
+        await queryClient.invalidateQueries()
         if (forced) void navigate('/', { replace: true })
       },
     }),

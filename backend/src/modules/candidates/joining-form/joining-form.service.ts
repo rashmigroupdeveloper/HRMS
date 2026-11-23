@@ -398,10 +398,10 @@ const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, ' ').toLower
 
 export type Signature = { name: string; ip: string | null; userAgent: string | null }
 
-// The candidate submits the form and signs it online (the one-time code was checked by the caller). Needs every
-// required part filled and their full name typed as in the form (nameOnForm). Locks the form for the candidate and e-mails the
-// HR person who sent the offer.
-export async function submitJoiningForm(candidateId: number, signature: Signature, documentProblems: string[]) {
+// Whether the form can be submitted with this signature: every required part filled and the full name typed as in the
+// form (nameOnForm) - BAD_REQUEST / CONFLICT saying what is wrong. Checked before the one-time code is (2026-11-23, the
+// review: a submit refused here had already used up the code), and again by submitJoiningForm.
+export async function checkSubmission(candidateId: number, signature: Signature, documentProblems: string[]) {
   const candidate = await candidatesService.getCandidate(candidateId)
   if (candidate.status !== 'ACCEPTED') throw new ORPCError('CONFLICT', { message: 'This joining form can no longer be submitted. Please contact HR.' })
   if (candidate.joiningFormSubmittedAt) throw new ORPCError('CONFLICT', { message: 'You have already submitted your joining form.' })
@@ -417,6 +417,13 @@ export async function submitJoiningForm(candidateId: number, signature: Signatur
   if (!sameName(signature.name, signName)) {
     throw new ORPCError('BAD_REQUEST', { message: `Type your full name exactly as it is in your joining form: ${signName}` })
   }
+  return candidate
+}
+
+// The candidate submits the form and signs it online (the one-time code was checked by the caller, after
+// checkSubmission). Locks the form for the candidate and e-mails the HR person who sent the offer.
+export async function submitJoiningForm(candidateId: number, signature: Signature, documentProblems: string[]) {
+  const candidate = await checkSubmission(candidateId, signature, documentProblems)
   const submittedAt = new Date()
   await joiningFormRepository.updateSubmission(
     candidateId,

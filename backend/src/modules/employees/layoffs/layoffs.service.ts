@@ -2,7 +2,7 @@ import { prisma, type DbClient } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
-import { assertCanChange, getEmployeeFor, lookupPeople } from '../employees.service.js'
+import { assertCanChange, canSeeEmployee, getEmployeeFor, lookupPeople } from '../employees.service.js'
 import * as layoffsRepository from './layoffs.repository.js'
 import type { createLayoffInput, updateLayoffInput } from './layoffs.schema.js'
 
@@ -53,30 +53,49 @@ export async function createLayoff({ employeeCode, ...input }: z.infer<typeof cr
   const employee = await getEmployeeFor(viewer, employeeCode)
   assertCanChange(viewer, employee)
   return prisma.$transaction(async (tx) => {
-    const joined = await layoffsRepository.findDateOfJoining(employee.id, tx)
-    await checkRules(employee.id, joined!.dateOfJoining, { startDate: input.startDate, rejoinDate: input.rejoinDate ?? null }, undefined, tx)
+    // another change of their lay offs at the same moment finishes first - then the rules see it
+    await layoffsRepository.lockEmployee(employee.id, tx)
+    // an employee who has left gets no new lay off (2026-11-23, the review)
+    const saved = (await layoffsRepository.findEmployee(employee.id, tx))!
+    if (saved.status === 'EXITED') throw new ORPCError('BAD_REQUEST', { message: `${saved.employeeCode} has left - a lay off cannot be recorded` })
+    await checkRules(employee.id, saved.dateOfJoining, { startDate: input.startDate, rejoinDate: input.rejoinDate ?? null }, undefined, tx)
     const [created] = await withPeople([await layoffsRepository.create({ ...input, employeeId: employee.id }, viewer.employeeId, tx)])
     return created!
   })
 }
 
-// The lay off, for a change by `viewer`: its employee first (NOT_FOUND outside their View, FORBIDDEN with View only)
+const noLayoff = (id: number) => new ORPCError('NOT_FOUND', { message: `No lay off found with id ${id}` })
+
+// The lay off, for a change by `viewer`: NOT_FOUND outside their View of its employee - the same as an id that does not
+// exist (2026-11-23, the review: it named the employee's code) - FORBIDDEN with View only
 async function getLayoffToChange(id: number, viewer: CurrentUser) {
   const layoff = await layoffsRepository.findById(id)
-  if (!layoff) throw new ORPCError('NOT_FOUND', { message: `No lay off found with id ${id}` })
+  if (!layoff || !canSeeEmployee(viewer, layoff.employee)) throw noLayoff(id)
   assertCanChange(viewer, layoff.employee)
   return layoff
 }
 
 export async function updateLayoff({ id, ...changes }: z.infer<typeof updateLayoffInput>, viewer: CurrentUser) {
-  const current = await getLayoffToChange(id, viewer)
-  const after = {
-    startDate: changes.startDate ?? current.startDate,
-    rejoinDate: changes.rejoinDate === undefined ? current.rejoinDate : changes.rejoinDate,
-  }
-  await checkRules(current.employee.id, current.employee.dateOfJoining, after, id)
-  const [updated] = await withPeople([await layoffsRepository.update(id, changes, viewer.employeeId)])
-  return updated!
+  const { employee } = await getLayoffToChange(id, viewer)
+  const updated = await prisma.$transaction(async (tx) => {
+    // the rules are checked and the change saved while no other change of their lay offs runs (2026-11-23, the review)
+    await layoffsRepository.lockEmployee(employee.id, tx)
+    const current = await layoffsRepository.findById(id, tx)
+    if (!current) throw noLayoff(id)
+    const after = {
+      startDate: changes.startDate ?? current.startDate,
+      rejoinDate: changes.rejoinDate === undefined ? current.rejoinDate : changes.rejoinDate,
+    }
+    // one who has left: their lay offs can be corrected, never left open
+    const saved = (await layoffsRepository.findEmployee(employee.id, tx))!
+    if (saved.status === 'EXITED' && after.rejoinDate === null) {
+      throw new ORPCError('BAD_REQUEST', { message: `${saved.employeeCode} has left - a lay off of theirs needs its day back at work` })
+    }
+    await checkRules(employee.id, saved.dateOfJoining, after, id, tx)
+    return layoffsRepository.update(id, changes, viewer.employeeId, tx)
+  })
+  const [shown] = await withPeople([updated])
+  return shown!
 }
 
 // Removes a lay off entered by mistake (the change history keeps what it was)

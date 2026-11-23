@@ -26,9 +26,15 @@ export function findById(id: number, db: DbClient = prisma) {
   })
 }
 
-// The employee's date of joining (a lay off cannot start before it), or null
-export function findDateOfJoining(employeeId: number, db: DbClient = prisma) {
-  return db.employee.findUnique({ where: { id: employeeId }, select: { dateOfJoining: true } })
+// The employee's date of joining (a lay off cannot start before it) and status (none for one who has left), or null
+export function findEmployee(employeeId: number, db: DbClient = prisma) {
+  return db.employee.findUnique({ where: { id: employeeId }, select: { employeeCode: true, dateOfJoining: true, status: true } })
+}
+
+// Holds this employee's lay offs until the transaction ends: the overlap rules are checked after it, so two changes at the
+// same moment cannot both pass them (2026-11-23, the review)
+export async function lockEmployee(employeeId: number, db: DbClient) {
+  await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('employee-layoffs'), ${employeeId}::int)::text AS locked`
 }
 
 export function create(data: NewRow<Prisma.EmployeeLayoffUncheckedCreateInput>, actorId: ActorId, db: DbClient = prisma) {

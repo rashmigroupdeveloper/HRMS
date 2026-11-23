@@ -20,8 +20,8 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
-import { cn, formatDate, formatDoneBy, fromDateInput, toDateInput } from '@/lib/utils'
-import { segment, SEGMENTS, SETUP_PARTS, UPLOAD_HINT, UPLOAD_TITLE, type Shift, todayDay, WEEKDAYS } from './labels'
+import { cn, formatDate, formatDoneBy, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
+import { segment, SEGMENTS, SETUP_PARTS, UPLOAD_HINT, UPLOAD_TITLE, type Shift, WEEKDAYS } from './labels'
 import { AppliesFrom, UpcomingPill } from './AppliesFrom'
 import { MonthLockSetup } from './MonthLockSetup'
 import { PoliciesSetup } from './PoliciesSetup'
@@ -1085,7 +1085,7 @@ function Patterns() {
       {starring && (
         <ConfirmDialog
           title={`Make ${starring.name} the default pattern?`}
-          description={`Everyone never given a schedule follows ${starring.name} from now on, instead of ${patterns.data?.find((p) => p.isDefault)?.name ?? 'the current default'}. Days already worked out keep what they had until something makes them be worked out again (a punch, a correction).`}
+          description={`Everyone never given a schedule follows ${starring.name} from today, instead of ${patterns.data?.find((p) => p.isDefault)?.name ?? 'the current default'}. The days before today keep the pattern they had.`}
           confirm="Make it the default"
           pending={makeDefault.isPending}
           onConfirm={() => makeDefault.mutate({ id: starring.id, isDefault: true })}

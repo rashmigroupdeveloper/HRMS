@@ -133,7 +133,7 @@ describe('employment & job fields: adding and importing', () => {
       { file: await file([{ ...cells, employeeCode: `IA${tag}`, costCenter: `IO${tag}`, functionalManagerCode: `NOBODY${tag}` }]) },
       hr,
     )
-    expect(wrong.rows[0]!.errors.join(' | ')).toMatch(/not an active cost centre of the company.*No employee found with code NOBODY/)
+    expect(wrong.rows[0]!.errors.join(' | ')).toMatch(/not a cost centre of the company.*No employee found with code NOBODY/)
     const saved = await importsService.uploadImport(
       { file: await file([{ ...cells, employeeCode: `IB${tag}`, costCenter: `IC${tag}`, functionalManagerCode: colleague.employeeCode }]), save: true },
       hr,

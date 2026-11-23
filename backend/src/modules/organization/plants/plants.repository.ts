@@ -73,7 +73,7 @@ export function listAllDepartmentLinks(db: DbClient = prisma) {
       id: true,
       isActive: true,
       plant: { select: { id: true, plantCode: true, name: true, isActive: true, company: { select: { id: true, code: true, name: true } } } },
-      department: { select: { id: true, code: true, name: true } },
+      department: { select: { id: true, code: true, name: true, isActive: true } },
     },
   })
 }

@@ -194,6 +194,22 @@ export async function apply(viewer: CurrentUser, input: z.infer<typeof applyInpu
   return (await toApplications([(await applicationsRepository.find(created.application.id))!]))[0]!
 }
 
+// An approved leave of a year already ended, of a type that lapses at the year end, is not cancelled or counted again
+// (2026-11-23, the review): the year end already lapsed what was above the carry-forward, so days given back would come
+// past it - days that lapsed would come back. HR puts such a leave right with an adjustment. Checked when asked and when
+// approved (a cancel asked in December may be approved in January).
+const yearLapsed = (fromDate: Date, type: Pick<typesService.LeaveType, 'isPaid' | 'maxCarryForward'>) =>
+  // the year end job's own rule: a year has ended on 1 January after it
+  type.isPaid && type.maxCarryForward !== null && Date.UTC(fromDate.getUTCFullYear() + 1, 0, 1) <= today().getTime()
+
+async function assertNotLapsed(record: { fromDate: Date; leaveTypeId: number }) {
+  const type = await typesService.getType(record.leaveTypeId)
+  if (!yearLapsed(record.fromDate, type)) return
+  throw new ORPCError('CONFLICT', {
+    message: `This leave is of ${record.fromDate.getUTCFullYear()}, whose year end has passed (${type.code} above the carry-forward lapsed) - it cannot be cancelled or counted again now; HR puts it right with a balance adjustment`,
+  })
+}
+
 // The employee withdraws a leave still waiting (at once), or asks to cancel an approved one (through approval, with a reason)
 export async function cancel(viewer: CurrentUser, { id, reason }: z.infer<typeof cancelInput>) {
   const application = await applicationsRepository.find(id)
@@ -202,13 +218,22 @@ export async function cancel(viewer: CurrentUser, { id, reason }: z.infer<typeof
     await approvalsService.cancel(viewer, { id: application.approvalRequestId, ...(reason && { reason }) })
   } else if (application.status === 'APPROVED') {
     if (!reason || reason.length < 3) throw new ORPCError('BAD_REQUEST', { message: 'Say why you want to cancel the approved leave' })
-    if (application.cancelApprovalRequestId) {
-      const [current] = (await approvalsService.statusOf([application.cancelApprovalRequestId])).values()
+    const assertNoCancelWaiting = async (record: applicationsRepository.ApplicationRow) => {
+      if (!record.cancelApprovalRequestId) return
+      const [current] = (await approvalsService.statusOf([record.cancelApprovalRequestId])).values()
       if (current?.status === 'PENDING') throw new ORPCError('CONFLICT', { message: 'You already asked to cancel this leave - it is waiting for approval' })
     }
+    await assertNoCancelWaiting(application)
+    await assertNotLapsed(application)
     await attendanceService.assertOpenDays(eachDay(application.fromDate, application.toDate))
     const summary = `Cancel ${describe(application.leaveType, { ...application, days: application.days.toNumber() })}`
     const raised = await prisma.$transaction(async (tx) => {
+      // one change of this employee's leave at a time, checked again now that the one before is saved (2026-11-23, the
+      // review: two cancel requests sent at the same moment both raised an approval)
+      await applicationsRepository.lockEmployee(viewer.employeeId, tx)
+      const record = await applicationsRepository.find(application.id, tx)
+      if (record?.status !== 'APPROVED') throw new ORPCError('CONFLICT', { message: 'This leave was rejected or cancelled already' })
+      await assertNoCancelWaiting(record)
       const approval = await approvalsService.raiseRequest({ feature: 'LEAVE', kinds: ['LEAVE_CANCEL'], employeeId: viewer.employeeId, requestedById: viewer.employeeId, summary }, tx)
       await applicationsRepository.update(application.id, { cancelApprovalRequestId: approval.id, cancelReason: reason }, viewer.employeeId, tx)
       return approval
@@ -280,6 +305,8 @@ export async function listRecounts(viewer: CurrentUser, { from, to }: z.infer<ty
   const types = new Map((await typesService.allTypes()).map((t) => [t.id, t]))
   const out = []
   for (const row of rows) {
+    // (not a leave of a year whose year end has lapsed - it is put right by an adjustment, assertNotLapsed)
+    if (yearLapsed(row.fromDate, types.get(row.leaveType.id)!)) continue
     const now = await recountOf(row.employeeId, types.get(row.leaveType.id)!, row)
     const counted = row.days.toNumber()
     if (now.days === counted) continue
@@ -302,6 +329,7 @@ export async function recount(viewer: CurrentUser, { id }: z.infer<typeof recoun
     const [cancelling] = (await approvalsService.statusOf([application.cancelApprovalRequestId])).values()
     if (cancelling?.status === 'PENDING') throw new ORPCError('CONFLICT', { message: 'The employee asked to cancel this leave - decide that first' })
   }
+  await assertNotLapsed(application)
   await attendanceService.assertOpenDays(eachDay(application.fromDate, application.toDate))
   const type = await typesService.getType(application.leaveTypeId)
   const result = await prisma.$transaction(async (tx) => {
@@ -354,6 +382,8 @@ approvalsService.registerFeature('LEAVE', {
   label: 'Leave',
   onApproved: async (requestId, actorId, tx) => {
     const { record, isCancel } = await recordOf(requestId, tx)
+    // a cancel whose year end passed while it waited: refused (nothing changes)
+    if (isCancel) await assertNotLapsed(record)
     // a month locked meanwhile: the approval is refused (nothing changes)
     await attendanceService.assertOpenDays(eachDay(record.fromDate, record.toDate))
     const days = record.days.toNumber()

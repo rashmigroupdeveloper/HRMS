@@ -1,11 +1,19 @@
 import type { Tone } from '@/components/Pill'
 import type { client } from '@/lib/orpc'
-import { toDateInput } from '@/lib/utils'
+import { toDateInput, todayDay } from '@/lib/utils'
 
 // Display labels for every backend enum used on the onboarding page. The keys are typed from the API, so a
 // renamed or added value in the backend shows up here as a TypeScript error.
 
 export type Candidate = Awaited<ReturnType<typeof client.candidates.get>>
+
+// Where a candidate is placed - for useAccess().covers('ONBOARDING', 'WRITE', ...): the backend lets Onboarding Edit change
+// only candidates its data access covers, so the buttons follow the same (not only can('ONBOARDING', 'WRITE'))
+export const candidatePlace = (c: { company: { id: number }; plant: { id: number }; department: { id: number } | null }) => ({
+  companyId: c.company.id,
+  plantId: c.plant.id,
+  departmentId: c.department?.id ?? null,
+})
 export type CandidateRow = Awaited<ReturnType<typeof client.candidates.list>>[number]
 export type CandidateStatus = Candidate['status']
 export type JoiningForm = Awaited<ReturnType<typeof client.candidates.joiningForm.get>>
@@ -121,12 +129,12 @@ export const BGV_STATUS: Record<BackgroundCheck['status'], string> = {
 
 // The joining day is today or gone - a confirmation call is no longer possible (the API refuses it)
 export function joiningDayCome(c: { proposedJoiningDate: Date }) {
-  return toDateInput(c.proposedJoiningDate) <= toDateInput(new Date())
+  return toDateInput(c.proposedJoiningDate) <= toDateInput(todayDay())
 }
 
 // Accepted but not joined, and the joining day is gone (the date has probably moved)
 export function joiningDatePassed(c: { status: string; proposedJoiningDate: Date }) {
-  return c.status === 'ACCEPTED' && toDateInput(c.proposedJoiningDate) < toDateInput(new Date())
+  return c.status === 'ACCEPTED' && toDateInput(c.proposedJoiningDate) < toDateInput(todayDay())
 }
 
 export function fullName(c: { firstName: string; middleName: string | null; lastName: string | null }) {

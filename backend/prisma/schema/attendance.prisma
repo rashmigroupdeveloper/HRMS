@@ -138,18 +138,35 @@ model ShiftAssignment {
 model RosterPattern {
   id          Int      @id @default(autoincrement())
   name        String   @unique
-  // the pattern of employees with no schedule given (exactly one - it cannot be retired, only moved)
-  isDefault   Boolean  @default(false) @map("is_default")
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById Int      @map("created_by_id")
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
   updatedById Int      @map("updated_by_id")
 
-  versions    RosterPatternVersion[]
-  assignments ShiftAssignment[]
+  versions       RosterPatternVersion[]
+  assignments    ShiftAssignment[]
+  defaultChanges DefaultPatternChange[]
 
   @@map("roster_patterns")
+}
+
+// Which pattern is the default - the one of employees with no schedule given - from a date until the next change (the
+// user, 2026-11-23: "fix the default pattern too" - it was a flag, so moving the star changed the days already passed the
+// next time they were worked out). Exactly one in force on any day (the first from 2000-01-01); the pattern in force today
+// or from a later date cannot be retired.
+model DefaultPatternChange {
+  id            Int      @id @default(autoincrement())
+  effectiveFrom DateTime @unique @map("effective_from") @db.Date
+  patternId     Int      @map("pattern_id")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int      @map("created_by_id")
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int      @map("updated_by_id")
+
+  pattern RosterPattern @relation(fields: [patternId], references: [id], onDelete: Restrict)
+
+  @@map("default_pattern_changes")
 }
 
 // A pattern's days from a date until its next version (2026-11-23): a day follows the version in force on it. The cycle

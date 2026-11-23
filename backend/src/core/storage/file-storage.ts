@@ -3,6 +3,7 @@ import { constants } from 'node:fs'
 import { copyFile as copyOnDisk, mkdir, readFile, rm, rmdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import type { DetectedFileType } from '#shared/utils/file-type'
+import { today } from '#shared/utils/dates'
 import { env } from '../config/env.js'
 
 // File storage for uploaded and generated files (documents, offer letters, letterhead images). Files live on the
@@ -49,7 +50,8 @@ function folderOf({ area, owner, what }: FilePlace): string {
 
 // "2026-11-13_7f3a9c21.pdf" - the day it was stored (server's local date) and a random part, so two never clash
 function newFileName(storedOn: Date, type: DetectedFileType): string {
-  const day = [storedOn.getFullYear(), storedOn.getMonth() + 1, storedOn.getDate()].map((n) => String(n).padStart(2, '0')).join('-')
+  // India's calendar day
+  const day = today(storedOn).toISOString().slice(0, 10)
   return `${day}_${randomBytes(4).toString('hex')}.${EXTENSION[type]}`
 }
 

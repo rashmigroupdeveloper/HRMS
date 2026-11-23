@@ -5,10 +5,12 @@ import { Link } from 'react-router'
 import { ApprovalStatusPill, ApprovalTrail } from '@/components/ApprovalTrail'
 import { FormDrawer } from '@/components/FormDrawer'
 import { FormError } from '@/components/FormError'
+import { ApprovalDrawerSkeleton } from '@/components/skeletons/approvals/ApprovalDrawerSkeleton'
 import { JobChangeDetails } from '@/components/JobChangeDetails'
 import { TeamOffNote } from '@/components/TeamOffNote'
 import { ReasonDialog } from '@/components/ReasonDialog'
 import { Button } from '@/components/ui/button'
+import { useAccess } from '@/hooks/useAccess'
 import { orpc } from '@/lib/orpc'
 import { errorMessage, formatDate } from '@/lib/utils'
 import { refreshAfterDecision } from './request-kinds'
@@ -20,6 +22,12 @@ export function ApprovalDrawer({ id, onClose }: { id: number; onClose: () => voi
   const queryClient = useQueryClient()
   const request = useQuery(orpc.approvals.get.queryOptions({ input: { id } }))
   const r = request.data
+  const { me, can } = useAccess()
+  // the employee's profile - only for whoever may open it (the backend's `link` is the requester's own page for leave and
+  // attendance, and a profile without Employees View bounced to the home page)
+  const profile = !r ? null : me?.employeeCode === r.employee.employeeCode ? '/me' : can('EMPLOYEES') ? `/employees/${r.employee.employeeCode}` : null
+  // after a decision the request loads again: no second click on what it showed before (it would be refused)
+  const settling = request.isFetching
   const jobChange = useQuery({ ...orpc.jobChanges.get.queryOptions({ input: { approvalRequestId: id } }), enabled: r?.feature === 'JOB_CHANGE' })
   // a leave: its reason and the employee's balance of its type now (2026-11-22)
   const leave = useQuery({ ...orpc.leave.applications.forApproval.queryOptions({ input: { approvalRequestId: id } }), enabled: r?.feature === 'LEAVE' })
@@ -41,9 +49,13 @@ export function ApprovalDrawer({ id, onClose }: { id: number; onClose: () => voi
       description={
         r && (
           <span className="flex flex-wrap items-center gap-2">
-            <Link to={r.link} className="underline-offset-4 hover:underline">
-              {r.employee.employeeCode}
-            </Link>
+            {profile ? (
+              <Link to={profile} className="underline-offset-4 hover:underline">
+                {r.employee.employeeCode}
+              </Link>
+            ) : (
+              <span>{r.employee.employeeCode}</span>
+            )}
             <ApprovalStatusPill status={r.status} />
             <span>
               asked by {r.requestedBy?.name ?? 'System'}, {formatDate(r.raisedAt)}
@@ -56,21 +68,21 @@ export function ApprovalDrawer({ id, onClose }: { id: number; onClose: () => voi
           <>
             {r.canCancel && (
               // "Cancel the request" read like closing the panel (the user, 2026-11-21): red, on the left, "Withdraw request"
-              <Button variant="destructive" className="mr-auto" onClick={() => setAsking('cancel')} disabled={cancel.isPending}>
+              <Button variant="destructive" className="mr-auto" onClick={() => setAsking('cancel')} disabled={cancel.isPending || settling}>
                 <Ban /> Withdraw request
               </Button>
             )}
             {r.canRetry && (
-              <Button variant="secondary" onClick={() => retry.mutate({ id })} disabled={retry.isPending}>
+              <Button variant="secondary" onClick={() => retry.mutate({ id })} disabled={retry.isPending || settling}>
                 <RotateCcw /> Send through again
               </Button>
             )}
             {r.canDecide && (
               <>
-                <Button variant="destructive" onClick={() => setAsking('reject')} disabled={decide.isPending}>
+                <Button variant="destructive" onClick={() => setAsking('reject')} disabled={decide.isPending || settling}>
                   <X /> Reject
                 </Button>
-                <Button variant="gold" onClick={() => decide.mutate({ id, approve: true })} disabled={decide.isPending}>
+                <Button variant="gold" onClick={() => decide.mutate({ id, approve: true })} disabled={decide.isPending || settling}>
                   <Check /> {decide.isPending ? 'Saving…' : 'Approve'}
                 </Button>
               </>
@@ -80,6 +92,7 @@ export function ApprovalDrawer({ id, onClose }: { id: number; onClose: () => voi
       }
     >
       <FormError error={request.error ?? (asking ? null : error)} />
+      {request.isPending && <ApprovalDrawerSkeleton label="Loading the request" />}
       {r && (
         <>
           <p className="text-sm">{r.summary}</p>

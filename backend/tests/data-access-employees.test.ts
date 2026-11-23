@@ -3,6 +3,7 @@ import { employeesService } from '#modules/employees'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import * as jobHistoryService from '../src/modules/employees/job-history/job-history.service.js'
 import * as jobChangesService from '../src/modules/job-changes/job-changes.service.js'
+import * as documentsService from '../src/modules/employees/documents/documents.service.js'
 import * as layoffsService from '../src/modules/employees/layoffs/layoffs.service.js'
 import { createCompany, createEmployee, createPlant } from './helpers/organization.js'
 import { row, userWith } from './helpers/users.js'
@@ -165,4 +166,35 @@ describe('lists fail closed and the "all" attendance view follows the data acces
     expect(inD.employeeCode).toBeTruthy()
   })
 
+})
+
+// Records by id outside the data access (2026-11-23, the review): a document or lay off of someone outside the viewer's View
+// said "No employee found with code <owner>" - their code and that the record exists. Now the same "not found" as an id
+// that does not exist.
+describe('documents and lay offs by id outside the data access', () => {
+  it('answers exactly as for an id that does not exist', async () => {
+    const companyA = (await createCompany()).id
+    const companyB = (await createCompany()).id
+    const inA = await createEmployee({ companyId: companyA, plantId: (await createPlant(companyA)).id })
+    const inB = await createEmployee({ companyId: companyB, plantId: (await createPlant(companyB)).id })
+    const everywhere = userWith(inA, [{ access: { EMPLOYEES: 'WRITE', EMPLOYEE_DOCUMENTS: 'WRITE' }, rows: [row(null, null, null)] }])
+    const hrForA = userWith(inA, [{ access: { EMPLOYEES: 'WRITE', EMPLOYEE_DOCUMENTS: 'WRITE' }, rows: [row(companyA, null, null)] }])
+    const pdf = new File([new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0x25, 0x45, 0x4f, 0x46])], 'copy.pdf', { type: 'application/pdf' })
+    const document = await documentsService.uploadDocument({ employeeCode: inB.employeeCode, type: 'GRADUATION_CERTIFICATE', file: pdf }, everywhere)
+    const layoff = await layoffsService.createLayoff({ employeeCode: inB.employeeCode, startDate: new Date(Date.UTC(2026, 5, 1)), reason: 'Plant shut' }, everywhere)
+    const missing = 2_000_000_000
+    const answer = (run: () => Promise<unknown>) =>
+      run().then(
+        () => 'opened',
+        (error: Error) => error.message,
+      )
+    // the id of someone else's record gets the answer of a missing id - only the id differs
+    const same = async (id: number, run: (id: number) => Promise<unknown>) =>
+      expect((await answer(() => run(id))).replace(String(id), '#')).toBe((await answer(() => run(missing))).replace(String(missing), '#'))
+    await same(document.id, (id) => documentsService.downloadDocument(hrForA, id))
+    await same(document.id, (id) => documentsService.reviewDocument({ id, status: 'VERIFIED' }, hrForA))
+    await same(layoff.id, (id) => layoffsService.updateLayoff({ id, reason: 'Changed' }, hrForA))
+    await same(layoff.id, (id) => layoffsService.deleteLayoff(id, hrForA))
+    expect(await answer(() => documentsService.downloadDocument(hrForA, document.id))).not.toContain(inB.employeeCode)
+  })
 })

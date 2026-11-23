@@ -167,11 +167,14 @@ async function openPoolStep(request: RequestRow, step: StepRow, actorId: ActorId
   return { opened: step.id }
 }
 
-// An escalation whose manager cannot sign in any more becomes a fallback step (no time limit of its own)
-async function toFallback(request: RequestRow, step: StepRow, actorId: ActorId, tx: DbClient) {
+// An escalation whose manager cannot sign in any more becomes a fallback step (no time limit of its own). `asRead`: only
+// if the step is still as read then (the daily job) - nothing changes ({}) when it was decided or moved on meanwhile
+async function toFallback(request: RequestRow, step: StepRow, actorId: ActorId, tx: DbClient, asRead = false): Promise<Outcome> {
   // back to waiting first: if even the fallback approver has nobody, the request is held at this step and a retry finds it
   const fallback = { approverType: 'FALLBACK' as const, approverId: null, slaHours: FALLBACK_REMIND_HOURS, onBreach: 'WAIT' as const, dueAt: null, status: 'WAITING' as const, openedAt: null, openedById: null }
-  await approvalsRepository.updateStep(step.id, fallback, actorId, tx)
+  if (asRead) {
+    if (!(await approvalsRepository.updateStepIfAsRead(step.id, { status: step.status, approverId: step.approverId }, fallback, actorId, tx))) return {}
+  } else await approvalsRepository.updateStep(step.id, fallback, actorId, tx)
   return openPoolStep(request, { ...step, ...fallback }, actorId, tx, 'The manager it was escalated to cannot decide it - the fallback approver decides it')
 }
 
@@ -567,11 +570,14 @@ export async function cancel(viewer: CurrentUser, { id, reason }: z.infer<typeof
   return getRequest(viewer, id)
 }
 
-// Sends a held request through its chain again, after its routing was repaired - never approves anything by itself
-async function retry(request: RequestRow, actorId: ActorId, tx: DbClient) {
-  await approvalsRepository.updateRequest(request.id, { heldAt: null, heldById: null, heldReason: null }, actorId, tx)
+// Sends a held request through its chain again, after its routing was repaired - never approves anything by itself. Only
+// while it is still held - null when it was cancelled or sent on a moment before (2026-11-23, the review: the daily job sent
+// a request cancelled meanwhile through again, which approved it if a step had been approved)
+async function retry(request: RequestRow, actorId: ActorId, tx: DbClient): Promise<Outcome | null> {
+  if (!(await approvalsRepository.releaseHoldIfHeld(request.id, actorId, tx))) return null
   // the step it stopped at is worked out afresh (the role may be held by someone now)
-  const stuck = request.steps.find((s) => s.status === 'WAITING' && s.approverType !== 'FALLBACK')
+  const fresh = (await approvalsRepository.findRequest(request.id, tx))!
+  const stuck = fresh.steps.find((s) => s.status === 'WAITING' && s.approverType !== 'FALLBACK')
   if (stuck) await approvalsRepository.updateStep(stuck.id, { byFallback: false, note: null }, actorId, tx)
   return advance(request.id, actorId, tx)
 }
@@ -581,7 +587,9 @@ export async function retryRouting(viewer: CurrentUser, id: number) {
     const request = await getVisible(viewer, id, tx)
     if (request.status !== 'PENDING' || !request.heldAt) throw new ORPCError('CONFLICT', { message: 'This request is not held' })
     if (!hasLevelAt(viewer, 'APPROVAL_CHAINS', placementsOf(request)[0]!, 'WRITE')) throw new ORPCError('FORBIDDEN', { message: 'Repairing approval routing needs Approval chains: Edit' })
-    return retry(request, viewer.employeeId, tx)
+    const outcome = await retry(request, viewer.employeeId, tx)
+    if (!outcome) throw new ORPCError('CONFLICT', { message: 'This request is not held' })
+    return outcome
   })
   await finishAndNotify(id, outcome)
   return getRequest(viewer, id)
@@ -594,7 +602,9 @@ class StillHeld extends Error {}
 
 // Every request still waiting: cancelled if the employee left; a held one sent through again; a manager / HOD step given
 // to the new manager / HOD (or skipped when there is none now); a fallback step given back to the role once someone holds
-// it (reminders follow each step's SLA - the hourly job, runTimeLimits). `only`: just these requests - for the tests, so
+// it (reminders follow each step's SLA - the hourly job, runTimeLimits). Each change is made only if the request / step is
+// still as read at the start (2026-11-23, the review: a step decided a moment before was given to the new manager, skipped
+// or moved on) - otherwise it is left alone. `only`: just these requests - for the tests, so
 // they do not go through every request earlier runs left in the test database (the job itself passes nothing)
 export type JobFilter = { requestIds: number[] }
 export function runDaily(only?: JobFilter) {
@@ -618,11 +628,13 @@ async function daily(only?: JobFilter) {
         try {
           const outcome = await prisma.$transaction(async (tx) => {
             const tried = await retry(request, SYSTEM_ACTOR, tx)
-            if (tried.held) throw new StillHeld()
+            if (tried?.held) throw new StillHeld()
             return tried
           })
-          await sendNotices(request.id, outcome)
-          counts.moved++
+          if (outcome) {
+            await sendNotices(request.id, outcome)
+            counts.moved++
+          }
         } catch (error) {
           if (!(error instanceof StillHeld)) throw error
         }
@@ -634,36 +646,50 @@ async function daily(only?: JobFilter) {
         const found = await namedApprover(step, request)
         if ('vacant' in found) {
           const outcome = await prisma.$transaction(async (tx) => {
-            await approvalsRepository.updateStep(step.id, { status: 'SKIPPED', note: found.vacant, approverId: null }, SYSTEM_ACTOR, tx)
-            return advance(request.id, SYSTEM_ACTOR, tx)
+            const skipped = await approvalsRepository.updateStepIfAsRead(step.id, { status: 'OPEN', approverId: step.approverId }, { status: 'SKIPPED', note: found.vacant, approverId: null }, SYSTEM_ACTOR, tx)
+            return skipped ? advance(request.id, SYSTEM_ACTOR, tx) : null
           })
-          await sendNotices(request.id, outcome)
-          counts.moved++
+          if (outcome) {
+            await sendNotices(request.id, outcome)
+            counts.moved++
+          }
           continue
         }
         if (found.id !== step.approverId) {
-          await approvalsRepository.updateStep(
+          const moved = await approvalsRepository.updateStepIfAsRead(
             step.id,
+            { status: 'OPEN', approverId: step.approverId },
             { approverId: found.id, openedAt: new Date(), openedById: SYSTEM_ACTOR, remindedAt: null, remindedById: null, dueAt: dueFrom(step, new Date()), breachedAt: null, breachedById: null },
             SYSTEM_ACTOR,
           )
-          await sendNotices(request.id, { opened: step.id })
-          counts.moved++
+          if (moved) {
+            await sendNotices(request.id, { opened: step.id })
+            counts.moved++
+          }
           continue
         }
       } else if (step.approverType === 'ESCALATION') {
         if (!step.approverId || !(await accountsService.listSignInIds([step.approverId])).has(step.approverId)) {
-          const outcome = await prisma.$transaction(async (tx) => toFallback((await approvalsRepository.findRequest(request.id, tx))!, step, SYSTEM_ACTOR, tx))
-          await sendNotices(request.id, outcome)
-          counts.moved++
+          const outcome = await prisma.$transaction(async (tx) => toFallback((await approvalsRepository.findRequest(request.id, tx))!, step, SYSTEM_ACTOR, tx, true))
+          if (outcome.opened || outcome.held) {
+            await sendNotices(request.id, outcome)
+            counts.moved++
+          }
           continue
         }
       } else if (step.byFallback && step.approverType !== 'FALLBACK') {
         const [pool] = await poolsOf([{ step: { ...step, byFallback: false }, request }])
         if (pool!.length) {
-          await approvalsRepository.updateStep(step.id, { byFallback: false, note: null, openedAt: new Date(), openedById: SYSTEM_ACTOR }, SYSTEM_ACTOR)
-          await sendNotices(request.id, { opened: step.id })
-          counts.moved++
+          const given = await approvalsRepository.updateStepIfAsRead(
+            step.id,
+            { status: 'OPEN', approverId: step.approverId, byFallback: true },
+            { byFallback: false, note: null, openedAt: new Date(), openedById: SYSTEM_ACTOR },
+            SYSTEM_ACTOR,
+          )
+          if (given) {
+            await sendNotices(request.id, { opened: step.id })
+            counts.moved++
+          }
           continue
         }
       }
@@ -678,7 +704,8 @@ async function daily(only?: JobFilter) {
             const open = fresh?.status === 'PENDING' && !fresh.heldAt ? fresh.steps.find((s) => s.id === step.id && s.status === 'OPEN') : undefined
             if (!fresh || !open) return {}
             const waiting = { status: 'WAITING' as const, openedAt: null, openedById: null, dueAt: null }
-            await approvalsRepository.updateStep(open.id, waiting, SYSTEM_ACTOR, tx)
+            // (the step as its approvers were worked out - a decision a moment before wins)
+            if (!(await approvalsRepository.updateStepIfAsRead(open.id, { status: 'OPEN', approverId: step.approverId, byFallback: step.byFallback }, waiting, SYSTEM_ACTOR, tx))) return {}
             return openPoolStep(fresh, { ...open, ...waiting }, SYSTEM_ACTOR, tx)
           })
           if (outcome.opened || outcome.held) {
@@ -760,11 +787,15 @@ async function breach(request: RequestRow, step: StepRow, tx: DbClient): Promise
 async function remind(request: RequestRow, step: StepRow) {
   const now = new Date()
   if (step.remindedAt && now.getTime() - step.remindedAt.getTime() < step.slaHours! * HOUR_MS) return false
-  await approvalsRepository.updateStep(
+  // only while it is still open and not reminded meanwhile (2026-11-23, the review: a step decided a moment before was
+  // still marked late and its approver reminded)
+  const marked = await approvalsRepository.updateStepIfAsRead(
     step.id,
+    { status: 'OPEN', remindedAt: step.remindedAt },
     { remindedAt: now, remindedById: SYSTEM_ACTOR, ...(step.breachedAt ? {} : { breachedAt: now, breachedById: SYSTEM_ACTOR }) },
     SYSTEM_ACTOR,
   )
+  if (!marked) return false
   const who = `${fullName(request.employee)} (${request.employee.employeeCode})`
   await mailApprovers(request, step, `Reminder - to approve: ${labelOf(request).toLowerCase()} of ${who}`, [
     `${labelOf(request)} of ${who}: ${request.summary}`,

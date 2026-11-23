@@ -298,7 +298,9 @@ const resetCodeHash = (accountId: number, code: string) => createHash('sha256').
 export async function requestPasswordReset({ employeeCode }: z.infer<typeof requestPasswordResetInput>, ip: string | null) {
   countPasswordTry('requestReset', employeeCode, ip)
   const employee = await employeesService.findContactByCode(employeeCode)
-  const account = employee && CAN_LOG_IN.includes(employee.status) && employee.personalEmail ? await accountsRepository.findResetCode(employee.id) : null
+  const found = employee && CAN_LOG_IN.includes(employee.status) && employee.personalEmail ? await accountsRepository.findResetCode(employee.id) : null
+  // a turned-off login gets no code (2026-11-23, the review) - the same answer
+  const account = found && !found.disabledAt ? found : null
   const rules = await securityService.getRules()
   // the same answer whatever the employee code is, with what the new password needs (the next step's page shows it)
   const answer = { message: RESET_SENT, passwordRule: { minLength: rules.minPasswordLength, history: rules.passwordHistory } }
@@ -336,21 +338,23 @@ export async function requestPasswordReset({ employeeCode }: z.infer<typeof requ
 }
 
 // Sets the new password with the code: a wrong code counts, and after 5 wrong tries it stops working. Unlocks the
-// login, logs it out everywhere, and the password is no longer temporary.
+// login, logs it out everywhere, and the password is no longer temporary. Every wrong, used-up or expired code, an
+// unknown employee code and a turned-off login get the same answer, so the answer never tells a real employee code
+// apart (2026-11-23, the review - it said "4 tries left" only for a real one).
 export async function resetPasswordWithCode({ employeeCode, code, newPassword }: z.infer<typeof resetPasswordWithCodeInput>, ip: string | null) {
   countPasswordTry('resetWithCode', employeeCode, ip)
   const employee = await employeesService.findContactByCode(employeeCode)
   const account = employee && CAN_LOG_IN.includes(employee.status) ? await accountsRepository.findResetCode(employee.id) : null
-  if (!employee || !account?.resetCodeHash || !account.resetCodeValidUntil || account.resetCodeValidUntil < new Date()) badRequest(RESET_CODE_WRONG)
+  if (!employee || !account || account.disabledAt || !account.resetCodeHash || !account.resetCodeValidUntil || account.resetCodeValidUntil < new Date())
+    badRequest(RESET_CODE_WRONG)
   // every try is counted before the code is compared (in the database: parallel guesses each count - 2026-11-23)
   const failed = await accountsRepository.takeResetCodeTry(account.id, account.resetCodeHash, MAX_WRONG_RESET_CODES, SYSTEM_ACTOR)
-  if (failed === null) badRequest('Wrong code. Too many wrong tries - ask for a new code.')
+  if (failed === null) badRequest(RESET_CODE_WRONG)
   const expected = Buffer.from(account.resetCodeHash, 'hex')
   const given = Buffer.from(resetCodeHash(account.id, code), 'hex')
   if (!timingSafeEqual(expected, given)) {
-    const dead = failed >= MAX_WRONG_RESET_CODES
-    if (dead) await accountsRepository.updateResetCode(account.id, { resetCodeHash: null, resetCodeValidUntil: null }, SYSTEM_ACTOR)
-    badRequest(dead ? 'Wrong code. Too many wrong tries - ask for a new code.' : `Wrong code. ${MAX_WRONG_RESET_CODES - failed} tries left.`)
+    if (failed >= MAX_WRONG_RESET_CODES) await accountsRepository.updateResetCode(account.id, { resetCodeHash: null, resetCodeValidUntil: null }, SYSTEM_ACTOR)
+    badRequest(RESET_CODE_WRONG)
   }
   await assertGoodPassword(newPassword, employee.employeeCode, await recentPasswords(account))
   const passwordHash = await hashPassword(newPassword)
@@ -584,7 +588,39 @@ export async function setAccountRoles({ employeeCode, roles }: z.infer<typeof se
   const wanted = await rolesService.getRolesByIds(roles.map((r) => r.roleId))
   const rowsOf = new Map(roles.map((r) => [r.roleId, wanted.find((role) => role.id === r.roleId)?.isSuperAdmin ? [] : normalizeRows(r.dataAccess)]))
   await assertPlantsOfCompanies([...rowsOf.values()].flat())
+  checkedRoleChanges(user, account, wanted, rowsOf)
 
+  await prisma.$transaction(async (tx) => {
+    // the roles given and taken away, one change or giving of each at a time - checked again with them as saved now
+    // (2026-11-23, the review: a role given with wide data access while another editor added areas to it passed both checks)
+    await rolesService.lockRoles([...rowsOf.keys(), ...account.roles.map((given) => given.role.id)], tx)
+    const fresh = await accountsRepository.findByEmployeeId(employee.id, tx)
+    if (!fresh) throw new ORPCError('NOT_FOUND', { message: `${employee.employeeCode} has no login yet - give one with npm run set-password` })
+    const { toSave, removed } = checkedRoleChanges(user, fresh, await rolesService.getRolesByIds([...rowsOf.keys()], tx), rowsOf)
+    if (removed.length) await accountsRepository.removeRoles(fresh.id, removed.map((given) => given.role.id), tx)
+    for (const { roleId, rows } of toSave) {
+      const given = await accountsRepository.addRole(fresh.id, roleId, user.employeeId, tx)
+      await accountsRepository.replaceScopes(given.id, rows, user.employeeId, tx)
+    }
+  })
+  const saved = await accountsRepository.findByEmployeeId(employee.id)
+  return {
+    employeeCode: employee.employeeCode,
+    name: fullName(employee),
+    status: employee.status,
+    canLogIn: CAN_LOG_IN.includes(employee.status),
+    roles: (saved?.roles ?? []).map(({ role, scopes }) => ({ id: role.id, name: role.name, isSuperAdmin: role.isSuperAdmin, dataAccess: scopes.map(toDataAccessRow) })),
+  }
+}
+
+// The roles to give (with their rows) and take away to leave the account with exactly `wanted` - each one added, changed or
+// taken away checked against the giver's own access (setAccountRoles' rules)
+function checkedRoleChanges(
+  user: CurrentUser,
+  account: AccountRoles,
+  wanted: Awaited<ReturnType<typeof rolesService.getRolesByIds>>,
+  rowsOf: Map<number, ScopeRow[]>,
+) {
   const current = new Map(account.roles.map((given) => [given.role.id, given]))
   // added, changed (other rows) and taken away - each checked against the giver's own access
   const toCheck: { isSuperAdmin: boolean; access: AccessMap; rows: ScopeRow[] }[] = []
@@ -619,22 +655,7 @@ export async function setAccountRoles({ employeeCode, roles }: z.infer<typeof se
       }
     }
   }
-
-  await prisma.$transaction(async (tx) => {
-    if (removed.length) await accountsRepository.removeRoles(account.id, removed.map((given) => given.role.id), tx)
-    for (const { roleId, rows } of toSave) {
-      const given = await accountsRepository.addRole(account.id, roleId, user.employeeId, tx)
-      await accountsRepository.replaceScopes(given.id, rows, user.employeeId, tx)
-    }
-  })
-  const saved = await accountsRepository.findByEmployeeId(employee.id)
-  return {
-    employeeCode: employee.employeeCode,
-    name: fullName(employee),
-    status: employee.status,
-    canLogIn: CAN_LOG_IN.includes(employee.status),
-    roles: (saved?.roles ?? []).map(({ role, scopes }) => ({ id: role.id, name: role.name, isSuperAdmin: role.isSuperAdmin, dataAccess: scopes.map(toDataAccessRow) })),
-  }
+  return { toSave, removed }
 }
 
 // A plant in a data-access row must be one of the row's company's (400)

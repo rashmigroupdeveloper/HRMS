@@ -219,6 +219,9 @@ export function EmployeeProfile({ employeeCode, self }: { employeeCode: string; 
   if (!self && e.employeeCode !== employeeCode.toUpperCase()) return <Navigate to={`/employees/${e.employeeCode}${search}`} replace />
   // a tab of a part the viewer may not see (e.g. an old link ?tab=ids) opens the job tab instead
   const here = { companyId: e.company.id, plantId: e.plant.id, departmentId: e.department?.id ?? null }
+  // what the viewer may change on THIS employee - the area at Edit covering where they are (and Employees View there for a
+  // part), as the backend checks per record; `can` alone offered buttons it refused for an employee outside the data access
+  const mayChange = (area: AccessArea) => !self && access.covers(area, 'WRITE', here) && (area === 'EMPLOYEES' || access.covers('EMPLOYEES', 'READ', here))
   // a tab that would only say "no access" is not shown (2026-11-21); one's own profile shows salary and medical always
   const seesSalary = self || access.covers('SALARY', 'READ', here)
   const seesMedical = self || access.covers('MEDICAL', 'READ', here)
@@ -247,9 +250,9 @@ export function EmployeeProfile({ employeeCode, self }: { employeeCode: string; 
   // & job: Edit); a records tab opens its sections with that part's access ("Edit IDs & bank"); a tab with nothing to
   // edit this way (documents, letters, salary, record - they have their own actions) shows none
   const edit =
-    isEditable(shownTab) && can(EDITABLE[shownTab].area, 'WRITE')
+    isEditable(shownTab) && mayChange(EDITABLE[shownTab].area)
       ? { label: `Edit ${EDITABLE[shownTab].what}`, open: () => setEditingTab(shownTab) }
-      : shownTab === 'job' && can('EMPLOYEES', 'WRITE')
+      : shownTab === 'job' && mayChange('EMPLOYEES')
         ? { label: 'Edit details', open: () => setEditingDetails(true) }
         : null
 
@@ -509,13 +512,13 @@ export function EmployeeProfile({ employeeCode, self }: { employeeCode: string; 
 
         <TabsContent value="statutory" className="mt-4 xl:col-start-2 xl:row-start-1 xl:mt-0">
           {e.statutory ? (
-            <Statutory s={e.statutory} onEditNumbers={can('EMPLOYEE_IDS_BANK', 'WRITE') ? () => setEditingNumbers(true) : undefined} />
+            <Statutory s={e.statutory} onEditNumbers={mayChange('EMPLOYEE_IDS_BANK') ? () => setEditingNumbers(true) : undefined} />
           ) : (
             <InfoCard
               icon={ShieldCheck}
               title="PF and ESIC"
               aside={
-                can('EMPLOYEE_IDS_BANK', 'WRITE') && (
+                mayChange('EMPLOYEE_IDS_BANK') && (
                   <Button variant="ghost" size="sm" onClick={() => setEditingNumbers(true)}>
                     <Pencil /> Edit numbers
                   </Button>
@@ -623,12 +626,12 @@ export function EmployeeProfile({ employeeCode, self }: { employeeCode: string; 
         </TabsContent>
 
         <TabsContent value="documents" className="mt-4 xl:col-start-2 xl:row-start-1 xl:mt-0">
-          <Documents employeeCode={e.employeeCode} canManage={can('EMPLOYEE_DOCUMENTS', 'WRITE')} />
+          <Documents employeeCode={e.employeeCode} canManage={mayChange('EMPLOYEE_DOCUMENTS')} />
         </TabsContent>
 
         {/* letters issued to the employee (appointment, confirmation, experience, relieving) - with the documents' access */}
         <TabsContent value="letters" className="mt-4 xl:col-start-2 xl:row-start-1 xl:mt-0">
-          <EmployeeLetters employeeCode={e.employeeCode} canIssue={can('EMPLOYEE_DOCUMENTS', 'WRITE')} />
+          <EmployeeLetters employeeCode={e.employeeCode} canIssue={mayChange('EMPLOYEE_DOCUMENTS')} />
         </TabsContent>
 
         <TabsContent value="salary" className="mt-4 xl:col-start-2 xl:row-start-1 xl:mt-0">
@@ -678,7 +681,7 @@ export function EmployeeProfile({ employeeCode, self }: { employeeCode: string; 
                 icon={ClipboardCheck}
                 title="For HR / office use"
                 aside={
-                  can('EMPLOYEES', 'WRITE') && (
+                  mayChange('EMPLOYEES') && (
                     <Button variant="ghost" size="sm" onClick={() => setEditingChecklist(true)}>
                       <Pencil /> Update
                     </Button>

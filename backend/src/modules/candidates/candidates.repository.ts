@@ -117,6 +117,22 @@ export function update(id: number, data: Prisma.CandidateUncheckedUpdateInput, a
   return db.candidate.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: candidateDetailSelect })
 }
 
+// Changes the candidate only while they are still in `status` (the one read before) - false when someone changed it a
+// moment before (2026-11-23, the review: a candidate's accept and HR's withdraw at the same moment - the last write won)
+export async function updateIfStatus(
+  id: number,
+  status: CandidateStatus | readonly CandidateStatus[],
+  data: Prisma.CandidateUncheckedUpdateManyInput,
+  actorId: ActorId,
+  db: DbClient = prisma,
+) {
+  const result = await db.candidate.updateMany({
+    where: { id, status: typeof status === 'string' ? status : { in: [...status] } },
+    data: { ...data, ...updatedBy(actorId) },
+  })
+  return result.count === 1
+}
+
 // Replaces the offer's salary breakup with `lines`
 export async function replaceSalaryLines(
   candidateId: number,

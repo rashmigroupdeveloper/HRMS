@@ -83,14 +83,15 @@ model LeaveLedgerEntry {
   days          Decimal        @db.Decimal(6, 2)
   // the day it counts on: the 1st for a credit, the leave's first day for taken / returned, 31 Dec for a lapse
   effectiveDate DateTime       @map("effective_date") @db.Date
-  // the month credited ("2026-11") or the year lapsed ("2026") - once each (a job run twice adds nothing); null for the rest
+  // the month credited ("2026-11"), the year lapsed ("2026") or the day comp-off expired ("exp:2026-11-23" - 2026-11-23) -
+  // once each (a job run twice adds nothing); null for the rest
   period        String?
   // the leave taken / returned
   applicationId Int?           @map("application_id")
   // HR's reason for an adjustment (required then)
   note          String?
   // a comp-off credit: the day it expires - not used by then, it lapses (90 days after the day worked - old HRMS
-  // lv.comp_off_validity_days)
+  // lv.comp_off_validity_days - or 30 days after the approval when that is later, 2026-11-23)
   expiresOn     DateTime?      @map("expires_on") @db.Date
   // the comp-off claim it was earned by
   compOffClaimId Int?          @unique @map("comp_off_claim_id")

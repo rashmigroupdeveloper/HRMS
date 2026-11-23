@@ -225,7 +225,7 @@ forgotten filters and grant hand-outs) on 2026-11-17. A role says WHAT (areas, V
 
 ### 6. Automatic reminders (background jobs)
 - **Done (2026-11-16, phase 5 - `src/worker.ts`, run with `npm run worker -w backend`):** offers past their valid-until
-  date become `EXPIRED` (daily 01:00); HR is e-mailed the candidates joining in 3 days whose joining is not confirmed
+  date become `EXPIRED` (daily 01:00); HR is e-mailed the candidates joining in the next 3 days (from tomorrow - today's can no longer be confirmed, 2026-11-23) whose joining is not confirmed
   (daily 08:30) and the background checks still open after joining (Mondays 09:00) - "HR" = everyone with Onboarding:
   Edit; expired sessions are removed hourly.
 - **Still open:** an "Are you still joining?" e-mail to the candidate a few days before; flagging a candidate who did not
@@ -594,7 +594,7 @@ region (on the work location), the work location's address, lay offs, and the jo
 - **Ask HR:** see "Questions to settle with HR" (the real leave types and days, 30 days back for a regularization; comp-off:
   8 h / 4 h, 30 days to claim and 90 days to use - the old HRMS's numbers, the user chose them for now).
 
-### 30. Bugs found in the code review of 2026-11-23 - not fixed yet
+### 30. Bugs found in the code review of 2026-11-23
 A read-through of every module built so far. **Fixed the same day:** editing a role now checks the holders' data access (and
 nobody edits a role they have); a cancel racing an approval or an apply no longer leaves a cancelled request with its change
 applied; punch files with "Date" + "Punch Time", impossible months, CSVs named without .csv; the new-login and letter
@@ -616,37 +616,26 @@ user's answers (after comparing Keka, Zoho People, SAP, Workday, Odoo):** a chan
 month HR picks (creditsFrom - never every month back by surprise); approved leave the calendar now counts otherwise is
 listed under Team leave > To recount and HR gives days back / takes days more by hand, the employee e-mailed (never on its
 own); a comp-off leave uses only the days there on its date, the closest to expiry first, so a later comp-off still
-lapses. **Waiting** (each fixed with a test when picked up; most severe first):
-- **Attendance, found while dating shifts:** moving the default pattern (the star) is not dated - everyone never given a
-  schedule follows the new default on past days too, the next time those days are worked out (a punch, a correction).
-  **Needs:** dated defaults, or giving those employees the old default as a schedule up to the move - to propose.
-- **Leave:** an employee whose gender / employment type changes is credited every month back from the type's creditsFrom
-  (the types' rules are dated now, a person's details are not); comp-off expiry has no once-only key; credits a month late for joiners on the 29th-31st; two cancel requests at
-  once.
-- **Attendance:** a night-shift punch is lock-checked by its calendar day; correcting one half wipes the other half's
-  correction; the 48-hour roster warning counts only the days on screen.
-- **Approvals / job changes:** the daily job writes from an old snapshot (reassigning a step decided a moment before).
-- **Employees / onboarding:** out-of-scope employees can be told apart by their error messages.
-- **Everywhere:** "today" is the server's clock with no time zone set - on a UTC server every date rule is a day behind
-  from 00:00 to 05:30 IST. **Needs:** TZ=Asia/Kolkata on the server, or today() in IST.
-- **Low:** forgot-password answers tell real codes apart ("4 tries left" vs generic); a reset code works on a turned-off
-  login; an admin reset lets HR sign in as a manager / HOD (design question); a lay-off does not affect approval routing;
-  layoffs can be recorded for an exited employee, and their update checks overlap outside a transaction; an AUTO_APPROVE
-  step can approve with no human; the old manager can still decide until the 07:30 hand-over; HODs can be appointed to
-  retired plant-departments; retired departments / companies / masters can still be set through the API; the import
-  matches master names loosely and loses leading zeros of numeric codes, and treats former and current codes of one
-  employee as two rows; rich-text hyperlink cells read as "[object Object]"; document downloads by id name the owner's
-  code when out of scope; a failed portal submit uses up the signing code; portal uploads have no count limit; the
-  offer page shows ACCEPTED after a withdrawal; HR's reminder lists joinings they can no longer confirm; one error stops
-  the nightly offer expiry; a step failing after saving a letter deletes its PDF; a candidate's accept and HR's withdraw
-  at once (last write wins); comp-off approved late can expire at once; an approved leave in a past year can be cancelled
-  and its days come back; a night-to-morning shift pair can swap punches; a 4-day pattern assigned from a Thursday
-  starts on its day 4; `attendance.punches.addManual` answers 409 where the tracker says 400; the day board / Today card
-  around midnight on a UTC server.
-- **Found while fixing:** a role-change race - giving someone an area-less role with wide rows while another editor adds
-  areas to that role: each check passes on its own snapshot; the test setup runs `npx prisma migrate deploy`, which
-  fetches the newest Prisma (a pre-release) when the packages are not installed - it should call the installed one.
-- **Not reviewed yet:** the frontend (only the backend was read).
+lapses. **Fixed the same day, the user's "fix the rest":** the default pattern is dated (DefaultPatternChange); "today" and
+the job times are India's whatever the server's time zone; and every item of the waiting list below except the
+questions - attendance (night-shift punches beside a locked month, one half's correction kept / cleared, the 48-hour
+warning over the whole week, a night-then-morning hand-over, a pattern not of whole weeks), leave (comp-off expiry once a
+day, joiners of the 29th-31st, one cancel per double click, comp-off approved late keeps 30 days, no cancelling a leave of
+a lapsed year), approvals (the daily job writes only what it read), roles (a lock per role), employees / accounts (by-id
+records outside the View answer like unknown ids, forgot-password answers the same and refuses turned-off logins, lay
+offs, HODs of retired places, retired masters, the import's matching / zeros / former codes / rich text), candidates (the
+signing code kept on a refused submit, an upload limit, a closed offer's page, the joining reminder from tomorrow, one
+failing offer no longer stops the expiry, a PDF deleted only with its rolled-back row, accept / withdraw at the same
+moment) and the test setup using the installed Prisma; and the frontend review's findings (see below). **Waiting:**
+- **Ask the user (design questions):** (a) an admin's password reset lets HR sign in as a manager / HOD; (b) a laid-off
+  approver still gets approval steps; (c) an AUTO_APPROVE step approves with no person (and on a cancel of a lapsed year's
+  leave it fails every hour); (d) the old manager can still decide until the 07:30 hand-over; (e) an employee whose gender
+  / employment type changes is credited every month back from the type's creditsFrom (a person's details are not dated).
+- **Small, known:** two portal uploads at the same moment can go one file over the limit; the set-password script gives a
+  role without the role lock; manager / HOD pickers answer "has left" vs "not found" (managers are picked group-wide by
+  design); conflict messages for a duplicate UAN / ESIC IP / identity number / work e-mail name the owner's code; the
+  approvals daily job's skip / fallback / give-back / pool / retry / remind branches have no race test (only reassign);
+  test files are not type-checked (backend tsconfig covers src only).
 
 ## Questions to settle with HR
 

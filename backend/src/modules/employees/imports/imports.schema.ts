@@ -15,11 +15,13 @@ export const uploadImportInput = z.object({
   save: z.boolean().optional(),
 })
 
-// The template's columns, in order. `key`: the "Add employee" field the column fills.
+// The template's columns, in order. `key`: the "Add employee" field the column fills; `text`: a text column in the
+// template (codes and numbers keep their leading zeros - 2026-11-23)
 export const IMPORT_COLUMNS = [
   {
     key: 'employeeCode',
     header: 'Employee code',
+    text: true,
     note: "An employee already in the system: their code updates them (empty cells keep what is saved). A new employee: their existing code (e.g. RML035384), or empty for the next code of the company's series.",
   },
   { key: 'salutation', header: 'Salutation' },
@@ -32,6 +34,7 @@ export const IMPORT_COLUMNS = [
   {
     key: 'plant',
     header: 'Plant code',
+    text: true,
     required: true,
     note: "The SAP code of one of the company's plants, e.g. 1101 (RML HQ) - see the Organization page. Required for a new employee.",
   },
@@ -45,20 +48,21 @@ export const IMPORT_COLUMNS = [
   { key: 'designation', header: 'Designation' },
   { key: 'grade', header: 'Grade' },
   { key: 'position', header: 'Position' },
-  { key: 'costCenter', header: 'Cost centre', note: "The code of one of the company's cost centres (Organization page)." },
+  { key: 'costCenter', header: 'Cost centre', text: true, note: "The code of one of the company's cost centres (Organization page)." },
   { key: 'dateOfJoining', header: 'Date of joining', required: true, date: true },
   { key: 'joiningType', header: 'Joining type' },
   { key: 'employmentType', header: 'Employment type' },
   { key: 'workforceCategory', header: 'Workforce' },
   { key: 'contractEndDate', header: 'Contract end date', date: true, note: 'Only for a fixed-term engagement (not Permanent).' },
   { key: 'probationEndDate', header: 'Probation end date', date: true },
-  { key: 'mobile', header: 'Mobile' },
+  { key: 'mobile', header: 'Mobile', text: true },
   { key: 'personalEmail', header: 'Personal e-mail' },
   { key: 'workEmail', header: 'Work e-mail' },
-  { key: 'reportingManagerCode', header: 'Reporting manager code', note: 'The employee code of the manager - an existing employee or another row of this file.' },
+  { key: 'reportingManagerCode', header: 'Reporting manager code', text: true, note: 'The employee code of the manager - an existing employee or another row of this file.' },
   {
     key: 'functionalManagerCode',
     header: 'Functional manager code',
+    text: true,
     note: 'A second manager the employee works for day to day, shown on the profile only - an existing employee or another row of this file.',
   },
 ] as const

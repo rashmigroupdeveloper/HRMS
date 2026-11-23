@@ -5,14 +5,17 @@ import { EmptyState } from '@/components/EmptyState'
 import { FormDrawer } from '@/components/FormDrawer'
 import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
+import { DayBoardSkeleton } from '@/components/skeletons/attendance/DayBoardSkeleton'
+import { MonthSkeleton } from '@/components/skeletons/attendance/MonthSkeleton'
+import { MusterSkeleton } from '@/components/skeletons/attendance/MusterSkeleton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { client, orpc } from '@/lib/orpc'
-import { cn, downloadFile, formatDate, fromDateInput, toDateInput } from '@/lib/utils'
-import { BOARD_STATE, HALF_STATUSES, type HalfStatus, hours, type MonthDay, segment, SEGMENTS, STATUS, todayDay, splitFill, statusOfCode } from './labels'
-import { useAttendanceMonth } from './useAttendanceMonth'
+import { cn, downloadFile, formatDate, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
+import { BOARD_STATE, cycleRange, HALF_STATUSES, type HalfStatus, hours, type MonthDay, MUSTER_TOTALS, segment, SEGMENTS, STATUS, splitFill, statusOfCode } from './labels'
+import { useAttendanceMonth, useCycleStartDay } from './useAttendanceMonth'
 import { MonthCalendar, MonthPicker, MonthTotals } from './MonthCalendar'
 
 type Scope = 'TEAM' | 'DEPARTMENT' | 'ALL'
@@ -87,6 +90,7 @@ function DayBoard({ filter, date, onOpen }: { filter: Filter; date: string; onOp
   const s = board.data?.summary
   // the day's totals as one plain line (they are not filters) - a zero is muted
   const counts: [number, string][] = s ? [[s.in, 'in'], [s.late, 'late'], ...(board.data?.isToday ? [[s.notIn, 'not in yet'] as [number, string]] : []), [s.absent, 'absent'], [s.leave, 'on leave'], [s.onDuty, 'on duty'], [s.off, 'off']] : []
+  if (board.isPending) return <DayBoardSkeleton label="Loading the day board" />
   return (
     <div className="space-y-2">
       {s && (
@@ -157,12 +161,14 @@ function Muster({ filter, onOpen }: { filter: Filter; onOpen: (code: string) => 
   const [ym, setYm] = useState(useAttendanceMonth())
   const [exportError, setExportError] = useState<string | null>(null)
   const muster = useQuery({ ...orpc.attendance.days.muster.queryOptions({ input: { ...filter, ...ym } }), placeholderData: keepPreviousData })
+  // the attendance month's days before the muster answers (its skeleton's day columns)
+  const range = cycleRange(ym.year, ym.month, useCycleStartDay())
   // (a code that is no status is a leave type's - CL, SL... 2026-11-22)
   const cellTone = (code: string) => Object.values(STATUS).find((s) => s.short === code)?.cell ?? (code ? STATUS.LEAVE.cell : 'text-muted-foreground')
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <MonthPicker year={ym.year} month={ym.month} onChange={(year, month) => setYm({ year, month })} range={muster.data} locked={muster.data?.locked} />
+        <MonthPicker year={ym.year} month={ym.month} onChange={(year, month) => setYm({ year, month })} range={muster.data ?? range} locked={muster.data?.locked} />
         <Button
           variant="secondary"
           size="sm"
@@ -177,6 +183,12 @@ function Muster({ filter, onOpen }: { filter: Filter; onOpen: (code: string) => 
       </div>
       {exportError && <p className="text-xs text-negative-ink">{exportError}</p>}
       <FormError error={muster.error} />
+      {muster.isPending && (
+        <MusterSkeleton
+          days={Array.from({ length: Math.round((range.to.getTime() - range.from.getTime()) / 86_400_000) + 1 }, (_, i) => new Date(range.from.getTime() + i * 86_400_000))}
+          label="Loading the month muster"
+        />
+      )}
       {muster.data?.rows.length === 0 && <EmptyState className="py-6" title="Nobody to show" hint="Nobody matches the search in this month." />}
       {!!muster.data?.rows.length && (
         <div className={cn('overflow-x-auto rounded-2xl border border-border', muster.isFetching && 'opacity-60')}>
@@ -189,7 +201,7 @@ function Muster({ filter, onOpen }: { filter: Filter; onOpen: (code: string) => 
                     {d.getUTCDate()}
                   </th>
                 ))}
-                {['P', 'HD', 'A', 'MP', 'L', 'OD', 'Late'].map((h) => (
+                {MUSTER_TOTALS.map((h) => (
                   <th key={h} className="px-1.5 py-1.5 text-center font-medium">
                     {h}
                   </th>
@@ -278,6 +290,8 @@ export function PersonMonth({ employeeCode, canEdit, onClose }: { employeeCode: 
   const now = todayDay()
   const [ym, setYm] = useState(useAttendanceMonth())
   const month = useQuery({ ...orpc.attendance.days.employeeMonth.queryOptions({ input: { employeeCode, ...ym } }), placeholderData: keepPreviousData })
+  // the attendance month's days before it answers (the picker's line and the skeleton)
+  const range = cycleRange(ym.year, ym.month, useCycleStartDay())
   // a day correction typed and not saved - closing asks first
   const [unsaved, setUnsaved] = useState(false)
   return (
@@ -289,12 +303,13 @@ export function PersonMonth({ employeeCode, canEdit, onClose }: { employeeCode: 
       description={month.data ? [month.data.employee.employeeCode, month.data.employee.designation, month.data.employee.department].filter(Boolean).join(' · ') : undefined}
     >
       <div className="space-y-4">
-        <MonthPicker year={ym.year} month={ym.month} onChange={(year, month) => setYm({ year, month })} range={month.data} locked={month.data?.locked} />
+        <MonthPicker year={ym.year} month={ym.month} onChange={(year, month) => setYm({ year, month })} range={month.data ?? range} locked={month.data?.locked} />
         <FormError error={month.error} />
+        {month.isPending && <MonthSkeleton year={ym.year} month={ym.month} range={range} label="Loading the month" />}
         {month.data && (
           <>
             <MonthTotals totals={month.data.totals} />
-            <MonthCalendar data={month.data} actions={(day) => (canEdit && !month.data.locked && day.date <= now ? <CorrectDay key={day.date.toISOString()} employeeCode={employeeCode} day={day} onDirty={setUnsaved} /> : null)} />
+            <MonthCalendar data={month.data} actions={(day) => (canEdit && month.data.canCorrect && !month.data.locked && day.date <= now ? <CorrectDay key={day.date.toISOString()} employeeCode={employeeCode} day={day} onDirty={setUnsaved} /> : null)} />
           </>
         )}
       </div>
@@ -344,7 +359,8 @@ function CorrectDay({ employeeCode, day, onDirty }: { employeeCode: string; day:
           size="sm"
           variant="gold"
           disabled={(!first && !second) || reason.trim().length < 3 || correct.isPending}
-          onClick={() => correct.mutate({ employeeCode, date: day.date, ...(first && { firstHalf: first }), ...(second && { secondHalf: second }), reason })}
+          // both halves as the form shows them: "as the punches" (null) clears that half's correction
+          onClick={() => correct.mutate({ employeeCode, date: day.date, firstHalf: first || null, secondHalf: second || null, reason })}
         >
           Save
         </Button>

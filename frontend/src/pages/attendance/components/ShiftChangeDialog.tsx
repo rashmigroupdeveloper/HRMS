@@ -10,8 +10,7 @@ import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { orpc } from '@/lib/orpc'
-import { cn, fromDateInput, toDateInput } from '@/lib/utils'
-import { todayDay } from './labels'
+import { cn, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
 
 // Asking for a shift change on one day: another shift (or off), or a swap with a colleague. The manager approves, then
 // HR; only then does the roster change.

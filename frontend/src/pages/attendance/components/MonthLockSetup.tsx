@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { DialogCancel, FormDialog } from '@/components/FormDialog'
 import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
+import { LockChecklistSkeleton } from '@/components/skeletons/attendance/LockChecklistSkeleton'
 import { ReasonDialog } from '@/components/ReasonDialog'
 import { Button } from '@/components/ui/button'
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -12,8 +13,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAccess } from '@/hooks/useAccess'
 import { type client, orpc } from '@/lib/orpc'
-import { cn, errorMessage, formatDate, formatDoneBy } from '@/lib/utils'
-import { todayDay } from './labels'
+import { cn, errorMessage, formatDate, formatDoneBy, todayDay } from '@/lib/utils'
 
 type MonthRow = Awaited<ReturnType<typeof client.attendance.locks.months>>['months'][number]
 type CardProps = { title: string; hint?: string; action?: React.ReactNode; children: React.ReactNode }
@@ -126,18 +126,20 @@ export function MonthLockSetup({ card: Card }: { card: (props: CardProps) => Rea
   )
 }
 
+// What "Lock" checks in the month: its name and hint (the dialog and its skeleton)
+const LOCK_CHECKS = [
+  ['Missed punches', 'days with only one punch, not fixed'],
+  ['Shift changes waiting', 'requests for its days not decided yet'],
+  ['Unknown machine codes', 'punches not linked to an employee'],
+] as const
+
 // "Lock November 2026?" - what is still open in the month (a warning), then lock
 function LockDialog({ month, onClose, onLocked }: { month: MonthRow; onClose: () => void; onLocked: () => void }) {
   const checklist = useQuery(orpc.attendance.locks.checklist.queryOptions({ input: { year: month.year, month: month.month } }))
   const lock = useMutation(orpc.attendance.locks.lock.mutationOptions({ onSuccess: () => (onLocked(), onClose()) }))
   const c = checklist.data
-  const items: [string, number, string][] = c
-    ? [
-        ['Missed punches', c.missedPunches, 'days with only one punch, not fixed'],
-        ['Shift changes waiting', c.pendingShiftChanges, 'requests for its days not decided yet'],
-        ['Unknown machine codes', c.unmatchedPunches, 'punches not linked to an employee'],
-      ]
-    : []
+  const counts = c ? [c.missedPunches, c.pendingShiftChanges, c.unmatchedPunches] : []
+  const items: [string, number, string][] = counts.map((count, i) => [LOCK_CHECKS[i]![0], count, LOCK_CHECKS[i]![1]])
   const open = items.reduce((n, [, count]) => n + count, 0)
   return (
     <FormDialog onOpenChange={(o) => !o && onClose()} dirty={false} className="rounded-3xl sm:max-w-md">
@@ -148,7 +150,7 @@ function LockDialog({ month, onClose, onLocked }: { month: MonthRow; onClose: ()
         </DialogDescription>
       </DialogHeader>
       {checklist.isPending ? (
-        <p className="text-sm text-muted-foreground">Checking the month…</p>
+        <LockChecklistSkeleton checks={LOCK_CHECKS} label="Checking the month" />
       ) : (
         <ul className="divide-y rounded-2xl bg-surface-2/60 px-3 text-sm">
           {items.map(([label, count, hint]) => (

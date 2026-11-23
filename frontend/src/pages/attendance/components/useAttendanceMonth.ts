@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { orpc } from '@/lib/orpc'
-import { todayDay } from './labels'
+import { todayDay } from '@/lib/utils'
 
 // The attendance month today is in (the user, 2026-11-22: RML's month runs from the 26th to the 25th, so from 26 Nov it is
 // "December") - from the overview the attendance page has already loaded; the calendar month until it answers.

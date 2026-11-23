@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { orpc } from '@/lib/orpc'
-import { cn, fromDateInput, toDateInput } from '@/lib/utils'
+import { cn, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
 import { type Balance, daysText } from './labels'
 
 // Applying for leave (2026-11-22): the type (with what is available), the days - the first day from its second half, the
@@ -20,7 +20,7 @@ import { type Balance, daysText } from './labels'
 // Approved through the leave approval chain (the reporting manager first).
 export function ApplyLeaveDialog({ balances, initialTypeId, onClose }: { balances: Balance[]; initialTypeId?: number; onClose: () => void }) {
   const queryClient = useQueryClient()
-  const [start] = useState(() => toDateInput(new Date()))
+  const [start] = useState(() => toDateInput(todayDay()))
   const [typeId, setTypeId] = useState(initialTypeId ? String(initialTypeId) : '')
   const [from, setFrom] = useState(start)
   const [to, setTo] = useState(start)

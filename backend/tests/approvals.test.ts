@@ -2,13 +2,15 @@ import { prisma } from '#core/db/prisma'
 import { approvalsService } from '#modules/approvals'
 import { designationsService } from '#modules/organization'
 import { SYSTEM_ACTOR } from '#core/db/prisma'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import * as approvalsRepository from '../src/modules/approvals/approvals.repository.js'
 import * as chainsService from '../src/modules/approvals/chains/chains.service.js'
 import * as jobChangesService from '../src/modules/job-changes/job-changes.service.js'
 import { employeesService } from '#modules/employees'
 import { createRole, fallbackRoleId, giveLogin } from './helpers/approvals.js'
 import { createCompany, createEmployee, createPlant } from './helpers/organization.js'
 import { row, userWith } from './helpers/users.js'
+import { asAsync } from './helpers/spies.js'
 
 // The approval service (the user, 2026-11-20): chains of steps, skipped vacant steps, the fallback approver, held
 // requests, nobody deciding their own, one decision per step, and data access.
@@ -318,6 +320,31 @@ describe('the daily job of approvals', () => {
     expect((await approvalsService.getRequest(direct, leaverRequest))).toMatchObject({ status: 'CANCELLED', cancelReason: 'The employee has left' })
     expect((await stepsOf(movedRequest))[0]).toMatchObject({ status: 'OPEN', approver: { employeeCode: m2.employeeCode } })
     expect((await stepsOf(orphanRequest)).map((s) => s.status)).toEqual(['SKIPPED', 'OPEN'])
+  })
+
+  // found in the 2026-11-23 review: the job wrote from what it read at the start - a step decided a moment before was
+  // still given to the new manager
+  it('leaves a step decided after it read the requests alone', async () => {
+    const [m1, m2] = [await withLogin(), await withLogin()]
+    const moved = await createEmployee({ companyId: company, plantId: plant })
+    await employeesService.updateEmployee({ employeeCode: moved.employeeCode, reportingManagerCode: m1.employeeCode }, direct)
+    const request = await raiseFor(moved.employeeCode)
+    await employeesService.updateEmployee({ employeeCode: moved.employeeCode, reportingManagerCode: m2.employeeCode }, direct)
+    // the old manager approves between the job's reading and its writing
+    const read = approvalsRepository.listPending
+    const spy = vi.spyOn(asAsync(approvalsRepository), 'listPending').mockImplementationOnce(async (...args) => {
+      const rows = await read(...args)
+      await approvalsService.decide(viewerOf(m1, company), { id: request, approve: true })
+      return rows
+    })
+    try {
+      await approvalsService.runDaily({ requestIds: [request] })
+    } finally {
+      spy.mockRestore()
+    }
+    const [first, second] = await stepsOf(request)
+    expect(first).toMatchObject({ status: 'APPROVED', approver: { employeeCode: m1.employeeCode } })
+    expect(second?.status).toBe('OPEN')
   })
 
   it('leaves a held request untouched while nobody can decide it, and sends it on once someone can', async () => {

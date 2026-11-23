@@ -173,7 +173,11 @@ export async function uploadPunches({ file }: z.infer<typeof uploadPunchesInput>
       errors.push(`Row ${rowNumber}: the time is in the future`)
       continue
     }
-    if (daysService.isLockedDay(localDay(punchedAt, zone), lock)) {
+    // a punch can belong to the day before (a night shift) or the day after (in early): refused only when every day it may
+    // belong to is locked (2026-11-23, the review: a night-shift punch was judged by its calendar day alone). A locked day
+    // is never worked out again, so a punch kept beside one cannot change it.
+    const calendarDay = localDay(punchedAt, zone)
+    if ([addDays(calendarDay, -1), calendarDay, addDays(calendarDay, 1)].every((d) => daysService.isLockedDay(d, lock))) {
       errors.push(`Row ${rowNumber}: ${code}'s punch is in a locked attendance month`)
       continue
     }

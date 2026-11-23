@@ -6,6 +6,7 @@ import {
   type ApprovalBreachAction,
   type ApprovalFeature,
   type ApprovalKind,
+  type ApprovalStepStatus,
   type ApproverType,
   type AccessArea,
   type DbClient,
@@ -125,6 +126,27 @@ export async function closeRequestIfPending(id: number, data: Prisma.ApprovalReq
 
 export function updateStep(id: number, data: Prisma.ApprovalRequestStepUncheckedUpdateInput, actorId: ActorId, db: DbClient = prisma) {
   return db.approvalRequestStep.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: { id: true } })
+}
+
+// Changes a step only if it is still as the caller read it (its status, and its approver / fallback mark / reminder when
+// given) - false when it was decided, cancelled or moved on a moment before (2026-11-23, the review: the daily job wrote
+// from what it had read earlier - e.g. gave a step decided a moment ago to a new manager)
+export async function updateStepIfAsRead(
+  id: number,
+  read: { status: ApprovalStepStatus; approverId?: number | null; byFallback?: boolean; remindedAt?: Date | null },
+  data: Prisma.ApprovalRequestStepUncheckedUpdateInput,
+  actorId: ActorId,
+  db: DbClient = prisma,
+) {
+  const result = await db.approvalRequestStep.updateMany({ where: { id, ...read }, data: { ...data, ...updatedBy(actorId) } })
+  return result.count === 1
+}
+
+// Takes a request off hold only if it is still waiting and held - false when it was decided, cancelled or sent on a
+// moment before (2026-11-23, the review)
+export async function releaseHoldIfHeld(id: number, actorId: ActorId, db: DbClient = prisma) {
+  const result = await db.approvalRequest.updateMany({ where: { id, status: 'PENDING', heldAt: { not: null } }, data: { heldAt: null, heldById: null, heldReason: null, ...updatedBy(actorId) } })
+  return result.count === 1
 }
 
 // Decides a step only if it is still open - false when someone else decided it a moment before

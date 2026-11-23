@@ -42,6 +42,8 @@ import type { boardInput, correctDayInput, dayPunchesInput, employeeMonthInput, 
 const DEFAULT_ANCHOR = new Date(Date.UTC(2024, 0, 1))
 const WINDOW_BEFORE = 4 * 60 * MINUTE_MS
 const WINDOW_AFTER = 8 * 60 * MINUTE_MS
+// two working shifts meeting within this time share the punches around that moment by order (punchesByDay)
+const PAIR_WINDOW = 60 * MINUTE_MS
 // if no policy exists at all (should not happen - "Standard" is seeded): grace 10, the whole shift, half day 4h, no penalties
 const FALLBACK_POLICY: PlanPolicy = { id: null, name: 'Standard', graceMinutes: 10, fullDayMinutes: null, halfDayMinutes: 240, latesPerHalfDayCut: null, veryLateMinutes: null, veryEarlyMinutes: null }
 
@@ -287,17 +289,18 @@ export async function loadShifts() {
 // 2026-11-22)
 export async function loadPlans(people: Person[], from: Date, to: Date, { roster: withRoster = true }: { roster?: boolean } = {}) {
   const ids = people.map((p) => p.id)
-  const [shifts, policies, assignments, roster, holidays, defaultPattern] = await Promise.all([
+  const [shifts, policies, assignments, roster, holidays, defaults] = await Promise.all([
     daysRepository.listAllShifts(),
     daysRepository.listPolicies(),
     daysRepository.listAssignments(ids, to),
     withRoster ? daysRepository.listPublishedRoster(ids, from, to) : Promise.resolve([]),
     daysRepository.listHolidays(from, to),
-    daysRepository.findDefaultPattern(),
+    daysRepository.listDefaultPatterns(),
   ])
   // no schedule is built into the code (the user, 2026-11-23): employees with none given follow the default pattern -
-  // there is always one (the default cannot be retired, only moved to another pattern)
-  if (!defaultPattern) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'No default schedule pattern is set up - star a pattern on Attendance setup > Schedule patterns' })
+  // there is always one (the default cannot be retired, only moved to another pattern); which one is dated (2026-11-23):
+  // a day follows the default in force on it
+  if (!defaults.length) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'No default schedule pattern is set up - star a pattern on Attendance setup > Schedule patterns' })
   const shiftById = new Map(shifts.map((s) => [s.id, s]))
   const shiftAt = (id: number, day: Date) => {
     const shift = shiftById.get(id)
@@ -323,7 +326,7 @@ export async function loadPlans(people: Person[], from: Date, to: Date, { roster
       // the schedule in force: the latest that started by that day, else the default pattern
       const assignment = own.filter((a) => a.effectiveFrom <= day).at(-1)
       // the pattern's days in force that day (dated patterns - 2026-11-23); the cycle counts from the schedule's start
-      const pattern = patternOn(assignment?.pattern ?? defaultPattern, day)
+      const pattern = patternOn(assignment?.pattern ?? inForce(defaults, day).pattern, day)
       const anchor = assignment ? assignment.effectiveFrom : DEFAULT_ANCHOR
       const startDay = assignment ? assignment.patternDay : 1
       const policy = rulesOn((assignment?.policyId && policyById.get(assignment.policyId)) || defaultPolicy, day)
@@ -363,7 +366,7 @@ function spanOf(day: Date, s: PlanShift, timeZone: string, halfDay = false) {
 function punchesByDay(punches: Date[], days: Date[], plans: Map<string, Plan>, timeZone: string) {
   const spans = days.flatMap((day) => {
     const plan = plans.get(dayKey(day))
-    return plan ? [{ key: dayKey(day), ...spanOf(day, plan.shift, timeZone, plan.halfDay) }] : []
+    return plan ? [{ key: dayKey(day), working: plan.kind === 'WORK', ...spanOf(day, plan.shift, timeZone, plan.halfDay) }] : []
   })
   const byDay = new Map<string, Date[]>()
   for (const punch of punches) {
@@ -375,6 +378,24 @@ function punchesByDay(punches: Date[], days: Date[], plans: Map<string, Plan>, t
       if (!best || distance < best.distance) best = { key: span.key, distance }
     }
     if (best) byDay.set(best.key, [...(byDay.get(best.key) ?? []), punch])
+  }
+  // a shift ending where the next working day's starts (a night shift then a morning one - 2026-11-23, the review): the
+  // punches around that moment are split at their biggest gap - the earlier close the first shift, the later open the
+  // next (nearest alone put a late out and an early in both on one day, so one day lost its out and the other its in)
+  for (let i = 0; i + 1 < spans.length; i++) {
+    const [a, b] = [spans[i]!, spans[i + 1]!]
+    if (!a.working || !b.working || Math.abs(b.start.getTime() - a.end.getTime()) > PAIR_WINDOW) continue
+    const from = Math.min(a.end.getTime(), b.start.getTime()) - PAIR_WINDOW
+    const to = Math.max(a.end.getTime(), b.start.getTime()) + PAIR_WINDOW
+    const near = (key: string) => (byDay.get(key) ?? []).filter((p) => p.getTime() >= from && p.getTime() <= to)
+    const zone = [...near(a.key), ...near(b.key)].sort((x, y) => x.getTime() - y.getTime())
+    if (zone.length < 2) continue
+    let cut = 1
+    for (let j = 2; j < zone.length; j++) if (zone[j]!.getTime() - zone[j - 1]!.getTime() > zone[cut]!.getTime() - zone[cut - 1]!.getTime()) cut = j
+    const inZone = new Set(zone.map((p) => p.getTime()))
+    const keep = (key: string) => (byDay.get(key) ?? []).filter((p) => !inZone.has(p.getTime()))
+    byDay.set(a.key, [...keep(a.key), ...zone.slice(0, cut)].sort((x, y) => x.getTime() - y.getTime()))
+    byDay.set(b.key, [...zone.slice(cut), ...keep(b.key)].sort((x, y) => x.getTime() - y.getTime()))
   }
   return byDay
 }
@@ -689,8 +710,11 @@ export async function getMyMonth(viewer: CurrentUser, { year, month }: { year: n
   return monthOf(await getVisiblePerson(viewer, viewer.employeeCode), year, month)
 }
 
+// `canCorrect`: the viewer's Attendance Edit covers the employee (the day correction - 2026-11-23, the review: the button
+// showed for anyone with Attendance Edit somewhere, and saving failed)
 export async function getEmployeeMonth(viewer: CurrentUser, { employeeCode, year, month }: z.infer<typeof employeeMonthInput>) {
-  return monthOf(await getVisiblePerson(viewer, employeeCode), year, month)
+  const person = await getVisiblePerson(viewer, employeeCode)
+  return { ...(await monthOf(person, year, month)), canCorrect: hasLevelAt(viewer, 'ATTENDANCE', placementOf(person), 'WRITE') }
 }
 
 // The day's board: everyone in the scope on that date - in / late / not in yet / absent / off - with the counts
@@ -881,7 +905,9 @@ export async function correctDay({ employeeCode, date, firstHalf, secondHalf, re
   assertAttendanceEdit(viewer, anyDay)
   const [person] = await employeesService.listAttendancePeople({ scope: SYSTEM_SCOPE, ids: [id], from: date, to: date })
   if (!person) throw new ORPCError('BAD_REQUEST', { message: `${employeeCode} was not employed on that day` })
-  await daysRepository.upsertCorrection({ employeeId: id, date, firstHalf: firstHalf ?? null, secondHalf: secondHalf ?? null, reason }, actorId)
+  const saved = await daysRepository.upsertCorrection({ employeeId: id, date, firstHalf, secondHalf, reason }, actorId)
+  // both halves back to the punches: no correction is left
+  if (saved.firstHalf === null && saved.secondHalf === null) await daysRepository.deleteCorrection(id, date)
   await recompute([id], date, date)
   return { corrected: true }
 }

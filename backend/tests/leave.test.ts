@@ -238,6 +238,93 @@ describe('leave', () => {
     expect(await applicationsService.recount(hr, { id: leave.id })).toMatchObject({ days: 2, difference: 1 })
     expect((await balanceOf()).balance).toBe(before)
   })
+
+  // found in the 2026-11-23 review: both cancel requests passed "already asked" before either was saved - two approvals
+  it('makes one cancel request of a double click', async () => {
+    const day = monday(11)
+    const leave = await applicationsService.apply(self, { leaveTypeId: typeId, fromDate: day, toDate: day, fromSecondHalf: false, toFirstHalf: false, reason: 'Wedding' })
+    await approvalsService.decide(approver, { id: leave.approvalRequestId, approve: true })
+    const results = await Promise.allSettled([applicationsService.cancel(self, { id: leave.id, reason: 'Plans changed' }), applicationsService.cancel(self, { id: leave.id, reason: 'Plans changed' })])
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+    expect(String((results.find((r) => r.status === 'rejected') as PromiseRejectedResult).reason)).toContain('already asked to cancel')
+    expect(await prisma.approvalRequest.count({ where: { employeeId: employee.id, kinds: { has: 'LEAVE_CANCEL' }, summary: { contains: dateTextOf(day) } } })).toBe(1)
+  })
+
+  // found in the 2026-11-23 review: a leave of a year whose year end had lapsed was cancelled and its days came back -
+  // past the carry-forward the year end had already applied. Refused when asked and when approved; HR adjusts instead.
+  it('refuses cancelling an approved leave of a year whose year end has passed, for a type that lapses', async () => {
+    const lapsing = await typesService.createType(hr, {
+      code: `L${tag}`,
+      name: `Lapsing test ${tag}`,
+      isPaid: true,
+      creditPerMonth: 0,
+      creditAfterMonths: 0,
+      maxCarryForward: 0,
+      maxPerRequest: null,
+      allowHalfDay: true,
+      countsOffDays: false,
+      genders: [],
+      employmentTypes: [],
+    })
+    await balancesService.adjust(hr, { employeeCode: employee.employeeCode, leaveTypeId: lapsing.id, days: 2, note: 'Opening balance' })
+    const day = monday(13)
+    const leave = await applicationsService.apply(self, { leaveTypeId: lapsing.id, fromDate: day, toDate: day, fromSecondHalf: false, toFirstHalf: false, reason: 'Travel' })
+    await approvalsService.decide(approver, { id: leave.approvalRequestId, approve: true })
+    const cancelling = await applicationsService.cancel(self, { id: leave.id, reason: 'Plans changed' })
+    // test data: the leave was of last year (its year end has passed) - the cancel asked in December, decided now
+    const lastYear = new Date(Date.UTC(utcToday().getUTCFullYear() - 1, 11, 15))
+    await prisma.leaveApplication.update({ where: { id: leave.id }, data: { fromDate: lastYear, toDate: lastYear } })
+    await expect(approvalsService.decide(approver, { id: cancelling.cancelRequest!.approvalRequestId, approve: true })).rejects.toThrow('year end has passed')
+    await approvalsService.decide(approver, { id: cancelling.cancelRequest!.approvalRequestId, approve: false, comment: 'Ask HR' })
+    await expect(applicationsService.cancel(self, { id: leave.id, reason: 'Plans changed' })).rejects.toThrow('year end has passed')
+    // nor counted again by HR (and not listed for it)
+    await expect(applicationsService.recount(hr, { id: leave.id })).rejects.toThrow('year end has passed')
+    expect((await applicationsService.listRecounts(hr, { from: lastYear, to: lastYear })).find((r) => r.id === leave.id)).toBeUndefined()
+    expect((await applicationsService.listMine(self)).find((a) => a.id === leave.id)?.status).toBe('APPROVED')
+    expect(await prisma.leaveLedgerEntry.count({ where: { applicationId: leave.id, kind: 'RETURNED' } })).toBe(0)
+  })
+})
+
+const dateTextOf = (d: Date) => d.toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
+
+// Found in the 2026-11-23 review: 31 January + 1 month ran over into March, so a joiner of the 29th-31st got the first
+// credit a month late. The rule: the first credit is the 1st after the service needed (creditAfterMonths) is done; a
+// joiner's own month is never part-credited (old HRMS).
+describe('the first monthly credit of a joiner', () => {
+  it('comes on the 1st after the service needed, for a joiner of the 31st too', async () => {
+    const companyId = (await createCompany()).id
+    const plantId = (await createPlant(companyId)).id
+    const hr = userWith({ id: 0, employeeCode: 'HR' }, [{ access: { LEAVE: 'WRITE' }, rows: [row(null, null, null)] }])
+    const tag = Math.random().toString(36).slice(2, 7).toUpperCase()
+    const type = await typesService.createType(hr, {
+      code: `J${tag}`,
+      name: `Joiner test ${tag}`,
+      isPaid: true,
+      creditPerMonth: 1,
+      creditAfterMonths: 1,
+      maxCarryForward: null,
+      maxPerRequest: null,
+      allowHalfDay: true,
+      countsOffDays: false,
+      genders: [],
+      employmentTypes: [],
+    })
+    // test data: the type was added in January 2026, crediting from February
+    await prisma.leaveType.update({ where: { id: type.id }, data: { createdAt: new Date(Date.UTC(2026, 0, 2)), creditsFrom: new Date(Date.UTC(2026, 1, 1)) } })
+    const joined = async (day: number) => {
+      const e = await createEmployee({ companyId, plantId })
+      await prisma.employee.update({ where: { id: e.id }, data: { dateOfJoining: new Date(Date.UTC(2026, 0, day)) } })
+      return e.id
+    }
+    const [on1st, on15th, on31st] = [await joined(1), await joined(15), await joined(31)]
+    await balancesService.creditDue(new Date(Date.UTC(2026, 2, 2)), { employeeIds: [on1st, on15th, on31st] })
+    const months = async (employeeId: number) =>
+      (await prisma.leaveLedgerEntry.findMany({ where: { employeeId, leaveTypeId: type.id, kind: 'CREDIT' }, select: { period: true }, orderBy: { period: 'asc' } })).map((r) => r.period)
+    // a month's service done on 1 February, 15 February, 28 February
+    expect(await months(on1st)).toEqual(['2026-02', '2026-03'])
+    expect(await months(on15th)).toEqual(['2026-03'])
+    expect(await months(on31st)).toEqual(['2026-03'])
+  })
 })
 
 // Found in the 2026-11-23 review: a leave of the new year approved in December was checked against the whole balance, but

@@ -2,16 +2,19 @@ import { SYSTEM_SCOPE } from '#core/auth/scope'
 import { prisma } from '#core/db/prisma'
 import { approvalsService } from '#modules/approvals'
 import { employeesService } from '#modules/employees'
+import { today } from '#shared/utils/dates'
 import { zonedInstant } from '#shared/utils/time'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import * as chainsService from '../src/modules/approvals/chains/chains.service.js'
 import * as daysService from '../src/modules/attendance/days/days.service.js'
+import * as balancesRepository from '../src/modules/leave/balances/balances.repository.js'
 import * as balancesService from '../src/modules/leave/balances/balances.service.js'
 import * as compOffService from '../src/modules/leave/comp-off/comp-off.service.js'
 import * as typesService from '../src/modules/leave/types/types.service.js'
 import { createRole, giveLogin } from './helpers/approvals.js'
 import { createCompany, createEmployee, createPlant } from './helpers/organization.js'
 import { row, userWith } from './helpers/users.js'
+import { asAsync } from './helpers/spies.js'
 
 // Comp-off claims (the user, 2026-11-22): work on a weekly off (here a Sunday - the default weekly off) is claimed; the
 // punches decide (8 h = a day, 4 h = half a day); approved, the days are credited to the comp-off type and expire 90 days
@@ -94,6 +97,52 @@ describe('comp-off claims', () => {
     // a Monday already over (the Monday after two Sundays back - never today)
     await expect(compOffService.claim(self, { workDate: new Date(sunday(2).getTime() + DAY), reason: 'A Monday' })).rejects.toThrow('working day')
     await expect(compOffService.claim(self, { workDate: sunday(6), reason: 'Long ago' })).rejects.toThrow('within 30 days')
+  })
+
+  // found in the 2026-11-23 review: a claim approved after its 90 days was credited already expired - it lapsed the next
+  // night. The rule: 90 days after the day worked, but at least 30 days from the approval.
+  it('a claim approved late still leaves 30 days to use it', async () => {
+    const sun = sunday(4)
+    await punch(sun, '09:00', '18:00')
+    const claim = await compOffService.claim(self, { workDate: sun, reason: 'Plant shutdown work' })
+    // test data: the approval came so late that the day worked is 14 weeks back
+    const longAgo = sunday(14)
+    await punch(longAgo, '09:00', '18:00')
+    await prisma.compOffClaim.update({ where: { id: claim.id }, data: { workDate: longAgo } })
+    await approvalsService.decide(approver, { id: claim.approvalRequestId, approve: true })
+    const approved = (await compOffService.listMine(self)).find((c) => c.id === claim.id)
+    expect(approved).toMatchObject({ status: 'APPROVED', days: 1 })
+    expect(approved!.expiresOn?.getTime()).toBe(today().getTime() + 30 * DAY)
+    // not lapsed the next night
+    expect((await balancesService.creditDue(new Date(today().getTime() + DAY), { employeeIds: [employee.id] })).expired).toBe(0)
+  })
+})
+
+// Found in the 2026-11-23 review: the expiry had no once-only key - two runs at the same moment both wrote it
+describe('comp-off expiry written once', () => {
+  it('writes one expiry when another run wrote it after this one read the rows', async () => {
+    const companyId = (await createCompany()).id
+    const employee = await createEmployee({ companyId, plantId: (await createPlant(companyId)).id })
+    const typeId = (await typesService.compOffType())!.id
+    const worked = new Date(Date.UTC(2026, 5, 7))
+    await prisma.leaveLedgerEntry.create({
+      data: { employeeId: employee.id, leaveTypeId: typeId, kind: 'COMP_OFF', days: 1, effectiveDate: worked, expiresOn: new Date(worked.getTime() + 90 * DAY), createdById: 0, updatedById: 0 },
+    })
+    const asOf = new Date(worked.getTime() + 91 * DAY)
+    // the other run writes its expiry between this run's reading and writing
+    const read = balancesRepository.listCompOffRows
+    const spy = vi.spyOn(asAsync(balancesRepository), 'listCompOffRows').mockImplementationOnce(async (...args) => {
+      const rows = await read(...args)
+      await balancesService.creditDue(asOf, { employeeIds: [employee.id] })
+      return rows
+    })
+    try {
+      await balancesService.creditDue(asOf, { employeeIds: [employee.id] })
+    } finally {
+      spy.mockRestore()
+    }
+    const expired = await prisma.leaveLedgerEntry.findMany({ where: { employeeId: employee.id, kind: 'EXPIRED' }, select: { days: true } })
+    expect(expired.map((e) => e.days.toNumber())).toEqual([-1])
   })
 })
 

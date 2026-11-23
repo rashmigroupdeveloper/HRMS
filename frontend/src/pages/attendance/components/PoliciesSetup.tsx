@@ -14,8 +14,8 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAccess } from '@/hooks/useAccess'
 import { type client, orpc } from '@/lib/orpc'
-import { formatDate, fromDateInput, toDateInput } from '@/lib/utils'
-import { hours, todayDay } from './labels'
+import { formatDate, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
+import { hours } from './labels'
 
 type Policy = Awaited<ReturnType<typeof client.attendance.policies.list>>[number]
 

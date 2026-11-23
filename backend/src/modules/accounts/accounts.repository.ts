@@ -101,7 +101,16 @@ export function setOwnPassword(accountId: number, passwordHash: string, actorId:
 export function findResetCode(employeeId: number, db: DbClient = prisma) {
   return db.userAccount.findUnique({
     where: { employeeId },
-    select: { id: true, passwordHash: true, resetCodeHash: true, resetCodeValidUntil: true, resetCodeFailedAttempts: true, resetCodeSentAt: true, resetCodesSentToday: true },
+    select: {
+      id: true,
+      passwordHash: true,
+      disabledAt: true,
+      resetCodeHash: true,
+      resetCodeValidUntil: true,
+      resetCodeFailedAttempts: true,
+      resetCodeSentAt: true,
+      resetCodesSentToday: true,
+    },
   })
 }
 

@@ -61,14 +61,18 @@ export async function getGrid(viewer: CurrentUser, { from, to, onlyChanges, comp
   checkRange(from, to)
   // the employees inside the viewer's Attendance setup View data access
   const inScope = await employeesService.listAttendancePeople({ scope: scopeOf(viewer, 'ATTENDANCE_SETUP', 'READ'), companyIds, search, from, to })
+  // the whole weeks (Monday-Sunday) around the days shown - the 48-hour check counts every day of a week, not only those on
+  // screen (2026-11-23, the review)
+  const weekFrom = addDays(from, -weekdayIndex(from))
+  const weekTo = addDays(to, 6 - weekdayIndex(to))
   const entries = await rostersRepository.listEntries(
     inScope.map((p) => p.id),
-    addDays(from, -1),
-    to,
+    addDays(weekFrom, -1),
+    weekTo,
   )
-  const changed = new Set(entries.filter((e) => e.date >= from).map((e) => e.employeeId))
+  const changed = new Set(entries.filter((e) => e.date >= from && e.date <= to).map((e) => e.employeeId))
   const people = onlyChanges ? inScope.filter((p) => changed.has(p.id)) : inScope
-  const [plans, shifts] = await Promise.all([daysService.loadPlans(people, addDays(from, -1), to, { roster: false }), shiftsService.listShifts(viewer, false)])
+  const [plans, shifts] = await Promise.all([daysService.loadPlans(people, addDays(weekFrom, -1), weekTo, { roster: false }), shiftsService.listShifts(viewer, false)])
   // each shift's timing on the day (dated shifts - 2026-11-23)
   const shiftAt = await daysService.loadShifts()
   const days = eachDay(from, to)
@@ -98,9 +102,9 @@ export async function getGrid(viewer: CurrentUser, { from, to, onlyChanges, comp
         const end = e.halfDay ? split : full
         return { start: zonedInstant(day, shift.startMinute, person.timezone), end: zonedInstant(day, end, person.timezone), minutes: end - shift.startMinute - (e.halfDay ? 0 : shift.breakMinutes) }
       }
-      // the hours of each week (Monday to Sunday) shown
+      // the hours of each week (Monday to Sunday) shown - all its days
       const weekMinutes = new Map<string, number>()
-      for (const day of days) {
+      for (const day of eachDay(weekFrom, weekTo)) {
         const s = span(day)
         if (!s) continue
         const monday = dayKey(addDays(day, -weekdayIndex(day)))

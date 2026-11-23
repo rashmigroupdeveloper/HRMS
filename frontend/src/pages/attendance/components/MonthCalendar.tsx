@@ -6,8 +6,8 @@ import { Pill } from '@/components/Pill'
 import { PunchesSkeleton } from '@/components/skeletons/attendance/PunchesSkeleton'
 import { Button } from '@/components/ui/button'
 import { orpc } from '@/lib/orpc'
-import { cn, formatDoneBy } from '@/lib/utils'
-import { coversText, dayMark, dayName, hours, MONTHS, MONTH_BARS, type Month, type MonthDay, sameDay, STATUS, todayDay, TOTAL_LABELS, WEEKDAYS, splitFill } from './labels'
+import { cn, formatDoneBy, todayDay } from '@/lib/utils'
+import { coversText, dayMark, dayName, hours, MONTHS, MONTH_BARS, type Month, type MonthDay, sameDay, STATUS, TOTAL_LABELS, WEEKDAYS, splitFill } from './labels'
 
 // One employee's month as a calendar (Monday-first weeks): each day's status, in / out times and shift; the totals above.
 // The chosen day's details (the shift and its times, in / out, worked, late / early, every punch and its machine, HR's

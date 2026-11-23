@@ -69,7 +69,7 @@ const toPost = (post: Post) => ({
   label: postLabel(post),
   company: post.plant.company,
   plant: { id: post.plant.id, plantCode: post.plant.plantCode, name: post.plant.name },
-  department: post.department,
+  department: { id: post.department.id, code: post.department.code, name: post.department.name },
 })
 // who heads a post now, and who will next
 const hodOf = (a: Appointment) => ({ employeeCode: a.employee.employeeCode, name: fullName(a.employee), since: a.startsAt, until: a.endsAt })
@@ -254,6 +254,8 @@ export async function appointHod(input: z.infer<typeof appointHodInput>, viewer:
         counts.unchanged++
         continue
       }
+      // a retired place gets no new HOD - one heading it stays, and can still be ended (2026-11-23, the review)
+      if (!post.isActive || !post.plant.isActive || !post.department.isActive) throw fail(label, `${label} is retired - it gets no new HOD`)
       // backdating reaches back to the start of the appointment going on now (or the end of the last one) - no further
       const latest = rows.filter((a) => a.startsAt <= now).at(-1)
       if (latest) {

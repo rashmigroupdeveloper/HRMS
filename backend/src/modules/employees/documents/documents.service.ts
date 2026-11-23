@@ -4,7 +4,7 @@ import { copyFile, deleteFile, isOldKey, readStoredFile, saveFile, type FilePlac
 import { cleanFileName, detectFileType, type DetectedFileType } from '#shared/utils/file-type'
 import type { z } from 'zod'
 import { ORPCError } from '@orpc/server'
-import { assertPart, type EmployeeRef, getEmployeeFor, lookupPeople, seesPart } from '../employees.service.js'
+import { assertPart, canSeeEmployee, type EmployeeRef, getEmployeeFor, lookupPeople, seesPart } from '../employees.service.js'
 import * as documentsRepository from './documents.repository.js'
 import type { deleteEmployeeDocumentInput, reviewEmployeeDocumentInput, uploadEmployeeDocumentInput } from './documents.schema.js'
 
@@ -102,10 +102,19 @@ export async function listDocuments(viewer: CurrentUser, employeeCode: string) {
   })
 }
 
+const noDocument = (id: number) => new ORPCError('NOT_FOUND', { message: `No document found with id ${id}` })
+
+// The document with this id, if the viewer may see its employee - else NOT_FOUND, the same as an id that does not exist
+// (2026-11-23, the review: it named the owner's employee code)
+async function findVisible(viewer: CurrentUser, id: number) {
+  const document = await documentsRepository.findById(id)
+  if (!document || !canSeeEmployee(viewer, document.employee)) throw noDocument(id)
+  return document
+}
+
 // The file itself, with its original name and type (own record, or "Employee · Documents & letters" View).
 export async function downloadDocument(viewer: CurrentUser, id: number) {
-  const document = await documentsRepository.findById(id)
-  if (!document) throw new ORPCError('NOT_FOUND', { message: `No document found with id ${id}` })
+  const document = await findVisible(viewer, id)
   assertPart(viewer, document.employee, 'EMPLOYEE_DOCUMENTS')
   assertMayOpen(viewer, document.employee, document.type)
   const bytes = await readStoredFile(document.storageKey)
@@ -188,8 +197,7 @@ export async function renameOldFiles(actorId: ActorId) {
 // The document, for a change by `viewer` - "Employee · Documents & letters" Edit covering where the employee is (data access),
 // plus a sensitive type's access
 async function getDocument(id: number, viewer: CurrentUser) {
-  const document = await documentsRepository.findById(id)
-  if (!document) throw new ORPCError('NOT_FOUND', { message: `No document found with id ${id}` })
+  const document = await findVisible(viewer, id)
   assertPart(viewer, document.employee, 'EMPLOYEE_DOCUMENTS', 'WRITE')
   assertMayOpen(viewer, document.employee, document.type)
   return document

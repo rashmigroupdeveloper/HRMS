@@ -19,13 +19,24 @@ import type { claimCompOffInput } from './comp-off.schema.js'
 // leave. With the old HRMS's numbers (the user: "build it with those defaults"):
 // - the day's punches decide: at least 8 hours worked = 1 day, at least 4 hours = half a day, less = nothing;
 // - only a whole weekly off or holiday already over, claimed at most 30 days after it; one claim per day;
-// - the comp-off expires 90 days after the day worked - not used by then, it lapses (the nightly leave job).
+// - the comp-off expires 90 days after the day worked - not used by then, it lapses (the nightly leave job); a claim
+//   approved late still leaves at least 30 days from the approval to use it (expiresOn).
 // The hours are counted again when the claim is approved (punches uploaded meanwhile count).
 
 export const FULL_DAY_MINUTES = 480
 export const HALF_DAY_MINUTES = 240
 export const CLAIM_DAYS_BACK = 30
 export const VALID_DAYS = 90
+export const MIN_DAYS_LEFT = 30
+
+// The day a comp-off expires: 90 days after the day worked - or, for a claim approved so late that less than 30 days
+// would be left, 30 days after the approval (2026-11-23, the review: a claim approved after its 90 days was credited
+// already expired and lapsed the next night, before the employee could use it)
+export const expiresOn = (workDate: Date, approvedOn: Date) => {
+  const normal = addDays(workDate, VALID_DAYS)
+  const least = addDays(approvedOn, MIN_DAYS_LEFT)
+  return normal < least ? least : normal
+}
 
 const fullName = (e: { firstName: string; middleName: string | null; lastName: string | null }) => [e.firstName, e.middleName, e.lastName].filter(Boolean).join(' ')
 const dateText = (d: Date) => d.toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
@@ -112,13 +123,14 @@ async function recordOf(requestId: number, db?: DbClient) {
 approvalsService.registerFeature('COMP_OFF', {
   label: 'Comp-off claim',
   // approved: the hours are counted again and the days credited to the comp-off type, expiring 90 days after the day worked
+  // (at least 30 days from today - expiresOn)
   onApproved: async (requestId, actorId, tx) => {
     const record = await recordOf(requestId, tx)
     const type = await typesService.compOffType()
     if (!type) throw new ORPCError('CONFLICT', { message: 'No leave type receives comp-off - ask HR to tick one on Team leave > Leave types' })
     const { days } = await checkDay(record.employeeId, record.workDate)
     await balancesRepository.addEntries(
-      [{ employeeId: record.employeeId, leaveTypeId: type.id, kind: 'COMP_OFF', days, effectiveDate: record.workDate, expiresOn: addDays(record.workDate, VALID_DAYS), compOffClaimId: record.id }],
+      [{ employeeId: record.employeeId, leaveTypeId: type.id, kind: 'COMP_OFF', days, effectiveDate: record.workDate, expiresOn: expiresOn(record.workDate, today()), compOffClaimId: record.id }],
       actorId,
       tx,
     )

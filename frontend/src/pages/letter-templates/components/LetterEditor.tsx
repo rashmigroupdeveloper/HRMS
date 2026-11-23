@@ -135,6 +135,9 @@ export function LetterEditor({
   // the letterhead decides how much of each page the text has
   const { header: hasHeader, footer: hasFooter } = letterhead
   useEffect(() => setLetterhead(editor.view, { header: hasHeader, footer: hasFooter }), [editor, hasHeader, hasFooter])
+  // useEditor reads `editable` only once - the access (accounts.me) may answer after the template, so follow it (no update
+  // event: it is not a change of the letter)
+  useEffect(() => editor.setEditable(editable, false), [editor, editable])
 
   const chain = () => editor.chain().focus()
 

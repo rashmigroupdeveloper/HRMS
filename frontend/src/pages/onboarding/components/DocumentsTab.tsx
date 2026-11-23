@@ -11,7 +11,7 @@ import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
 import { errorMessage, formatDoneBy } from '@/lib/utils'
 import { SectionTitle } from '@/components/FormFields'
-import { type Candidate, type CandidateDocument, DOCUMENT_TYPE, VERIFICATION, VERIFICATION_TONE } from './labels'
+import { type Candidate, candidatePlace, type CandidateDocument, DOCUMENT_TYPE, VERIFICATION, VERIFICATION_TONE } from './labels'
 import { MovedToEmployee } from './MovedToEmployee'
 import { PrintFormsCard } from './PrintForms'
 import { Pill } from '@/components/Pill'
@@ -31,7 +31,7 @@ export function DocumentsTab({ candidate }: { candidate: Candidate }) {
   const documents = useQuery(orpc.candidates.documents.list.queryOptions({ input: { candidateId: candidate.id } }))
   const refresh = () => queryClient.invalidateQueries({ queryKey: orpc.candidates.key() })
   // Changes only before joining, and only with edit access to onboarding
-  const canChange = useAccess().can('ONBOARDING', 'WRITE')
+  const canChange = useAccess().covers('ONBOARDING', 'WRITE', candidatePlace(candidate))
   const editable = candidate.status === 'ACCEPTED' && canChange
 
   const [type, setType] = useState<DocumentType | ''>('')

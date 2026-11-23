@@ -33,9 +33,11 @@ export function AccessGrid({
   const update = useMutation(
     orpc.accounts.roles.update.mutationOptions({
       // accounts.* covers the roles, the people list and the logged-in user's own access
-      onSettled: () => {
+      // the pickers stay off until the roles have loaded again: a next change is built from the role's saved access, so
+      // one sent before would overwrite this one with the old map
+      onSettled: async () => {
+        await queryClient.invalidateQueries({ queryKey: orpc.accounts.key() })
         setSaving(null)
-        void queryClient.invalidateQueries({ queryKey: orpc.accounts.key() })
       },
     }),
   )

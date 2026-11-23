@@ -25,7 +25,12 @@ import { type adjustInput, type balancesInput, type importBalancesInput, MAX_IMP
 // (+ 0: never "-0")
 const round2 = (n: number) => Math.round(n * 100) / 100 + 0
 const yearRange = (year: number) => ({ from: new Date(Date.UTC(year, 0, 1)), to: new Date(Date.UTC(year, 11, 31)) })
-const addMonths = (d: Date, n: number) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, d.getUTCDate()))
+// (a day the month lacks becomes its last day: 31 January + 1 month = 28 February - 2026-11-23, the review: it ran over
+// into March, so a joiner of the 29th-31st got the first credit a month late)
+const addMonths = (d: Date, n: number) => {
+  const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n + 1, 0)).getUTCDate()
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, Math.min(d.getUTCDate(), lastDay)))
+}
 const monthKey = (d: Date) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
 
 type Person = leaveService.Person
@@ -261,6 +266,8 @@ export async function creditDue(asOf: Date = today(), only?: { employeeIds: numb
       if (!peopleOn.has(month)) {
         peopleOn.set(month, await employeesService.listLeavePeople({ scope: SYSTEM_SCOPE, ...(only && { ids: only.employeeIds }), from: day, to: day }))
       }
+      // the service needed (creditAfterMonths from the date of joining) done by this 1st - so the first credit is the 1st
+      // after it, and a joiner's own month is never part-credited (old HRMS)
       const due = peopleOn.get(month)!.filter((p) => p.status !== 'EXITED' && addMonths(p.dateOfJoining, type.creditAfterMonths) <= day && leaveService.typeAppliesTo(type, p))
       credited += await balancesRepository.addEntries(
         due.map((p) => ({ employeeId: p.id, leaveTypeId: type.id, kind: 'CREDIT' as const, days: type.creditPerMonth, effectiveDate: day, period: month })),
@@ -287,7 +294,9 @@ export async function creditDue(asOf: Date = today(), only?: { employeeIds: numb
       )
     }
   }
-  // comp-off not used before it expired - each day, so it lapses the day after it expires
+  // comp-off not used before it expired - each day, so it lapses the day after it expires. Once a day per employee
+  // (period "exp:<day>" - 2026-11-23, the review: two runs at the same moment both wrote the same expiry); a second run
+  // the same day finding more to expire leaves it to the next day's run
   let expired = 0
   const compOff = types.find((t) => t.isCompOff)
   if (compOff) {
@@ -298,7 +307,7 @@ export async function creditDue(asOf: Date = today(), only?: { employeeIds: numb
       [...byEmployee]
         .map(([employeeId, own]) => ({ employeeId, over: compOffToExpire(own, asOf) }))
         .filter((s) => s.over > 0)
-        .map((s) => ({ employeeId: s.employeeId, leaveTypeId: compOff.id, kind: 'EXPIRED' as const, days: -s.over, effectiveDate: asOf, note: 'Not used within 90 days of the day worked' })),
+        .map((s) => ({ employeeId: s.employeeId, leaveTypeId: compOff.id, kind: 'EXPIRED' as const, days: -s.over, effectiveDate: asOf, period: `exp:${asOf.toISOString().slice(0, 10)}`, note: 'Not used before it expired' })),
       SYSTEM_ACTOR,
     )
   }

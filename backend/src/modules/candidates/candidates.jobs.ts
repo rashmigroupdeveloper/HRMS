@@ -8,7 +8,10 @@ export const candidatesJobs: Job[] = [
     // an offer past its "valid until" date without an answer becomes Expired
     name: 'candidates.expireUnansweredOffers',
     schedule: { dailyAt: '01:00' },
-    run: async () => `${await candidatesService.expireUnansweredOffers()} offer(s) expired`,
+    run: async () => {
+      const { expired, failed } = await candidatesService.expireUnansweredOffers()
+      return `${expired} offer(s) expired${failed ? `, ${failed} failed (see the log)` : ''}`
+    },
   },
   {
     // HR is told about candidates joining in the next 3 days whose joining is not confirmed

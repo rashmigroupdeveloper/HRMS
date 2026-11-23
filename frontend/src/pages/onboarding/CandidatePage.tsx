@@ -34,6 +34,7 @@ import { JoiningDialog } from './components/JoiningDialog'
 import { JoiningFormTab } from './components/JoiningFormTab'
 import {
   type Candidate,
+  candidatePlace,
   EMPLOYMENT_TYPE,
   fullName,
   JOINING_TYPE,
@@ -131,8 +132,7 @@ function CandidatePanel({ id }: { id: number }) {
   const [paperAccept, setPaperAccept] = useState(false)
   // the candidate's link after sending / a new link (shown once)
   const [linkResult, setLinkResult] = useState<{ title: string; result: LinkResult } | null>(null)
-  const { can } = useAccess()
-  const canChange = can('ONBOARDING', 'WRITE')
+  const { can, covers } = useAccess()
 
   // picking the letter template, previewing and sending happen in the send dialog - the Letter of Intent or the offer
   const [sending, setSending] = useState<SentKind | null>(null)
@@ -185,6 +185,8 @@ function CandidatePanel({ id }: { id: number }) {
     )
   }
   const c = query.data
+  // Onboarding Edit covering where this candidate is placed (the backend checks the same)
+  const canChange = covers('ONBOARDING', 'WRITE', candidatePlace(c))
   // the tabs after "Offer" open once the candidate accepted; without ?tab, the stage in progress (the joining form
   // while that is still being worked out)
   const fallback = stage ?? (c.status === 'ACCEPTED' ? 'joining' : 'offer')

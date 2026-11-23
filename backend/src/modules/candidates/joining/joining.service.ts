@@ -28,7 +28,8 @@ import type { completeJoiningInput } from './joining.schema.js'
 //   employee gets a login with a temporary password, and the candidate becomes JOINED and is linked to the employee.
 //   After it is saved the login is e-mailed to the employee's personal e-mail (else HR is shown the password once).
 
-const dateOnly = (at: Date) => new Date(Date.UTC(at.getFullYear(), at.getMonth(), at.getDate()))
+// the Indian calendar day of a moment
+const dateOnly = (at: Date) => today(at)
 
 // `who` does it: the CANDIDATE (the joining form, their own document copies - HR may help) or HR on the joining day
 // (the medical result, the printed forms signed on paper). `required`: joining waits for it - as the old HRMS
@@ -281,7 +282,10 @@ export async function completeJoining(input: z.infer<typeof completeJoiningInput
       )
       copies = await employeeDocumentsService.addMovedDocuments(created, documents, actorId, tx)
       await documentsService.removeAfterJoining(input.candidateId, tx)
-      await joiningRepository.markJoined(input.candidateId, created.id, actorId, tx)
+      // still ACCEPTED (a withdrawal at the same moment wins - nothing of the joining is saved)
+      if (!(await joiningRepository.markJoined(input.candidateId, created.id, actorId, tx))) {
+        throw new ORPCError('CONFLICT', { message: 'This candidate was changed a moment ago. Please reload the page and try again.' })
+      }
       // the background checks (some may still be running) belong to the employee from now on
       await backgroundChecksService.linkToEmployee(input.candidateId, created.id, actorId, tx)
       temporaryPassword = await accountsService.createJoinerLogin(created.id, actorId, tx)

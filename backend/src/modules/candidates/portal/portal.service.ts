@@ -155,6 +155,7 @@ export async function saveForm(candidateId: number, input: z.infer<typeof savePo
 // --- Documents ---
 
 export async function uploadDocument(candidateId: number, { type, file }: z.infer<typeof uploadPortalDocumentInput>) {
+  await documentsService.assertCanUploadMore(candidateId, type)
   await documentsService.uploadDocument({ candidateId, type, file }, SYSTEM_ACTOR)
   return getPortal(candidateId)
 }
@@ -183,7 +184,11 @@ export async function submit(candidateId: number, { code, name }: z.infer<typeof
     .filter((type) => (documentsService.CANDIDATE_DOCUMENT_TYPES as readonly string[]).includes(type))
     .filter((type) => !uploaded.some((d) => d.type === type && d.verificationStatus !== 'REJECTED'))
   const documentProblems = toUpload.length ? [`documents to upload: ${toUpload.map((type) => documentsService.DOCUMENT_LABEL[type]).join(', ')}`] : []
+  const signature = { name, ip: proof.ip, userAgent: proof.userAgent }
+  // the form first, then the code - used only once the form is saved (2026-11-23, the review: a refused submit used it up)
+  await joiningFormService.checkSubmission(candidateId, signature, documentProblems)
   await offerLettersService.checkSigningCode(candidateId, code)
-  await joiningFormService.submitJoiningForm(candidateId, { name, ip: proof.ip, userAgent: proof.userAgent }, documentProblems)
+  await joiningFormService.submitJoiningForm(candidateId, signature, documentProblems)
+  await offerLettersService.signingCodeUsed(candidateId)
   return getPortal(candidateId)
 }

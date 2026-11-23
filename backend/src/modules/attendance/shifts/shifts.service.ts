@@ -137,7 +137,10 @@ export async function updateShift({ id, start, end, halfSplit, breakMinutes, eff
 
 // Which day of a pattern a date is, when the date's week is week `startWeek` of it: a 7 / 14 / 21-day pattern lines up
 // with Monday-Sunday (Monday = the first day of a week)
+// - a pattern that is not whole weeks (e.g. 4 days on, 4 off - only through the API) starts on its first day on the
+// schedule's first date (2026-11-23, the review: a 4-day pattern given from a Thursday started on its day 4)
 export function patternDayOf(date: Date, startWeek: number, length: number) {
+  if (length % 7 !== 0) return 1
   const weekday = (date.getUTCDay() + 6) % 7
   return (((startWeek - 1) * 7 + weekday) % length) + 1
 }
@@ -189,7 +192,7 @@ export async function listSchedules(viewer: CurrentUser, filter: NonNullable<z.i
   })
   const [assignments, patterns, policies] = await Promise.all([
     shiftsRepository.listAssignments(people.map((p) => p.id), new Date(Date.UTC(2200, 0, 1))),
-    shiftsRepository.listPatterns(true),
+    shiftsRepository.listPatterns(true).then(toPatterns),
     policiesService.listPolicies(viewer, true),
   ])
   const patternOf = new Map(patterns.map((p) => [p.id, p]))
@@ -242,13 +245,19 @@ export async function listEmployeeAssignments(viewer: CurrentUser, employeeCode:
 // --- schedule patterns ---
 
 // For the API: the days in force today, with the date they run from, and every version (who set it)
+// (and whether it is the default today, or becomes it on a later date)
 async function toPatterns(rows: shiftsRepository.PatternRow[]) {
-  const person = await employeesService.lookupPeople(rows.flatMap((r) => r.versions.map((v) => v.updatedById)))
+  const [person, defaults] = await Promise.all([employeesService.lookupPeople(rows.flatMap((r) => r.versions.map((v) => v.updatedById))), shiftsRepository.listDefaultChanges()])
   const now = today()
-  return rows.map(({ versions, ...pattern }) => {
+  const defaultId = defaults.length ? versionOn(defaults, now).patternId : null
+  const list = rows.map(({ versions, ...pattern }) => {
     const current = versionOn(versions, now)
     return {
       ...pattern,
+      // the default pattern today (dated - 2026-11-23)
+      isDefault: pattern.id === defaultId,
+      // the date it becomes the default, when a later change names it
+      defaultFrom: defaults.find((d) => d.effectiveFrom > now && d.patternId === pattern.id)?.effectiveFrom ?? null,
       days: current.days,
       halfDays: current.halfDays,
       // the date the days in force today run from (2000-01-01 = from the start)
@@ -256,6 +265,15 @@ async function toPatterns(rows: shiftsRepository.PatternRow[]) {
       versions: versions.map((v) => ({ effectiveFrom: v.effectiveFrom, days: v.days, halfDays: v.halfDays, current: v.id === current.id, upcoming: v.effectiveFrom > now, by: person(v.updatedById), at: v.updatedAt })),
     }
   })
+  // the default first
+  return list.sort((a, b) => Number(b.isDefault) - Number(a.isDefault))
+}
+
+// Whether the pattern is the default on any day from `from` on (today's default, or named by a later change)
+async function isDefaultFrom(patternId: number, from: Date) {
+  const defaults = await shiftsRepository.listDefaultChanges()
+  if (!defaults.length) return false
+  return versionOn(defaults, from).patternId === patternId || defaults.some((d) => d.effectiveFrom > from && d.patternId === patternId)
 }
 
 // Read by whoever builds rosters (managers and Attendance); the retired ones with Attendance setup: View
@@ -290,15 +308,19 @@ export async function createPattern({ halfDays, days, name }: z.infer<typeof cre
 
 // The name, default, retired - and the days from a date: the version in force that day with the changes, kept as the
 // version from that date (one on the same date is replaced); later versions stay. From a day already passed: the days of
-// the employees following it are worked out again from then (never across a locked month). `isDefault` moves the default
-// here - there is always exactly one, so the default cannot be retired.
+// the employees following it are worked out again from then (never across a locked month). `isDefault` makes it the
+// default from today (dated - 2026-11-23: the days before today keep the default they had); there is always exactly one,
+// so the default - today's or a later one - cannot be retired.
 export async function updatePattern({ id, effectiveFrom, days: newDays, halfDays: newHalfDays, ...changes }: z.infer<typeof updatePatternInput>, viewer: CurrentUser) {
   assertGroupWide(viewer, 'ATTENDANCE_SETUP', 'A schedule pattern')
   const actorId = viewer.employeeId
   const current = await shiftsRepository.findPattern(id)
   if (!current) throw new ORPCError('NOT_FOUND', { message: `No schedule pattern with id ${id}` })
-  if (changes.isActive === false && current.isDefault) throw new ORPCError('CONFLICT', { message: 'The default pattern cannot be retired - star another pattern first' })
-  if (changes.isDefault && (changes.isActive === false || !current.isActive)) throw new ORPCError('BAD_REQUEST', { message: 'A retired pattern cannot be the default' })
+  const { isDefault, ...own } = changes
+  const day = today()
+  if (own.isActive === false && (await isDefaultFrom(id, day))) throw new ORPCError('CONFLICT', { message: 'The default pattern cannot be retired - star another pattern first' })
+  const becomesDefault = !!isDefault && !(await toPattern(id)).isDefault
+  if (isDefault && (own.isActive === false || !current.isActive)) throw new ORPCError('BAD_REQUEST', { message: 'A retired pattern cannot be the default' })
   const changesDays = newDays !== undefined || newHalfDays !== undefined
   if (changesDays && !effectiveFrom) throw new ORPCError('BAD_REQUEST', { message: 'Give the date the new days apply from' })
   let cycle: shiftsRepository.Cycle | null = null
@@ -310,18 +332,20 @@ export async function updatePattern({ id, effectiveFrom, days: newDays, halfDays
     await daysService.assertNothingLockedFrom(effectiveFrom)
   }
   await prisma.$transaction(async (tx) => {
-    if (changes.name !== undefined || changes.isDefault || changes.isActive !== undefined) await shiftsRepository.updatePattern(id, changes, actorId, tx)
-    if (changes.isDefault) await shiftsRepository.clearDefaultPattern(id, actorId, tx)
+    if (own.name !== undefined || own.isActive !== undefined) await shiftsRepository.updatePattern(id, own, actorId, tx)
+    if (becomesDefault) await shiftsRepository.setDefaultFrom(id, day, actorId, tx)
     if (cycle && effectiveFrom) await shiftsRepository.upsertPatternVersion(id, effectiveFrom, cycle, actorId, tx)
   })
   // the days already passed from that date follow the new days: everyone given the pattern - and, for the default one,
   // everyone never given a schedule
   if (cycle && effectiveFrom && effectiveFrom <= today()) {
-    const ids = current.isDefault
+    const ids = (await isDefaultFrom(id, effectiveFrom))
       ? (await employeesService.listAttendancePeople({ scope: SYSTEM_SCOPE, from: effectiveFrom, to: today() })).map((p) => p.id)
       : await shiftsRepository.listEmployeeIdsOnPattern(id)
     await daysService.recompute(ids, effectiveFrom, today())
   }
+  // the new default from today: today's days of everyone are worked out again (those never given a schedule follow it)
+  if (becomesDefault) await daysService.recompute((await employeesService.listAttendancePeople({ scope: SYSTEM_SCOPE, from: day, to: day })).map((p) => p.id), day, day)
   return toPattern(id)
 }
 

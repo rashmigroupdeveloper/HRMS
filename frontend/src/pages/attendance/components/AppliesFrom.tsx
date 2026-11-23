@@ -1,8 +1,7 @@
 import { Pill } from '@/components/Pill'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { formatDate, fromDateInput } from '@/lib/utils'
-import { todayDay } from './labels'
+import { formatDate, fromDateInput, todayDay } from '@/lib/utils'
 
 // "Applies from" in an edit form of something dated (a shift's times, a pattern's days - 2026-11-23): the days before the
 // date keep what they had; a date already passed works the days from it up to today out again

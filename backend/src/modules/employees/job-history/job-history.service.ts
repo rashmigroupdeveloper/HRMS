@@ -5,7 +5,7 @@ import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as employeesRepository from '../employees.repository.js'
 import * as documentsService from '../documents/documents.service.js'
-import { assertCostCenter, assertNoReportingLoop, ensureFirstJobRecord, fullName, getEmployeeFor, hodPostOf, lookupPeople, takeEmployeeCode } from '../employees.service.js'
+import { assertCostCenter, assertMastersInUse, assertNoReportingLoop, ensureFirstJobRecord, fullName, getEmployeeFor, hodPostOf, lookupPeople, takeEmployeeCode } from '../employees.service.js'
 import * as jobHistoryRepository from './job-history.repository.js'
 import { JOB_FIELDS, type JobDetails, type JobField, jobDetailsOf } from './job-history.repository.js'
 import type { jobAsOfInput } from './job-history.schema.js'
@@ -103,7 +103,8 @@ export async function currentJob(employeeId: number, db?: DbClient) {
 
 // The rules a change of job details must keep - when asked and again on the day it applies: the department runs at the
 // plant (a newly chosen plant / department active), the cost centre is the company's (and active when newly chosen), a
-// new manager has not left and is not the employee, and the reporting line makes no loop. Throws BAD_REQUEST.
+// new manager has not left and is not the employee, and the reporting line makes no loop; a newly chosen company,
+// department, work location, designation, grade or position is still in use (2026-11-23). Throws BAD_REQUEST.
 export async function checkJobChange(employeeId: number, companyId: number, base: JobDetails, next: JobDetails, db?: DbClient) {
   await plantsService.assertPlacement(
     { companyId, plantId: next.plantId, departmentId: next.departmentId },
@@ -111,6 +112,20 @@ export async function checkJobChange(employeeId: number, companyId: number, base
     db,
   )
   if (next.costCenterId !== null && next.costCenterId !== base.costCenterId) await assertCostCenter(next.costCenterId, companyId, db)
+  const anew = (field: 'departmentId' | 'workLocationId' | 'designationId' | 'gradeId' | 'positionId') => (next[field] !== base[field] ? next[field] : null)
+  const saved = await jobHistoryRepository.findEmployeeJob(employeeId, db)
+  await assertMastersInUse(
+    {
+      // a company transfer: the new company
+      companyId: saved && saved.companyId !== companyId ? companyId : null,
+      departmentId: anew('departmentId'),
+      workLocationId: anew('workLocationId'),
+      designationId: anew('designationId'),
+      gradeId: anew('gradeId'),
+      positionId: anew('positionId'),
+    },
+    db,
+  )
   for (const [field, what] of [
     ['reportingManagerId', 'reporting manager'],
     ['functionalManagerId', 'functional manager'],

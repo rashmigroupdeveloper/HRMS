@@ -3,7 +3,7 @@ import { encrypt, fingerprint, last4 } from '#core/crypto/encryption'
 import { prisma, SYSTEM_ACTOR, type AccessArea, type AccessLevel, type ActorId, type EmployeeStatus, type DbClient, type EmploymentType, type IdentityDocumentType, type MedicalResult, type Prisma } from '#core/db/prisma'
 import { writeWorkbook } from '#core/excel/workbook'
 import type { CurrentUser } from '#core/rpc/procedures'
-import { companiesService, costCentersService, plantsService } from '#modules/organization'
+import { companiesService, costCentersService, departmentsService, designationsService, gradesService, plantsService, positionsService, workLocationsService } from '#modules/organization'
 import { formatDate, today } from '#shared/utils/dates'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
@@ -543,6 +543,35 @@ export async function assertCostCenter(costCenterId: number, companyId: number, 
   if (!costCenter.isActive) throw new ORPCError('BAD_REQUEST', { message: `Cost centre ${costCenter.code} is no longer active` })
 }
 
+// The masters an employee is given anew must still be in use (2026-11-23, the review - only the plant, the department at
+// the plant and the cost centre were checked): a retired company, department, work location, designation, grade or
+// position is refused. One the employee already has stays - pass only what is chosen anew (null / undefined: nothing).
+export type MasterChoice = Partial<Record<'companyId' | 'departmentId' | 'workLocationId' | 'designationId' | 'gradeId' | 'positionId', number | null>>
+export async function assertMastersInUse(chosen: MasterChoice, db?: DbClient) {
+  const retired: string[] = []
+  if (chosen.companyId != null) {
+    const company = await companiesService.getCompany(chosen.companyId, db)
+    if (!company.isActive) retired.push(`Company ${company.code}`)
+  }
+  if (chosen.workLocationId != null) {
+    const location = await workLocationsService.getWorkLocation(chosen.workLocationId, db)
+    if (!location.isActive) retired.push(`Work location ${location.name}`)
+  }
+  // (an unknown id is refused by the database - mapped centrally)
+  const inList = async (id: number | null | undefined, what: string, load: () => Promise<{ id: number; name: string; isActive: boolean }[]>) => {
+    if (id == null) return
+    const master = (await load()).find((m) => m.id === id)
+    if (master && !master.isActive) retired.push(`${what} ${master.name}`)
+  }
+  await inList(chosen.departmentId, 'Department', () => departmentsService.listDepartments(true))
+  await inList(chosen.designationId, 'Designation', () => designationsService.listDesignations(true))
+  await inList(chosen.gradeId, 'Grade', () => gradesService.listGrades(true))
+  await inList(chosen.positionId, 'Position', () => positionsService.listPositions(true))
+  if (retired.length) {
+    throw new ORPCError('BAD_REQUEST', { message: `${retired.join(', ')} ${retired.length > 1 ? 'are' : 'is'} no longer in use - choose one that is (Organization page)` })
+  }
+}
+
 // The dates of an employment that must fit together (as the old HRMS checked): added on or after the day they join, at
 // least 18 on the date of joining, and the contract end / probation end / confirmation after joining. A permanent
 // employee has no contract end date.
@@ -584,6 +613,7 @@ export async function addEmployee({ reportingManagerCode, functionalManagerCode,
   const actorId = viewer.employeeId
   assertCanPlace(viewer, { companyId: details.companyId, plantId: details.plantId, departmentId: details.departmentId ?? null })
   checkEmploymentDates(details)
+  await assertMastersInUse(details)
   return prisma.$transaction(async (tx) => {
     const reportingManagerId = reportingManagerCode ? await resolveReportingManager(reportingManagerCode, null, tx) : undefined
     const functionalManagerId = functionalManagerCode ? await resolveFunctionalManager(functionalManagerCode, null, tx) : undefined
@@ -641,6 +671,14 @@ export async function updateEmployee({ employeeCode, reportingManagerCode, funct
     },
   )
   if (changes.costCenterId != null && changes.costCenterId !== current.costCenter?.id) await assertCostCenter(changes.costCenterId, current.company.id)
+  const anew = <T>(change: T | undefined, now: T) => (differs(change, now) ? change : undefined)
+  await assertMastersInUse({
+    departmentId: anew(changes.departmentId, current.department?.id ?? null),
+    workLocationId: anew(changes.workLocationId, current.workLocation?.id ?? null),
+    designationId: anew(changes.designationId, current.designation?.id ?? null),
+    gradeId: anew(changes.gradeId, current.grade?.id ?? null),
+    positionId: anew(changes.positionId, current.position?.id ?? null),
+  })
   return prisma.$transaction(async (tx) => {
     const data: Prisma.EmployeeUncheckedUpdateInput = { ...changes }
     if (reportingManagerCode !== undefined) {

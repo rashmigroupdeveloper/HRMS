@@ -125,11 +125,8 @@ export function hours(minutes: number) {
   return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`
 }
 
-// Today as a calendar day (UTC midnight, like the API's dates)
-export function todayDay() {
-  const now = new Date()
-  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
-}
+// the month muster's totals columns (PeopleView's Muster and its skeleton)
+export const MUSTER_TOTALS = ['P', 'HD', 'A', 'MP', 'L', 'OD', 'Late']
 
 export const sameDay = (a: Date, b: Date) => a.getTime() === b.getTime()
 

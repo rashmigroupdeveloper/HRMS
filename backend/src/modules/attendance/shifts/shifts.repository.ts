@@ -92,14 +92,13 @@ export type Cycle = Prisma.RosterPatternVersionGetPayload<{ select: typeof cycle
 const patternSelect = {
   id: true,
   name: true,
-  isDefault: true,
   isActive: true,
   versions: { orderBy: { effectiveFrom: 'asc' }, select: { id: true, effectiveFrom: true, ...cycleSelect, updatedAt: true, updatedById: true } },
 } satisfies Prisma.RosterPatternSelect
 export type PatternRow = Prisma.RosterPatternGetPayload<{ select: typeof patternSelect }>
 
 export function listPatterns(includeInactive: boolean, db: DbClient = prisma) {
-  return db.rosterPattern.findMany({ where: includeInactive ? {} : { isActive: true }, orderBy: [{ isDefault: 'desc' }, { name: 'asc' }], select: patternSelect })
+  return db.rosterPattern.findMany({ where: includeInactive ? {} : { isActive: true }, orderBy: { name: 'asc' }, select: patternSelect })
 }
 
 export function findPattern(id: number, db: DbClient = prisma) {
@@ -113,7 +112,7 @@ export async function createPattern(name: string, cycle: Cycle, effectiveFrom: D
   return pattern.id
 }
 
-export function updatePattern(id: number, data: { name?: string; isDefault?: boolean; isActive?: boolean }, actorId: ActorId, db: DbClient = prisma) {
+export function updatePattern(id: number, data: { name?: string; isActive?: boolean }, actorId: ActorId, db: DbClient = prisma) {
   return db.rosterPattern.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: { id: true } })
 }
 
@@ -134,7 +133,17 @@ export async function listEmployeeIdsOnPattern(patternId: number, db: DbClient =
   return rows.map((r) => r.employeeId)
 }
 
-// Only one default pattern: the others lose the flag
-export function clearDefaultPattern(exceptId: number, actorId: ActorId, db: DbClient = prisma) {
-  return db.rosterPattern.updateMany({ where: { isDefault: true, id: { not: exceptId } }, data: { isDefault: false, ...updatedBy(actorId) } })
+// Which pattern is the default from which day (2026-11-23 - dated, so moving it never changes the days before)
+export function listDefaultChanges(db: DbClient = prisma) {
+  return db.defaultPatternChange.findMany({ orderBy: { effectiveFrom: 'asc' }, select: { id: true, effectiveFrom: true, patternId: true } })
+}
+
+// The default from a date (one on the same date is replaced)
+export function setDefaultFrom(patternId: number, effectiveFrom: Date, actorId: ActorId, db: DbClient = prisma) {
+  return db.defaultPatternChange.upsert({
+    where: { effectiveFrom },
+    create: { effectiveFrom, patternId, ...createdBy(actorId) },
+    update: { patternId, ...updatedBy(actorId) },
+    select: { id: true },
+  })
 }

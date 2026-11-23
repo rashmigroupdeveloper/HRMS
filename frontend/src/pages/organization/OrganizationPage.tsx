@@ -47,6 +47,10 @@ export function OrganizationPage() {
   // the masters (with the retired ones) need Organization: View; the HOD posts their own area
   const canSeeMasters = can('ORGANIZATION')
   const canSeeHods = can('HOD_APPOINTMENTS')
+  // the open tab: the first one the access gives until one is picked - worked out on every render, so it follows
+  // accounts.me when that answers after the page showed (a default value was fixed before)
+  const [pickedTab, setPickedTab] = useState<string | null>(null)
+  const tab = pickedTab ?? (canSeeMasters ? 'companies' : 'department-heads')
   const companies = useQuery({ ...orpc.organization.companies.list.queryOptions({ input: ALL }), enabled: canSeeMasters })
   const workLocations = useQuery({ ...orpc.organization.workLocations.list.queryOptions({ input: ALL }), enabled: canSeeMasters })
   const plants = useQuery({ ...orpc.organization.plants.list.queryOptions({ input: ALL }), enabled: canSeeMasters })
@@ -105,7 +109,7 @@ export function OrganizationPage() {
         }
       />
 
-      <Tabs defaultValue={canSeeMasters ? 'companies' : 'department-heads'}>
+      <Tabs value={tab} onValueChange={(value) => setPickedTab(String(value))}>
         <PillTabsList>
           {(
             [

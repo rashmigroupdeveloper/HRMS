@@ -83,7 +83,7 @@ export const updatePatternInput = z
     days: createPatternInput.shape.days.optional(),
     halfDays: z.array(z.number().int().min(1).max(56)).max(56).optional(),
     effectiveFrom: z.date().optional(),
-    // makes it the default pattern (the one of employees with no schedule given; the others lose the flag)
+    // makes it the default pattern from today (the one of employees with no schedule given - dated, 2026-11-23)
     isDefault: z.literal(true).optional(),
     isActive: z.boolean().optional(),
   })

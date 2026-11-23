@@ -1,6 +1,7 @@
 import { prisma } from '#core/db/prisma'
 import { writeWorkbook } from '#core/excel/workbook'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import * as locksService from '../src/modules/attendance/locks/locks.service.js'
 import * as punchesService from '../src/modules/attendance/punches/punches.service.js'
 import { createCompany, createEmployee, createPlant } from './helpers/organization.js'
 import { row, userWith } from './helpers/users.js'
@@ -73,5 +74,27 @@ describe('punch files', () => {
     const result = await punchesService.uploadPunches({ file: csv('us.csv', `Emp Code,Punch time\n${employee.employeeCode},12/13/2025 09:00\n`) }, hr)
     expect(result).toMatchObject({ added: 0, skipped: 1 })
     expect(await punchesOf()).not.toContain('2026-01-12 09:00')
+  })
+
+  // A punch beside a locked month (2026-11-23, the review): judged by every day it may belong to, not its calendar day - a
+  // 23:50 punch on the last locked day belongs to the next (open) day's early shift. (March 2023 is locked here only and
+  // always opened again - the test database is shared.)
+  it('keeps a punch next to a locked month, refuses one inside it', async () => {
+    const lockHr = userWith({ id: 0, employeeCode: 'HRLOCKP' }, [{ access: { ATTENDANCE: 'WRITE', ATTENDANCE_SETUP: 'WRITE' }, rows: [row(null, null, null)] }])
+    // the attendance month March 2023: 26 Feb - 25 Mar
+    await locksService.lockMonth(lockHr, { year: 2023, month: 3 })
+    try {
+      const result = await punchesService.uploadPunches(
+        { file: csv('edge.csv', `Emp Code,Punch time
+${employee.employeeCode},25-03-2023 23:50
+${employee.employeeCode},10-03-2023 09:00
+`) },
+        hr,
+      )
+      expect(result).toMatchObject({ added: 1, skipped: 1 })
+      expect(await punchesOf()).toContain('2023-03-25 23:50')
+    } finally {
+      await prisma.attendanceMonthLock.updateMany({ where: { year: 2023, month: 3, unlockedAt: null }, data: { unlockedAt: new Date(), unlockedById: 0, unlockReason: 'Test clean-up', updatedById: 0 } })
+    }
   })
 })

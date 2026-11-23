@@ -1,6 +1,7 @@
 import { runWithAuditRequest } from '../audit/request.js'
 import { outsideTransaction } from '../audit/capture.js'
 import { createdBy, prisma, SYSTEM_ACTOR, updatedBy } from '../db/prisma.js'
+import { IST_OFFSET_MS } from '#shared/utils/dates'
 
 // The background worker's scheduler (src/worker.ts, phase 5 - 2026-11-16). Knows nothing about HR: each module gives
 // its jobs (<module>.jobs.ts) - a name, when it runs, and what it does.
@@ -33,15 +34,18 @@ const STALE_MS = 6 * 60 * 60_000
 function lastDueAt(schedule: JobSchedule, now: Date): Date {
   if ('everyMinutes' in schedule) return new Date(now.getTime() - schedule.everyMinutes * 60_000)
   const [hours = 0, minutes = 0] = ('dailyAt' in schedule ? schedule.dailyAt : schedule.at).split(':').map(Number)
-  const slot = new Date(now)
-  slot.setHours(hours, minutes, 0, 0)
+  // the times are India's (07:30 = 07:30 IST whatever the server's time zone - 2026-11-23, the review): worked out on the
+  // Indian wall clock, held in the UTC fields
+  const wallNow = new Date(now.getTime() + IST_OFFSET_MS)
+  const slot = new Date(wallNow)
+  slot.setUTCHours(hours, minutes, 0, 0)
   if ('weeklyOn' in schedule) {
-    slot.setDate(slot.getDate() - ((slot.getDay() - schedule.weeklyOn + 7) % 7))
-    if (slot > now) slot.setDate(slot.getDate() - 7)
-  } else if (slot > now) {
-    slot.setDate(slot.getDate() - 1)
+    slot.setUTCDate(slot.getUTCDate() - ((slot.getUTCDay() - schedule.weeklyOn + 7) % 7))
+    if (slot > wallNow) slot.setUTCDate(slot.getUTCDate() - 7)
+  } else if (slot > wallNow) {
+    slot.setUTCDate(slot.getUTCDate() - 1)
   }
-  return slot
+  return new Date(slot.getTime() - IST_OFFSET_MS)
 }
 
 // Due when it never ran, or its last start was before the latest due moment

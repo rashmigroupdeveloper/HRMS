@@ -1,10 +1,14 @@
 // Calendar-date helpers. Calendar dates (@db.Date columns) are handled as Date objects at UTC midnight,
 // so a date never shifts by a day because of the time zone.
 
-// Today's calendar date (by the server's local clock) as a UTC-midnight Date, comparable with @db.Date values.
-export function today(): Date {
-  const now = new Date()
-  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+// India's calendar day (UTC+05:30, no daylight saving) - the group works in India (2026-11-23, the review: "today" was the
+// server's own clock, so on a UTC server every date rule was a day behind from 00:00 to 05:30 IST)
+export const IST_OFFSET_MS = 330 * 60_000
+
+// Today's calendar date in India as a UTC-midnight Date, comparable with @db.Date values - whatever the server's time zone.
+export function today(now: Date = new Date()): Date {
+  const india = new Date(now.getTime() + IST_OFFSET_MS)
+  return new Date(Date.UTC(india.getUTCFullYear(), india.getUTCMonth(), india.getUTCDate()))
 }
 
 // Full years from a birth date to a day (default today) - a person's age

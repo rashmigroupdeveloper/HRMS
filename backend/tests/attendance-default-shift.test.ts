@@ -1,6 +1,7 @@
 import { prisma } from '#core/db/prisma'
 import { employeesService } from '#modules/employees'
 import { SYSTEM_SCOPE } from '#core/auth/scope'
+import { dayKey } from '#shared/utils/time'
 import { describe, expect, it } from 'vitest'
 import * as daysService from '../src/modules/attendance/days/days.service.js'
 import * as shiftsService from '../src/modules/attendance/shifts/shifts.service.js'
@@ -33,5 +34,29 @@ describe('the default schedule pattern', () => {
     const shift = await shiftsService.createShift({ code: `D${tag}`, name: `Default test ${tag}`, start: 540, end: 1080, breakMinutes: 0 }, hr)
     await shiftsService.createPattern({ name: `Default test week ${tag}`, days: [shift.id, 0, 0, 0, 0, 0, 0], halfDays: [] }, hr)
     await expect(shiftsService.updateShift({ id: shift.id, isActive: false }, hr)).rejects.toThrow('is used by')
+  })
+  // Dated (the user, 2026-11-23): a move of the default applies from its date - the days before keep the default they had.
+  // (A move far ahead, removed again: today's default is never moved here.)
+  it('follows the default in force on each day, and keeps a later default from being retired', async () => {
+    const shift = await shiftsService.createShift({ code: `M${tag}`, name: `Move test ${tag}`, start: 540, end: 1080, breakMinutes: 0 }, hr)
+    // every day off but Monday
+    const later = await shiftsService.createPattern({ name: `Move test week ${tag}`, days: [shift.id, 0, 0, 0, 0, 0, 0], halfDays: [] }, hr)
+    const companyId = (await createCompany()).id
+    const employee = await createEmployee({ companyId, plantId: (await createPlant(companyId)).id })
+    const [person] = await employeesService.listAttendancePeople({ scope: SYSTEM_SCOPE, ids: [employee.id], from: new Date(Date.UTC(2099, 0, 1)), to: new Date(Date.UTC(2099, 0, 1)) })
+    // a Tuesday before and after the move on 1 January 2099 (a Thursday)
+    const before = new Date(Date.UTC(2098, 11, 30))
+    const after = new Date(Date.UTC(2099, 0, 6))
+    const move = await prisma.defaultPatternChange.create({ data: { effectiveFrom: new Date(Date.UTC(2099, 0, 1)), patternId: later.id, createdById: 0, updatedById: 0 } })
+    try {
+      const plan = (await daysService.loadPlans([person!], before, after)).get(employee.id)!
+      expect(plan.get(dayKey(before))!.pattern).not.toBe(later.name)
+      expect(plan.get(dayKey(after))).toMatchObject({ pattern: later.name, kind: 'WEEKLY_OFF' })
+      // the default of a later date cannot be retired either
+      await expect(shiftsService.updatePattern({ id: later.id, isActive: false }, hr)).rejects.toThrow('cannot be retired')
+      expect((await shiftsService.listPatterns(hr, true)).find((p) => p.id === later.id)).toMatchObject({ isDefault: false, defaultFrom: new Date(Date.UTC(2099, 0, 1)) })
+    } finally {
+      await prisma.defaultPatternChange.delete({ where: { id: move.id } })
+    }
   })
 })

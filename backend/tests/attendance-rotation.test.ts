@@ -74,5 +74,7 @@ describe('rotations and the rare roster', () => {
     expect(shiftsService.patternDayOf(day(6), 1, 7)).toBe(7)
     expect(shiftsService.patternDayOf(start, 2, 14)).toBe(8)
     expect(shiftsService.patternDayOf(day(2), 3, 21)).toBe(17)
+    // not whole weeks: its first day on the schedule's first date, whatever the weekday (2026-11-23 - a Thursday gave day 4)
+    expect(shiftsService.patternDayOf(day(3), 1, 4)).toBe(1)
   })
 })

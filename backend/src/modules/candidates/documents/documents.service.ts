@@ -195,16 +195,17 @@ export async function uploadDocument({ candidateId, type, file }: z.infer<typeof
   if (!mimeType) throw new ORPCError('BAD_REQUEST', { message: 'Only PDF, JPG or PNG files can be uploaded' })
 
   const storageKey = await saveFile(placeOf(candidate, type), mimeType, bytes)
+  let document
   try {
-    const document = await documentsRepository.create(
+    document = await documentsRepository.create(
       { candidateId, type, storageKey, fileName: cleanFileName(file.name), mimeType, sizeBytes: bytes.byteLength },
       actorId,
     )
-    return await withPeopleOne(document)
   } catch (error) {
-    await deleteFile(storageKey) // no row -> no orphan file
+    await deleteFile(storageKey) // no row -> no orphan file (only then: a saved row keeps its file - 2026-11-23, the review)
     throw error
   }
+  return withPeopleOne(document)
 }
 
 // The file itself, with its original name and type.
@@ -331,6 +332,24 @@ export const REQUESTABLE_DOCUMENTS = [
   'DRIVING_LICENCE_COPY',
   'POLICE_VERIFICATION',
 ] as const satisfies DocumentType[]
+
+// How many files the candidate may upload on their page (2026-11-23, the review: there was no limit): 10 of one type and
+// 60 in all - enough for a re-upload after HR rejects a copy, and a multi-page certificate. Files they removed count too:
+// a removed file is kept (only marked deleted), so upload-and-remove would have no end. HR's uploads do not count.
+const MAX_OWN_UPLOADS_PER_TYPE = 10
+const MAX_OWN_UPLOADS = 60
+
+export async function assertCanUploadMore(candidateId: number, type: DocumentType) {
+  const own = (await documentsRepository.list(candidateId)).filter((d) => d.createdById === SYSTEM_ACTOR)
+  if (own.filter((d) => d.type === type).length >= MAX_OWN_UPLOADS_PER_TYPE) {
+    throw new ORPCError('BAD_REQUEST', {
+      message: `You have uploaded ${MAX_OWN_UPLOADS_PER_TYPE} files for "${DOCUMENT_LABEL[type]}" - the most allowed. Please contact HR if you need to send another.`,
+    })
+  }
+  if (own.length >= MAX_OWN_UPLOADS) {
+    throw new ORPCError('BAD_REQUEST', { message: `You have uploaded ${MAX_OWN_UPLOADS} files - the most allowed. Please contact HR if you need to send another.` })
+  }
+}
 
 // The candidate's documents, deleted ones left out, with what they need to see (not who reviewed them)
 export async function listForCandidate(candidateId: number) {

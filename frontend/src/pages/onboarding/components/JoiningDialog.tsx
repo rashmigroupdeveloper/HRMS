@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { orpc } from '@/lib/orpc'
-import { cn, errorMessage, fromDateInput, toDateInput } from '@/lib/utils'
+import { cn, errorMessage, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
 import { type Candidate, fullName } from './labels'
 import { PrintFormsButton } from './PrintForms'
 
@@ -44,7 +44,7 @@ function probationEnd(dateOfJoining: string, months: number | null): string {
 function JoiningForm({ candidate, onClose }: { candidate: Candidate; onClose: () => void }) {
   const queryClient = useQueryClient()
   const checklist = useQuery({ ...orpc.candidates.joining.checklist.queryOptions({ input: { candidateId: candidate.id } }), staleTime: 0 })
-  const [today] = useState(() => toDateInput(new Date()))
+  const [today] = useState(() => toDateInput(todayDay()))
   const proposed = toDateInput(candidate.proposedJoiningDate)
   // who the new employee reports to (their employee code)
   const [managerCode, setManagerCode] = useState('')

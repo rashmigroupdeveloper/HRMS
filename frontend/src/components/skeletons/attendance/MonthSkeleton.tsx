@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
-import { dayName, todayDay, TOTAL_LABELS, MONTH_BARS, WEEKDAYS } from '@/pages/attendance/components/labels'
+import { cn, todayDay } from '@/lib/utils'
+import { dayName, TOTAL_LABELS, MONTH_BARS, WEEKDAYS } from '@/pages/attendance/components/labels'
 import { MonthLegend } from '@/pages/attendance/components/MonthCalendar'
 
 // Loading placeholder for one employee's month (MonthTotals + MonthCalendar): the hours figure, the three segments

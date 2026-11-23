@@ -221,8 +221,9 @@ export async function sendOffer(candidateId: number, templateId: number, viewer:
   candidatesService.assertCanSend(candidate, kind)
   const token = newToken()
   let storageKey: string | undefined
+  let result
   try {
-    const result = await prisma.$transaction(
+    result = await prisma.$transaction(
       async (tx) => {
         // the LOI and the full offer each have their own number, given the first time
         let offerNumber = kind === 'LETTER_OF_INTENT' ? candidate.loiNumber : candidate.offerNumber
@@ -258,12 +259,14 @@ export async function sendOffer(candidateId: number, templateId: number, viewer:
       // writing the PDF takes a moment
       { timeout: 30_000 },
     )
-    const email = await emailLetter(result.updated, result.letter, result.offerNumber, token, result.pdf, actorId)
-    return { candidate: await candidatesService.toCandidateDetails(result.updated), link: linkOf(token), ...email }
   } catch (error) {
-    if (storageKey) await deleteFile(storageKey).catch(() => undefined) // no row -> no orphan file
+    // the letter's row rolled back -> no orphan file. Only here: once saved, the row points at the file, so a step
+    // failing after it never deletes it (2026-11-23, the review)
+    if (storageKey) await deleteFile(storageKey).catch(() => undefined)
     throw error
   }
+  const email = await emailLetter(result.updated, result.letter, result.offerNumber, token, result.pdf, actorId)
+  return { candidate: await candidatesService.toCandidateDetails(result.updated), link: linkOf(token), ...email }
 }
 
 // Gives letters stored before the readable names (offer-letters/<uuid>) their readable name. For
@@ -423,7 +426,10 @@ async function findByToken(token: string) {
   const candidate = await candidatesService.getCandidate(letter.candidateId)
   const latest = await offerLettersRepository.findLatest(letter.candidateId)
   let state: LinkState = 'OPEN'
-  if (letter.response) state = letter.response
+  // an accepted letter whose offer was closed afterwards (withdrawn, backed out, no-show...) is closed, not accepted
+  // (2026-11-23, the review: a withdrawn candidate still saw "accepted")
+  if (letter.response === 'ACCEPTED' && candidatesService.isClosed(candidate.status)) state = 'CLOSED'
+  else if (letter.response) state = letter.response
   // a newer letter was sent, or HR is preparing one (the offer went back to draft)
   else if (letter.id !== latest?.id || candidate.status === 'DRAFT') state = 'REPLACED'
   // accepted on paper (HR recorded it with the signed copy): the link opens the joining form like an online acceptance
@@ -566,19 +572,26 @@ function codeUsed(letterId: number) {
 export async function checkJoiningFormCode(token: string, code: string) {
   const { letter, candidate, state, isLatest } = await findByToken(token)
   if (!isPortalOpen(state, candidate, isLatest)) {
-    conflict(state === 'ACCEPTED' ? 'Your joining form is closed. Please contact HR.' : 'The joining form opens once you have accepted the offer.')
+    conflict(state === 'OPEN' ? 'The joining form opens once you have accepted the offer.' : 'Your joining form is closed. Please contact HR.')
   }
   await checkCode(letter, code)
   await codeUsed(letter.id)
   return candidate.id
 }
 
-// Signing the submitted joining form: the code e-mailed to the signed-in candidate (asked for on their page)
+// Signing the submitted joining form: the code e-mailed to the signed-in candidate (asked for on their page). Only
+// checked here - signingCodeUsed clears it once the form is saved, so a submit refused after the check keeps the code
+// (2026-11-23, the review: a failed submit used it up)
 export async function checkSigningCode(candidateId: number, code: string) {
   const letter = await offerLettersRepository.findLatest(candidateId)
   if (!letter) conflict('Your joining form is closed. Please contact HR.')
   await checkCode(letter, code)
-  await codeUsed(letter.id)
+}
+
+// The form was submitted with the code: the code is used
+export async function signingCodeUsed(candidateId: number) {
+  const letter = await offerLettersRepository.findLatest(candidateId)
+  if (letter) await codeUsed(letter.id)
 }
 
 const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase()

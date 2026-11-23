@@ -31,14 +31,16 @@ export function LoginPage() {
   const login = useMutation(
     orpc.accounts.login.mutationOptions({
       onSuccess: (user) => {
+        // nothing of a previous login stays (the query keys do not name the user)
+        queryClient.removeQueries()
         queryClient.setQueryData(orpc.accounts.me.queryKey(), user)
         void navigate(user.mustChangePassword ? '/change-password' : (params.get('next') ?? startPage(user)), { replace: true })
       },
     }),
   )
 
-  // Already logged in
-  if (me.data && !login.isPending) return <Navigate to={startPage(me.data)} replace />
+  // Already logged in - not when the last check said the session is gone (the old data stays in the cache with the error)
+  if (me.data && !me.error && !login.isPending) return <Navigate to={startPage(me.data)} replace />
 
   return (
     <AuthLayout eyebrow="Employee sign-in" title="Sign in to your account">

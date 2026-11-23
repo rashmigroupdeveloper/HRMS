@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useIsFetching, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Check, ChevronRight, X } from 'lucide-react'
 import { useState } from 'react'
 import { ApprovalStatusPill } from '@/components/ApprovalTrail'
@@ -149,6 +149,8 @@ function StepProgress({ step }: { step: NonNullable<ApprovalRow['step']> }) {
 function DecideButtons({ r, onDecided }: { r: ApprovalRow; onDecided?: (d: Decided) => void }) {
   const queryClient = useQueryClient()
   const [rejecting, setRejecting] = useState(false)
+  // decided: the buttons stay off until the lists have loaded again (the row then goes - a second click was refused)
+  const refreshing = useIsFetching({ queryKey: orpc.approvals.key() }) > 0
   const decide = useMutation(
     orpc.approvals.decide.mutationOptions({
       onSuccess: (_, input) => {
@@ -158,10 +160,11 @@ function DecideButtons({ r, onDecided }: { r: ApprovalRow; onDecided?: (d: Decid
       },
     }),
   )
+  const busy = decide.isPending || (decide.isSuccess && refreshing)
   return (
     <>
       {decide.error && !rejecting && <span className="mr-1 max-w-48 text-xs text-negative-ink">{errorMessage(decide.error)}</span>}
-      <Button variant="destructive" size="sm" onClick={() => setRejecting(true)} disabled={decide.isPending} aria-label={`Reject - ${r.employee.name}`}>
+      <Button variant="destructive" size="sm" onClick={() => setRejecting(true)} disabled={busy} aria-label={`Reject - ${r.employee.name}`}>
         <X /> Reject
       </Button>
       <Button
@@ -169,7 +172,7 @@ function DecideButtons({ r, onDecided }: { r: ApprovalRow; onDecided?: (d: Decid
         size="sm"
         className="bg-positive/15 text-positive-ink hover:bg-positive/25"
         onClick={() => decide.mutate({ id: r.id, approve: true })}
-        disabled={decide.isPending}
+        disabled={busy}
         aria-label={`Approve - ${r.employee.name}`}
       >
         <Check /> {decide.isPending && decide.variables?.approve ? 'Saving…' : 'Approve'}

@@ -17,12 +17,12 @@ export function RequireLogin() {
   const location = useLocation()
 
   if (me.isPending) return <Outlet />
-  if (me.error) {
-    if (isUnauthorized(me.error)) {
-      return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />
-    }
-    return <FullPageMessage>{errorMessage(me.error)}</FullPageMessage>
+  // Not logged in (any more): a failed re-check keeps the last user's data in the cache, so the error decides
+  if (isUnauthorized(me.error)) {
+    return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />
   }
+  // Another failure only when nobody is known yet - a failed background re-check stays on the last answer
+  if (!me.data) return <FullPageMessage>{errorMessage(me.error)}</FullPageMessage>
   if (me.data.mustChangePassword && location.pathname !== '/change-password') return <Navigate to="/change-password" replace />
   return <Outlet />
 }

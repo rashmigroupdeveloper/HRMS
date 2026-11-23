@@ -31,6 +31,8 @@ type CloseOutcome = z.infer<typeof closeCandidateInput>['outcome']
 const CLOSED: readonly CandidateStatus[] = ['DECLINED', 'EXPIRED', 'WITHDRAWN', 'BACKED_OUT', 'NO_SHOW']
 // Nothing changes once the candidate has joined either - the employee record takes over
 const FINAL: readonly CandidateStatus[] = [...CLOSED, 'JOINED']
+// Closed without joining (declined, expired, withdrawn, backed out, no-show)
+export const isClosed = (status: CandidateStatus) => CLOSED.includes(status)
 
 // The statuses each outcome can be reached from
 const CAN_CLOSE_FROM: Record<CloseOutcome, readonly CandidateStatus[]> = {
@@ -131,6 +133,22 @@ function checkSalaryLines(lines: SalaryLineInput[], annualCtc: number) {
 function sameLines(current: { monthlyAmount: number; salaryComponent: { id: number } }[], next: SalaryLineInput[]) {
   const key = (lines: SalaryLineInput[]) => lines.map((l) => `${l.salaryComponentId}:${l.monthlyAmount}`).sort().join(',')
   return key(current.map((l) => ({ salaryComponentId: l.salaryComponent.id, monthlyAmount: l.monthlyAmount }))) === key(next)
+}
+
+// Changes the candidate only while they are still `from` (the status read before) and returns them; CONFLICT when the
+// status changed a moment before - e.g. HR withdrew the offer while the candidate was accepting it (2026-11-23, the
+// review: the last write won)
+async function changeIfStatus(
+  id: number,
+  from: CandidateStatus | readonly CandidateStatus[],
+  data: Parameters<typeof candidatesRepository.updateIfStatus>[2],
+  actorId: ActorId,
+  db?: DbClient,
+) {
+  if (!(await candidatesRepository.updateIfStatus(id, from, data, actorId, db))) {
+    conflict('This offer was changed a moment ago. Please reload the page and try again.')
+  }
+  return getCandidate(id, db)
 }
 
 // --- Data access (2026-11-18): Onboarding covering where the candidate is placed (company / plant / department) ---
@@ -417,8 +435,10 @@ export async function updateCandidate({ id, salaryLines, ...changes }: z.infer<t
     changes.proposedJoiningDate.getTime() !== current.proposedJoiningDate.getTime()
   const updated = await prisma.$transaction(async (tx) => {
     if (linesChanged) await candidatesRepository.replaceSalaryLines(id, salaryLines, actorId, tx)
-    return candidatesRepository.update(
+    // only while the status is the one checked above (a withdrawal at the same moment wins - nothing is changed)
+    return changeIfStatus(
       id,
+      current.status,
       {
         ...changes,
         ...(staleContractEnd && { contractEndDate: null }),
@@ -469,19 +489,19 @@ export function assertCanAnswer(candidate: CandidateRow) {
 
 // DRAFT -> OFFERED, once the letter is written (assertCanSend was checked). Keeps the offer number.
 export async function recordOfferSent(id: number, offerNumber: string, actorId: ActorId, db?: DbClient) {
-  return candidatesRepository.update(id, { status: 'OFFERED', offerNumber, offerSentAt: new Date(), offerSentById: actorId }, actorId, db)
+  return changeIfStatus(id, ['DRAFT', 'LOI_ACCEPTED'], { status: 'OFFERED', offerNumber, offerSentAt: new Date(), offerSentById: actorId }, actorId, db)
 }
 
 // DRAFT -> OFFERED with the Letter of Intent (2026-11-16); its number is given the first time
 export async function recordLoiSent(id: number, loiNumber: string, actorId: ActorId, db?: DbClient) {
-  return candidatesRepository.update(id, { status: 'OFFERED', loiNumber, offerSentAt: new Date(), offerSentById: actorId }, actorId, db)
+  return changeIfStatus(id, 'DRAFT', { status: 'OFFERED', loiNumber, offerSentAt: new Date(), offerSentById: actorId }, actorId, db)
 }
 
 // OFFERED (Letter of Intent) -> LOI_ACCEPTED (online by the candidate = System, or by HR with the signed copy); the
 // full offer is sent next
 export async function recordLoiAccepted(id: number, actorId: ActorId, db?: DbClient) {
   assertCanAnswer(await getCandidate(id, db))
-  return candidatesRepository.update(id, { status: 'LOI_ACCEPTED', loiAcceptedAt: new Date(), loiAcceptedById: actorId }, actorId, db)
+  return changeIfStatus(id, 'OFFERED', { status: 'LOI_ACCEPTED', loiAcceptedAt: new Date(), loiAcceptedById: actorId }, actorId, db)
 }
 
 // OFFERED -> ACCEPTED (by HR with the signed copy, or online by the candidate = System). The joining form opens with it
@@ -490,8 +510,9 @@ export async function recordOfferAccepted(id: number, actorId: ActorId, db?: DbC
   const candidate = await getCandidate(id, db)
   assertCanAnswer(candidate)
   const now = new Date()
-  return candidatesRepository.update(
+  return changeIfStatus(
     id,
+    'OFFERED',
     {
       status: 'ACCEPTED',
       acceptedAt: now,
@@ -519,7 +540,7 @@ export async function endPortalSessions(candidateId: number, db?: DbClient) {
 // OFFERED -> DECLINED, answered online by the candidate (System)
 export async function recordOfferDeclined(id: number, reason: string | null, actorId: ActorId, db?: DbClient) {
   assertCanAnswer(await getCandidate(id, db))
-  return candidatesRepository.update(id, { status: 'DECLINED', closedAt: new Date(), closedById: actorId, closeReason: reason }, actorId, db)
+  return changeIfStatus(id, 'OFFERED', { status: 'DECLINED', closedAt: new Date(), closedById: actorId, closeReason: reason }, actorId, db)
 }
 
 // For the API after an offer letter step: the candidate with the people named
@@ -548,11 +569,7 @@ export async function closeCandidate({ id, outcome, reason }: z.infer<typeof clo
     conflict(`The joining date (${formatDate(candidate.proposedJoiningDate)}) has not come yet`)
   }
   if (outcome === 'WITHDRAWN' && !reason) badRequest('Give the reason for withdrawing the offer')
-  const updated = await candidatesRepository.update(
-    id,
-    { status: outcome, closedAt: new Date(), closedById: actorId, closeReason: reason ?? null },
-    actorId,
-  )
+  const updated = await changeIfStatus(id, candidate.status, { status: outcome, closedAt: new Date(), closedById: actorId, closeReason: reason ?? null }, actorId)
   return withPeople(updated)
 }
 
@@ -569,8 +586,9 @@ export async function recordMedical(
   }
   if (examDate > today()) badRequest('examDate cannot be in the future')
   if (result === 'FIT_WITH_RESTRICTIONS' && !restrictions) badRequest('Describe the restrictions')
-  const updated = await candidatesRepository.update(
+  const updated = await changeIfStatus(
     id,
+    'ACCEPTED',
     {
       medicalResult: result,
       medicalExamDate: examDate,
@@ -592,23 +610,36 @@ export async function confirmJoining(id: number, viewer: CurrentUser) {
   if (candidate.proposedJoiningDate <= today()) {
     conflict(`The joining date (${formatDate(candidate.proposedJoiningDate)}) has already come`)
   }
-  const updated = await candidatesRepository.update(id, { joiningConfirmedAt: new Date(), joiningConfirmedById: actorId }, actorId)
+  const updated = await changeIfStatus(id, 'ACCEPTED', { joiningConfirmedAt: new Date(), joiningConfirmedById: actorId }, actorId)
   return withPeople(updated)
 }
 
 // --- for the background worker (candidates.jobs.ts) ---
 
-// Offers whose "valid until" date has passed without an answer become EXPIRED (as "close as expired" would)
+// Offers whose "valid until" date has passed without an answer become EXPIRED (as "close as expired" would). Each offer
+// on its own: one that fails (e.g. answered a moment before) is logged and counted, and the others still expire
+// (2026-11-23, the review: one error stopped the rest)
 export async function expireUnansweredOffers() {
   const offers = await candidatesRepository.listUnansweredExpired(today())
-  for (const { id } of offers) await closeCandidate({ id, outcome: 'EXPIRED' }, SYSTEM_ACTOR)
-  return offers.length
+  let expired = 0
+  let failed = 0
+  for (const { id } of offers) {
+    try {
+      await closeCandidate({ id, outcome: 'EXPIRED' }, SYSTEM_ACTOR)
+      expired++
+    } catch (error) {
+      failed++
+      console.error(`[candidates] the offer of candidate ${id} could not be expired:`, error)
+    }
+  }
+  return { expired, failed }
 }
 
-// E-mails HR (Onboarding: Edit) the candidates joining in the next DAYS days whose joining is not confirmed yet
+// E-mails HR (Onboarding: Edit) the candidates joining in the next DAYS days whose joining is not confirmed yet - from
+// tomorrow: a joining today can no longer be confirmed (confirmJoining; 2026-11-23, the review: today's were listed too)
 export async function remindUnconfirmedJoining(days: number) {
   const from = today()
-  const candidates = await candidatesRepository.listUnconfirmedJoining(from, new Date(from.getTime() + days * 86_400_000))
+  const candidates = await candidatesRepository.listUnconfirmedJoining(new Date(from.getTime() + 86_400_000), new Date(from.getTime() + days * 86_400_000))
   if (!candidates.length) return 'nothing to remind'
   // each person only about the candidates inside their data access
   const recipients = await accountsService.mailRecipientsFor('ONBOARDING', 'WRITE', candidates.map((c) => ({ ...c, placement: placementOf(c) })))

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { prisma } from '#core/db/prisma'
 import { accountsService } from '#modules/accounts'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -76,5 +77,51 @@ describe('forgot-password codes', () => {
     // each code stored is one e-mail: the change history shows how many were stored
     const stored = await prisma.auditLog.findMany({ where: { model: 'UserAccount', recordId: accountId, createdAt: { gte: start } }, select: { changes: true } })
     expect(stored.filter((r) => r.changes && typeof r.changes === 'object' && 'resetCodeHash' in r.changes)).toHaveLength(1)
+  })
+})
+
+// Forgot-password answers (2026-11-23, the review): a wrong code said "4 tries left" only for a real employee code, and a
+// code worked on a turned-off login. Now every refusal is the same answer, and a turned-off login gets no code.
+describe('forgot-password answers', () => {
+  const GOOD_PASSWORD = 'A-new-long-password-7'
+  async function loginWithCode(code: string) {
+    const companyId = (await createCompany()).id
+    const employee = await createEmployee({ companyId, plantId: (await createPlant(companyId)).id })
+    await accountsService.setPassword(employee.employeeCode, 'A-good-long-password-1')
+    // test data: a live code, stored as the service stores it
+    const { id } = await prisma.userAccount.findUniqueOrThrow({ where: { employeeId: employee.id }, select: { id: true } })
+    const hash = createHash('sha256').update(`reset:${id}:${code}`).digest('hex')
+    await prisma.userAccount.update({ where: { id }, data: { resetCodeHash: hash, resetCodeValidUntil: new Date(Date.now() + 600_000), resetCodeFailedAttempts: 0 } })
+    await prisma.employee.update({ where: { id: employee.id }, data: { personalEmail: `answers.${employee.employeeCode.toLowerCase()}@example.com` } })
+    return { employeeCode: employee.employeeCode, employeeId: employee.id, accountId: id }
+  }
+  const answerOf = (employeeCode: string, code: string, ip: string) =>
+    accountsService.resetPasswordWithCode({ employeeCode, code, newPassword: GOOD_PASSWORD }, ip).then(
+      () => 'changed',
+      (error: Error) => error.message,
+    )
+
+  it('answers a wrong code the same for a real and an unknown employee code, and still counts the tries', async () => {
+    const { employeeCode, accountId } = await loginWithCode('123456')
+    const unknown = await answerOf(`NOPE${Date.now()}`, '000000', '198.51.100.40')
+    const real = await answerOf(employeeCode, '000000', '198.51.100.41')
+    expect(real).toBe(unknown)
+    const { resetCodeFailedAttempts } = await prisma.userAccount.findUniqueOrThrow({ where: { id: accountId }, select: { resetCodeFailedAttempts: true } })
+    expect(resetCodeFailedAttempts).toBe(1)
+    // the 5th wrong try uses the code up: still the same answer (a 6th within the minute meets the per-login limit)
+    for (let n = 2; n <= 5; n++) expect(await answerOf(employeeCode, '000000', `198.51.100.5${n}`)).toBe(unknown)
+    expect((await prisma.userAccount.findUniqueOrThrow({ where: { id: accountId }, select: { resetCodeHash: true } })).resetCodeHash).toBeNull()
+  })
+
+  it('refuses a right code on a turned-off login, and sends a turned-off login no code', async () => {
+    const { employeeCode, accountId } = await loginWithCode('654321')
+    const unknown = await answerOf(`NOPE${Date.now()}`, '654321', '198.51.100.42')
+    await prisma.userAccount.update({ where: { id: accountId }, data: { disabledAt: new Date(), disabledById: 0, disabledReason: 'test' } })
+    expect(await answerOf(employeeCode, '654321', '198.51.100.43')).toBe(unknown)
+    // the code was not used: the password is unchanged
+    const before = await prisma.userAccount.findUniqueOrThrow({ where: { id: accountId }, select: { passwordHash: true, resetCodeHash: true } })
+    await accountsService.requestPasswordReset({ employeeCode }, '198.51.100.44')
+    const after = await prisma.userAccount.findUniqueOrThrow({ where: { id: accountId }, select: { passwordHash: true, resetCodeHash: true } })
+    expect(after).toEqual(before)
   })
 })
