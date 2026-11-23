@@ -135,8 +135,16 @@ async function poolsOf(items: { step: Pick<StepRow, 'approverType' | 'roleId' | 
 async function mayDecide(viewer: CurrentUser, request: RequestRow, step: StepRow) {
   if (viewer.employeeId === request.employeeId || viewer.employeeId === request.requestedById) return false
   if (isNamed(step)) return step.approverId === viewer.employeeId
+  if (!activeRoleCoversStep(viewer, request, step)) return false
   const [pool] = await poolsOf([{ step, request }])
   return pool!.includes(viewer.employeeId)
+}
+
+function activeRoleCoversStep(viewer: CurrentUser, request: RequestRow, step: StepRow) {
+  if (isNamed(step)) return true
+  if (step.approverType === 'FALLBACK' || step.byFallback) return !!viewer.activeRoleIsFallback
+  if (step.approverType === 'ROLE') return step.roleId === viewer.activeRoleId
+  return !!step.accessArea && placementsOf(request).every((where) => hasLevelAt(viewer, step.accessArea!, where, 'WRITE'))
 }
 
 // --- Moving a request along ---
@@ -488,7 +496,7 @@ async function waitingFor(viewer: CurrentUser) {
       return step ? [{ request, step }] : []
     })
   const named = open.filter(({ step }) => isNamed(step) && step.approverId === viewer.employeeId)
-  const pooled = open.filter(({ step }) => !isNamed(step))
+  const pooled = open.filter(({ request, step }) => !isNamed(step) && activeRoleCoversStep(viewer, request, step))
   const pools = await poolsOf(pooled)
   return [...named, ...pooled.filter((_, n) => pools[n]!.includes(viewer.employeeId))]
     .sort((a, b) => (a.step.openedAt?.getTime() ?? 0) - (b.step.openedAt?.getTime() ?? 0))

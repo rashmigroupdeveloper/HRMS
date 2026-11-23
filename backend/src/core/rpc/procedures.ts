@@ -14,10 +14,14 @@ export type CurrentUser = {
   employeeCode: string
   name: string
   roles: { id: number; name: string }[]
+  // Assigned roles remain available for switching; only the active role contributes permissions and scopes.
+  availableRoles: { id: number; name: string }[]
+  activeRoleId: number | null
+  activeRoleIsFallback: boolean
   isSuperAdmin: boolean
-  // The level per area, from all of the employee's roles (read fresh on every request)
+  // The level per area, from the employee's active role (read fresh on every request)
   access: AccessMap
-  // Each role given to the employee with its data access - whose records it covers (core/auth/scope.ts, 2026-11-18)
+  // The active role with its data access - whose records it covers (core/auth/scope.ts, 2026-11-18)
   grants: RoleGrant[]
   // Signed in with a temporary password (new login / admin reset): only changing it is allowed until then
   mustChangePassword: boolean

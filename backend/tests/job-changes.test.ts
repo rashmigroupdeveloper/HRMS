@@ -59,7 +59,7 @@ describe('job changes', () => {
     hrB = userWith(await createEmployee({ companyId: companyB, plantId: plantB }), [{ access: { EMPLOYEES: 'WRITE', JOB_CHANGE_REQUEST: 'WRITE' }, rows: [row(companyB, null, null)] }])
     const approverEmployee = await createEmployee({ companyId: companyA, plantId: plantA })
     await giveLogin(approverEmployee.id, [{ roleId: role.id, companyId: companyA }])
-    approver = userWith(approverEmployee, [{ access: {}, rows: [row(companyA, null, null)] }])
+    approver = { ...userWith(approverEmployee, [{ access: {}, rows: [row(companyA, null, null)] }]), activeRoleId: role.id }
     const admin = userWith({ id: 0, employeeCode: 'CHAINS' }, [{ access: { APPROVAL_CHAINS: 'WRITE' }, rows: [row(companyA, null, null)] }])
     await chainsService.saveChain(admin, { kind: 'JOB_CHANGE', companyId: companyA, steps: [{ approverType: 'ROLE', roleId: role.id, seesConfidential: false }] })
   })
@@ -262,7 +262,7 @@ describe('job changes', () => {
     const role2 = await createRole()
     const approver2Employee = await createEmployee({ companyId: companyA, plantId: plantA })
     await giveLogin(approver2Employee.id, [{ roleId: role2.id, companyId: companyA }])
-    const approver2 = userWith(approver2Employee, [{ access: {}, rows: [row(companyA, null, null)] }])
+    const approver2 = { ...userWith(approver2Employee, [{ access: {}, rows: [row(companyA, null, null)] }]), activeRoleId: role2.id }
     const admin = userWith({ id: 0, employeeCode: 'CHAINS' }, [{ access: { APPROVAL_CHAINS: 'WRITE' }, rows: [row(companyA, null, null)] }])
     await chainsService.saveChain(admin, {
       kind: 'SALARY_REVISION',
@@ -374,7 +374,7 @@ describe('job changes', () => {
       expect(asked.changes[0]).toMatchObject({ field: 'companyId', label: 'Company', to: expect.stringContaining(companyC.code) })
       // its approvers must cover both companies: the role holder for A only cannot decide it
       await expect(approvalsService.decide(approver, { id: asked.approvalRequestId, approve: true })).rejects.toThrow()
-      await approvalsService.decide(userWith(both, [{ access: {}, rows: [] }]), { id: asked.approvalRequestId, approve: true })
+      await approvalsService.decide({ ...userWith(both, [{ access: {}, rows: [] }]), activeRoleId: role.id }, { id: asked.approvalRequestId, approve: true })
       expect((await jobChangesService.getJobChange(hrBoth, asked.id)).status).toBe('APPLIED')
     } finally {
       // the other tests of this file use company A's one-role chain

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronDown, KeyRound, LogOut, Menu, UserRound } from 'lucide-react'
+import { ArrowRightLeft, ChevronDown, KeyRound, LogOut, Menu, UserRound } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
@@ -10,6 +10,8 @@ import { useAccess } from '@/hooks/useAccess'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
+import { writeActiveRole } from '@/lib/active-role'
+import { RoleOptions } from './RoleOptions'
 
 // short: the name on the "More" button while that page is open (the page's title says the rest)
 type NavItem = { to: string; label: string; short?: string; count?: number; also?: string[] }
@@ -27,9 +29,23 @@ export function AppLayout() {
   const me = useCurrentUser()
   const { can } = useAccess()
   const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const location = useLocation()
+  const { pathname } = location
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
+  const activeRole = me.data?.availableRoles.find((role) => role.id === me.data.activeRoleId)?.name ?? 'Employee'
+  const switchingRole = me.data?.availableRoles.find((role) => role.id === location.state?.switchRoleTo)
+  const switchingRoleId = switchingRole?.id
+  useEffect(() => {
+    if (switchingRoleId === undefined) return
+    // Keep the old role in force until the transition commits. The fresh document clears all
+    // cached records and in-flight reads before the new role's data is shown.
+    const timer = window.setTimeout(() => {
+      writeActiveRole(switchingRoleId)
+      window.location.replace('/')
+    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 220)
+    return () => window.clearTimeout(timer)
+  }, [switchingRoleId])
   // what waits for my decision (2026-11-20) - shown next to Approvals
   const waiting = useQuery({ ...orpc.approvals.countToDecide.queryOptions(), refetchInterval: 120_000 })
   // whether there is anyone's attendance to see: a team, an HOD department (the overview's sizes) or Attendance: View
@@ -41,6 +57,7 @@ export function AppLayout() {
   const logout = useMutation(
     orpc.accounts.logout.mutationOptions({
       onSettled: () => {
+        writeActiveRole(null)
         queryClient.clear()
         void navigate('/login', { replace: true })
       },
@@ -86,14 +103,25 @@ export function AppLayout() {
 
   const pill = (active: boolean) =>
     cn(
-      'flex shrink-0 items-center gap-1 rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
-      active ? 'bg-hero text-hero-foreground' : 'text-muted-foreground hover:text-foreground',
+      'nav-control relative isolate flex shrink-0 items-center gap-1 rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+      active ? 'text-hero-foreground' : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground',
     )
   const sheetLink = (active: boolean) =>
-    cn('flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-medium transition-colors', active ? 'bg-hero text-hero-foreground' : 'hover:bg-surface-2')
+    cn('nav-control flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-medium transition-colors', active ? 'bg-hero text-hero-foreground' : 'hover:bg-surface-2')
+
+  const activeSurface = <span aria-hidden className="nav-active-surface pointer-events-none absolute inset-0 -z-10 rounded-full bg-hero" />
 
   return (
-    <div className="flex min-h-svh flex-col">
+    <>
+      {switchingRole && (
+        <div role="status" aria-live="polite" className="role-transition fixed inset-0 z-[100] grid place-items-center bg-background/95 backdrop-blur-sm">
+          <div className="flex items-center gap-4 px-6">
+            <span className="role-transition-mark grid size-12 shrink-0 place-items-center rounded-full bg-gold-soft text-foreground"><ArrowRightLeft aria-hidden className="size-5" /></span>
+            <div><p className="text-xs text-muted-foreground">Switching role</p><p className="role-transition-name mt-1 text-xl font-medium">{switchingRole.name}</p></div>
+          </div>
+        </div>
+      )}
+    <div inert={!!switchingRole} className="flex min-h-svh flex-col">
       <header className="sticky top-0 z-30 bg-background/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 lg:py-4">
           <Link to="/" className="flex shrink-0 items-center gap-2.5 rounded-full">
@@ -111,23 +139,27 @@ export function AppLayout() {
             {/* the items follow the access - bars until accounts.me answers (the page below loads at the same time) */}
             {!menuReady && <NavItemsSkeleton />}
             {menuReady && pillItems.map((item) => (
-              <NavLink key={item.to} to={item.to} end={item.to === '/'} className={({ isActive }) => pill(isActive)}>
-                {item.label}
-                {!!item.count && <span className="rounded-full bg-gold px-1.5 text-[11px] font-semibold text-gold-foreground tabular-nums">{item.count}</span>}
+              <NavLink key={item.to} to={item.to} viewTransition end={item.to === '/'} className={({ isActive }) => pill(isActive)}>
+                {({ isActive }) => <>
+                  {isActive && activeSurface}
+                  {item.label}
+                  {!!item.count && <span className="rounded-full bg-gold px-1.5 text-[11px] font-semibold text-gold-foreground tabular-nums">{item.count}</span>}
+                </>}
               </NavLink>
             ))}
             {menuReady && menuItems.length > 0 && (
               <DropdownMenu>
-                <DropdownMenuTrigger className={pill(Boolean(currentMore))}>
+                <DropdownMenuTrigger className={cn(pill(Boolean(currentMore)), 'nav-dropdown')}>
+                  {currentMore && activeSurface}
                   {currentMore ? (currentMore.short ?? currentMore.label) : 'More'}
                   <ChevronDown className="size-4 opacity-70" aria-hidden />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" sideOffset={10} className="w-52 rounded-2xl p-1.5 shadow-float ring-0">
+                <DropdownMenuContent align="end" sideOffset={10} className="nav-popup w-52 rounded-2xl p-1.5 shadow-float ring-0">
                   {menuItems.map((item) => (
                     <DropdownMenuItem
                       key={item.to}
                       className={cn('rounded-xl px-3 py-2', item === currentMore && 'bg-surface-2 font-medium')}
-                      onClick={() => void navigate(item.to)}
+                      onClick={() => void navigate(item.to, { viewTransition: true })}
                     >
                       {item.label}
                     </DropdownMenuItem>
@@ -143,16 +175,18 @@ export function AppLayout() {
               <DropdownMenu>
                 <DropdownMenuTrigger
                   aria-label="My account"
-                  className="hidden shrink-0 items-center gap-2.5 rounded-full bg-card py-1.5 pr-3 pl-1.5 text-left shadow-card transition-colors outline-none hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring/50 xl:flex"
+                  className="nav-control nav-dropdown hidden shrink-0 items-center gap-2.5 rounded-full bg-card py-1.5 pr-3 pl-1.5 text-left shadow-card transition-colors outline-none hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring/50 xl:flex"
                 >
                   <span className="grid size-7 place-items-center rounded-full bg-gold-soft text-xs font-semibold">{me.data.name.slice(0, 1)}</span>
                   <span className="max-w-36 text-sm leading-tight">
                     <span className="block truncate font-medium">{me.data.name}</span>
-                    <span className="block text-xs text-muted-foreground">{me.data.employeeCode}</span>
+                    <span className="block truncate text-xs text-muted-foreground" title={activeRole}>{activeRole}</span>
                   </span>
                   <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" sideOffset={10} className="w-52 rounded-2xl p-1.5 shadow-float ring-0">
+                <DropdownMenuContent align="end" sideOffset={10} className="nav-popup w-52 rounded-2xl p-1.5 shadow-float ring-0">
+                  <RoleOptions />
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem className="rounded-xl px-3 py-2" onClick={() => void navigate('/me')}>
                     <UserRound /> My profile
                   </DropdownMenuItem>
@@ -166,10 +200,21 @@ export function AppLayout() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              <div className="min-w-0 xl:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger aria-label={`Switch role: ${activeRole}`} className="nav-control nav-dropdown flex h-10 max-w-36 items-center gap-2 rounded-full bg-card px-3 text-sm shadow-card outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <span className="truncate">{activeRole}</span><ChevronDown aria-hidden className="size-4 shrink-0" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" sideOffset={8} className="nav-popup w-60 max-w-[calc(100vw-2rem)] rounded-2xl p-1.5 shadow-float ring-0">
+                    <RoleOptions />
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
               <button
                 type="button"
                 onClick={() => setMenuOpen(true)}
-                className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-card px-4 text-sm font-medium shadow-card transition-colors outline-none hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring/50 xl:hidden"
+                className="nav-control flex h-10 shrink-0 items-center gap-2 rounded-full bg-card px-4 text-sm font-medium shadow-card transition-colors outline-none hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ring/50 xl:hidden"
               >
                 <Menu className="size-4" aria-hidden />
                 Menu
@@ -192,7 +237,7 @@ export function AppLayout() {
             </SheetHeader>
             <nav aria-label="All pages" className="flex flex-col gap-1 px-3 pb-3">
               {[...mainItems, ...moreItems].map((item) => (
-                <NavLink key={item.to} to={item.to} end={item.to === '/'} onClick={() => setMenuOpen(false)} className={({ isActive }) => sheetLink(isActive)}>
+                <NavLink key={item.to} to={item.to} viewTransition end={item.to === '/'} onClick={() => setMenuOpen(false)} className={({ isActive }) => sheetLink(isActive)}>
                   {item.label}
                 {!!item.count && <span className="ml-auto rounded-full bg-gold px-1.5 text-xs font-semibold text-gold-foreground tabular-nums">{item.count}</span>}
                 </NavLink>
@@ -217,5 +262,6 @@ export function AppLayout() {
         <Outlet />
       </main>
     </div>
+    </>
   )
 }

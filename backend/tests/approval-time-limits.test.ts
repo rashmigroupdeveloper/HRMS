@@ -36,7 +36,7 @@ describe('approval time limits', () => {
   async function holderOf(roleId: number) {
     const employee = await createEmployee({ companyId, plantId })
     await giveLogin(employee.id, [{ roleId, companyId }])
-    return viewerOf(employee)
+    return { ...viewerOf(employee), activeRoleId: roleId, activeRoleIsFallback: roleId === await fallbackRoleId() }
   }
 
   // a job change of a new employee (optionally with a reporting manager), following this chain; its request id
@@ -236,7 +236,7 @@ describe('approval time limits', () => {
       hrN,
     )
     const id = change.approvalRequestId
-    await approvalsService.decide(userWith(holderN, [{ access: {}, rows: [row(companyN, null, null)] }]), { id, approve: true })
+    await approvalsService.decide({ ...userWith(holderN, [{ access: {}, rows: [row(companyN, null, null)] }]), activeRoleId: role.id }, { id, approve: true })
     await runLate(id)
     await signOut(top.id)
     await approvalsService.runDaily({ requestIds: [id] })

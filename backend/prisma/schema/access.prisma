@@ -6,7 +6,7 @@
 //     and its APIs check it: accessProcedure('ONBOARDING', 'READ' | 'WRITE').
 //   - A ROLE is created by the super admin from the "Roles & access" page and given a level per area:
 //     READ (view only) or WRITE (view + change). An area left out = no access.
-//   - An employee can have several roles; their access is the highest level any of their roles gives per area.
+//   - An employee can have several roles; each authenticated request activates one assigned role and its data access.
 //   - DATA ACCESS (2026-11-18): each role given to an employee says WHOSE records it covers - slices of the group
 //     (company -> plant -> department) at View or Edit (UserAccountRoleScope). A role says what, its data access whose.
 //   - Every logged-in employee can use the self-service parts without any role.

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { hasAccess } from '@/hooks/useAccess'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { orpc } from '@/lib/orpc'
+import { writeActiveRole } from '@/lib/active-role'
 import { errorMessage } from '@/lib/utils'
 import { AuthLayout } from './components/AuthLayout'
 import { TestAccounts } from './components/TestAccounts'
@@ -31,6 +32,7 @@ export function LoginPage() {
   const login = useMutation(
     orpc.accounts.login.mutationOptions({
       onSuccess: (user) => {
+        writeActiveRole(null)
         queryClient.setQueryData(orpc.accounts.me.queryKey(), user)
         void navigate(user.mustChangePassword ? '/change-password' : (params.get('next') ?? startPage(user)), { replace: true })
       },
