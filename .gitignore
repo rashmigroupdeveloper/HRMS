@@ -8,6 +8,7 @@ dist-ssr/
 
 # Generated Prisma client (rebuilt by `npm run db:generate`)
 backend/src/generated/
+backend/var/storage/
 
 # Environment files (commit only the .example versions)
 .env
