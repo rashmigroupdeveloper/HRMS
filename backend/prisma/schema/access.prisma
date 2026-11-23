@@ -32,6 +32,9 @@ model UserAccount {
   resetCodeFailedAttempts Int       @default(0) @map("reset_code_failed_attempts") @db.SmallInt
   resetCodeSentAt         DateTime? @map("reset_code_sent_at") @db.Timestamptz(3)
   resetCodeSentById       Int?      @map("reset_code_sent_by_id")
+  // how many codes were sent on the Indian calendar day of resetCodeSentAt - at most 5 a day per login (2026-11-23, the
+  // review: with only the 60-second gap, a login could be sent 1,440 codes a day, each with 5 tries at guessing)
+  resetCodesSentToday     Int       @default(0) @map("reset_codes_sent_today") @db.SmallInt
   // When the employee last signed in - the logins list (old HRMS, 2026-11-16). No "by" column: it is always the
   // employee themselves (each sign-in, with its IP, is also in the change history)
   lastLoginAt             DateTime? @map("last_login_at") @db.Timestamptz(3)

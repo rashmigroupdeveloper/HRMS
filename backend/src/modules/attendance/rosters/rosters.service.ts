@@ -69,7 +69,8 @@ export async function getGrid(viewer: CurrentUser, { from, to, onlyChanges, comp
   const changed = new Set(entries.filter((e) => e.date >= from).map((e) => e.employeeId))
   const people = onlyChanges ? inScope.filter((p) => changed.has(p.id)) : inScope
   const [plans, shifts] = await Promise.all([daysService.loadPlans(people, addDays(from, -1), to, { roster: false }), shiftsService.listShifts(viewer, false)])
-  const shiftById = new Map((await daysService.allShifts()).map((s) => [s.id, s]))
+  // each shift's timing on the day (dated shifts - 2026-11-23)
+  const shiftAt = await daysService.loadShifts()
   const days = eachDay(from, to)
   const canEdit = canRoster(viewer)
   return {
@@ -89,7 +90,7 @@ export async function getGrid(viewer: CurrentUser, { from, to, onlyChanges, comp
       }
       const span = (day: Date) => {
         const e = effective(day)
-        const shift = e.shiftId ? shiftById.get(e.shiftId) : undefined
+        const shift = e.shiftId ? shiftAt(e.shiftId, day) : undefined
         if (!e.working || !shift) return null
         const full = shift.endMinute > shift.startMinute ? shift.endMinute : shift.endMinute + 1440
         // a half day (e.g. Saturday) ends where the first half ends, without the break (2026-11-22)

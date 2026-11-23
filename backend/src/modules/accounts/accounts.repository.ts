@@ -101,8 +101,24 @@ export function setOwnPassword(accountId: number, passwordHash: string, actorId:
 export function findResetCode(employeeId: number, db: DbClient = prisma) {
   return db.userAccount.findUnique({
     where: { employeeId },
-    select: { id: true, passwordHash: true, resetCodeHash: true, resetCodeValidUntil: true, resetCodeFailedAttempts: true, resetCodeSentAt: true },
+    select: { id: true, passwordHash: true, resetCodeHash: true, resetCodeValidUntil: true, resetCodeFailedAttempts: true, resetCodeSentAt: true, resetCodesSentToday: true },
   })
+}
+
+// Stores a new "forgot password" code only if no other one was sent since `lastSentAt` was read (two requests at once send
+// one code - 2026-11-23); 0 = another request was first
+export async function storeNewResetCode(
+  accountId: number,
+  lastSentAt: Date | null,
+  data: { resetCodeHash: string; resetCodeValidUntil: Date; resetCodeSentAt: Date; resetCodesSentToday: number },
+  actorId: ActorId,
+  db: DbClient = prisma,
+) {
+  const { count } = await db.userAccount.updateMany({
+    where: { id: accountId, resetCodeSentAt: lastSentAt },
+    data: { ...data, resetCodeFailedAttempts: 0, resetCodeSentById: actorId, ...updatedBy(actorId) },
+  })
+  return count
 }
 
 // Sets / counts / clears the "forgot password" code (by System - the employee is not logged in)

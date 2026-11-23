@@ -3,8 +3,18 @@ import { createdBy, prisma, SYSTEM_ACTOR, updatedBy, type ActorId, type DayStatu
 // Database access for the days' results and HR's corrections, and the reads the day calculation needs (shifts,
 // assignments, published roster days, holidays, punches) - one place that reads everything a day depends on.
 
-const shiftSelect = { id: true, code: true, name: true, startMinute: true, endMinute: true, breakMinutes: true, halfSplitMinute: true, isActive: true } satisfies Prisma.ShiftSelect
-export type PlanShift = Prisma.ShiftGetPayload<{ select: typeof shiftSelect }>
+// a shift with its dated timing (2026-11-23) - a day uses the version in force on it
+const shiftSelect = {
+  id: true,
+  code: true,
+  name: true,
+  isActive: true,
+  versions: { orderBy: { effectiveFrom: 'asc' }, select: { effectiveFrom: true, startMinute: true, endMinute: true, breakMinutes: true, halfSplitMinute: true } },
+} satisfies Prisma.ShiftSelect
+export type DatedShift = Prisma.ShiftGetPayload<{ select: typeof shiftSelect }>
+// a pattern with its dated days (2026-11-23)
+const patternSelect = { name: true, versions: { orderBy: { effectiveFrom: 'asc' }, select: { effectiveFrom: true, days: true, halfDays: true } } } satisfies Prisma.RosterPatternSelect
+export type DatedPattern = Prisma.RosterPatternGetPayload<{ select: typeof patternSelect }>
 
 export function listAllShifts(db: DbClient = prisma) {
   return db.shift.findMany({ select: shiftSelect })
@@ -14,7 +24,7 @@ export function listAssignments(employeeIds: number[], to: Date, db: DbClient = 
   return db.shiftAssignment.findMany({
     where: { employeeId: { in: employeeIds }, effectiveFrom: { lte: to } },
     orderBy: [{ employeeId: 'asc' }, { effectiveFrom: 'asc' }],
-    select: { employeeId: true, policyId: true, patternDay: true, pattern: { select: { name: true, days: true, halfDays: true } }, effectiveFrom: true },
+    select: { employeeId: true, policyId: true, patternDay: true, pattern: { select: patternSelect }, effectiveFrom: true },
   })
 }
 
@@ -33,7 +43,7 @@ export function listPolicies(db: DbClient = prisma) {
 
 // The default schedule pattern in use (exactly one - for employees with no schedule given)
 export function findDefaultPattern(db: DbClient = prisma) {
-  return db.rosterPattern.findFirst({ where: { isDefault: true, isActive: true }, select: { name: true, days: true, halfDays: true } })
+  return db.rosterPattern.findFirst({ where: { isDefault: true, isActive: true }, select: patternSelect })
 }
 
 // Published roster days (drafts do not count)

@@ -22,6 +22,7 @@ import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
 import { cn, formatDate, formatDoneBy, fromDateInput, toDateInput } from '@/lib/utils'
 import { segment, SEGMENTS, SETUP_PARTS, UPLOAD_HINT, UPLOAD_TITLE, type Shift, todayDay, WEEKDAYS } from './labels'
+import { AppliesFrom, UpcomingPill } from './AppliesFrom'
 import { MonthLockSetup } from './MonthLockSetup'
 import { PoliciesSetup } from './PoliciesSetup'
 import { RosterView } from './RosterView'
@@ -248,6 +249,7 @@ function Shifts() {
             <TableRow key={s.id} className={s.isActive ? undefined : 'text-muted-foreground'}>
               <TableCell>
                 <span className="font-medium">{s.name}</span> <span className="text-xs text-muted-foreground">{s.code}</span>
+                <UpcomingPill versions={s.versions} />
                 {!s.isActive && (
                   <Pill tone="neutral" className="ml-2">
                     Retired
@@ -287,9 +289,12 @@ function ShiftDialog({ shift, onClose }: { shift: Shift | null; onClose: () => v
     brk: String(shift?.breakMinutes ?? 30),
     // where the first half ends ('' = the middle of the shift) - a half day (e.g. Saturday) ends there (2026-11-22)
     split: shift?.halfSplit ?? '',
+    // the date changed times apply from (an existing shift - dated shifts, 2026-11-23)
+    from: toDateInput(todayDay()),
   }))
   const [v, setV] = useState(initial)
   const dirty = (Object.keys(v) as (keyof typeof v)[]).some((k) => v[k] !== initial[k])
+  const timingChanged = !!shift && (['start', 'end', 'brk', 'split'] as const).some((k) => v[k] !== initial[k])
   const done = {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: orpc.attendance.key() })
@@ -319,7 +324,7 @@ function ShiftDialog({ shift, onClose }: { shift: Shift | null; onClose: () => v
     <FormDialog onOpenChange={(open) => !open && onClose()} dirty={dirty} className="rounded-3xl sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{shift ? `Edit ${shift.name}` : 'Add a shift'}</DialogTitle>
-          <DialogDescription>A change applies to the days worked out from now on.</DialogDescription>
+          <DialogDescription>{shift ? 'A change of the times applies from the date you choose below.' : 'Its times apply once a pattern or a roster day names it.'}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           {field('name', 'Name', { placeholder: 'e.g. Morning' })}
@@ -332,6 +337,7 @@ function ShiftDialog({ shift, onClose }: { shift: Shift | null; onClose: () => v
         <p className="text-xs text-muted-foreground">
           A half day (a pattern day marked ½, e.g. Saturday) works only the first half and ends at its time. The grace and the full / half day hours are in the attendance policy.
         </p>
+        {timingChanged && <AppliesFrom id="sh-from" what="times" value={v.from} onChange={(from) => setV((x) => ({ ...x, from }))} />}
         <FormError error={create.error ?? update.error} />
         <DialogFooter>
           {shift && (
@@ -342,8 +348,13 @@ function ShiftDialog({ shift, onClose }: { shift: Shift | null; onClose: () => v
           <DialogCancel />
           <Button
             variant="gold"
-            disabled={!v.name.trim() || !v.code.trim() || create.isPending || update.isPending}
-            onClick={() => (shift ? update.mutate({ id: shift.id, ...data }) : create.mutate(data))}
+            disabled={!v.name.trim() || !v.code.trim() || (timingChanged && !v.from) || create.isPending || update.isPending}
+            onClick={() => {
+              if (!shift) return create.mutate(data)
+              // the times only when changed - then with their date
+              const { code, name, ...timing } = data
+              update.mutate({ id: shift.id, code, name, ...(timingChanged && { ...timing, effectiveFrom: fromDateInput(v.from)! }) })
+            }}
           >
             Save
           </Button>
@@ -1048,6 +1059,7 @@ function Patterns() {
             <div className="min-w-0 flex-1 space-y-1.5">
               <p>
                 <span className="font-medium">{p.name}</span> <span className="text-xs text-muted-foreground">{weeksOf(p.days.length)}</span>
+                <UpcomingPill versions={p.versions} />
                 {p.isDefault && (
                   <Pill tone="gold" className="ml-2">
                     Default
@@ -1073,7 +1085,7 @@ function Patterns() {
       {starring && (
         <ConfirmDialog
           title={`Make ${starring.name} the default pattern?`}
-          description={`Everyone never given a schedule follows ${starring.name} from now on, instead of ${patterns.data?.find((p) => p.isDefault)?.name ?? 'the current default'}. Days already worked out keep what they had.`}
+          description={`Everyone never given a schedule follows ${starring.name} from now on, instead of ${patterns.data?.find((p) => p.isDefault)?.name ?? 'the current default'}. Days already worked out keep what they had until something makes them be worked out again (a punch, a correction).`}
           confirm="Make it the default"
           pending={makeDefault.isPending}
           onConfirm={() => makeDefault.mutate({ id: starring.id, isDefault: true })}
@@ -1099,7 +1111,10 @@ function PatternDialog({ pattern, shifts, onClose }: { pattern: Pattern | null; 
   })
   const [name, setName] = useState(initial.name)
   const [cells, setCells] = useState(initial.cells)
+  // the date changed days apply from (an existing pattern - dated patterns, 2026-11-23)
+  const [from, setFrom] = useState(() => toDateInput(todayDay()))
   const weeks = cells.length / 7
+  const daysChanged = !!pattern && cells.join(',') !== initial.cells.join(',')
   const dirty = name !== initial.name || cells.join(',') !== initial.cells.join(',')
   const done = {
     onSuccess: () => {
@@ -1117,7 +1132,7 @@ function PatternDialog({ pattern, shifts, onClose }: { pattern: Pattern | null; 
     <FormDialog onOpenChange={(open) => !open && onClose()} dirty={dirty} className="rounded-3xl sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle>{pattern ? `Edit ${pattern.name}` : 'Add a schedule pattern'}</DialogTitle>
-        <DialogDescription>Each day: a shift, its first half only (½) or off. The weeks repeat in order.</DialogDescription>
+        <DialogDescription>Each day: a shift, its first half only (½) or off. The weeks repeat in order.{pattern ? ' A change of the days applies from the date you choose below.' : ''}</DialogDescription>
       </DialogHeader>
       <div className="space-y-3">
         <div className="flex flex-wrap items-end gap-3">
@@ -1190,6 +1205,7 @@ function PatternDialog({ pattern, shifts, onClose }: { pattern: Pattern | null; 
         <p className="text-xs text-muted-foreground">
           ½ = only the shift's first half is worked (to its "first half ends" time); the second half is off - a half-day Saturday counts half a day worked, and leave on it 0.5.
         </p>
+        {daysChanged && <AppliesFrom id="pt-from" what="days" value={from} onChange={setFrom} />}
       </div>
       <FormError error={create.error ?? update.error} />
       <DialogFooter>
@@ -1201,8 +1217,10 @@ function PatternDialog({ pattern, shifts, onClose }: { pattern: Pattern | null; 
         <DialogCancel />
         <Button
           variant="gold"
-          disabled={!name.trim() || !days.some((d) => d !== 0) || create.isPending || update.isPending}
-          onClick={() => (pattern ? update.mutate({ id: pattern.id, name, days, halfDays }) : create.mutate({ name, days, halfDays }))}
+          disabled={!name.trim() || !days.some((d) => d !== 0) || (daysChanged && !from) || create.isPending || update.isPending}
+          onClick={() =>
+            pattern ? update.mutate({ id: pattern.id, name, ...(daysChanged && { days, halfDays, effectiveFrom: fromDateInput(from)! }) }) : create.mutate({ name, days, halfDays })
+          }
         >
           Save
         </Button>

@@ -134,7 +134,7 @@ describe('half-day sessions', () => {
       policiesService.createPolicy({ name: `Bad ${tag}`, graceMinutes: 0, fullDayMinutes: 200, halfDayMinutes: 240, latesPerHalfDayCut: null, veryLateMinutes: null, veryEarlyMinutes: null }, userWith({ id: 0, employeeCode: 'HRATT' }, [{ access: { ATTENDANCE: 'WRITE', ATTENDANCE_SETUP: 'WRITE' }, rows: [row(null, null, null)] }])),
     ).rejects.toThrow('half day cannot need more')
     const hr = userWith({ id: 0, employeeCode: 'HRATT' }, [{ access: { ATTENDANCE: 'WRITE', ATTENDANCE_SETUP: 'WRITE' }, rows: [row(null, null, null)] }])
-    await expect(shiftsService.updateShift({ id: shiftId, halfSplit: 1200 }, hr)).rejects.toThrow('first half must end')
-    await expect(shiftsService.updatePattern({ id: patternId, halfDays: [7] }, hr)).rejects.toThrow('half day must be a day with a shift')
+    await expect(shiftsService.updateShift({ id: shiftId, halfSplit: 1200, effectiveFrom: new Date(Date.UTC(2026, 0, 1)) }, hr)).rejects.toThrow('first half must end')
+    await expect(shiftsService.updatePattern({ id: patternId, halfDays: [7], effectiveFrom: new Date(Date.UTC(2026, 0, 1)) }, hr)).rejects.toThrow('half day must be a day with a shift')
   })
 })

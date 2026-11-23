@@ -281,6 +281,10 @@ export async function changePassword(user: CurrentUser, { currentPassword, newPa
 // --- Forgot password (2026-11-15): a 6-digit code to the employee's personal e-mail, then a new password ---
 
 const RESET_RESEND_SECONDS = 60
+// at most this many codes a day per login (2026-11-23, the review: with only the minute's gap a login could be sent 1,440
+// codes a day - 7,200 guesses at a 6-digit code); the day is India's calendar day
+const MAX_RESET_CODES_A_DAY = 5
+const indianDay = (at: Date) => new Date(at.getTime() + 330 * 60_000).toISOString().slice(0, 10)
 const MAX_WRONG_RESET_CODES = 5
 // Shown whatever the employee code is, so codes and e-mail addresses cannot be discovered by asking
 const RESET_SENT =
@@ -290,7 +294,7 @@ const RESET_CODE_WRONG = 'The code is wrong or has expired. Ask for a new code.'
 const resetCodeHash = (accountId: number, code: string) => createHash('sha256').update(`reset:${accountId}:${code}`).digest('hex')
 
 // Sends a code when the employee can log in and has a personal e-mail; always answers the same. A new code at most
-// once a minute. The e-mail is sent in the background (a failure is only logged on the server).
+// once a minute and 5 a day (more asks get the same answer, and no e-mail). The e-mail is sent in the background (a failure is only logged on the server).
 export async function requestPasswordReset({ employeeCode }: z.infer<typeof requestPasswordResetInput>, ip: string | null) {
   countPasswordTry('requestReset', employeeCode, ip)
   const employee = await employeesService.findContactByCode(employeeCode)
@@ -300,19 +304,23 @@ export async function requestPasswordReset({ employeeCode }: z.infer<typeof requ
   const answer = { message: RESET_SENT, passwordRule: { minLength: rules.minPasswordLength, history: rules.passwordHistory } }
   if (!employee?.personalEmail || !account) return answer
   if (account.resetCodeSentAt && Date.now() - account.resetCodeSentAt.getTime() < RESET_RESEND_SECONDS * 1000) return answer
-  const code = String(randomInt(0, 1_000_000)).padStart(6, '0')
   const now = new Date()
-  await accountsRepository.updateResetCode(
+  const sentToday = account.resetCodeSentAt && indianDay(account.resetCodeSentAt) === indianDay(now) ? account.resetCodesSentToday : 0
+  if (sentToday >= MAX_RESET_CODES_A_DAY) return answer
+  const code = String(randomInt(0, 1_000_000)).padStart(6, '0')
+  const stored = await accountsRepository.storeNewResetCode(
     account.id,
+    account.resetCodeSentAt,
     {
       resetCodeHash: resetCodeHash(account.id, code),
       resetCodeValidUntil: new Date(now.getTime() + rules.resetCodeMinutes * 60_000),
-      resetCodeFailedAttempts: 0,
       resetCodeSentAt: now,
-      resetCodeSentById: SYSTEM_ACTOR,
+      resetCodesSentToday: sentToday + 1,
     },
     SYSTEM_ACTOR,
   )
+  // another ask at the same moment sent its code
+  if (!stored) return answer
   void sendMail({
     to: employee.personalEmail,
     subject: `Your code to reset your HRMS password - ${employee.company.name}`,

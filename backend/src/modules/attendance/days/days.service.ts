@@ -46,7 +46,8 @@ const WINDOW_AFTER = 8 * 60 * MINUTE_MS
 const FALLBACK_POLICY: PlanPolicy = { id: null, name: 'Standard', graceMinutes: 10, fullDayMinutes: null, halfDayMinutes: 240, latesPerHalfDayCut: null, veryLateMinutes: null, veryEarlyMinutes: null }
 
 type Person = employeesService.AttendancePerson
-type PlanShift = daysRepository.PlanShift
+// a shift as one day sees it: its timing in force that day (dated shifts - 2026-11-23)
+export type PlanShift = { id: number; code: string; name: string; isActive: boolean; startMinute: number; endMinute: number; breakMinutes: number; halfSplitMinute: number | null }
 type PlanPolicy = { id: number | null; name: string; graceMinutes: number; fullDayMinutes: number | null; halfDayMinutes: number; latesPerHalfDayCut: number | null; veryLateMinutes: number | null; veryEarlyMinutes: number | null }
 // `halfDay`: a working day of the first half only (a half-day weekday of the default shift line; a roster day is whole);
 // `policy`: the rules the day is judged by
@@ -259,9 +260,27 @@ export function assertAttendanceEdit(viewer: CurrentUser, person: { employeeCode
 
 // --- the plan of each day ---
 
-// Every shift, retired ones too (a day may still use one)
-export function allShifts() {
-  return daysRepository.listAllShifts()
+// the version in force on a day: the latest that started by then (the first one runs from 2000-01-01)
+const inForce = <T extends { effectiveFrom: Date }>(versions: T[], day: Date) => versions.filter((v) => v.effectiveFrom <= day).at(-1) ?? versions[0]!
+
+// A shift's timing on a day, and a pattern's days on a day (dated - 2026-11-23: an edit from a date never reworks the days
+// before it)
+export function shiftOn({ versions, ...shift }: daysRepository.DatedShift, day: Date): PlanShift {
+  const { startMinute, endMinute, breakMinutes, halfSplitMinute } = inForce(versions, day)
+  return { ...shift, startMinute, endMinute, breakMinutes, halfSplitMinute }
+}
+export function patternOn(pattern: daysRepository.DatedPattern, day: Date) {
+  const { days, halfDays } = inForce(pattern.versions, day)
+  return { name: pattern.name, days, halfDays }
+}
+
+// Every shift, retired ones too (a day may still use one): the shift with this id as that day sees it
+export async function loadShifts() {
+  const byId = new Map((await daysRepository.listAllShifts()).map((s) => [s.id, s]))
+  return (id: number, day: Date) => {
+    const shift = byId.get(id)
+    return shift ? shiftOn(shift, day) : undefined
+  }
 }
 
 // `roster: false` - what the days are by default, without the roster (a roster day the same as the default is not kept -
@@ -280,6 +299,10 @@ export async function loadPlans(people: Person[], from: Date, to: Date, { roster
   // there is always one (the default cannot be retired, only moved to another pattern)
   if (!defaultPattern) throw new ORPCError('INTERNAL_SERVER_ERROR', { message: 'No default schedule pattern is set up - star a pattern on Attendance setup > Schedule patterns' })
   const shiftById = new Map(shifts.map((s) => [s.id, s]))
+  const shiftAt = (id: number, day: Date) => {
+    const shift = shiftById.get(id)
+    return shift ? shiftOn(shift, day) : undefined
+  }
   const policyById = new Map(policies.map((p) => [p.id, p]))
   const defaultPolicy = policies.find((p) => p.isDefault && p.isActive)
   // a policy's rules on a day: the version in force then (dated policy changes - the user, 2026-11-23)
@@ -299,7 +322,8 @@ export async function loadPlans(people: Person[], from: Date, to: Date, { roster
       const key = dayKey(day)
       // the schedule in force: the latest that started by that day, else the default pattern
       const assignment = own.filter((a) => a.effectiveFrom <= day).at(-1)
-      const pattern = assignment?.pattern ?? defaultPattern
+      // the pattern's days in force that day (dated patterns - 2026-11-23); the cycle counts from the schedule's start
+      const pattern = patternOn(assignment?.pattern ?? defaultPattern, day)
       const anchor = assignment ? assignment.effectiveFrom : DEFAULT_ANCHOR
       const startDay = assignment ? assignment.patternDay : 1
       const policy = rulesOn((assignment?.policyId && policyById.get(assignment.policyId)) || defaultPolicy, day)
@@ -309,14 +333,14 @@ export async function loadPlans(people: Person[], from: Date, to: Date, { roster
       const turn = pattern.days[index]!
       const half = pattern.halfDays.includes(index + 1)
       // an off day still has a shift - its punches (worked on a day off) are placed by it: the pattern's first shift
-      const usual = shiftById.get(pattern.days.find((d) => d !== 0)!)!
-      const patternShift = turn ? (shiftById.get(turn) ?? usual) : usual
+      const usual = shiftAt(pattern.days.find((d) => d !== 0)!, day)!
+      const patternShift = turn ? (shiftAt(turn, day) ?? usual) : usual
       const holiday = holidaysByDay
         .get(key)
         ?.find((h) => (h.companyId === null || h.companyId === person.companyId) && (h.workLocationId === null || h.workLocationId === person.workLocationId))
       // a published roster change (rare, one day) wins over the pattern
       const entry = rostered.get(key)
-      const rosterShift = entry?.shiftId ? (shiftById.get(entry.shiftId) ?? patternShift) : patternShift
+      const rosterShift = entry?.shiftId ? (shiftAt(entry.shiftId, day) ?? patternShift) : patternShift
       const base = { holiday: null, rostered: false, halfDay: false, policy, pattern: pattern.name }
       if (holiday) days.set(key, { ...base, kind: 'HOLIDAY', shift: rosterShift, holiday: holiday.name, rostered: !!entry })
       else if (entry) days.set(key, { ...base, kind: entry.shiftId ? 'WORK' : 'WEEKLY_OFF', shift: rosterShift, rostered: true })
