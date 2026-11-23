@@ -147,6 +147,22 @@ function TypeDrawer({ type, onClose }: { type: LeaveType | null; onClose: () => 
   const [initial] = useState(() => formOf(type))
   const [f, setF] = useState(initial)
   const [done, setDone] = useState(false)
+  // the month changed credit rules credit from (2026-11-23): next month unless HR picks another - an earlier one back-dates
+  const [creditsFrom, setCreditsFrom] = useState(() => {
+    const n = new Date()
+    const next = new Date(Date.UTC(n.getFullYear(), n.getMonth() + 1, 1))
+    return next.toISOString().slice(0, 7)
+  })
+  const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x))
+  // the same test as the server's: who is credited what changes
+  const creditRulesChange =
+    !!type &&
+    f.isPaid &&
+    (Number(f.creditPerMonth || 0) !== type.creditPerMonth ||
+      Number(f.creditAfterMonths || 0) !== type.creditAfterMonths ||
+      !sameSet(f.genders, type.genders) ||
+      !sameSet(f.employmentTypes, type.employmentTypes) ||
+      (f.isActive && !type.isActive))
   const set = <K extends keyof Form>(key: K, value: Form[K]) => setF((v) => ({ ...v, [key]: value }))
   const onSuccess = () => {
     void queryClient.invalidateQueries({ queryKey: orpc.leave.key() })
@@ -172,7 +188,7 @@ function TypeDrawer({ type, onClose }: { type: LeaveType | null; onClose: () => 
       isCompOff: f.isPaid && f.isCompOff,
       isActive: f.isActive,
     }
-    if (type) update.mutate({ ...input, id: type.id })
+    if (type) update.mutate({ ...input, id: type.id, ...(creditRulesChange && { creditsFrom: new Date(`${creditsFrom}-01T00:00:00Z`) }) })
     else create.mutate(input)
   }
   const number = (key: 'creditPerMonth' | 'creditAfterMonths' | 'maxCarryForward' | 'maxPerRequest', label: string, hint: string, step = '0.01') => (
@@ -196,11 +212,11 @@ function TypeDrawer({ type, onClose }: { type: LeaveType | null; onClose: () => 
       closed={done}
       dirty={JSON.stringify(f) !== JSON.stringify(initial) && !done}
       title={type ? `Edit ${type.code}` : 'Add a leave type'}
-      description="One list for every company. A change applies from now on - credits already given stay."
+      description="One list for every company. Credits already given stay; a change of the credits applies from the month you pick."
       footer={
         <>
           <DrawerCancel />
-          <Button variant="gold" disabled={saving || !f.code.trim() || !f.name.trim()} onClick={save}>
+          <Button variant="gold" disabled={saving || !f.code.trim() || !f.name.trim() || (creditRulesChange && !creditsFrom)} onClick={save}>
             {saving ? 'Saving…' : 'Save'}
           </Button>
         </>
@@ -249,6 +265,15 @@ function TypeDrawer({ type, onClose }: { type: LeaveType | null; onClose: () => 
         </div>
       </div>
       {type && check(f.isActive, (v) => set('isActive', v), 'In use (unchecked: retired - no new applications; balances stay)')}
+      {creditRulesChange && (
+        <div className="space-y-1 rounded-2xl bg-gold-soft/40 p-3">
+          <Label htmlFor="lt-from" className="text-xs text-muted-foreground">
+            The new credits start from
+          </Label>
+          <Input id="lt-from" type="month" className="h-10 w-48 rounded-xl" value={creditsFrom} onChange={(e) => setCreditsFrom(e.target.value)} />
+          <p className="text-xs text-muted-foreground">Months before it are not credited. A month already passed is credited at the next run - everyone the type now covers gets it.</p>
+        </div>
+      )}
       <FormError error={create.error ?? update.error} />
     </FormDrawer>
   )

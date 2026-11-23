@@ -29,6 +29,8 @@ export const leaveTypeInput = z
   // (old HRMS) an unpaid leave has no balance: nothing to credit
   .refine((v) => v.isPaid || v.creditPerMonth === 0, { message: 'Leave without pay has no balance - it cannot be credited', path: ['creditPerMonth'] })
 
-export const updateLeaveTypeInput = leaveTypeInput.and(z.object({ id: idSchema }))
+// `creditsFrom`: the month (any day of it) the changed credit rules credit from - needed when the credit a month, the
+// months before it, who the type is for, or "in use" change (the user, 2026-11-23); an earlier month back-dates on purpose
+export const updateLeaveTypeInput = leaveTypeInput.and(z.object({ id: idSchema, creditsFrom: z.date().optional() }))
 
 export const listLeaveTypesInput = z.object({ includeInactive: z.boolean().optional() }).optional()

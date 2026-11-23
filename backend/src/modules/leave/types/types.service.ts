@@ -1,6 +1,7 @@
 import { hasAccess } from '#core/auth/access'
 import { assertGroupWide } from '#core/auth/scope'
 import type { CurrentUser } from '#core/rpc/procedures'
+import { today } from '#shared/utils/dates'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as typesRepository from './types.repository.js'
@@ -11,6 +12,10 @@ import type { leaveTypeInput, updateLeaveTypeInput } from './types.schema.js'
 // balances and applications keep pointing at it.
 
 const round2 = (n: number) => Math.round(n * 100) / 100
+const firstOfMonth = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1))
+const nextMonth = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))
+const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x))
+const monthText = (d: Date) => d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 
 // For the API: the decimals as numbers
 export function toType(row: typesRepository.TypeRow) {
@@ -70,7 +75,8 @@ export async function compOffType() {
 export async function createType(viewer: CurrentUser, input: z.infer<typeof leaveTypeInput>) {
   assertGroupWide(viewer, 'LEAVE', 'The list of leave types')
   await assertCompOff(input)
-  return toType(await typesRepository.create({ ...dataOf(input), isActive: input.isActive ?? true }, viewer.employeeId))
+  // credits start the month after it is added - never months back
+  return toType(await typesRepository.create({ ...dataOf(input), isActive: input.isActive ?? true, creditsFrom: nextMonth(today()) }, viewer.employeeId))
 }
 
 export async function updateType(viewer: CurrentUser, input: z.infer<typeof updateLeaveTypeInput>) {
@@ -81,5 +87,23 @@ export async function updateType(viewer: CurrentUser, input: z.infer<typeof upda
   if (current.isPaid !== input.isPaid && (await typesRepository.isUsed(input.id))) {
     throw new ORPCError('CONFLICT', { message: `${current.code} is already used - paid / unpaid cannot change; add a new leave type instead` })
   }
-  return toType(await typesRepository.update(input.id, { ...dataOf(input), ...(input.isActive !== undefined && { isActive: input.isActive }) }, viewer.employeeId))
+  // a change of who is credited what (the user, 2026-11-23, as Keka / Zoho People: from an effective date): the month it
+  // credits from - before, every month back to when the type was added was credited at once to whoever it now covered
+  const next = dataOf(input)
+  const isActive = input.isActive ?? current.isActive
+  const creditRulesChange =
+    next.isPaid &&
+    (next.creditPerMonth !== current.creditPerMonth ||
+      next.creditAfterMonths !== current.creditAfterMonths ||
+      !sameSet(next.genders, current.genders) ||
+      !sameSet(next.employmentTypes, current.employmentTypes) ||
+      (isActive && !current.isActive))
+  let creditsFrom: Date | undefined
+  if (creditRulesChange) {
+    if (!input.creditsFrom) throw new ORPCError('BAD_REQUEST', { message: 'Give the month the new credit rules credit from' })
+    creditsFrom = firstOfMonth(input.creditsFrom)
+    const first = nextMonth(current.createdAt)
+    if (creditsFrom < first) throw new ORPCError('BAD_REQUEST', { message: `${current.code} was added in ${monthText(current.createdAt)} - its credits start ${monthText(first)} at the earliest` })
+  }
+  return toType(await typesRepository.update(input.id, { ...next, ...(input.isActive !== undefined && { isActive: input.isActive }), ...(creditsFrom && { creditsFrom }) }, viewer.employeeId))
 }

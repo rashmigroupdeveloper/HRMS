@@ -1,4 +1,6 @@
-import { hasLevelAt } from '#core/auth/scope'
+import { env } from '#core/config/env'
+import { hasLevelAt, scopeOf } from '#core/auth/scope'
+import { sendMail } from '#core/mail/mailer'
 import { prisma, type DbClient, type LeaveStatus } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { approvalsService } from '#modules/approvals'
@@ -13,7 +15,7 @@ import * as balancesRepository from '../balances/balances.repository.js'
 import * as leaveService from '../leave.service.js'
 import * as typesService from '../types/types.service.js'
 import * as applicationsRepository from './applications.repository.js'
-import type { applyInput, cancelInput, listInput, previewInput } from './applications.schema.js'
+import type { applyInput, cancelInput, listInput, previewInput, recountInput, recountsInput } from './applications.schema.js'
 
 // Leave applications (2026-11-22 - the old HRMS's lv.applications and its rules):
 // - The days are counted from the attendance plan: each working half is 0.5 (a half-day weekday such as RML's Saturday
@@ -243,6 +245,101 @@ export async function getForApproval(viewer: CurrentUser, approvalRequestId: num
   // who else of the employee's team is away then (not the leave itself)
   const away = person ? (await teamOff(person, application.fromDate, application.toDate)) : []
   return { ...view!, isCancelRequest: application.cancelApprovalRequestId === approvalRequestId, balance, teamOff: away }
+}
+
+// --- Approved leave the calendar now counts otherwise (the user, 2026-11-23) ---
+// A holiday added on an approved leave day, one removed, a weekly off changed: the leave keeps the days it was approved
+// with - never changed on its own (as in Keka, Zoho People and SAP, where it is put right by hand). HR sees these leaves
+// and puts each right: days the calendar no longer counts come back to the balance, days it now counts more are taken
+// (if the balance has them); the employee is e-mailed.
+
+// The days an approved leave takes by today's calendar - no "starts and ends on a working day" rule, it is approved
+// already - and the holidays on it
+async function recountOf(employeeId: number, type: Pick<typesService.LeaveType, 'countsOffDays'>, v: Pick<Days, 'fromDate' | 'toDate' | 'fromSecondHalf' | 'toFirstHalf'>) {
+  const plan = await attendanceService.planDays(employeeId, v.fromDate, v.toDate)
+  const planOf = new Map(plan.map((d) => [dayKey(d.date), d]))
+  let halves = 0
+  for (const { date, half } of halvesOfLeave(v)) {
+    const day = planOf.get(dayKey(date))
+    if (day && (type.countsOffDays || (day.kind === 'WORK' && !(day.halfDay && half === 'SECOND')))) halves++
+  }
+  const holidays = plan.filter((d) => d.kind === 'HOLIDAY' && d.holiday).map((d) => `${d.holiday} (${dateText(d.date)})`)
+  return { days: halves / 2, holidays }
+}
+
+// Approved leave overlapping from..to of everyone in the viewer's Leave View data access whose days the calendar now
+// counts otherwise
+export async function listRecounts(viewer: CurrentUser, { from, to }: z.infer<typeof recountsInput>) {
+  const people = await employeesService.listLeavePeople({ scope: scopeOf(viewer, 'LEAVE', 'READ'), from, to })
+  const rows = await applicationsRepository.listForEmployees(
+    people.map((p) => p.id),
+    from,
+    to,
+    ['APPROVED'],
+  )
+  const types = new Map((await typesService.allTypes()).map((t) => [t.id, t]))
+  const out = []
+  for (const row of rows) {
+    const now = await recountOf(row.employeeId, types.get(row.leaveType.id)!, row)
+    const counted = row.days.toNumber()
+    if (now.days === counted) continue
+    const [view] = await toApplications([row])
+    out.push({ ...view!, now: now.days, difference: round1(now.days - counted), holidays: now.holidays })
+  }
+  return out
+}
+
+// Puts one approved leave right by today's calendar: Leave Edit covering the employee ("not found" outside the View range)
+export async function recount(viewer: CurrentUser, { id }: z.infer<typeof recountInput>) {
+  const notFound = new ORPCError('NOT_FOUND', { message: `No leave with id ${id}` })
+  const application = await applicationsRepository.find(id)
+  if (!application) throw notFound
+  const person = await leaveService.findPerson(application.employeeId)
+  if (!person || !hasLevelAt(viewer, 'LEAVE', leaveService.placementOf(person), 'READ')) throw notFound
+  if (!hasLevelAt(viewer, 'LEAVE', leaveService.placementOf(person), 'WRITE')) throw new ORPCError('FORBIDDEN', { message: "You do not have access to change this employee's leave" })
+  if (application.status !== 'APPROVED') throw new ORPCError('CONFLICT', { message: 'Only an approved leave is counted again' })
+  if (application.cancelApprovalRequestId) {
+    const [cancelling] = (await approvalsService.statusOf([application.cancelApprovalRequestId])).values()
+    if (cancelling?.status === 'PENDING') throw new ORPCError('CONFLICT', { message: 'The employee asked to cancel this leave - decide that first' })
+  }
+  await attendanceService.assertOpenDays(eachDay(application.fromDate, application.toDate))
+  const type = await typesService.getType(application.leaveTypeId)
+  const result = await prisma.$transaction(async (tx) => {
+    // one change of this employee's leave at a time (a double click puts it right once)
+    await applicationsRepository.lockEmployee(application.employeeId, tx)
+    const record = await applicationsRepository.find(id, tx)
+    if (!record || record.status !== 'APPROVED') throw new ORPCError('CONFLICT', { message: 'Only an approved leave is counted again' })
+    const before = record.days.toNumber()
+    const now = await recountOf(record.employeeId, type, record)
+    const difference = round1(now.days - before)
+    if (!difference) throw new ORPCError('CONFLICT', { message: `This leave already counts ${daysText(before)}` })
+    const why = now.holidays.length ? `holidays on it now: ${now.holidays.join(', ')}` : 'the weekly offs / holidays changed'
+    if (type.isPaid) {
+      if (difference < 0) {
+        await balancesRepository.addEntries([{ employeeId: record.employeeId, leaveTypeId: type.id, kind: 'RETURNED', days: -difference, effectiveDate: record.fromDate, applicationId: record.id, note: `Counted again: ${daysText(now.days)}, not ${daysText(before)} (${why})` }], viewer.employeeId, tx)
+      } else {
+        const sums = await balancesRepository.sumBalances([record.employeeId], undefined, tx)
+        const balance = sums.find((s) => s.leaveTypeId === type.id)?.days ?? 0
+        if (balance < difference) throw new ORPCError('CONFLICT', { message: `Not enough ${type.code} left to take ${daysText(difference)} more: ${balance}` })
+        await balancesRepository.addEntries([{ employeeId: record.employeeId, leaveTypeId: type.id, kind: 'TAKEN', days: -difference, effectiveDate: record.fromDate, applicationId: record.id, note: `Counted again: ${daysText(now.days)}, not ${daysText(before)} (${why})` }], viewer.employeeId, tx)
+      }
+    }
+    await applicationsRepository.update(record.id, { days: now.days }, viewer.employeeId, tx)
+    return { before, now: now.days, difference, why, record }
+  })
+  // the employee is told (after the change - an e-mail never undoes it)
+  const contact = await employeesService.findMailContact(application.employeeId)
+  if (contact?.email) {
+    const what = describe(type, { ...application, days: result.now })
+    const change = result.difference < 0 ? `${daysText(-result.difference)} given back to your ${type.code} balance` : `${daysText(result.difference)} more taken from your ${type.code} balance`
+    await sendMail({
+      to: contact.email,
+      subject: `Your leave was counted again - ${change}`,
+      text: [`Dear ${contact.name},`, '', `Your approved leave was counted again by the calendar: ${what} (it was ${daysText(result.before)}).`, `${change[0]!.toUpperCase()}${change.slice(1)} - ${result.why}.`, '', `Leave: ${env.APP_URL}/leave`].join('\n'),
+    }).catch((error: unknown) => console.error('[mail] leave recount e-mail failed:', error))
+  }
+  const [view] = await toApplications([(await applicationsRepository.find(id))!])
+  return { ...view!, difference: result.difference }
 }
 
 // --- The approval's decision (the approval service calls these) ---

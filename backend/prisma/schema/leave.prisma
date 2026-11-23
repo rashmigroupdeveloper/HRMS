@@ -21,6 +21,10 @@ model LeaveType {
   // the monthly credit starts only this many months after the date of joining (old: accrual_requires_service_months -
   // EL after 12 months)
   creditAfterMonths         Int              @default(0) @map("credit_after_months") @db.SmallInt
+  // the first month (its 1st) credited under the credit rules in force - the credit a month, the months before it, who it
+  // is for, in use (the user, 2026-11-23: "HR picks the month", as Keka and Zoho People work from an effective date - a
+  // change never credits months before it by surprise); a new type: the month after it was added
+  creditsFrom               DateTime         @map("credits_from") @db.Date
   // at the end of the year the balance above this lapses (0 = all of it; null = all of it carries forward) - old:
   // max_carry_forward
   maxCarryForward           Decimal?         @map("max_carry_forward") @db.Decimal(5, 2)

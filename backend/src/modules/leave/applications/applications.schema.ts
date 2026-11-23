@@ -33,5 +33,15 @@ export const listInput = peopleFilterSchema.extend({
   statuses: z.array(z.enum(LeaveStatus)).max(4).optional(),
 })
 
+// Approved leave over a span whose days the calendar now counts otherwise (a holiday added / removed, a weekly off changed
+// - the user, 2026-11-23); at most a year
+export const recountsInput = z
+  .object({ from: z.date(), to: z.date() })
+  .refine((v) => v.to >= v.from, { message: 'The last day is before the first', path: ['to'] })
+  .refine((v) => v.to.getTime() - v.from.getTime() <= 366 * 86_400_000, { message: 'At most a year at a time', path: ['to'] })
+
+// HR puts one approved leave right: counted again by today's calendar
+export const recountInput = z.object({ id: idSchema })
+
 // The leave behind an approval request (the Approvals page's side panel)
 export const forApprovalInput = z.object({ approvalRequestId: idSchema })

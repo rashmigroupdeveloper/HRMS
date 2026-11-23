@@ -3,6 +3,7 @@ import { approvalsService } from '#modules/approvals'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import * as chainsService from '../src/modules/approvals/chains/chains.service.js'
 import * as daysService from '../src/modules/attendance/days/days.service.js'
+import * as holidaysService from '../src/modules/attendance/holidays/holidays.service.js'
 import * as regularizationsService from '../src/modules/attendance/regularizations/regularizations.service.js'
 import * as applicationsService from '../src/modules/leave/applications/applications.service.js'
 import * as balancesService from '../src/modules/leave/balances/balances.service.js'
@@ -202,6 +203,41 @@ describe('leave', () => {
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
     expect(String((results.find((r) => r.status === 'rejected') as PromiseRejectedResult).reason)).toContain('already has leave')
   })
+
+  // A holiday added on an approved leave day (the user, 2026-11-23: never changed on its own - as in Keka, Zoho People,
+  // SAP): HR sees the leave and gives the day back; a holiday removed again, HR takes it back
+  it('lets HR put an approved leave right when a holiday is added or removed on it', async () => {
+    const mon = monday(9)
+    const leave = await applicationsService.apply(self, { leaveTypeId: typeId, fromDate: mon, toDate: plus(mon, 1), fromSecondHalf: false, toFirstHalf: false, reason: 'Travel' })
+    await approvalsService.decide(approver, { id: leave.approvalRequestId, approve: true })
+    const before = (await balanceOf()).balance!
+    const { companyId } = await prisma.employee.findUniqueOrThrow({ where: { id: employee.id }, select: { companyId: true } })
+    const setup = userWith({ id: 0, employeeCode: 'HRHOL' }, [{ access: { ATTENDANCE_SETUP: 'WRITE' }, rows: [row(companyId, null, null)] }])
+    const span = { from: mon, to: plus(mon, 6) }
+    expect((await applicationsService.listRecounts(hr, span)).find((r) => r.id === leave.id)).toBeUndefined()
+
+    // the Tuesday becomes a holiday: listed, counted 1 day now; nothing changes until HR puts it right
+    const holiday = await holidaysService.createHoliday({ date: plus(mon, 1), name: `Recount day ${tag}`, companyId }, setup)
+    const listed = (await applicationsService.listRecounts(hr, span)).find((r) => r.id === leave.id)
+    expect(listed).toMatchObject({ days: 2, now: 1, difference: -1 })
+    expect(listed!.holidays[0]).toContain(`Recount day ${tag}`)
+    expect((await balanceOf()).balance).toBe(before)
+    // HR of another company does not see it
+    const otherHr = userWith({ id: 0, employeeCode: 'HROTHER' }, [{ access: { LEAVE: 'WRITE' }, rows: [row((await createCompany()).id, null, null)] }])
+    expect((await applicationsService.listRecounts(otherHr, span)).find((r) => r.id === leave.id)).toBeUndefined()
+    await expect(applicationsService.recount(otherHr, { id: leave.id })).rejects.toThrow('No leave')
+    // a double click gives the day back once
+    const results = await Promise.allSettled([applicationsService.recount(hr, { id: leave.id }), applicationsService.recount(hr, { id: leave.id })])
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1)
+    expect((await balanceOf()).balance).toBe(before + 1)
+    expect((await applicationsService.listMine(self)).find((a) => a.id === leave.id)?.days).toBe(1)
+
+    // the holiday removed again: listed as counting more; HR takes the day again
+    await holidaysService.deleteHoliday(holiday.id, setup)
+    expect((await applicationsService.listRecounts(hr, span)).find((r) => r.id === leave.id)).toMatchObject({ days: 1, now: 2, difference: 1 })
+    expect(await applicationsService.recount(hr, { id: leave.id })).toMatchObject({ days: 2, difference: 1 })
+    expect((await balanceOf()).balance).toBe(before)
+  })
 })
 
 // Found in the 2026-11-23 review: a leave of the new year approved in December was checked against the whole balance, but
@@ -294,12 +330,40 @@ describe('catching up across the year end', () => {
       employmentTypes: [],
     })
     // test data: the type was added in November 2026, so its first credit is 1 December
-    await prisma.leaveType.update({ where: { id: type.id }, data: { createdAt: new Date(Date.UTC(2026, 10, 15)) } })
+    await prisma.leaveType.update({ where: { id: type.id }, data: { createdAt: new Date(Date.UTC(2026, 10, 15)), creditsFrom: new Date(Date.UTC(2026, 11, 1)) } })
     // the job runs again only on 2 January
     await balancesService.creditDue(new Date(Date.UTC(2027, 0, 2)), { employeeIds: [employee.id] })
     const rows = await prisma.leaveLedgerEntry.findMany({ where: { employeeId: employee.id, leaveTypeId: type.id }, select: { kind: true, days: true, period: true } })
     // December's credit lapsed at the year end; January's stays
     expect(rows.filter((r) => r.kind === 'LAPSE').map((r) => r.days.toNumber())).toEqual([-1])
     expect(rows.reduce((sum, r) => sum + r.days.toNumber(), 0)).toBe(1)
+  })
+})
+
+// A credit switched on later, or a type given to more people (the user, 2026-11-23 - as Keka and Zoho People: from an
+// effective date): it credits from the month HR picks - before, every month back to when the type was added came at once
+describe('changing the credit rules', () => {
+  it('credits from the month HR picks, never every month back by surprise', async () => {
+    const companyId = (await createCompany()).id
+    const employee = await createEmployee({ companyId, plantId: (await createPlant(companyId)).id })
+    const hr = userWith({ id: 0, employeeCode: 'HR' }, [{ access: { LEAVE: 'WRITE' }, rows: [row(null, null, null)] }])
+    const tag = Math.random().toString(36).slice(2, 7).toUpperCase()
+    const input = { code: `R${tag}`, name: `Rules test ${tag}`, isPaid: true, creditPerMonth: 0, creditAfterMonths: 0, maxCarryForward: null, maxPerRequest: null, allowHalfDay: true, countsOffDays: false, genders: [], employmentTypes: [] }
+    const type = await typesService.createType(hr, input)
+    // test data: the type was added in January 2026, with no credit (HR loaded the balances by hand)
+    await prisma.leaveType.update({ where: { id: type.id }, data: { createdAt: new Date(Date.UTC(2026, 0, 10)), creditsFrom: new Date(Date.UTC(2026, 1, 1)) } })
+    const credited = async () => (await prisma.leaveLedgerEntry.findMany({ where: { employeeId: employee.id, leaveTypeId: type.id, kind: 'CREDIT' }, select: { period: true }, orderBy: { period: 'asc' } })).map((r) => r.period)
+
+    // 1.5 a month: the month it credits from is needed, and not before the type existed
+    await expect(typesService.updateType(hr, { ...input, creditPerMonth: 1.5, id: type.id })).rejects.toThrow('Give the month')
+    await expect(typesService.updateType(hr, { ...input, creditPerMonth: 1.5, id: type.id, creditsFrom: new Date(Date.UTC(2026, 0, 1)) })).rejects.toThrow('at the earliest')
+    // from August (picked on any day of it): on 2 August only August is credited - not February to July
+    await typesService.updateType(hr, { ...input, creditPerMonth: 1.5, id: type.id, creditsFrom: new Date(Date.UTC(2026, 7, 20)) })
+    await balancesService.creditDue(new Date(Date.UTC(2026, 7, 2)), { employeeIds: [employee.id] })
+    expect(await credited()).toEqual(['2026-08'])
+    // a change back-dated on purpose to May: May to July come too
+    await typesService.updateType(hr, { ...input, creditPerMonth: 1.25, id: type.id, creditsFrom: new Date(Date.UTC(2026, 4, 1)) })
+    await balancesService.creditDue(new Date(Date.UTC(2026, 7, 2)), { employeeIds: [employee.id] })
+    expect(await credited()).toEqual(['2026-05', '2026-06', '2026-07', '2026-08'])
   })
 })

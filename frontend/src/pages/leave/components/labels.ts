@@ -51,6 +51,8 @@ export const TEAM_LEAVE_PARTS = [
   ['away', 'Leave'],
   ['balances', 'Balances'],
   ['types', 'Leave types'],
+  // approved leave the calendar now counts otherwise (Leave View - 2026-11-23)
+  ['recount', 'To recount'],
 ] as const
 export type TeamLeavePart = (typeof TEAM_LEAVE_PARTS)[number][0]
 

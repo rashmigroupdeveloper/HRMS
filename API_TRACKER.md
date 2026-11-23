@@ -75,7 +75,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 ## Summary
 
-**Total APIs: 248**
+**Total APIs: 250**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -324,9 +324,11 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 243 | `leave.applications.mine` | Logged in | the employee's leave and where it stands |
 | 244 | `leave.applications.list` | team / department; Leave: View for everyone | who is on leave over a span |
 | 245 | `leave.applications.forApproval` | the approval request's people | the leave behind an approval request, with the balance |
-| 246 | `leave.compOff.claim` | Logged in (their own) | claims comp-off for work on a weekly off / holiday - goes for approval |
-| 247 | `leave.compOff.cancel` | the employee (their own) | withdraws a claim still waiting |
-| 248 | `leave.compOff.mine` | Logged in | the employee's comp-off claims |
+| 246 | `leave.applications.recounts` | Leave: View | approved leave the calendar now counts otherwise |
+| 247 | `leave.applications.recount` | Leave: Edit | puts one approved leave right by today's calendar |
+| 248 | `leave.compOff.claim` | Logged in (their own) | claims comp-off for work on a weekly off / holiday - goes for approval |
+| 249 | `leave.compOff.cancel` | the employee (their own) | withdraws a claim still waiting |
+| 250 | `leave.compOff.mine` | Logged in | the employee's comp-off claims |
 
 ---
 
@@ -3630,7 +3632,7 @@ leave year is the calendar year.
 - **Access:** Logged in; retired types only with Leave: View.
 - **Scope:** not limited by data access - a list shared by every company.
 - **Input:** `{ includeInactive? }` (optional)
-- **Returns:** `[{ id, code, name, isPaid, creditPerMonth, creditAfterMonths, maxCarryForward, maxPerRequest, allowHalfDay, countsOffDays, genders, employmentTypes, isCompOff, isActive, createdAt }]`
+- **Returns:** `[{ id, code, name, isPaid, creditPerMonth, creditAfterMonths, maxCarryForward, maxPerRequest, allowHalfDay, countsOffDays, genders, employmentTypes, isCompOff, isActive, creditsFrom (the first month credited under the credit rules in force - 2026-11-23), createdAt }]`
 - **What it does:** the leave types and their rules (seeded with the old HRMS's: CL, SL, EL, CO, ML, LWP).
 - **Errors:** `401`.
 
@@ -3640,17 +3642,17 @@ leave year is the calendar year.
 - **Scope:** shared by every company - Leave Edit for all companies (`assertGroupWide`).
 - **Input:** `{ code (1-10 capitals / digits), name, isPaid, creditPerMonth (0-31, 2 decimals), creditAfterMonths (0-120), maxCarryForward (null = all carries; 0 = all lapses), maxPerRequest (null = no limit; 0.5 steps), allowHalfDay, countsOffDays, genders: Gender[] (empty = all), employmentTypes: EmploymentType[] (empty = all), isCompOff? (comp-off claims are credited to it - one paid type; 2026-11-22), isActive? }`
 - **Returns:** the type, as `list`.
-- **What it does:** adds a leave type. Its monthly credits start on the 1st after the day it is added.
+- **What it does:** adds a leave type. Its monthly credits start on the 1st of the month after it is added (`creditsFrom`).
 - **Errors:** `400` (an unpaid type with a credit, an unpaid comp-off type) · `403` · `409` the code / name exists, another type already receives comp-off.
 
 ### `leave.types.update`
 - **HTTP:** `POST /api/rpc/leave/types/update` · **Code:** `backend/src/modules/leave/types/`
 - **Access:** Leave: Edit.
 - **Scope:** shared by every company - Leave Edit for all companies (`assertGroupWide`).
-- **Input:** as `create` + `id`.
+- **Input:** as `create` + `id` + `creditsFrom?: date` (any day of the month the changed credit rules credit from - required when `creditPerMonth`, `creditAfterMonths`, `genders`, `employmentTypes` change or a retired type is put back in use).
 - **Returns:** the type.
-- **What it does:** changes a type's rules or retires it (`isActive: false` - never deleted). Paid / unpaid cannot change once the type has balance rows or applications (old HRMS - add a new type).
-- **Errors:** `400` · `403` · `404` · `409` paid / unpaid of a used type, the code / name exists.
+- **What it does:** changes a type's rules or retires it (`isActive: false` - never deleted). Paid / unpaid cannot change once the type has balance rows or applications (old HRMS - add a new type). A change of who is credited what credits from the month HR picks (the user, 2026-11-23 - as Keka and Zoho People work from an effective date; before, every month back to when the type was added was credited at once to whoever it now covered): months before it are never credited by the job; an earlier month back-dates on purpose (not before the month after the type was added).
+- **Errors:** `400` (also: credit rules changed without `creditsFrom`, a month before the type's first) · `403` · `404` · `409` paid / unpaid of a used type, the code / name exists.
 
 ### `leave.balances.get`
 - **HTTP:** `POST /api/rpc/leave/balances/get` · **Code:** `backend/src/modules/leave/balances/`
@@ -3694,7 +3696,7 @@ leave year is the calendar year.
 - **Scope:** every company's employees - Leave Edit for all companies (`assertGroupWide`).
 - **Input:** none
 - **Returns:** `{ credited, lapsed, expired }` - rows added.
-- **What it does:** what the nightly job `leave.creditDue` does, now: every type's monthly credit for each 1st due since the type was added (to everyone employed that day, whose service is long enough - `creditAfterMonths` - and whom the type applies to; no part credit for a joiner's month - old HRMS) and, for each year ended, the balance above the type's `maxCarryForward` lapses (on 31 Dec) - leave of the new year already approved in the old one (applied in December for January) is paid from the old year's days first, so only what is left above the carry-forward lapses (the user, 2026-11-23: the balance never goes below zero at the lapse); and comp-off not used within 90 days of the day worked expires (2026-11-22: what is above the comp-off credits still valid and HR's positive adjustments lapses - expired credits are spent first, as the old HRMS). Not for a retired type (2026-11-23 - its days can no longer be applied for; its year end still lapses). The credits run before the year end, so a December credit caught up late lapses with the rest (2026-11-23). Each month / year / expiry once per employee and type - running it again adds nothing.
+- **What it does:** what the nightly job `leave.creditDue` does, now: every type's monthly credit for each 1st due from its `creditsFrom` month (2026-11-23 - was every month since the type was added; to everyone employed that day, whose service is long enough - `creditAfterMonths` - and whom the type applies to; no part credit for a joiner's month - old HRMS) and, for each year ended, the balance above the type's `maxCarryForward` lapses (on 31 Dec) - leave of the new year already approved in the old one (applied in December for January) is paid from the old year's days first, so only what is left above the carry-forward lapses (the user, 2026-11-23: the balance never goes below zero at the lapse); and comp-off not used within 90 days of the day worked expires (the user, 2026-11-23 - as Workday and Odoo: each leave uses only the days there on its date and not expired by then, the closest to expiry first, HR's days - which never expire - last; a leave cancelled gives its days back; what is left of a comp-off past its expiry lapses. Before, a leave was counted against comp-off earned after it, so a later comp-off could never lapse). Not for a retired type (2026-11-23 - its days can no longer be applied for; its year end still lapses). The credits run before the year end, so a December credit caught up late lapses with the rest (2026-11-23). Each month / year / expiry once per employee and type - running it again adds nothing.
 - **Errors:** `403`.
 
 ### `leave.balances.importTemplate`
@@ -3761,6 +3763,24 @@ leave year is the calendar year.
 - **Returns:** the applications overlapping from..to (up to 2000), as `apply`.
 - **What it does:** who is on leave (or has asked) over a span.
 - **Errors:** `400` · `403`.
+
+### `leave.applications.recounts`
+- **HTTP:** `POST /api/rpc/leave/applications/recounts` · **Code:** `backend/src/modules/leave/applications/`
+- **Access:** Leave: View.
+- **Scope:** the employees in the viewer's Leave View data access (`scopeOf(viewer, 'LEAVE', 'READ')`).
+- **Input:** `{ from: date, to: date }` (required; `to` not before `from`, at most a year)
+- **Returns:** `[{ ...the application (as `apply`), now (the days by today's calendar), difference (now - days: negative = days to give back), holidays: string[] (the holidays on it now, "Diwali (Sun, 08 Nov 2026)") }]`
+- **What it does:** (the user, 2026-11-23) approved leave overlapping the span whose days the calendar now counts otherwise - a holiday added or removed, a weekly off changed. A leave keeps the days it was approved with - never changed on its own (as in Keka, Zoho People and SAP); HR puts each right with `recount`. Counted without the "starts and ends on a working day" rule (it is approved already).
+- **Errors:** `400` · `403`.
+
+### `leave.applications.recount`
+- **HTTP:** `POST /api/rpc/leave/applications/recount` · **Code:** `backend/src/modules/leave/applications/`
+- **Access:** Leave: Edit.
+- **Scope:** Leave Edit covering the employee (`hasLevelAt`) - outside the View range `404`, View only `403`.
+- **Input:** `{ id }`
+- **Returns:** the application (as `apply`, with its new `days`) + `{ difference }`.
+- **What it does:** counts one approved leave again by today's calendar: days it no longer takes come back to the balance (a RETURNED row), days it now takes more are taken (a TAKEN row - only if the balance has them); each row's note says why (the holidays on it). The leave's days become the new count; the employee is e-mailed (work e-mail). One at a time per employee (a double click puts it right once).
+- **Errors:** `403` · `404` · `409` not approved, a cancel request waiting, already counted so, not enough balance for days more, a locked attendance month.
 
 ### `leave.applications.forApproval`
 - **HTTP:** `POST /api/rpc/leave/applications/forApproval` · **Code:** `backend/src/modules/leave/applications/`

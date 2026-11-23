@@ -10,7 +10,7 @@ export function TeamLeaveSkeleton({ label }: { label: string }) {
   return (
     <div role="status" aria-label={label} className="space-y-3">
       <div className={SEGMENTS}>
-        {TEAM_LEAVE_PARTS.filter(([value]) => value !== 'types').map(([value, text], i) => (
+        {TEAM_LEAVE_PARTS.filter(([value]) => value !== 'types' && value !== 'recount').map(([value, text], i) => (
           <span key={value} className={segment(i === 0)}>
             {text}
           </span>

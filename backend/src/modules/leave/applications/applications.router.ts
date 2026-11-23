@@ -1,5 +1,5 @@
-import { authedProcedure } from '#core/rpc/procedures'
-import { applyInput, cancelInput, forApprovalInput, listInput, previewInput } from './applications.schema.js'
+import { accessProcedure, authedProcedure } from '#core/rpc/procedures'
+import { applyInput, cancelInput, forApprovalInput, listInput, previewInput, recountInput, recountsInput } from './applications.schema.js'
 import * as applicationsService from './applications.service.js'
 
 // leave.applications.* - any employee applies for / withdraws / cancels / lists their own leave; a manager sees their
@@ -12,4 +12,7 @@ export const applicationsRouter = {
   mine: authedProcedure.handler(({ context }) => applicationsService.listMine(context.user)),
   list: authedProcedure.input(listInput).handler(({ input, context }) => applicationsService.list(context.user, input)),
   forApproval: authedProcedure.input(forApprovalInput).handler(({ input, context }) => applicationsService.getForApproval(context.user, input.approvalRequestId)),
+  // approved leave the calendar now counts otherwise (Leave View, in its data access), and putting one right (Leave Edit)
+  recounts: accessProcedure('LEAVE', 'READ').input(recountsInput).handler(({ input, context }) => applicationsService.listRecounts(context.user, input)),
+  recount: accessProcedure('LEAVE', 'WRITE').input(recountInput).handler(({ input, context }) => applicationsService.recount(context.user, input)),
 }

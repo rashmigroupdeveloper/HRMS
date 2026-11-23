@@ -17,6 +17,7 @@ const typeSelect = {
   employmentTypes: true,
   isCompOff: true,
   isActive: true,
+  creditsFrom: true,
   createdAt: true,
 } satisfies Prisma.LeaveTypeSelect
 export type TypeRow = Prisma.LeaveTypeGetPayload<{ select: typeof typeSelect }>

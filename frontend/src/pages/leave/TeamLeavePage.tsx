@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { segment, SEGMENTS } from '@/pages/attendance/components/labels'
 import { LeavePages } from './components/LeavePages'
 import { TEAM_LEAVE_PARTS, type TeamLeavePart, type TeamLeaveView, teamLeaveViews } from './components/labels'
+import { LeaveRecounts } from './components/LeaveRecounts'
 import { LeaveRegister } from './components/LeaveRegister'
 import { LeaveTypes } from './components/LeaveTypes'
 import { TeamLeaveList } from './components/TeamLeaveList'
@@ -23,7 +24,8 @@ export function TeamLeavePage() {
   const o = overview.data
   const views = o ? teamLeaveViews(o) : []
   const view = views.find(([value]) => value === params.get('view'))?.[0] ?? views[0]?.[0]
-  const parts = TEAM_LEAVE_PARTS.filter(([value]) => value !== 'types' || o?.canSeeAll)
+  // the leave types and the leave to recount: everyone's (Leave View)
+  const parts = TEAM_LEAVE_PARTS.filter(([value]) => (value !== 'types' && value !== 'recount') || o?.canSeeAll)
   const part: TeamLeavePart = parts.find(([value]) => value === params.get('part'))?.[0] ?? 'away'
   if (o && !view) return <Navigate to="/leave" replace />
   const go = (next: { view?: string; part?: string }) => setParams({ ...(view && { view }), part, ...next }, { replace: true })
@@ -34,7 +36,7 @@ export function TeamLeavePage() {
         <div>
           <p className="text-sm text-muted-foreground">Time off</p>
           <h1 className="mt-1 text-3xl font-light tracking-tight sm:text-4xl">Team leave</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">Who is on leave, everyone&apos;s balances and the leave types. Leave is approved on the Approvals page.</p>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">Who is on leave, everyone&apos;s balances, the leave types and leave to recount. Leave is approved on the Approvals page.</p>
         </div>
         <LeavePages />
       </header>
@@ -50,7 +52,7 @@ export function TeamLeavePage() {
                 </button>
               ))}
             </div>
-            {views.length > 1 && part !== 'types' && (
+            {views.length > 1 && part !== 'types' && part !== 'recount' && (
               <div className={cn(SEGMENTS, 'sm:ml-auto')}>
                 {views.map(([value, label]) => (
                   <button key={value} type="button" aria-pressed={view === value} onClick={() => go({ view: value })} className={segment(view === value)}>
@@ -64,6 +66,7 @@ export function TeamLeavePage() {
           {part === 'away' && <TeamLeaveList key={view} scope={SCOPE[view]} />}
           {part === 'balances' && <LeaveRegister key={view} scope={SCOPE[view]} />}
           {part === 'types' && <LeaveTypes />}
+          {part === 'recount' && <LeaveRecounts />}
         </div>
       )}
     </div>

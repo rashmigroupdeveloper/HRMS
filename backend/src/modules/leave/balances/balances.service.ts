@@ -17,18 +17,16 @@ import { type adjustInput, type balancesInput, type importBalancesInput, MAX_IMP
 //   next 1st). The daily job credits every month due, so a missed run catches up by itself; a month is credited once.
 // - At the year end the balance above the type's carry-forward limit lapses (old HRMS: by hand only - here the job does it
 //   on 1 January, once).
-// - Credits and lapses start with the month after the type was added - going live never credits months back; balances
-//   brought from before are HR's adjustments.
+// - Credits start with the month after the type was added - going live never credits months back; balances brought from
+//   before are HR's adjustments. A change of the credit rules credits from the month HR picks (creditsFrom - 2026-11-23).
+//   Lapses start with the year the type was added.
 // - Days waiting for approval are held back: available = balance - waiting. Leave without pay has no balance.
 
 // (+ 0: never "-0")
 const round2 = (n: number) => Math.round(n * 100) / 100 + 0
 const yearRange = (year: number) => ({ from: new Date(Date.UTC(year, 0, 1)), to: new Date(Date.UTC(year, 11, 31)) })
-const firstOfMonth = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1))
 const addMonths = (d: Date, n: number) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, d.getUTCDate()))
 const monthKey = (d: Date) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
-// the first 1st of a month after the day a type was added (when its credits start)
-const firstCreditDay = (createdAt: Date) => addMonths(firstOfMonth(createdAt), 1)
 
 type Person = leaveService.Person
 type LeaveType = typesService.LeaveType
@@ -202,17 +200,63 @@ export async function adjust(viewer: CurrentUser, input: z.infer<typeof adjustIn
 
 // --- crediting and the year end (the daily job; HR may run it now) ---
 
+export type CompOffRow = { kind: string; days: number; effectiveDate: Date; expiresOn: Date | null; applicationId: number | null }
+
+// How much comp-off is still to expire on `asOf` (the user, 2026-11-23 - as Workday and Odoo do it): each leave uses only
+// the days that exist on its date and have not expired by then, the closest to expiry first, HR's days (which never
+// expire) last; what is left of a comp-off past its expiry lapses. Before, a leave was counted against the comp-off
+// closest to expiry even when it was earned later - so HR's days, once used, kept a later comp-off from ever lapsing.
+// Less what has already expired; never negative.
+export function compOffToExpire(rows: CompOffRow[], asOf: Date) {
+  type Lot = { earned: Date; expiresOn: Date | null; left: number }
+  const lots: Lot[] = []
+  const uses: { on: Date; days: number }[] = []
+  // a leave cancelled gives its days back to that leave's own use
+  const returned = new Map<number, number>()
+  for (const r of rows) if (r.kind === 'RETURNED' && r.applicationId !== null) returned.set(r.applicationId, (returned.get(r.applicationId) ?? 0) + r.days)
+  let alreadyExpired = 0
+  for (const r of rows) {
+    if (r.kind === 'EXPIRED') alreadyExpired -= r.days
+    else if (r.kind === 'RETURNED' && r.applicationId !== null) continue
+    else if (r.days > 0) lots.push({ earned: r.effectiveDate, expiresOn: r.kind === 'COMP_OFF' ? r.expiresOn : null, left: r.days })
+    else if (r.days < 0) {
+      const back = r.kind === 'TAKEN' && r.applicationId !== null ? (returned.get(r.applicationId) ?? 0) : 0
+      if (back) returned.delete(r.applicationId!)
+      const days = -r.days - back
+      if (days > 0) uses.push({ on: r.effectiveDate, days })
+    }
+  }
+  // the closest to expiry first, the days that never expire last
+  const order = (a: Lot, b: Lot) => (a.expiresOn?.getTime() ?? Infinity) - (b.expiresOn?.getTime() ?? Infinity) || a.earned.getTime() - b.earned.getTime()
+  lots.sort(order)
+  const take = (lot: Lot, need: number) => {
+    const used = Math.min(lot.left, need)
+    lot.left = round2(lot.left - used)
+    return round2(need - used)
+  }
+  for (const use of uses.sort((a, b) => a.on.getTime() - b.on.getTime())) {
+    let need = use.days
+    // the days there on the leave's date, not expired by then
+    for (const lot of lots) if (need > 0 && lot.left > 0 && lot.earned <= use.on && (!lot.expiresOn || lot.expiresOn >= use.on)) need = take(lot, need)
+    // more than that (a balance put right by HR afterwards): from what is left, the closest to expiry first
+    for (const lot of lots) if (need > 0 && lot.left > 0) need = take(lot, need)
+  }
+  const due = lots.filter((l) => l.expiresOn && l.expiresOn < asOf).reduce((sum, l) => sum + l.left, 0)
+  return Math.max(0, round2(due - alreadyExpired))
+}
+
 // Credits every month due up to `asOf` and lapses every year ended (only these employees, if given - tests). Safe to run
 // any number of times: a month / year is done once per employee and type.
 export async function creditDue(asOf: Date = today(), only?: { employeeIds: number[] }) {
   const types = (await typesService.allTypes()).filter((t) => t.isPaid)
   let credited = 0
   let lapsed = 0
-  // the monthly credits: every 1st since the type was added, up to asOf
+  // the monthly credits: every 1st from the month its credit rules credit from (the user, 2026-11-23 - was every month
+  // since the type was added, so a credit switched on later, or a type widened, credited those months at once), up to asOf
   const peopleOn = new Map<string, Person[]>()
   // not for a retired type: its days can no longer be applied for (2026-11-23: retired types kept being credited)
   for (const type of types.filter((t) => t.creditPerMonth > 0 && t.isActive)) {
-    for (let day = firstCreditDay(type.createdAt); day <= asOf; day = addMonths(day, 1)) {
+    for (let day = type.creditsFrom; day <= asOf; day = addMonths(day, 1)) {
       const month = monthKey(day)
       if (!peopleOn.has(month)) {
         peopleOn.set(month, await employeesService.listLeavePeople({ scope: SYSTEM_SCOPE, ...(only && { ids: only.employeeIds }), from: day, to: day }))
@@ -243,15 +287,16 @@ export async function creditDue(asOf: Date = today(), only?: { employeeIds: numb
       )
     }
   }
-  // comp-off not used before it expired (2026-11-22, old HRMS: expired credits are spent first): what is above the credits
-  // still valid and HR's days (which never expire) lapses - each day, so it lapses the day after it expires
+  // comp-off not used before it expired - each day, so it lapses the day after it expires
   let expired = 0
   const compOff = types.find((t) => t.isCompOff)
   if (compOff) {
-    const standing = (await balancesRepository.compOffStanding(compOff.id, asOf)).filter((s) => !only || only.employeeIds.includes(s.employeeId))
+    const rows = (await balancesRepository.listCompOffRows(compOff.id)).filter((r) => !only || only.employeeIds.includes(r.employeeId))
+    const byEmployee = new Map<number, CompOffRow[]>()
+    for (const r of rows) byEmployee.set(r.employeeId, [...(byEmployee.get(r.employeeId) ?? []), { kind: r.kind, days: r.days.toNumber(), effectiveDate: r.effectiveDate, expiresOn: r.expiresOn, applicationId: r.applicationId }])
     expired = await balancesRepository.addEntries(
-      standing
-        .map((s) => ({ ...s, over: round2(s.balance - s.live - s.given) }))
+      [...byEmployee]
+        .map(([employeeId, own]) => ({ employeeId, over: compOffToExpire(own, asOf) }))
         .filter((s) => s.over > 0)
         .map((s) => ({ employeeId: s.employeeId, leaveTypeId: compOff.id, kind: 'EXPIRED' as const, days: -s.over, effectiveDate: asOf, note: 'Not used within 90 days of the day worked' })),
       SYSTEM_ACTOR,

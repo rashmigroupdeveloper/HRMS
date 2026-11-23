@@ -611,18 +611,17 @@ centre against the new company; the import checks managers again against the sav
 come as "not in yet"; holidays and schedules are refused inside a locked month; a role step whose approvers are all gone
 goes to the fallback approver (or is held). **Fixed the same day, the user's "fix it" / "yes do it":** a shift's times and a
 pattern's days are dated versions (like the policies) - an edit applies from a date and never reworks the days before it;
-forgot-password codes are capped at 5 a day per login, and asks at the same moment send one code. **Waiting** (each fixed with a test when picked up; most severe first):
-- **Ask the user:** (a) a monthly credit switched on later (or a type made to apply to more people) credits every month back
-  to when the type was made - from the change, or back-dated? (explained with an example, waiting for the answer) (b) a
-  holiday added on an approved leave day: **not refunded automatically** (the user, 2026-11-23) - a plan for HR to see
-  the leaves it touches and give the day back by hand was proposed, waiting for approval; (c) comp-off: a leave uses the
-  days closest to expiry first, across all of an employee's comp-off - also comp-off earned after the leave (so HR's days
-  given earlier, once used, can keep a later comp-off from lapsing) - or only the days that existed on the leave's date?
-  (explained with an example, waiting for the answer).
+forgot-password codes are capped at 5 a day per login, and asks at the same moment send one code. **Fixed the same day, the
+user's answers (after comparing Keka, Zoho People, SAP, Workday, Odoo):** a change of a type's credit rules credits from the
+month HR picks (creditsFrom - never every month back by surprise); approved leave the calendar now counts otherwise is
+listed under Team leave > To recount and HR gives days back / takes days more by hand, the employee e-mailed (never on its
+own); a comp-off leave uses only the days there on its date, the closest to expiry first, so a later comp-off still
+lapses. **Waiting** (each fixed with a test when picked up; most severe first):
 - **Attendance, found while dating shifts:** moving the default pattern (the star) is not dated - everyone never given a
   schedule follows the new default on past days too, the next time those days are worked out (a punch, a correction).
   **Needs:** dated defaults, or giving those employees the old default as a schedule up to the move - to propose.
-- **Leave:** comp-off expiry has no once-only key; credits a month late for joiners on the 29th-31st; two cancel requests at
+- **Leave:** an employee whose gender / employment type changes is credited every month back from the type's creditsFrom
+  (the types' rules are dated now, a person's details are not); comp-off expiry has no once-only key; credits a month late for joiners on the 29th-31st; two cancel requests at
   once.
 - **Attendance:** a night-shift punch is lock-checked by its calendar day; correcting one half wipes the other half's
   correction; the 48-hour roster warning counts only the days on screen.

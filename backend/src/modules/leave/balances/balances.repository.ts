@@ -85,15 +85,12 @@ export async function sumTypeForEveryone(leaveTypeId: number, until: Date, recor
 }
 
 // data access: the daily comp-off expiry job - every employee who has comp-off rows (no one's data is returned to a user)
-// Per employee, of the comp-off type: the balance, the comp-off credits not expired on `day`, and HR's positive adjustments
-// (which never expire)
-export async function compOffStanding(leaveTypeId: number, day: Date, db: DbClient = prisma) {
-  const [totals, live, given] = await Promise.all([
-    db.leaveLedgerEntry.groupBy({ by: ['employeeId'], where: { leaveTypeId }, _sum: { days: true } }),
-    db.leaveLedgerEntry.groupBy({ by: ['employeeId'], where: { leaveTypeId, kind: 'COMP_OFF', expiresOn: { gte: day } }, _sum: { days: true } }),
-    db.leaveLedgerEntry.groupBy({ by: ['employeeId'], where: { leaveTypeId, kind: 'ADJUSTMENT', days: { gt: 0 } }, _sum: { days: true } }),
-  ])
-  const liveOf = new Map(live.map((r) => [r.employeeId, r._sum.days?.toNumber() ?? 0]))
-  const givenOf = new Map(given.map((r) => [r.employeeId, r._sum.days?.toNumber() ?? 0]))
-  return totals.map((r) => ({ employeeId: r.employeeId, balance: r._sum.days?.toNumber() ?? 0, live: liveOf.get(r.employeeId) ?? 0, given: givenOf.get(r.employeeId) ?? 0 }))
+// Every row of the comp-off type, per employee in date order - the expiry follows which days each leave used
+export function listCompOffRows(leaveTypeId: number, db: DbClient = prisma) {
+  return db.leaveLedgerEntry.findMany({
+    where: { leaveTypeId },
+    orderBy: [{ employeeId: 'asc' }, { effectiveDate: 'asc' }, { createdAt: 'asc' }],
+    select: { employeeId: true, kind: true, days: true, effectiveDate: true, expiresOn: true, applicationId: true },
+  })
 }
+

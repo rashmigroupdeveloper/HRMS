@@ -96,3 +96,29 @@ describe('comp-off claims', () => {
     await expect(compOffService.claim(self, { workDate: sunday(6), reason: 'Long ago' })).rejects.toThrow('within 30 days')
   })
 })
+
+// Which days a leave uses (the user, 2026-11-23 - as Workday and Odoo do it): only the days there on the leave's date, the
+// closest to expiry first; HR's days (never expiring) last
+describe('comp-off expiry', () => {
+  const d = (m: number, day: number) => new Date(Date.UTC(2026, m - 1, day))
+  const given = (on: Date, days: number) => ({ kind: 'ADJUSTMENT', days, effectiveDate: on, expiresOn: null, applicationId: null })
+  const earned = (on: Date, days: number) => ({ kind: 'COMP_OFF', days, effectiveDate: on, expiresOn: new Date(on.getTime() + 90 * DAY), applicationId: null })
+  const taken = (on: Date, days: number, applicationId: number) => ({ kind: 'TAKEN', days: -days, effectiveDate: on, expiresOn: null, applicationId })
+
+  it("lets a comp-off earned after a leave expire - the leave used HR's days", () => {
+    // HR gives 2 days in January, 2 taken in February, a Sunday worked on 1 March (expires 30 May), never used
+    const rows = [given(d(1, 5), 2), taken(d(2, 10), 2, 1), earned(d(3, 1), 1)]
+    expect(balancesService.compOffToExpire(rows, d(5, 30))).toBe(0)
+    expect(balancesService.compOffToExpire(rows, d(5, 31))).toBe(1)
+    // once expired, nothing more
+    expect(balancesService.compOffToExpire([...rows, { kind: 'EXPIRED', days: -1, effectiveDate: d(5, 31), expiresOn: null, applicationId: null }], d(6, 1))).toBe(0)
+  })
+
+  it('uses the comp-off closest to expiry before HR days when both are there', () => {
+    // a comp-off from 1 March, HR's day on 1 April, a day taken on 10 April: the comp-off is used, HR's day stays
+    expect(balancesService.compOffToExpire([earned(d(3, 1), 1), given(d(4, 1), 1), taken(d(4, 10), 1, 2)], d(6, 30))).toBe(0)
+    // a leave cancelled gives its day back: the comp-off then lapses
+    const cancelled = { kind: 'RETURNED', days: 1, effectiveDate: d(4, 10), expiresOn: null, applicationId: 2 }
+    expect(balancesService.compOffToExpire([earned(d(3, 1), 1), given(d(4, 1), 1), taken(d(4, 10), 1, 2), cancelled], d(6, 30))).toBe(1)
+  })
+})
