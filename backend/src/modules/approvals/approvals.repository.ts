@@ -116,6 +116,13 @@ export function updateRequest(id: number, data: Prisma.ApprovalRequestUncheckedU
   return db.approvalRequest.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: { id: true } })
 }
 
+// Closes a request only if it is still waiting - false when it was decided or cancelled a moment before (2026-11-23: a
+// cancel read the request as waiting, then wrote CANCELLED over an approval that had just closed it)
+export async function closeRequestIfPending(id: number, data: Prisma.ApprovalRequestUncheckedUpdateInput, actorId: ActorId, db: DbClient = prisma) {
+  const result = await db.approvalRequest.updateMany({ where: { id, status: 'PENDING' }, data: { ...data, ...updatedBy(actorId) } })
+  return result.count === 1
+}
+
 export function updateStep(id: number, data: Prisma.ApprovalRequestStepUncheckedUpdateInput, actorId: ActorId, db: DbClient = prisma) {
   return db.approvalRequestStep.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: { id: true } })
 }

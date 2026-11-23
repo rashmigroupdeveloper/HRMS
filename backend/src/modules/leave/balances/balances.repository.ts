@@ -73,10 +73,15 @@ export function listEntries(employeeId: number, from: Date, to: Date, db: DbClie
 }
 
 // data access: the year-end job - every employee who has rows of the type (no one's data is returned to a user)
-// The balance of everyone with rows of a type, up to a day (what lapses at the year end)
-export async function sumTypeForEveryone(leaveTypeId: number, until: Date, db: DbClient = prisma) {
-  const rows = await db.leaveLedgerEntry.groupBy({ by: ['employeeId'], where: { leaveTypeId, effectiveDate: { lte: until } }, _sum: { days: true } })
-  return rows.map((r) => ({ employeeId: r.employeeId, days: r._sum.days?.toNumber() ?? 0 }))
+// The balance of everyone with rows of a type, up to a day (what lapses at the year end) - and the leave on later days
+// already taken (less given back) by `recordedBefore`: `takenLater`, negative or 0
+export async function sumTypeForEveryone(leaveTypeId: number, until: Date, recordedBefore: Date, db: DbClient = prisma) {
+  const [rows, later] = await Promise.all([
+    db.leaveLedgerEntry.groupBy({ by: ['employeeId'], where: { leaveTypeId, effectiveDate: { lte: until } }, _sum: { days: true } }),
+    db.leaveLedgerEntry.groupBy({ by: ['employeeId'], where: { leaveTypeId, effectiveDate: { gt: until }, kind: { in: ['TAKEN', 'RETURNED'] }, createdAt: { lt: recordedBefore } }, _sum: { days: true } }),
+  ])
+  const laterOf = new Map(later.map((r) => [r.employeeId, r._sum.days?.toNumber() ?? 0]))
+  return rows.map((r) => ({ employeeId: r.employeeId, days: r._sum.days?.toNumber() ?? 0, takenLater: Math.min(0, laterOf.get(r.employeeId) ?? 0) }))
 }
 
 // data access: the daily comp-off expiry job - every employee who has comp-off rows (no one's data is returned to a user)

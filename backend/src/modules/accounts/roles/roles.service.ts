@@ -1,5 +1,5 @@
-import { ACCESS_AREAS, fullAccess, hasAccess, type AccessMap } from '#core/auth/access'
-import { assertGroupWide } from '#core/auth/scope'
+import { ACCESS_AREAS, fullAccess, hasAccess, higherLevel, type AccessMap } from '#core/auth/access'
+import { assertGroupWide, beyondGiver } from '#core/auth/scope'
 import { assertPasswordConfirmed } from '#core/auth/confirm'
 import { prisma, type AccessArea, type AccessLevel, type DbClient } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
@@ -276,6 +276,7 @@ export async function updateRole(input: z.infer<typeof updateRoleInput>, user: C
   // the role as it is now, and as it will be
   assertWithinOwnAccess(user, accessOf(role))
   if (input.access) assertWithinOwnAccess(user, input.access)
+  await assertChangeWithinHolders(user, role, input)
   if (input.name !== undefined) await assertNameFree(input.name, role.id)
   // Access is read fresh on every request, so the change applies to everyone with this role straight away
   const updated = await prisma.$transaction(async (tx) => {
@@ -289,6 +290,34 @@ export async function updateRole(input: z.infer<typeof updateRoleInput>, user: C
     )
   })
   return withPeopleOne(updated)
+}
+
+// A role's change reaches everyone who has it, over their own data-access rows (2026-11-23 - before, only the areas were
+// compared, so an editor could widen a role they or someone else held over every company):
+// - nobody changes a role they have themselves (as nobody changes their own roles);
+// - each area whose level changes (added, raised, lowered or taken away) must be within the editor's access over every
+//   holder's rows - the same rule as giving the role to them.
+// (The fallback-approver mark needs no check of its own: changing a role already needs Roles & access Edit for all
+// companies, which covers every holder's rows - the rule for giving rows in setAccountRoles.)
+async function assertChangeWithinHolders(user: CurrentUser, role: RoleRow, input: z.infer<typeof updateRoleInput>) {
+  if (user.isSuperAdmin) return
+  if (user.roles.some((r) => r.id === role.id)) {
+    throw new ORPCError('FORBIDDEN', { message: 'You cannot change a role you have yourself - ask someone else with Roles & access' })
+  }
+  const before = accessOf(role)
+  const after = input.access ?? before
+  const changed: AccessMap = {}
+  for (const area of ACCESS_AREAS) {
+    if (before[area] !== after[area]) changed[area] = higherLevel(before[area], after[area])
+  }
+  if (Object.keys(changed).length) {
+    const beyond = beyondGiver(user, changed, await rolesRepository.listHolderRows(role.id))
+    if (beyond.length) {
+      throw new ORPCError('FORBIDDEN', {
+        message: `People who have this role have data access beyond yours for: ${beyond.map((a) => AREA_INFO[a].label).join(', ')} - you can only change what your own data access covers`,
+      })
+    }
+  }
 }
 
 // Only a role nobody has can be deleted

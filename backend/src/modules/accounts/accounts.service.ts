@@ -359,12 +359,13 @@ export async function createJoinerLogin(employeeId: number, actorId: number, db?
 }
 
 // E-mails a new employee their employee code, the temporary password and where to sign in. Returns whether it went
-// out (false: no e-mail address, or the mail server refused - then HR passes the password on).
+// out (null: no e-mail address, no mail server - only saved in the outbox - or the mail server refused; then HR passes the
+// password on).
 export async function emailNewLogin(employeeCode: string, temporaryPassword: string): Promise<{ emailedTo: string | null }> {
   const employee = await employeesService.findContactByCode(employeeCode)
   if (!employee?.personalEmail) return { emailedTo: null }
   try {
-    await sendMail({
+    const result = await sendMail({
       to: employee.personalEmail,
       subject: `Welcome to ${employee.company.name} - your HRMS login`,
       text: [
@@ -380,6 +381,8 @@ export async function emailNewLogin(employeeCode: string, temporaryPassword: str
         'Forgot your password later? Use "Forgot password?" on the sign-in page.',
       ].join('\n'),
     })
+    // no mail server (only saved in the outbox folder): nothing reached the employee - HR is shown the password (2026-11-23)
+    if (result === 'SAVED_TO_OUTBOX') return { emailedTo: null }
     return { emailedTo: maskEmail(employee.personalEmail) }
   } catch (error) {
     console.error(`[mail] the login e-mail for ${employee.employeeCode} failed:`, error)

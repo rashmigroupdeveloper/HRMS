@@ -250,19 +250,21 @@ export async function raiseRequest(
 export async function cancelRequest(requestId: number, reason: string, actorId: ActorId, tx: DbClient) {
   const request = await approvalsRepository.findRequest(requestId, tx)
   if (!request || request.status !== 'PENDING') return false
-  await closeAsCancelled(request, reason, actorId, tx)
-  return true
+  return closeAsCancelled(request, reason, actorId, tx)
 }
 
+// Cancels the request if it is still waiting (false: it was decided or cancelled in the meantime - nothing is written)
 async function closeAsCancelled(request: RequestRow, reason: string | null, actorId: ActorId, tx: DbClient) {
-  await approvalsRepository.cancelOpenSteps(request.id, actorId, tx)
-  await approvalsRepository.updateRequest(
+  const closed = await approvalsRepository.closeRequestIfPending(
     request.id,
     { status: 'CANCELLED', closedAt: new Date(), closedById: actorId, cancelReason: reason, heldAt: null, heldById: null, heldReason: null },
     actorId,
     tx,
   )
+  if (!closed) return false
+  await approvalsRepository.cancelOpenSteps(request.id, actorId, tx)
   await handlerOf(request.feature).onCancelled(request.id, actorId, tx, reason)
+  return true
 }
 
 
@@ -557,7 +559,9 @@ export async function cancel(viewer: CurrentUser, { id, reason }: z.infer<typeof
     if (request.requestedById !== viewer.employeeId && !handlerOf(request.feature).canCancel(viewer, placementsOf(request)[0]!)) {
       throw new ORPCError('FORBIDDEN', { message: 'Only the person who raised it (or HR for the employee) can cancel it' })
     }
-    await closeAsCancelled(request, reason ?? null, viewer.employeeId, tx)
+    if (!(await closeAsCancelled(request, reason ?? null, viewer.employeeId, tx))) {
+      throw new ORPCError('CONFLICT', { message: 'This request was decided a moment ago - it cannot be cancelled now' })
+    }
   })
   await finishAndNotify(id, { closed: 'CANCELLED' })
   return getRequest(viewer, id)
@@ -602,9 +606,11 @@ async function daily(only?: JobFilter) {
   for (const request of await approvalsRepository.listPending(only?.requestIds)) {
     try {
       if (request.employee.status === 'EXITED') {
-        await prisma.$transaction((tx) => closeAsCancelled(request, 'The employee has left', SYSTEM_ACTOR, tx))
-        await sendNotices(request.id, { closed: 'CANCELLED' })
-        counts.cancelled++
+        const cancelled = await prisma.$transaction((tx) => closeAsCancelled(request, 'The employee has left', SYSTEM_ACTOR, tx))
+        if (cancelled) {
+          await sendNotices(request.id, { closed: 'CANCELLED' })
+          counts.cancelled++
+        }
         continue
       }
       if (request.heldAt) {

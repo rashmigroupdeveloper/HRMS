@@ -212,11 +212,15 @@ export async function creditDue(asOf: Date = today(), only?: { employeeIds: numb
   for (const type of types.filter((t) => t.maxCarryForward !== null)) {
     for (let year = type.createdAt.getUTCFullYear(); Date.UTC(year + 1, 0, 1) <= asOf.getTime(); year++) {
       const yearEnd = new Date(Date.UTC(year, 11, 31))
-      const balances = (await balancesRepository.sumTypeForEveryone(type.id, yearEnd)).filter((b) => !only || only.employeeIds.includes(b.employeeId))
+      const balances = (await balancesRepository.sumTypeForEveryone(type.id, yearEnd, new Date(Date.UTC(year + 1, 0, 1)))).filter((b) => !only || only.employeeIds.includes(b.employeeId))
+      // leave of the new year approved in the old one (applied in December for January) was checked against the whole
+      // balance - it is paid from the old year's days first, and only what is left above the carry-forward lapses (the
+      // user, 2026-11-23: before, those days lapsed too and the balance went below zero)
+      const lapsing = (b: (typeof balances)[number]) => round2(b.days + b.takenLater - type.maxCarryForward!)
       lapsed += await balancesRepository.addEntries(
         balances
-          .filter((b) => round2(b.days - type.maxCarryForward!) > 0)
-          .map((b) => ({ employeeId: b.employeeId, leaveTypeId: type.id, kind: 'LAPSE' as const, days: -round2(b.days - type.maxCarryForward!), effectiveDate: yearEnd, period: String(year) })),
+          .filter((b) => lapsing(b) > 0)
+          .map((b) => ({ employeeId: b.employeeId, leaveTypeId: type.id, kind: 'LAPSE' as const, days: -lapsing(b), effectiveDate: yearEnd, period: String(year) })),
         SYSTEM_ACTOR,
       )
     }

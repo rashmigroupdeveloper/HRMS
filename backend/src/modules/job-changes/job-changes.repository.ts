@@ -97,6 +97,19 @@ export function update(id: number, data: Prisma.JobChangeRequestUncheckedUpdateI
   return db.jobChangeRequest.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: { id: true } })
 }
 
+// Changes a record only while it still has this status - false when it moved on a moment before (2026-11-23: a cancel and
+// the apply, or two applies, each read "approved" and both wrote)
+export async function updateIfStatus(
+  id: number,
+  status: Prisma.JobChangeRequestWhereInput['status'],
+  data: Prisma.JobChangeRequestUncheckedUpdateManyInput,
+  actorId: ActorId,
+  db: DbClient = prisma,
+) {
+  const result = await db.jobChangeRequest.updateMany({ where: { id, status }, data: { ...data, ...updatedBy(actorId) } })
+  return result.count === 1
+}
+
 export type ChangeFilter = {
   scope: DataScope
   employeeId?: number | undefined

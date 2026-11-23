@@ -166,3 +166,44 @@ describe('leave', () => {
     expect(daysService.dayStatusOf('PRESENT', 'ABSENT')).toBe('HALF_DAY')
   })
 })
+
+// Found in the 2026-11-23 review: a leave of the new year approved in December was checked against the whole balance, but
+// the 1 January lapse took the old year's days without it - the balance went below zero. The user's rule (2026-11-23):
+// such a leave is paid from the old year's days first; only what is left above the carry-forward lapses.
+describe('the year end with next year\'s leave already approved', () => {
+  it('pays the January leave from the old year\'s days, so the balance never goes below zero', async () => {
+    const companyId = (await createCompany()).id
+    const employee = await createEmployee({ companyId, plantId: (await createPlant(companyId)).id })
+    const hr = userWith({ id: 0, employeeCode: 'HR' }, [{ access: { LEAVE: 'WRITE' }, rows: [row(null, null, null)] }])
+    const tag = Math.random().toString(36).slice(2, 7).toUpperCase()
+    // lapses every day above 0 at the year end, as the seeded CL
+    const type = await typesService.createType(hr, {
+      code: `Y${tag}`,
+      name: `Year-end test ${tag}`,
+      isPaid: true,
+      creditPerMonth: 0,
+      creditAfterMonths: 0,
+      maxCarryForward: 0,
+      maxPerRequest: null,
+      allowHalfDay: true,
+      countsOffDays: false,
+      genders: [],
+      employmentTypes: [],
+    })
+    const year = new Date().getUTCFullYear()
+    const entry = (kind: 'ADJUSTMENT' | 'TAKEN', days: number, effectiveDate: Date, createdAt?: Date) =>
+      prisma.leaveLedgerEntry.create({
+        data: { employeeId: employee.id, leaveTypeId: type.id, kind, days, effectiveDate, ...(createdAt && { createdAt }), note: 'test', createdById: 0, updatedById: 0 },
+      })
+    // 10 days in December; a 1-day leave on 5 January approved on 20 December
+    await entry('ADJUSTMENT', 10, new Date(Date.UTC(year, 11, 1)))
+    await entry('TAKEN', -1, new Date(Date.UTC(year + 1, 0, 5)), new Date(Date.UTC(year, 11, 20)))
+
+    const asOf = new Date(Date.UTC(year + 1, 0, 2))
+    await balancesService.creditDue(asOf, { employeeIds: [employee.id] })
+    await balancesService.creditDue(asOf, { employeeIds: [employee.id] })
+    const rows = await prisma.leaveLedgerEntry.findMany({ where: { employeeId: employee.id, leaveTypeId: type.id }, select: { kind: true, days: true } })
+    expect(rows.filter((r) => r.kind === 'LAPSE').map((r) => r.days.toNumber())).toEqual([-9])
+    expect(rows.reduce((sum, r) => sum + r.days.toNumber(), 0)).toBe(0)
+  })
+})

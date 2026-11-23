@@ -1283,12 +1283,16 @@ access.
   the mark moves from any other role; `false` takes it away). Only the fields sent are changed.
 - **Returns:** the updated role.
 - **What it does:** renames a role or changes its access - at once for everyone who has it. Someone who is not a
-  super admin can only change roles within their own access (before and after the change).
+  super admin can only change roles within their own access (before and after the change). Since 2026-11-23 the change
+  is also checked over the people who have the role: every area whose level changes (added, raised, lowered, taken
+  away) must be within the caller's access over **each holder's data-access rows** - the same rule as giving them the
+  role (`403` "People who have this role have data access beyond yours for: ..."); and nobody but a super admin
+  changes a role they have themselves (`403` "You cannot change a role you have yourself").
 - **Re-entered password (2026-11-16):** needs the caller's password confirmed in this session in the last 10 minutes
   (`accounts.confirmPassword`) - else `403 FORBIDDEN` "Enter your password to confirm this change" with
   `data.passwordConfirmationRequired: true`.
-- **Errors:** `400` invalid input · `403 FORBIDDEN` the Super Admin role, or beyond own access · `404 NOT_FOUND`
-  unknown id · `409 CONFLICT` name already used.
+- **Errors:** `400` invalid input · `403 FORBIDDEN` the Super Admin role, beyond own access (also over the holders'
+  data access), or a role the caller has · `404 NOT_FOUND` unknown id · `409 CONFLICT` name already used.
 
 ### `accounts.roles.delete`
 - **HTTP:** `POST /api/rpc/accounts/roles/delete` · **Code:** `backend/src/modules/accounts/roles/`
@@ -2064,7 +2068,8 @@ together with their time, e.g. when a changed offer goes back to draft). Calenda
 - **Login (2026-11-15):** in the same transaction the employee gets a login with a temporary password (changed at
   the first sign-in); after it is saved, the employee code, the temporary password and the sign-in address are
   e-mailed to the personal e-mail. The result also has `login: { emailedTo, temporaryPassword }` - `emailedTo` the
-  masked address it went to; when there is no personal e-mail or the e-mail failed, `emailedTo` is null and
+  masked address it went to; when there is no personal e-mail, the e-mail failed, or there is no mail server (only
+  saved in the outbox folder - 2026-11-23, before it was wrongly reported as e-mailed), `emailedTo` is null and
   `temporaryPassword` is given (shown to HR once, to hand over).
 - **Joining tasks (2026-11-16, rules 2026-11-20):** checked before anything is saved: every active task type for the
   joining type (`joiningTasks.types.*`) that HR did not leave out (`skipTaskTypeIds`) must go to a holder of its team role
@@ -2769,7 +2774,8 @@ profile's Letters tab (and on one's own `/me`).
 - **Input:** as `preview`.
 - **Returns:** the letter (shape of `list`), with `emailedTo`.
 - **What it does:** in one transaction gives the next letter number, writes the PDF, stores it and records the letter;
-  then e-mails it with the PDF attached (a mail failure does not undo the letter - `emailedTo` stays null).
+  then e-mails it with the PDF attached (a mail failure does not undo the letter - `emailedTo` stays null; so does an
+  e-mail only saved in the outbox folder when there is no mail server - 2026-11-23).
 - **Errors:** `400` the template is not of this kind / retired / has no complete letterhead, "The letter needs: ..."
   (missing details, e.g. the designation), a confirmation letter without the employee's confirmation date, an
   experience / relieving letter without `lastWorkingDay` or with one before the date of joining, an appointment letter or
@@ -3186,7 +3192,10 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Scope:** punches only for employees inside the uploader's Attendance **Edit** data access - other rows are left out ("employee code X cannot be used here", without saying whose it is).
 - **Input:** `{ file: File (.xlsx or .csv, up to 10 MB, 50 000 rows) }`
 - **Returns:** `{ uploadId, rowCount, added, duplicates, unmatchedCodes, skipped, errors[] (first 50) }`.
-- **What it does:** the biometric machines' export until the Kent feed is connected. Columns found by header: the employee code (Employee code / Emp Code / EmpId...), the time (Punch time / Date time... - or a Date and a Time column), the machine (Device / Door..., optional). A time without a zone is the clock of the employee's work location (else Asia/Kolkata). The same punch (code + time) is kept once; a code that is no employee waits in `unmatched` (a code an employee had before a company transfer still matches them - 2026-11-20); a future time or an unreadable row is skipped. The days of the punches are worked out at once. Punches are not in the change history (the upload is).
+- **What it does:** the biometric machines' export until the Kent feed is connected. Columns found by header: the employee code (Employee code / Emp Code / EmpId...), the time (Punch time / Date time... - or a Date and a Time column; when a "Punch time" / "Log time" column holds only a
+time of day next to a Date column - the usual machine export - the two are read together, and a full date and time in it
+wins over the Date column - 2026-11-23); a date is read as day-month-year (or year-month-day) and a day or month that does
+not exist is skipped, not rolled over; a file is read as Excel only when it is one (else as CSV text), the machine (Device / Door..., optional). A time without a zone is the clock of the employee's work location (else Asia/Kolkata). The same punch (code + time) is kept once; a code that is no employee waits in `unmatched` (a code an employee had before a company transfer still matches them - 2026-11-20); a future time or an unreadable row is skipped. The days of the punches are worked out at once. Punches are not in the change history (the upload is).
 - **Errors:** `400` not readable, no code / time column, no rows, too many rows · `403`.
 
 ### `attendance.punches.uploads`
@@ -3423,8 +3432,11 @@ already raised go on.
 - **Scope:** as above; not visible to the viewer `404`.
 - **Input:** `{ id: number, reason?: string (1-500) }`
 - **Returns:** the request.
-- **What it does:** takes back a request still waiting - its steps end and the feature records it as cancelled.
-- **Errors:** `400` · `403` · `404` · `409` already decided.
+- **What it does:** takes back a request still waiting - its steps end and the feature records it as cancelled. The
+  request is closed only if it is still waiting at that moment (2026-11-23: a cancel landing just after the last
+  approval used to write "cancelled" over it while the change was applied).
+- **Errors:** `400` · `403` · `404` · `409` already decided (also "decided a moment ago" when an approval closed it
+  while the cancel ran).
 
 ### `approvals.listHeld`
 - **HTTP:** `POST /api/rpc/approvals/listHeld` · **Code:** `backend/src/modules/approvals/`
@@ -3578,8 +3590,10 @@ salary figures). One open change per employee at a time (waiting for approval, o
 - **Input:** `{ id: number, reason?: string (1-500) }`
 - **Returns:** the change, as `get`.
 - **What it does:** cancels a change not in force yet - one waiting for approval cancels its approval too. The employee's
-  slot for a new change is free again.
-- **Errors:** `403` · `404` · `409` in force, rejected or cancelled already.
+  slot for a new change is free again. An approved change is cancelled only if it is still approved at that moment, and
+  applying one only if it is still approved (2026-11-23 - a cancel and the apply landing together no longer leave a
+  cancelled change in force).
+- **Errors:** `403` · `404` · `409` in force, rejected or cancelled already (also "applied a moment ago").
 
 ## leave
 
@@ -3666,7 +3680,7 @@ leave year is the calendar year.
 - **Scope:** every company's employees - Leave Edit for all companies (`assertGroupWide`).
 - **Input:** none
 - **Returns:** `{ credited, lapsed, expired }` - rows added.
-- **What it does:** what the nightly job `leave.creditDue` does, now: every type's monthly credit for each 1st due since the type was added (to everyone employed that day, whose service is long enough - `creditAfterMonths` - and whom the type applies to; no part credit for a joiner's month - old HRMS) and, for each year ended, the balance above the type's `maxCarryForward` lapses (on 31 Dec); and comp-off not used within 90 days of the day worked expires (2026-11-22: what is above the comp-off credits still valid and HR's positive adjustments lapses - expired credits are spent first, as the old HRMS). Each month / year / expiry once per employee and type - running it again adds nothing.
+- **What it does:** what the nightly job `leave.creditDue` does, now: every type's monthly credit for each 1st due since the type was added (to everyone employed that day, whose service is long enough - `creditAfterMonths` - and whom the type applies to; no part credit for a joiner's month - old HRMS) and, for each year ended, the balance above the type's `maxCarryForward` lapses (on 31 Dec) - leave of the new year already approved in the old one (applied in December for January) is paid from the old year's days first, so only what is left above the carry-forward lapses (the user, 2026-11-23: the balance never goes below zero at the lapse); and comp-off not used within 90 days of the day worked expires (2026-11-22: what is above the comp-off credits still valid and HR's positive adjustments lapses - expired credits are spent first, as the old HRMS). Each month / year / expiry once per employee and type - running it again adds nothing.
 - **Errors:** `403`.
 
 ### `leave.balances.importTemplate`
