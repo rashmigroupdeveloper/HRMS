@@ -1,0 +1,456 @@
+// Attendance (2026-11-16 - the first module after onboarding, in the order an employee lives it). Planned with the user:
+// punches come from the biometric machines (an Excel / CSV upload by HR for now, the Kent feed later); each employee follows
+// a schedule pattern (2026-11-23 - a repeating list of days, each a shift, its first half only, or off), with rare one-off
+// roster changes on top; each day's result is worked out from the first
+// punch in and the last punch out; HR corrects a day with a reason; changing a published roster day is asked by the
+// employee and approved by the manager, then HR. Overtime, late-mark penalties and closing the month wait for payroll.
+// Approved leave (leave.prisma) and missed-punch / on-duty requests (RegularizationRequest, 2026-11-22) cover the days.
+
+// A shift: when work starts and ends (its timing only - how a day is judged is the attendance policy, 2026-11-22). A night
+// shift ends the next day (end <= start).
+model Shift {
+  id             Int      @id @default(autoincrement())
+  // short code shown on the roster grid, e.g. GEN, A, B, NIGHT
+  code           String   @unique
+  name           String   @unique
+  // minutes from midnight in the employee's work-location time, e.g. 540 = 09:00
+  startMinute    Int      @map("start_minute") @db.SmallInt
+  endMinute      Int      @map("end_minute") @db.SmallInt
+  // an unpaid break - taken off the hours worked shown (lunch punches are not needed)
+  breakMinutes   Int      @map("break_minutes") @db.SmallInt
+  // where the first half ends and the second begins, minutes from midnight (null: the middle of the shift) - the halves
+  // of a day (the user, 2026-11-22: RML's Saturday is a half day, 09:00-13:00 of GEN 09:00-18:00); on a half day the
+  // day ends here
+  halfSplitMinute Int?    @map("half_split_minute") @db.SmallInt
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById    Int      @map("created_by_id")
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById    Int      @map("updated_by_id")
+
+  rosterEntries  RosterEntry[]
+  days           AttendanceDay[]
+  changeRequests ShiftChangeRequest[]
+
+  @@map("shifts")
+}
+
+
+// An attendance policy (the user, 2026-11-22): a named set of rules a day is judged by, apart from the shift's timing. The
+// rules themselves are dated (AttendancePolicyVersion - the user, 2026-11-23), so a change from a date never changes the
+// days before it. Given on an employee's schedule; anyone without one follows the default policy. The same for every
+// company (like shifts): Attendance setup Edit for all companies.
+model AttendancePolicy {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  // the policy of employees whose schedule names none (one policy)
+  isDefault   Boolean  @default(false) @map("is_default")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  assignments ShiftAssignment[]
+  versions    AttendancePolicyVersion[]
+
+  @@map("attendance_policies")
+}
+
+// A policy's rules from a date until its next version (the user, 2026-11-23: "dated policy changes" - a day is judged by
+// the version in force on it, so working a day out again later never moves it to newer rules). A new policy's first
+// version runs from the start (2000-01-01).
+model AttendancePolicyVersion {
+  id                 Int      @id @default(autoincrement())
+  policyId           Int      @map("policy_id")
+  effectiveFrom      DateTime @map("effective_from") @db.Date
+  // late only after this many minutes past the start (and early-leaving only before the end minus it)
+  graceMinutes       Int      @map("grace_minutes") @db.SmallInt
+  // the time from the first in to the last out for a full day (break inside); null = the whole shift (9h for 09:00-18:00)
+  fullDayMinutes     Int?     @map("full_day_minutes") @db.SmallInt
+  // the same for a half day - also a pattern's half day (e.g. Saturday)
+  halfDayMinutes     Int      @map("half_day_minutes") @db.SmallInt
+  // every Nth late day of an attendance month loses its first half (absent) - null: no late penalty
+  latesPerHalfDayCut Int?     @map("lates_per_half_day_cut") @db.SmallInt
+  // in more than this many minutes after the start = first half absent; null: off
+  veryLateMinutes    Int?     @map("very_late_minutes") @db.SmallInt
+  // out more than this many minutes before the end = second half absent; null: off
+  veryEarlyMinutes   Int?     @map("very_early_minutes") @db.SmallInt
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById        Int      @map("created_by_id")
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById        Int      @map("updated_by_id")
+
+  policy AttendancePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@unique([policyId, effectiveFrom])
+  @@map("attendance_policy_versions")
+}
+
+// An employee's schedule from a date until their next row (the user, 2026-11-23 - was a fixed shift + weekly offs, or a
+// rotation): the schedule pattern that decides every day, and the attendance policy. No row: the default pattern.
+model ShiftAssignment {
+  id            Int       @id @default(autoincrement())
+  employeeId    Int       @map("employee_id")
+  patternId     Int       @map("pattern_id")
+  // which day of the pattern effectiveFrom is (1 = its first day) - the screen works it out from the start week and the
+  // weekday, so a 7 / 14 / 21-day pattern lines up with Monday-Sunday
+  patternDay    Int       @map("pattern_day") @db.SmallInt
+  // the attendance policy (null: the default policy - 2026-11-22)
+  policyId      Int?      @map("policy_id")
+  effectiveFrom DateTime  @map("effective_from") @db.Date
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int       @map("created_by_id")
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int       @map("updated_by_id")
+
+  employee Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  pattern  RosterPattern     @relation(fields: [patternId], references: [id], onDelete: Restrict)
+  policy   AttendancePolicy? @relation(fields: [policyId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeId, effectiveFrom])
+  @@map("shift_assignments")
+}
+
+// A schedule pattern (the user, 2026-11-23 - one idea for everyone, e.g. Mon A, Tue B, Wed C, Thu GEN, Fri GEN, Sat GEN
+// first half, Sun off): a list of days repeating for ever - usually 7, 14 or 21, shown as weeks of Monday-Sunday. The
+// default one is for employees with no schedule given. Worked out live each day (the old HRMS copied patterns into the
+// roster for a range).
+model RosterPattern {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  // the cycle, one item per day: a shift id, or 0 = off
+  days        Int[]
+  // the days (1 = the first) worked in their first half only - the second half is off (the user, 2026-11-23: a half-day
+  // Saturday counts half a day worked and half off, so leave on it is 0.5); always days with a shift
+  halfDays    Int[]    @default([]) @map("half_days")
+  // the pattern of employees with no schedule given (exactly one - it cannot be retired, only moved)
+  isDefault   Boolean  @default(false) @map("is_default")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  assignments ShiftAssignment[]
+
+  @@map("roster_patterns")
+}
+
+// One rostered day of an employee: a shift or off - only a rare, short change from the default (2026-11-22, the user):
+// a day the same as the default is never stored. Set by the manager (their reporting tree) or HR as a draft, then
+// published - attendance follows only published days; a published day changes through an approved shift-change request
+// (or HR's correction).
+model RosterEntry {
+  id            Int       @id @default(autoincrement())
+  employeeId    Int       @map("employee_id")
+  date          DateTime  @db.Date
+  // null = off that day
+  shiftId       Int?      @map("shift_id")
+  publishedAt   DateTime? @map("published_at") @db.Timestamptz(3)
+  publishedById Int?      @map("published_by_id")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int       @map("created_by_id")
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int       @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shift    Shift?   @relation(fields: [shiftId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeId, date])
+  @@index([date])
+  @@map("roster_entries")
+}
+
+enum ShiftChangeKind {
+  // my shift on that day becomes another shift, or off
+  CHANGE
+  // I swap that day's shift with a colleague (both days change)
+  SWAP
+
+  @@map("shift_change_kind")
+}
+
+enum ShiftChangeStatus {
+  // waiting for its approval (the approval service - who has it is on the request; 2026-11-22, was manager then HR)
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+
+  @@map("shift_change_status")
+}
+
+// An employee's request to change one day (another shift or off, or a swap with a colleague), approved through the
+// approval service (kind SHIFT_CHANGE - its chain on the Approval rules page; seeded: reporting manager -> Attendance:
+// Edit, as before 2026-11-22); only when approved does the day change. Who decided each step, when and why is on the
+// approval request.
+model ShiftChangeRequest {
+  id                 Int               @id @default(autoincrement())
+  employeeId         Int               @map("employee_id")
+  date               DateTime          @db.Date
+  kind               ShiftChangeKind
+  // CHANGE: the shift asked for (null = off)
+  requestedShiftId   Int?              @map("requested_shift_id")
+  // SWAP: the colleague (they are told; their day changes too)
+  swapWithEmployeeId Int?              @map("swap_with_employee_id")
+  reason             String
+  status             ShiftChangeStatus
+  // its request in the approval service
+  approvalRequestId  Int               @unique @map("approval_request_id")
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById        Int               @map("created_by_id")
+  updatedAt          DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById        Int               @map("updated_by_id")
+
+  employee       Employee  @relation("ShiftChangeRequestEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  swapWith       Employee? @relation("ShiftChangeRequestSwapWith", fields: [swapWithEmployeeId], references: [id], onDelete: Cascade)
+  requestedShift Shift?    @relation(fields: [requestedShiftId], references: [id], onDelete: Restrict)
+  approvalRequest ApprovalRequest @relation(fields: [approvalRequestId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([employeeId, date])
+  @@map("shift_change_requests")
+}
+
+// A holiday: for every company (companyId null) or one company, and optionally one work location
+model Holiday {
+  id             Int      @id @default(autoincrement())
+  date           DateTime @db.Date
+  name           String
+  companyId      Int?     @map("company_id")
+  workLocationId Int?     @map("work_location_id")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById    Int      @map("created_by_id")
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById    Int      @map("updated_by_id")
+
+  company      Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  workLocation WorkLocation? @relation(fields: [workLocationId], references: [id], onDelete: Cascade)
+
+  @@index([date])
+  @@map("holidays")
+}
+
+enum PunchSource {
+  // a file of the biometric machines' export, uploaded by HR
+  UPLOAD
+  // the machines' automatic feed (later)
+  DEVICE
+
+  @@map("punch_source")
+}
+
+// One uploaded file of punches (the machines' export) and what it added
+model PunchUpload {
+  id             Int      @id @default(autoincrement())
+  fileName       String   @map("file_name")
+  rowCount       Int      @map("row_count")
+  addedCount     Int      @map("added_count")
+  duplicateCount Int      @map("duplicate_count")
+  // punches whose employee code is no employee (the "Unmatched punches" list)
+  unmatchedCount Int      @map("unmatched_count")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById    Int      @map("created_by_id")
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById    Int      @map("updated_by_id")
+
+  punches Punch[]
+
+  @@map("punch_uploads")
+}
+
+// One punch on a biometric machine. The same punch (code + time) is kept once. Raw data - not in the change history
+// (the upload is). employeeId null: the code matched no employee (HR links it).
+model Punch {
+  id           Int         @id @default(autoincrement())
+  employeeId   Int?        @map("employee_id")
+  // the code as the machine sent it (the employee code)
+  employeeCode String      @map("employee_code")
+  punchedAt    DateTime    @map("punched_at") @db.Timestamptz(3)
+  // the machine, as named in the file (optional)
+  device       String?
+  source       PunchSource
+  uploadId     Int?        @map("upload_id")
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  Int         @map("created_by_id")
+  updatedAt    DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById  Int         @map("updated_by_id")
+
+  employee Employee?    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  upload   PunchUpload? @relation(fields: [uploadId], references: [id], onDelete: SetNull)
+
+  @@unique([employeeCode, punchedAt])
+  @@index([employeeId, punchedAt])
+  @@map("punches")
+}
+
+enum DayStatus {
+  PRESENT
+  HALF_DAY
+  ABSENT
+  WEEKLY_OFF
+  HOLIDAY
+  // only one punch - the day cannot be counted (a regularization request fixes it)
+  MISSED_PUNCH
+  // on approved leave (leave module, 2026-11-22) - only a working half; a weekly off / holiday inside a leave stays so
+  LEAVE
+  // on approved official duty outside the office (a regularization request, 2026-11-22) - counted as worked
+  ON_DUTY
+
+  @@map("day_status")
+}
+
+// The result of one employee's day, worked out from the shift and the punches (always by System; recomputed whenever a
+// punch, the shift, the roster or a holiday changes - so not in the change history). HR's correction (below) wins.
+model AttendanceDay {
+  id            Int       @id @default(autoincrement())
+  employeeId    Int       @map("employee_id")
+  date          DateTime  @db.Date
+  // the shift that applied (null: weekly off / holiday with no shift)
+  shiftId       Int?      @map("shift_id")
+  // the day overall, worked out from its two halves (both present = present, one present and one absent = half day...)
+  status        DayStatus
+  // each half's status (the user, 2026-11-22): present, absent, missed punch, weekly off or holiday - never "half day";
+  // HR's correction of a half wins
+  firstHalf     DayStatus @map("first_half")
+  secondHalf    DayStatus @map("second_half")
+  // what the punches alone gave (status may come from HR's correction)
+  autoStatus    DayStatus @map("auto_status")
+  firstIn       DateTime? @map("first_in") @db.Timestamptz(3)
+  lastOut       DateTime? @map("last_out") @db.Timestamptz(3)
+  punchCount    Int       @map("punch_count") @db.SmallInt
+  workedMinutes Int       @map("worked_minutes") @db.SmallInt
+  lateMinutes   Int       @map("late_minutes") @db.SmallInt
+  earlyMinutes  Int       @map("early_minutes") @db.SmallInt
+  // why a policy rule made a half absent, e.g. "3rd late this month - first half absent" (2026-11-22)
+  note          String?
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int       @map("created_by_id")
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int       @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shift    Shift?   @relation(fields: [shiftId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeId, date])
+  @@index([date])
+  @@map("attendance_days")
+}
+
+enum RegularizationKind {
+  // "Attendance regularisation" (old HRMS AR): a day already come with a missed / forgotten punch - approved, the half or
+  // day is present
+  MISSED_PUNCH
+  // "Official duty" (old HRMS OD): work outside the office - days to come too; approved, on duty
+  ON_DUTY
+
+  @@map("regularization_kind")
+}
+
+enum DayPortion {
+  FULL_DAY
+  FIRST_HALF
+  SECOND_HALF
+
+  @@map("day_portion")
+}
+
+enum RegularizationStatus {
+  // waiting for its approval (the approval service: kind REGULARIZATION or ON_DUTY)
+  PENDING
+  APPROVED
+  REJECTED
+  // withdrawn by the employee while it waited
+  CANCELLED
+
+  @@map("regularization_status")
+}
+
+// An employee's request to regularize days (a missed punch) or to be marked on official duty (old HRMS
+// att.regularizations - 2026-11-22), approved through the approval service. Approved, the working halves it covers are
+// present / on duty on the attendance days (worked out with the punches; HR's correction still wins). A half day only for
+// one day. (The old HRMS's "short permission" waits - BACKLOG.)
+model RegularizationRequest {
+  id                Int                  @id @default(autoincrement())
+  employeeId        Int                  @map("employee_id")
+  kind              RegularizationKind
+  fromDate          DateTime             @map("from_date") @db.Date
+  toDate            DateTime             @map("to_date") @db.Date
+  // the whole day(s), or one half of a single day (old: day_portion)
+  portion           DayPortion
+  reason            String
+  status            RegularizationStatus
+  // its request in the approval service
+  approvalRequestId Int                  @unique @map("approval_request_id")
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       Int                  @map("created_by_id")
+  updatedAt         DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById       Int                  @map("updated_by_id")
+
+  employee        Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approvalRequest ApprovalRequest @relation(fields: [approvalRequestId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId, fromDate])
+  @@index([status])
+  @@map("regularization_requests")
+}
+
+// HR's correction of a day's status, with the reason (in the change history). Removing it returns the day to what the
+// punches give.
+model AttendanceCorrection {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int       @map("employee_id")
+  date        DateTime  @db.Date
+  // the half (or both) HR sets; an empty half keeps following the punches (2026-11-22, was one status for the day)
+  firstHalf   DayStatus? @map("first_half")
+  secondHalf  DayStatus? @map("second_half")
+  reason      String
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int       @map("created_by_id")
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int       @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@map("attendance_corrections")
+}
+
+// Attendance settings for the whole system (one row, id 1 - the user, 2026-11-22): the day an attendance month starts -
+// RML's runs from the 26th to the 25th ("November" = 26 Oct - 25 Nov); 1 = the calendar month. The muster, the month
+// views, the late count and the month lock follow it.
+model AttendanceSetting {
+  id            Int      @id
+  // 1-28
+  cycleStartDay Int      @map("cycle_start_day") @db.SmallInt
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int      @map("created_by_id")
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int      @map("updated_by_id")
+
+  @@map("attendance_settings")
+}
+
+// A locked attendance month (the user, 2026-11-22 - for payroll): one lock for the whole group; while locked, nothing in
+// it changes - its days are not worked out again, and punches, corrections, roster days and shift changes for its days are
+// refused. Opened again with a reason (the row keeps who and why); locked again as a new row. At most one open lock
+// (unlockedAt null) per month - checked in the service.
+model AttendanceMonthLock {
+  id           Int       @id @default(autoincrement())
+  // the attendance month ("November" with a cycle from the 26th = 26 Oct - 25 Nov)
+  year         Int       @db.SmallInt
+  month        Int       @db.SmallInt
+  lockedAt     DateTime  @map("locked_at") @db.Timestamptz(3)
+  lockedById   Int       @map("locked_by_id")
+  unlockedAt   DateTime? @map("unlocked_at") @db.Timestamptz(3)
+  unlockedById Int?      @map("unlocked_by_id")
+  unlockReason String?   @map("unlock_reason")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  Int       @map("created_by_id")
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById  Int       @map("updated_by_id")
+
+  @@index([year, month])
+  @@map("attendance_month_locks")
+}

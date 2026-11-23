@@ -1,0 +1,274 @@
+// Approvals (the user, 2026-11-20): ONE service every feature uses to get a request approved - job changes and salary
+// revisions now; offers, leave, regularization, exit later. It knows nothing about leave or transfers: only requests,
+// the chain of steps they go through, and the decisions. Each feature keeps its own data in its own table, with a link
+// to its request, and acts on the final decision (modules/approvals - registerFeature).
+// Inspired by the old HRMS's workflow engine (its chains, "vacancy is not consent", held requests), built to our rules.
+
+// What a chain is for - one chain per kind (and, if HR wants, one per company that wins over the shared one)
+enum ApprovalKind {
+  // a change of an employee's job details: promotion, transfer, redesignation, manager... (job-changes module)
+  JOB_CHANGE
+  // a change of an employee's salary, alone or with a job change
+  SALARY_REVISION
+  // a change of one day's shift, or a swap with a colleague (attendance - its own approval until 2026-11-22)
+  SHIFT_CHANGE
+  // an application for leave (leave module, 2026-11-22 - old HRMS workflow "leave")
+  LEAVE
+  // cancelling a leave already approved (old HRMS "leave_cancel")
+  LEAVE_CANCEL
+  // regularizing a day with a missed punch (old HRMS "regularization")
+  REGULARIZATION
+  // official duty outside the office (old HRMS "od")
+  ON_DUTY
+  // a claim for comp-off: work on a weekly off / holiday (2026-11-22)
+  COMP_OFF
+
+  @@map("approval_kind")
+}
+
+// Which feature a request belongs to - the one that acts on the final decision
+enum ApprovalFeature {
+  // modules/job-changes: a job and / or salary change of an employee
+  JOB_CHANGE
+  // modules/attendance/shift-changes: a one-day shift change or swap (2026-11-22)
+  SHIFT_CHANGE
+  // modules/leave/applications: a leave, or the cancelling of an approved one (2026-11-22)
+  LEAVE
+  // modules/attendance/regularizations: a missed-punch regularization or official duty (2026-11-22)
+  REGULARIZATION
+  // modules/leave/comp-off: a comp-off claim (2026-11-22)
+  COMP_OFF
+
+  @@map("approval_feature")
+}
+
+// Who decides a step
+enum ApproverType {
+  // the employee's reporting manager, when the step opens
+  REPORTING_MANAGER
+  // the employee's functional manager, when the step opens
+  FUNCTIONAL_MANAGER
+  // the HOD of the employee's place (plant-department), when the step opens
+  HOD
+  // anyone holding a chosen role whose data access covers the employee (e.g. "HR", then "HR Head")
+  ROLE
+  // anyone whose roles give an access area at Edit covering the employee
+  ACCESS
+  // the fallback approver: anyone holding the role marked as fallback (Role.isApprovalFallback - seeded "Admin") whose
+  // data access covers the employee - added when every step of a request was skipped
+  FALLBACK
+  // the late approver's own reporting manager - a step added when the one before was not decided in time and escalates
+  // (2026-11-20, as the old HRMS)
+  ESCALATION
+
+  @@map("approver_type")
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  // a step was not decided in time and its chain says the request then expires (2026-11-20 - the old HRMS's "lapse")
+  EXPIRED
+
+  @@map("approval_status")
+}
+
+enum ApprovalStepStatus {
+  // not reached yet
+  WAITING
+  // waiting for its approver now
+  OPEN
+  APPROVED
+  REJECTED
+  // nobody to decide it (no manager, no HOD, the manager is the employee...) - why is in `note`
+  SKIPPED
+  // the request ended (rejected or cancelled) before this step was reached
+  CANCELLED
+  // not decided in time - passed on to the next step added after it (2026-11-20)
+  ESCALATED
+
+  @@map("approval_step_status")
+}
+
+// What happens when a step is not decided within its time limit (the user, 2026-11-20 - the old HRMS's SLA actions, plus
+// "wait")
+enum ApprovalBreachAction {
+  // nothing moves: the step is marked late and its approver reminded - only they can decide it, even late
+  WAIT
+  // passed on: to the role named on the step, else the late approver's own reporting manager (a role / access step with
+  // no role named: the fallback approver)
+  ESCALATE
+  // counts as approved and the request goes on
+  AUTO_APPROVE
+  // the request ends as expired - neither approved nor rejected
+  EXPIRE
+  // the request is rejected
+  AUTO_REJECT
+
+  @@map("approval_breach_action")
+}
+
+// The chain of one kind: shared by every company (companyId empty) or one company's own, which wins over the shared
+// one. Only one shared chain per kind - the partial unique index approval_chains_one_shared, written into the migration
+// by hand (Prisma cannot describe it).
+model ApprovalChain {
+  id          Int          @id @default(autoincrement())
+  kind        ApprovalKind
+  companyId   Int?         @map("company_id")
+  // switched off: new requests of this kind are refused (for the company of a company's own chain, for every company
+  // without one of their own for the shared chain) - requests already raised go on (the user, 2026-11-20, as the old HRMS)
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int          @map("created_by_id")
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int          @map("updated_by_id")
+
+  company Company?            @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  steps   ApprovalChainStep[]
+
+  @@unique([kind, companyId])
+  @@map("approval_chains")
+}
+
+// One step of a chain, in order. A role used here cannot be deleted while it is.
+model ApprovalChainStep {
+  id               Int          @id @default(autoincrement())
+  chainId          Int          @map("chain_id")
+  // 1, 2, 3... - the order of the steps
+  stepNo           Int          @map("step_no") @db.SmallInt
+  approverType     ApproverType @map("approver_type")
+  // the role of a ROLE step
+  roleId           Int?         @map("role_id")
+  // the access area of an ACCESS step (at Edit)
+  accessArea       AccessArea?  @map("access_area")
+  // a ROLE / ACCESS step named to one holder of the role / access (empty: anyone holding it) - the user, 2026-11-20. When
+  // saved they hold it over the chain's whole reach (every company for the shared chain, the whole company for its own);
+  // a request they cannot decide (left, the role or data access changed) goes to the fallback approver
+  approverId       Int?         @map("approver_id")
+  // this approver sees the confidential part of a request (e.g. the proposed salary - the user, 2026-11-20)
+  seesConfidential Boolean      @default(false) @map("sees_confidential")
+  // the time limit to decide it, in hours (empty: none), and what happens when it passes (2026-11-20)
+  slaHours         Int?         @map("sla_hours") @db.SmallInt
+  onBreach         ApprovalBreachAction @default(WAIT) @map("on_breach")
+  // ESCALATE to this role (empty: the late approver's reporting manager)
+  escalateRoleId   Int?         @map("escalate_role_id")
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById      Int          @map("created_by_id")
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById      Int          @map("updated_by_id")
+
+  chain        ApprovalChain @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  role         Role?         @relation("ChainStepRole", fields: [roleId], references: [id], onDelete: Restrict)
+  escalateRole Role?         @relation("ChainStepEscalateRole", fields: [escalateRoleId], references: [id], onDelete: Restrict)
+
+  @@unique([chainId, stepNo])
+  @@index([roleId])
+  @@index([escalateRoleId])
+  @@map("approval_chain_steps")
+}
+
+// One request for approval: what it is about (an employee), who raised it, the chains it follows (a promotion with a
+// hike follows both the job and the salary chain, merged) and where it stands. Its steps are a copy of the chains made
+// when it was raised, so editing a chain later never changes a request in flight.
+model ApprovalRequest {
+  id                 Int              @id @default(autoincrement())
+  feature            ApprovalFeature
+  kinds              ApprovalKind[]
+  employeeId         Int              @map("employee_id")
+  // who raised it (never one of its approvers)
+  requestedById      Int              @map("requested_by_id")
+  status             ApprovalStatus   @default(PENDING)
+  // one plain line shown in lists and e-mails - never confidential (no salary figures)
+  summary            String
+  // a second place the request touches (a move to another plant / department / company): ROLE, ACCESS and FALLBACK
+  // approvers must cover it as well as where the employee is
+  targetCompanyId    Int?             @map("target_company_id")
+  targetPlantId      Int?             @map("target_plant_id")
+  targetDepartmentId Int?             @map("target_department_id")
+  // nobody can decide the step it is at, not even the fallback approver: it waits - not approved - until the routing is
+  // repaired (e.g. the role is given) and it is sent through again ("vacancy is not consent", as the old HRMS)
+  heldAt             DateTime?        @map("held_at") @db.Timestamptz(3)
+  heldById           Int?             @map("held_by_id")
+  heldReason         String?          @map("held_reason")
+  // approved / rejected (the last decision) or cancelled - when and by whom
+  closedAt           DateTime?        @map("closed_at") @db.Timestamptz(3)
+  closedById         Int?             @map("closed_by_id")
+  // why it was cancelled (a rejection's reason is on its step)
+  cancelReason       String?          @map("cancel_reason")
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById        Int              @map("created_by_id")
+  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById        Int              @map("updated_by_id")
+
+  employee Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  steps    ApprovalRequestStep[]
+  // the feature's record (one of these, by `feature`)
+  jobChange   JobChangeRequest?
+  shiftChange ShiftChangeRequest?
+  leave       LeaveApplication?      @relation("LeaveApproval")
+  leaveCancel LeaveApplication?      @relation("LeaveCancelApproval")
+  regularization RegularizationRequest?
+  compOffClaim   CompOffClaim?
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([requestedById])
+  @@map("approval_requests")
+}
+
+// One step of a request: who was to decide it, and what happened
+model ApprovalRequestStep {
+  id               Int                @id @default(autoincrement())
+  requestId        Int                @map("request_id")
+  stepNo           Int                @map("step_no") @db.SmallInt
+  approverType     ApproverType       @map("approver_type")
+  // a ROLE step's role, and its name when the request was raised (the role may be renamed or deleted later)
+  roleId           Int?               @map("role_id")
+  roleName         String?            @map("role_name")
+  accessArea       AccessArea?        @map("access_area")
+  seesConfidential Boolean            @default(false) @map("sees_confidential")
+  // the person a manager / functional manager / HOD step is named to (set when it opens, changed if they change) - or the
+  // one holder a ROLE / ACCESS step is named to (copied from the chain; only they decide it, else the fallback approver)
+  approverId       Int?               @map("approver_id")
+  // nobody holds this ROLE / ACCESS step's role or access for the employee: the fallback approver decides it instead
+  byFallback       Boolean            @default(false) @map("by_fallback")
+  // its time limit (copied from the chain): hours, the action when it passes, the role to escalate to (id and name)
+  slaHours         Int?               @map("sla_hours") @db.SmallInt
+  onBreach         ApprovalBreachAction @default(WAIT) @map("on_breach")
+  escalateRoleId   Int?               @map("escalate_role_id")
+  escalateRoleName String?            @map("escalate_role_name")
+  // when it must be decided by (set when it opens), and when the time ran out and the action was taken - by whom (System)
+  dueAt            DateTime?          @map("due_at") @db.Timestamptz(3)
+  breachedAt       DateTime?          @map("breached_at") @db.Timestamptz(3)
+  breachedById     Int?               @map("breached_by_id")
+  // approved / rejected by its time limit's action, not by a person
+  autoDecided      Boolean            @default(false) @map("auto_decided")
+  status           ApprovalStepStatus @default(WAITING)
+  // why it was skipped or went to the fallback approver
+  note             String?
+  openedAt         DateTime?          @map("opened_at") @db.Timestamptz(3)
+  openedById       Int?               @map("opened_by_id")
+  decidedAt        DateTime?          @map("decided_at") @db.Timestamptz(3)
+  decidedById      Int?               @map("decided_by_id")
+  // the approver's comment - required to reject
+  comment          String?
+  // the last reminder e-mail (every 3 days while it waits - by the daily job, System)
+  remindedAt       DateTime?          @map("reminded_at") @db.Timestamptz(3)
+  remindedById     Int?               @map("reminded_by_id")
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById      Int                @map("created_by_id")
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById      Int                @map("updated_by_id")
+
+  request ApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  role    Role?           @relation("RequestStepRole", fields: [roleId], references: [id], onDelete: SetNull)
+
+  @@unique([requestId, stepNo])
+  @@index([dueAt])
+  @@index([status])
+  @@index([approverId])
+  @@index([roleId])
+  @@map("approval_request_steps")
+}

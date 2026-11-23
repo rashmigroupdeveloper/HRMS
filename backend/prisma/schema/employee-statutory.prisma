@@ -1,0 +1,144 @@
+// Identity numbers, bank account and statutory (EPF / ESIC) registrations of an employee.
+// Sensitive numbers are stored ENCRYPTED (core/crypto): `...Encrypted` = ciphertext, `...Last4` = for masked display
+// (XXXX-XXXX-1234), `...Hash` = keyed fingerprint so the same number cannot be registered for two employees.
+
+// JF §2 (passport, driving licence), JF §4 (PAN / TPIN, Aadhaar), EPF Form 11 items 10-11 (Aadhaar name, passport validity)
+model EmployeeIdentityDocument {
+  id              Int                  @id @default(autoincrement())
+  employeeId      Int                  @map("employee_id")
+  type            IdentityDocumentType
+  numberEncrypted String               @map("number_encrypted")
+  numberLast4     String               @map("number_last4") @db.VarChar(4)
+  numberHash      String               @map("number_hash")
+  // EPF Form 11 asks for the name exactly as on Aadhaar
+  nameOnDocument  String?              @map("name_on_document")
+  // ISO 3166-1 alpha-2 (passport / foreign tax id)
+  issuingCountry  String?              @map("issuing_country") @db.Char(2)
+  // Passport validity (EPF Form 11 item 10d), driving licence validity
+  validFrom       DateTime?            @map("valid_from") @db.Date
+  validUntil      DateTime?            @map("valid_until") @db.Date
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById     Int                  @map("created_by_id")
+  updatedAt       DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById     Int                  @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, type])
+  @@unique([type, numberHash])
+  @@map("employee_identity_documents")
+}
+
+enum IdentityDocumentType {
+  AADHAAR
+  PAN
+  // "TPIN (Taxpayer Id. No.)" on the joining form - for overseas employees without a PAN
+  FOREIGN_TAX_ID
+  PASSPORT
+  DRIVING_LICENCE
+
+  @@map("identity_document_type")
+}
+
+// JF §5 "Bank Details for Salary Processing" (+ EPF Form 11 KYC). Old accounts are kept as history.
+model EmployeeBankAccount {
+  id                     Int             @id @default(autoincrement())
+  employeeId             Int             @map("employee_id")
+  bankName               String          @map("bank_name")
+  branch                 String?
+  accountHolderName      String          @map("account_holder_name")
+  accountNumberEncrypted String          @map("account_number_encrypted")
+  accountNumberLast4     String          @map("account_number_last4") @db.VarChar(4)
+  ifsc                   String?
+  accountType            BankAccountType @map("account_type")
+  // The account salary is paid into (only one per employee - enforced by the service)
+  isSalaryAccount        Boolean         @default(true) @map("is_salary_account")
+  createdAt              DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById            Int             @map("created_by_id")
+  updatedAt              DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById            Int             @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_bank_accounts")
+}
+
+enum BankAccountType {
+  SAVINGS
+  CURRENT
+
+  @@map("bank_account_type")
+}
+
+// One row per employee: JF §4 (UAN, ESIC no.), EPF Form 11 and ESIC Form 1 answers. Mainly Regular employees.
+model EmployeeStatutory {
+  id         Int @id @default(autoincrement())
+  employeeId Int @unique @map("employee_id")
+
+  // --- EPF (Form 11) ---
+  pfApplicable             Boolean     @default(false) @map("pf_applicable")
+  uan                      String?     @unique
+  pfNumber                 String?     @map("pf_number")
+  // Item 2: whether father's or spouse's name is printed on Form 11
+  epfRelative              EpfRelative @default(FATHER) @map("epf_relative")
+  // Item 6b: the mobile number registered with Aadhaar (PF sends its OTPs there - usually the employee's mobile)
+  aadhaarMobile            String?     @map("aadhaar_mobile")
+  // Item 10a
+  isInternationalWorker    Boolean     @default(false) @map("is_international_worker")
+  // Items 7-9: previous membership
+  wasEpfMember             Boolean?    @map("was_epf_member")
+  wasEpsMember             Boolean?    @map("was_eps_member")
+  previousPfNumber         String?     @map("previous_pf_number")
+  previousExitDate         DateTime?   @map("previous_exit_date") @db.Date
+  schemeCertificateNumber  String?     @map("scheme_certificate_number")
+  ppoNumber                String?     @map("ppo_number")
+  // Item 12
+  firstEpfEnrolledOn       DateTime?   @map("first_epf_enrolled_on") @db.Date
+  // Whole rupees
+  firstEpfWages            Int?        @map("first_epf_wages")
+  isEpfMemberBeforeSep2014 Boolean?    @map("is_epf_member_before_sep_2014")
+  epfWithdrawn             Boolean?    @map("epf_withdrawn")
+  epsWithdrawn             Boolean?    @map("eps_withdrawn")
+  epsWithdrawnAfterSep2014 Boolean?    @map("eps_withdrawn_after_sep_2014")
+
+  // --- ESIC (Form 1) ---
+  esicApplicable          Boolean @default(false) @map("esic_applicable")
+  // Item 1 "Insurance No." (= JF §4 "ESIC No.")
+  esicIpNumber            String? @unique @map("esic_ip_number")
+  esicBranchOffice        String? @map("esic_branch_office")
+  esicDispensary          String? @map("esic_dispensary")
+  // Item 12: previous employment
+  previousEsicIpNumber    String? @map("previous_esic_ip_number")
+  previousEmployerCode    String? @map("previous_employer_code")
+  previousEmployerName    String? @map("previous_employer_name")
+  previousEmployerAddress String? @map("previous_employer_address")
+  // the previous employer's telephone / e-mail (Form 1 item 12)
+  previousEmployerContact String? @map("previous_employer_contact")
+
+  // --- Gratuity (Form F declarations, Payment of Gratuity Act s.2(h)) ---
+  // "I have no family within the meaning of clause (h) of section 2"
+  gratuityNoFamily                    Boolean?  @map("gratuity_no_family")
+  // "My father / mother / parents is / are not dependent on me"
+  gratuityParentsNotDependent         Boolean?  @map("gratuity_parents_not_dependent")
+  // (a woman) "My husband's father / mother / parents is / are not dependent on my husband"
+  gratuityHusbandsParentsNotDependent Boolean?  @map("gratuity_husbands_parents_not_dependent")
+  // (a woman) the date of her notice to the controlling authority excluding her husband from her family
+  gratuityHusbandExcludedOn           DateTime? @map("gratuity_husband_excluded_on") @db.Date
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("employee_statutory")
+}
+
+enum EpfRelative {
+  FATHER
+  SPOUSE
+
+  @@map("epf_relative")
+}

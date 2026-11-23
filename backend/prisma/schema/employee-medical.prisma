@@ -1,0 +1,97 @@
+// Employee · Medical: the "Employee Medical Information" pages of the joining form RML/HR/02/01
+// (Regular and Consultant & Intern packs - docs/hr-forms/). Health data: seen and changed only with the MEDICAL
+// access area (and by the employee themselves); collected with the candidate's consent. Height and weight are on the
+// employee (personal details) and BMI is worked out from them, so they are not repeated here.
+// Asked by HR (2026-11-15): every question of the paper form is collected online.
+
+model EmployeeMedicalInfo {
+  id         Int @id @default(autoincrement())
+  employeeId Int @unique @map("employee_id")
+
+  // --- Medical history - self ---
+  // "Do you have or have you had any of the following conditions?"
+  conditions             MedicalCondition[]
+  otherConditions        String?            @map("other_conditions")
+  takesMedication        Boolean?           @map("takes_medication")
+  medications            String?
+  // physical limitations or conditions that may affect the job duties
+  hasPhysicalLimitations Boolean?           @map("has_physical_limitations")
+  physicalLimitations    String?            @map("physical_limitations")
+  // surgeries or major medical treatments in the past 5 years
+  hadSurgery             Boolean?           @map("had_surgery")
+  surgeries              String?
+  hasAllergies           Boolean?           @map("has_allergies")
+  allergies              String?
+
+  // --- Medical history - family: which family member(s) had the condition (empty = none) ---
+  familyHeartDisease      String? @map("family_heart_disease")
+  familyDiabetes          String? @map("family_diabetes")
+  familyHighBloodPressure String? @map("family_high_blood_pressure")
+  // with the type of cancer
+  familyCancer            String? @map("family_cancer")
+  familyStroke            String? @map("family_stroke")
+  familyMentalHealth      String? @map("family_mental_health")
+  familyGeneticDisorders  String? @map("family_genetic_disorders")
+  familyOther             String? @map("family_other")
+  // hereditary conditions that could affect health or work performance
+  hasHereditaryCondition  Boolean? @map("has_hereditary_condition")
+  hereditaryCondition     String?  @map("hereditary_condition")
+  // a condition that needs unplanned leave for personal or family health
+  needsHealthLeave        Boolean? @map("needs_health_leave")
+  healthLeave             String?  @map("health_leave")
+
+  // --- Lifestyle ---
+  smokes             Boolean? @map("smokes")
+  drinksAlcohol      Boolean? @map("drinks_alcohol")
+  exercisesRegularly Boolean? @map("exercises_regularly")
+  exerciseFrequency  String?  @map("exercise_frequency")
+
+  // --- Emergency medical instructions ---
+  needsEmergencyCare Boolean? @map("needs_emergency_care")
+  emergencyCare      String?  @map("emergency_care")
+
+  // --- Physical activity ---
+  sports          Sport[]
+  otherSports     String? @map("other_sports")
+  sportsFrequency String? @map("sports_frequency")
+
+  // The consent to hold this health data, given with the joining form (by the candidate online = SYSTEM_ACTOR, or HR)
+  consentAt   DateTime @map("consent_at") @db.Timestamptz(3)
+  consentById Int      @map("consent_by_id")
+  // The exact consent text agreed to (old HRMS kept its version and SHA-256 - 2026-11-16); null for consent given
+  // before the text was kept
+  consentText String?  @map("consent_text")
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("employee_medical_info")
+}
+
+// The conditions the form lists as tick boxes
+enum MedicalCondition {
+  ASTHMA
+  DIABETES
+  HEART_DISEASE
+  HIGH_BLOOD_PRESSURE
+  EPILEPSY
+  MENTAL_HEALTH
+
+  @@map("medical_condition")
+}
+
+// "Do you play any racket sport or any other sport?"
+enum Sport {
+  TENNIS
+  PADDLE_BALL
+  BADMINTON
+  FOOTBALL
+  BASKETBALL
+  OTHER
+
+  @@map("sport")
+}

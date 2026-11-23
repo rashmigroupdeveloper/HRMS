@@ -1,0 +1,75 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Edit(**/*.repository.ts)",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-data-access.mjs\" post-edit",
+            "timeout": 120,
+            "statusMessage": "Checking data access (CLAUDE.md section 8)..."
+          },
+          {
+            "type": "command",
+            "if": "Edit(**/prisma/schema/*.prisma)",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-data-access.mjs\" post-edit",
+            "timeout": 120,
+            "statusMessage": "Checking data access (CLAUDE.md section 8)..."
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Write(**/*.repository.ts)",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-data-access.mjs\" post-edit",
+            "timeout": 120,
+            "statusMessage": "Checking data access (CLAUDE.md section 8)..."
+          },
+          {
+            "type": "command",
+            "if": "Write(**/prisma/schema/*.prisma)",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-data-access.mjs\" post-edit",
+            "timeout": 120,
+            "statusMessage": "Checking data access (CLAUDE.md section 8)..."
+          }
+        ]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "MultiEdit(**/*.repository.ts)",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-data-access.mjs\" post-edit",
+            "timeout": 120,
+            "statusMessage": "Checking data access (CLAUDE.md section 8)..."
+          },
+          {
+            "type": "command",
+            "if": "MultiEdit(**/prisma/schema/*.prisma)",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-data-access.mjs\" post-edit",
+            "timeout": 120,
+            "statusMessage": "Checking data access (CLAUDE.md section 8)..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-data-access.mjs\" stop",
+            "timeout": 120,
+            "statusMessage": "Checking data access (CLAUDE.md section 8)..."
+          }
+        ]
+      }
+    ]
+  }
+}

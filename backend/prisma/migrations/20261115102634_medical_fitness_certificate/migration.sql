@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "document_type" ADD VALUE 'MEDICAL_FITNESS_CERTIFICATE';

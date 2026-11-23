@@ -1,0 +1,52 @@
+// The change history (phase 2, agreed 2026-11-16 - the old HRMS had it): every create / change / delete made through
+// the app, recorded automatically by core/audit in the same transaction, and sign-ins / sign-outs.
+// Append-only: the app never changes or deletes a row (no API does). Tamper-evident (decided 2026-11-16): each row
+// carries the fingerprint of the row before it - a hash chain - so a row changed or removed directly in the database
+// is found by the integrity check (changeHistory.verify). Kept for good (BACKLOG.md item 3b).
+model AuditLog {
+  id          Int         @id @default(autoincrement())
+  action      AuditAction
+  // which record: the model ("Employee", "Candidate"...) and the row's id - none for sign-ins
+  model       String?
+  recordId    Int?        @map("record_id")
+  // whose record it is, so one employee's / candidate's history can be shown (the profile's Record tab)
+  employeeId  Int?        @map("employee_id")
+  candidateId Int?        @map("candidate_id")
+  // what made the change: the API ("employees.update") or a script ("script:import-old-hrms")
+  source      String?
+  // only the fields that changed: { field: [before, after] }; passwords, codes, tokens and encrypted numbers only as
+  // "(changed)"
+  changes     Json?
+  // sign-ins: { employeeCode, reason }
+  details     Json?
+  // where the request came from (proof, as for a candidate's online answer)
+  ip          String?
+  userAgent   String?     @map("user_agent")
+  // the hash chain: the row before's fingerprint and this row's (SHA-256, hex)
+  previousHash String     @map("previous_hash") @db.Char(64)
+  hash         String     @unique @db.Char(64)
+
+  // createdById = who did it (an employee, or 0 = System / the candidate on their own pages); never updated
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  @@index([createdAt])
+  @@index([createdById])
+  @@index([employeeId])
+  @@index([candidateId])
+  @@index([model, recordId])
+  @@map("audit_logs")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  SIGN_IN
+  SIGN_IN_FAILED
+  SIGN_OUT
+
+  @@map("audit_action")
+}

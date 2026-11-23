@@ -1,0 +1,154 @@
+// An employee's background from the joining form RML/HR/02/01 ("JF §n"): education (§6), certifications (§7),
+// previous employment (§8), family (the second "6", a numbering slip on the form) and the nominations of JF §4,
+// Gratuity Form F and ESIC Form 1. Filled in the joining-form draft before joining (by the candidate online or by HR)
+// and created with the employee on the joining day (added 2026-11-13: "every detail of the employee master in the form").
+
+// JF §6 "Educational Qualification" - one row per qualification; also what the EDUCATION background check verifies
+model EmployeeQualification {
+  id             Int      @id @default(autoincrement())
+  employeeId     Int      @map("employee_id")
+  // As written by the employee, e.g. "B.Tech", "Class XII", "ITI Fitter"
+  qualification  String
+  // Institute / university / board
+  institute      String
+  yearOfPassing  Int      @map("year_of_passing") @db.SmallInt
+  specialization String?
+  // "% / CGPA" as written, e.g. "78%" or "8.2 CGPA"
+  score          String?
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById    Int      @map("created_by_id")
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById    Int      @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_qualifications")
+}
+
+// JF §7 "Additional Certification"
+model EmployeeCertification {
+  id             Int       @id @default(autoincrement())
+  employeeId     Int       @map("employee_id")
+  name           String
+  // Issuing organisation / institute
+  issuedBy       String    @map("issued_by")
+  certifiedOn    DateTime? @map("certified_on") @db.Date
+  specialization String?
+  // Grade / score as written
+  score          String?
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById    Int       @map("created_by_id")
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById    Int       @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_certifications")
+}
+
+// JF §8 "Previous Employment Details" - also what the EMPLOYMENT background check verifies.
+// (The form's unlabeled last column is an open question for HR - BACKLOG.md.)
+model EmployeePreviousEmployment {
+  id               Int      @id @default(autoincrement())
+  employeeId       Int      @map("employee_id")
+  employerName     String   @map("employer_name")
+  designation      String
+  fromDate         DateTime @map("from_date") @db.Date
+  toDate           DateTime @map("to_date") @db.Date
+  reasonForLeaving String?  @map("reason_for_leaving")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById      Int      @map("created_by_id")
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById      Int      @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_previous_employments")
+}
+
+// JF "6 Family Details" (name, relation, gender, date of birth, Aadhaar, pre-existing disease) + ESIC Form 1
+// "particulars of family" (residing with the employee; if not, town and state). Age is worked out from dateOfBirth.
+model EmployeeFamilyMember {
+  id                 Int                @id @default(autoincrement())
+  employeeId         Int                @map("employee_id")
+  name               String
+  relationship       FamilyRelationship
+  gender             Gender?
+  dateOfBirth        DateTime?          @map("date_of_birth") @db.Date
+  // Aadhaar of the family member, ENCRYPTED (core/crypto) + last 4 digits for display; not unique (no hash)
+  aadhaarEncrypted   String?            @map("aadhaar_encrypted")
+  aadhaarLast4       String?            @map("aadhaar_last4") @db.VarChar(4)
+  // As written on the form ("Any pre-existing disease")
+  preExistingDisease String?            @map("pre_existing_disease")
+  // ESIC Form 1: whether they live with the employee; if not, where
+  livesWithEmployee  Boolean?           @map("lives_with_employee")
+  residenceTown      String?            @map("residence_town")
+  residenceState     String?            @map("residence_state")
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById        Int                @map("created_by_id")
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById        Int                @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_family_members")
+}
+
+enum FamilyRelationship {
+  SPOUSE
+  SON
+  DAUGHTER
+  FATHER
+  MOTHER
+  BROTHER
+  SISTER
+  FATHER_IN_LAW
+  MOTHER_IN_LAW
+  OTHER
+
+  @@map("family_relationship")
+}
+
+// Who receives a benefit if the employee dies - one list per scheme, because each law asks for its own nomination.
+model EmployeeNominee {
+  id           Int              @id @default(autoincrement())
+  employeeId   Int              @map("employee_id")
+  scheme       NominationScheme
+  name         String
+  // As written ("Wife", "Son", "Grandson"...)
+  relationship String
+  // Form F asks the nominee's age
+  dateOfBirth  DateTime?        @map("date_of_birth") @db.Date
+  // Form F "name in full with full address", ESIC Form 1 nominee address
+  address      String?
+  // Form F "proportion by which the gratuity will be shared" - the shares of one scheme add up to 100
+  sharePercent Int?             @map("share_percent") @db.SmallInt
+  // A nominee under 18 cannot receive the money themselves: their guardian's name and address (the user, 2026-11-20 -
+  // asked only then, and required then; printed under Form F's nominee table, as EPF's Form 2 asks it)
+  guardianName    String?       @map("guardian_name")
+  guardianAddress String?       @map("guardian_address")
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  Int              @map("created_by_id")
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById  Int              @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, scheme])
+  @@map("employee_nominees")
+}
+
+enum NominationScheme {
+  // JF §4 "Nominee name / relationship" - one nominee; which benefit it is for is an open question for HR (BACKLOG.md)
+  GENERAL
+  // Gratuity Form F (Payment of Gratuity Rules r.6(1)) - one or more nominees with shares
+  GRATUITY
+  // ESIC Form 1 - the nominee for the cash benefit on death (ESI Act s.71), one person
+  ESIC
+
+  @@map("nomination_scheme")
+}

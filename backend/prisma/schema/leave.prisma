@@ -1,0 +1,186 @@
+// Leave (2026-11-22 - the second module in an employee's life, after attendance). Built while the user was away, on their
+// word "if you get any doubt follow how it has been done in old HRMS" - so every rule below is the old HRMS's
+// (lv.leave_types, lv.ledger, lv.applications), made simpler where it could be. Balances are a ledger (every credit and
+// debit a row, the balance their sum - never a number overwritten); an application is approved through the approval
+// service (kind LEAVE, cancelling an approved one: LEAVE_CANCEL); approved leave shows on the attendance days (status
+// LEAVE). The leave year is the calendar year (the old HRMS's default - ask HR, BACKLOG). Encashment and comp-off earned
+// from overtime wait for payroll (BACKLOG).
+
+// A kind of leave and its rules (old HRMS lv.leave_types, its seeded values in the migration - "pending HR's sign-off"
+// there too). The same for every company (like shifts): Leave Edit for all companies.
+model LeaveType {
+  id                        Int              @id @default(autoincrement())
+  // short code shown on the muster and the balances, e.g. CL, SL, EL
+  code                      String           @unique
+  name                      String           @unique
+  // false = loss of pay: no balance to check, payroll deducts the days (old: is_paid)
+  isPaid                    Boolean          @map("is_paid")
+  // days credited on the 1st of every month (0 = none; days are then given by HR as an adjustment - e.g. maternity,
+  // comp-off) - old: accrual_per_month
+  creditPerMonth            Decimal          @default(0) @map("credit_per_month") @db.Decimal(4, 2)
+  // the monthly credit starts only this many months after the date of joining (old: accrual_requires_service_months -
+  // EL after 12 months)
+  creditAfterMonths         Int              @default(0) @map("credit_after_months") @db.SmallInt
+  // at the end of the year the balance above this lapses (0 = all of it; null = all of it carries forward) - old:
+  // max_carry_forward
+  maxCarryForward           Decimal?         @map("max_carry_forward") @db.Decimal(5, 2)
+  // the most days one application may take (null = no limit) - old: max_per_request
+  maxPerRequest             Decimal?         @map("max_per_request") @db.Decimal(5, 1)
+  // half days may be taken (the first day from its second half, the last day to its first half) - old: allow_half_day
+  allowHalfDay              Boolean          @default(true) @map("allow_half_day")
+  // weekly offs and holidays inside the leave count as leave days (the "sandwich" rule; old: sandwich_rule include /
+  // exclude) - the off days themselves stay weekly off / holiday on the attendance days
+  countsOffDays             Boolean          @default(false) @map("counts_off_days")
+  // only for these genders / employment types (empty = everyone) - old: applicable_gender, applicable_categories
+  genders                   Gender[]         @default([])
+  employmentTypes           EmploymentType[] @default([]) @map("employment_types")
+  // the type comp-off is credited to when a claim for work on a weekly off / holiday is approved (one type - the seeded CO;
+  // the user, 2026-11-22)
+  isCompOff                 Boolean          @default(false) @map("is_comp_off")
+  isActive                  Boolean          @default(true) @map("is_active")
+  createdAt                 DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById               Int              @map("created_by_id")
+  updatedAt                 DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById               Int              @map("updated_by_id")
+
+  entries      LeaveLedgerEntry[]
+  applications LeaveApplication[]
+
+  @@map("leave_types")
+}
+
+enum LeaveEntryKind {
+  // the monthly credit (by System, on the 1st)
+  CREDIT
+  // an approved leave taken (negative)
+  TAKEN
+  // an approved leave cancelled - its days given back
+  RETURNED
+  // the year-end: the balance above the carry-forward limit (negative)
+  LAPSE
+  // HR's change, with a note - also the opening balances at go-live and days given (maternity, comp-off)
+  ADJUSTMENT
+  // comp-off earned by working on a weekly off / holiday (an approved claim - 2026-11-22); it expires (expiresOn)
+  COMP_OFF
+  // comp-off not used before it expired (negative - the daily job)
+  EXPIRED
+
+  @@map("leave_entry_kind")
+}
+
+// One credit or debit of a leave balance (old HRMS lv.ledger). Never changed or removed - a mistake is put right by
+// another row. Balance = the sum of an employee's rows of a type.
+model LeaveLedgerEntry {
+  id            Int            @id @default(autoincrement())
+  employeeId    Int            @map("employee_id")
+  leaveTypeId   Int            @map("leave_type_id")
+  kind          LeaveEntryKind
+  // + credited, - taken / lapsed
+  days          Decimal        @db.Decimal(6, 2)
+  // the day it counts on: the 1st for a credit, the leave's first day for taken / returned, 31 Dec for a lapse
+  effectiveDate DateTime       @map("effective_date") @db.Date
+  // the month credited ("2026-11") or the year lapsed ("2026") - once each (a job run twice adds nothing); null for the rest
+  period        String?
+  // the leave taken / returned
+  applicationId Int?           @map("application_id")
+  // HR's reason for an adjustment (required then)
+  note          String?
+  // a comp-off credit: the day it expires - not used by then, it lapses (90 days after the day worked - old HRMS
+  // lv.comp_off_validity_days)
+  expiresOn     DateTime?      @map("expires_on") @db.Date
+  // the comp-off claim it was earned by
+  compOffClaimId Int?          @unique @map("comp_off_claim_id")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int            @map("created_by_id")
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int            @map("updated_by_id")
+
+  employee    Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType   LeaveType         @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+  application LeaveApplication? @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  compOffClaim CompOffClaim?    @relation(fields: [compOffClaimId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeId, leaveTypeId, kind, period])
+  @@index([employeeId, leaveTypeId])
+  @@map("leave_ledger_entries")
+}
+
+enum LeaveStatus {
+  // waiting for its approval (who has it is on the approval request)
+  PENDING
+  APPROVED
+  REJECTED
+  // withdrawn while waiting, or cancelled after approval (through its own approval - cancelApprovalRequestId)
+  CANCELLED
+
+  @@map("leave_status")
+}
+
+// An employee's application for leave (old HRMS lv.applications), approved through the approval service. Its days are
+// worked out from the attendance plan (weekly offs and holidays count only for a type that counts them) and kept as
+// asked - checked again when approved.
+model LeaveApplication {
+  id                      Int         @id @default(autoincrement())
+  employeeId              Int         @map("employee_id")
+  leaveTypeId             Int         @map("leave_type_id")
+  fromDate                DateTime    @map("from_date") @db.Date
+  toDate                  DateTime    @map("to_date") @db.Date
+  // the first day is taken from its second half only (old: from_half)
+  fromSecondHalf          Boolean     @default(false) @map("from_second_half")
+  // the last day is taken in its first half only (old: to_half)
+  toFirstHalf             Boolean     @default(false) @map("to_first_half")
+  // the leave days it takes (halves count 0.5)
+  days                    Decimal     @db.Decimal(5, 1)
+  reason                  String
+  status                  LeaveStatus
+  // its request in the approval service
+  approvalRequestId       Int         @unique @map("approval_request_id")
+  // an approved leave the employee asks to cancel: that request (old HRMS: the leave_cancel approval); the latest one
+  cancelApprovalRequestId Int?        @unique @map("cancel_approval_request_id")
+  // why they want to cancel it
+  cancelReason            String?     @map("cancel_reason")
+  createdAt               DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById             Int         @map("created_by_id")
+  updatedAt               DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById             Int         @map("updated_by_id")
+
+  employee        Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveType       LeaveType          @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+  approvalRequest ApprovalRequest    @relation("LeaveApproval", fields: [approvalRequestId], references: [id], onDelete: Restrict)
+  cancelRequest   ApprovalRequest?   @relation("LeaveCancelApproval", fields: [cancelApprovalRequestId], references: [id], onDelete: Restrict)
+  entries         LeaveLedgerEntry[]
+
+  @@index([employeeId, fromDate])
+  @@index([status])
+  @@map("leave_applications")
+}
+
+// An employee's claim for comp-off: they worked on a weekly off or a holiday (the user, 2026-11-22 - "the employee works on
+// holidays, maybe Sunday... applies for comp off for that, the manager approves, then the employee gets the comp off which
+// can be used later as a leave"). The day's punches decide how much: at least 8 hours = 1 day, at least 4 hours = half a
+// day (the old HRMS's thresholds); claimed at most 30 days after; approved through the approval service (kind COMP_OFF);
+// approved, the days are credited to the comp-off type, expiring 90 days after the day worked.
+model CompOffClaim {
+  id                Int         @id @default(autoincrement())
+  employeeId        Int         @map("employee_id")
+  // the weekly off / holiday worked
+  workDate          DateTime    @map("work_date") @db.Date
+  // 0.5 or 1, from the hours worked when claimed (counted again when approved)
+  days              Decimal     @db.Decimal(3, 1)
+  reason            String
+  // PENDING / APPROVED / REJECTED / CANCELLED (withdrawn while waiting) - as a leave application
+  status            LeaveStatus
+  // its request in the approval service
+  approvalRequestId Int         @unique @map("approval_request_id")
+  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       Int         @map("created_by_id")
+  updatedAt         DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById       Int         @map("updated_by_id")
+
+  employee        Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  approvalRequest ApprovalRequest   @relation(fields: [approvalRequestId], references: [id], onDelete: Restrict)
+  entry           LeaveLedgerEntry?
+
+  @@index([employeeId, workDate])
+  @@map("comp_off_claims")
+}

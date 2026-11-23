@@ -1,0 +1,10 @@
+{
+  // Type-checks backend/scripts and the tests together with src (run with tsx / vitest, never compiled to dist)
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["src", "scripts", "tests", "vitest.config.ts"],
+  "exclude": []
+}

@@ -1,0 +1,30 @@
+// HRMS database schema - the single source of truth for every table.
+// The schema is split into one file per domain (employee.prisma, organization.prisma, ...);
+// Prisma merges every *.prisma file in this folder.
+//
+// Workflow for adding / changing a table:
+//   1. Edit the models in the right domain file (or create a new domain file).
+//   2. Run `npm run db:migrate -- --name <what_changed>` from the root.
+//      This creates + applies the migration and regenerates the typed client in src/generated/prisma.
+//
+// Conventions:
+//   - Model names: PascalCase singular (Employee). Table names: snake_case plural via @@map("employees").
+//   - Field names: camelCase in code, snake_case in the DB via @map("first_name").
+//   - Enums: PascalCase name mapped to snake_case (@@map), values UPPER_CASE.
+//   - Every table gets: id, createdAt + createdById, updatedAt + updatedById - all four compulsory
+//     (timestamps as timestamptz).
+//   - Every other column that records WHEN something was done (offerSentAt, reviewedAt, completedAt...) gets a
+//     column for WHO did it right after it: <action>ById, set and cleared together with the time.
+//   - A "by" column holds the employees.id of the logged-in employee who did it, or 0 = System (a script, a
+//     migration, an automatic job). It has no foreign key (0 is not an employee); the code only ever writes the
+//     logged-in user's id or SYSTEM_ACTOR (core/db/prisma.ts), never an id from the request.
+//   - Calendar dates (birth, joining, leave days) use @db.Date - no time part, no timezone shifts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

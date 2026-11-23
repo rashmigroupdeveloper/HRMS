@@ -1,0 +1,143 @@
+// Job changes through approval (the user, 2026-11-20 - modules/job-changes): a promotion, transfer, redesignation, change
+// of manager... and / or a salary revision, asked by HR from a day on, approved through the approval chains (approvals
+// .prisma), then applied on its day. A change not yet in force lives only here - the job timeline (EmployeeJobRecord)
+// gets its entry when it is applied. One open request (waiting for approval, or approved and waiting for its day) per
+// employee at a time - the partial unique index job_change_requests_one_open, written into the migration by hand.
+
+enum JobChangeStatus {
+  // waiting for approval
+  PENDING
+  // approved - waiting for its day, or it could not be applied on its day (applyError says why)
+  APPROVED
+  // in force: the employee's details changed and the timeline has its entry
+  APPLIED
+  REJECTED
+  CANCELLED
+
+  @@map("job_change_status")
+}
+
+model JobChangeRequest {
+  id                  Int                @id @default(autoincrement())
+  employeeId          Int                @map("employee_id")
+  // its approval (modules/approvals)
+  approvalRequestId   Int                @unique @map("approval_request_id")
+  // the day it applies from
+  effectiveFrom       DateTime           @map("effective_from") @db.Date
+  kind                JobChangeKind
+  // why - required (as the old HRMS's transfer reason)
+  reason              String
+  status              JobChangeStatus    @default(PENDING)
+  // the job details that change, by name (e.g. {designationId, gradeId}) - so "clear the grade" differs from "grade not
+  // touched"; the new values are in the columns below
+  changedFields       String[]           @map("changed_fields")
+  // a company transfer (2026-11-20): the company of the group they move to - with a new employee code from its series
+  companyId           Int?               @map("company_id")
+  plantId             Int?               @map("plant_id")
+  departmentId        Int?               @map("department_id")
+  workLocationId      Int?               @map("work_location_id")
+  designationId       Int?               @map("designation_id")
+  gradeId             Int?               @map("grade_id")
+  positionId          Int?               @map("position_id")
+  costCenterId        Int?               @map("cost_center_id")
+  reportingManagerId  Int?               @map("reporting_manager_id")
+  functionalManagerId Int?               @map("functional_manager_id")
+  employmentType      EmploymentType?    @map("employment_type")
+  workforceCategory   WorkforceCategory? @map("workforce_category")
+  // approved, but its day came and it could not be applied (e.g. the new manager has left since) - why; cleared when
+  // applied
+  applyError          String?            @map("apply_error")
+  // when it took effect, and by whom (System for the daily job)
+  appliedAt           DateTime?          @map("applied_at") @db.Timestamptz(3)
+  appliedById         Int?               @map("applied_by_id")
+  // the job details as shown just before it applied ({ field: name }) - so the change still shows old -> new later
+  before              Json?
+  // cancelled - while waiting for approval (its approval is cancelled too) or approved and waiting for its day: when, by
+  // whom and why
+  cancelledAt         DateTime?          @map("cancelled_at") @db.Timestamptz(3)
+  cancelledById       Int?               @map("cancelled_by_id")
+  cancelReason        String?            @map("cancel_reason")
+  // when the employee was e-mailed about it, and by whom
+  notifiedAt          DateTime?          @map("notified_at") @db.Timestamptz(3)
+  notifiedById        Int?               @map("notified_by_id")
+  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById         Int                @map("created_by_id")
+  updatedAt           DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById         Int                @map("updated_by_id")
+
+  employee          Employee          @relation("JobChangeEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  approvalRequest   ApprovalRequest   @relation(fields: [approvalRequestId], references: [id], onDelete: Restrict)
+  company           Company?          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  plant             Plant?            @relation(fields: [plantId], references: [id], onDelete: Restrict)
+  department        Department?       @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  workLocation      WorkLocation?     @relation(fields: [workLocationId], references: [id], onDelete: Restrict)
+  designation       Designation?      @relation(fields: [designationId], references: [id], onDelete: Restrict)
+  grade             Grade?            @relation(fields: [gradeId], references: [id], onDelete: Restrict)
+  position          Position?         @relation(fields: [positionId], references: [id], onDelete: Restrict)
+  costCenter        CostCenter?       @relation(fields: [costCenterId], references: [id], onDelete: Restrict)
+  reportingManager  Employee?         @relation("JobChangeReportingManager", fields: [reportingManagerId], references: [id], onDelete: Restrict)
+  functionalManager Employee?         @relation("JobChangeFunctionalManager", fields: [functionalManagerId], references: [id], onDelete: Restrict)
+  // the timeline entry it wrote when applied
+  jobRecord         EmployeeJobRecord?
+  // the salary it proposes (none: job details only), and the salary rows it set when applied
+  salary            JobChangeSalary?
+  salaries          EmployeeSalary[]
+  // the employee code a company transfer retired
+  formerCodes       EmployeeFormerCode[]
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([effectiveFrom])
+  @@index([companyId])
+  @@index([plantId])
+  @@index([departmentId])
+  @@index([workLocationId])
+  @@index([designationId])
+  @@index([gradeId])
+  @@index([positionId])
+  @@index([costCenterId])
+  @@index([reportingManagerId])
+  @@index([functionalManagerId])
+  @@map("job_change_requests")
+}
+
+// The salary a job change proposes (the user, 2026-11-20): an increment alone, or a promotion's hike - the annual fixed
+// CTC, performance pay and the full monthly breakup (lines x 12 = the CTC, as on the offer). Confidential: the change
+// history shows it only with Employee · Salary access, and an approver sees it only on a step set to see it.
+model JobChangeSalary {
+  id                   Int      @id @default(autoincrement())
+  jobChangeRequestId   Int      @unique @map("job_change_request_id")
+  annualCtc            Int      @map("annual_ctc")
+  performancePayAnnual Int?     @map("performance_pay_annual")
+  // ISO 4217, e.g. INR
+  currency             String   @default("INR") @db.Char(3)
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById          Int      @map("created_by_id")
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById          Int      @map("updated_by_id")
+
+  jobChangeRequest JobChangeRequest      @relation(fields: [jobChangeRequestId], references: [id], onDelete: Cascade)
+  lines            JobChangeSalaryLine[]
+
+  @@map("job_change_salaries")
+}
+
+// One line of a proposed salary's monthly breakup
+model JobChangeSalaryLine {
+  id                Int      @id @default(autoincrement())
+  jobChangeSalaryId Int      @map("job_change_salary_id")
+  salaryComponentId Int      @map("salary_component_id")
+  // whole units of the salary's currency per month
+  monthlyAmount     Int      @map("monthly_amount")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       Int      @map("created_by_id")
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById       Int      @map("updated_by_id")
+
+  jobChangeSalary JobChangeSalary @relation(fields: [jobChangeSalaryId], references: [id], onDelete: Cascade)
+  salaryComponent SalaryComponent @relation(fields: [salaryComponentId], references: [id], onDelete: Restrict)
+
+  @@unique([jobChangeSalaryId, salaryComponentId])
+  @@index([salaryComponentId])
+  @@map("job_change_salary_lines")
+}

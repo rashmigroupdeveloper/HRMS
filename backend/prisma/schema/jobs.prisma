@@ -1,0 +1,64 @@
+// The background worker (src/worker.ts, phase 5 - 2026-11-16): every run of a scheduled job - when it ran, how it
+// ended and what it did - so a failing job is seen, not silent. Runs older than 90 days are removed. Always by System
+// (createdById 0), so the start / finish times have no "by" columns of their own.
+model JobRun {
+  id         Int          @id @default(autoincrement())
+  // the job's name, e.g. "accounts.removeExpiredSessions"
+  job        String
+  status     JobRunStatus
+  startedAt  DateTime     @map("started_at") @db.Timestamptz(3)
+  finishedAt DateTime?    @map("finished_at") @db.Timestamptz(3)
+  // what it did, e.g. "3 expired sessions removed"
+  summary    String?
+  // why it failed
+  error      String?
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  @@index([job, startedAt])
+  @@map("job_runs")
+}
+
+enum JobRunStatus {
+  RUNNING
+  OK
+  FAILED
+
+  @@map("job_run_status")
+}
+
+// An e-mail that could not be sent, waiting to be tried again (old HRMS: a mail queue with up to 5 tries, 2026-11-16).
+// The worker tries it again every minute or so; once sent the row is removed, after the last try it stays FAILED for a
+// while with the message wiped. The message (it may hold a temporary password or a code) is kept encrypted. Not in the
+// change history (as JobRun). Always by System.
+model MailRetry {
+  id               Int             @id @default(autoincrement())
+  // for the lists and logs only - the message itself is in messageEncrypted
+  recipient        String
+  subject          String
+  // the whole e-mail (to, subject, text, attachments) as encrypted JSON; null once it finally failed
+  messageEncrypted String?         @map("message_encrypted")
+  status           MailRetryStatus
+  // tries so far (the first, failed one counts)
+  attempts         Int             @db.SmallInt
+  nextAttemptAt    DateTime        @map("next_attempt_at") @db.Timestamptz(3)
+  lastError        String?         @map("last_error")
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  @@index([status, nextAttemptAt])
+  @@map("mail_retries")
+}
+
+enum MailRetryStatus {
+  PENDING
+  FAILED
+
+  @@map("mail_retry_status")
+}

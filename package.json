@@ -1,0 +1,32 @@
+{
+  "name": "hrms",
+  "private": true,
+  "version": "0.1.0",
+  "description": "HRMS - rebuilt step by step",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n api,worker,web -c cyan,yellow,magenta \"npm run dev -w backend\" \"npm run worker -w backend\" \"npm run dev -w frontend\"",
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "typecheck": "npm run typecheck -w backend && npm run typecheck -w frontend",
+    "db:migrate": "npm run db:migrate -w backend --",
+    "db:generate": "npm run db:generate -w backend",
+    "db:studio": "npm run db:studio -w backend",
+    "db:reset": "npm run db:reset -w backend",
+    "import:old-hrms": "npm run import:old-hrms -w backend --",
+    "import:vbms": "npm run import:vbms -w backend --",
+    "set-password": "npm run set-password -w backend --",
+    "create-admin": "npm run create-admin -w backend --",
+    "check:api-tracker": "npm run check:api-tracker -w backend",
+    "check:data-access": "npm run check:data-access -w backend",
+    "test": "npm run test -w backend"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}

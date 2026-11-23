@@ -1,0 +1,632 @@
+// Employee master - one row per person employed. A row is created on the joining day;
+// before that the person is a Candidate (onboarding.prisma).
+// Source references: "JF §n" = Employee Joining Form RML/HR/02/01 section n.
+// Rule: every field must have a real purpose (a form, a statutory need, or an HR process) - no "nice to have" columns.
+
+model Employee {
+  id Int @id @default(autoincrement())
+
+  // --- Official / employment (JF §1) ---
+  // Unique company-issued code, stored in UPPER CASE (e.g. RML035384)
+  employeeCode          String            @unique @map("employee_code")
+  // Which joining-form pack applies; decides the required onboarding sections
+  joiningType           JoiningType       @map("joining_type")
+  employmentType        EmploymentType    @map("employment_type")
+  // Plant workers vs staff - drives overtime and attendance rules
+  workforceCategory     WorkforceCategory @map("workforce_category")
+  dateOfJoining         DateTime          @map("date_of_joining") @db.Date
+  // End of engagement for contract / trainee / consultant / apprentice
+  contractEndDate       DateTime?         @map("contract_end_date") @db.Date
+  // Notice either side gives to end the employment, during probation / after confirmation (offer letter 4.1 / 4.2) -
+  // copied from the offer on the joining day (2026-11-15); used when the employee leaves
+  noticeMonthsProbation Int?              @map("notice_months_probation") @db.SmallInt
+  noticeMonthsConfirmed Int?              @map("notice_months_confirmed") @db.SmallInt
+  probationEndDate      DateTime?         @map("probation_end_date") @db.Date
+  // Actual confirmation (can differ from probationEndDate)
+  confirmationDate      DateTime?         @map("confirmation_date") @db.Date
+  dateOfLeaving         DateTime?         @map("date_of_leaving") @db.Date
+  status                EmployeeStatus    @default(ACTIVE)
+
+  // --- Placement (JF header + §1). Company, plant and department are required; the rest optional so incomplete records
+  // (e.g. imported) can exist ---
+  companyId          Int  @map("company_id")
+  // A plant of the employee's company - required (decided 2026-11-18: company -> plant -> department, as VBMS; the
+  // employees there before were given their company's first plant)
+  plantId            Int  @map("plant_id")
+  workLocationId     Int? @map("work_location_id")
+  // One of the plant's departments - required (the user, 2026-11-19: every employee has a department, so every employee
+  // has an HOD post)
+  departmentId       Int  @map("department_id")
+  designationId      Int? @map("designation_id")
+  gradeId            Int? @map("grade_id")
+  // The post they fill (the user, 2026-11-19 - from the "Employment & Job" screen); optional
+  positionId         Int? @map("position_id")
+  // The cost centre the employee's salary is booked to - one of their company's (the user, 2026-11-19; checked in the
+  // service); optional
+  costCenterId       Int? @map("cost_center_id")
+  // Who the employee reports to (old HRMS reporting manager, agreed 2026-11-16): approves their leave and attendance
+  // and sees their team. Optional - the head of a company reports to no one, and imported records may lack it
+  reportingManagerId Int? @map("reporting_manager_id")
+  // The employee's HOD post (BACKLOG 3e, changed with the user 2026-11-19): the plant-department whose HOD is their HOD -
+  // for now always the one they are placed in, set whenever they are placed. Stored on the employee (the user's decision)
+  // to find their HOD directly, and so that later someone can be given an HOD from another place. The post is stored,
+  // not the person: replacing the HOD changes nobody's record. Whether the post has an HOD now is in HodAppointment
+  // (none: approvals go to HR)
+  hodPostId          Int? @map("hod_post_id")
+  // A second manager the employee works for day to day (the user, 2026-11-19 - "functional manager"). Shown only:
+  // approvals and the team view stay with the reporting manager. Optional
+  functionalManagerId Int? @map("functional_manager_id")
+
+  // --- Personal (JF §2; also EPF Form 11, ESIC Form 1, Gratuity Form F) ---
+  // "Mr. / Ms. ..." on letters to the employee - copied from the offer on the joining day (2026-11-15)
+  salutation           Salutation?
+  firstName            String          @map("first_name")
+  middleName           String?         @map("middle_name")
+  lastName             String?         @map("last_name")
+  fatherName           String?         @map("father_name")
+  // Asked by HR (2026-11-14): the joining form asks for the mother's name too, not only the father's
+  motherName           String?         @map("mother_name")
+  // Optional so incomplete records (e.g. imported from the old HRMS) can exist; required to complete joining
+  gender               Gender?
+  dateOfBirth          DateTime?       @map("date_of_birth") @db.Date
+  // Town / city of birth - asked by HR (2026-11-14)
+  placeOfBirth         String?         @map("place_of_birth")
+  maritalStatus        MaritalStatus?  @map("marital_status")
+  spouseName           String?         @map("spouse_name")
+  marriageDate         DateTime?       @map("marriage_date") @db.Date
+  // ISO 3166-1 alpha-2 country codes, e.g. "IN" (EPF asks country of origin for international workers)
+  countryOfOrigin      String?         @map("country_of_origin") @db.Char(2)
+  nationality          String?         @db.Char(2)
+  religion             String?
+  // The social category the joining form asks (HR, 2026-11-14: "category", not the caste itself)
+  category             SocialCategory?
+  bloodGroup           BloodGroup?     @map("blood_group")
+  heightCm             Int?            @map("height_cm")
+  weightKg             Float?          @map("weight_kg")
+  identificationMark   String?         @map("identification_mark")
+  // Asked by HR (2026-11-14)
+  hobbies              String?
+  // Disability details affect the ESIC wage limit and income-tax deductions
+  isPhysicallyDisabled Boolean         @default(false) @map("is_physically_disabled")
+  disabilityType       String?         @map("disability_type")
+  disabilityPercent    Int?            @map("disability_percent")
+
+  // --- Contact (JF §2) ---
+  // Stored in lower case
+  workEmail       String? @unique @map("work_email")
+  personalEmail   String? @map("personal_email")
+  mobile          String?
+  // A second number to reach the employee on - asked by HR (2026-11-14)
+  alternateMobile String? @map("alternate_mobile")
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  company          Company       @relation(fields: [companyId], references: [id])
+  // (plant, company): the plant is always one of the employee's company
+  plant            Plant         @relation(fields: [plantId, companyId], references: [id, companyId], onDelete: Restrict)
+  workLocation     WorkLocation? @relation(fields: [workLocationId], references: [id], onDelete: Restrict)
+  department       Department    @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  // (plant, department): the department must run at the plant
+  plantDepartment  PlantDepartment @relation("EmployeePlacement", fields: [plantId, departmentId], references: [plantId, departmentId], onDelete: Restrict)
+  designation      Designation?  @relation(fields: [designationId], references: [id], onDelete: Restrict)
+  grade            Grade?        @relation(fields: [gradeId], references: [id], onDelete: Restrict)
+  position         Position?     @relation(fields: [positionId], references: [id], onDelete: Restrict)
+  costCenter       CostCenter?   @relation(fields: [costCenterId], references: [id], onDelete: Restrict)
+  reportingManager Employee?     @relation("ReportingManager", fields: [reportingManagerId], references: [id], onDelete: Restrict)
+  // the employees who report to this one
+  directReports    Employee[]    @relation("ReportingManager")
+  functionalManager Employee?    @relation("FunctionalManager", fields: [functionalManagerId], references: [id], onDelete: Restrict)
+  // the employees whose functional manager this one is
+  functionalReports Employee[]   @relation("FunctionalManager")
+  hodPost          PlantDepartment? @relation("EmployeeHodPost", fields: [hodPostId], references: [id], onDelete: Restrict)
+  // the HOD posts this employee holds or held
+  hodAppointments  HodAppointment[]
+
+  addresses         EmployeeAddress[]
+  emergencyContacts EmployeeEmergencyContact[]
+  documents         EmployeeDocument[]
+  identityDocuments EmployeeIdentityDocument[]
+  bankAccounts      EmployeeBankAccount[]
+  statutory         EmployeeStatutory?
+  qualifications    EmployeeQualification[]
+  certifications    EmployeeCertification[]
+  previousJobs      EmployeePreviousEmployment[]
+  familyMembers     EmployeeFamilyMember[]
+  nominees          EmployeeNominee[]
+  onboarding        EmployeeOnboarding?
+  medicalInfo       EmployeeMedicalInfo?
+  account           UserAccount?
+  // The offer this employee joined from (none for employees imported or created directly)
+  candidate         Candidate?
+  // Background checks - from onboarding (linked on the joining day) or started for the employee directly
+  backgroundChecks  BackgroundCheck[]
+  // Salary from a date on - the first is the offer's, copied on the joining day (payroll.prisma)
+  salaries          EmployeeSalary[]
+  // Letters issued to the employee (appointment, confirmation, experience, relieving - letters.prisma)
+  letters           EmployeeLetter[]
+  // The tasks other teams do when the employee joins (onboarding.prisma)
+  joiningTasks      JoiningTask[]
+  // Attendance (attendance.prisma)
+  shiftAssignments       ShiftAssignment[]
+  rosterEntries          RosterEntry[]
+  shiftChangeRequests    ShiftChangeRequest[]   @relation("ShiftChangeRequestEmployee")
+  // leave (2026-11-22)
+  leaveEntries           LeaveLedgerEntry[]
+  leaveApplications      LeaveApplication[]
+  regularizationRequests RegularizationRequest[]
+  compOffClaims          CompOffClaim[]
+  shiftSwapsAsColleague  ShiftChangeRequest[]   @relation("ShiftChangeRequestSwapWith")
+  punches                Punch[]
+  attendanceDays         AttendanceDay[]
+  attendanceCorrections  AttendanceCorrection[]
+  // Lay offs, each from a day until they rejoin
+  layoffs                EmployeeLayoff[]
+  // The job timeline: their job details from a day on (and, below, the entries naming them as a manager)
+  jobRecords             EmployeeJobRecord[] @relation("JobRecordEmployee")
+  jobRecordsAsManager    EmployeeJobRecord[] @relation("JobRecordReportingManager")
+  jobRecordsAsFunctional EmployeeJobRecord[] @relation("JobRecordFunctionalManager")
+  // requests for approval about this employee (modules/approvals)
+  approvalRequests       ApprovalRequest[]
+  // job changes asked for this employee, and the ones naming them as a manager (job-changes.prisma)
+  jobChanges             JobChangeRequest[] @relation("JobChangeEmployee")
+  jobChangesAsManager    JobChangeRequest[] @relation("JobChangeReportingManager")
+  jobChangesAsFunctional JobChangeRequest[] @relation("JobChangeFunctionalManager")
+  // the codes they had before moving to another company of the group
+  formerCodes            EmployeeFormerCode[]
+
+  @@index([companyId])
+  @@index([plantId])
+  @@index([workLocationId])
+  @@index([departmentId])
+  @@index([designationId])
+  @@index([gradeId])
+  @@index([positionId])
+  @@index([costCenterId])
+  @@index([functionalManagerId])
+  @@index([reportingManagerId])
+  @@index([hodPostId])
+  @@map("employees")
+}
+
+// One lay off of an employee: from a day until the day they are back at work (the user, 2026-11-19 - a history, so a
+// second lay off keeps the first). Entered by HR. The employee's status does not change; what a lay off does to
+// attendance and pay waits for those modules (BACKLOG.md). Lay offs of an employee never overlap, and only the latest
+// may still be open (checked in the service).
+model EmployeeLayoff {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int       @map("employee_id")
+  // the first day laid off
+  startDate   DateTime  @map("start_date") @db.Date
+  // the day they are back at work - after startDate; empty = still laid off
+  rejoinDate  DateTime? @map("rejoin_date") @db.Date
+  reason      String
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int       @map("created_by_id")
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int       @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_layoffs")
+}
+
+// The job timeline (the user, 2026-11-19): the employee's job details from a day on - one row per change, each the whole
+// picture, so "what was their department on 15-05-2025" can always be answered. The first is the joining (dated the
+// date of joining); the others are job changes approved and applied (JobChangeRequest - job-changes.prisma, 2026-11-20:
+// a change not yet in force lives there, not here). The Employee row always holds the details in force today, so lists,
+// data access and HODs read only it. Fixing a typing mistake ("Edit details") corrects the latest row instead of adding
+// one. The salary is not here (its own history - payroll.prisma).
+model EmployeeJobRecord {
+  id                  Int            @id @default(autoincrement())
+  employeeId          Int            @map("employee_id")
+  // the day these details apply from - one row per employee and day
+  effectiveFrom       DateTime       @map("effective_from") @db.Date
+  kind                JobChangeKind
+  note                String?
+  // the details (as on Employee; the company does not change - a move to another company is a later module)
+  plantId             Int            @map("plant_id")
+  departmentId        Int            @map("department_id")
+  workLocationId      Int?           @map("work_location_id")
+  designationId       Int?           @map("designation_id")
+  gradeId             Int?           @map("grade_id")
+  positionId          Int?           @map("position_id")
+  costCenterId        Int?           @map("cost_center_id")
+  reportingManagerId  Int?           @map("reporting_manager_id")
+  functionalManagerId Int?           @map("functional_manager_id")
+  employmentType      EmploymentType @map("employment_type")
+  workforceCategory   WorkforceCategory @map("workforce_category")
+  // the approved job change that wrote it (none for the joining entry)
+  jobChangeRequestId  Int?           @unique @map("job_change_request_id")
+  // the company and employee code in force from that day (a company transfer changes both - 2026-11-20)
+  companyId           Int            @map("company_id")
+  employeeCode        String         @map("employee_code")
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById         Int            @map("created_by_id")
+  updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById         Int            @map("updated_by_id")
+
+  employee          Employee     @relation("JobRecordEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  plant             Plant        @relation(fields: [plantId], references: [id], onDelete: Restrict)
+  department        Department   @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  // (plant, department): the department runs at the plant - and a link an entry names is kept (retired, not deleted)
+  plantDepartment   PlantDepartment @relation("JobRecordPlacement", fields: [plantId, departmentId], references: [plantId, departmentId], onDelete: Restrict)
+  workLocation      WorkLocation? @relation(fields: [workLocationId], references: [id], onDelete: Restrict)
+  designation       Designation? @relation(fields: [designationId], references: [id], onDelete: Restrict)
+  grade             Grade?       @relation(fields: [gradeId], references: [id], onDelete: Restrict)
+  position          Position?    @relation(fields: [positionId], references: [id], onDelete: Restrict)
+  costCenter        CostCenter?  @relation(fields: [costCenterId], references: [id], onDelete: Restrict)
+  reportingManager  Employee?    @relation("JobRecordReportingManager", fields: [reportingManagerId], references: [id], onDelete: Restrict)
+  functionalManager Employee?    @relation("JobRecordFunctionalManager", fields: [functionalManagerId], references: [id], onDelete: Restrict)
+  jobChangeRequest  JobChangeRequest? @relation(fields: [jobChangeRequestId], references: [id], onDelete: Restrict)
+  company           Company      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeId, effectiveFrom])
+  @@index([companyId])
+  @@index([effectiveFrom])
+  @@index([plantId, departmentId])
+  @@index([departmentId])
+  @@index([workLocationId])
+  @@index([designationId])
+  @@index([gradeId])
+  @@index([positionId])
+  @@index([costCenterId])
+  @@index([reportingManagerId])
+  @@index([functionalManagerId])
+  @@map("employee_job_records")
+}
+
+// An employee code someone had before a company transfer (the user, 2026-11-20 - same record, new code from the new
+// company's series): it still signs them in, finds them and matches their old punches, and is never given to anyone else
+model EmployeeFormerCode {
+  id                 Int      @id @default(autoincrement())
+  employeeId         Int      @map("employee_id")
+  // upper case, unique among every code in use or used before (checked in the service against employees' codes)
+  employeeCode       String   @unique @map("employee_code")
+  // the company it belonged to
+  companyId          Int      @map("company_id")
+  // the last day it was theirs
+  usedUntil          DateTime @map("used_until") @db.Date
+  // the company transfer that retired it
+  jobChangeRequestId Int?     @map("job_change_request_id")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById        Int      @map("created_by_id")
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById        Int      @map("updated_by_id")
+
+  employee         Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  company          Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  jobChangeRequest JobChangeRequest? @relation(fields: [jobChangeRequestId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId])
+  @@index([companyId])
+  @@index([jobChangeRequestId])
+  @@map("employee_former_codes")
+}
+
+// What kind of change a job-timeline entry is (the user, 2026-11-19: fixed kinds + a note, for reports such as "all
+// promotions this year")
+enum JobChangeKind {
+  // the first entry - the details they joined with
+  JOINING
+  PROMOTION
+  // another plant / department / work location
+  TRANSFER
+  REDESIGNATION
+  MANAGER_CHANGE
+  // a move to another company of the group, with a new employee code (2026-11-20)
+  COMPANY_TRANSFER
+  // a salary change alone - an increment (job-change requests only; it writes no timeline entry - 2026-11-20)
+  SALARY_REVISION
+  // fixing a salary already in force, for the same day (requests only - 2026-11-20)
+  SALARY_CORRECTION
+  OTHER
+
+  @@map("job_change_kind")
+}
+
+// Male / Female / Transgender - the wording used by the joining form, EPF, ESIC and Form F
+enum Gender {
+  MALE
+  FEMALE
+  TRANSGENDER
+
+  @@map("gender")
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_NOTICE
+  EXITED
+
+  @@map("employee_status")
+}
+
+// The three joining-form packs: Regular (+ EPF, ESIC, Form F, medical), Consultant & Intern (+ medical), Overseas
+enum JoiningType {
+  REGULAR
+  CONSULTANT_INTERN
+  OVERSEAS
+
+  @@map("joining_type")
+}
+
+enum EmploymentType {
+  PERMANENT
+  CONTRACT
+  // also interns - HR treats intern and trainee as the same (2026-11-14)
+  TRAINEE
+  CONSULTANT
+  APPRENTICE
+
+  @@map("employment_type")
+}
+
+enum WorkforceCategory {
+  WHITE_COLLAR
+  BLUE_COLLAR
+
+  @@map("workforce_category")
+}
+
+// Superset of the joining form, EPF Form 11, ESIC Form 1 and Gratuity Form F options
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  WIDOWED
+  DIVORCED
+  SEPARATED
+
+  @@map("marital_status")
+}
+
+// The social category on the joining form: General, Economically Weaker Section, Other Backward Class,
+// Scheduled Caste, Scheduled Tribe
+enum SocialCategory {
+  GENERAL
+  EWS
+  OBC
+  SC
+  ST
+
+  @@map("social_category")
+}
+
+enum BloodGroup {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+
+  @@map("blood_group")
+}
+
+// Joining process of one employee (one row at most; none for employees imported or created directly): the form date,
+// the employee's declaration (JF §10), the pre-employment medical and the "For HR / Office Use Only" checklist
+// (JF §11). Each checklist item is when it was done and by whom. ("Employee Master Created" is the Employee row
+// itself, so it has no column.) Facts of the joining, not a copy of the employee's details - those live on Employee.
+model EmployeeOnboarding {
+  id                              Int            @id @default(autoincrement())
+  employeeId                      Int            @unique @map("employee_id")
+  // JF header "Date"
+  formDate                        DateTime?      @map("form_date") @db.Date
+  // JF §10 declaration accepted
+  declarationAcceptedAt           DateTime?      @map("declaration_accepted_at") @db.Timestamptz(3)
+  declarationAcceptedById         Int?           @map("declaration_accepted_by_id")
+  // JF §11 "Joining Formalities Completed": HR ticks it in the office checklist once everything of the joining is
+  // really done (induction, paperwork...) - who and when (2026-11-15). Not the same as completedAt, which is the
+  // employee record being created on the joining day.
+  joiningFormalitiesCompletedAt   DateTime?      @map("joining_formalities_completed_at") @db.Timestamptz(3)
+  joiningFormalitiesCompletedById Int?           @map("joining_formalities_completed_by_id")
+  payrollUpdatedAt                DateTime?      @map("payroll_updated_at") @db.Timestamptz(3)
+  payrollUpdatedById              Int?           @map("payroll_updated_by_id")
+  idCardIssuedAt                  DateTime?      @map("id_card_issued_at") @db.Timestamptz(3)
+  idCardIssuedById                Int?           @map("id_card_issued_by_id")
+  inductionDate                   DateTime?      @map("induction_date") @db.Date
+  // The pre-employment medical recorded before joining - copied from the candidate on the joining day (2026-11-15),
+  // so the result and any restriction (e.g. "no work at height", which matters for job placement) stay with the
+  // employee. None for Overseas joiners and for employees who did not go through onboarding.
+  medicalResult                   MedicalResult? @map("medical_result")
+  medicalExamDate                 DateTime?      @map("medical_exam_date") @db.Date
+  medicalExaminer                 String?        @map("medical_examiner")
+  medicalRestrictions             String?        @map("medical_restrictions")
+  // Set when HR completes joining; completedById is the HR representative of JF §11
+  completedAt                     DateTime?      @map("completed_at") @db.Timestamptz(3)
+  completedById                   Int?           @map("completed_by_id")
+  createdAt                       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById                     Int            @map("created_by_id")
+  updatedAt                       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById                     Int            @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("employee_onboardings")
+}
+
+// Present and permanent address (JF §3; ESIC Form 1 items 7-8; Gratuity Form F "permanent address")
+model EmployeeAddress {
+  id            Int         @id @default(autoincrement())
+  employeeId    Int         @map("employee_id")
+  type          AddressType
+  houseNo       String      @map("house_no")
+  locality      String?
+  cityOrVillage String      @map("city_or_village")
+  district      String?
+  state         String?
+  // ISO 3166-1 alpha-2
+  countryCode   String      @default("IN") @map("country_code") @db.Char(2)
+  // PIN code in India; foreign postal code for overseas addresses
+  postalCode    String?     @map("postal_code")
+  // Gratuity Form F asks these for the permanent address
+  postOffice    String?     @map("post_office")
+  policeStation String?     @map("police_station")
+  subDivision   String?     @map("sub_division")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int         @map("created_by_id")
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int         @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  // At most one of each type, OTHER up to 3 - checked by employeesSchemas.addressesSchema
+  @@index([employeeId])
+  @@map("employee_addresses")
+}
+
+enum AddressType {
+  PRESENT
+  PERMANENT
+  // further addresses the employee may give (asked by HR, 2026-11-14): where to send letters, where to reach the
+  // emergency contact, the spouse's (when not living together), and any other
+  CONTACT
+  EMERGENCY
+  SPOUSE
+  OTHER
+
+  @@map("address_type")
+}
+
+// JF §9 "Emergency Contact Details" (and the medical form's emergency contact line)
+model EmployeeEmergencyContact {
+  id              Int      @id @default(autoincrement())
+  employeeId      Int      @map("employee_id")
+  name            String
+  relationship    String
+  mobile          String
+  alternateMobile String?  @map("alternate_mobile")
+  address         String?
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById     Int      @map("created_by_id")
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById     Int      @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("employee_emergency_contacts")
+}
+
+// Uploaded files: the photo (JF page 1), signed forms, and the KYC copies EPF Form 11 asks to enclose
+model EmployeeDocument {
+  id                 Int                        @id @default(autoincrement())
+  employeeId         Int                        @map("employee_id")
+  type               DocumentType
+  // Where the file lives in file storage (never a public URL)
+  storageKey         String                     @unique @map("storage_key")
+  fileName           String                     @map("file_name")
+  mimeType           String                     @map("mime_type")
+  sizeBytes          Int                        @map("size_bytes")
+  // HR checks every document against the original; a rejected one must be uploaded again
+  verificationStatus DocumentVerificationStatus @default(PENDING) @map("verification_status")
+  rejectionReason    String?                    @map("rejection_reason")
+  // When HR verified / rejected it
+  reviewedAt         DateTime?                  @map("reviewed_at") @db.Timestamptz(3)
+  reviewedById       Int?                       @map("reviewed_by_id")
+  // HR deleted it (wrong file, blurred scan...): it is never erased - hidden from the document list and the joining /
+  // BGV checks, shown under "Deleted" with who, when and why, and can be restored before joining (decided 2026-11-13).
+  // The reason is required. isDeleted is set together with deletedAt (asked for 2026-11-13, so the table shows it
+  // plainly).
+  isDeleted          Boolean                    @default(false) @map("is_deleted")
+  deletedAt          DateTime?                  @map("deleted_at") @db.Timestamptz(3)
+  deletedById        Int?                       @map("deleted_by_id")
+  deleteReason       String?                    @map("delete_reason")
+  createdAt          DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById        Int                        @map("created_by_id")
+  updatedAt          DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById        Int                        @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, type])
+  @@map("employee_documents")
+}
+
+enum DocumentType {
+  PHOTO
+  SIGNED_JOINING_FORM
+  // The whole printed pack (candidates.printedForms) signed on the joining day, as one scan: it counts for every paper
+  // form in it - joining form, Form F, EPF Form 11, ESIC Form 1, medical pages (decided 2026-11-15); a form may still
+  // be uploaded on its own (e.g. a Form F signed again)
+  SIGNED_FORMS_PACK
+  // The offer letter signed by a candidate who answered on paper (proof of acceptance when HR marks it accepted)
+  SIGNED_OFFER_LETTER
+  // The joining form's "Employee Medical Information" pages, signed (or in SIGNED_FORMS_PACK)
+  MEDICAL_FORM
+  // The doctor's certificate from the pre-employment medical - optional (decided 2026-11-15); the result itself is
+  // recorded on the candidate (medical result)
+  MEDICAL_FITNESS_CERTIFICATE
+  EPF_FORM_11
+  ESIC_FORM_1
+  GRATUITY_FORM_F
+  AADHAAR_COPY
+  PAN_COPY
+  PASSPORT_COPY
+  BANK_PROOF
+  // Signed authorisation for the background check (needed before any check starts)
+  BGV_CONSENT_FORM
+  // Copies the EDUCATION / EMPLOYMENT background checks verify (JF §6, §8) and the driving licence (JF §2) - added
+  // 2026-11-13 with those sections; optional for joining unless the offer asks for them (Candidate.extraRequiredDocuments)
+  // EDUCATION_CERTIFICATE is "Other education certificate" since the four below were added (the user, 2026-11-20:
+  // some offers need the Class X / XII marksheets and the college certificates)
+  EDUCATION_CERTIFICATE
+  CLASS_X_MARKSHEET
+  CLASS_XII_MARKSHEET
+  GRADUATION_CERTIFICATE
+  POST_GRADUATION_CERTIFICATE
+  EXPERIENCE_LETTER
+  DRIVING_LICENCE_COPY
+  // Added by HR on the employee's profile (2026-11-16): staff working outside their home country, plant work, company
+  // policy
+  VISA_COPY
+  WORK_PERMIT_COPY
+  // crane / forklift operator, boiler attendant, electrical licence...
+  TRADE_LICENCE_COPY
+  POLICE_VERIFICATION
+
+  @@map("document_type")
+}
+
+enum DocumentVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+
+  @@map("document_verification_status")
+}
+
+// One Excel import of employees (old HRMS bulk-import history, 2026-11-16): the file, what it did, and - when rows were
+// wrong - each row's errors, so HR can download them as an Excel file. Nothing is saved from a file with errors.
+model EmployeeImport {
+  id           Int                @id @default(autoincrement())
+  // the name of the uploaded file
+  fileName     String             @map("file_name")
+  status       EmployeeImportStatus
+  rowCount     Int                @map("row_count")
+  // employees added / existing employees updated (both 0 when the file had errors)
+  createdCount Int                @map("created_count")
+  updatedCount Int                @map("updated_count")
+  // the wrong rows: [{ row, employeeCode?, errors: string[] }] (messages never repeat ID or bank numbers)
+  errors       Json?
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  Int                @map("created_by_id")
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById  Int                @map("updated_by_id")
+
+  @@map("employee_imports")
+}
+
+enum EmployeeImportStatus {
+  // every row was saved
+  DONE
+  // nothing was saved - the rows' errors are in `errors`
+  FAILED
+
+  @@map("employee_import_status")
+}

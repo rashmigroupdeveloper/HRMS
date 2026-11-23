@@ -1,0 +1,476 @@
+// Onboarding: from the offer to the joining day.
+// A Candidate is kept apart from Employee - the employee row is created only on the joining day, so queries on
+// working employees never have to filter out people who have not joined (or never will).
+//
+// Flow (status):
+//   DRAFT -> OFFERED -> ACCEPTED -> JOINED (on the joining day the employee is created and linked: employeeId)
+//   ends: DECLINED (refused the offer), EXPIRED (no answer in time), WITHDRAWN (company cancelled, before or after
+//         acceptance), BACKED_OUT (accepted, then said they won't join), NO_SHOW (did not turn up on the joining date)
+
+model Candidate {
+  id Int @id @default(autoincrement())
+
+  // --- Person: who the offer letter is addressed to and where it is sent; copied to the employee ---
+  // "Mr. Prateek Kumar Singh" on the offer letter. Empty only on offers made before letters existed; needed to send
+  // an offer whose letter uses it.
+  salutation    Salutation?
+  firstName     String      @map("first_name")
+  middleName    String?     @map("middle_name")
+  lastName      String?     @map("last_name")
+  mobile        String
+  // Stored in lower case. Optional: blue-collar candidates may have no email
+  personalEmail String?     @map("personal_email")
+  // Postal address printed under the name on the offer letter
+  address       String?
+
+  // --- Offer terms: printed on the offer letter, copied to the employee on the joining day ---
+  companyId             Int               @map("company_id")
+  // A plant of the offer's company (decided 2026-11-18: company -> plant -> department, as VBMS)
+  plantId               Int               @map("plant_id")
+  workLocationId        Int?              @map("work_location_id")
+  // One of the plant's departments
+  departmentId          Int?              @map("department_id")
+  designationId         Int               @map("designation_id")
+  gradeId               Int?              @map("grade_id")
+  // Decides the joining-form pack and the joining-day checklist
+  joiningType           JoiningType       @map("joining_type")
+  employmentType        EmploymentType    @map("employment_type")
+  workforceCategory     WorkforceCategory @map("workforce_category")
+  // Annual FIXED cost to company stated on the offer letter, in whole units of ctcCurrency. When the offer has a
+  // salary breakup (salaryLines), the monthly lines x 12 must add up to exactly this.
+  annualCtc             Int               @map("annual_ctc")
+  // "Performance pay (Target Oriented Earnings)" per year, on top of the fixed CTC (offer letter Annexure-I);
+  // Total CTC = annualCtc + this
+  performancePayAnnual  Int?              @map("performance_pay_annual")
+  // ISO 4217 code, e.g. INR - overseas offers can be in another currency
+  ctcCurrency           String            @default("INR") @map("ctc_currency") @db.Char(3)
+  // Agreed joining date; becomes the employee's dateOfJoining
+  proposedJoiningDate   DateTime          @map("proposed_joining_date") @db.Date
+  // End of engagement for contract / trainee / consultant / apprentice offers
+  contractEndDate       DateTime?         @map("contract_end_date") @db.Date
+  // Last day the offer can be accepted; required to send it
+  offerValidUntil       DateTime?         @map("offer_valid_until") @db.Date
+  // Probation length (offer letter point 4); on the joining day it suggests the employee's probation end date
+  probationMonths       Int?              @map("probation_months") @db.SmallInt
+  // Notice either side must give to end the employment, during probation / after confirmation (letter 4.1 / 4.2)
+  noticeMonthsProbation Int?              @map("notice_months_probation") @db.SmallInt
+  noticeMonthsConfirmed Int?              @map("notice_months_confirmed") @db.SmallInt
+
+  // --- Offer letter ---
+  // Given on the first send, e.g. RML/OFFER/2026/0001 (company e-code prefix / year / running number); kept by
+  // every revision of the letter
+  offerNumber     String?   @unique @map("offer_number")
+  // The Letter of Intent sent before the full offer (2026-11-16), e.g. RML/LOI/2026/0001 - its own number, and when and
+  // by whom it was accepted (online - System - or on paper by HR); then the full offer is sent as usual
+  loiNumber       String?   @unique @map("loi_number")
+  loiAcceptedAt   DateTime? @map("loi_accepted_at") @db.Timestamptz(3)
+  loiAcceptedById Int?      @map("loi_accepted_by_id")
+
+  // --- Progress ---
+  status        CandidateStatus @default(DRAFT)
+  offerSentAt   DateTime?       @map("offer_sent_at") @db.Timestamptz(3)
+  offerSentById Int?            @map("offer_sent_by_id")
+  acceptedAt    DateTime?       @map("accepted_at") @db.Timestamptz(3)
+  acceptedById  Int?            @map("accepted_by_id")
+  // When it ended (declined / expired / withdrawn / backed out / no-show)
+  closedAt      DateTime?       @map("closed_at") @db.Timestamptz(3)
+  closedById    Int?            @map("closed_by_id")
+  // Why it ended - drop-out analysis, and the record of why the company withdrew an offer
+  closeReason   String?         @map("close_reason")
+
+  // --- Pre-joining (after acceptance) ---
+  // Chosen on the offer (the user, 2026-11-20): true = the joining form opens when the candidate accepts and its link is
+  // e-mailed to them then; false = HR opens it later with "Send joining form link".
+  joiningFormOnAcceptance Boolean   @default(false) @map("joining_form_on_acceptance")
+  // When the joining form was opened for the candidate: at acceptance (by System online, or by HR recording a paper
+  // acceptance), or by HR sending its link. The candidate can sign in to it only once this is set. Set together.
+  joiningFormOpenedAt     DateTime? @map("joining_form_opened_at") @db.Timestamptz(3)
+  joiningFormOpenedById   Int?      @map("joining_form_opened_by_id")
+  // Documents this offer needs on top of the pack's compulsory ones (the user, 2026-11-20 - e.g. the Class X / XII
+  // marksheets for some posts): ticked on the offer, changeable until joining. The candidate uploads them before signing
+  // the joining form, and HR verifies them before joining.
+  extraRequiredDocuments  DocumentType[] @default([]) @map("extra_required_documents")
+
+  // The joining-form data collected before the joining day (personal, addresses, emergency contacts, identity
+  // numbers, bank, PF / ESIC answers) as ENCRYPTED JSON - it holds Aadhaar, PAN and bank numbers.
+  // Its shape is validated with the employees module's schemas; on the joining day it becomes the employee rows.
+  joiningFormEncrypted String? @map("joining_form_encrypted")
+
+  // The candidate submitted the joining form online and signed it (JF §10 declaration): their typed name, the
+  // declaration they agreed to and from where, confirmed with a one-time code sent to their e-mail. "By" is
+  // SYSTEM_ACTOR (shown as "Candidate (online)"). The form is then locked for the candidate until HR sends it back;
+  // HR can still correct it. The printed form is ALSO signed on paper on the joining day (SIGNED_JOINING_FORM) - HR
+  // wants both (decided 2026-11-13). Needed to join when the candidate has an e-mail address.
+  joiningFormSubmittedAt   DateTime? @map("joining_form_submitted_at") @db.Timestamptz(3)
+  joiningFormSubmittedById Int?      @map("joining_form_submitted_by_id")
+  joiningFormSignedName    String?   @map("joining_form_signed_name")
+  joiningFormDeclaration   String?   @map("joining_form_declaration")
+  joiningFormSignIp        String?   @map("joining_form_sign_ip")
+  joiningFormSignUserAgent String?   @map("joining_form_sign_user_agent")
+  // HR sent the submitted form back for changes (the reason is e-mailed to the candidate). Set and cleared together;
+  // cleared when the candidate submits again.
+  joiningFormReturnedAt    DateTime? @map("joining_form_returned_at") @db.Timestamptz(3)
+  joiningFormReturnedById  Int?      @map("joining_form_returned_by_id")
+  joiningFormReturnReason  String?   @map("joining_form_return_reason")
+
+  // Pre-employment medical (the filled form is uploaded as a MEDICAL_FORM document).
+  // Needed to join for the Regular and Consultant & Intern packs, not for Overseas.
+  medicalResult       MedicalResult? @map("medical_result")
+  medicalExamDate     DateTime?      @map("medical_exam_date") @db.Date
+  // Doctor / clinic, as written on the medical form
+  medicalExaminer     String?        @map("medical_examiner")
+  // Only for FIT_WITH_RESTRICTIONS, e.g. "no work at height" - matters for job placement
+  medicalRestrictions String?        @map("medical_restrictions")
+
+  // The employee created from this candidate on the joining day (status JOINED). Keeps the offer, medical result
+  // and background checks readable from the employee, and stops a candidate from joining twice.
+  employeeId Int? @unique @map("employee_id")
+
+  // HR called a few days before the joining date and the candidate confirmed they are joining.
+  // Cleared when the joining date changes (it must be confirmed again).
+  joiningConfirmedAt   DateTime? @map("joining_confirmed_at") @db.Timestamptz(3)
+  joiningConfirmedById Int?      @map("joining_confirmed_by_id")
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  employee     Employee?     @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  // (plant, company): the plant is always one of the candidate's company
+  plant           Plant            @relation(fields: [plantId, companyId], references: [id, companyId], onDelete: Restrict)
+  workLocation    WorkLocation?    @relation(fields: [workLocationId], references: [id], onDelete: Restrict)
+  department      Department?      @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  // (plant, department): a department must run at the plant - not checked while there is no department
+  plantDepartment PlantDepartment? @relation(fields: [plantId, departmentId], references: [plantId, departmentId], onDelete: Restrict)
+  designation     Designation      @relation(fields: [designationId], references: [id], onDelete: Restrict)
+  grade           Grade?           @relation(fields: [gradeId], references: [id], onDelete: Restrict)
+
+  documents        CandidateDocument[]
+  backgroundChecks BackgroundCheck[]
+  salaryLines      CandidateSalaryLine[]
+  offerLetters     OfferLetter[]
+  sessions         CandidateSession[]
+
+  @@index([status])
+  @@index([companyId])
+  @@index([plantId])
+  @@index([workLocationId])
+  @@index([departmentId])
+  @@index([designationId])
+  @@index([gradeId])
+  @@map("candidates")
+}
+
+// The candidate signed in to their pre-joining page (the offer link + a one-time code) to fill the joining form and
+// upload documents. The token is in an httpOnly cookie; only its SHA-256 is kept. Ends after an hour without use, at
+// sign-out, or when the candidate is no longer ACCEPTED (joined, withdrawn, backed out).
+model CandidateSession {
+  id          Int      @id @default(autoincrement())
+  candidateId Int      @map("candidate_id")
+  tokenHash   String   @unique @map("token_hash") @db.Char(64)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+  @@map("candidate_sessions")
+}
+
+// Files collected before the joining day (photo, KYC copies, medical form...). On the joining day each row moves
+// 1:1 to EmployeeDocument (the file to the employee's folder, same verification result, deleted ones too).
+model CandidateDocument {
+  id                 Int                        @id @default(autoincrement())
+  candidateId        Int                        @map("candidate_id")
+  type               DocumentType
+  // Where the file lives in file storage (never a public URL)
+  storageKey         String                     @unique @map("storage_key")
+  fileName           String                     @map("file_name")
+  mimeType           String                     @map("mime_type")
+  sizeBytes          Int                        @map("size_bytes")
+  // HR checks every document against the original; a rejected one must be uploaded again
+  verificationStatus DocumentVerificationStatus @default(PENDING) @map("verification_status")
+  rejectionReason    String?                    @map("rejection_reason")
+  // When HR verified / rejected it
+  reviewedAt         DateTime?                  @map("reviewed_at") @db.Timestamptz(3)
+  reviewedById       Int?                       @map("reviewed_by_id")
+  // HR deleted it (wrong file, blurred scan...): it is never erased - hidden from the document list and the joining /
+  // BGV checks, shown under "Deleted" with who, when and why, and can be restored before joining (decided 2026-11-13).
+  // The reason is required. isDeleted is set together with deletedAt (asked for 2026-11-13, so the table shows it
+  // plainly).
+  isDeleted          Boolean                    @default(false) @map("is_deleted")
+  deletedAt          DateTime?                  @map("deleted_at") @db.Timestamptz(3)
+  deletedById        Int?                       @map("deleted_by_id")
+  deleteReason       String?                    @map("delete_reason")
+  createdAt          DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById        Int                        @map("created_by_id")
+  updatedAt          DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById        Int                        @map("updated_by_id")
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+
+  @@index([candidateId, type])
+  @@map("candidate_documents")
+}
+
+enum MedicalResult {
+  FIT
+  FIT_WITH_RESTRICTIONS
+  UNFIT
+
+  @@map("medical_result")
+}
+
+// One background check, done by a BGV agency after the person's signed consent (a BGV_CONSENT_FORM document).
+// People may join while checks are still running, so a check can stay open after the joining day. It belongs to the
+// employee directly (decided 2026-11-15): a candidate's checks get the employee on the joining day, and an employee
+// HR creates without onboarding has checks with no candidate.
+model BackgroundCheck {
+  id              Int            @id @default(autoincrement())
+  // The candidate it was started for during onboarding - none for an employee who did not go through onboarding
+  candidateId     Int?           @map("candidate_id")
+  // The employee it belongs to - set when the candidate joins (and on checks started after that), or from the start
+  // for an employee created directly
+  employeeId      Int?           @map("employee_id")
+  type            BgvCheckType
+  // Which item is checked when there are several of one type, e.g. "B.Tech, Delhi University", "ABC Ltd"
+  subject         String?
+  status          BgvCheckStatus @default(IN_PROGRESS)
+  // Agency doing the check and its case id - for follow-up
+  vendorName      String?        @map("vendor_name")
+  vendorReference String?        @map("vendor_reference")
+  // What the discrepancy / failure was (required for those results)
+  remarks         String?
+  // When the result came (for "still open after N days" follow-up)
+  completedAt     DateTime?      @map("completed_at") @db.Timestamptz(3)
+  completedById   Int?           @map("completed_by_id")
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById     Int            @map("created_by_id")
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById     Int            @map("updated_by_id")
+
+  candidate Candidate? @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  employee  Employee?  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@index([candidateId])
+  @@index([employeeId])
+  @@map("background_checks")
+}
+
+enum BgvCheckType {
+  IDENTITY
+  ADDRESS
+  EDUCATION
+  EMPLOYMENT
+  CRIMINAL
+  REFERENCE
+
+  @@map("bgv_check_type")
+}
+
+enum BgvCheckStatus {
+  IN_PROGRESS
+  CLEAR
+  // Something did not match; may become CLEAR once explained
+  DISCREPANCY
+  FAILED
+
+  @@map("bgv_check_status")
+}
+
+enum CandidateStatus {
+  DRAFT
+  // a letter was sent - the Letter of Intent or the full offer (the latest offer letter's kind says which)
+  OFFERED
+  // the Letter of Intent was accepted - the full offer is still to be sent (2026-11-16)
+  LOI_ACCEPTED
+  ACCEPTED
+  // Joined on the joining day - the employee row exists (employeeId)
+  JOINED
+  DECLINED
+  EXPIRED
+  WITHDRAWN
+  BACKED_OUT
+  NO_SHOW
+
+  @@map("candidate_status")
+}
+
+enum Salutation {
+  MR
+  MS
+  MRS
+  DR
+
+  @@map("salutation")
+}
+
+// The salary breakup of an offer (offer letter Annexure-I): one monthly amount per salary component.
+// Annual = monthly x 12. Replaced as a whole when HR edits the offer (decided 2026-11-12: HR types it).
+model CandidateSalaryLine {
+  id                Int      @id @default(autoincrement())
+  candidateId       Int      @map("candidate_id")
+  salaryComponentId Int      @map("salary_component_id")
+  // Whole units of the offer's ctcCurrency per month
+  monthlyAmount     Int      @map("monthly_amount")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       Int      @map("created_by_id")
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById       Int      @map("updated_by_id")
+
+  candidate       Candidate       @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  salaryComponent SalaryComponent @relation(fields: [salaryComponentId], references: [id], onDelete: Restrict)
+
+  @@unique([candidateId, salaryComponentId])
+  @@index([salaryComponentId])
+  @@map("candidate_salary_lines")
+}
+
+// Every offer letter sent to a candidate, frozen as sent. Revision 0 is the first letter; changing the terms after
+// sending and sending again makes revision 1, 2... with the same offer number. Only the newest revision of an
+// OFFERED candidate can be answered; older ones stay as history.
+model OfferLetter {
+  id                Int            @id @default(autoincrement())
+  candidateId       Int            @map("candidate_id")
+  revision          Int            @db.SmallInt
+  // A Letter of Intent or the full offer (2026-11-16) - the kind of the template it was written from
+  kind              LetterKind     @default(OFFER_LETTER)
+  // The template HR picked to send it (its wording and letterhead)
+  letterTemplateId  Int            @map("letter_template_id")
+  // The PDF exactly as sent (file storage) - a later change to the template does not change it
+  storageKey        String         @unique @map("storage_key")
+  // SHA-256 of that PDF (hex): proves which exact letter the candidate accepted
+  sha256            String         @db.Char(64)
+  sentAt            DateTime       @map("sent_at") @db.Timestamptz(3)
+  sentById          Int            @map("sent_by_id")
+  // The candidate's secret link (/offer/<token>): only the SHA-256 of the token is stored; a new link replaces it.
+  // It works while this is the newest letter, the candidate is OFFERED and the offer is still valid.
+  linkTokenHash     String         @unique @map("link_token_hash") @db.Char(64)
+  // When the letter and link were last e-mailed to the candidate (never: no e-mail address - HR shares the link)
+  emailedAt         DateTime?      @map("emailed_at") @db.Timestamptz(3)
+  emailedById       Int?           @map("emailed_by_id")
+  // One-time code e-mailed to the candidate to accept / decline online: SHA-256 of the code, its expiry, wrong
+  // tries (the code dies after 5) and how many codes were sent (at most 5 per link)
+  otpHash           String?        @map("otp_hash") @db.Char(64)
+  otpValidUntil     DateTime?      @map("otp_valid_until") @db.Timestamptz(3)
+  otpFailedAttempts Int            @default(0) @map("otp_failed_attempts") @db.SmallInt
+  otpSentCount      Int            @default(0) @map("otp_sent_count") @db.SmallInt
+  // When the last code was sent (the next one only after 60 seconds); by System - the candidate asked for it
+  otpSentAt         DateTime?      @map("otp_sent_at") @db.Timestamptz(3)
+  otpSentById       Int?           @map("otp_sent_by_id")
+  // The candidate's online answer to this letter, with the proof: the name they typed, their IP and browser.
+  // By System (a candidate is not an employee). Answers on paper are recorded by HR on the candidate instead.
+  response          OfferResponse?
+  respondedAt       DateTime?      @map("responded_at") @db.Timestamptz(3)
+  respondedById     Int?           @map("responded_by_id")
+  responseName      String?        @map("response_name")
+  responseIp        String?        @map("response_ip")
+  responseUserAgent String?        @map("response_user_agent")
+  // Optional reason given when declining - drop-out analysis
+  declineReason     String?        @map("decline_reason")
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       Int            @map("created_by_id")
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById       Int            @map("updated_by_id")
+
+  candidate      Candidate      @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  letterTemplate LetterTemplate @relation(fields: [letterTemplateId], references: [id], onDelete: Restrict)
+
+  @@unique([candidateId, revision])
+  @@index([letterTemplateId])
+  @@map("offer_letters")
+}
+
+enum OfferResponse {
+  ACCEPTED
+  DECLINED
+
+  @@map("offer_response")
+}
+
+// The running number of letter numbers, per company, letter kind and calendar year (RML/OFFER/2026/0001,
+// RML/LOI/2026/0001, RML/APPT/2026/0001...) - the kind added 2026-11-16 (the earlier rows are the offers')
+model OfferNumberSequence {
+  id          Int        @id @default(autoincrement())
+  companyId   Int        @map("company_id")
+  kind        LetterKind @default(OFFER_LETTER)
+  year        Int        @db.SmallInt
+  // The last number given out (the next offer gets lastNumber + 1)
+  lastNumber  Int        @map("last_number")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int        @map("created_by_id")
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int        @map("updated_by_id")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, kind, year])
+  @@map("offer_number_sequences")
+}
+
+// The tasks other teams do for a new employee (2026-11-16 - the old HRMS's "stakeholder tasks"): the list HR keeps -
+// e.g. "Create the e-mail ID" (IT, 1 day), "Issue the ID card" (Admin, 3 days). Each task is given to one person with
+// the "Joining tasks" access (decided 2026-11-16: an IT person must not get HR's tasks) - the type's default person,
+// changeable by HR at joining. Retired, never deleted (tasks already made keep their name).
+// The team is a role (the user, 2026-11-20): a role that gives "Joining tasks: Edit"; its name is shown as the team, and
+// the task goes to a holder of that role whose data access covers the new employee. Listed by due day, then name.
+model JoiningTaskType {
+  id                Int           @id @default(autoincrement())
+  name              String        @unique
+  // the team that does it: the role whose holders get it (e.g. IT, Admin, HR Ops) - its name groups the tasks
+  roleId            Int           @map("role_id")
+  // what exactly to do (shown with the task)
+  description       String?
+  // due this many days after the date of joining (0 = on the joining day)
+  dueDays           Int           @map("due_days") @db.SmallInt
+  // the person it is given to by default (employees.id, a holder of the role); HR can pick another at joining
+  defaultAssigneeId Int?          @map("default_assignee_id")
+  // only for these joining types (empty = every joining type)
+  joiningTypes      JoiningType[] @map("joining_types")
+  isActive          Boolean       @default(true) @map("is_active")
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       Int           @map("created_by_id")
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById       Int           @map("updated_by_id")
+
+  role  Role          @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  tasks JoiningTask[]
+
+  @@map("joining_task_types")
+}
+
+// One joining task for one new employee - made on the joining day (and for "Add employee") from the active task
+// types; name, team (the role's name then) and due date are copied so a later change of the list does not change it.
+model JoiningTask {
+  id           Int       @id @default(autoincrement())
+  employeeId   Int       @map("employee_id")
+  taskTypeId   Int?      @map("task_type_id")
+  name         String
+  team         String
+  description  String?
+  dueDate      DateTime  @map("due_date") @db.Date
+  // the person who does it (employees.id, with "Joining tasks: Edit") - picked at joining, reassigned by HR; null =
+  // nobody picked yet (HR gives it to someone)
+  assignedToId Int?      @map("assigned_to_id")
+  // done: when and by whom, with an optional note (e.g. "laptop serial ABC123")
+  doneAt       DateTime? @map("done_at") @db.Timestamptz(3)
+  doneById     Int?      @map("done_by_id")
+  note         String?
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  Int       @map("created_by_id")
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById  Int       @map("updated_by_id")
+
+  employee Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  taskType JoiningTaskType? @relation(fields: [taskTypeId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId])
+  @@index([assignedToId, doneAt])
+  @@index([doneAt, dueDate])
+  @@map("joining_tasks")
+}

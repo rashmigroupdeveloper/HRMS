@@ -1,0 +1,375 @@
+// Organization masters - the lists an employee is placed into.
+// Source references: "JF" = Employee Joining Form RML/HR/02/01; "old HRMS" = the masters of the previous system
+// (core.companies / locations / grades / cost_centers / plants), carried over field by field (decided 2026-11-12).
+// `isActive` lets HR retire an entry without deleting it while employees still point to it.
+
+// Legal entity of the group (JF header "Company Name")
+model Company {
+  id                  Int      @id @default(autoincrement())
+  // Short unique code, stored in UPPER CASE (e.g. RML)
+  code                String   @unique
+  name                String   @unique
+  // Prefix of this company's employee codes, e.g. RML in RML035384 (old HRMS ecode_prefix)
+  ecodePrefix         String   @unique @map("ecode_prefix")
+  // The number the next system-generated employee code gets: ecodePrefix + the number as 6 digits, e.g. RML035385
+  // (old HRMS ecode_next_seq; decided 2026-11-16: one series per company). HR sets it where the company's existing
+  // codes end; empty = not set yet, so no code can be generated for the company (joining and "Add employee" ask for it)
+  nextEmployeeNumber  Int?     @map("next_employee_number")
+  // SAP company code, e.g. 1100 = RML (VBMS / SAP); plant codes start with it. None for entities outside SAP.
+  sapCompanyCode      String?  @unique @map("sap_company_code")
+  // Indian statutory payroll (PF, ESIC, PT, TDS) applies; false for the overseas entities (old HRMS)
+  isIndiaPayroll      Boolean  @default(true) @map("is_india_payroll")
+  // Printed as the establishment / employer address on Gratuity Form F and ESIC Form 1 - required when HR adds or
+  // saves a company (2026-11-15); a company from the VBMS import may lack it until HR fills it in (the user,
+  // 2026-11-19), as the state / region, PIN and PF / ESIC codes below. Street / building ...
+  address             String?
+  // ... PIN code - required for an Indian address (6 digits); postal code abroad, where there may be none ...
+  postalCode          String?  @map("postal_code")
+  // ... country (ISO 3166-1 alpha-2) ...
+  countryCode         String   @default("IN") @map("country_code") @db.Char(2)
+  // ... and state / region name, e.g. West Bengal, Dubai (same address fields as plants) - required as the address
+  region              String?
+  // Employer registrations printed on EPF Form 11 and ESIC Form 1 - required for an India payroll company, absent for
+  // overseas entities (checked in companies.service)
+  pfEstablishmentCode String?  @map("pf_establishment_code")
+  esicEmployerCode    String?  @map("esic_employer_code")
+  // Company PAN and TAN - TDS deduction, Form 16 / 24Q (old HRMS)
+  pan                 String?
+  tan                 String?
+  // GST registration (old HRMS); characters 3-12 are the company PAN
+  gstin               String?
+  // Professional Tax employer registration number (old HRMS)
+  ptRegistrationNo    String?  @map("pt_registration_no")
+  isActive            Boolean  @default(true) @map("is_active")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById         Int      @map("created_by_id")
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById         Int      @map("updated_by_id")
+
+  plants         Plant[]
+  costCenters    CostCenter[]
+  employees      Employee[]
+  candidates     Candidate[]
+  holidays       Holiday[]
+  offerSequences OfferNumberSequence[]
+  // data-access rows naming this company
+  roleScopes     UserAccountRoleScope[]
+  // its own approval chains (winning over the shared ones)
+  approvalChains ApprovalChain[]
+  // job changes moving someone to it, timeline entries in it, and codes that belonged to it (2026-11-20)
+  jobChanges     JobChangeRequest[]
+  jobRecords     EmployeeJobRecord[]
+  formerCodes    EmployeeFormerCode[]
+
+  @@map("companies")
+}
+
+// Where an employee / candidate is placed: a site or office (JF header "Location" and §1 "Work Location").
+// One group-wide list - a site can be used by several companies; the employee / offer has its own company.
+// Only for placing people - not linked to plants (decided 2026-11-12).
+model WorkLocation {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  // ISO 3166-1 alpha-2, e.g. "IN" - a non-IN location means an overseas posting
+  countryCode String   @default("IN") @map("country_code") @db.Char(2)
+  // Indian state, e.g. WB - decides the Professional Tax slab and LWF (old HRMS). Required for Indian locations.
+  stateCode   String?  @map("state_code") @db.Char(2)
+  // IANA time zone of the place, e.g. Asia/Kolkata, Asia/Bahrain - attendance times (old HRMS)
+  timezone    String   @default("Asia/Kolkata")
+  // The place's address - street / building, and the PIN code in India (6 digits) or postal code abroad (the user,
+  // 2026-11-19: shown on the employee's job details). Optional
+  address     String?
+  postalCode  String?  @map("postal_code")
+  // The region it is reported under, e.g. East (the user, 2026-11-19); optional
+  regionId    Int?     @map("region_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  region     Region?    @relation(fields: [regionId], references: [id], onDelete: Restrict)
+  employees  Employee[]
+  candidates Candidate[]
+  holidays   Holiday[]
+  // job-timeline entries naming it
+  jobRecords EmployeeJobRecord[]
+  // job changes asking for it
+  jobChanges JobChangeRequest[]
+
+  @@index([regionId])
+  @@map("work_locations")
+}
+
+// A part of the country work locations are grouped under for reports, e.g. East, West - a list HR manages (the user,
+// 2026-11-19). Not the state / region name on a company or plant address, which is free text.
+model Region {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  workLocations WorkLocation[]
+
+  @@map("regions")
+}
+
+// JF §1 "Department" - one group-wide list
+model Department {
+  id          Int      @id @default(autoincrement())
+  // Short code as used in SAP / VBMS, e.g. ELEC.MAINT
+  code        String   @unique
+  name        String   @unique
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  employees  Employee[]
+  candidates Candidate[]
+  // the plants it runs at
+  plants     PlantDepartment[]
+  // data-access rows naming this department
+  roleScopes UserAccountRoleScope[]
+  // job-timeline entries naming it
+  jobRecords EmployeeJobRecord[]
+  // job changes asking for it
+  jobChanges JobChangeRequest[]
+
+  @@map("departments")
+}
+
+// JF §1 "Designation" - one group-wide list
+model Designation {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  employees  Employee[]
+  candidates Candidate[]
+  // job-timeline entries naming it
+  jobRecords EmployeeJobRecord[]
+  // job changes asking for it
+  jobChanges JobChangeRequest[]
+
+  @@map("designations")
+}
+
+// JF §1 "Grade / Level" - one group-wide list
+model Grade {
+  id          Int      @id @default(autoincrement())
+  // Short code, e.g. M1 (old HRMS)
+  code        String   @unique
+  name        String   @unique
+  // Seniority order - lower = more senior (as the old HRMS, 2026-11-16); for level-based rules and reports
+  rank        Int      @db.SmallInt
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  employees  Employee[]
+  candidates Candidate[]
+  // job-timeline entries naming it
+  jobRecords EmployeeJobRecord[]
+  // job changes asking for it
+  jobChanges JobChangeRequest[]
+
+  @@map("grades")
+}
+
+// The post an employee fills, e.g. "Plant Maintenance Engineer" - separate from the designation (the title). One
+// group-wide list (the user, 2026-11-19)
+model Position {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  employees Employee[]
+  // job-timeline entries naming it
+  jobRecords EmployeeJobRecord[]
+  // job changes asking for it
+  jobChanges JobChangeRequest[]
+
+  @@map("positions")
+}
+
+// A plant of a company, by its SAP plant code (old HRMS core.plants; list from VBMS / SAP): salary costs are posted
+// to the GL by plant. Not linked to Location - a location is where employees are placed (decided 2026-11-12).
+model Plant {
+  id          Int      @id @default(autoincrement())
+  companyId   Int      @map("company_id")
+  // SAP plant code, stored in UPPER CASE, unique within the company
+  plantCode   String   @map("plant_code")
+  name        String
+  // Where the plant is, as in SAP / VBMS
+  address     String?
+  // PIN code in India, postal code abroad
+  postalCode  String?  @map("postal_code")
+  // ISO 3166-1 alpha-2, e.g. IN, AE
+  countryCode String   @default("IN") @map("country_code") @db.Char(2)
+  // State / region name as in SAP, e.g. West Bengal, Dubai
+  region      String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  costCenters CostCenter[]
+  // the departments that run at this plant
+  departments PlantDepartment[]
+  employees   Employee[]
+  candidates  Candidate[]
+  // data-access rows naming this plant
+  roleScopes  UserAccountRoleScope[]
+  // job-timeline entries naming it
+  jobRecords EmployeeJobRecord[]
+  // job changes asking for it
+  jobChanges JobChangeRequest[]
+
+  @@unique([companyId, plantCode])
+  // lets an employee / candidate point to (plant, company), so their plant is always one of their own company
+  @@unique([id, companyId])
+  @@map("plants")
+}
+
+// A department that runs at a plant (VBMS PlantDepartment, imported 2026-11-18): company -> plant -> department.
+// An employee's / candidate's department must be one of their plant's (decided 2026-11-18).
+// It is also the HOD POST of that department at that plant (BACKLOG 3e, changed with the user 2026-11-19): it exists as
+// soon as the department is ticked at the plant - nothing else to create or keep in step; HodAppointment says who heads it.
+model PlantDepartment {
+  id           Int      @id @default(autoincrement())
+  plantId      Int      @map("plant_id")
+  departmentId Int      @map("department_id")
+  // Retired (2026-11-18, as VBMS): no longer runs at the plant - nobody new is placed in it there, the people already
+  // placed keep it. A link nobody ever used is deleted instead (unticked on the Organization page).
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  Int      @map("created_by_id")
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById  Int      @map("updated_by_id")
+
+  plant      Plant      @relation(fields: [plantId], references: [id], onDelete: Restrict)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  // the employees / candidates placed in this department at this plant - a link still used cannot be removed (nor one
+  // with HOD history: it is retired)
+  employees       Employee[]       @relation("EmployeePlacement")
+  candidates      Candidate[]
+  // as the HOD post: who heads it from when to when, and the employees whose HOD post it is
+  hodAppointments HodAppointment[]
+  hodEmployees    Employee[]       @relation("EmployeeHodPost")
+  // job-timeline entries placing someone here (past or planned) - such a link is retired, never deleted
+  jobRecords      EmployeeJobRecord[] @relation("JobRecordPlacement")
+
+  @@unique([plantId, departmentId])
+  @@index([departmentId])
+  @@map("plant_departments")
+}
+
+// Who heads an HOD post (a plant-department) from a moment to a moment (BACKLOG 3e; moments, not days - the user,
+// 2026-11-19: an HOD can be changed at once, or from a later day): replacing an HOD ends one appointment at the moment
+// the next starts, so "who was the HOD at 15:00 on 15-05" can always be answered. Days and times are India time for every
+// plant (the user, 2026-11-19). Whether an appointment is upcoming,
+// current or past follows from the clock - nothing has to run when a planned change comes. One HOD per post at a time;
+// one person may head any number of posts, in any companies. The database itself refuses two appointments of a post
+// that overlap in time (hod_appointments_no_overlap, written into the migration by hand - Prisma cannot describe it),
+// so two HR users changing a post at the same moment can never leave it with two HODs.
+model HodAppointment {
+  id          Int       @id @default(autoincrement())
+  // the post: a plant-department (one company + one of its plants + one department running there)
+  postId      Int       @map("post_id")
+  // the HOD
+  employeeId  Int       @map("employee_id")
+  // the moment they become HOD of the post (a later one = an upcoming appointment, cancelled by deleting it)
+  startsAt    DateTime  @map("starts_at") @db.Timestamptz(3)
+  // the moment they stop - not included, so the next HOD can start at that very moment; empty = no end planned (who
+  // ended it is in the change history). Always after startsAt (a check in the migration)
+  endsAt      DateTime? @map("ends_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int       @map("created_by_id")
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int       @map("updated_by_id")
+
+  post     PlantDepartment @relation(fields: [postId], references: [id], onDelete: Restrict)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@index([postId])
+  @@index([employeeId])
+  @@map("hod_appointments")
+}
+
+// A SAP cost centre of a company, e.g. 1701 (old HRMS core.cost_centers): which cost centre an employee's salary
+// is booked to.
+model CostCenter {
+  id          Int      @id @default(autoincrement())
+  companyId   Int      @map("company_id")
+  // SAP cost centre code, unique within the company
+  code        String
+  name        String
+  // The plant it rolls up into (a plant of the same company)
+  plantId     Int?     @map("plant_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  plant   Plant?  @relation(fields: [plantId], references: [id], onDelete: Restrict)
+  // the employees whose salary is booked to it
+  employees Employee[]
+  // job-timeline entries naming it
+  jobRecords EmployeeJobRecord[]
+  // job changes asking for it
+  jobChanges JobChangeRequest[]
+
+  @@unique([companyId, code])
+  @@index([plantId])
+  @@map("cost_centers")
+}
+
+// A line of the salary breakup: Basic, HRA, Employer PF... (Annexure-I of the offer letter). One group-wide list,
+// so every offer uses the same names; payroll reuses it later (decided 2026-11-12).
+model SalaryComponent {
+  id           Int                 @id @default(autoincrement())
+  name         String              @unique
+  // EARNING: paid to the employee (the earnings add up to the Monthly Gross);
+  // EMPLOYER_CONTRIBUTION: paid by the company on top (PF, ESI, gratuity) - part of the CTC, not of the gross
+  kind         SalaryComponentKind
+  // Order of the lines in the breakup (lower first)
+  displayOrder Int                 @map("display_order") @db.SmallInt
+  isActive     Boolean             @default(true) @map("is_active")
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  Int                 @map("created_by_id")
+  updatedAt    DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById  Int                 @map("updated_by_id")
+
+  candidateLines CandidateSalaryLine[]
+  employeeLines  EmployeeSalaryLine[]
+  // lines of salaries proposed by job changes
+  jobChangeLines JobChangeSalaryLine[]
+
+  @@map("salary_components")
+}
+
+enum SalaryComponentKind {
+  EARNING
+  EMPLOYER_CONTRIBUTION
+
+  @@map("salary_component_kind")
+}

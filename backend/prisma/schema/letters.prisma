@@ -1,0 +1,125 @@
+// Letters the system writes (the offer letter now; the appointment letter later): their wording and letterhead,
+// editable by HR on the "Letter templates" page in a page-like editor (LETTER_TEMPLATES access, decided 2026-11-12).
+// A template is a complete letter - e.g. "RML offer letter" with the RML letterhead; HR picks one when sending an
+// offer (decided 2026-11-13). The document format of `body` is described in src/core/pdf/letter-pdf.ts.
+
+model LetterTemplate {
+  id               Int          @id @default(autoincrement())
+  kind             LetterKind
+  // Suggested for offers of this joining type when HR picks the template to send; none = for any joining type.
+  // Only a suggestion: HR can send any active template (several per joining type are fine, e.g. one per company).
+  joiningType      JoiningType? @map("joining_type")
+  name             String       @unique
+  // The letter as the editor's rich-text document (JSON text) with field tags such as [Candidate name]. Templates
+  // saved before the editor existed hold plain text with {{placeholders}} and are converted when read.
+  body             String
+  // The letterhead, as images cut from the printed letterhead: the top of every page (logo, registered office, CIN),
+  // the bottom (factory address) and the authorised signatory's stamp + signature (printed where the letter has its
+  // signature block). A letter can only be sent from a template with all three. One image can serve several
+  // templates (picked from the images already uploaded - decided 2026-11-13).
+  headerImageId    Int?         @map("header_image_id")
+  footerImageId    Int?         @map("footer_image_id")
+  signatureImageId Int?         @map("signature_image_id")
+  isActive         Boolean      @default(true) @map("is_active")
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById      Int          @map("created_by_id")
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById      Int          @map("updated_by_id")
+
+  headerImage     LetterheadImage? @relation("TemplateHeader", fields: [headerImageId], references: [id], onDelete: Restrict)
+  footerImage     LetterheadImage? @relation("TemplateFooter", fields: [footerImageId], references: [id], onDelete: Restrict)
+  signatureImage  LetterheadImage? @relation("TemplateSignature", fields: [signatureImageId], references: [id], onDelete: Restrict)
+  offerLetters    OfferLetter[]
+  employeeLetters EmployeeLetter[]
+
+  @@index([kind, joiningType])
+  @@index([headerImageId])
+  @@index([footerImageId])
+  @@index([signatureImageId])
+  @@map("letter_templates")
+}
+
+// Every letterhead image ever uploaded for a template - kept, never erased (replacing a template's image keeps the
+// old one), so HR can pick one again for another template (decided 2026-11-13). The file is stored under the
+// template it was first uploaded for.
+model LetterheadImage {
+  id          Int            @id @default(autoincrement())
+  part        LetterheadPart
+  // Where the file lives in file storage (never a public URL)
+  storageKey  String         @unique @map("storage_key")
+  // The uploaded file's name - shown when picking an image
+  fileName    String         @map("file_name")
+  // image/png or image/jpeg (detected from the content)
+  mimeType    String         @map("mime_type")
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int            @map("created_by_id")
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int            @map("updated_by_id")
+
+  headerOf    LetterTemplate[] @relation("TemplateHeader")
+  footerOf    LetterTemplate[] @relation("TemplateFooter")
+  signatureOf LetterTemplate[] @relation("TemplateSignature")
+
+  @@index([part])
+  @@map("letterhead_images")
+}
+
+// Which part of the letterhead an image is
+enum LetterheadPart {
+  HEADER
+  FOOTER
+  SIGNATURE
+
+  @@map("letterhead_part")
+}
+
+enum LetterKind {
+  OFFER_LETTER
+  // Sent before the full offer (2026-11-16): accepted online like an offer, then the full offer follows
+  LETTER_OF_INTENT
+  // Letters to employees (2026-11-16): the appointment letter is issued automatically on the joining day; experience
+  // and relieving letters by HR for now (later after the resignation module's approvals)
+  APPOINTMENT_LETTER
+  CONFIRMATION_LETTER
+  EXPERIENCE_LETTER
+  RELIEVING_LETTER
+  // A salary certificate (e.g. for a bank loan) issued by HR - the old HRMS seeded it with the letters above (2026-11-16)
+  SALARY_CERTIFICATE
+
+  @@map("letter_kind")
+}
+
+// A letter issued to an employee (2026-11-16): appointment (automatically on the joining day), confirmation, experience,
+// relieving - written from a template, numbered, kept exactly as issued (a later template change does not change it)
+// and e-mailed to the employee. The employee sees their own on /me.
+model EmployeeLetter {
+  id               Int        @id @default(autoincrement())
+  employeeId       Int        @map("employee_id")
+  kind             LetterKind
+  // The template it was written from (its wording and letterhead)
+  letterTemplateId Int        @map("letter_template_id")
+  // e.g. RML/APPT/2026/0001 - company e-code prefix / kind / year / running number (OfferNumberSequence)
+  letterNumber     String     @unique @map("letter_number")
+  letterDate       DateTime   @map("letter_date") @db.Date
+  // Experience / relieving letters: the last working day written in the letter (the exit itself comes with the
+  // resignation module)
+  lastWorkingDay   DateTime?  @map("last_working_day") @db.Date
+  // The PDF exactly as issued (file storage) and its SHA-256 (hex)
+  storageKey       String     @unique @map("storage_key")
+  sha256           String     @db.Char(64)
+  issuedAt         DateTime   @map("issued_at") @db.Timestamptz(3)
+  issuedById       Int        @map("issued_by_id")
+  // The address the letter was e-mailed to (null: no address, or the e-mail failed)
+  emailedTo        String?    @map("emailed_to")
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById      Int        @map("created_by_id")
+  updatedAt        DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById      Int        @map("updated_by_id")
+
+  employee       Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  letterTemplate LetterTemplate @relation(fields: [letterTemplateId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId])
+  @@index([letterTemplateId])
+  @@map("employee_letters")
+}

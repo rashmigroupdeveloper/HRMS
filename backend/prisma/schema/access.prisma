@@ -1,0 +1,297 @@
+// Login and access. Employees are the users: they log in with their employee code and a password.
+// Kept apart from Employee so a password hash can never come back through an employee query.
+//
+// Access = roles as data, areas in code:
+//   - An AREA is a part of the system (onboarding, employees, ...). Each new module adds its area to AccessArea,
+//     and its APIs check it: accessProcedure('ONBOARDING', 'READ' | 'WRITE').
+//   - A ROLE is created by the super admin from the "Roles & access" page and given a level per area:
+//     READ (view only) or WRITE (view + change). An area left out = no access.
+//   - An employee can have several roles; their access is the highest level any of their roles gives per area.
+//   - DATA ACCESS (2026-11-18): each role given to an employee says WHOSE records it covers - slices of the group
+//     (company -> plant -> department) at View or Edit (UserAccountRoleScope). A role says what, its data access whose.
+//   - Every logged-in employee can use the self-service parts without any role.
+
+// The login of one employee (only employees HR has given a password have one)
+model UserAccount {
+  id                      Int       @id @default(autoincrement())
+  employeeId              Int       @unique @map("employee_id")
+  // scrypt hash ("scrypt:<salt>:<hash>") - the password itself is never stored
+  passwordHash            String    @map("password_hash")
+  // A password given or reset by an admin (or the set-password script) is temporary: it must be changed at the
+  // next sign-in before anything else can be used
+  mustChangePassword      Boolean   @default(false) @map("must_change_password")
+  // Lockout: wrong passwords in a row; at 5 the login is locked for 15 minutes (an admin can unlock it).
+  // A correct password resets both.
+  failedLoginCount        Int       @default(0) @map("failed_login_count")
+  lockedUntil             DateTime? @map("locked_until") @db.Timestamptz(3)
+  // "Forgot password" (2026-11-15): a one-time code e-mailed to the employee's personal e-mail - SHA-256 of the code,
+  // its expiry (10 minutes), wrong tries (the code dies after 5), and when the last one was sent (the next only after
+  // 60 seconds; by System - the employee asked for it on the sign-in page, not logged in)
+  resetCodeHash           String?   @map("reset_code_hash") @db.Char(64)
+  resetCodeValidUntil     DateTime? @map("reset_code_valid_until") @db.Timestamptz(3)
+  resetCodeFailedAttempts Int       @default(0) @map("reset_code_failed_attempts") @db.SmallInt
+  resetCodeSentAt         DateTime? @map("reset_code_sent_at") @db.Timestamptz(3)
+  resetCodeSentById       Int?      @map("reset_code_sent_by_id")
+  // When the employee last signed in - the logins list (old HRMS, 2026-11-16). No "by" column: it is always the
+  // employee themselves (each sign-in, with its IP, is also in the change history)
+  lastLoginAt             DateTime? @map("last_login_at") @db.Timestamptz(3)
+  // A login turned off (old HRMS, 2026-11-16 - e.g. during a suspension): no sign-in although the employee is still
+  // employed, and their sessions end. When, by whom and why; turning it back on clears all three
+  disabledAt              DateTime? @map("disabled_at") @db.Timestamptz(3)
+  disabledById            Int?      @map("disabled_by_id")
+  disabledReason          String?   @map("disabled_reason")
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById             Int       @map("created_by_id")
+  updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById             Int       @map("updated_by_id")
+
+  employee        Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  sessions        Session[]
+  roles           UserAccountRole[]
+  passwordHistory PasswordHistory[]
+
+  @@map("user_accounts")
+}
+
+// A login's earlier passwords (hash only): a password the employee chooses may not be one of their last 5 - the one
+// in use and the 4 before (old HRMS rule, 2026-11-16). Older rows are removed.
+model PasswordHistory {
+  id           Int      @id @default(autoincrement())
+  accountId    Int      @map("account_id")
+  // scrypt hash of a password the login had before ("scrypt:<salt>:<hash>")
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  Int      @map("created_by_id")
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById  Int      @map("updated_by_id")
+
+  account UserAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@map("password_history")
+}
+
+// A logged-in browser. The browser holds a random token in an httpOnly cookie; only its SHA-256 hash is stored,
+// so a copy of the database cannot be used to log in. Logout deletes the row.
+model Session {
+  id             Int       @id @default(autoincrement())
+  accountId      Int       @map("account_id")
+  tokenHash      String    @unique @map("token_hash")
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(3)
+  // Where it was started from and when it was last used - the "Sessions" lists (old HRMS, 2026-11-16); last used is
+  // updated at most once a minute
+  ip             String?
+  userAgent      String?   @map("user_agent")
+  lastSeenAt     DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  // The password was re-entered in this session: changing roles and who has them is allowed without asking again
+  // until then (10 minutes - old HRMS "step-up", 2026-11-16)
+  confirmedUntil DateTime? @map("confirmed_until") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById    Int       @map("created_by_id")
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById    Int       @map("updated_by_id")
+
+  account UserAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@map("sessions")
+}
+
+// A role, e.g. "HR", "Recruiter", "Payroll clerk" - created and changed by the super admin
+model Role {
+  id           Int      @id @default(autoincrement())
+  // Shown on the roles page and used by `npm run set-password -- <code> --role <name>`
+  name         String   @unique
+  description  String?
+  // The built-in "Super Admin" role (created by the migration): has WRITE on every area, including areas added
+  // later, and cannot be changed or deleted. At least one active employee must always have it.
+  isSuperAdmin Boolean  @default(false) @map("is_super_admin")
+  // The fallback approver (the user, 2026-11-20): its holders decide an approval request nobody else can - every step
+  // skipped, or nobody holds a step's role / access for the employee (modules/approvals). Seeded on a new "Admin" role;
+  // can be moved to another role. One role at most - the partial unique index roles_one_approval_fallback (migration).
+  isApprovalFallback Boolean @default(false) @map("is_approval_fallback")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById  Int      @map("created_by_id")
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById  Int      @map("updated_by_id")
+
+  permissions RolePermission[]
+  accounts    UserAccountRole[]
+  // approval chains whose steps name this role, and requests' steps that did
+  approvalChainSteps   ApprovalChainStep[]   @relation("ChainStepRole")
+  approvalEscalations  ApprovalChainStep[]   @relation("ChainStepEscalateRole")
+  approvalRequestSteps ApprovalRequestStep[] @relation("RequestStepRole")
+  // joining task types done by this role's holders (the team)
+  joiningTaskTypes     JoiningTaskType[]
+
+  @@map("roles")
+}
+
+// What one role may do in one area
+model RolePermission {
+  id          Int         @id @default(autoincrement())
+  roleId      Int         @map("role_id")
+  area        AccessArea
+  level       AccessLevel
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int         @map("created_by_id")
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int         @map("updated_by_id")
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, area])
+  @@map("role_permissions")
+}
+
+// Which roles an employee's login has
+model UserAccountRole {
+  id          Int      @id @default(autoincrement())
+  accountId   Int      @map("account_id")
+  roleId      Int      @map("role_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  account UserAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  // A role that someone still has cannot be deleted
+  role    Role        @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  // Whose records this role covers for this employee (none = nobody's)
+  scopes  UserAccountRoleScope[]
+
+  @@unique([accountId, roleId])
+  @@index([roleId])
+  @@map("user_account_roles")
+}
+
+// One data-access row of a role given to an employee (agreed with the user 2026-11-18, VBMS-style but per role): a slice
+// of the group - a company (empty = every company), a plant of it (empty = every plant), a department (empty = every
+// department) - at View or Edit. For an area, the level for a record is the lower of the role's level and the best row
+// that covers the record; across the employee's roles the best wins. An employee without a department is covered only
+// by rows for every department. Rows are saved as the role's whole list (Roles & access, with the password re-entered).
+model UserAccountRoleScope {
+  id            Int         @id @default(autoincrement())
+  accountRoleId Int         @map("account_role_id")
+  companyId     Int?        @map("company_id")
+  // only with a company (checked when saving): a plant of that company
+  plantId       Int?        @map("plant_id")
+  departmentId  Int?        @map("department_id")
+  level         AccessLevel
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int         @map("created_by_id")
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int         @map("updated_by_id")
+
+  accountRole UserAccountRole @relation(fields: [accountRoleId], references: [id], onDelete: Cascade)
+  company     Company?        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  // (plant, company): the plant is always one of the row's company
+  plant       Plant?          @relation(fields: [plantId, companyId], references: [id, companyId], onDelete: Restrict)
+  department  Department?     @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+
+  @@index([accountRoleId])
+  @@map("user_account_role_scopes")
+}
+
+// The parts of the system access is given for. A new module adds its area here (and its label in
+// modules/accounts/roles/roles.service.ts).
+enum AccessArea {
+  // Candidates: offers, joining forms, documents, background checks, medical, joining confirmation
+  ONBOARDING
+  // "Employee · Directory & job": find employees and open their profile - job, placement, managers, the job timeline and
+  // lay offs (2026-11-19), work contacts, record; the way into anyone else's profile (everyone can always see their own). The parts below add tabs
+  // on top of it (split 2026-11-16)
+  EMPLOYEES
+  // "Employee · Personal": personal details, addresses & emergency contacts, education & work history, family &
+  // nominees (with the Form F declarations)
+  EMPLOYEE_PERSONAL_DETAILS
+  // "Employee · IDs, bank & statutory": identity documents, the salary bank account, the EPF / ESIC details and numbers
+  EMPLOYEE_IDS_BANK
+  // "Employee · Documents & letters": the employee's document copies (added and reviewed by HR)
+  EMPLOYEE_DOCUMENTS
+  // Companies, locations, regions, plants, cost centres, departments, designations, grades, positions
+  ORGANIZATION
+  // "Request job changes" (the user, 2026-11-21): Edit raises promotions, transfers, company transfers, redesignations,
+  // manager changes for the employees in its data access (a move: also covering where they go) - through approval. View
+  // gives nothing on its own. Apart from Employees Edit, which no longer raises them.
+  JOB_CHANGE_REQUEST
+  // "Request salary changes" (the user, 2026-11-21): Edit raises salary revisions and corrections and the salary part of a
+  // promotion - through approval; it also needs Employee · Salary View (to start from the salary in force). View gives nothing.
+  SALARY_CHANGE_REQUEST
+  // "Approve job & salary changes" (the user, 2026-11-20): change an employee's job details directly in "Edit details"
+  // and the Excel import (otherwise a job change goes through approval); and usable as a step of an approval chain
+  JOB_CHANGE_APPROVAL
+  // "Approval chains" (the user, 2026-11-20 - its own area, apart from Roles & access): see / set the steps each kind of
+  // request goes through, and repair the requests held because nobody can decide them
+  APPROVAL_CHAINS
+  // Roles and who has which role
+  ACCESS
+  // The wording of letters (offer letter...) - who may change it; using a template needs no access of its own
+  LETTER_TEMPLATES
+  // Health data: the medical information of candidates' joining forms and of employees (asked by HR, 2026-11-15)
+  MEDICAL
+  // Employees' salaries - confidential (2026-11-15); everyone always sees their own. (A candidate's offer salary is
+  // part of Onboarding.)
+  SALARY
+  // The change history: who changed what and when, sign-ins (phase 2, 2026-11-16) - view only
+  CHANGE_HISTORY
+  // Joining tasks (2026-11-16): the tasks other teams do for a new employee (e-mail ID, laptop, ID card...) - View sees
+  // them, Edit marks them done
+  JOINING_TASKS
+  // "Joining task types" (the user, 2026-11-21 - apart from Onboarding and from doing the tasks): View sees the list of
+  // joining tasks (the Task types tab), Edit also adds and changes them - Edit for all companies, as the list is shared
+  JOINING_TASK_TYPES
+  // Attendance (2026-11-16): others' attendance - View sees everyone's attendance and the muster; Edit also corrects days
+  // and gives HR's approval of shift changes (the roster moved to the setup, 2026-11-22). One's own attendance needs none;
+  // a manager sees their reporting tree. (The setup moved to its own area, 2026-11-22.)
+  ATTENDANCE
+  // "Attendance setup" (the user, 2026-11-22 - apart from others' attendance): View sees the setup (punch uploads and
+  // unmatched codes, retired shifts / policies / patterns, an employee's default shifts); Edit also changes shifts, policies, default
+  // shifts, holidays and roster patterns, sets roster changes (2026-11-22), uploads and links punches, and locks / unlocks
+  // the attendance month
+  ATTENDANCE_SETUP
+  // HOD appointments (2026-11-18, changed 2026-11-19 - BACKLOG 3e): View sees the HODs, the places each heads (a
+  // department at a plant), their history and the gap list; Edit also appoints and ends HODs - only for places inside
+  // the data access of the role giving it. An HOD's own "My department" needs none.
+  HOD_APPOINTMENTS
+  // Leave (2026-11-22): others' leave - View sees everyone's applications and balances (the leave register) and the leave
+  // types; Edit also adjusts balances (opening balances, days given) and changes the leave types (Edit for all companies -
+  // the types are shared). One's own leave needs none; a manager sees their reporting tree's, an HOD their department's.
+  LEAVE
+
+  @@map("access_area")
+}
+
+enum AccessLevel {
+  // View only
+  READ
+  // View and change
+  WRITE
+
+  @@map("access_level")
+}
+
+// The security rules HR / IT can change on the Roles & access page (the old HRMS's Settings page, 2026-11-16). One row
+// (id 1); until it is saved the code's defaults apply (the old HRMS's: 5 tries, 15 minutes, 7 days, 10 characters, the
+// last 5 passwords, 10-minute codes, 10 minutes after re-entering the password).
+model SecuritySetting {
+  id                     Int      @id
+  // wrong passwords in a row before the login is locked, and for how many minutes
+  maxFailedLogins        Int      @map("max_failed_logins") @db.SmallInt
+  lockMinutes            Int      @map("lock_minutes") @db.SmallInt
+  // how long a sign-in lasts, in hours from signing in
+  sessionHours           Int      @map("session_hours") @db.SmallInt
+  minPasswordLength      Int      @map("min_password_length") @db.SmallInt
+  // a new password may not be one of the last N (the one in use counts)
+  passwordHistory        Int      @map("password_history") @db.SmallInt
+  // how long a "forgot password" code works
+  resetCodeMinutes       Int      @map("reset_code_minutes") @db.SmallInt
+  // how long re-entering the password counts before changing roles
+  confirmPasswordMinutes Int      @map("confirm_password_minutes") @db.SmallInt
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById            Int      @map("created_by_id")
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById            Int      @map("updated_by_id")
+
+  @@map("security_settings")
+}

@@ -1,0 +1,414 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * "Warm Editorial" look, taken from the old HRMS:
+ *  - warm off-white canvas with a soft gold glow in the bottom-right corner, cream cards, near-black ink (never #000)
+ *  - charcoal "hero" surfaces (login brand panel, active nav pill, default buttons)
+ *  - ONE gold accent per screen (`bg-gold`) for the main action
+ *  - big rounded cards, pill buttons, soft warm shadows instead of hard borders
+ * Components never use a hex colour - only these tokens.
+ */
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Geist Variable', 'Segoe UI', system-ui, sans-serif;
+
+    /* extra Warm Editorial tokens */
+    --color-surface-2: var(--surface-2);
+    --color-hero: var(--hero);
+    --color-hero-foreground: var(--hero-foreground);
+    --color-hero-muted: var(--hero-muted);
+    --color-gold: var(--gold);
+    --color-gold-foreground: var(--gold-foreground);
+    --color-gold-soft: var(--gold-soft);
+    --color-positive: var(--positive);
+    --color-positive-ink: var(--positive-ink);
+    --color-warning: var(--warning);
+    --color-warning-ink: var(--warning-ink);
+    --color-info: var(--info);
+    --color-info-ink: var(--info-ink);
+    --color-negative-ink: var(--negative-ink);
+
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    /* Warm Editorial palette */
+    --canvas-glow: #f7e9b0;
+    --surface-2: #f1eee5;
+    --hero: #1c1c1e;
+    --hero-foreground: #fbf9f3;
+    --hero-muted: #9b978d;
+    --gold: #f4cb45;
+    --gold-foreground: #1c1c1e;
+    --gold-soft: #fbeec0;
+    --positive: #2f9e6f;
+    --positive-ink: #1b6b4a;
+    --warning: #c98b3a;
+    --warning-ink: #7f5216;
+    --info: #5b7fa8;
+    --info-ink: #3b5f88;
+    --negative-ink: #a3392f;
+    --shadow-card: 0 1px 2px rgb(28 28 30 / 6%), 0 8px 24px -12px rgb(28 28 30 / 18%);
+    --shadow-float: 0 2px 6px rgb(28 28 30 / 8%), 0 16px 40px -16px rgb(28 28 30 / 24%);
+
+    /* shadcn tokens mapped onto it */
+    --background: #ecebe6;
+    --foreground: #1c1c1e;
+    --card: #fbf9f3;
+    --card-foreground: #1c1c1e;
+    --popover: #fbf9f3;
+    --popover-foreground: #1c1c1e;
+    --primary: #1c1c1e;
+    --primary-foreground: #fbf9f3;
+    --secondary: #f1eee5;
+    --secondary-foreground: #1c1c1e;
+    --muted: #f1eee5;
+    --muted-foreground: #67635a;
+    --accent: #f1eee5;
+    --accent-foreground: #1c1c1e;
+    --destructive: #d4574e;
+    --border: #e7e2d6;
+    --input: #dcd5c4;
+    --ring: #1c1c1e;
+    --chart-1: #f4cb45;
+    --chart-2: #2f9e6f;
+    --chart-3: #5b7fa8;
+    --chart-4: #c98b3a;
+    --chart-5: #d4574e;
+    --radius: 0.875rem;
+    --sidebar: #fbf9f3;
+    --sidebar-foreground: #1c1c1e;
+    --sidebar-primary: #1c1c1e;
+    --sidebar-primary-foreground: #fbf9f3;
+    --sidebar-accent: #f1eee5;
+    --sidebar-accent-foreground: #1c1c1e;
+    --sidebar-border: #e7e2d6;
+    --sidebar-ring: #1c1c1e;
+}
+
+.dark {
+    --canvas-glow: #2a2410;
+    --surface-2: #27272b;
+    --hero: #0f0f11;
+    --hero-foreground: #f4f1e9;
+    --hero-muted: #8a867d;
+    --gold: #f4cb45;
+    --gold-foreground: #1c1c1e;
+    --gold-soft: #3a3318;
+    --positive: #43c98c;
+    --positive-ink: #5fd39e;
+    --warning: #e0a960;
+    --warning-ink: #e8b675;
+    --info: #7593b8;
+    --info-ink: #93acd0;
+    --negative-ink: #f0918a;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px -12px rgb(0 0 0 / 60%);
+    --shadow-float: 0 2px 6px rgb(0 0 0 / 45%), 0 16px 40px -16px rgb(0 0 0 / 70%);
+
+    --background: #141416;
+    --foreground: #f4f1e9;
+    --card: #1f1f22;
+    --card-foreground: #f4f1e9;
+    --popover: #1f1f22;
+    --popover-foreground: #f4f1e9;
+    --primary: #f4f1e9;
+    --primary-foreground: #1c1c1e;
+    --secondary: #27272b;
+    --secondary-foreground: #f4f1e9;
+    --muted: #27272b;
+    --muted-foreground: #a8a29a;
+    --accent: #27272b;
+    --accent-foreground: #f4f1e9;
+    --destructive: #e87a72;
+    --border: #34343a;
+    --input: #3f3f46;
+    --ring: #f4cb45;
+    --sidebar: #1f1f22;
+    --sidebar-foreground: #f4f1e9;
+    --sidebar-primary: #f4cb45;
+    --sidebar-primary-foreground: #1c1c1e;
+    --sidebar-accent: #27272b;
+    --sidebar-accent-foreground: #f4f1e9;
+    --sidebar-border: #34343a;
+    --sidebar-ring: #f4cb45;
+}
+
+/* Soft warm shadows - separation by shadow, not by 1px lines */
+@utility shadow-card {
+    box-shadow: var(--shadow-card);
+}
+@utility shadow-float {
+    box-shadow: var(--shadow-float);
+}
+
+/* Faint paper grain over charcoal hero surfaces */
+.u-grain {
+    position: relative;
+    isolation: isolate;
+}
+.u-grain::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    opacity: 0.5;
+    mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+}
+
+/* Diagonal hatch - "in progress / pending" tiles */
+.u-hatch {
+    background-image: repeating-linear-gradient(
+        -45deg,
+        color-mix(in srgb, var(--foreground) 9%, transparent) 0,
+        color-mix(in srgb, var(--foreground) 9%, transparent) 1.5px,
+        transparent 1.5px,
+        transparent 7px
+    );
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground antialiased;
+    }
+  /* the warm bottom-right corner glow of the canvas */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(120% 120% at 100% 100%, var(--canvas-glow) 0%, transparent 42%);
+  }
+  html {
+    @apply font-sans;
+    }
+}
+
+/* The letter template editor's pages (pages/letter-templates): laid out like the PDF the backend writes with pdfmake
+   (backend/src/core/pdf/letter-pdf.ts), so the pages break at the same lines (components/letter-pages.ts):
+   - a line is as high as the tallest text on it: the font's height (ascent + descent) x 1.25. The factor per font is
+     --letter-lh (Roboto, the default; the others below) - set on each piece of text (.letter-run), with no line height
+     of the paragraph itself, so a line is never taller than its own text (as in pdfmake);
+   - 8 pt after a paragraph; nothing above anything (pdfmake adds margins, the browser would merge them);
+   - numbered points: the text 22 pt in, a sub-point's 38 pt (48 pt for a third level), the number 6 pt in;
+   - the default font's bold is Roboto Medium, as in the PDF (only 400 and 500 are loaded; no fake bold). */
+@layer components {
+  .letter-doc {
+    --letter-lh: 1.46484375;
+    font-synthesis: none;
+  }
+  .letter-doc [style*='Carlito'] {
+    --letter-lh: 1.52587890625;
+  }
+  .letter-doc [style*='Caladea'] {
+    --letter-lh: 1.4375;
+  }
+  .letter-doc [style*='Arimo'] {
+    --letter-lh: 1.396484375;
+  }
+  .letter-doc [style*='Tinos'] {
+    --letter-lh: 1.38427734375;
+  }
+  .letter-doc [style*='Cousine'] {
+    --letter-lh: 1.416015625;
+  }
+  .letter-doc [style*='Inter'] {
+    --letter-lh: 1.512451171875;
+  }
+  .letter-doc [style*='Source Sans 3'] {
+    --letter-lh: 1.78;
+  }
+  .letter-doc [style*='Source Serif 4'] {
+    --letter-lh: 1.71375;
+  }
+  .letter-doc [style*='JetBrains Mono'] {
+    --letter-lh: 1.65;
+  }
+  .letter-doc p {
+    margin: 0 0 8pt;
+    line-height: 0;
+  }
+  .letter-doc .letter-run,
+  .letter-doc .letter-field,
+  .letter-doc br,
+  .letter-doc p:not(:has(.letter-run, .letter-field)) {
+    /* + 1/128 px: the browser rounds a line height down to 1/64 px - this makes it round to the nearest (Roboto
+       10 pt: 19.53125 px, exactly the PDF's 14.6484 pt) */
+    line-height: calc(var(--letter-lh) * 1em + 0.0078125px);
+  }
+  .letter-doc ol,
+  .letter-doc ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .letter-doc ol {
+    counter-reset: point;
+  }
+  .letter-doc li {
+    position: relative;
+    padding-left: 22pt;
+  }
+  .letter-doc li li {
+    padding-left: 38pt;
+  }
+  .letter-doc li li li {
+    padding-left: 48pt;
+  }
+  .letter-doc ol > li {
+    counter-increment: point;
+  }
+  .letter-doc li::before {
+    position: absolute;
+    left: 0;
+    font-size: 10pt;
+    line-height: calc(1.46484375 * 1em + 0.0078125px);
+  }
+  .letter-doc li li::before {
+    left: 6pt;
+  }
+  .letter-doc ol > li::before {
+    content: counter(point) '.';
+  }
+  /* sub-points: 4.1, 4.2 */
+  .letter-doc li ol > li::before {
+    content: counters(point, '.');
+  }
+  .letter-doc ul > li::before {
+    content: '•';
+  }
+  .letter-field {
+    border-radius: 0.375rem;
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--color-info) 16%, transparent);
+    color: var(--color-info-ink);
+    font-weight: inherit;
+  }
+  .letter-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15em;
+    padding: 0.9em 1em;
+    border: 1.5px dashed color-mix(in srgb, var(--color-info) 55%, transparent);
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--color-info) 7%, transparent);
+    line-height: 1.4;
+  }
+  .letter-block-title {
+    font-weight: 600;
+  }
+  .letter-block-hint {
+    font-size: 0.85em;
+    color: var(--color-muted-foreground);
+  }
+  /* a table as pdfmake draws it: 1 pt lines (#555), 4 pt padding, 10 pt text with the PDF's line height */
+  .letter-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    color: #000;
+  }
+  .letter-table td {
+    border: 1pt solid #555;
+    padding: 4pt;
+    font-size: 10pt;
+    line-height: calc(1.46484375 * 1em + 0.0078125px);
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+  .letter-split {
+    display: flex;
+    margin-bottom: 8pt;
+  }
+  .letter-split > p {
+    flex: 1;
+    margin: 0;
+  }
+  /* takes no room (as in the PDF): a dashed line where the page is cut, the rest of the page stays empty */
+  .letter-page-break {
+    position: relative;
+    height: 0;
+    font-size: 0;
+  }
+  .letter-page-break::after {
+    content: 'New page';
+    position: absolute;
+    inset: -0.6rem 0 auto;
+    height: 1.2rem;
+    border-top: 1.5px dashed var(--color-border);
+    margin-top: 0.6rem;
+    font-size: 0.7rem;
+    line-height: 1.2rem;
+    text-align: right;
+    color: var(--color-muted-foreground);
+    cursor: default;
+  }
+  /* the space that moves text to the next page (letter-pages.ts) - inside a paragraph it starts a new line */
+  .letter-page-spacer {
+    display: block;
+  }
+  .letter-page-spacer-inline {
+    display: inline-block;
+    width: 100%;
+    vertical-align: top;
+  }
+  .letter-doc .ProseMirror-selectednode {
+    outline: 2px solid var(--color-ring);
+    border-radius: 0.5rem;
+  }
+  /* a block drawn by LetterBlockView sits in a full-width wrapper: outline the block (e.g. the stamp), not the line */
+  .letter-doc .ProseMirror-selectednode:has([data-block]) {
+    outline: none;
+  }
+  .letter-doc .ProseMirror-selectednode [data-block] {
+    outline: 2px solid var(--color-ring);
+  }
+}

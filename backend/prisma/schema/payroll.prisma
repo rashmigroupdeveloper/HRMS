@@ -1,0 +1,73 @@
+// Payroll: what an employee is paid.
+// The salary agreed in the offer is copied to the employee on the joining day (decided 2026-11-15) - so the employee's
+// pay does not depend on the candidate record. Revisions (an increment, a promotion's hike, a correction) are asked as
+// job changes and approved (job-changes.prisma, 2026-11-20); each approved one is a row from its day - the salary
+// history. Pay runs and deductions come with the payroll module.
+
+// An employee's salary from a date on: the annual fixed CTC, the performance pay and the monthly breakup (lines).
+// The first one is the offer's (offer letter Annexure-I), effective from the date of joining.
+model EmployeeSalary {
+  id                   Int      @id @default(autoincrement())
+  employeeId           Int      @map("employee_id")
+  // The day this salary applies from - the date of joining for the one copied from the offer
+  effectiveFrom        DateTime @map("effective_from") @db.Date
+  // Annual FIXED cost to company in whole units of the currency; the monthly lines x 12 add up to it
+  annualCtc            Int      @map("annual_ctc")
+  // "Performance pay (Target Oriented Earnings)" per year, on top of the fixed CTC
+  performancePayAnnual Int?     @map("performance_pay_annual")
+  // ISO 4217, e.g. INR - an overseas salary can be in another currency
+  currency             String   @default("INR") @db.Char(3)
+  // why it changed (2026-11-20): the joining (from the offer), an increment, a promotion, a correction...
+  reason               SalaryReason @default(JOINING)
+  // the approved job change that set it (a correction later sets the same row again - the latest is kept; the change
+  // history keeps the earlier)
+  jobChangeRequestId   Int?     @map("job_change_request_id")
+  // when it was approved and by whom (the last approver) - empty for the offer's
+  approvedAt           DateTime? @map("approved_at") @db.Timestamptz(3)
+  approvedById         Int?      @map("approved_by_id")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById          Int      @map("created_by_id")
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById          Int      @map("updated_by_id")
+
+  employee         Employee             @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  lines            EmployeeSalaryLine[]
+  jobChangeRequest JobChangeRequest?    @relation(fields: [jobChangeRequestId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeId, effectiveFrom])
+  @@index([jobChangeRequestId])
+  @@map("employee_salaries")
+}
+
+// Why a salary row exists
+enum SalaryReason {
+  // the offer's, from the date of joining
+  JOINING
+  INCREMENT
+  PROMOTION
+  CONFIRMATION
+  CORRECTION
+  OTHER
+
+  @@map("salary_reason")
+}
+
+// One line of a salary's monthly breakup: one amount per salary component (Basic, HRA, employer PF...)
+model EmployeeSalaryLine {
+  id                Int      @id @default(autoincrement())
+  employeeSalaryId  Int      @map("employee_salary_id")
+  salaryComponentId Int      @map("salary_component_id")
+  // Whole units of the salary's currency per month
+  monthlyAmount     Int      @map("monthly_amount")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       Int      @map("created_by_id")
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById       Int      @map("updated_by_id")
+
+  employeeSalary  EmployeeSalary  @relation(fields: [employeeSalaryId], references: [id], onDelete: Cascade)
+  salaryComponent SalaryComponent @relation(fields: [salaryComponentId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeSalaryId, salaryComponentId])
+  @@index([salaryComponentId])
+  @@map("employee_salary_lines")
+}
