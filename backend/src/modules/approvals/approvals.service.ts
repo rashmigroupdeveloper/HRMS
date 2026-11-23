@@ -667,6 +667,27 @@ async function daily(only?: JobFilter) {
           continue
         }
       }
+      // a role / access / fallback step whose approvers are all gone (left, lost the login, the role or the data access)
+      // waited for nobody, unseen (2026-11-23): opened again - the fallback approver, or the request is held (the step
+      // back to waiting first, so "send through again" finds it)
+      if (!(step.approverType in NAMED) && step.approverType !== 'ESCALATION') {
+        const [pool] = await poolsOf([{ step, request }])
+        if (!pool!.length) {
+          const outcome = await prisma.$transaction(async (tx) => {
+            const fresh = await approvalsRepository.findRequest(request.id, tx)
+            const open = fresh?.status === 'PENDING' && !fresh.heldAt ? fresh.steps.find((s) => s.id === step.id && s.status === 'OPEN') : undefined
+            if (!fresh || !open) return {}
+            const waiting = { status: 'WAITING' as const, openedAt: null, openedById: null, dueAt: null }
+            await approvalsRepository.updateStep(open.id, waiting, SYSTEM_ACTOR, tx)
+            return openPoolStep(fresh, { ...open, ...waiting }, SYSTEM_ACTOR, tx)
+          })
+          if (outcome.opened || outcome.held) {
+            await sendNotices(request.id, outcome)
+            counts.moved++
+          }
+          continue
+        }
+      }
     } catch (error) {
       failures.push(`#${request.id}: ${error instanceof Error ? error.message : String(error)}`)
     }

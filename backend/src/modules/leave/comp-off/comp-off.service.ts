@@ -77,6 +77,9 @@ export async function claim(viewer: CurrentUser, input: z.infer<typeof claimComp
   const { day, days } = await checkDay(viewer.employeeId, input.workDate)
   const summary = `Comp-off - ${dateText(input.workDate)} (${day.holiday ?? 'weekly off'}): worked ${hoursText(day.workedMinutes)}${day.inAt ? ` (${day.inAt}-${day.outAt ?? '?'})` : ''}, ${days === 1 ? '1 day' : 'half a day'}`
   const created = await prisma.$transaction(async (tx) => {
+    // one claim of this employee at a time, checked again now that the one before (a double click) is saved
+    await compOffRepository.lockEmployee(viewer.employeeId, tx)
+    if (await compOffRepository.findOpen(viewer.employeeId, input.workDate, tx)) throw new ORPCError('CONFLICT', { message: 'You already claimed comp-off for that day' })
     const approval = await approvalsService.raiseRequest({ feature: 'COMP_OFF', kinds: ['COMP_OFF'], employeeId: viewer.employeeId, requestedById: viewer.employeeId, summary }, tx)
     const row = await compOffRepository.create({ employeeId: viewer.employeeId, workDate: input.workDate, days, reason: input.reason, status: 'PENDING', approvalRequestId: approval.id }, viewer.employeeId, tx)
     return { approval, row }

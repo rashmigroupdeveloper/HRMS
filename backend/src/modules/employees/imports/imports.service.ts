@@ -263,6 +263,16 @@ export async function uploadImport({ file, save }: z.infer<typeof uploadImportIn
         await employeesRepository.update(id, data, actorId, tx)
         await employeesService.correctJobRecords(id, data, actorId, tx)
       }
+      // checked again once every row is saved, against the database: a manager who is a row of the file was checked only
+      // within the file - a loop through someone's saved manager (A -> B in the file, B -> A already) or a manager who has
+      // left passed (2026-11-23). Any problem: nothing is saved.
+      for (const { id, managerCode } of managersToSet) {
+        const managerId = managerCode ? idByCode.get(managerCode) : undefined
+        if (managerId === undefined) continue
+        const manager = await employeesRepository.findManagerLinkById(managerId, tx)
+        if (manager?.status === 'EXITED') throw new ORPCError('BAD_REQUEST', { message: `Reporting manager ${managerCode} has left - nothing was imported` })
+        await employeesService.assertNoReportingLoop(managerId, id, tx)
+      }
       return importsRepository.createImport({ fileName: file.name, status: 'DONE', rowCount: rows.length, createdCount: toAdd, updatedCount: toUpdate }, actorId, tx)
     },
     // a big file takes longer than a normal request

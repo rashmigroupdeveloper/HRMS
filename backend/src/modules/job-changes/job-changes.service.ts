@@ -153,7 +153,9 @@ export async function createJobChange(input: z.infer<typeof createJobChangeInput
         message: now.latestEntryFrom ? `The change must apply after the latest entry of the job timeline (${day(after)})` : `The change must apply after the date of joining (${day(after)})`,
       })
     }
-    await jobHistoryService.checkJobChange(employee.id, companyAfter, toCompany !== null ? { ...base, plantId: 0, departmentId: 0 } : base, next)
+    // a company transfer: the place and the cost centre are all checked against the new company (2026-11-23: the old
+    // company's cost centre, kept selected, passed as "unchanged")
+    await jobHistoryService.checkJobChange(employee.id, companyAfter, toCompany !== null ? { ...base, plantId: 0, departmentId: 0, costCenterId: null } : base, next)
   }
   let salary: (SalaryInput & { currency: string }) | null = null
   if (input.salary) {
@@ -264,7 +266,7 @@ export async function applyNow(id: number, actorId: ActorId) {
       if (record.changedFields.length || record.companyId !== null) {
         const next = merged(now.details, record)
         const toCompany = record.companyId !== null && record.companyId !== now.companyId ? record.companyId : null
-        await jobHistoryService.checkJobChange(record.employeeId, toCompany ?? now.companyId, toCompany !== null ? { ...now.details, plantId: 0, departmentId: 0 } : now.details, next, tx)
+        await jobHistoryService.checkJobChange(record.employeeId, toCompany ?? now.companyId, toCompany !== null ? { ...now.details, plantId: 0, departmentId: 0, costCenterId: null } : now.details, next, tx)
         const result = await jobHistoryService.applyJobChange(
           record.employeeId,
           { details: next, companyId: toCompany, effectiveFrom: record.effectiveFrom, kind: record.kind, note: record.reason, jobChangeRequestId: record.id },

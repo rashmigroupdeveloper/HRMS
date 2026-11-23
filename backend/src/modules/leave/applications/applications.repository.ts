@@ -55,3 +55,9 @@ export function listForEmployees(employeeIds: number[], from: Date, to: Date, st
     select: applicationSelect,
   })
 }
+
+// Holds this employee's leave requests until the transaction ends: an application is checked again after it, so two sent at
+// the same moment (a double click) cannot both pass the overlap and balance checks (2026-11-23)
+export async function lockEmployee(employeeId: number, db: DbClient) {
+  await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('leave-applications'), ${employeeId}::int)::text AS locked`
+}

@@ -55,6 +55,23 @@ export function create(data: NewRow<Prisma.OfferLetterUncheckedCreateInput>, act
   return db.offerLetter.create({ data: { ...data, ...createdBy(actorId) }, select: letterSelect })
 }
 
+// Takes one try of the live code (`otpHash`) before it is compared - false when there is none left, or the code was
+// replaced or used meanwhile. Counted in the database itself, so guesses sent at the same moment each count (2026-11-23:
+// each read the same count and wrote count + 1). Returns the tries used, with this one.
+export async function takeCodeTry(id: number, otpHash: string, maxTries: number, actorId: ActorId, db: DbClient = prisma) {
+  const [row] = await db.offerLetter.updateManyAndReturn({
+    where: { id, otpHash, otpFailedAttempts: { lt: maxTries } },
+    data: { otpFailedAttempts: { increment: 1 }, ...updatedBy(actorId) },
+    select: { otpFailedAttempts: true },
+  })
+  return row?.otpFailedAttempts ?? null
+}
+
+// Gives back the try a right code took (the code was known: it never counts as a wrong one)
+export function giveBackCodeTry(id: number, actorId: ActorId, db: DbClient = prisma) {
+  return db.offerLetter.updateMany({ where: { id, otpFailedAttempts: { gt: 0 } }, data: { otpFailedAttempts: { decrement: 1 }, ...updatedBy(actorId) } })
+}
+
 export function update(id: number, data: Prisma.OfferLetterUncheckedUpdateInput, actorId: ActorId, db: DbClient = prisma) {
   return db.offerLetter.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: letterSelect })
 }

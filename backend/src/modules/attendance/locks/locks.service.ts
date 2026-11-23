@@ -79,7 +79,13 @@ export async function lockMonth(viewer: CurrentUser, { year, month }: z.infer<ty
     from,
     to,
   )
-  await locksRepository.createLock({ year, month, lockedAt: new Date(), lockedById: viewer.employeeId }, viewer.employeeId)
+  // checked again while holding the month: two locks at once (a double click, two HR people) make one lock - before
+  // (2026-11-23) both were saved and one "unlock" left the month locked
+  await prisma.$transaction(async (tx) => {
+    await locksRepository.holdMonth(year, month, tx)
+    if (await locksRepository.findOpenLock(year, month, tx)) throw new ORPCError('CONFLICT', { message: `${daysService.monthName(year, month)} is already locked` })
+    await locksRepository.createLock({ year, month, lockedAt: new Date(), lockedById: viewer.employeeId }, viewer.employeeId, tx)
+  })
   return getChecklist(viewer, { year, month })
 }
 

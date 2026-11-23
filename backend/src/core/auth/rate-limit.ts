@@ -39,3 +39,9 @@ export function countPasswordTry(action: 'signIn' | 'requestReset' | 'resetWithC
   count(`ip:${ip ?? 'unknown'}`, IP_MAX, IP_WINDOW_MS, now)
   count(`${action}:${account.trim().toLowerCase()}`, ACCOUNT_MAX, ACCOUNT_WINDOW_MS, now)
 }
+
+// One more try of `action` at this login, whatever name it was reached by (employee code, work e-mail, a former code) - the
+// same 5 a minute as for each name (2026-11-23: each name had its own count)
+export function countAccountTry(action: 'signIn', accountId: number) {
+  count(`${action}:#${accountId}`, ACCOUNT_MAX, ACCOUNT_WINDOW_MS, Date.now())
+}

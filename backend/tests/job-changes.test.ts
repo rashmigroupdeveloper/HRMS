@@ -3,7 +3,7 @@ import { prisma, SYSTEM_ACTOR } from '#core/db/prisma'
 import { writeWorkbook } from '#core/excel/workbook'
 import { approvalsService } from '#modules/approvals'
 import { employeesService } from '#modules/employees'
-import { designationsService, positionsService, salaryComponentsService } from '#modules/organization'
+import { costCentersService, designationsService, positionsService, salaryComponentsService } from '#modules/organization'
 import { readStoredFile } from '#core/storage/file-storage'
 import { changeHistoryService } from '#modules/change-history'
 import { employeeDocumentsService } from '#modules/employees'
@@ -363,6 +363,10 @@ describe('job changes', () => {
     const hrBoth = userWith(hrEmployee, [{ access: { EMPLOYEES: 'WRITE', JOB_CHANGE_REQUEST: 'WRITE' }, rows: [row(companyA, null, null), row(companyC.id, null, null)] }])
     await expect(jobChangesService.createJobChange({ ...transfer, kind: 'TRANSFER' }, hrBoth)).rejects.toThrow('is a company transfer')
     await expect(jobChangesService.createJobChange({ ...transfer, plantId: undefined }, hrBoth)).rejects.toThrow('plant and department of the new company')
+    // found in the 2026-11-23 review: the old company's cost centre, kept selected, passed as "unchanged"
+    const oldCostCenter = await costCentersService.createCostCenter({ companyId: companyA, code: `CC${tag}`, name: 'Old company' }, SYSTEM_ACTOR)
+    await prisma.employee.update({ where: { id: employee.id }, data: { costCenterId: oldCostCenter.id } })
+    await expect(jobChangesService.createJobChange({ ...transfer, costCenterId: oldCostCenter.id }, hrBoth)).rejects.toThrow(/cost cent/i)
 
     await chainsService.saveChain(admin, { kind: 'JOB_CHANGE', companyId: companyA, steps: [{ approverType: 'ROLE', roleId: role.id, seesConfidential: false }] })
     try {

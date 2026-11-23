@@ -16,9 +16,13 @@ type DocumentRow = Awaited<ReturnType<typeof documentsRepository.list>>[number]
 
 // Sensitive documents need the access of what they show too (2026-11-16, inspired by the old HRMS): copies of IDs and
 // bank proof - and the PF / ESIC forms that print them - also "Employee · IDs, bank & statutory"; medical documents also
-// "Employee · Medical"; the whole signed pack (it holds both) both. One's own documents: always.
-type SensitiveArea = 'EMPLOYEE_IDS_BANK' | 'MEDICAL'
+// "Employee · Medical"; the whole signed pack (it holds both) both. One's own documents: always. Since 2026-11-23 also
+// the signed joining form (it prints the ID and bank numbers - JF §4 / §5) and the signed offer letter (it shows the CTC -
+// "Employee · Salary"). The candidate's documents follow the same list (candidates/documents).
+export type SensitiveArea = 'EMPLOYEE_IDS_BANK' | 'MEDICAL' | 'SALARY'
 const SENSITIVE: Partial<Record<DocumentType, SensitiveArea[]>> = {
+  SIGNED_JOINING_FORM: ['EMPLOYEE_IDS_BANK'],
+  SIGNED_OFFER_LETTER: ['SALARY'],
   AADHAAR_COPY: ['EMPLOYEE_IDS_BANK'],
   PAN_COPY: ['EMPLOYEE_IDS_BANK'],
   PASSPORT_COPY: ['EMPLOYEE_IDS_BANK'],
@@ -31,7 +35,16 @@ const SENSITIVE: Partial<Record<DocumentType, SensitiveArea[]>> = {
   MEDICAL_FITNESS_CERTIFICATE: ['MEDICAL'],
   SIGNED_FORMS_PACK: ['EMPLOYEE_IDS_BANK', 'MEDICAL'],
 }
-const AREA_NAME: Record<SensitiveArea, string> = { EMPLOYEE_IDS_BANK: '"Employee · IDs, bank & statutory"', MEDICAL: '"Employee · Medical"' }
+export const AREA_NAME: Record<SensitiveArea, string> = {
+  EMPLOYEE_IDS_BANK: '"Employee · IDs, bank & statutory"',
+  MEDICAL: '"Employee · Medical"',
+  SALARY: '"Employee · Salary"',
+}
+
+// The access areas a document type needs besides the documents' own (empty: none)
+export function sensitiveAreasOf(type: DocumentType): SensitiveArea[] {
+  return SENSITIVE[type] ?? []
+}
 
 // The areas of a document type the viewer lacks for this employee (empty: they may open it)
 function missingAreas(viewer: CurrentUser, employee: EmployeeRef, type: DocumentType) {

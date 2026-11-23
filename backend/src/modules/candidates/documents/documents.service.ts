@@ -2,7 +2,7 @@ import type { CurrentUser } from '#core/rpc/procedures'
 import { SYSTEM_ACTOR, type ActorId, type CandidateStatus, type DbClient, type DocumentType, type JoiningType } from '#core/db/prisma'
 import { sendMail } from '#core/mail/mailer'
 import { copyFile, deleteFile, isOldKey, namedOwner, readStoredFile, saveFile, type FilePlace } from '#core/storage/file-storage'
-import { employeesService } from '#modules/employees'
+import { employeeDocumentsService, employeesService } from '#modules/employees'
 import { cleanFileName, detectFileType, type DetectedFileType } from '#shared/utils/file-type'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
@@ -208,10 +208,16 @@ export async function uploadDocument({ candidateId, type, file }: z.infer<typeof
 }
 
 // The file itself, with its original name and type.
-// HR downloads a candidate's document (Onboarding View covering the candidate - data access)
+// HR downloads a candidate's document (Onboarding View covering the candidate - data access). A sensitive one also needs
+// the access of what it shows, as on the employee (2026-11-23: ID / bank copies, medical documents, the signed joining form
+// and offer letter opened with Onboarding View alone)
 export async function downloadDocument(id: number, viewer: CurrentUser) {
   const document = await getDocument(id)
-  await candidatesService.getCandidateFor(viewer, document.candidateId)
+  const candidate = await candidatesService.getCandidateFor(viewer, document.candidateId)
+  const missing = employeeDocumentsService.sensitiveAreasOf(document.type).filter((area) => !candidatesService.viewerHasAt(viewer, candidate, area, 'READ'))
+  if (missing.length) {
+    throw new ORPCError('FORBIDDEN', { message: `This document also needs the ${missing.map((a) => employeeDocumentsService.AREA_NAME[a]).join(' and ')} access` })
+  }
   return fileOf(document)
 }
 async function fileOf(document: { storageKey: string; fileName: string; mimeType: string }) {

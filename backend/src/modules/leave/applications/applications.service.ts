@@ -47,12 +47,18 @@ async function countDays(employeeId: number, type: typesService.LeaveType, v: Da
   const plan = await attendanceService.planDays(employeeId, v.fromDate, v.toDate)
   if (!plan.length || plan.some((d) => !d.employed)) return { days: 0, problem: 'You are not employed on every one of those days' }
   const planOf = new Map(plan.map((d) => [dayKey(d.date), d]))
-  let halves = 0
-  for (const { date, half } of halvesOfLeave(v)) {
+  const isWorking = (date: Date, half: 'FIRST' | 'SECOND') => {
     const day = planOf.get(dayKey(date))!
-    const working = day.kind === 'WORK' && !(day.halfDay && half === 'SECOND')
-    if (working || type.countsOffDays) halves++
+    return day.kind === 'WORK' && !(day.halfDay && half === 'SECOND')
   }
+  const leaveHalves = halvesOfLeave(v)
+  // a leave starts and ends on a working day - never on a weekly off or a holiday (the user, 2026-11-23: a type that
+  // counts off days took a day for a leave on a Sunday alone); off days inside follow the type (countsOffDays)
+  for (const end of [leaveHalves[0], leaveHalves.at(-1)]) {
+    if (end && !isWorking(end.date, end.half)) return { days: 0, problem: `${dateText(end.date)} is a weekly off or a holiday - a leave starts and ends on a working day` }
+  }
+  let halves = 0
+  for (const { date, half } of leaveHalves) if (isWorking(date, half) || type.countsOffDays) halves++
   return { days: halves / 2, problem: null }
 }
 
@@ -159,6 +165,10 @@ export async function apply(viewer: CurrentUser, input: z.infer<typeof applyInpu
   if (problem) throw new ORPCError(problem.code, { message: problem.message })
   const summary = describe(result.type, { ...input, days: result.days })
   const created = await prisma.$transaction(async (tx) => {
+    // one application of this employee at a time, checked again now that the one before (a double click) is saved
+    await applicationsRepository.lockEmployee(viewer.employeeId, tx)
+    const again = (await check(viewer.employeeId, input)).problems[0]
+    if (again) throw new ORPCError(again.code, { message: again.message })
     const approval = await approvalsService.raiseRequest({ feature: 'LEAVE', kinds: ['LEAVE'], employeeId: viewer.employeeId, requestedById: viewer.employeeId, summary }, tx)
     const application = await applicationsRepository.create(
       {

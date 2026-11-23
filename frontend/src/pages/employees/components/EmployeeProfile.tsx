@@ -1155,6 +1155,7 @@ function ReasonDialog({ title, label, confirm, onClose, onConfirm }: { title: st
 
 // "Fit with restrictions - 15 Nov 2026, City Clinic - no work at height"
 function preEmploymentMedical(joining: EmployeeProfile['joining']) {
+  if (joining?.medicalHidden) return 'Recorded - needs Medical access to see'
   if (!joining?.medicalResult) return '—'
   return [MEDICAL_RESULT[joining.medicalResult], formatDate(joining.medicalExamDate), joining.medicalExaminer, joining.medicalRestrictions]
     .filter((part) => part && part !== '—')

@@ -52,6 +52,8 @@ export async function createHoliday(input: z.infer<typeof createHolidayInput>, v
   const actorId = viewer.employeeId
   const data = { date: input.date, name: input.name, companyId: input.companyId ?? null, workLocationId: input.workLocationId ?? null }
   assertMayChange(viewer, data.companyId)
+  // never inside a locked attendance month: its planned days would change under the lock (2026-11-23)
+  await daysService.assertOpenDays([data.date])
   await assertNotTwice(data.date, data.companyId, data.workLocationId)
   const holiday = await holidaysRepository.create(data, actorId)
   await reworkDays(holiday.date)
@@ -69,6 +71,10 @@ export async function updateHoliday({ id, ...changes }: z.infer<typeof updateHol
   // the company it was for and the one it will be for
   assertMayChange(viewer, current.companyId)
   assertMayChange(viewer, next.companyId)
+  // moved, or given to other people: the old and the new day must be in open months (a new name alone may be fixed)
+  if (next.date.getTime() !== current.date.getTime() || next.companyId !== current.companyId || next.workLocationId !== current.workLocationId) {
+    await daysService.assertOpenDays([current.date, next.date])
+  }
   await assertNotTwice(next.date, next.companyId, next.workLocationId, id)
   const holiday = await holidaysRepository.update(id, { ...changes }, actorId)
   await reworkDays(current.date, holiday.date)
@@ -78,6 +84,7 @@ export async function updateHoliday({ id, ...changes }: z.infer<typeof updateHol
 export async function deleteHoliday(id: number, viewer: CurrentUser) {
   const current = await getHoliday(id)
   assertMayChange(viewer, current.companyId)
+  await daysService.assertOpenDays([current.date])
   await holidaysRepository.remove(id)
   await reworkDays(current.date)
   return { deleted: true }

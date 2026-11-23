@@ -323,6 +323,8 @@ export async function sendPortalLink(candidateId: number, actorId: ActorId, sent
     )
     // an offer whose joining form waits for HR (joiningFormOnAcceptance false) opens it now
     await candidatesService.recordJoiningFormOpened(candidateId, actorId, tx)
+    // whoever is signed in with the old link is signed out (2026-11-23: a forwarded link's session stayed open)
+    await candidatesService.endPortalSessions(candidateId, tx)
   })
   if (!candidate.personalEmail) return { link: joiningFormLinkOf(token), emailedTo: null, emailError: null }
   const salutation = candidate.salutation ? `${SALUTATION[candidate.salutation]} ` : ''
@@ -430,7 +432,9 @@ async function findByToken(token: string) {
   else if (isLoi(letter) && candidate.status === 'LOI_ACCEPTED') state = 'ACCEPTED'
   else if (candidate.status !== 'OFFERED') state = 'CLOSED'
   else if (candidate.offerValidUntil && candidate.offerValidUntil < today()) state = 'EXPIRED'
-  return { letter, candidate, state }
+  // only the newest letter's link opens the joining form (2026-11-23: an accepted Letter of Intent's link kept opening it,
+  // and HR's "new link" could not stop it)
+  return { letter, candidate, state, isLatest: letter.id === latest?.id }
 }
 
 function assertOpen(state: LinkState) {
@@ -446,7 +450,7 @@ function assertOpen(state: LinkState) {
 
 // What the candidate's page shows
 export async function viewByToken(token: string) {
-  const { letter, candidate, state } = await findByToken(token)
+  const { letter, candidate, state, isLatest } = await findByToken(token)
   return {
     state,
     // the full offer or the Letter of Intent (2026-11-16), and the number on it
@@ -466,7 +470,7 @@ export async function viewByToken(token: string) {
     codeEmail: candidate.personalEmail ? maskEmail(candidate.personalEmail) : null,
     respondedAt: letter.respondedAt,
     // accepted and not joined yet: the link opens the candidate's joining form (candidates.portal.*)
-    joiningFormOpen: isPortalOpen(state, candidate),
+    joiningFormOpen: isPortalOpen(state, candidate, isLatest),
     // after accepting the offer, what the page tells the candidate (it shows no joining-form button - 2026-11-20):
     // EMAILED = the link to the joining form was e-mailed to them; FROM_HR = HR will send it
     joiningFormNext: state === 'ACCEPTED' && candidate.status === 'ACCEPTED' ? (candidate.joiningFormOpenedAt ? ('EMAILED' as const) : ('FROM_HR' as const)) : null,
@@ -484,8 +488,8 @@ export async function downloadByToken(token: string) {
 // asks for a new code after a minute (unlike HR's offer e-mail, where HR is told whether it went out).
 // After acceptance the same code signs the candidate in to their joining form, and signs the submitted form.
 export async function sendCode(token: string) {
-  const { letter, candidate, state } = await findByToken(token)
-  const forJoiningForm = isPortalOpen(state, candidate)
+  const { letter, candidate, state, isLatest } = await findByToken(token)
+  const forJoiningForm = isPortalOpen(state, candidate, isLatest)
   if (!forJoiningForm) assertOpen(state)
   if (!candidate.personalEmail) conflict('There is no e-mail address for you on this offer. Please contact HR.')
   if (letter.otpSentAt && Date.now() - letter.otpSentAt.getTime() < CODE_RESEND_SECONDS * 1000) {
@@ -529,16 +533,18 @@ async function checkCode(letter: LetterRow, code: string) {
   if (!letter.otpHash || !letter.otpValidUntil || letter.otpValidUntil < new Date()) {
     throw new ORPCError('BAD_REQUEST', { message: 'The code has expired or was not requested. Ask for a new code.' })
   }
+  // every try is counted before the code is compared (a right one is cleared by codeUsed)
+  const tries = await offerLettersRepository.takeCodeTry(letter.id, letter.otpHash, MAX_WRONG_CODES, SYSTEM_ACTOR)
+  if (tries === null) throw new ORPCError('BAD_REQUEST', { message: 'Too many wrong tries - ask for a new code.' })
   const expected = Buffer.from(letter.otpHash, 'hex')
   const given = Buffer.from(codeHash(letter.id, code), 'hex')
-  if (timingSafeEqual(expected, given)) return
-  const failed = letter.otpFailedAttempts + 1
+  if (timingSafeEqual(expected, given)) {
+    await offerLettersRepository.giveBackCodeTry(letter.id, SYSTEM_ACTOR)
+    return
+  }
+  const failed = tries
   const dead = failed >= MAX_WRONG_CODES
-  await offerLettersRepository.update(
-    letter.id,
-    { otpFailedAttempts: failed, ...(dead && { otpHash: null, otpValidUntil: null }) },
-    SYSTEM_ACTOR,
-  )
+  if (dead) await offerLettersRepository.update(letter.id, { otpHash: null, otpValidUntil: null }, SYSTEM_ACTOR)
   throw new ORPCError('BAD_REQUEST', {
     message: dead ? 'Wrong code. Too many wrong tries - ask for a new code.' : `Wrong code. ${MAX_WRONG_CODES - failed} tries left.`,
   })
@@ -546,8 +552,8 @@ async function checkCode(letter: LetterRow, code: string) {
 
 // After acceptance the link opens the joining form while the candidate is ACCEPTED (until joining / withdrawal) - once
 // it was opened for them: at acceptance, or by HR sending its link (joiningFormOnAcceptance, 2026-11-20)
-function isPortalOpen(state: LinkState, candidate: Candidate) {
-  return state === 'ACCEPTED' && candidate.status === 'ACCEPTED' && candidate.joiningFormOpenedAt !== null
+function isPortalOpen(state: LinkState, candidate: Candidate, isLatest: boolean) {
+  return isLatest && state === 'ACCEPTED' && candidate.status === 'ACCEPTED' && candidate.joiningFormOpenedAt !== null
 }
 
 // A used code is cleared; the count of codes sent starts again, so the candidate can sign in again on later days
@@ -558,8 +564,8 @@ function codeUsed(letterId: number) {
 // Signing in to the joining form: the link (of an accepted offer, candidate still ACCEPTED) + the code.
 // Returns the candidate's id.
 export async function checkJoiningFormCode(token: string, code: string) {
-  const { letter, candidate, state } = await findByToken(token)
-  if (!isPortalOpen(state, candidate)) {
+  const { letter, candidate, state, isLatest } = await findByToken(token)
+  if (!isPortalOpen(state, candidate, isLatest)) {
     conflict(state === 'ACCEPTED' ? 'Your joining form is closed. Please contact HR.' : 'The joining form opens once you have accepted the offer.')
   }
   await checkCode(letter, code)

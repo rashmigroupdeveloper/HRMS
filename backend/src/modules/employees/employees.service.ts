@@ -226,11 +226,13 @@ export async function getByCodeFor(viewer: CurrentUser, employeeCode: string) {
           idCardIssuedAt: onboarding.idCardIssuedAt,
           idCardIssuedBy: person(onboarding.idCardIssuedById),
           inductionDate: onboarding.inductionDate,
-          // the pre-employment medical (from onboarding)
-          medicalResult: onboarding.medicalResult,
-          medicalExamDate: onboarding.medicalExamDate,
-          medicalExaminer: onboarding.medicalExaminer,
-          medicalRestrictions: onboarding.medicalRestrictions,
+          // the pre-employment medical (from onboarding) - health data: only with Medical (2026-11-23, before anyone who
+          // saw the profile saw it)
+          medicalResult: seesMedical ? onboarding.medicalResult : null,
+          medicalExamDate: seesMedical ? onboarding.medicalExamDate : null,
+          medicalExaminer: seesMedical ? onboarding.medicalExaminer : null,
+          medicalRestrictions: seesMedical ? onboarding.medicalRestrictions : null,
+          medicalHidden: !seesMedical && onboarding.medicalResult !== null,
         }
       : null,
     // the offer this employee joined from

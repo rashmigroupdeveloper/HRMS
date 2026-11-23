@@ -42,3 +42,9 @@ export function findOpen(employeeId: number, workDate: Date, db: DbClient = pris
 export function listByEmployee(employeeId: number, take: number, db: DbClient = prisma) {
   return db.compOffClaim.findMany({ where: { employeeId }, orderBy: [{ workDate: 'desc' }, { id: 'desc' }], take, select: claimSelect })
 }
+
+// Holds this employee's comp-off claims until the transaction ends: a claim is checked again after it, so two sent at the
+// same moment cannot both pass "already claimed" (2026-11-23)
+export async function lockEmployee(employeeId: number, db: DbClient) {
+  await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('comp-off-claims'), ${employeeId}::int)::text AS locked`
+}
