@@ -56,7 +56,7 @@ export function RegularizationDialog({ initialDate, onClose, onSent }: { initial
   const dirty = kind !== initialKind || from !== toDateInput(start) || to !== toDateInput(start) || portion !== 'FULL_DAY' || !!reason.trim()
   const ready = !!from && !!to && to >= from && reason.trim().length >= 5
   return (
-    <FormDialog onOpenChange={(open) => !open && onClose()} dirty={dirty} className="rounded-3xl sm:max-w-md">
+    <FormDialog onOpenChange={(open) => !open && onClose()} dirty={dirty} className="attendance-request-dialog max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-3xl sm:max-w-md">
       <DialogHeader>
         <DialogTitle>Regularize / on duty</DialogTitle>
         <DialogDescription>

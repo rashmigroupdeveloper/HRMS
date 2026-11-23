@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarPlus, FileClock, Repeat } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { CalendarPlus, Check, FileClock, Repeat } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
 import { MonthSkeleton } from '@/components/skeletons/attendance/MonthSkeleton'
@@ -10,42 +10,10 @@ import { orpc } from '@/lib/orpc'
 import { formatDate } from '@/lib/utils'
 import { compOffDays, cycleRange, type MonthDay, REQUEST_STATUS, todayDay, type Regularization } from './labels'
 import { useAttendanceMonth, useCycleStartDay } from './useAttendanceMonth'
-import { MOTION_EASE, MonthCalendar, MonthPicker, MonthTotals, prefersReducedMotion } from './MonthCalendar'
+import { MonthCalendar, MonthPicker, MonthTotals } from './MonthCalendar'
 import { CompOffDialog } from './CompOffDialog'
 import { RegularizationDialog } from './RegularizationDialog'
 import { ShiftChangeDialog } from './ShiftChangeDialog'
-
-// A new month enters from the side of the arrow. The controls stay put. Reduced motion keeps a short fade.
-function MonthStage({ stamp, direction, children }: { stamp: string; direction: 1 | -1; children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const seen = useRef(stamp)
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el || seen.current === stamp) return
-    const dir = direction
-    seen.current = stamp
-    const reduced = prefersReducedMotion()
-    el.animate(reduced ? [{ opacity: 0.72 }, { opacity: 1 }] : [{ opacity: 0, transform: `translateX(${dir * 12}px)` }, { opacity: 1, transform: 'translateX(0)' }], {
-      duration: reduced ? 120 : 280,
-      easing: MOTION_EASE,
-    })
-  }, [stamp, direction])
-  return <div ref={ref}>{children}</div>
-}
-
-function SentNotice({ text }: { text: string }) {
-  const ref = useRef<HTMLParagraphElement>(null)
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el || prefersReducedMotion()) return
-    el.animate([{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }], { duration: 160, easing: MOTION_EASE })
-  }, [text])
-  return (
-    <p ref={ref} role="status" className="text-sm font-medium text-positive-ink">
-      {text}
-    </p>
-  )
-}
 
 // The employee's own attendance: the month calendar with the totals, their shift-change requests and their regularization /
 // on-duty requests (2026-11-22).
@@ -70,15 +38,13 @@ export function MyAttendance() {
   const [claiming, setClaiming] = useState<MonthDay | null>(null)
   const [notice, setNotice] = useState<{ id: number; text: string } | null>(null)
   const noticeId = useRef(0)
-  const [direction, setDirection] = useState<1 | -1>(1)
   const sent = (text: string) => {
     noticeId.current += 1
     setNotice({ id: noticeId.current, text })
   }
+  const [direction, setDirection] = useState<'next' | 'previous' | null>(null)
   const showMonth = (year: number, month: number) => {
-    const next = year * 12 + month
-    const current = ym.year * 12 + ym.month
-    setDirection(next >= current ? 1 : -1)
+    setDirection(year * 12 + month > ym.year * 12 + ym.month ? 'next' : 'previous')
     setYm({ year, month })
   }
   useEffect(() => {
@@ -88,11 +54,14 @@ export function MyAttendance() {
   }, [notice])
   const claimable = (day: MonthDay) =>
     (day.planned === 'WEEKLY_OFF' || day.planned === 'HOLIDAY') && day.date < now && day.date.getTime() >= now.getTime() - 30 * 86_400_000 && compOffDays(day.workedMinutes) > 0
-  // a day can be regularized when it has come (up to 30 days back) and was not worked in full; on duty for days to come
-  const regularizable = (day: { date: Date; planned: string | null; status: string | null; covers: { status: string }[] }) =>
-    day.planned === 'WORK' &&
-    !day.covers.length &&
-    (day.date > now || (day.date.getTime() >= now.getTime() - 30 * 86_400_000 && (day.status === 'ABSENT' || day.status === 'MISSED_PUNCH' || day.status === 'HALF_DAY' || !day.status)))
+  // any working day already come, today included, back 30 days — the same limit as the request — can be regularized,
+  // whatever the punches currently say. A working day still to come is on duty. Weekly offs and holidays are not.
+  const regularizable = (day: MonthDay) => {
+    if (!day.employed) return false
+    if (day.planned === 'WEEKLY_OFF' || day.planned === 'HOLIDAY' || day.status === 'WEEKLY_OFF' || day.status === 'HOLIDAY') return false
+    if (day.planned != null && day.planned !== 'WORK') return false
+    return day.date.getTime() >= now.getTime() - 30 * 86_400_000
+  }
 
   return (
     <div className="space-y-6">
@@ -102,16 +71,7 @@ export function MyAttendance() {
             <h2 className="text-lg font-light tracking-tight">My month</h2>
             <MonthPicker year={ym.year} month={ym.month} onChange={showMonth} range={month.data ?? range} locked={month.data?.locked} />
             {chosenMonth && (chosenMonth.year !== currentMonth.year || chosenMonth.month !== currentMonth.month) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const next = currentMonth.year * 12 + currentMonth.month
-                  const current = ym.year * 12 + ym.month
-                  setDirection(next >= current ? 1 : -1)
-                  setYm(null)
-                }}
-              >
+              <Button variant="ghost" size="sm" onClick={() => { showMonth(currentMonth.year, currentMonth.month); setYm(null) }}>
                 Current month
               </Button>
             )}
@@ -127,15 +87,21 @@ export function MyAttendance() {
         </div>
         <FormError error={month.error} />
         {month.isError && <Button variant="secondary" size="sm" onClick={() => void month.refetch()}>Retry month</Button>}
-        {notice && <SentNotice key={notice.id} text={notice.text} />}
-        <MonthStage stamp={`${ym.year}-${ym.month}`} direction={direction}>
-          {month.isPending && <MonthSkeleton year={ym.year} month={ym.month} range={range} label="Loading the month" />}
-          {month.data && (
-            <>
-              <MonthTotals totals={month.data.totals} />
-              <MonthCalendar
+        {notice && (
+          <p key={notice.id} role="status" className="attendance-confirmation flex items-start gap-1.5 text-sm text-positive-ink">
+            <Check className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+            {notice.text}
+          </p>
+        )}
+        <div key={`${ym.year}-${ym.month}`} data-direction={direction ?? undefined} className="attendance-month-content space-y-3">
+        {month.isPending && <MonthSkeleton year={ym.year} month={ym.month} range={range} label="Loading the month" />}
+        {month.data && (
+          <>
+            <MonthTotals totals={month.data.totals} />
+            <MonthCalendar
                 data={month.data}
                 actions={(day) => {
+                if (month.data.locked) return <p className="text-xs text-hero-foreground/70">This attendance month is locked. Contact HR about a correction.</p>
                 const change = day.date >= now && day.planned !== 'HOLIDAY'
                 const regularize = regularizable(day)
                 const compOff = claimable(day)
@@ -161,9 +127,9 @@ export function MyAttendance() {
                 )
               }}
             />
-            </>
-          )}
-        </MonthStage>
+          </>
+        )}
+        </div>
       </section>
 
       <div className="grid items-start gap-3 lg:grid-cols-2">

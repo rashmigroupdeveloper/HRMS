@@ -106,6 +106,13 @@ export const REQUEST_STATUS: Record<ShiftChange['status'], { label: string; tone
 // A month's counts. MonthTotals leads with hours, then Present / Absent / Leave; these labels are the quiet line and the key.
 export const TOTAL_LABELS = ['Present', 'Half days', 'Absent', 'Missed punch', 'Leave', 'On duty', 'Late', 'Hours worked']
 
+// Shared with the month summary's skeleton.
+export const MONTH_BARS = [
+  { label: 'Present', bar: 'bg-gold' },
+  { label: 'Absent', bar: 'bg-hero' },
+  { label: 'Leave', bar: 'bg-foreground/15' },
+] as const
+
 // "Tuesday, November 2026" (the day panel and its loading placeholder)
 export const dayName = (date: Date) =>
   `${date.toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'long' })}, ${date.toLocaleDateString('en-IN', { timeZone: 'UTC', month: 'long', year: 'numeric' })}`

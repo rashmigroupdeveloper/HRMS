@@ -27,7 +27,7 @@ export function CompOffDialog({ day, onClose, onSent }: { day: MonthDay; onClose
   )
   const days = compOffDays(day.workedMinutes)
   return (
-    <FormDialog onOpenChange={(open) => !open && onClose()} dirty={!!reason.trim()} className="rounded-3xl sm:max-w-md">
+    <FormDialog onOpenChange={(open) => !open && onClose()} dirty={!!reason.trim()} className="attendance-request-dialog max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-3xl sm:max-w-md">
       <DialogHeader>
         <DialogTitle>Claim comp-off</DialogTitle>
         <DialogDescription>Your manager approves it; then use it like any leave within 90 days.</DialogDescription>

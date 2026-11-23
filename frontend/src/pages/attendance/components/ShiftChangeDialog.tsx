@@ -36,7 +36,7 @@ export function ShiftChangeDialog({ initialDate, onClose, onSent }: { initialDat
   const dirty = date !== startDate || kind !== 'CHANGE' || shift !== '' || !!colleague || !!reason.trim()
   const ready = !!date && reason.trim().length >= 3 && (kind === 'CHANGE' ? shift !== '' : !!colleague)
   return (
-    <FormDialog onOpenChange={(open) => !open && onClose()} dirty={dirty} className="rounded-3xl sm:max-w-md">
+    <FormDialog onOpenChange={(open) => !open && onClose()} dirty={dirty} className="attendance-request-dialog max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-3xl sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Ask for a shift change</DialogTitle>
           <DialogDescription>Your manager approves it, then HR. Your roster changes once both have approved.</DialogDescription>

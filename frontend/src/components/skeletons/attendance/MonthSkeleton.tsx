@@ -1,7 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { dayName, todayDay, TOTAL_LABELS, WEEKDAYS } from '@/pages/attendance/components/labels'
-import { MONTH_BARS, MonthLegend } from '@/pages/attendance/components/MonthCalendar'
+import { dayName, todayDay, TOTAL_LABELS, MONTH_BARS, WEEKDAYS } from '@/pages/attendance/components/labels'
+import { MonthLegend } from '@/pages/attendance/components/MonthCalendar'
 
 // Loading placeholder for one employee's month (MonthTotals + MonthCalendar): the hours figure, the three segments
 // (Present / Absent / Leave), the quiet counts, the weekdays, the month's days with their real numbers (today circled),
@@ -25,22 +25,24 @@ export function MonthSkeleton({ year, month, range, label, actions }: { year?: n
   return (
     <div role={label ? 'status' : undefined} aria-label={label} className="space-y-3">
       <div className="space-y-3">
-        <div className="flex h-10 items-end">
-          <Skeleton className="h-8 w-28 rounded-md" />
-          <span className="ml-2 text-sm text-muted-foreground">worked</span>
+        <div className="flex h-10 items-end gap-2">
+          <Skeleton className="h-8 w-24 rounded-md" />
+          <span className="text-sm text-muted-foreground">worked</span>
         </div>
-        <div className="flex gap-1">
-          {MONTH_BARS.map((part, i) => (
-            <div key={part.label} className={cn('min-w-16', i === 0 ? 'flex-[2]' : 'flex-1')}>
-              <div className="text-xs text-muted-foreground">{part.label}</div>
-              <Skeleton className="mt-1 h-4 w-8 rounded-full" />
-              <Skeleton className="mt-1 h-8 w-full rounded-full" />
+        <div className="grid grid-cols-3 gap-3">
+          {MONTH_BARS.map((part) => (
+            <div key={part.label} className="min-w-0">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="truncate text-xs text-muted-foreground">{part.label}</span>
+                <Skeleton className="h-3.5 w-6 rounded-full" />
+              </div>
+              <Skeleton className="mt-1.5 h-2 w-full rounded-full" />
             </div>
           ))}
         </div>
-        <dl className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
+        <dl className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs">
           {[1, 3, 5, 6].map((i) => (
-            <div key={TOTAL_LABELS[i]} className="flex items-center gap-2">
+            <div key={TOTAL_LABELS[i]} className="flex items-center gap-1.5">
               <dt className="text-muted-foreground">{TOTAL_LABELS[i]}</dt>
               <dd><Skeleton className="h-3 w-4 rounded-full" /></dd>
             </div>
@@ -67,9 +69,9 @@ export function MonthSkeleton({ year, month, range, label, actions }: { year?: n
                   <div
                     key={date.toISOString()}
                     className={cn(
-                      'flex min-h-12 min-w-0 flex-col items-stretch rounded-lg p-1 text-xs sm:min-h-16 sm:rounded-xl sm:px-2 sm:py-1.5',
+                      'flex min-h-12 min-w-0 flex-col items-stretch overflow-hidden rounded-lg p-1 text-xs sm:min-h-16 sm:rounded-xl sm:px-2 sm:py-1.5',
+                      isToday && 'ring-2 ring-foreground ring-inset',
                       noResult ? 'u-hatch bg-surface-2/60' : 'bg-surface-2/45',
-                      isToday && 'outline-2 -outline-offset-2 outline-foreground',
                     )}
                   >
                     <span className="flex items-center gap-1">

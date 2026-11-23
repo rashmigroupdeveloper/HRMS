@@ -1,22 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Fingerprint, Lock, Pencil } from 'lucide-react'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
 import { PunchesSkeleton } from '@/components/skeletons/attendance/PunchesSkeleton'
 import { Button } from '@/components/ui/button'
 import { orpc } from '@/lib/orpc'
 import { cn, formatDoneBy } from '@/lib/utils'
-import { coversText, dayMark, dayName, hours, MONTHS, type Month, type MonthDay, sameDay, STATUS, todayDay, TOTAL_LABELS, WEEKDAYS, splitFill } from './labels'
-
-// Motion on this calendar: the selection frame travels between days, the day's details fade inside a stable panel,
-// and My attendance slides a new month in from the direction of the arrow. Reduced motion keeps a short fade and
-// drops the travel. Durations: selection 180ms, details 180ms, month 280ms.
-export const MOTION_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)'
-
-export function prefersReducedMotion() {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
+import { coversText, dayMark, dayName, hours, MONTHS, MONTH_BARS, type Month, type MonthDay, sameDay, STATUS, todayDay, TOTAL_LABELS, WEEKDAYS, splitFill } from './labels'
 
 // One employee's month as a calendar (Monday-first weeks): each day's status, in / out times and shift; the totals above.
 // The chosen day's details (the shift and its times, in / out, worked, late / early, every punch and its machine, HR's
@@ -50,15 +41,15 @@ export function MonthPicker({
   const crossYear = !!range && range.from.getUTCFullYear() !== range.to.getUTCFullYear()
   const label = !range || (range.from.getUTCDate() === 1 && sameMonth) ? `${MONTHS[month - 1]} ${year}` : `${dayMonth(range.from, crossYear)} – ${dayMonth(range.to, crossYear)}`
   return (
-    <div className="inline-flex h-9 items-center rounded-full bg-surface-2">
-      <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Previous month" disabled={disabled} onClick={() => move(-1)}>
+    <div className="inline-flex h-9 max-w-full items-center rounded-full bg-background">
+      <Button variant="ghost" size="icon-lg" className="rounded-full hover:bg-card" aria-label="Previous month" disabled={disabled} onClick={() => move(-1)}>
         <ChevronLeft />
       </Button>
-      <span className="inline-flex min-w-36 items-center justify-center gap-1 px-1 text-sm font-medium tabular-nums">
+      <span className="inline-flex min-w-0 items-center justify-center gap-1 px-0.5 text-sm font-medium whitespace-nowrap tabular-nums">
         {label}
-        {locked && <Lock className="size-3.5 text-muted-foreground" aria-label="Locked" />}
+        {locked && <Lock className="size-3.5 shrink-0 text-muted-foreground" aria-label="Locked" />}
       </span>
-      <Button variant="ghost" size="icon-lg" className="rounded-full" aria-label="Next month" disabled={disabled} onClick={() => move(1)}>
+      <Button variant="ghost" size="icon-lg" className="rounded-full hover:bg-card" aria-label="Next month" disabled={disabled} onClick={() => move(1)}>
         <ChevronRight />
       </Button>
     </div>
@@ -68,18 +59,13 @@ export function MonthPicker({
 // The month summary, in the shape of the Crextio salary calendar (crextio-011 desktop, crextio-025 phone):
 // one light hours figure, then three segments — present, absent, leave. The other counts stay as a quiet line.
 // Change MonthSkeleton's summary together with this.
-export const MONTH_BARS = [
-  { label: 'Present', bar: 'bg-gold' },
-  { label: 'Absent', bar: 'bg-hero' },
-  { label: 'Leave', bar: 'bg-foreground/15' },
-] as const
-
 export function MonthTotals({ totals }: { totals: Month['totals'] }) {
   const parts = [
     { ...MONTH_BARS[0], value: totals.present },
     { ...MONTH_BARS[1], value: totals.absent },
     { ...MONTH_BARS[2], value: totals.leave },
   ]
+  const peak = Math.max(...parts.map((part) => part.value), 0)
   const quiet = [
     [TOTAL_LABELS[1], totals.halfDay],
     [TOTAL_LABELS[3], totals.missedPunch],
@@ -88,24 +74,31 @@ export function MonthTotals({ totals }: { totals: Month['totals'] }) {
   ] as const
   return (
     <div className="space-y-3">
-      <p className="text-4xl leading-none font-light tracking-tight tabular-nums">
-        {totals.workedMinutes ? hours(totals.workedMinutes) : '0h'}
-        <span className="ml-2 align-middle text-sm font-normal text-muted-foreground">worked</span>
+      <p className="flex items-baseline gap-2">
+        <span className="text-4xl leading-none font-light tracking-tight tabular-nums">{totals.workedMinutes ? hours(totals.workedMinutes) : '0h'}</span>
+        <span className="text-sm text-muted-foreground">worked</span>
       </p>
-      <div className="flex gap-1" role="img" aria-label={parts.map((part) => `${part.label} ${part.value}`).join(', ')}>
+      <div className="grid grid-cols-3 gap-3" role="img" aria-label={parts.map((part) => `${part.label} ${part.value}`).join(', ')}>
         {parts.map((part) => (
-          <div key={part.label} className="min-w-16" style={{ flexGrow: Math.max(part.value, 0.4) }}>
-            <div className="text-xs text-muted-foreground">{part.label}</div>
-            <div className="text-sm font-medium tabular-nums">{part.value}</div>
-            <div className={cn('mt-1 h-8 rounded-full', part.bar)} />
+          <div key={part.label} className="min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="truncate text-xs text-muted-foreground">{part.label}</span>
+              <span className="text-sm font-medium tabular-nums">{part.value}</span>
+            </div>
+            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-2">
+              <div
+                className={cn('h-full rounded-full', part.value > 0 && part.bar)}
+                style={{ width: peak > 0 ? `${(part.value / peak) * 100}%` : '0%' }}
+              />
+            </div>
           </div>
         ))}
       </div>
-      <dl className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
+      <dl className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs">
         {quiet.map(([label, value]) => (
-          <div key={label} className="flex items-center gap-2">
+          <div key={label} className="flex items-center gap-1.5">
             <dt className="text-muted-foreground">{label}</dt>
-            <dd className="font-medium tabular-nums">{value}</dd>
+            <dd className={cn('tabular-nums', value ? 'font-medium text-foreground' : 'text-muted-foreground')}>{value}</dd>
           </div>
         ))}
       </dl>
@@ -167,76 +160,61 @@ function firstChoice(days: MonthDay[], today: Date) {
 export function MonthCalendar({ data, actions }: { data: Month; actions?: (day: MonthDay) => React.ReactNode }) {
   const today = todayDay()
   const [picked, setPicked] = useState<Date | null>(null)
-  const gridRef = useRef<HTMLDivElement>(null)
-  const ringRef = useRef<HTMLSpanElement>(null)
-  const ringBox = useRef<{ x: number; y: number; w: number; h: number } | null>(null)
-  const seenMonthRef = useRef<string | null>(null)
-  const monthId = `${data.year}-${data.month}`
-  // the picked day of THIS month (after a month change it falls back to the first choice)
+  const panelRef = useRef<HTMLElement>(null)
+  // the picked day of THIS month (after a month change it falls back to the first choice). A day before joining does not open.
   const open = data.days.find((d) => picked && sameDay(d.date, picked) && d.employed) ?? firstChoice(data.days, today)
-  const openId = open ? open.date.getTime() : null
-
-  const syncRing = useCallback((animate: boolean) => {
-    const grid = gridRef.current
-    const ring = ringRef.current
-    if (!grid || !ring) return
-    const cell = grid.querySelector<HTMLElement>('[data-selected="true"]')
-    if (!cell) {
-      ring.hidden = true
-      ringBox.current = null
-      return
-    }
-    const gridBox = grid.getBoundingClientRect()
-    const cellBox = cell.getBoundingClientRect()
-    const next = { x: cellBox.left - gridBox.left, y: cellBox.top - gridBox.top, w: cellBox.width, h: cellBox.height }
-    const prev = ringBox.current
-    ringBox.current = next
-    ring.hidden = false
-    ring.style.width = `${next.w}px`
-    ring.style.height = `${next.h}px`
-    ring.style.borderRadius = getComputedStyle(cell).borderRadius
-    const to = `translate3d(${next.x}px, ${next.y}px, 0)`
-    const same = !!prev && Math.abs(prev.x - next.x) < 0.5 && Math.abs(prev.y - next.y) < 0.5 && Math.abs(prev.w - next.w) < 0.5 && Math.abs(prev.h - next.h) < 0.5
-    // a resize during the travel must not cancel it; a month change snaps, it does not fly across a new grid
-    if (!animate && ring.getAnimations().length && same) return
-    if (!animate || !prev || same || prefersReducedMotion()) {
-      ring.getAnimations().forEach((animation) => animation.cancel())
-      ring.style.transform = to
-      return
-    }
-    const from = getComputedStyle(ring).transform
-    ring.getAnimations().forEach((animation) => animation.cancel())
-    ring.style.transform = to
-    ring.animate([{ transform: from === 'none' ? `translate3d(${prev.x}px, ${prev.y}px, 0)` : from }, { transform: to }], { duration: 180, easing: MOTION_EASE })
-  }, [])
-
-  useLayoutEffect(() => {
-    const monthChanged = seenMonthRef.current !== null && seenMonthRef.current !== monthId
-    seenMonthRef.current = monthId
-    syncRing(!monthChanged)
-  }, [openId, monthId, syncRing])
-
+  // on a phone the day's card sits under the month, so bring it up when a day is chosen
   useEffect(() => {
-    const grid = gridRef.current
-    if (!grid) return
-    const observer = new ResizeObserver(() => syncRing(false))
-    observer.observe(grid)
-    return () => observer.disconnect()
-  }, [syncRing])
+    if (!picked) return
+    panelRef.current?.scrollIntoView({ block: 'nearest', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+  }, [picked])
   // blank cells before the 1st (the grid starts on Monday)
   const lead = data.days[0] ? (data.days[0].date.getUTCDay() + 6) % 7 : 0
+  const selectedIndex = open ? data.days.indexOf(open) + lead : -1
+  const selection = useRef<HTMLDivElement>(null)
+  const calendarGrid = useRef<HTMLDivElement>(null)
+  const previousSelection = useRef<DOMRect | null>(null)
+  const movement = useRef<Animation | null>(null)
+  const openDate = open?.date.getTime()
+  useEffect(() => {
+    const grid = calendarGrid.current
+    if (!grid) return
+    // A phone rotation or a resized drawer changes cell geometry; finish any old movement.
+    const observer = new ResizeObserver(() => movement.current?.cancel())
+    observer.observe(grid)
+    return () => observer.disconnect()
+  }, [])
+  const pick = (date: Date) => {
+    if (open && sameDay(open.date, date)) return
+    previousSelection.current = selection.current?.getBoundingClientRect() ?? null
+    movement.current?.cancel()
+    setPicked(date)
+  }
+  useLayoutEffect(() => {
+    const element = selection.current
+    const before = previousSelection.current
+    previousSelection.current = null
+    if (!element || !before || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const after = element.getBoundingClientRect()
+    const animation = element.animate([
+      { transform: `translate(${before.x - after.x}px, ${before.y - after.y}px) scale(${before.width / after.width}, ${before.height / after.height})` },
+      { transform: 'none' },
+    ], { duration: 200, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' })
+    movement.current = animation
+    return () => animation.cancel()
+  }, [openDate])
   return (
     <div className="@container">
       {data.days.length > 0 && !data.days.some((day) => day.employed) && <p className="mb-3 rounded-xl bg-surface-2 px-3 py-2 text-sm text-muted-foreground">This period is outside your employment dates. Choose another month to see attendance.</p>}
       <div className="grid gap-3 @4xl:grid-cols-[minmax(0,1fr)_20rem] @4xl:items-start @4xl:gap-5">
-        <div className="space-y-2">
+        <div className="relative z-10 min-w-0 space-y-2">
           <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground sm:gap-1.5">
             {WEEKDAYS.map((w) => (
               <span key={w.key}>{w.short}</span>
             ))}
           </div>
-          <div ref={gridRef} className="relative grid grid-cols-7 gap-1 sm:gap-1.5">
-            <span ref={ringRef} aria-hidden className="pointer-events-none absolute top-0 left-0 z-10 outline-2 -outline-offset-2 outline-foreground" />
+          <div ref={calendarGrid} className="relative grid grid-cols-7 gap-1 sm:gap-1.5">
+            {selectedIndex >= 0 && <div ref={selection} aria-hidden className="pointer-events-none absolute inset-0 z-10 rounded-lg outline-2 -outline-offset-2 outline-foreground sm:rounded-xl" style={{ gridColumn: `${selectedIndex % 7 + 1} / ${selectedIndex % 7 + 2}`, gridRow: `${Math.floor(selectedIndex / 7) + 1} / ${Math.floor(selectedIndex / 7) + 2}`, transformOrigin: 'top left' }} />}
             {Array.from({ length: lead }, (_, i) => (
               <span key={`lead-${i}`} />
             ))}
@@ -246,7 +224,7 @@ export function MonthCalendar({ data, actions }: { data: Month; actions?: (day: 
               const future = day.date > today
               const status = day.status ? STATUS[day.status] : null
               // today before the checkout: "at work"
-              const atWork = isToday && day.punchCount === 1
+              const atWork = isToday && !!day.inAt && !day.outAt
               // a weekly off or a holiday - by the day's status, or (a day not worked out yet) by the plan
               const kind = day.status ?? (day.employed ? day.planned : null)
               const off = kind === 'WEEKLY_OFF' || kind === 'HOLIDAY'
@@ -267,13 +245,12 @@ export function MonthCalendar({ data, actions }: { data: Month; actions?: (day: 
                   type="button"
                   disabled={!day.employed}
                   aria-pressed={isOpen}
-                  data-selected={isOpen ? 'true' : undefined}
                   aria-current={isToday ? 'date' : undefined}
                   aria-label={`${day.date.toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}: ${!day.employed ? 'Outside employment' : atWork ? 'At work' : status?.label ?? ahead?.label ?? (off ? (kind === 'HOLIDAY' ? 'Holiday' : 'Weekly off') : future ? 'Scheduled' : isToday ? 'Not in yet' : 'Not worked out yet')}${day.firstHalf && day.secondHalf && day.firstHalf !== day.secondHalf ? `; first half ${STATUS[day.firstHalf].label}, second half ${STATUS[day.secondHalf].label}` : ''}`}
-                  onClick={() => setPicked(day.date)}
+                  onClick={() => pick(day.date)}
                   style={split ? { background: split } : undefined}
                   className={cn(
-                    'flex min-h-12 min-w-0 flex-col items-stretch rounded-lg p-1 text-left text-xs transition-shadow hover:shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60 disabled:opacity-60 sm:min-h-16 sm:rounded-xl sm:px-2 sm:py-1.5',
+                    'relative flex min-h-12 min-w-0 cursor-pointer flex-col items-stretch overflow-hidden rounded-lg p-1 text-left text-xs transition-shadow hover:shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-16 sm:rounded-xl sm:px-2 sm:py-1.5',
                     atWork
                       ? 'bg-positive/10 text-positive-ink'
                       : split
@@ -293,7 +270,7 @@ export function MonthCalendar({ data, actions }: { data: Month; actions?: (day: 
                     <span className="flex items-center gap-1">
                       <span
                         className={cn(
-                          'grid h-6 place-items-center text-sm font-semibold tabular-nums',
+                          'grid h-6 shrink-0 place-items-center text-sm font-semibold tabular-nums',
                           isOpen ? 'w-6 rounded-full bg-gold text-gold-foreground' : isToday ? 'w-6 rounded-full bg-hero text-hero-foreground' : (off || noResult) && 'font-medium text-muted-foreground',
                         )}
                       >
@@ -322,31 +299,24 @@ export function MonthCalendar({ data, actions }: { data: Month; actions?: (day: 
           </div>
           <MonthLegend />
         </div>
-        {open && <DayPanel day={open} employeeCode={data.employee.employeeCode} actions={actions?.(open)} motion={!!picked && sameDay(picked, open.date)} />}
+        {open && <DayPanel ref={panelRef} day={open} employeeCode={data.employee.employeeCode} actions={actions?.(open)} />}
       </div>
     </div>
   )
 }
 
 // The chosen day: its shift with the times, the numbers, every punch and the machine it came from, HR's correction
-function DayPanel({ day, employeeCode, actions, motion = false }: { day: MonthDay; employeeCode: string; actions?: React.ReactNode; motion?: boolean }) {
+function DayPanel({ ref, day, employeeCode, actions }: { ref?: React.Ref<HTMLElement>; day: MonthDay; employeeCode: string; actions?: React.ReactNode }) {
   return (
-    <section aria-label="The day's details" className="rounded-3xl bg-hero p-4 text-hero-foreground shadow-card sm:p-5 @4xl:sticky @4xl:top-24">
-      <DayDetails key={`${employeeCode}:${day.date.toISOString()}`} day={day} employeeCode={employeeCode} actions={actions} motion={motion} />
+    <section ref={ref} aria-label="The day's details" className="pointer-events-none relative z-0 min-w-0 rounded-3xl bg-hero p-4 text-hero-foreground shadow-card sm:p-5 @4xl:sticky @4xl:top-24">
+      <div className="pointer-events-auto">
+        <DayDetails key={`${employeeCode}:${day.date.toISOString()}`} day={day} employeeCode={employeeCode} actions={actions} />
+      </div>
     </section>
   )
 }
 
-function DayDetails({ day, employeeCode, actions, motion }: { day: MonthDay; employeeCode: string; actions?: React.ReactNode; motion: boolean }) {
-  // captured once: the parent turns motion on after the first paint, and that must not replay this fade
-  const [playMotion] = useState(motion)
-  const bodyRef = useRef<HTMLDivElement>(null)
-  useLayoutEffect(() => {
-    const el = bodyRef.current
-    if (!el || !playMotion) return
-    const reduced = prefersReducedMotion()
-    el.animate([{ opacity: reduced ? 0.72 : 0 }, { opacity: 1 }], { duration: reduced ? 120 : 180, easing: MOTION_EASE })
-  }, [playMotion])
+function DayDetails({ day, employeeCode, actions }: { day: MonthDay; employeeCode: string; actions?: React.ReactNode }) {
   const punches = useQuery({ ...orpc.attendance.days.punches.queryOptions({ input: { employeeCode, date: day.date } }), enabled: day.punchCount > 0 })
   // the day carries the shift's name; the times come from the shift list (open to every employee)
   const shifts = useQuery(orpc.attendance.shifts.list.queryOptions({ input: {} }))
@@ -372,7 +342,7 @@ function DayDetails({ day, employeeCode, actions, motion }: { day: MonthDay; emp
     ['Punches', String(day.punchCount || '—')],
   ]
   return (
-    <div ref={bodyRef} className="space-y-4">
+    <div className="attendance-day-content space-y-4 [&_[role=alert]]:bg-card [&_[role=alert]]:text-negative-ink">
       <div className="flex items-start gap-3">
         <div className="grid w-12 shrink-0 place-items-center rounded-2xl bg-hero-foreground/10 py-1">
           <span className="text-xl leading-7 font-light tabular-nums">{day.date.getUTCDate()}</span>
