@@ -600,27 +600,28 @@ nobody edits a role they have); a cancel racing an approval or an apply no longe
 applied; punch files with "Date" + "Punch Time", impossible months, CSVs named without .csv; the new-login and letter
 e-mails no longer say "e-mailed" when only saved in the outbox; the tests no longer reach the real mail server; a January
 leave approved in December is paid from the old year's days at the lapse (the user's rule), so the balance never goes below
-zero. **Waiting**
-(each fixed with a test when picked up; most severe first):
-- **Leave:** a leave of only weekly offs is deducted on types that count off days; retired types
-  still get monthly credits; switching on a monthly credit credits every month since the type was made; the lapse runs
-  before a missed December credit; comp-off may never lapse after HR gave CO days; a double submit can make two
-  overlapping leaves / two comp-off claims; a holiday added later does not give back a leave day; comp-off expiry has no
-  once-only key; credits a month late for joiners on the 29th-31st; two cancel requests at once.
-- **Attendance:** two recomputes of one employee at once (the nightly close and an HR correction) - one fails or writes
-  stale days; shift / pattern edits rework days already worked out (the tracker says they keep what they had); holidays and
-  pattern assignments can change inside a locked month; locking a month twice at once makes two locks; the day board shows
-  future days as absent; two punches a minute apart become absent, not missed punch; a night-shift punch is lock-checked by
-  its calendar day; correcting one half wipes the other half's correction; the 48-hour roster warning counts only the days
-  on screen.
-- **Approvals / job changes:** a company transfer can keep the old company's cost centre; a role step whose only holder
-  leaves waits for ever, unseen; the daily job writes from an old snapshot (reassigning a step decided a moment before).
-- **Employees / onboarding:** the Excel import can save a reporting loop or an exited manager; the pre-employment medical
-  on the profile needs no Medical access; candidate medical / ID documents and the signed joining form / offer letter
-  download without the matching access; the one-time code and reset code limits can be beaten with parallel requests (and
-  the reset code has no daily cap); the login lockout counts parallel wrong passwords once; the LOI link keeps opening the
-  joining form; a new portal link leaves open sessions alive; out-of-scope employees can be told apart by their error
-  messages.
+zero. **Fixed the same day, the medium list (the user approved the order):** the pre-employment medical needs Medical;
+candidate ID / bank / medical documents and the signed joining form / offer letter need the matching access; every code
+try, wrong password and reset-code try is counted in the database (parallel guesses each count; a login's tries count
+across its code, e-mail and former codes); only the newest letter's link opens the joining form and a new link signs the
+candidate out everywhere; a leave starts and ends on a working day (the user's rule); retired types get no credits; the
+credits run before the year-end lapse; one leave / one comp-off claim per double click; two recomputes of one employee
+wait for each other; one lock per month; two taps within 5 minutes are one punch; a company transfer checks the cost
+centre against the new company; the import checks managers again against the saved data; the day board shows a day to
+come as "not in yet"; holidays and schedules are refused inside a locked month; a role step whose approvers are all gone
+goes to the fallback approver (or is held). **Waiting** (each fixed with a test when picked up; most severe first):
+- **Ask the user:** (a) a monthly credit switched on later (or a type made to apply to more people) credits every month back
+  to when the type was made - from the change, or back-dated? (b) a holiday added on an approved leave day - give the day
+  back? (c) comp-off: a leave uses the days closest to expiry first, across all of an employee's comp-off - also comp-off
+  earned after the leave (so HR's days given earlier, once used, can keep a later comp-off from lapsing) - or only the days
+  that existed on the leave's date? (d) shift / pattern edits rework days already worked out - needs the shifts and patterns
+  kept by version (a schema change, to propose); (e) a daily cap on forgot-password codes per login - needs a column.
+- **Leave:** comp-off expiry has no once-only key; credits a month late for joiners on the 29th-31st; two cancel requests at
+  once.
+- **Attendance:** a night-shift punch is lock-checked by its calendar day; correcting one half wipes the other half's
+  correction; the 48-hour roster warning counts only the days on screen.
+- **Approvals / job changes:** the daily job writes from an old snapshot (reassigning a step decided a moment before).
+- **Employees / onboarding:** out-of-scope employees can be told apart by their error messages.
 - **Everywhere:** "today" is the server's clock with no time zone set - on a UTC server every date rule is a day behind
   from 00:00 to 05:30 IST. **Needs:** TZ=Asia/Kolkata on the server, or today() in IST.
 - **Low:** forgot-password answers tell real codes apart ("4 tries left" vs generic); a reset code works on a turned-off
