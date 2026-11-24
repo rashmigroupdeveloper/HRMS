@@ -50,7 +50,6 @@ model Company {
   costCenters    CostCenter[]
   employees      Employee[]
   candidates     Candidate[]
-  holidays       Holiday[]
   offerSequences OfferNumberSequence[]
   // data-access rows naming this company
   roleScopes     UserAccountRoleScope[]
@@ -60,6 +59,8 @@ model Company {
   jobChanges     JobChangeRequest[]
   jobRecords     EmployeeJobRecord[]
   formerCodes    EmployeeFormerCode[]
+  // its own holiday lists (2026-11-24)
+  holidayLists   HolidayList[]
 
   @@map("companies")
 }
@@ -91,7 +92,6 @@ model WorkLocation {
   region     Region?    @relation(fields: [regionId], references: [id], onDelete: Restrict)
   employees  Employee[]
   candidates Candidate[]
-  holidays   Holiday[]
   // job-timeline entries naming it
   jobRecords EmployeeJobRecord[]
   // job changes asking for it
@@ -241,6 +241,8 @@ model Plant {
   jobRecords EmployeeJobRecord[]
   // job changes asking for it
   jobChanges JobChangeRequest[]
+  // its default holiday list (2026-11-24)
+  defaultHolidayList PlantDefaultHolidayList?
 
   @@unique([companyId, plantCode])
   // lets an employee / candidate point to (plant, company), so their plant is always one of their own company

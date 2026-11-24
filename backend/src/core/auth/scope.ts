@@ -135,7 +135,7 @@ export function assertGroupWide(viewer: ScopedViewer, area: AccessArea, what: st
   }
 }
 
-// Things that belong to one company or plant (its details, its plants, a plant's departments, its holidays) - changing them
+// Things that belong to one company or plant (its details, its plants, a plant's departments, its holiday lists) - changing them
 // needs the area at Edit for that whole company / plant (A4, 2026-11-18)
 export function assertWholeSlice(viewer: ScopedViewer, area: AccessArea, slice: Slice, what: string) {
   if (levelOver(viewer, area, slice) !== 'WRITE') {

@@ -48,9 +48,10 @@ async function rosterable(viewer: CurrentUser, codes: string[]) {
 }
 
 // Whether a roster day would be the same as the default (shift and weekly offs, or the rotation's day) - then no row is
-// kept. A holiday or a half day by default is never the same: a roster day there means something of its own.
+// kept. A holiday (a half-day one too) or a half day by default is never the same: a roster day there means something of
+// its own.
 function sameAsDefault(plan: daysService.Plan | undefined, shiftId: number | null) {
-  if (!plan || plan.kind === 'HOLIDAY' || plan.halfDay) return false
+  if (!plan || plan.kind === 'HOLIDAY' || plan.halfDay || plan.holidayHalf) return false
   return shiftId === null ? plan.kind === 'WEEKLY_OFF' : plan.kind === 'WORK' && plan.shift?.id === shiftId
 }
 
@@ -91,7 +92,8 @@ export async function getGrid(viewer: CurrentUser, { from, to, onlyChanges, comp
         const planned = plan.get(dayKey(day))
         if (planned?.kind === 'HOLIDAY') return { working: false, shiftId: planned.shift?.id ?? null, halfDay: false }
         if (entry) return { working: entry.shiftId !== null, shiftId: entry.shiftId, halfDay: false }
-        return { working: planned?.kind === 'WORK', shiftId: planned?.shift?.id ?? null, halfDay: planned?.halfDay ?? false }
+        // (a half-day holiday counts as a half day for the rest and week-hours warnings)
+        return { working: planned?.kind === 'WORK', shiftId: planned?.shift?.id ?? null, halfDay: (planned?.halfDay || !!planned?.holidayHalf) ?? false }
       }
       const span = (day: Date) => {
         const e = effective(day)

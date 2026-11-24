@@ -16,12 +16,13 @@ import { useAccess } from '@/hooks/useAccess'
 import { EMPLOYMENT_TYPE } from '@/lib/choices'
 import { client, orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
-import { type LeaveType, TYPE_HEADINGS } from './labels'
+import { type LeaveType, timingRules, TYPE_HEADINGS } from './labels'
 
 // The leave types and their rules (Leave View; changing them: Leave Edit for every company - one list for all companies):
 // credited on the 1st of each month, carried forward up to a limit at the year end, at most so many days at once, half
-// days, the "sandwich" rule (weekly offs / holidays inside count), and whom they apply to. HR can also credit now what the
-// nightly job would (after adding a type or employees).
+// days, the "sandwich" rule (weekly offs / holidays inside count), when it may be applied for (notice, today or past only,
+// how far back - 2026-11-24), and whom they apply to. HR can also credit now what the nightly job would (after adding a
+// type or employees).
 const GENDERS = [
   ['MALE', 'Men'],
   ['FEMALE', 'Women'],
@@ -31,10 +32,12 @@ const GENDERS = [
 function rules(t: LeaveType) {
   return [
     t.isCompOff && 'receives comp-off',
+    t.holidaysOnly && 'only on its holiday dates',
     !t.isPaid && 'unpaid',
     t.creditAfterMonths > 0 && `after ${t.creditAfterMonths} months`,
     t.allowHalfDay ? 'half days' : 'whole days only',
     t.countsOffDays && 'counts weekly offs & holidays',
+    ...timingRules(t),
     t.genders.length > 0 && t.genders.map((g) => GENDERS.find(([v]) => v === g)?.[1] ?? g).join(', '),
     t.employmentTypes.length > 0 && t.employmentTypes.map((e) => EMPLOYMENT_TYPE[e]).join(', '),
   ]
@@ -124,9 +127,13 @@ type Form = {
   maxPerRequest: string
   allowHalfDay: boolean
   countsOffDays: boolean
+  noticeDays: string
+  todayOrPastOnly: boolean
+  maxDaysBack: string
   genders: string[]
   employmentTypes: string[]
   isCompOff: boolean
+  holidaysOnly: boolean
   isActive: boolean
 }
 const formOf = (t: LeaveType | null): Form => ({
@@ -139,9 +146,13 @@ const formOf = (t: LeaveType | null): Form => ({
   maxPerRequest: t?.maxPerRequest === null || t?.maxPerRequest === undefined ? '' : String(t.maxPerRequest),
   allowHalfDay: t?.allowHalfDay ?? true,
   countsOffDays: t?.countsOffDays ?? false,
+  noticeDays: t?.noticeDays ? String(t.noticeDays) : '',
+  todayOrPastOnly: t?.todayOrPastOnly ?? false,
+  maxDaysBack: t?.maxDaysBack === null || t?.maxDaysBack === undefined ? '' : String(t.maxDaysBack),
   genders: t?.genders ?? [],
   employmentTypes: t?.employmentTypes ?? [],
   isCompOff: t?.isCompOff ?? false,
+  holidaysOnly: t?.holidaysOnly ?? false,
   isActive: t?.isActive ?? true,
 })
 
@@ -186,20 +197,24 @@ function TypeDrawer({ type, onClose }: { type: LeaveType | null; onClose: () => 
       maxPerRequest: f.maxPerRequest.trim() === '' ? null : Number(f.maxPerRequest),
       allowHalfDay: f.allowHalfDay,
       countsOffDays: f.countsOffDays,
+      noticeDays: f.todayOrPastOnly || f.noticeDays.trim() === '' ? null : Number(f.noticeDays),
+      todayOrPastOnly: f.todayOrPastOnly,
+      maxDaysBack: f.maxDaysBack.trim() === '' ? null : Number(f.maxDaysBack),
       genders: f.genders as LeaveType['genders'],
       employmentTypes: f.employmentTypes as LeaveType['employmentTypes'],
-      isCompOff: f.isPaid && f.isCompOff,
+      isCompOff: f.isPaid && f.isCompOff && !f.holidaysOnly,
+      holidaysOnly: f.isPaid && f.holidaysOnly,
       isActive: f.isActive,
     }
     if (type) update.mutate({ ...input, id: type.id, ...(creditRulesChange && { creditsFrom: new Date(`${creditsFrom}-01T00:00:00Z`) }) })
     else create.mutate(input)
   }
-  const number = (key: 'creditPerMonth' | 'creditAfterMonths' | 'maxCarryForward' | 'maxPerRequest', label: string, hint: string, step = '0.01') => (
+  const number = (key: 'creditPerMonth' | 'creditAfterMonths' | 'maxCarryForward' | 'maxPerRequest' | 'noticeDays' | 'maxDaysBack', label: string, hint: string, step = '0.01', disabled = false) => (
     <div className="space-y-1.5">
       <Label htmlFor={`lt-${key}`} className="text-xs text-muted-foreground">
         {label}
       </Label>
-      <Input id={`lt-${key}`} type="number" min={0} step={step} className="h-10 rounded-xl" value={f[key]} onChange={(e) => set(key, e.target.value)} />
+      <Input id={`lt-${key}`} type="number" min={0} step={step} disabled={disabled} className="h-10 rounded-xl" value={disabled ? '' : f[key]} onChange={(e) => set(key, e.target.value)} />
       <p className="text-xs text-muted-foreground">{hint}</p>
     </div>
   )
@@ -244,7 +259,7 @@ function TypeDrawer({ type, onClose }: { type: LeaveType | null; onClose: () => 
         <div className="grid grid-cols-2 gap-3">
           {number('creditPerMonth', 'Credit a month', 'Days on the 1st of each month (0: HR gives the days)')}
           {number('creditAfterMonths', 'Credit after (months)', 'Months of service before the credit starts', '1')}
-          {number('maxCarryForward', 'Carry forward at most', 'Empty: all carries; 0: all lapses at the year end')}
+          {number('maxCarryForward', 'Carry forward at most', f.holidaysOnly ? 'Lapses at the year end (taken only on its holiday dates)' : 'Empty: all carries; 0: all lapses at the year end', '0.01', f.holidaysOnly)}
           {number('maxPerRequest', 'At most at once', 'Days in one application (empty: no limit)', '0.5')}
         </div>
       )}
@@ -252,7 +267,17 @@ function TypeDrawer({ type, onClose }: { type: LeaveType | null; onClose: () => 
       <div className="space-y-2">
         {check(f.allowHalfDay, (v) => set('allowHalfDay', v), 'Half days allowed')}
         {check(f.countsOffDays, (v) => set('countsOffDays', v), 'Weekly offs and holidays inside the leave count as leave days')}
-        {f.isPaid && check(f.isCompOff, (v) => set('isCompOff', v), 'Receives comp-off (approved claims for work on a weekly off / holiday; expires after 90 days)')}
+        {f.isPaid && !f.holidaysOnly && check(f.isCompOff, (v) => set('isCompOff', v), 'Receives comp-off (approved claims for work on a weekly off / holiday; expires after 90 days)')}
+        {f.isPaid && !f.isCompOff && check(f.holidaysOnly, (v) => set('holidaysOnly', v), 'Only on its holiday dates (restricted / election holidays - the on-application holidays naming it); unused days lapse at the year end')}
+      </div>
+      {/* when it may be applied for (the user, 2026-11-24), in calendar days from the day of applying */}
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">When it can be applied for (calendar days from the day of applying)</p>
+        <div className="grid grid-cols-2 gap-3">
+          {number('noticeDays', 'Notice (days)', 'At least this many days before the first day - e.g. 7 for EL (empty: none)', '1', f.todayOrPastOnly)}
+          {number('maxDaysBack', 'Days back at most', 'The first day at most this many days ago (empty: any day of a month not locked)', '1')}
+        </div>
+        {check(f.todayOrPastOnly, (v) => set('todayOrPastOnly', v), 'Only for today or days already passed (e.g. sick leave)')}
       </div>
       <div className="space-y-1.5">
         <p className="text-xs text-muted-foreground">Only for (none ticked: everyone)</p>

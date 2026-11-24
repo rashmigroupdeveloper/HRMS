@@ -328,7 +328,8 @@ function DayDetails({ day, employeeCode, actions }: { day: MonthDay; employeeCod
   const cover = day.covers.find((c) => c.status !== 'PRESENT')
   const state = atWork ? { label: 'At work', tone: 'positive' as const } : status ?? (cover ? STATUS[cover.status] : plannedStatus)
   const future = day.date > todayDay()
-  const kind = day.holiday ? `Holiday - ${day.holiday}` : day.planned === 'WEEKLY_OFF' ? 'Weekly off' : null
+  // (a half-day holiday says which half - 2026-11-24)
+  const kind = day.holiday ? `Holiday${day.holidayHalf ? ` (${day.holidayHalf === 'FIRST' ? 'first' : 'second'} half)` : ''} - ${day.holiday}` : day.planned === 'WEEKLY_OFF' ? 'Weekly off' : null
   // the two halves when they differ (2026-11-22)
   const halves = day.firstHalf && day.secondHalf && day.firstHalf !== day.secondHalf ? { first: STATUS[day.firstHalf], second: STATUS[day.secondHalf] } : null
   // approved leave / regularization / on duty on the day (2026-11-22)

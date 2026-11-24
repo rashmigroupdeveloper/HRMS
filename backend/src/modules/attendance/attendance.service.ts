@@ -49,10 +49,17 @@ export function closeYesterday() {
 // --- For the leave module (2026-11-22 - leave depends on attendance, never the other way) ---
 
 // what leave gives the day calculation (its approved leave as covers), works out again, checks the month lock with
-export { assertOpenDays, halvesOf, loadCovers, recompute, registerLeaveCovers, type DayCover, type Half } from './days/days.service.js'
+export { assertOpenDays, halvesOf, loadCovers, recompute, registerHolidayLeave, registerLeaveCovers, type DayCover, type Half } from './days/days.service.js'
+// on-application holidays (2026-11-24): those an employee may take; the holiday list each employee follows on a day
+export { onApplicationHolidaysOf } from './holidays/holidays.service.js'
+export { listsOn as holidayListsOn } from './holiday-lists/holiday-lists.service.js'
+
+// --- For the candidates module: the holiday list chosen on the joining day (2026-11-24) ---
+export { assertJoiningList as assertJoiningHolidayList, giveOnJoining as giveHolidayListOnJoining } from './holiday-lists/holiday-lists.service.js'
 
 // The days from..to of one employee as attendance plans them - a working day (`halfDay`: only its first half is worked,
-// e.g. RML's Saturday), a weekly off or a holiday - and whether they are employed that day. Leave days are counted from
+// e.g. RML's Saturday; `holidayHalf`: that half is a holiday - 2026-11-24), a weekly off or a holiday - and whether they
+// are employed that day. Leave days are counted from
 // this (the holidays, rotations and weekly offs are attendance's).
 export async function planDays(employeeId: number, from: Date, to: Date) {
   const [person] = await employeesService.listAttendancePeople({ scope: SYSTEM_SCOPE, ids: [employeeId], from: new Date(Date.UTC(1950, 0, 1)), to: new Date(Date.UTC(2200, 0, 1)) })
@@ -60,7 +67,7 @@ export async function planDays(employeeId: number, from: Date, to: Date) {
   const plans = (await daysService.loadPlans([person], from, to)).get(person.id)!
   return eachDay(from, to).map((date) => {
     const plan = plans.get(dayKey(date))!
-    return { date, kind: plan.kind, halfDay: plan.halfDay, holiday: plan.holiday, employed: date >= person.dateOfJoining && (!person.dateOfLeaving || date <= person.dateOfLeaving) }
+    return { date, kind: plan.kind, halfDay: plan.halfDay, holidayHalf: plan.holidayHalf, holiday: plan.holiday, employed: date >= person.dateOfJoining && (!person.dateOfLeaving || date <= person.dateOfLeaving) }
   })
 }
 
@@ -110,7 +117,10 @@ export async function exportSetup(viewer: CurrentUser,input:z.infer<typeof expor
     ])
     case 'holidays':return file('Holidays',await holidaysService.listHolidays(input.year!),[
       {header:'Date',date:true,value:r=>r.date},{header:'Name',value:r=>r.name},
-      {header:'Company',value:r=>r.company?.code??'Every company'},{header:'Work location',value:r=>r.workLocation?.name??'Every location'},
+      {header:'Category',value:r=>r.category.name},
+      {header:'Day off',value:r=>r.portion==='FULL_DAY'?'Whole day':r.portion==='FIRST_HALF'?'First half':'Second half'},
+      {header:'How',value:r=>r.mode==='AUTOMATIC'?'Everyone on the lists':`On application (${r.leaveType?.code??'?'}${r.allowHalfDay?', half days too':''})`},
+      {header:'Holiday lists',width:45,value:r=>r.lists.map(l=>l.name).join(', ')},
     ])
     case 'schedules':return file('Schedules',await shiftsService.listSchedules(viewer,input.schedules??{}),[
       {header:'Employee code',text:true,value:r=>r.employee.employeeCode},{header:'Employee',value:r=>r.employee.name},
@@ -119,6 +129,8 @@ export async function exportSetup(viewer: CurrentUser,input:z.infer<typeof expor
       {header:'Work location',value:r=>r.employee.workLocation},{header:'Pattern',value:r=>r.pattern?.name},
       {header:'Policy',value:r=>r.policy?.name},{header:'Since',date:true,value:r=>r.since},
       {header:'Next pattern',value:r=>r.next?.pattern?.name},{header:'Next from',date:true,value:r=>r.next?.from},
+      {header:'Holiday list',value:r=>r.holidayList.holidayList?.name??'None'},{header:'Holiday list since',date:true,value:r=>r.holidayList.since},
+      {header:'Next holiday list',value:r=>r.holidayList.next?.holidayList.name},{header:'Next holiday list from',date:true,value:r=>r.holidayList.next?.from},
     ])
     case 'locks':return file('Month locks',(await locksService.listMonths(viewer,input.year!)).months,[
       {header:'Month',value:r=>r.name},{header:'From',date:true,value:r=>r.from},{header:'To',date:true,value:r=>r.to},

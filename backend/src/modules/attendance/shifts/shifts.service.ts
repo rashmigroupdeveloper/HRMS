@@ -8,6 +8,7 @@ import { today } from '#shared/utils/dates'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as daysService from '../days/days.service.js'
+import * as holidayListsService from '../holiday-lists/holiday-lists.service.js'
 import * as policiesService from '../policies/policies.service.js'
 import * as shiftsRepository from './shifts.repository.js'
 import type { assignShiftInput, createPatternInput, createShiftInput, listSchedulesInput, updatePatternInput, updateShiftInput } from './shifts.schema.js'
@@ -190,10 +191,12 @@ export async function listSchedules(viewer: CurrentUser, filter: NonNullable<z.i
     from: day,
     to: day,
   })
-  const [assignments, patterns, policies] = await Promise.all([
+  const [assignments, patterns, policies, holidayLists] = await Promise.all([
     shiftsRepository.listAssignments(people.map((p) => p.id), new Date(Date.UTC(2200, 0, 1))),
     shiftsRepository.listPatterns(true).then(toPatterns),
     policiesService.listPolicies(viewer, true),
+    // the holiday list each follows (2026-11-24)
+    holidayListsService.listsOn(people.map((p) => p.id), day),
   ])
   const patternOf = new Map(patterns.map((p) => [p.id, p]))
   const policyOf = new Map(policies.map((p) => [p.id, p]))
@@ -224,9 +227,16 @@ export async function listSchedules(viewer: CurrentUser, filter: NonNullable<z.i
       policyIsDefault: !current?.policyId,
       since: current?.effectiveFrom ?? null,
       next: next ? { from: next.effectiveFrom, pattern: name(patternOf.get(next.patternId)) } : null,
+      // the holiday list followed today (null: none - no holidays), since when, and a change already set for later
+      holidayList: holidayLists.get(person.id)!,
     }
   })
-  return rows.filter((r) => (!filter.patternId || r.pattern?.id === filter.patternId) && (!filter.policyId || r.policy?.id === filter.policyId))
+  return rows.filter(
+    (r) =>
+      (!filter.patternId || r.pattern?.id === filter.patternId) &&
+      (!filter.policyId || r.policy?.id === filter.policyId) &&
+      (filter.holidayListId === undefined || (r.holidayList.holidayList?.id ?? null) === filter.holidayListId),
+  )
 }
 
 // One employee's assignments, newest first (own record, or Attendance setup: View)

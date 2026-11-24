@@ -1,6 +1,6 @@
 import { ExportButton } from '@/components/ExportButton'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Search, Upload } from 'lucide-react'
+import { Gift, Search, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState } from '@/components/EmptyState'
 import { FormError } from '@/components/FormError'
@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { client, orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
 import { useAccess } from '@/hooks/useAccess'
+import { GiveDaysDrawer } from './GiveDaysDrawer'
 import { ImportBalancesDrawer } from './ImportBalancesDrawer'
 import type { Register } from './labels'
 
@@ -29,6 +30,8 @@ export function LeaveRegister({ scope }: { scope: Scope }) {
   const [search, setSearch] = useState('')
   const [adjusting, setAdjusting] = useState<Row | null>(null)
   const [importing, setImporting] = useState(false)
+  // days of a type to many at once (2026-11-24)
+  const [giving, setGiving] = useState(false)
   // the opening balances import: Leave Edit (each row's employee is checked by the backend)
   const canImport = useAccess().can('LEAVE', 'WRITE')
   const input = { scope, search: search.trim() || undefined }
@@ -42,6 +45,11 @@ export function LeaveRegister({ scope }: { scope: Scope }) {
           <Input aria-label="Search by name or code" placeholder="Name or code" className="h-9 rounded-xl pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <div className="flex flex-wrap gap-2">
+          {canImport && (
+            <Button variant="secondary" size="sm" onClick={() => setGiving(true)}>
+              <Gift /> Give days
+            </Button>
+          )}
           {canImport && (
             <Button variant="secondary" size="sm" onClick={() => setImporting(true)}>
               <Upload /> Import
@@ -105,6 +113,7 @@ export function LeaveRegister({ scope }: { scope: Scope }) {
           </Table>
         </div>
       )}
+      {giving && <GiveDaysDrawer onClose={() => setGiving(false)} />}
       {importing && <ImportBalancesDrawer onClose={() => setImporting(false)} />}
       {adjusting && r && <AdjustDialog row={adjusting} types={r.types.filter((t) => t.isPaid)} onClose={() => setAdjusting(null)} />}
     </section>

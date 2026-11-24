@@ -151,6 +151,8 @@ model Employee {
   joiningTasks      JoiningTask[]
   // Attendance (attendance.prisma)
   shiftAssignments       ShiftAssignment[]
+  // the holiday list followed from a date (2026-11-24)
+  holidayLists           EmployeeHolidayList[]
   rosterEntries          RosterEntry[]
   shiftChangeRequests    ShiftChangeRequest[]   @relation("ShiftChangeRequestEmployee")
   // leave (2026-11-22)

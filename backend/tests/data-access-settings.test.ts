@@ -3,9 +3,12 @@ import { changeHistoryService } from '#modules/change-history'
 import { companiesService, departmentsService, plantsService, positionsService, regionsService } from '#modules/organization'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import * as daysService from '../src/modules/attendance/days/days.service.js'
+import * as holidayCategoriesService from '../src/modules/attendance/holiday-categories/holiday-categories.service.js'
+import * as holidayListsService from '../src/modules/attendance/holiday-lists/holiday-lists.service.js'
 import * as holidaysService from '../src/modules/attendance/holidays/holidays.service.js'
 import * as rostersService from '../src/modules/attendance/rosters/rosters.service.js'
 import * as shiftsService from '../src/modules/attendance/shifts/shifts.service.js'
+import { holidaySetup } from './helpers/holidays.js'
 import { createCompany, createEmployee, createPlant } from './helpers/organization.js'
 import { row, userWith } from './helpers/users.js'
 
@@ -15,16 +18,22 @@ describe('shared settings, attendance and the change history', () => {
   let companyA: number
   let companyB: number
   let plantA: number
+  let plantB: number
   let inB: { id: number; employeeCode: string }
   let adminForA: ReturnType<typeof userWith>
   let adminForPlantA: ReturnType<typeof userWith>
+  // a list of company B's and one of every company (2026-11-24 - holidays are put in lists)
+  let listOfB: { categoryId: number; holidayListId: number }
+  let listOfAll: { categoryId: number; holidayListId: number }
 
   beforeAll(async () => {
     companyA = (await createCompany()).id
     companyB = (await createCompany()).id
     plantA = (await createPlant(companyA)).id
-    const plantB = (await createPlant(companyB)).id
+    plantB = (await createPlant(companyB)).id
     inB = await createEmployee({ companyId: companyB, plantId: plantB })
+    listOfB = await holidaySetup(companyB)
+    listOfAll = await holidaySetup(null)
     const everything = { ORGANIZATION: 'WRITE', ATTENDANCE: 'WRITE', ATTENDANCE_SETUP: 'WRITE', CHANGE_HISTORY: 'READ', EMPLOYEES: 'READ' } as const
     adminForA = userWith({ id: 0, employeeCode: 'ADMINA' }, [{ access: everything, rows: [row(companyA, null, null)] }])
     adminForPlantA = userWith({ id: 0, employeeCode: 'ADMINP' }, [{ access: everything, rows: [row(companyA, plantA, null)] }])
@@ -38,7 +47,7 @@ describe('shared settings, attendance and the change history', () => {
     // a plant's departments: Edit for that plant is enough
     await expect(plantsService.setPlantDepartmentsFor(adminForPlantA, { id: plantA, departmentIds: [] })).resolves.toBeDefined()
     await expect(
-      holidaysService.createHoliday({ date: new Date(Date.UTC(2027, 0, 26)), name: 'Company B day', companyId: companyB }, adminForA),
+      holidaysService.createHoliday({ date: new Date(Date.UTC(2027, 0, 26)), name: 'Company B day', categoryId: listOfB.categoryId, holidayListIds: [listOfB.holidayListId] }, adminForA),
     ).rejects.toThrow('whole company')
   })
 
@@ -47,7 +56,9 @@ describe('shared settings, attendance and the change history', () => {
     // the positions and regions (2026-11-19) are one list for every company too
     await expect(positionsService.createPositionFor(adminForA, { name: `Position ${companyA}` })).rejects.toThrow('shared by every company')
     await expect(regionsService.createRegionFor(adminForA, { name: `Region ${companyA}` })).rejects.toThrow('shared by every company')
-    await expect(holidaysService.createHoliday({ date: new Date(Date.UTC(2027, 0, 26)), name: 'Everyone day' }, adminForA)).rejects.toThrow('shared by every company')
+    await expect(
+      holidaysService.createHoliday({ date: new Date(Date.UTC(2027, 0, 26)), name: 'Everyone day', categoryId: listOfAll.categoryId, holidayListIds: [listOfAll.holidayListId] }, adminForA),
+    ).rejects.toThrow('shared by every company')
     await expect(
       shiftsService.createShift({ code: 'ZZ', name: `Shift ${companyA}`, start: 540, end: 1080, breakMinutes: 30 }, adminForA),
     ).rejects.toThrow('shared by every company')
@@ -59,7 +70,9 @@ describe('shared settings, attendance and the change history', () => {
     await expect(
       shiftsService.createShift({ code: 'ZY', name: `Shift ${companyB}`, start: 540, end: 1080, breakMinutes: 30 }, attendanceOnly),
     ).rejects.toThrow('shared by every company')
-    await expect(holidaysService.createHoliday({ date: new Date(Date.UTC(2027, 0, 27)), name: 'Setup day', companyId: companyB }, attendanceOnly)).rejects.toThrow('whole company')
+    await expect(
+      holidaysService.createHoliday({ date: new Date(Date.UTC(2027, 0, 27)), name: 'Setup day', categoryId: listOfB.categoryId, holidayListIds: [listOfB.holidayListId] }, attendanceOnly),
+    ).rejects.toThrow('whole company')
     // a default shift for someone: "not found" without Attendance setup covering them
     const setupForAll = userWith({ id: 0, employeeCode: 'SETUPALL' }, [{ access: { ATTENDANCE_SETUP: 'WRITE' }, rows: [row(null, null, null)] }])
     const shift = await shiftsService.createShift({ code: `S${companyB}`.slice(0, 10), name: `Setup shift ${companyB}`, start: 540, end: 1080, breakMinutes: 30 }, setupForAll)
@@ -79,6 +92,42 @@ describe('shared settings, attendance and the change history', () => {
     await expect(rostersService.saveCells(attendanceOnly, { cells: [cell] })).rejects.toThrow('No employee found')
     const grid = await rostersService.getGrid(setupForA, { from: cell.date, to: cell.date, search: inB.employeeCode })
     expect(grid.rows).toEqual([])
+  })
+
+  // holiday lists (2026-11-24): a company's list needs Edit for that whole company, one for every company - all companies; a
+  // plant's default - Edit for that whole plant; the categories are shared by every company
+  it('changes holiday lists, plant defaults and categories only within the data access', async () => {
+    // names unique per run: the new company's id (the test database is never wiped)
+    const n = companyA
+    await expect(holidayListsService.createHolidayList({ name: `B list ${n}`, companyId: companyB }, adminForA)).rejects.toThrow('whole company')
+    await expect(holidayListsService.createHolidayList({ name: `Shared list ${n}` }, adminForA)).rejects.toThrow('shared by every company')
+    await expect(holidayListsService.createHolidayList({ name: `A list ${n}`, companyId: companyA }, adminForPlantA)).rejects.toThrow('whole company')
+    const ofA = await holidayListsService.createHolidayList({ name: `A list ${n}`, companyId: companyA }, adminForA)
+    await expect(holidayListsService.updateHolidayList({ id: ofA.id, companyId: companyB }, adminForA)).rejects.toThrow('whole company')
+    // a plant's default: Edit for that plant is enough - and never for another company's plant
+    await expect(holidayListsService.setPlantDefault({ plantId: plantA, holidayListId: ofA.id }, adminForPlantA)).resolves.toMatchObject({ holidayList: { id: ofA.id } })
+    await expect(holidayListsService.setPlantDefault({ plantId: plantB, holidayListId: null }, adminForA)).rejects.toThrow('whole plant')
+    await expect(holidayCategoriesService.createHolidayCategory({ name: `Category ${n}`, tone: 'GOLD' }, adminForA)).rejects.toThrow('shared by every company')
+    // someone's list: Attendance setup Edit covering them - company A's admin never reaches company B's employee
+    await expect(
+      holidayListsService.assignHolidayList({ employeeCodes: [inB.employeeCode], holidayListId: ofA.id, effectiveFrom: new Date(Date.UTC(2033, 0, 1)) }, adminForA),
+    ).rejects.toThrow('No employee found')
+    // "fill in" counts only the employees inside the data access: company B's plant (no default, inB waiting) is not there
+    const plantBCode = (await plantsService.getPlant(plantB)).plantCode
+    const filled = await holidayListsService.fillMissing({ dryRun: true }, adminForA)
+    expect(filled.noDefault.some((p) => p.plant.startsWith(`${plantBCode} `))).toBe(false)
+    const forAll = await holidayListsService.fillMissing({ dryRun: true }, userWith({ id: 0, employeeCode: 'SETUPALL2' }, [{ access: { ATTENDANCE_SETUP: 'WRITE' }, rows: [row(null, null, null)] }]))
+    expect(forAll.noDefault.some((p) => p.plant.startsWith(`${plantBCode} `))).toBe(true)
+    // "copy from last year": company A's admin copies only into the lists they may change - nothing lands in company B's
+    // list nor in the list of every company
+    const setupForAll = userWith({ id: 0, employeeCode: 'SETUPALL3' }, [{ access: { ATTENDANCE_SETUP: 'WRITE' }, rows: [row(null, null, null)] }])
+    const year = 2050 + (companyA % 40)
+    for (const lists of [listOfB, listOfAll]) {
+      await holidaysService.createHoliday({ date: new Date(Date.UTC(year - 1, 4, 1)), name: `Copied ${companyA}`, categoryId: lists.categoryId, holidayListIds: [lists.holidayListId] }, setupForAll)
+    }
+    await holidaysService.copyYear({ year }, adminForA)
+    expect(await holidaysService.listHolidays(year, listOfB.holidayListId)).toEqual([])
+    expect(await holidaysService.listHolidays(year, listOfAll.holidayListId)).toEqual([])
   })
 
   it("limits someone's attendance and the change history by the data access", async () => {

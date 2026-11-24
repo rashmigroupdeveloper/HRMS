@@ -3,6 +3,8 @@ import { exportSetupInput } from './shifts/shifts.schema.js'
 import { accessProcedure, authedProcedure } from '#core/rpc/procedures'
 import * as attendanceService from './attendance.service.js'
 import { daysRouter } from './days/days.router.js'
+import { holidayCategoriesRouter } from './holiday-categories/holiday-categories.router.js'
+import { holidayListsRouter } from './holiday-lists/holiday-lists.router.js'
 import { holidaysRouter } from './holidays/holidays.router.js'
 import { locksRouter } from './locks/locks.router.js'
 import { policiesRouter } from './policies/policies.router.js'
@@ -25,6 +27,9 @@ export const attendanceRouter = {
   // the attendance month lock (2026-11-22)
   locks: locksRouter,
   holidays: holidaysRouter,
+  // named holiday lists with the plants' defaults, and HR's holiday categories (2026-11-24)
+  holidayLists: holidayListsRouter,
+  holidayCategories: holidayCategoriesRouter,
   punches: punchesRouter,
   rosters: rostersRouter,
   shiftChanges: shiftChangesRouter,

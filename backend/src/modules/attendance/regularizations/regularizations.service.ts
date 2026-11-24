@@ -75,7 +75,7 @@ export async function createRequest(viewer: CurrentUser, input: z.infer<typeof c
   const halves = halvesAsked(input)
   const working = halves.filter(({ date, half }) => {
     const plan = plans.get(dayKey(date))
-    return plan?.kind === 'WORK' && !(plan.halfDay && half === 'SECOND')
+    return !!plan && daysService.isWorkingHalf(plan, half)
   })
   if (!working.length) throw new ORPCError('BAD_REQUEST', { message: 'Those are weekly offs or holidays - there is nothing to regularize' })
   // nothing asked twice for the same half: leave (approved or waiting) or another request (approved or waiting)

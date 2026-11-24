@@ -17,7 +17,7 @@ const applicationSelect = {
   cancelApprovalRequestId: true,
   cancelReason: true,
   createdAt: true,
-  leaveType: { select: { id: true, code: true, name: true, isPaid: true } },
+  leaveType: { select: { id: true, code: true, name: true, isPaid: true, holidaysOnly: true } },
   employee: { select: { id: true, employeeCode: true, firstName: true, middleName: true, lastName: true, companyId: true, plantId: true, departmentId: true } },
 } satisfies Prisma.LeaveApplicationSelect
 export type ApplicationRow = Prisma.LeaveApplicationGetPayload<{ select: typeof applicationSelect }>
@@ -52,6 +52,17 @@ export function listForEmployees(employeeIds: number[], from: Date, to: Date, st
     where: { employeeId: { in: employeeIds }, fromDate: { lte: to }, toDate: { gte: from }, status: { in: statuses } },
     orderBy: [{ fromDate: 'asc' }, { id: 'asc' }],
     take: 2000,
+    select: applicationSelect,
+  })
+}
+
+// The leave of types taken only on their holiday dates, waiting or approved, overlapping from..to (only these employees',
+// when given) - checked again when holidays or someone's holiday list change (2026-11-24)
+// data access: a system step after a holiday change - the leave is checked, nothing is returned to a viewer
+export function listHolidayLeave(from: Date, to: Date, employeeIds: number[] | undefined, db: DbClient = prisma) {
+  return db.leaveApplication.findMany({
+    where: { fromDate: { lte: to }, toDate: { gte: from }, status: { in: ['PENDING', 'APPROVED'] }, leaveType: { holidaysOnly: true }, ...(employeeIds && { employeeId: { in: employeeIds } }) },
+    orderBy: { id: 'asc' },
     select: applicationSelect,
   })
 }

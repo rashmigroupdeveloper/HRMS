@@ -51,13 +51,19 @@ const dataOf = (input: z.infer<typeof leaveTypeInput>) => ({
   isPaid: input.isPaid,
   creditPerMonth: round2(input.creditPerMonth),
   creditAfterMonths: input.creditAfterMonths,
-  maxCarryForward: input.maxCarryForward === null ? null : round2(input.maxCarryForward),
+  // (a type taken on its holiday dates lapses at the year end - 2026-11-24)
+  maxCarryForward: input.holidaysOnly ? 0 : input.maxCarryForward === null ? null : round2(input.maxCarryForward),
   maxPerRequest: input.maxPerRequest,
   allowHalfDay: input.allowHalfDay,
   countsOffDays: input.countsOffDays,
+  // (0 days' notice = none)
+  noticeDays: input.noticeDays || null,
+  todayOrPastOnly: input.todayOrPastOnly ?? false,
+  maxDaysBack: input.maxDaysBack ?? null,
   genders: [...new Set(input.genders)],
   employmentTypes: [...new Set(input.employmentTypes)],
   isCompOff: input.isCompOff ?? false,
+  holidaysOnly: input.holidaysOnly ?? false,
 })
 
 // Comp-off goes to one type only, and it must be paid (it has a balance)
@@ -116,9 +122,11 @@ export async function exportTypes(viewer: CurrentUser, includeInactive = false) 
     {header:'Credit after months',value:r=>r.creditAfterMonths},{header:'Carry forward limit',value:r=>r.maxCarryForward??'All'},
     {header:'Per-request limit',value:r=>r.maxPerRequest??'No limit'},{header:'Half days',value:r=>r.allowHalfDay?'Yes':'No'},
     {header:'Counts off days',value:r=>r.countsOffDays?'Yes':'No'},
+    {header:'Notice (days)',value:r=>r.noticeDays??'None'},{header:'Today or past only',value:r=>r.todayOrPastOnly?'Yes':'No'},
+    {header:'Days back at most',value:r=>r.maxDaysBack??'Open months'},
     {header:'Genders',value:r=>r.genders.join(', ')||'All'},
     {header:'Employment types',width:35,value:r=>r.employmentTypes.join(', ')||'All'},
-    {header:'Comp-off',value:r=>r.isCompOff?'Yes':'No'},{header:'Status',value:r=>r.isActive?'Active':'Retired'},
+    {header:'Comp-off',value:r=>r.isCompOff?'Yes':'No'},{header:'Only on its holiday dates',value:r=>r.holidaysOnly?'Yes':'No'},{header:'Status',value:r=>r.isActive?'Active':'Retired'},
   ])],{title:'Leave types',preparedBy:`${viewer.name} (${viewer.employeeCode})`,
     coverage:'Shared leave rules. Retired types are included only when requested and the active role has Leave View.'},'leave-types')
 }

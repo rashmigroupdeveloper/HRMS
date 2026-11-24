@@ -12,21 +12,16 @@ import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { orpc } from '@/lib/orpc'
 import { cn, errorMessage, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
-import { type Candidate, fullName } from './labels'
+import { JoiningChecklistSkeleton } from '@/components/skeletons/onboarding/JoiningChecklistSkeleton'
+import { type Candidate, CHECK_GROUPS, fullName } from './labels'
 import { PrintFormsButton } from './PrintForms'
 
 // The joining day: the checklist (joining form, medical, required documents verified) and what HR types in
-// (employee code, actual joining date, work e-mail, probation end) and who does each joining task (2026-11-16 - the
+// (employee code, actual joining date, work e-mail, reporting manager, holiday list, probation end) and who does each joining task (2026-11-16 - the
 // task's default person, changeable). Completing it creates the employee, their joining tasks and the appointment letter.
 export function JoiningDialog({ candidate, onClose }: { candidate: Candidate; onClose: () => void }) {
   return <JoiningForm candidate={candidate} onClose={onClose} />
 }
-
-// The checklist in two parts: what the candidate gives (HR may help), and what HR does on the joining day
-const CHECK_GROUPS = [
-  { who: 'CANDIDATE', title: 'From the candidate', help: 'The joining form and their own document copies - HR verifies the copies.' },
-  { who: 'HR', title: 'HR on the joining day', help: 'The medical result, and the printed forms signed by the candidate on paper.' },
-] as const
 
 // End of probation for an offer of `months` months: the day before the same date that many months after joining
 // (01 Sep + 6 months -> 28 Feb / 29 Feb). None when the offer has no probation.
@@ -48,6 +43,13 @@ function JoiningForm({ candidate, onClose }: { candidate: Candidate; onClose: ()
   const proposed = toDateInput(candidate.proposedJoiningDate)
   // who the new employee reports to (their employee code)
   const [managerCode, setManagerCode] = useState('')
+  // the holiday list followed from the date of joining (the user, 2026-11-24): the plant's default, until HR picks another
+  // ('' = none - no holidays until HR gives one); the lists in use of the candidate's company or of every company
+  const holidayLists = useQuery(orpc.attendance.holidayLists.list.queryOptions({ input: {} }))
+  const usableLists = (holidayLists.data ?? []).filter((l) => l.companyId === null || l.companyId === candidate.company.id)
+  const plantDefault = usableLists.find((l) => l.defaultPlants.some((p) => p.id === candidate.plant.id))
+  const [listPicked, setListPicked] = useState<string | null>(null)
+  const holidayListId = listPicked ?? (plantDefault ? String(plantDefault.id) : '')
   const [startDate] = useState(proposed > today ? today : proposed)
   const [dateOfJoining, setDateOfJoining] = useState(startDate)
   const [workEmail, setWorkEmail] = useState('')
@@ -152,7 +154,7 @@ function JoiningForm({ candidate, onClose }: { candidate: Candidate; onClose: ()
   const items = checklist.data?.items ?? []
   const ready = checklist.data?.ready ?? false
   // anything typed or picked that differs from what the form opened with
-  const dirty = !!managerCode.trim() || dateOfJoining !== startDate || !!workEmail.trim() || probationTyped !== null || Object.keys(picked).length > 0 || noTasks || skipped.size > 0
+  const dirty = !!managerCode.trim() || listPicked !== null || dateOfJoining !== startDate || !!workEmail.trim() || probationTyped !== null || Object.keys(picked).length > 0 || noTasks || skipped.size > 0
   return (
     <FormDrawer
       onClose={onClose}
@@ -170,11 +172,13 @@ function JoiningForm({ candidate, onClose }: { candidate: Candidate; onClose: ()
           <DrawerCancel />
           <Button
             variant="gold"
-            disabled={!ready || !dateOfJoining || !tasksReady || complete.isPending}
+            // (the holiday lists loaded: the plant's default is chosen, never "no list" by a slow or failed load)
+            disabled={!ready || !dateOfJoining || !tasksReady || !holidayLists.isSuccess || complete.isPending}
             onClick={() =>
               complete.mutate({
                 candidateId: candidate.id,
                 reportingManagerCode: managerCode || undefined,
+                holidayListId: holidayListId ? Number(holidayListId) : undefined,
                 dateOfJoining: fromDateInput(dateOfJoining)!,
                 workEmail: workEmail.trim() || undefined,
                 probationEndDate: fromDateInput(probationEndDate) ?? undefined,
@@ -192,7 +196,7 @@ function JoiningForm({ candidate, onClose }: { candidate: Candidate; onClose: ()
       <section className="space-y-2">
         <p className="text-sm font-medium">Checklist</p>
         {checklist.isPending ? (
-          <p className="text-sm text-muted-foreground">Checking…</p>
+          <JoiningChecklistSkeleton label="Checking the joining checklist" />
         ) : checklist.error ? (
           <p className="text-sm text-negative-ink">{errorMessage(checklist.error)}</p>
         ) : (
@@ -261,6 +265,21 @@ function JoiningForm({ candidate, onClose }: { candidate: Candidate; onClose: ()
         <div className="space-y-1.5">
           <Label htmlFor="join-manager">Reporting manager</Label>
           <EmployeePicker id="join-manager" value={managerCode} onChange={(picked) => setManagerCode(picked?.employeeCode ?? '')} />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="join-holidays">Holiday list</Label>
+          <NativeSelect id="join-holidays" className="w-full" value={holidayListId} disabled={holidayLists.isPending} onChange={(e) => setListPicked(e.target.value)}>
+            <NativeSelectOption value="">{holidayLists.isPending ? 'Loading…' : 'No holiday list'}</NativeSelectOption>
+            {usableLists.map((l) => (
+              <NativeSelectOption key={l.id} value={String(l.id)}>
+                {l.name}
+                {l.id === plantDefault?.id ? ` (${candidate.plant.plantCode}'s default)` : ''}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+          <p className={cn('text-xs', holidayListId ? 'text-muted-foreground' : 'text-warning-ink')}>
+            {holidayListId ? 'From the date of joining - HR can change it later on Attendance setup > Schedules.' : 'No holidays until HR gives a list.'}
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="join-probation">Probation ends</Label>
@@ -347,7 +366,7 @@ function JoiningForm({ candidate, onClose }: { candidate: Candidate; onClose: ()
         </section>
       )}
 
-      <FormError error={complete.error ?? taskTypes.error ?? teams.error} />
+      <FormError error={complete.error ?? taskTypes.error ?? teams.error ?? holidayLists.error} />
     </FormDrawer>
   )
 }

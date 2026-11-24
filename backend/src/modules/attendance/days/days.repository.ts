@@ -54,8 +54,28 @@ export function listPublishedRoster(employeeIds: number[], from: Date, to: Date,
   })
 }
 
+// the automatic holidays from..to with the lists that have each (2026-11-24: a day's holiday comes from the person's list;
+// an on-application holiday is a working day - the approved leave taking it covers the day)
 export function listHolidays(from: Date, to: Date, db: DbClient = prisma) {
-  return db.holiday.findMany({ where: { date: { gte: from, lte: to } }, select: { date: true, name: true, companyId: true, workLocationId: true } })
+  return db.holiday.findMany({ where: { date: { gte: from, lte: to }, mode: 'AUTOMATIC' }, select: { date: true, name: true, portion: true, lists: { select: { holidayListId: true } } } })
+}
+
+// The holiday list each employee follows, from a date (2026-11-24)
+// data access: a step of the day calculation - the ids come from people already chosen (and checked) by the caller
+export function listEmployeeHolidayLists(employeeIds: number[], db: DbClient = prisma) {
+  return db.employeeHolidayList.findMany({ where: { employeeId: { in: employeeIds } }, orderBy: { effectiveFrom: 'asc' }, select: { employeeId: true, holidayListId: true, effectiveFrom: true } })
+}
+
+// The employees whose days from..to are already worked out (any of them) - only those are worked out again when a holiday
+// or someone's holiday list changes (2026-11-24: never days before attendance started)
+// data access: a system step - the ids are only used to work days out again, nothing is returned to a viewer
+export async function listEmployeeIdsWithDays(from: Date, to: Date, employeeIds: number[] | undefined, db: DbClient = prisma) {
+  const rows = await db.attendanceDay.findMany({
+    where: { date: { gte: from, lte: to }, ...(employeeIds && { employeeId: { in: employeeIds } }) },
+    distinct: ['employeeId'],
+    select: { employeeId: true },
+  })
+  return rows.map((r) => r.employeeId)
 }
 
 export function listPunches(employeeIds: number[], from: Date, to: Date, db: DbClient = prisma) {

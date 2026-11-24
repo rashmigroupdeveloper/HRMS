@@ -4,8 +4,11 @@ import { SYSTEM_SCOPE } from '#core/auth/scope'
 import { zonedInstant } from '#shared/utils/time'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import * as daysService from '../src/modules/attendance/days/days.service.js'
+import * as holidaysService from '../src/modules/attendance/holidays/holidays.service.js'
+import * as listsService from '../src/modules/attendance/holiday-lists/holiday-lists.service.js'
 import * as policiesService from '../src/modules/attendance/policies/policies.service.js'
 import * as shiftsService from '../src/modules/attendance/shifts/shifts.service.js'
+import { followList, holidaySetup } from './helpers/holidays.js'
 import { createCompany, createEmployee, createPlant } from './helpers/organization.js'
 import { row, userWith } from './helpers/users.js'
 
@@ -48,11 +51,20 @@ describe('half-day sessions', () => {
   const sat3 = saturday(3)
   const sat4 = saturday(4)
   const work = () => daysService.recompute([employee.id], sat4, sat1)
+  let holidays: { categoryId: number; holidayListId: number }
+  // a holiday in the employee's list (`portion`: the part of the day off)
+  const holidayOn = (date: Date, name: string, portion: 'FULL_DAY' | 'FIRST_HALF' | 'SECOND_HALF' = 'FULL_DAY') =>
+    prisma.holiday.create({
+      data: { date, name, portion, categoryId: holidays.categoryId, createdById: 0, updatedById: 0, lists: { create: { holidayListId: holidays.holidayListId, createdById: 0, updatedById: 0 } } },
+    })
 
   beforeAll(async () => {
     companyId = (await createCompany()).id
     const plantId = (await createPlant(companyId)).id
     employee = await createEmployee({ companyId, plantId })
+    // the employee's holiday list (2026-11-24 - a day's holiday comes from it)
+    holidays = await holidaySetup(companyId)
+    await followList([employee.id], holidays.holidayListId)
     const [person] = await employeesService.listAttendancePeople({ scope: SYSTEM_SCOPE, ids: [employee.id], from: sat2, to: sat1 })
     timezone = person!.timezone
     const hr = userWith({ id: 0, employeeCode: 'HRATT' }, [{ access: { ATTENDANCE: 'WRITE', ATTENDANCE_SETUP: 'WRITE' }, rows: [row(null, null, null)] }])
@@ -121,13 +133,61 @@ describe('half-day sessions', () => {
   })
 
   it('a holiday on a Saturday is a holiday; a Saturday set on the roster is a whole day', async () => {
-    await prisma.holiday.create({ data: { date: sat3, name: `Test holiday ${tag}`, companyId, createdById: 0, updatedById: 0 } })
+    await holidayOn(sat3, `Test holiday ${tag}`)
     await prisma.rosterEntry.create({ data: { employeeId: employee.id, date: sat4, shiftId, publishedAt: new Date(), publishedById: 0, createdById: 0, updatedById: 0 } })
     // 09:00-13:00 on a whole (rostered) day: 4h - a half day, the morning
     await punch(sat4, '09:00', '13:00')
     await work()
     expect(await dayOf(sat3)).toMatchObject({ firstHalf: 'HOLIDAY', secondHalf: 'HOLIDAY', status: 'HOLIDAY' })
     expect(await dayOf(sat4)).toMatchObject({ firstHalf: 'PRESENT', secondHalf: 'ABSENT', status: 'HALF_DAY' })
+  })
+
+  // half-day holidays (the user, 2026-11-24): that half is a holiday, the other is worked - present for the half-day hours;
+  // on a Saturday (first half worked) a first-half holiday makes the whole day off
+  it('a half-day holiday: that half is a holiday, the other half is worked', async () => {
+    const sat5 = saturday(5)
+    const [mon5, tue5, wed5] = [2, 3, 4].map((n) => new Date(sat5.getTime() + n * DAY)) as [Date, Date, Date]
+    await holidayOn(mon5, `Morning off ${tag}`, 'FIRST_HALF')
+    await holidayOn(tue5, `Afternoon off ${tag}`, 'SECOND_HALF')
+    await holidayOn(wed5, `Afternoon off 2 ${tag}`, 'SECOND_HALF')
+    await holidayOn(sat5, `Saturday morning off ${tag}`, 'FIRST_HALF')
+    await punch(mon5, '13:00', '18:00')
+    await punch(tue5, '09:00', '13:05')
+    await daysService.recompute([employee.id], sat5, wed5)
+    expect(await dayOf(mon5)).toMatchObject({ firstHalf: 'HOLIDAY', secondHalf: 'PRESENT', status: 'PRESENT' })
+    expect(await dayOf(tue5)).toMatchObject({ firstHalf: 'PRESENT', secondHalf: 'HOLIDAY', status: 'PRESENT' })
+    // nobody came on the working half: absent
+    expect(await dayOf(wed5)).toMatchObject({ firstHalf: 'ABSENT', secondHalf: 'HOLIDAY', status: 'ABSENT' })
+    // a Saturday (first half worked): its first half off makes the whole day a holiday
+    expect(await dayOf(sat5)).toMatchObject({ firstHalf: 'HOLIDAY', secondHalf: 'HOLIDAY', status: 'HOLIDAY' })
+  })
+
+  // a holiday added later (2026-11-24): the months already worked out are worked out again; a month never worked out
+  // (before attendance started) stays empty - never filled with absent days
+  it('a holiday added later works out again only the months already worked out', async () => {
+    const hr = userWith({ id: 0, employeeCode: 'HRHOL2' }, [{ access: { ATTENDANCE_SETUP: 'WRITE' }, rows: [row(null, null, null)] }])
+    const mon3 = new Date(sat3.getTime() + 2 * DAY)
+    const add = (date: Date, name: string) => holidaysService.createHoliday({ date, name, categoryId: holidays.categoryId, holidayListIds: [holidays.holidayListId] }, hr)
+    await add(mon3, `Added later ${tag}`)
+    expect(await dayOf(mon3)).toMatchObject({ firstHalf: 'HOLIDAY', secondHalf: 'HOLIDAY', status: 'HOLIDAY' })
+    // February 2026 (joined 1 January): never worked out for this employee
+    const feb = { gte: new Date(Date.UTC(2026, 1, 1)), lte: new Date(Date.UTC(2026, 1, 28)) }
+    await add(new Date(Date.UTC(2026, 1, 10)), `Long ago ${tag}`)
+    expect(await prisma.attendanceDay.count({ where: { employeeId: employee.id, date: feb } })).toBe(0)
+  })
+
+  // giving someone another list from a past date (2026-11-24): the months already worked out follow the new list - the old
+  // list's holiday is a working day again, the new list's a holiday
+  it("works out again the days already worked out when someone's holiday list changes", async () => {
+    const hr = userWith({ id: 0, employeeCode: 'HRHOL3' }, [{ access: { ATTENDANCE_SETUP: 'WRITE' }, rows: [row(null, null, null)] }])
+    const mon3 = new Date(sat3.getTime() + 2 * DAY)
+    const tue3 = new Date(sat3.getTime() + 3 * DAY)
+    expect(await dayOf(mon3)).toMatchObject({ status: 'HOLIDAY' })
+    const other = await holidaySetup(companyId)
+    await holidaysService.createHoliday({ date: tue3, name: `Other list ${tag}`, categoryId: other.categoryId, holidayListIds: [other.holidayListId] }, hr)
+    await listsService.assignHolidayList({ employeeCodes: [employee.employeeCode], holidayListId: other.holidayListId, effectiveFrom: sat4 }, hr)
+    expect(await dayOf(tue3)).toMatchObject({ firstHalf: 'HOLIDAY', secondHalf: 'HOLIDAY', status: 'HOLIDAY' })
+    expect((await dayOf(mon3)).status).not.toBe('HOLIDAY')
   })
 
   it('the day overall from two halves', () => {

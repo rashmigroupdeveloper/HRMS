@@ -1,8 +1,9 @@
 import { writeReport } from '#core/excel/report'
-import { hasLevelAt, assertGroupWide, SYSTEM_SCOPE } from '#core/auth/scope'
+import { hasLevelAt, assertGroupWide, scopeOf, SYSTEM_SCOPE } from '#core/auth/scope'
 import { prisma, SYSTEM_ACTOR } from '#core/db/prisma'
 import { readFirstSheet, writeWorkbook, type CellValue } from '#core/excel/workbook'
 import type { CurrentUser } from '#core/rpc/procedures'
+import { attendanceService } from '#modules/attendance'
 import { employeesService } from '#modules/employees'
 import { today } from '#shared/utils/dates'
 import { ORPCError } from '@orpc/server'
@@ -10,7 +11,7 @@ import type { z } from 'zod'
 import * as leaveService from '../leave.service.js'
 import * as typesService from '../types/types.service.js'
 import * as balancesRepository from './balances.repository.js'
-import { type adjustInput, type balancesInput, type importBalancesInput, MAX_IMPORT_ROWS, type registerInput } from './balances.schema.js'
+import { type adjustInput, type balancesInput, type giveManyInput, type importBalancesInput, MAX_IMPORT_ROWS, type registerInput } from './balances.schema.js'
 
 // Leave balances (2026-11-22 - the old HRMS's lv.ledger): every credit and debit is a row, the balance their sum.
 // - Credited on the 1st of every month (the type's days a month) to everyone employed that day whose service is long
@@ -202,6 +203,50 @@ export async function adjust(viewer: CurrentUser, input: z.infer<typeof adjustIn
   if (current.balance + days < 0) throw new ORPCError('BAD_REQUEST', { message: `${type.code} balance is ${current.balance} - it cannot go below zero` })
   await balancesRepository.addEntries([{ employeeId: person.id, leaveTypeId: type.id, kind: 'ADJUSTMENT', days, effectiveDate: today(), note: input.note }], viewer.employeeId)
   return { balance: round2(current.balance + days) }
+}
+
+// HR gives days of a leave type to many at once (the user, 2026-11-24 - an election day, the year's restricted holidays):
+// the codes given, or everyone employed today or joining later inside the viewer's Leave Edit data access matching the
+// filters (company, plant, department, the holiday list followed today). Each gets an ADJUSTMENT row with HR's reason,
+// dated today; those the type is not for (gender, employment type) are left out. People joining later get nothing - HR
+// gives it to them too. `dryRun`: only the counts.
+export async function giveMany(viewer: CurrentUser, input: z.infer<typeof giveManyInput>) {
+  const type = await typesService.getType(input.leaveTypeId)
+  if (!type.isPaid) throw new ORPCError('BAD_REQUEST', { message: `${type.code} is leave without pay - it has no balance` })
+  if (!type.isActive) throw new ORPCError('BAD_REQUEST', { message: `${type.name} is no longer used` })
+  const scope = scopeOf(viewer, 'LEAVE', 'WRITE')
+  const now = today()
+  const later = new Date(Date.UTC(2200, 0, 1))
+  let people
+  if (input.employeeCodes) {
+    const ids = await employeesService.mapCodesToIds(input.employeeCodes)
+    people = await employeesService.listLeavePeople({ scope, ids: [...new Set(ids.values())], from: now, to: later })
+    // a code unknown, outside the Leave Edit data access or of someone who has left: "not found" (never reveal who exists)
+    const found = new Set(people.map((p) => p.employeeCode))
+    const missing = [...new Set(input.employeeCodes.map((c) => c.trim().toUpperCase()))].filter((c) => !found.has(c))
+    if (missing.length) throw new ORPCError('BAD_REQUEST', { message: `No employee found with code ${missing.slice(0, 5).join(', ')}` })
+  } else {
+    people = await employeesService.listLeavePeople({ scope, companyIds: input.companyIds, departmentIds: input.departmentIds, from: now, to: later })
+    if (input.plantIds?.length) people = people.filter((p) => input.plantIds!.includes(p.plantId))
+    if (input.holidayListIds?.length) {
+      const lists = await attendanceService.holidayListsOn(
+        people.map((p) => p.id),
+        now,
+      )
+      people = people.filter((p) => input.holidayListIds!.includes(lists.get(p.id)?.holidayList?.id ?? -1))
+    }
+  }
+  const fits = people.filter((p) => leaveService.typeAppliesTo(type, p))
+  const counts = { people: people.length, toGive: fits.length, notForThem: people.length - fits.length }
+  if (input.dryRun || !fits.length) return { ...counts, given: 0 }
+  const days = round2(input.days)
+  for (let i = 0; i < fits.length; i += 500) {
+    await balancesRepository.addEntries(
+      fits.slice(i, i + 500).map((p) => ({ employeeId: p.id, leaveTypeId: type.id, kind: 'ADJUSTMENT' as const, days, effectiveDate: now, note: input.note })),
+      viewer.employeeId,
+    )
+  }
+  return { ...counts, given: fits.length }
 }
 
 // --- crediting and the year end (the daily job; HR may run it now) ---

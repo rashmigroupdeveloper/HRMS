@@ -376,7 +376,7 @@ your answer which rule the API follows.
 5. **A change**: Edit covering the record (`assertCanChange`, `getCandidateFor(..., 'WRITE')`); a **move** (company / plant
    / department) needs Edit on the old **and** the new placement; a **new** record needs Edit where it is placed
    (`assertCanPlace`). Bulk changes (imports, uploads, rosters) check **every row's** person.
-6. **Settings**: something one company or plant owns (its details, plants, a plant's departments, its holidays) ->
+6. **Settings**: something one company or plant owns (its details, plants, a plant's departments, its holiday lists) ->
    `assertWholeSlice`; something every company shares (master lists, shifts, patterns, roles, security rules, letter
    templates, joining task types) -> `assertGroupWide`.
 7. **Relationships, not rows**: one's own record, the reporting tree and the HOD department (`employees.hods`) are worked out in

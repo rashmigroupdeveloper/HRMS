@@ -184,3 +184,20 @@ export const ROSTER_HINT = "Every day follows each person's schedule pattern (Sc
 // The comp-off a weekly off / holiday's work earns (2026-11-22): 8 hours = a day, 4 hours = half a day, less = none
 // (change both with the backend's comp-off.service)
 export const compOffDays = (minutes: number) => (minutes >= 480 ? 1 : minutes >= 240 ? 0.5 : 0)
+
+// --- holiday categories (2026-11-24) ---
+type HolidayTone = Awaited<ReturnType<typeof client.attendance.holidayCategories.list>>[number]['tone']
+
+// The colours a category may have - the app's pill tones, with a name HR understands
+export const HOLIDAY_TONES: { value: HolidayTone; tone: Tone; label: string }[] = [
+  { value: 'NEUTRAL', tone: 'neutral', label: 'Grey' },
+  { value: 'INFO', tone: 'info', label: 'Blue' },
+  { value: 'GOLD', tone: 'gold', label: 'Gold' },
+  { value: 'POSITIVE', tone: 'positive', label: 'Green' },
+  { value: 'WARNING', tone: 'warning', label: 'Amber' },
+  { value: 'NEGATIVE', tone: 'negative', label: 'Red' },
+]
+export const toneOf = (value: HolidayTone): Tone => HOLIDAY_TONES.find((t) => t.value === value)?.tone ?? 'neutral'
+
+// The part of a holiday's day that is off (2026-11-24) - the holidays' setup, the calendars
+export const HOLIDAY_PORTION: Record<'FULL_DAY' | 'FIRST_HALF' | 'SECOND_HALF', string> = { FULL_DAY: 'Whole day', FIRST_HALF: 'First half off', SECOND_HALF: 'Second half off' }

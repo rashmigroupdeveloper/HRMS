@@ -65,6 +65,8 @@ export const listSchedulesInput = z
     costCenterIds: z.array(idSchema).max(200).optional(),
     patternId: idSchema.optional(),
     policyId: idSchema.optional(),
+    // those following this holiday list today (null: those without a list - 2026-11-24)
+    holidayListId: idSchema.nullable().optional(),
   })
   .optional()
 

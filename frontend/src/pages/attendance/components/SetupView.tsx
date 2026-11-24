@@ -1,6 +1,6 @@
 import { ExportButton } from '@/components/ExportButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus, Search, Star, Trash2, Upload, X } from 'lucide-react'
+import { Pencil, Plus, Search, Star, Upload, X } from 'lucide-react'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -24,6 +24,9 @@ import { client, orpc } from '@/lib/orpc'
 import { cn, formatDate, formatDoneBy, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
 import { segment, SEGMENTS, SETUP_PARTS, UPLOAD_HINT, UPLOAD_TITLE, type Shift, WEEKDAYS } from './labels'
 import { AppliesFrom, UpcomingPill } from './AppliesFrom'
+import { HolidayListDrawer, type HolidayListStart } from './HolidayListDrawer'
+import { HolidayListsSetup } from './HolidayListsSetup'
+import { HolidaysSetup } from './HolidaysSetup'
 import { MonthLockSetup } from './MonthLockSetup'
 import { PoliciesSetup } from './PoliciesSetup'
 import { RosterView } from './RosterView'
@@ -53,7 +56,12 @@ export function SetupView() {
       {part === 'policies' && <PoliciesSetup card={Card} />}
       {part === 'assign' && <Schedules canEdit={canEdit} />}
       {part === 'roster' && <RosterView />}
-      {part === 'holidays' && <Holidays />}
+      {part === 'holidays' && (
+        <>
+          <HolidaysSetup card={Card} />
+          <HolidayListsSetup card={Card} />
+        </>
+      )}
       {part === 'patterns' && <Patterns />}
       {part === 'lock' && <MonthLockSetup card={Card} />}
     </div>
@@ -380,29 +388,31 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
   const [costCenterId, setCostCenterId] = useState('')
   const [patternId, setPatternId] = useState('')
   const [policyId, setPolicyId] = useState('')
+  // the holiday list followed ('none': those without one - 2026-11-24)
+  const [holidayListId, setHolidayListId] = useState('')
   const [editing, setEditing] = useState<ScheduleStart | null>(null)
+  const [givingList, setGivingList] = useState<HolidayListStart | null>(null)
   // the ticked employees (code -> name), kept while the filters change
   const [ticked, setTicked] = useState<Map<string, string>>(new Map())
   const patterns = useQuery(orpc.attendance.shifts.patterns.list.queryOptions({ input: { includeInactive: true } }))
   const policies = useQuery(orpc.attendance.policies.list.queryOptions({ input: { includeInactive: true } }))
+  const holidayLists = useQuery(orpc.attendance.holidayLists.list.queryOptions({ input: { includeInactive: true } }))
   const companies = useQuery(orpc.organization.companies.list.queryOptions())
   const plants = useQuery({ ...orpc.organization.plants.list.queryOptions({ input: { companyId: Number(companyId) } }), enabled: !!companyId })
   const departments = useQuery(orpc.organization.departments.list.queryOptions({ input: plantId ? { plantId: Number(plantId) } : {} }))
   const costCenters = useQuery({ ...orpc.organization.costCenters.list.queryOptions({ input: { companyId: Number(companyId) } }), enabled: !!companyId })
   const ids = (v: string) => (v ? [Number(v)] : undefined)
-  const rows = useQuery(
-    orpc.attendance.shifts.schedules.queryOptions({
-      input: {
-        ...(search.trim() && { search: search.trim() }),
-        companyIds: ids(companyId),
-        plantIds: ids(plantId),
-        departmentIds: ids(departmentId),
-        costCenterIds: ids(costCenterId),
-        ...(patternId && { patternId: Number(patternId) }),
-        ...(policyId && { policyId: Number(policyId) }),
-      },
-    }),
-  )
+  const filters = {
+    ...(search.trim() && { search: search.trim() }),
+    companyIds: ids(companyId),
+    plantIds: ids(plantId),
+    departmentIds: ids(departmentId),
+    costCenterIds: ids(costCenterId),
+    ...(patternId && { patternId: Number(patternId) }),
+    ...(policyId && { policyId: Number(policyId) }),
+    ...(holidayListId && { holidayListId: holidayListId === 'none' ? null : Number(holidayListId) }),
+  }
+  const rows = useQuery(orpc.attendance.shifts.schedules.queryOptions({ input: filters }))
   const shown = rows.data ?? []
   const shownTicked = shown.filter((r) => ticked.has(r.employee.employeeCode)).length
   const allShown = shown.length > 0 && shownTicked === shown.length
@@ -422,7 +432,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
       else next.delete(code)
       return next
     })
-  const filtered = !!(search.trim() || companyId || plantId || departmentId || costCenterId || patternId || policyId)
+  const filtered = !!(search.trim() || companyId || plantId || departmentId || costCenterId || patternId || policyId || holidayListId)
   const clearFilters = () => {
     setSearch('')
     setCompanyId('')
@@ -431,15 +441,21 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
     setCostCenterId('')
     setPatternId('')
     setPolicyId('')
+    setHolidayListId('')
   }
   return (
     <Card
       title="Schedules"
-      hint="Each employee's schedule pattern and attendance policy today - “default” where none was given (the ★ pattern, the default policy) - since when, and a change already set for later. A new schedule runs from its date until changed again; days already passed from that date are worked out again. The roster is only for rare one-off changes."
-      action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!rows.data?.length || rows.isFetching} load={() => client.attendance.exportSetup({section:'schedules',schedules:{search:search.trim()||undefined,companyIds:ids(companyId),plantIds:ids(plantId),departmentIds:ids(departmentId),costCenterIds:ids(costCenterId),patternId:patternId?Number(patternId):undefined,policyId:policyId?Number(policyId):undefined}})} />{canEdit && (
-          <Button variant="gold" size="sm" onClick={() => setEditing({ people: [], patternId: '', policyId: '' })}>
-            <Plus /> Give a schedule
-          </Button>
+      hint="Each employee's schedule pattern, attendance policy and holiday list today - “default” where none was given (the ★ pattern, the default policy; no holiday list = no holidays) - since when, and a change already set for later. A new schedule or list runs from its date until changed again; for a schedule, days already passed from that date are worked out again. The roster is only for rare one-off changes."
+      action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!rows.data?.length || rows.isFetching} load={() => client.attendance.exportSetup({ section: 'schedules', schedules: filters })} />{canEdit && (
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setGivingList({ people: [], holidayListId: '' })}>
+              <Plus /> Give a holiday list
+            </Button>
+            <Button variant="gold" size="sm" onClick={() => setEditing({ people: [], patternId: '', policyId: '' })}>
+              <Plus /> Give a schedule
+            </Button>
+          </>
         )}</div>
       }
     >
@@ -516,6 +532,15 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
             </NativeSelectOption>
           ))}
         </NativeSelect>
+        <NativeSelect aria-label="Holiday list" className="[&_select]:h-9 [&_select]:rounded-full" value={holidayListId} onChange={(e) => setHolidayListId(e.target.value)}>
+          <NativeSelectOption value="">Every holiday list</NativeSelectOption>
+          <NativeSelectOption value="none">No holiday list</NativeSelectOption>
+          {holidayLists.data?.map((l) => (
+            <NativeSelectOption key={l.id} value={String(l.id)}>
+              {l.name}
+            </NativeSelectOption>
+          ))}
+        </NativeSelect>
         {rows.data && (
           <span className="text-xs text-muted-foreground">
             {rows.data.length} employee{rows.data.length === 1 ? '' : 's'}
@@ -536,6 +561,9 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
           <span className="flex-1" />
           <Button variant="ghost" size="sm" onClick={() => setTicked(new Map())}>
             Untick all
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setGivingList({ people: [...ticked].map(([employeeCode, name]) => ({ employeeCode, name })), holidayListId: '' })}>
+            <Pencil /> Change their holiday list
           </Button>
           <Button
             variant="secondary"
@@ -568,6 +596,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
                 <TableHead>Employee</TableHead>
                 <TableHead>Schedule pattern</TableHead>
                 <TableHead>Policy</TableHead>
+                <TableHead className="hidden sm:table-cell">Holiday list</TableHead>
                 <TableHead className="hidden sm:table-cell">Since</TableHead>
                 <TableHead className="hidden md:table-cell">Next change</TableHead>
                 {canEdit && <TableHead />}
@@ -600,6 +629,14 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
                     {r.policy?.name ?? '—'}
                     {r.policyIsDefault && <span className="ml-1.5 text-xs text-muted-foreground">default</span>}
                   </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {r.holidayList.holidayList ? r.holidayList.holidayList.name : <span className="text-warning-ink">None</span>}
+                    {r.holidayList.next && (
+                      <span className="block text-xs text-muted-foreground">
+                        {r.holidayList.next.holidayList.name} from {formatDate(r.holidayList.next.from)}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell className="hidden text-sm tabular-nums sm:table-cell">{r.since ? formatDate(r.since) : '—'}</TableCell>
                   <TableCell className="hidden text-sm md:table-cell">{r.next ? `${r.next.pattern?.name ?? '?'} from ${formatDate(r.next.from)}` : '—'}</TableCell>
                   {canEdit && (
@@ -624,6 +661,14 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
             </TableBody>
           </Table>
         </div>
+      )}
+      {givingList && (
+        <HolidayListDrawer
+          start={givingList}
+          onClose={() => setGivingList(null)}
+          // saved for everyone ticked: untick them
+          onSaved={() => givingList.people.length > 1 && setTicked(new Map())}
+        />
       )}
       {editing && (
         <ScheduleDrawer
@@ -808,150 +853,6 @@ function ScheduleDrawer({ start, onClose, onSaved }: { start: ScheduleStart; onC
         <FormError error={assign.error} />
       </div>
     </FormDrawer>
-  )
-}
-
-// --- holidays ---
-
-type Holiday = Awaited<ReturnType<typeof client.attendance.holidays.list>>[number]
-
-function Holidays() {
-  const queryClient = useQueryClient()
-  const [year, setYear] = useState(todayDay().getUTCFullYear())
-  const holidays = useQuery(orpc.attendance.holidays.list.queryOptions({ input: { year } }))
-  const remove = useMutation(orpc.attendance.holidays.delete.mutationOptions({ onSuccess: () => void queryClient.invalidateQueries({ queryKey: orpc.attendance.key() }) }))
-  const [editing, setEditing] = useState<Holiday | 'new' | null>(null)
-  const companies = useQuery(orpc.organization.companies.list.queryOptions())
-  // a holiday for every company needs Attendance setup Edit for all companies; one company's, Edit for that whole company (B13)
-  const { coversGroup, coversWhole } = useAccess()
-  const mayChange = (companyId: number | null) => (companyId === null ? coversGroup('ATTENDANCE_SETUP') : coversWhole('ATTENDANCE_SETUP', 'WRITE', { companyId }))
-  const canAdd = mayChange(null) || !!companies.data?.some((c) => mayChange(c.id))
-  return (
-    <Card
-      title="Holidays"
-      hint="For every company, one company, and optionally one work location. A holiday on a day already passed works that day out again. Leave will use the same calendar."
-      action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!holidays.data?.length || holidays.isFetching} load={() => client.attendance.exportSetup({section:'holidays',year})} />{<div className="flex items-center gap-2">
-          <NativeSelect className="[&_select]:h-9 [&_select]:rounded-full" aria-label="Year" value={String(year)} onChange={(e) => setYear(Number(e.target.value))}>
-            {[year - 1, year, year + 1].map((y) => (
-              <NativeSelectOption key={y} value={String(y)}>
-                {y}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-          {canAdd && (
-            <Button variant="gold" size="sm" onClick={() => setEditing('new')}>
-              <Plus /> Add a holiday
-            </Button>
-          )}
-        </div>}</div>
-      }
-    >
-      <SharedListNote area="ATTENDANCE_SETUP" label="Attendance setup" what="a holiday for every company" />
-      <FormError error={holidays.error ?? remove.error} />
-      {holidays.data?.length === 0 && <EmptyState className="py-6" title={`No holidays in ${year} yet`} hint="A holiday counts for every company, or only for the company and work location you pick." />}
-      <ul className="divide-y text-sm">
-        {holidays.data?.map((h) => (
-          <li key={h.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <span>
-              <span className="font-medium tabular-nums">{formatDate(h.date)}</span> · {h.name}
-              <span className="ml-2 text-xs text-muted-foreground">{[h.company?.code ?? 'Every company', h.workLocation?.name].filter(Boolean).join(' · ')}</span>
-            </span>
-            {mayChange(h.companyId) && (
-              <span className="flex gap-1">
-                <Button variant="ghost" size="sm" onClick={() => setEditing(h)}>
-                  <Pencil /> Edit
-                </Button>
-                <Button variant="ghost" size="sm" disabled={remove.isPending} onClick={() => remove.mutate({ id: h.id })}>
-                  <Trash2 /> Remove
-                </Button>
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
-      {editing && <HolidayDialog holiday={editing === 'new' ? null : editing} mayChange={mayChange} onClose={() => setEditing(null)} />}
-    </Card>
-  )
-}
-
-// `mayChange`: whether the user may put a holiday for that company (null = every company) - only those are offered
-function HolidayDialog({ holiday, mayChange, onClose }: { holiday: Holiday | null; mayChange: (companyId: number | null) => boolean; onClose: () => void }) {
-  const queryClient = useQueryClient()
-  const companies = useQuery(orpc.organization.companies.list.queryOptions())
-  const locations = useQuery(orpc.organization.workLocations.list.queryOptions())
-  const allowed = companies.data?.filter((c) => mayChange(c.id)) ?? []
-  const [date, setDate] = useState(toDateInput(holiday?.date ?? null))
-  const [name, setName] = useState(holiday?.name ?? '')
-  // a new holiday starts at "every company" only for those who may put one there - else at their first company
-  const [companyId, setCompanyId] = useState(holiday ? (holiday.companyId ? String(holiday.companyId) : '') : mayChange(null) ? '' : String(allowed[0]?.id ?? ''))
-  const [locationId, setLocationId] = useState(holiday?.workLocationId ? String(holiday.workLocationId) : '')
-  const done = {
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: orpc.attendance.key() })
-      onClose()
-    },
-  }
-  const create = useMutation(orpc.attendance.holidays.create.mutationOptions(done))
-  const update = useMutation(orpc.attendance.holidays.update.mutationOptions(done))
-  const dirty =
-    date !== toDateInput(holiday?.date ?? null) ||
-    name !== (holiday?.name ?? '') ||
-    companyId !== (holiday?.companyId ? String(holiday.companyId) : '') ||
-    locationId !== (holiday?.workLocationId ? String(holiday.workLocationId) : '')
-  const data = { date: fromDateInput(date)!, name, companyId: companyId ? Number(companyId) : null, workLocationId: locationId ? Number(locationId) : null }
-  return (
-    <FormDialog onOpenChange={(open) => !open && onClose()} dirty={dirty} className="rounded-3xl sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{holiday ? 'Edit holiday' : 'Add a holiday'}</DialogTitle>
-        </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="ho-date" className="text-xs text-muted-foreground">
-              Date
-            </Label>
-            <Input id="ho-date" type="date" className="h-9 rounded-xl" value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="ho-name" className="text-xs text-muted-foreground">
-              Name
-            </Label>
-            <Input id="ho-name" className="h-9 rounded-xl" placeholder="e.g. Diwali" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="ho-company" className="text-xs text-muted-foreground">
-              Company
-            </Label>
-            <NativeSelect id="ho-company" className="w-full [&_select]:h-9 [&_select]:rounded-xl" value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
-              {mayChange(null) && <NativeSelectOption value="">Every company</NativeSelectOption>}
-              {allowed.map((c) => (
-                <NativeSelectOption key={c.id} value={String(c.id)}>
-                  {c.code}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="ho-location" className="text-xs text-muted-foreground">
-              Work location
-            </Label>
-            <NativeSelect id="ho-location" className="w-full [&_select]:h-9 [&_select]:rounded-xl" value={locationId} onChange={(e) => setLocationId(e.target.value)}>
-              <NativeSelectOption value="">Every location</NativeSelectOption>
-              {locations.data?.map((l) => (
-                <NativeSelectOption key={l.id} value={String(l.id)}>
-                  {l.name}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </div>
-        </div>
-        <FormError error={create.error ?? update.error} />
-        <DialogFooter>
-          <DialogCancel />
-          <Button variant="gold" disabled={!date || !name.trim() || create.isPending || update.isPending} onClick={() => (holiday ? update.mutate({ id: holiday.id, ...data }) : create.mutate(data))}>
-            Save
-          </Button>
-        </DialogFooter>
-    </FormDialog>
   )
 }
 

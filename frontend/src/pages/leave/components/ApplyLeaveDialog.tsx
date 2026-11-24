@@ -12,15 +12,16 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { orpc } from '@/lib/orpc'
 import { cn, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
-import { type Balance, daysText } from './labels'
+import { type Balance, daysText, timingRules } from './labels'
 
 // Applying for leave (2026-11-22): the type (with what is available), the days - the first day from its second half, the
 // last day to its first half - and the reason. While it is filled in, the backend counts the days by the attendance plan
 // (weekly offs and holidays out, unless the type counts them) and says what would stop it - before anything is sent.
 // Approved through the leave approval chain (the reporting manager first).
-export function ApplyLeaveDialog({ balances, initialTypeId, onClose }: { balances: Balance[]; initialTypeId?: number; onClose: () => void }) {
+// `initialDate`: the day it opens on (an on-application holiday's Apply on My leave - 2026-11-24), else today
+export function ApplyLeaveDialog({ balances, initialTypeId, initialDate, onClose }: { balances: Balance[]; initialTypeId?: number; initialDate?: Date; onClose: () => void }) {
   const queryClient = useQueryClient()
-  const [start] = useState(() => toDateInput(todayDay()))
+  const [start] = useState(() => toDateInput(initialDate ?? todayDay()))
   const [typeId, setTypeId] = useState(initialTypeId ? String(initialTypeId) : '')
   const [from, setFrom] = useState(start)
   const [to, setTo] = useState(start)
@@ -28,6 +29,12 @@ export function ApplyLeaveDialog({ balances, initialTypeId, onClose }: { balance
   const [toFirstHalf, setToFirstHalf] = useState(false)
   const [reason, setReason] = useState('')
   const type = balances.find((b) => String(b.leaveType.id) === typeId)
+  // when the type may be applied for (2026-11-24): its notice, today or past only, how far back - also the dates offered
+  const types = useQuery(orpc.leave.types.list.queryOptions({ input: {} }))
+  const rules = types.data?.find((t) => String(t.id) === typeId)
+  const plusDays = (n: number) => toDateInput(new Date(todayDay().getTime() + n * 86_400_000))
+  const earliest = rules?.maxDaysBack != null ? plusDays(-rules.maxDaysBack) : rules?.noticeDays ? plusDays(rules.noticeDays) : undefined
+  const latest = rules?.todayOrPastOnly ? start : undefined
   const oneDay = from === to
   const halves = { fromSecondHalf: type?.leaveType.allowHalfDay ? fromSecondHalf : false, toFirstHalf: type?.leaveType.allowHalfDay && !(oneDay && fromSecondHalf) ? toFirstHalf : false }
   const input = typeId && from && to && to >= from ? { leaveTypeId: Number(typeId), fromDate: fromDateInput(from)!, toDate: fromDateInput(to)!, ...halves } : null
@@ -73,6 +80,8 @@ export function ApplyLeaveDialog({ balances, initialTypeId, onClose }: { balance
             <Input
               id="lv-from"
               type="date"
+              min={rules?.noticeDays ? plusDays(rules.noticeDays) : earliest}
+              max={latest}
               className="h-10 rounded-xl"
               value={from}
               onChange={(e) => {
@@ -85,9 +94,10 @@ export function ApplyLeaveDialog({ balances, initialTypeId, onClose }: { balance
             <Label htmlFor="lv-to" className="text-xs text-muted-foreground">
               To
             </Label>
-            <Input id="lv-to" type="date" min={from} className="h-10 rounded-xl" value={to} onChange={(e) => setTo(e.target.value)} />
+            <Input id="lv-to" type="date" min={from} max={latest} className="h-10 rounded-xl" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
         </div>
+        {rules && timingRules(rules).length > 0 && <p className="text-xs text-muted-foreground">{rules.name}: {timingRules(rules).join(' · ')}.</p>}
         {/* half days, when the type has them */}
         {type?.leaveType.allowHalfDay && (
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">

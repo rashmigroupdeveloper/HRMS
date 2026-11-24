@@ -3,6 +3,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import * as daysService from '../src/modules/attendance/days/days.service.js'
 import * as holidaysService from '../src/modules/attendance/holidays/holidays.service.js'
 import * as locksService from '../src/modules/attendance/locks/locks.service.js'
+import { holidaySetup } from './helpers/holidays.js'
 import { createCompany } from './helpers/organization.js'
 import { row, userWith } from './helpers/users.js'
 
@@ -41,9 +42,15 @@ describe('the attendance month lock', () => {
     // a day of the next month is not
     await expect(daysService.assertOpenDays([d(2025, 6, 26)])).resolves.toBeUndefined()
     // found in the 2026-11-23 review: a holiday, or a schedule from an earlier date, changed the locked month's plan
-    await expect(holidaysService.createHoliday({ date: d(2025, 6, 12), name: 'Test holiday', companyId: null }, hr)).rejects.toThrow('locked attendance month')
+    const lists = await holidaySetup(null)
+    await expect(
+      holidaysService.createHoliday({ date: d(2025, 6, 12), name: 'Test holiday', categoryId: lists.categoryId, holidayListIds: [lists.holidayListId] }, hr),
+    ).rejects.toThrow('locked attendance month')
     await expect(daysService.assertNothingLockedFrom(d(2025, 6, 1))).rejects.toThrow('June 2025 is a locked attendance month')
     await expect(daysService.assertNothingLockedFrom(d(2025, 6, 26))).resolves.toBeUndefined()
+    // a holiday list given from a joining day before it ("fill in", 2026-11-24) starts the day after the locked month
+    expect(await daysService.firstOpenDayFrom(d(2025, 3, 1))).toEqual(d(2025, 6, 26))
+    expect(await daysService.firstOpenDayFrom(d(2025, 7, 1))).toEqual(d(2025, 7, 1))
     // the start day cannot change while a month is locked
     await expect(locksService.setCycleStart(hr, { cycleStartDay: 1 })).rejects.toThrow('Open the locked months again first')
     const months = await locksService.listMonths(hr, 2025)

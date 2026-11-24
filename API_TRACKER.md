@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 273**
+**Total APIs: 285**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -271,7 +271,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 182 | `attendance.shifts.update` | Attendance setup: Edit | changes or retires a shift; new times apply from a date (dated) |
 | 183 | `attendance.shifts.assign` | Attendance setup: Edit | the schedule pattern and attendance policy of employees from a date |
 | 184 | `attendance.shifts.assignments` | own, or Attendance setup: View | one employee's schedules |
-| 185 | `attendance.shifts.schedules` | Attendance setup: View | who follows which schedule pattern and policy today |
+| 185 | `attendance.shifts.schedules` | Attendance setup: View | who follows which schedule pattern, policy and holiday list today |
 | 186 | `attendance.shifts.patterns.list` | any logged-in employee (retired: Attendance setup: View) | the schedule patterns |
 | 187 | `attendance.shifts.patterns.create` | Attendance setup: Edit | adds a schedule pattern |
 | 188 | `attendance.shifts.patterns.update` | Attendance setup: Edit | changes, retires or stars (makes the default) a schedule pattern |
@@ -283,10 +283,10 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 194 | `attendance.locks.lock` | Attendance setup: Edit (all companies) | locks an attendance month (the whole group) |
 | 195 | `attendance.locks.unlock` | Attendance setup: Edit (all companies) | opens a locked month again, with a reason |
 | 196 | `attendance.locks.setCycleStart` | Attendance setup: Edit (all companies) | the day an attendance month starts |
-| 197 | `attendance.holidays.list` | any logged-in employee | the holiday calendar of a year |
-| 198 | `attendance.holidays.create` | Attendance setup: Edit | adds a holiday; a day already passed is worked out again for everyone |
-| 199 | `attendance.holidays.update` | Attendance setup: Edit | changes a holiday |
-| 200 | `attendance.holidays.delete` | Attendance setup: Edit | removes a holiday |
+| 197 | `attendance.holidays.list` | Attendance setup: View | a year's holidays of every list, each with its category and lists (one list's, when asked) |
+| 198 | `attendance.holidays.create` | Attendance setup: Edit (every list it goes in) | adds a holiday to holiday lists; a month already worked out is worked out again |
+| 199 | `attendance.holidays.update` | Attendance setup: Edit (every list it is / goes in) | changes a holiday or the lists that have it |
+| 200 | `attendance.holidays.delete` | Attendance setup: Edit (every list it is in) | removes a holiday |
 | 201 | `attendance.punches.upload` | Attendance setup: Edit | the biometric machines' export until the Kent feed is connected |
 | 202 | `attendance.punches.uploads` | Attendance setup: View | the earlier uploads |
 | 203 | `attendance.punches.unmatched` | Attendance setup: View | the codes on the machines that matched no employee |
@@ -360,6 +360,18 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 271 | `attendance.reports.list` | Logged in; team/HOD relationship or Attendance View | Paged attendance detail/exceptions with scoped summaries and filters |
 | 272 | `attendance.reports.export` | Same as reports.list | All filtered attendance days, summary and Excel review notes |
 | 273 | `attendance.reports.exportPunches` | Same as days.punches | Raw punches owned by one employee work date, with stored provenance |
+| 274 | `attendance.holidayLists.list` | any logged-in employee (retired ones: Attendance setup: View) | the named holiday lists and the plants they are the default of |
+| 275 | `attendance.holidayLists.create` | Attendance setup: Edit (the list's company / all companies) | adds a holiday list |
+| 276 | `attendance.holidayLists.update` | Attendance setup: Edit (the list's company / all companies) | renames, moves to another company or retires a list |
+| 277 | `attendance.holidayLists.setPlantDefault` | Attendance setup: Edit (the whole plant) | a plant's default holiday list |
+| 278 | `attendance.holidayCategories.list` | any logged-in employee (retired ones: Attendance setup: View) | HR's holiday categories and their colours |
+| 279 | `attendance.holidayCategories.create` | Attendance setup: Edit (all companies) | adds a holiday category |
+| 280 | `attendance.holidayCategories.update` | Attendance setup: Edit (all companies) | renames, recolours or retires a category |
+| 281 | `attendance.holidayLists.assign` | Attendance setup: Edit (covering each person) | employees follow a holiday list from a date - one or many |
+| 282 | `attendance.holidayLists.fillMissing` | Attendance setup: Edit | gives everyone without a holiday list their plant's default |
+| 283 | `attendance.holidays.copyYear` | Attendance setup: Edit (the lists copied into) | copies last year's holidays into a year, the same lists |
+| 284 | `leave.balances.giveMany` | Leave: Edit (covering each person) | gives days of a leave type to many - chosen, or everyone matching |
+| 285 | `attendance.holidays.mine` | Logged in (their own) | one's own holidays of a year - those of the list followed on each date |
 
 ---
 
@@ -2112,6 +2124,7 @@ together with their time, e.g. when a changed offer goes back to draft). Calenda
   |---|---|---|---|
   | `candidateId` | number | yes | |
   | `reportingManagerCode` | string | no | who the new employee reports to - an employee who has not left (2026-11-16) |
+  | `holidayListId` | number | no | the holiday list followed from `dateOfJoining` (2026-11-24 - the plant's default offered on the page): in use, of the candidate's company or of every company; left out = no list, no holidays until HR gives one |
   | `dateOfJoining` | Date | yes | not in the future; before the contract end date |
   | `workEmail` | string | no | e-mail, lower-cased, unique |
   | `probationEndDate` | Date | no | after `dateOfJoining` |
@@ -2123,7 +2136,7 @@ together with their time, e.g. when a changed offer goes back to draft). Calenda
   `login` below; `appointmentLetter` `{ issued: true, letterNumber, emailedTo }` or `{ issued: false, reason }`;
   `joiningTasks` how many were made).
 - **What it does:** the joining day, in one transaction: creates the employee (status `ACTIVE`, the code the next of the
-  company's series - no longer typed by HR, 2026-11-16 - the reporting manager, and the HOD post: their plant + department, 2026-11-19) from the offer terms
+  company's series - no longer typed by HR, 2026-11-16 - the reporting manager, and the HOD post: their plant + department, 2026-11-19; the holiday list chosen, from the date of joining - 2026-11-24) from the offer terms
   and the joining-form draft (a permanent employee gets no contract end date) - the name and mobile as in the form (else the offer's), the alternate mobile, addresses, emergency contacts, identity documents and bank account (numbers
   encrypted, with last 4 digits and fingerprint), PF / ESIC answers, education, certifications, previous jobs, family
   members (Aadhaar encrypted + last 4) and nominees, and the joining record (`completedBy` = this HR person; the
@@ -2152,7 +2165,8 @@ together with their time, e.g. when a changed offer goes back to draft). Calenda
 - **Errors:** `400` the checklist is not complete (lists what is missing), a date rule, the reporting manager is
   unknown / has left, a joining task without a person (or nobody of its role covers the employee), a picked person not
   of the task's role covering the employee, a left-out task that is not one of the joining type's, `noJoiningTasks` missing
-  with no task type / sent when there are some · `404 NOT_FOUND` · `409 CONFLICT` candidate not `ACCEPTED`, work e-mail / identity number already used. Â· `409` "This offer was changed a moment ago" - the status changed since it was read (a candidate's answer and HR's change at the same moment - 2026-11-23)
+  with no task type / sent when there are some, a retired holiday list or another company's (2026-11-24) · `404 NOT_FOUND` (also an
+  unknown holiday list) · `409 CONFLICT` candidate not `ACCEPTED`, work e-mail / identity number already used. Â· `409` "This offer was changed a moment ago" - the status changed since it was read (a candidate's answer and HR's change at the same moment - 2026-11-23)
 
 ### `candidates.backgroundChecks.list`
 - **HTTP:** `POST /api/rpc/candidates/backgroundChecks/list` · **Code:** `backend/src/modules/candidates/background-checks/`
@@ -3044,8 +3058,9 @@ Attendance (2026-11-16, planned with the user - the first module after onboardin
 Punches come from the biometric machines (an Excel / CSV upload by HR for now - `attendance.punches.upload`; the Kent
 feed later). Each employee has a default shift + weekly offs from a date (`shifts.assign`; none: the default shift,
 Sunday off); rotating employees get a roster built by their manager (reporting tree) or HR, published before it counts
-(`rosters.*`). **Which shift applies on a day:** a holiday (every company / the company / the location) first, then a
-published roster day, then the default shift. **A day:** the punches go to the day whose shift they are nearest (4h
+(`rosters.*`). **Which shift applies on a day:** a holiday of the holiday list the employee follows that day (2026-11-24 - a
+whole day; or one half off, the other worked - present for the policy's half-day hours; a first-half holiday on a half-day
+weekday makes it all off) first, then a published roster day, then the default shift. **A day:** the punches go to the day whose shift they are nearest (4h
 before the start to 8h after the end - a night shift's morning punch is the night before's); where one working day's shift
 ends within an hour of the next one's start (a night shift then a morning one), the punches around that moment are split at
 their biggest gap - the earlier close the first shift, the later open the next (2026-11-23); a working day with no punch
@@ -3062,7 +3077,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Access:** any logged-in employee.
 - **Scope:** not limited by data access - the caller's own (and the sizes of their reporting tree and of their HOD department).
 - **Input:** none
-- **Returns:** `{ today, teamSize, departmentSize, currentMonth {year, month} (the attendance month today is in - 26th to 25th, 2026-11-22), cycleStartDay (the day an attendance month starts, 1-28 - the month placeholder draws its real days), canSeeAll, canEdit }` - `today` the viewer's day (`{ date, employed, status, autoStatus, planned (WORK | WEEKLY_OFF | HOLIDAY), holiday, rostered, shift {id, code, name}, inAt, outAt ("09:04", the work location's clock), punchCount, workedMinutes, lateMinutes, earlyMinutes, correction }` without the correction, plus `corrected`); `teamSize` the size of their reporting tree; `departmentSize` (2026-11-18) how many employees they are the HOD of; the "Team attendance" menu item and page show when either is above 0 or `canSeeAll` (2026-11-22); (Shift changes to decide are on the Approvals page since 2026-11-22.)
+- **Returns:** `{ today, teamSize, departmentSize, currentMonth {year, month} (the attendance month today is in - 26th to 25th, 2026-11-22), cycleStartDay (the day an attendance month starts, 1-28 - the month placeholder draws its real days), canSeeAll, canEdit }` - `today` the viewer's day (`{ date, employed, status, autoStatus, planned (WORK | WEEKLY_OFF | HOLIDAY), holiday, holidayHalf, rostered, shift {id, code, name}, inAt, outAt ("09:04", the work location's clock), punchCount, workedMinutes, lateMinutes, earlyMinutes, correction }` without the correction, plus `corrected`); `teamSize` the size of their reporting tree; `departmentSize` (2026-11-18) how many employees they are the HOD of; the "Team attendance" menu item and page show when either is above 0 or `canSeeAll` (2026-11-22); (Shift changes to decide are on the Approvals page since 2026-11-22.)
 - **What it does:** what the attendance pages, the menu (whether "Team attendance" shows) and the home page's "Today" card need first.
 - **Errors:** `401`.
 
@@ -3071,7 +3086,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Access:** any logged-in employee (their own).
 - **Scope:** not limited by data access - the caller's own.
 - **Input:** `{ year, month }`
-- **Returns:** `{ employee {employeeCode, name, department, designation, company}, year, month, from, to, locked, days: [`{ date, employed, status, firstHalf, secondHalf, autoStatus, planned (WORK | WEEKLY_OFF | HOLIDAY), holiday, rostered, halfDay, policy {id, name, graceMinutes}, note, shift {id, code, name}, inAt, outAt ("09:04", the work location's clock), punchCount, workedMinutes, lateMinutes, earlyMinutes, correction, covers }`], totals { present, halfDay, absent, missedPunch, leave, onDuty, weeklyOff, holiday, late, workedMinutes } }` - `year` / `month` an **attendance month** from the settings' start day (RML: 26 - "November" = 26 Oct - 25 Nov, 2026-11-22) with its `from` / `to` days and whether it is `locked`; each day has two halves (2026-11-22): `firstHalf` / `secondHalf` each PRESENT | ABSENT | MISSED_PUNCH | WEEKLY_OFF | HOLIDAY | LEAVE | ON_DUTY (2026-11-22), `status` the day overall (both the same = that; present + absent = HALF_DAY; present / absent beside an off half = that; on duty counts as worked; leave + worked = HALF_DAY, leave + absent = ABSENT, leave beside an off half = LEAVE); `covers` (2026-11-22) `[{ half: FIRST | SECOND, status: LEAVE | PRESENT | ON_DUTY, code (CL, OD, P), label }]` - the approved leave (leave module) and missed-punch / on-duty requests on the day's working halves, also for days to come (a weekly off / holiday is never covered; HR's correction wins over them, they win over the punches); `halfDay` the day works only the first half (a half-day weekday, e.g. Saturday); `policy` the attendance policy the day is judged by; `note` why a policy rule made a half absent (e.g. "3rd late this month - first half absent", "In 2h 30m late - first half absent"); the totals count in halves (a Saturday present + off = 0.5 + 0.5), `halfDay` = days with one half present and one absent; `correction` `{ firstHalf, secondHalf (null = follows the punches), reason, at, by }` or null; a day not worked out yet (a future day, today before the first punch) has `status: null` and shows what is planned.
+- **Returns:** `{ employee {employeeCode, name, department, designation, company}, year, month, from, to, locked, days: [`{ date, employed, status, firstHalf, secondHalf, autoStatus, planned (WORK | WEEKLY_OFF | HOLIDAY), holiday, rostered, halfDay, holidayHalf (FIRST | SECOND | null - a half-day holiday's half off, 2026-11-24), policy {id, name, graceMinutes}, note, shift {id, code, name}, inAt, outAt ("09:04", the work location's clock), punchCount, workedMinutes, lateMinutes, earlyMinutes, correction, covers }`], totals { present, halfDay, absent, missedPunch, leave, onDuty, weeklyOff, holiday, late, workedMinutes } }` - `year` / `month` an **attendance month** from the settings' start day (RML: 26 - "November" = 26 Oct - 25 Nov, 2026-11-22) with its `from` / `to` days and whether it is `locked`; each day has two halves (2026-11-22): `firstHalf` / `secondHalf` each PRESENT | ABSENT | MISSED_PUNCH | WEEKLY_OFF | HOLIDAY | LEAVE | ON_DUTY (2026-11-22), `status` the day overall (both the same = that; present + absent = HALF_DAY; present / absent beside an off half = that; on duty counts as worked; leave + worked = HALF_DAY, leave + absent = ABSENT, leave beside an off half = LEAVE); `covers` (2026-11-22) `[{ half: FIRST | SECOND, status: LEAVE | PRESENT | ON_DUTY | HOLIDAY, code (CL, OD, P), label }]` - the approved leave (leave module; HOLIDAY: an on-application holiday taken - a leave type "only on its holiday dates", 2026-11-24) and missed-punch / on-duty requests on the day's working halves, also for days to come (a weekly off / holiday is never covered; HR's correction wins over them, they win over the punches); `halfDay` the day works only the first half (a half-day weekday, e.g. Saturday); `policy` the attendance policy the day is judged by; `note` why a policy rule made a half absent (e.g. "3rd late this month - first half absent", "In 2h 30m late - first half absent"); the totals count in halves (a Saturday present + off = 0.5 + 0.5), `halfDay` = days with one half present and one absent; `correction` `{ firstHalf, secondHalf (null = follows the punches), reason, at, by }` or null; a day not worked out yet (a future day, today before the first punch) has `status: null` and shows what is planned.
 - **What it does:** the employee's month calendar.
 - **Errors:** `400`.
 
@@ -3189,8 +3204,8 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **HTTP:** `POST /api/rpc/attendance/shifts/schedules` · **Code:** `backend/src/modules/attendance/shifts/`
 - **Access:** Attendance setup: View.
 - **Scope:** the employees inside the viewer's Attendance setup View data access (`scopeOf` - employed today).
-- **Input:** `{ search? (name or code), companyIds?, plantIds?, departmentIds?, costCenterIds? (each a list of ids - any of them), patternId?, policyId? }` (optional)
-- **Returns:** `[{ employee {employeeCode, name, company (code), plant (code + name), department, costCenter (code), workLocation}, pattern {id, name} | null, patternIsDefault (never given a schedule), policy {id, name} | null, policyIsDefault (the schedule names none), since (the schedule's start; null = never given one), next {from, pattern} | null (a change already set for later) }]` by employee code - `patternId` / `policyId` keep those following it (the default one included).
+- **Input:** `{ search? (name or code), companyIds?, plantIds?, departmentIds?, costCenterIds? (each a list of ids - any of them), patternId?, policyId?, holidayListId? (null = those without a list - 2026-11-24) }` (optional)
+- **Returns:** `[{ employee {employeeCode, name, company (code), plant (code + name), department, costCenter (code), workLocation}, pattern {id, name} | null, patternIsDefault (never given a schedule), policy {id, name} | null, policyIsDefault (the schedule names none), since (the schedule's start; null = never given one), next {from, pattern} | null (a change already set for later), holidayList { holidayList {id, name} | null (none = no holidays), since, next {from, holidayList} | null } (2026-11-24) }]` by employee code - `patternId` / `policyId` keep those following it (the default one included).
 - **What it does:** who follows what (the user, 2026-11-23: "which employee got what schedule pattern and what policy") - the Schedules part of Attendance setup.
 - **Errors:** `403`.
 
@@ -3296,39 +3311,138 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 
 ### `attendance.holidays.list`
 - **HTTP:** `POST /api/rpc/attendance/holidays/list` · **Code:** `backend/src/modules/attendance/holidays/`
-- **Access:** any logged-in employee.
-- **Scope:** not limited by data access (everyone's holidays).
+- **Access:** Attendance setup: View (2026-11-24 - was any logged-in employee; employees see their own: `mine`).
+- **Scope:** not limited by data access - every list's holidays (dates and names, no one's records), for the setup page.
+- **Input:** `{ year, holidayListId? (only that list's) }`
+- **Returns:** `[{ id, date, name, portion (FULL_DAY | FIRST_HALF | SECOND_HALF - the part of the day off), mode (AUTOMATIC | ON_APPLICATION), allowHalfDay, leaveType {id, code, name} | null, category {id, name, tone}, lists [{id, name, companyId}] }]` by date.
+- **What it does:** a year's holidays (2026-11-24 - each in the holiday lists that have it). Who gets which comes from the list each employee follows (`attendance.holidayLists.*`).
+- **Errors:** `400`.
+
+### `attendance.holidays.mine`
+- **HTTP:** `POST /api/rpc/attendance/holidays/mine` · **Code:** `backend/src/modules/attendance/holidays/`
+- **Access:** Logged in.
+- **Scope:** not limited by data access - the caller's own holidays only.
 - **Input:** `{ year }`
-- **Returns:** `[{ id, date, name, companyId, workLocationId, company {code, name}, workLocation {name} }]` by date.
-- **What it does:** the holiday calendar of a year.
+- **Returns:** `{ holidayList {id, name} | null (followed today), next {from, holidayList} | null (a change set for later), holidays [{ id, date, name, portion, mode, allowHalfDay, leaveType {id, code, name} | null, category {id, name, tone}, list {id, name} }] }` by date.
+- **What it does:** "My holidays" (the user, 2026-11-24 - on My leave): the holidays of the list the caller follows on each date of the year (a list changed in the year: each part its own); automatic ones are days off, an on-application one is theirs to apply for (`leave.applications.apply` with its leave type). No list: none. Their applications and balances come from `leave.applications.mine` / `leave.balances.get`.
 - **Errors:** `400`.
 
 ### `attendance.holidays.create`
 - **HTTP:** `POST /api/rpc/attendance/holidays/create` · **Code:** `backend/src/modules/attendance/holidays/`
 - **Access:** Attendance setup: Edit.
-- **Scope:** a company's holiday: Attendance setup Edit for that **whole company**; a holiday for every company: for **all companies** (`403`).
-- **Input:** `{ date, name, companyId? (empty = every company), workLocationId? (empty = every location) }`
-- **Returns:** the holiday.
-- **What it does:** adds a holiday; a day already passed is worked out again for everyone. Leave will use the same calendar.
-- **Errors:** `400` · `409` the same holiday (date + company + location) already there, or the date is in a locked attendance month (2026-11-23).
+- **Scope:** every list it goes in: a company's list - Attendance setup Edit for that **whole company**; a list of every company - for **all companies** (`403`).
+- **Input:** `{ date, name, categoryId (a category in use), portion? (default FULL_DAY), holidayListIds (1-200, lists in use), mode? (AUTOMATIC default | ON_APPLICATION - 2026-11-24), leaveTypeId? (ON_APPLICATION: required - a leave type in use, "only on its holiday dates"; AUTOMATIC: none), allowHalfDay? (ON_APPLICATION: half of it may be taken) }` - an on-application holiday is a whole day (`portion` FULL_DAY).
+- **Returns:** the holiday, as `list`.
+- **What it does:** adds a holiday to the lists (one holiday, shared by them - 2026-11-24): everyone following one of them that day is off - the whole day, or that half (the other half worked); an ON_APPLICATION one is a working day unless they apply for it (leave of its type, approved - the day then a holiday for them). A day already passed works that attendance month out again for those whose days of it are already worked out (never a month before attendance started - 2026-11-24). Leave counts by the same days.
+- **Errors:** `400` a retired list or category · `403` · `404` no such list / category · `409` one of the lists already has a holiday that day, or the date is in a locked attendance month (2026-11-23).
 
 ### `attendance.holidays.update`
 - **HTTP:** `POST /api/rpc/attendance/holidays/update` · **Code:** `backend/src/modules/attendance/holidays/`
 - **Access:** Attendance setup: Edit.
-- **Scope:** the company it was for and the one it will be for: Attendance setup Edit for that whole company - for every company, all companies (`403`).
-- **Input:** `{ id, ...the fields of create (optional) }`
-- **Returns:** the holiday.
-- **What it does:** changes a holiday (both the old and new dates are worked out again). Moving it or giving it to other people needs both dates in open months; a new name alone may be fixed in a locked month (2026-11-23).
+- **Scope:** as `create`, for every list it is in and every list it goes in (`403`).
+- **Input:** `{ id, ...the fields of create (optional) - holidayListIds: the lists that have it from now on }`
+- **Returns:** the holiday, as `list`.
+- **What it does:** changes a holiday; moved, put in other lists, another part of the day or how it is given: both dates must be in open months and are worked out again (as `create`); a new name or category alone may be fixed in a locked month (2026-11-23). An on-application holiday changed (2026-11-24): the leave taking it, waiting or approved, that no longer fits (another date, off the person's list) is cancelled - an approved one's days given back, the employee e-mailed.
 - **Errors:** as `create` · `404`.
 
 ### `attendance.holidays.delete`
 - **HTTP:** `POST /api/rpc/attendance/holidays/delete` · **Code:** `backend/src/modules/attendance/holidays/`
 - **Access:** Attendance setup: Edit.
-- **Scope:** a company's holiday: Attendance setup Edit for that whole company; a holiday for every company: for all companies (`403`).
+- **Scope:** every list it is in (as `create`, `403`).
 - **Input:** `{ id }`
 - **Returns:** `{ deleted: true }`.
-- **What it does:** removes a holiday (the day is worked out again) - not in a locked attendance month (2026-11-23).
-- **Errors:** `404` · `409` a locked month.
+- **What it does:** removes a holiday from every list (its month worked out again, as `create`) - not in a locked attendance month (2026-11-23). An on-application one: the leave taking it is cancelled and its days given back (the employee e-mailed - 2026-11-24).
+- **Errors:** `403` · `404` · `409` a locked month.
+
+### `attendance.holidays.copyYear`
+- **HTTP:** `POST /api/rpc/attendance/holidays/copyYear` · **Code:** `backend/src/modules/attendance/holidays/`
+- **Access:** Attendance setup: Edit.
+- **Scope:** only the lists the viewer may change (as `create`) - a holiday's other lists are left out; nothing outside the data access is copied into.
+- **Input:** `{ year }` - copies `year - 1` into `year`.
+- **Returns:** `{ copied, skipped }`.
+- **What it does:** "copy from last year" (the user, 2026-11-24): each holiday of the year before, on the same day and month (29 Feb -> 28 Feb), with its name, category, part of the day and how it is given, into the same lists; a list that already has a holiday that day keeps it; days in a locked month are left out. HR then moves the festivals whose dates differ.
+- **Errors:** `400` · `403`.
+
+### `attendance.holidayLists.list`
+- **HTTP:** `POST /api/rpc/attendance/holidayLists/list` · **Code:** `backend/src/modules/attendance/holiday-lists/`
+- **Access:** any logged-in employee; `includeInactive` needs Attendance setup: View.
+- **Scope:** not limited by data access - list names and the plants they are the default of, no one's records.
+- **Input:** `{ includeInactive? }` (optional)
+- **Returns:** `[{ id, name, companyId, isActive, company {id, code, name} | null, defaultPlants [{id, plantCode, name, companyId}] }]` by name.
+- **What it does:** the named holiday lists (2026-11-24 - "Corporate", "RML6 Plant"); each employee follows one from a date (`assign`, the joining day, `fillMissing`; who follows which: `attendance.shifts.schedules`). `company` null = a list every company may use.
+- **Errors:** `403` retired ones without Attendance setup: View.
+
+### `attendance.holidayLists.create`
+- **HTTP:** `POST /api/rpc/attendance/holidayLists/create` · **Code:** `backend/src/modules/attendance/holiday-lists/`
+- **Access:** Attendance setup: Edit.
+- **Scope:** a company's list: Attendance setup Edit for that **whole company** (`assertWholeSlice`); a list for every company: for **all companies** (`assertGroupWide`) - `403`.
+- **Input:** `{ name (unique), companyId? (empty = every company) }`
+- **Returns:** the list, as `list`.
+- **What it does:** adds a holiday list.
+- **Errors:** `400` · `403` · `404` no such company · `409` the name is taken.
+
+### `attendance.holidayLists.update`
+- **HTTP:** `POST /api/rpc/attendance/holidayLists/update` · **Code:** `backend/src/modules/attendance/holiday-lists/`
+- **Access:** Attendance setup: Edit.
+- **Scope:** as `create`, for the company it belongs to and, when moved, the one it goes to (`403`).
+- **Input:** `{ id, name?, companyId? (null = every company), isActive? }`
+- **Returns:** the list, as `list`.
+- **What it does:** renames, gives the list to another company (or to every company) or retires it.
+- **Errors:** `400` · `403` · `404` · `409` the name is taken; moved to a company while it is the default of another company's plant or followed (today or from a later date) by employees of another company; retired while it is a plant's default or still followed by employees (2026-11-24).
+
+### `attendance.holidayLists.setPlantDefault`
+- **HTTP:** `POST /api/rpc/attendance/holidayLists/setPlantDefault` · **Code:** `backend/src/modules/attendance/holiday-lists/`
+- **Access:** Attendance setup: Edit.
+- **Scope:** a plant's setting - Attendance setup Edit for that **whole plant** (`assertWholeSlice`, `403`).
+- **Input:** `{ plantId, holidayListId (null = no default) }`
+- **Returns:** `{ plantId, holidayList {id, name} | null }`.
+- **What it does:** the list offered on the joining day for the plant, and given by `fillMissing` to the plant's employees without a list (2026-11-24) - HR may give a person another (`assign`); moving plant keeps the list. A list in use, of the plant's company or of every company. Not dated: it decides only what is given next.
+- **Errors:** `400` a retired list or another company's · `403` · `404` no such plant / list.
+
+### `attendance.holidayLists.assign`
+- **HTTP:** `POST /api/rpc/attendance/holidayLists/assign` · **Code:** `backend/src/modules/attendance/holiday-lists/`
+- **Access:** Attendance setup: Edit.
+- **Scope:** each employee: Attendance setup Edit covering the employee (outside the View data access `404`, View only `403`).
+- **Input:** `{ employeeCodes (1-2000), holidayListId, effectiveFrom }`
+- **Returns:** `{ assigned, unchanged }` - `unchanged`: already following that list from that day, with no later change.
+- **What it does:** the employees follow the list from the date until their next row (one per employee per date, a row the same day replaced) - HR's change of one person or many (ticked on Attendance setup > Schedules, or added in the drawer); the days before keep the list they had. A list in use, of each employee's company or of every company. From a day already passed, the holidays' dates since then are worked out again for them (2026-11-24) - only months of theirs already worked out. Their leave taking on-application holidays from that date that are not on the new list is cancelled (an approved one's days given back, the employee e-mailed).
+- **Errors:** `400` an unknown code, a retired list, another company's list · `403` · `404` no such list · `409` a locked attendance month on or after the date.
+
+### `attendance.holidayLists.fillMissing`
+- **HTTP:** `POST /api/rpc/attendance/holidayLists/fillMissing` · **Code:** `backend/src/modules/attendance/holiday-lists/`
+- **Access:** Attendance setup: Edit.
+- **Scope:** the employees inside the viewer's Attendance setup **Edit** data access (`scopeOf`), employed today or joining later.
+- **Input:** `{ dryRun? }` - true: only count.
+- **Returns:** `{ withoutList, toGive, given, noDefault [{plant, employees}] }` - `noDefault`: plants without a default where people still wait, most first.
+- **What it does:** everyone without any holiday list gets their plant's default (in use, of their company or every company) from their joining day - or the day after the last locked attendance month after it. For go-live and for employees added directly or imported (the joining day sets the list itself). The holidays' dates already passed are worked out again for them - only months of theirs already worked out (never days before attendance started).
+- **Errors:** `403`.
+
+### `attendance.holidayCategories.list`
+- **HTTP:** `POST /api/rpc/attendance/holidayCategories/list` · **Code:** `backend/src/modules/attendance/holiday-categories/`
+- **Access:** any logged-in employee; `includeInactive` needs Attendance setup: View.
+- **Scope:** not limited by data access - one list shared by every company.
+- **Input:** `{ includeInactive? }` (optional)
+- **Returns:** `[{ id, name, tone (NEUTRAL | INFO | GOLD | POSITIVE | WARNING | NEGATIVE), isActive }]` by name.
+- **What it does:** HR's holiday categories (2026-11-24 - National, Festival, Election...) and the colour each shows in (the app's pill tones).
+- **Errors:** `403` retired ones without Attendance setup: View.
+
+### `attendance.holidayCategories.create`
+- **HTTP:** `POST /api/rpc/attendance/holidayCategories/create` · **Code:** `backend/src/modules/attendance/holiday-categories/`
+- **Access:** Attendance setup: Edit.
+- **Scope:** shared by every company - Attendance setup Edit for all companies (`assertGroupWide`, `403`).
+- **Input:** `{ name (unique), tone }`
+- **Returns:** the category.
+- **What it does:** adds a holiday category.
+- **Errors:** `400` · `403` · `409` the name is taken.
+
+### `attendance.holidayCategories.update`
+- **HTTP:** `POST /api/rpc/attendance/holidayCategories/update` · **Code:** `backend/src/modules/attendance/holiday-categories/`
+- **Access:** Attendance setup: Edit.
+- **Scope:** as `create`.
+- **Input:** `{ id, name?, tone?, isActive? }`
+- **Returns:** the category.
+- **What it does:** renames, recolours or retires a category (a retired one is offered no more).
+- **Errors:** `400` · `403` · `404` · `409` the name is taken.
 
 ### `attendance.punches.upload`
 - **HTTP:** `POST /api/rpc/attendance/punches/upload` · **Code:** `backend/src/modules/attendance/punches/`
@@ -3765,7 +3879,7 @@ leave year is the calendar year.
 - **Access:** Logged in; retired types only with Leave: View.
 - **Scope:** not limited by data access - a list shared by every company.
 - **Input:** `{ includeInactive? }` (optional)
-- **Returns:** `[{ id, code, name, isPaid, creditPerMonth, creditAfterMonths, maxCarryForward, maxPerRequest, allowHalfDay, countsOffDays, genders, employmentTypes, isCompOff, isActive, creditsFrom (the first month credited under the credit rules in force - 2026-11-23), createdAt }]`
+- **Returns:** `[{ id, code, name, isPaid, creditPerMonth, creditAfterMonths, maxCarryForward, maxPerRequest, allowHalfDay, countsOffDays, noticeDays, todayOrPastOnly, maxDaysBack (when it may be applied for - 2026-11-24), genders, employmentTypes, isCompOff, holidaysOnly, isActive, creditsFrom (the first month credited under the credit rules in force - 2026-11-23), createdAt }]`
 - **What it does:** the leave types and their rules (seeded with the old HRMS's: CL, SL, EL, CO, ML, LWP).
 - **Errors:** `401`.
 
@@ -3773,7 +3887,7 @@ leave year is the calendar year.
 - **HTTP:** `POST /api/rpc/leave/types/create` · **Code:** `backend/src/modules/leave/types/`
 - **Access:** Leave: Edit.
 - **Scope:** shared by every company - Leave Edit for all companies (`assertGroupWide`).
-- **Input:** `{ code (1-10 capitals / digits), name, isPaid, creditPerMonth (0-31, 2 decimals), creditAfterMonths (0-120), maxCarryForward (null = all carries; 0 = all lapses), maxPerRequest (null = no limit; 0.5 steps), allowHalfDay, countsOffDays, genders: Gender[] (empty = all), employmentTypes: EmploymentType[] (empty = all), isCompOff? (comp-off claims are credited to it - one paid type; 2026-11-22), isActive? }`
+- **Input:** `{ code (1-10 capitals / digits), name, isPaid, creditPerMonth (0-31, 2 decimals), creditAfterMonths (0-120), maxCarryForward (null = all carries; 0 = all lapses), maxPerRequest (null = no limit; 0.5 steps), allowHalfDay, countsOffDays, noticeDays? (0-365: at least that many calendar days before the first leave day - EL 7, CL 3; null / 0 / left out = none - 2026-11-24), todayOrPastOnly? (only for today or days passed - sick leave; not with notice), maxDaysBack? (0-365: the first day at most that many days ago; null / left out = any day of an open attendance month), genders: Gender[] (empty = all), employmentTypes: EmploymentType[] (empty = all), isCompOff? (comp-off claims are credited to it - one paid type; 2026-11-22), holidaysOnly? (taken only on its holiday dates - the on-application holidays naming it; paid, not the comp-off one; its carry forward is always 0 - 2026-11-24), isActive? }`
 - **Returns:** the type, as `list`.
 - **What it does:** adds a leave type. Its monthly credits start on the 1st of the month after it is added (`creditsFrom`).
 - **Errors:** `400` (an unpaid type with a credit, an unpaid comp-off type) · `403` · `409` the code / name exists, another type already receives comp-off.
@@ -3825,6 +3939,15 @@ leave year is the calendar year.
 - **What it does:** an ADJUSTMENT row dated today with HR's reason - opening balances at go-live, days given (maternity, comp-off), a mistake put right. Never below zero (old HRMS); not for leave without pay.
 - **Errors:** `400` below zero, unpaid type · `403` · `404`.
 
+
+### `leave.balances.giveMany`
+- **HTTP:** `POST /api/rpc/leave/balances/giveMany` · **Code:** `backend/src/modules/leave/balances/`
+- **Access:** Leave: Edit.
+- **Scope:** Leave **Edit** data access (`scopeOf`): codes outside it are "not found" (`400`, never revealing who exists); without codes, only the employees inside it.
+- **Input:** `{ leaveTypeId (a paid type in use), days (> 0, up to 365, 2 decimals), note (5-500), employeeCodes? (1-5000 - these people), companyIds?, plantIds?, departmentIds?, holidayListIds? (without codes: everyone matching - each list: any of them; the holiday list followed today), dryRun? (only count) }`
+- **Returns:** `{ people, toGive, notForThem, given }` - `notForThem`: left out, the type is not for them (gender / employment type).
+- **What it does:** (the user, 2026-11-24 - e.g. one day of election leave to everyone on the West Bengal holiday list, the year's restricted holidays) an ADJUSTMENT of `days` with the note, dated today, for each employee employed today or joining later. A separate API from `adjust` (one person, + or -, the balance back) because it chooses many by a filter and counts first. People joining later get nothing - HR gives it again.
+- **Errors:** `400` an unknown / outside code, unpaid or retired type · `403`.
 ### `leave.balances.runCredits`
 - **HTTP:** `POST /api/rpc/leave/balances/runCredits` · **Code:** `backend/src/modules/leave/balances/`
 - **Access:** Leave: Edit.
@@ -3868,7 +3991,7 @@ leave year is the calendar year.
 - **Scope:** not limited by data access - the caller's own.
 - **Input:** as `preview` + `reason` (3-500).
 - **Returns:** the application `{ id, employee {employeeCode, name}, leaveType {id, code, name, isPaid}, fromDate, toDate, fromSecondHalf, toFirstHalf, days, reason, status (PENDING | APPROVED | REJECTED | CANCELLED), approvalRequestId, approval {status, held, closedAt, closedById, step} | null, cancelRequest {approvalRequestId, status, held, closedAt, closedById, step} | null, cancelReason, createdAt }`.
-- **What it does:** counts the days by the attendance plan (each working half 0.5; a half-day weekday's second half is off; weekly offs / holidays count only for a type with `countsOffDays`; a leave must start and end on a working day - never on a weekly off or a holiday, the user 2026-11-23) and raises its approval request (kind `LEAVE`; seeded: the reporting manager, 48 h, then escalated to their manager). Refused: a retired type or one that does not apply to the employee; half days on a whole-day type; not employed every day; a locked attendance month; any half already on leave or with a regularization / on-duty request (approved or waiting); more than `maxPerRequest`; for a paid type more than the balance less what waits. When approved: the days are counted again (changed: refused - apply again), the balance must still cover them, a TAKEN row is added and the attendance days show the leave (days already come are worked out again).
+- **What it does:** counts the days by the attendance plan (each working half 0.5; a half-day weekday's second half is off; weekly offs / holidays count only for a type with `countsOffDays`; a leave must start and end on a working day - never on a weekly off or a holiday, the user 2026-11-23) and raises its approval request (kind `LEAVE`; seeded: the reporting manager, 48 h, then escalated to their manager). Refused: a retired type or one that does not apply to the employee; half days on a whole-day type; when the type's timing says no (2026-11-24, in calendar days from today in India): less notice than `noticeDays` before the first day, a day after today for a `todayOrPastOnly` type, a first day more than `maxDaysBack` days ago; for a `holidaysOnly` type, a day that is not an on-application holiday of that type in the employee's holiday list that day (the refusal lists their coming dates), or half of one that is taken as a whole day; not employed every day; a locked attendance month; any half already on leave or with a regularization / on-duty request (approved or waiting); more than `maxPerRequest`; for a paid type more than the balance less what waits. When approved: the days are counted again (changed: refused - apply again), the balance must still cover them, a TAKEN row is added and the attendance days show the leave (days already come are worked out again).
 - **Double submit (2026-11-23):** applications of one employee are saved one at a time and checked again then - a double
   click makes one leave (the second: `409` overlap).
 - **Errors:** `400` the rules above · `404` · `409` overlap, not enough balance, a locked month, the chain switched off.

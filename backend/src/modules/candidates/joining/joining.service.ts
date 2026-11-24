@@ -1,6 +1,7 @@
 import type { CurrentUser } from '#core/rpc/procedures'
 import { prisma, SYSTEM_ACTOR } from '#core/db/prisma'
 import { accountsService } from '#modules/accounts'
+import { attendanceService } from '#modules/attendance'
 import { employeeDocumentsService, employeesService } from '#modules/employees'
 import { employeeLettersService } from '#modules/employee-letters'
 import { joiningTasksService } from '#modules/joining-tasks'
@@ -25,7 +26,8 @@ import type { completeJoiningInput } from './joining.schema.js'
 //   family, nominees and the joining record with the signed declaration), the documents move to
 //   the employee, the background checks are linked to the employee (employeeId - some may still be running), the
 //   offer's salary and breakup become the employee's first salary (payroll.prisma, from the date of joining), the
-//   employee gets a login with a temporary password, and the candidate becomes JOINED and is linked to the employee.
+//   employee gets a login with a temporary password, the holiday list HR chose is followed from the date of joining
+//   (2026-11-24), and the candidate becomes JOINED and is linked to the employee.
 //   After it is saved the login is e-mailed to the employee's personal e-mail (else HR is shown the password once).
 
 // the Indian calendar day of a moment
@@ -171,6 +173,8 @@ export async function completeJoining(input: z.infer<typeof completeJoiningInput
   if (input.probationEndDate && input.probationEndDate <= input.dateOfJoining) {
     throw new ORPCError('BAD_REQUEST', { message: 'probationEndDate must be after dateOfJoining' })
   }
+  // the holiday list chosen: in use, of the company or of every company (2026-11-24)
+  if (input.holidayListId) await attendanceService.assertJoiningHolidayList(input.holidayListId, candidate.company.id)
 
   // the joining tasks and who does each - checked before anything is saved (every task needs a person, 2026-11-20)
   const taskPlan = await joiningTasksService.planJoiningTasks(
@@ -286,6 +290,8 @@ export async function completeJoining(input: z.infer<typeof completeJoiningInput
       if (!(await joiningRepository.markJoined(input.candidateId, created.id, actorId, tx))) {
         throw new ORPCError('CONFLICT', { message: 'This candidate was changed a moment ago. Please reload the page and try again.' })
       }
+      // the holiday list followed from the date of joining (2026-11-24)
+      if (input.holidayListId) await attendanceService.giveHolidayListOnJoining(created.id, input.holidayListId, input.dateOfJoining, actorId, tx)
       // the background checks (some may still be running) belong to the employee from now on
       await backgroundChecksService.linkToEmployee(input.candidateId, created.id, actorId, tx)
       temporaryPassword = await accountsService.createJoinerLogin(created.id, actorId, tx)

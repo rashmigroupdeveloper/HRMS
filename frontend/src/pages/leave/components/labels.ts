@@ -60,3 +60,12 @@ export type TeamLeavePart = (typeof TEAM_LEAVE_PARTS)[number][0]
 export const LEAVE_LIST_HEADINGS = ['Employee', 'Leave', 'Days', 'Status']
 // The leave types table's headings (the table and its skeleton)
 export const TYPE_HEADINGS = ['Code', 'Leave type', 'Credit a month', 'Carry forward', 'At most at once', 'Rules']
+
+// When a leave type may be applied for (the user, 2026-11-24) in words - the leave types list and the apply form
+export function timingRules(t: { noticeDays: number | null; todayOrPastOnly: boolean; maxDaysBack: number | null }) {
+  return [
+    t.noticeDays ? `apply ${t.noticeDays} day${t.noticeDays === 1 ? '' : 's'} ahead` : null,
+    t.todayOrPastOnly ? 'only for today or days already passed' : null,
+    t.maxDaysBack !== null ? `at most ${t.maxDaysBack} day${t.maxDaysBack === 1 ? '' : 's'} back` : null,
+  ].filter((x): x is string => !!x)
+}

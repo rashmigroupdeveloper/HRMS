@@ -90,7 +90,8 @@ HRMS_NEW/
 │     │  ├─ change-history/     reading the change history (filters, names for ids, hidden values) and checking its chain
 │     │  ├─ employee-letters/   letters issued to employees: appointment (on the joining day), confirmation, experience, relieving
 │     │  ├─ joining-tasks/      the tasks other teams do for a new employee: task list, given to a person, My tasks, reminders
-│     │  ├─ attendance/         sub-folders: shifts/ (shifts, default shifts, roster patterns) holidays/ punches/ (machine
+│     │  ├─ attendance/         sub-folders: shifts/ (shifts, default shifts, roster patterns) holidays/ holiday-lists/
+│     │  │                      (named lists, plants' defaults, who follows which from when) holiday-categories/ punches/ (machine
 │     │  │                      uploads, unmatched codes) days/ (each day worked out, month, board, muster, corrections)
 │     │  │                      rosters/ shift-changes/ (employee -> manager -> HR) regularizations/ (missed punch / on
 │     │  │                      duty requests, through approval); reports/ (scoped detail/exceptions and raw-punch Excel); attendance.jobs.ts (nightly close)

@@ -190,3 +190,10 @@ export const BGV_TONE: Record<BackgroundCheck['status'], Tone> = {
   DISCREPANCY: 'warning',
   FAILED: 'negative',
 }
+
+// The joining day's checklist in two parts: what the candidate gives (HR may help), and what HR does on the joining day
+// (JoiningDialog and its skeleton)
+export const CHECK_GROUPS = [
+  { who: 'CANDIDATE', title: 'From the candidate', help: 'The joining form and their own document copies - HR verifies the copies.' },
+  { who: 'HR', title: 'HR on the joining day', help: 'The medical result, and the printed forms signed by the candidate on paper.' },
+] as const

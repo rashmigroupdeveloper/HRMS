@@ -1,9 +1,11 @@
 import { prisma } from '#core/db/prisma'
 import { approvalsService } from '#modules/approvals'
+import { today } from '#shared/utils/dates'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import * as chainsService from '../src/modules/approvals/chains/chains.service.js'
 import * as daysService from '../src/modules/attendance/days/days.service.js'
 import * as holidaysService from '../src/modules/attendance/holidays/holidays.service.js'
+import { followList, holidaySetup } from './helpers/holidays.js'
 import * as regularizationsService from '../src/modules/attendance/regularizations/regularizations.service.js'
 import * as applicationsService from '../src/modules/leave/applications/applications.service.js'
 import * as balancesService from '../src/modules/leave/balances/balances.service.js'
@@ -69,9 +71,33 @@ describe('leave', () => {
     })
     typeId = type.id
   })
-  afterAll(() => prisma.$disconnect())
+  // the run's own leave types retired at the end: the test database is never wiped, and active types crediting everyone
+  // slow down every later credit run (2026-11-24 - the comp-off test timed out)
+  afterAll(async () => {
+    await prisma.leaveType.updateMany({ where: { name: { endsWith: ` ${tag}` } }, data: { isActive: false, updatedById: 0 } })
+    await prisma.$disconnect()
+  })
 
   const balanceOf = async () => (await balancesService.getBalances(self, {})).balances.find((b) => b.leaveType.id === typeId)!
+
+  // when a type may be applied for (the user, 2026-11-24 - HR sets it): the notice in calendar days before the first day
+  // (EL 7: applied today, today + 7 is the earliest), only today or days passed (sick), and how far back
+  it("refuses leave without the type's notice, a sick leave ahead, and one too far back", async () => {
+    const base = { isPaid: true, creditPerMonth: 0, creditAfterMonths: 0, maxCarryForward: null, maxPerRequest: null, allowHalfDay: true, countsOffDays: true, genders: [], employmentTypes: [] }
+    const notice = await typesService.createType(hr, { ...base, code: `N${tag}`, name: `Notice leave ${tag}`, noticeDays: 7 })
+    const sick = await typesService.createType(hr, { ...base, code: `S${tag}`, name: `Sick leave ${tag}`, todayOrPastOnly: true, maxDaysBack: 3 })
+    const now = today()
+    const problemsOf = async (leaveTypeId: number, from: number, to = from) =>
+      (await applicationsService.preview(self, { leaveTypeId, fromDate: plus(now, from), toDate: plus(now, to), fromSecondHalf: false, toFirstHalf: false })).problems.join(' | ')
+    expect(await problemsOf(notice.id, 6)).toContain("notice - the earliest first day")
+    expect(await problemsOf(notice.id, 7)).not.toContain('notice')
+    expect(await problemsOf(sick.id, 0, 1)).toContain('today or days already passed only')
+    expect(await problemsOf(sick.id, 0)).not.toContain('today or days already passed')
+    expect(await problemsOf(sick.id, -4)).toContain('goes back at most 3 days')
+    expect(await problemsOf(sick.id, -3)).not.toContain('goes back')
+    // the rules come back with the type, for the forms
+    expect((await typesService.getType(sick.id))).toMatchObject({ noticeDays: null, todayOrPastOnly: true, maxDaysBack: 3 })
+  })
 
   it('credits each month once, from the month after the type was added', async () => {
     const next = new Date(Date.UTC(utcToday().getUTCFullYear(), utcToday().getUTCMonth() + 1, 1))
@@ -217,7 +243,10 @@ describe('leave', () => {
     expect((await applicationsService.listRecounts(hr, span)).find((r) => r.id === leave.id)).toBeUndefined()
 
     // the Tuesday becomes a holiday: listed, counted 1 day now; nothing changes until HR puts it right
-    const holiday = await holidaysService.createHoliday({ date: plus(mon, 1), name: `Recount day ${tag}`, companyId }, setup)
+    // (2026-11-24: in a list the employee follows)
+    const lists = await holidaySetup(companyId)
+    await followList([employee.id], lists.holidayListId)
+    const holiday = await holidaysService.createHoliday({ date: plus(mon, 1), name: `Recount day ${tag}`, categoryId: lists.categoryId, holidayListIds: [lists.holidayListId] }, setup)
     const listed = (await applicationsService.listRecounts(hr, span)).find((r) => r.id === leave.id)
     expect(listed).toMatchObject({ days: 2, now: 1, difference: -1 })
     expect(listed!.holidays[0]).toContain(`Recount day ${tag}`)

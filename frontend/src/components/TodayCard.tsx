@@ -28,6 +28,8 @@ export function TodayCard({ today, className }: { today: Today; className?: stri
   else if (today.inAt && !today.outAt) line = `In since ${today.inAt}`
   else if (today.inAt) line = `${today.inAt} – ${today.outAt} · ${hours(today.workedMinutes)}`
   else line = today.shift ? `Not in yet · ${today.shift.name} shift` : 'Not in yet'
+  // a half-day holiday (2026-11-24): which half is off
+  if (today.planned === 'WORK' && today.holidayHalf && today.holiday) line += ` · ${today.holiday}, ${today.holidayHalf === 'FIRST' ? 'first' : 'second'} half off`
   return (
     <div className={cn('flex items-center gap-3 rounded-3xl bg-card px-4 py-3 shadow-card', className)}>
       <span className="grid size-10 place-items-center rounded-2xl bg-surface-2">

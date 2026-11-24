@@ -35,12 +35,22 @@ model LeaveType {
   // weekly offs and holidays inside the leave count as leave days (the "sandwich" rule; old: sandwich_rule include /
   // exclude) - the off days themselves stay weekly off / holiday on the attendance days
   countsOffDays             Boolean          @default(false) @map("counts_off_days")
+  // When it may be applied for (the user, 2026-11-24 - all set by HR): at least this many calendar days before the first
+  // leave day (EL 7, CL 3 - applied on the 1st, the 8th is the earliest with 7); null = no notice
+  noticeDays                Int?             @map("notice_days") @db.SmallInt
+  // only for today or days already passed (sick leave)
+  todayOrPastOnly           Boolean          @default(false) @map("today_or_past_only")
+  // the first leave day at most this many days before today; null = back to any day of an attendance month still open
+  maxDaysBack               Int?             @map("max_days_back") @db.SmallInt
   // only for these genders / employment types (empty = everyone) - old: applicable_gender, applicable_categories
   genders                   Gender[]         @default([])
   employmentTypes           EmploymentType[] @default([]) @map("employment_types")
   // the type comp-off is credited to when a claim for work on a weekly off / holiday is approved (one type - the seeded CO;
   // the user, 2026-11-22)
   isCompOff                 Boolean          @default(false) @map("is_comp_off")
+  // taken only on its holiday dates (the user, 2026-11-24): the on-application holidays naming it (restricted holidays,
+  // election days); its days are given by HR (to everyone / chosen / filtered) and lapse at the year end (carry forward 0)
+  holidaysOnly              Boolean          @default(false) @map("holidays_only")
   isActive                  Boolean          @default(true) @map("is_active")
   createdAt                 DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById               Int              @map("created_by_id")
@@ -49,6 +59,8 @@ model LeaveType {
 
   entries      LeaveLedgerEntry[]
   applications LeaveApplication[]
+  // the on-application holidays taken from it
+  holidays     Holiday[]
 
   @@map("leave_types")
 }

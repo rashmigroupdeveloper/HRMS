@@ -11,6 +11,9 @@ export const completeJoiningInput = z.object({
   // (no employee code: the next of the company's series is taken - 2026-11-16)
   // who the new employee reports to, by employee code
   reportingManagerCode: employeesSchemas.employeeCodeSchema.optional(),
+  // the holiday list the new employee follows from the date of joining (the user, 2026-11-24 - the plant's default is
+  // offered; HR changes it later on Attendance setup > Schedules). Left out: no list - no holidays until HR gives one
+  holidayListId: idSchema.optional(),
   // The day the person actually joined (usually the proposed joining date)
   dateOfJoining: z.date(),
   workEmail: emailSchema.optional(),

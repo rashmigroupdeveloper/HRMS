@@ -14,7 +14,8 @@ import * as daysRepository from './days.repository.js'
 import type { boardInput, correctDayInput, dayPunchesInput, employeeMonthInput, musterInput, removeCorrectionInput } from './days.schema.js'
 
 // Each employee's days (attendance, 2026-11-16).
-// Which shift applies on a day: a holiday (for every company, the employee's company and / or work location) first,
+// Which shift applies on a day: a holiday of the holiday list the employee follows that day (2026-11-24 - was by company /
+// work location) first - a whole day, or one half off with the other worked,
 // then a published roster day (a shift, or off), then the employee's default in force that day - a fixed shift and weekly
 // offs, or the day of their rotation pattern (2026-11-22) -
 // else the default shift with Sunday off. The punches are given to the day whose shift they are nearest (from 4 hours
@@ -53,9 +54,15 @@ type Person = employeesService.AttendancePerson
 export type PlanShift = { id: number; code: string; name: string; isActive: boolean; startMinute: number; endMinute: number; breakMinutes: number; halfSplitMinute: number | null }
 type PlanPolicy = { id: number | null; name: string; graceMinutes: number; fullDayMinutes: number | null; halfDayMinutes: number; latesPerHalfDayCut: number | null; veryLateMinutes: number | null; veryEarlyMinutes: number | null }
 // `halfDay`: a working day of the first half only (a half-day weekday of the default shift line; a roster day is whole);
+// `holidayHalf`: a working day with this half a holiday (a half-day holiday - 2026-11-24), the other half worked;
 // `policy`: the rules the day is judged by
 // `pattern`: the schedule pattern the day comes from (the user, 2026-11-23)
-export type Plan = { kind: 'WORK' | 'WEEKLY_OFF' | 'HOLIDAY'; shift: PlanShift; holiday: string | null; rostered: boolean; halfDay: boolean; policy: PlanPolicy; pattern: string }
+export type Plan = { kind: 'WORK' | 'WEEKLY_OFF' | 'HOLIDAY'; shift: PlanShift; holiday: string | null; holidayHalf: Half | null; rostered: boolean; halfDay: boolean; policy: PlanPolicy; pattern: string }
+
+// Whether a half of a planned day is worked: a working day, not the off half of a half-day weekday or a half-day holiday
+export function isWorkingHalf(plan: Pick<Plan, 'kind' | 'halfDay' | 'holidayHalf'>, half: Half) {
+  return plan.kind === 'WORK' && !(plan.halfDay && half === 'SECOND') && plan.holidayHalf !== half
+}
 type Correction = { firstHalf: DayStatus | null; secondHalf: DayStatus | null }
 
 // The day overall from its two halves (the calculation and HR's corrections): the same = that; a missed punch shows; one
@@ -80,7 +87,8 @@ export function dayStatusOf(first: DayStatus, second: DayStatus): DayStatus {
 
 export type Half = 'FIRST' | 'SECOND'
 // `code`: shown on the muster (CL, OD...); `label`: on the day ("Casual leave", "On duty")
-export type DayCover = { employeeId: number; date: Date; half: Half; status: 'LEAVE' | 'PRESENT' | 'ON_DUTY'; code: string; label: string }
+// (HOLIDAY: an on-application holiday taken - its approved leave makes the half a holiday, 2026-11-24)
+export type DayCover = { employeeId: number; date: Date; half: Half; status: 'LEAVE' | 'PRESENT' | 'ON_DUTY' | 'HOLIDAY'; code: string; label: string }
 // The leave module gives its approved leave (and, when asked, the leave still waiting for approval) as covers - it
 // registers this when it loads (attendance never imports leave: leave depends on attendance)
 export type LeaveCoverSource = (employeeIds: number[], from: Date, to: Date, options: { pending: boolean }) => Promise<DayCover[]>
@@ -92,6 +100,25 @@ export function registerLeaveCovers(source: LeaveCoverSource) {
 function leaveSource() {
   if (!leaveCovers) throw new Error('The leave module is not loaded - import #modules/leave before working out attendance days')
   return leaveCovers
+}
+
+// What the leave module gives attendance for on-application holidays (2026-11-24) - registered when leave loads, as its
+// covers are
+export type HolidayLeaveHooks = {
+  // the leave type an on-application holiday is taken from: there, in use and "only on its holiday dates" - throws if not
+  assertLeaveType: (leaveTypeId: number) => Promise<void>
+  // holidays or someone's list changed from..to (`employeeIds`: only theirs): the on-application holidays taken or asked
+  // for then are checked again - those no longer theirs are cancelled, the days given back, the employee told
+  recheck: (change: { from: Date; to: Date; employeeIds?: number[] }) => Promise<void>
+}
+let holidayLeave: HolidayLeaveHooks | null = null
+export function registerHolidayLeave(hooks: HolidayLeaveHooks) {
+  holidayLeave = hooks
+}
+// Loudly, never silently: changing holidays without the leave module loaded would leave taken holidays unchecked
+export function holidayLeaveHooks() {
+  if (!holidayLeave) throw new Error('The leave module is not loaded - import #modules/leave before changing holidays')
+  return holidayLeave
 }
 
 // The halves of the days from..to (the first day from `startHalf`, the last day to `endHalf`)
@@ -129,10 +156,11 @@ export async function loadCovers(employeeIds: number[], from: Date, to: Date, { 
   return byDay
 }
 
-// A day's covers that apply: only working halves (a weekly off / holiday stays so; a half-day weekday's second half is off)
+// A day's covers that apply: only working halves (a weekly off / holiday stays so; a half-day weekday's second half and a
+// half-day holiday's half are off)
 function workingCovers(plan: Plan | undefined, covers: DayCover[] | undefined) {
   if (!plan || plan.kind !== 'WORK' || !covers) return []
-  return covers.filter((c) => !(plan.halfDay && c.half === 'SECOND'))
+  return covers.filter((c) => isWorkingHalf(plan, c.half))
 }
 
 // --- the attendance month and its locks (the user, 2026-11-22) ---
@@ -197,6 +225,18 @@ export async function assertNothingLockedFrom(from: Date) {
   if (lockedAfter) {
     throw new ORPCError('CONFLICT', { message: `${monthName(lockedAfter[0], lockedAfter[1])} is a locked attendance month - start the change after it, or open it again first` })
   }
+}
+
+// The first day from `from` on that a change reaching every later day may start on: the day after the last locked
+// attendance month on or after `from` (none: `from` itself) - giving the plants' default holiday lists (2026-11-24)
+export async function firstOpenDayFrom(from: Date) {
+  const lock = await loadLockState()
+  const lastLockedEnd = [...lock.locked]
+    .map((key) => key.split('-').map(Number) as [number, number])
+    .map(([year, month]) => cycleRange(year, month, lock.startDay).to)
+    .filter((to) => to >= from)
+    .sort((a, b) => b.getTime() - a.getTime())[0]
+  return lastLockedEnd ? addDays(lastLockedEnd, 1) : from
 }
 
 // --- who may see whom ---
@@ -290,13 +330,14 @@ export async function loadShifts() {
 // 2026-11-22)
 export async function loadPlans(people: Person[], from: Date, to: Date, { roster: withRoster = true }: { roster?: boolean } = {}) {
   const ids = people.map((p) => p.id)
-  const [shifts, policies, assignments, roster, holidays, defaults] = await Promise.all([
+  const [shifts, policies, assignments, roster, holidays, defaults, holidayLists] = await Promise.all([
     daysRepository.listAllShifts(),
     daysRepository.listPolicies(),
     daysRepository.listAssignments(ids, to),
     withRoster ? daysRepository.listPublishedRoster(ids, from, to) : Promise.resolve([]),
     daysRepository.listHolidays(from, to),
     daysRepository.listDefaultPatterns(),
+    daysRepository.listEmployeeHolidayLists(ids),
   ])
   // no schedule is built into the code (the user, 2026-11-23): employees with none given follow the default pattern -
   // there is always one (the default cannot be retired, only moved to another pattern); which one is dated (2026-11-23):
@@ -321,6 +362,8 @@ export async function loadPlans(people: Person[], from: Date, to: Date, { roster
   for (const person of people) {
     const own = assignments.filter((a) => a.employeeId === person.id)
     const rostered = new Map(roster.filter((r) => r.employeeId === person.id).map((r) => [dayKey(r.date), r]))
+    // the holiday list they follow, from each date (no row: no list - no holidays - 2026-11-24)
+    const lists = holidayLists.filter((l) => l.employeeId === person.id)
     const days = new Map<string, Plan>()
     for (const day of eachDay(from, to)) {
       const key = dayKey(day)
@@ -339,35 +382,54 @@ export async function loadPlans(people: Person[], from: Date, to: Date, { roster
       // an off day still has a shift - its punches (worked on a day off) are placed by it: the pattern's first shift
       const usual = shiftAt(pattern.days.find((d) => d !== 0)!, day)!
       const patternShift = turn ? (shiftAt(turn, day) ?? usual) : usual
-      const holiday = holidaysByDay
-        .get(key)
-        ?.find((h) => (h.companyId === null || h.companyId === person.companyId) && (h.workLocationId === null || h.workLocationId === person.workLocationId))
+      const listId = lists.filter((l) => l.effectiveFrom <= day).at(-1)?.holidayListId
+      const holiday = listId === undefined ? undefined : holidaysByDay.get(key)?.find((h) => h.lists.some((l) => l.holidayListId === listId))
       // a published roster change (rare, one day) wins over the pattern
       const entry = rostered.get(key)
       const rosterShift = entry?.shiftId ? (shiftAt(entry.shiftId, day) ?? patternShift) : patternShift
-      const base = { holiday: null, rostered: false, halfDay: false, policy, pattern: pattern.name }
-      if (holiday) days.set(key, { ...base, kind: 'HOLIDAY', shift: rosterShift, holiday: holiday.name, rostered: !!entry })
-      else if (entry) days.set(key, { ...base, kind: entry.shiftId ? 'WORK' : 'WEEKLY_OFF', shift: rosterShift, rostered: true })
-      else days.set(key, { ...base, kind: turn ? 'WORK' : 'WEEKLY_OFF', shift: patternShift, halfDay: !!turn && half })
+      const base = { holiday: null, holidayHalf: null, rostered: false, halfDay: false, policy, pattern: pattern.name }
+      // the day without a holiday: the roster's, else the pattern's
+      const plain: Plan = entry
+        ? { ...base, kind: entry.shiftId ? 'WORK' : 'WEEKLY_OFF', shift: rosterShift, rostered: true }
+        : { ...base, kind: turn ? 'WORK' : 'WEEKLY_OFF', shift: patternShift, halfDay: !!turn && half }
+      days.set(key, withHoliday(plain, holiday))
     }
     plans.set(person.id, days)
   }
   return plans
 }
 
-// When the day's shift runs (a night shift ends the next day), and where its first half ends - a half day ends there
-function spanOf(day: Date, s: PlanShift, timeZone: string, halfDay = false) {
+// A day with its holiday (2026-11-24): a whole-day holiday makes any day a holiday (one on a weekly off is simply lost); a
+// half-day holiday makes that half off on a working day - on a half-day weekday its first half makes the whole day off
+// and its second half (off anyway) changes nothing; on a weekly off it changes nothing
+function withHoliday(plain: Plan, holiday: { name: string; portion: 'FULL_DAY' | 'FIRST_HALF' | 'SECOND_HALF' } | undefined): Plan {
+  if (!holiday) return plain
+  if (holiday.portion === 'FULL_DAY') return { ...plain, kind: 'HOLIDAY', halfDay: false, holiday: holiday.name }
+  if (plain.kind !== 'WORK') return plain
+  const off: Half = holiday.portion === 'FIRST_HALF' ? 'FIRST' : 'SECOND'
+  if (plain.halfDay) return off === 'FIRST' ? { ...plain, kind: 'HOLIDAY', halfDay: false, holiday: holiday.name } : plain
+  return { ...plain, holiday: holiday.name, holidayHalf: off }
+}
+
+// Which part of the shift is worked: the whole, its first half only (a half-day weekday, a second-half holiday) or its
+// second half only (a first-half holiday)
+type Part = 'WHOLE' | 'FIRST' | 'SECOND'
+const partOf = (plan: Plan): Part => (plan.halfDay || plan.holidayHalf === 'SECOND' ? 'FIRST' : plan.holidayHalf === 'FIRST' ? 'SECOND' : 'WHOLE')
+
+// When the day's shift runs (a night shift ends the next day), and where its first half ends - a day of its first half
+// only ends there, a day of its second half only starts there
+function spanOf(day: Date, s: PlanShift, timeZone: string, part: Part = 'WHOLE') {
   const end = s.endMinute > s.startMinute ? s.endMinute : s.endMinute + 1440
   const split = s.halfSplitMinute === null ? Math.round((s.startMinute + end) / 2) : s.halfSplitMinute > s.startMinute ? s.halfSplitMinute : s.halfSplitMinute + 1440
   const at = (minute: number) => zonedInstant(day, minute, timeZone)
-  return { start: at(s.startMinute), end: at(halfDay ? split : end), split: at(split), shiftMinutes: end - s.startMinute }
+  return { start: at(part === 'SECOND' ? split : s.startMinute), end: at(part === 'FIRST' ? split : end), split: at(split), shiftMinutes: end - s.startMinute }
 }
 
 // Each punch goes to the day whose shift it is nearest
 function punchesByDay(punches: Date[], days: Date[], plans: Map<string, Plan>, timeZone: string) {
   const spans = days.flatMap((day) => {
     const plan = plans.get(dayKey(day))
-    return plan ? [{ key: dayKey(day), working: plan.kind === 'WORK', ...spanOf(day, plan.shift, timeZone, plan.halfDay) }] : []
+    return plan ? [{ key: dayKey(day), working: plan.kind === 'WORK', ...spanOf(day, plan.shift, timeZone, partOf(plan)) }] : []
   })
   const byDay = new Map<string, Date[]>()
   for (const punch of punches) {
@@ -409,7 +471,8 @@ const SAME_TAP_MINUTES = 5
 function computeDay(day: Date, plan: Plan, punches: Date[], timeZone: string) {
   const s = plan.shift
   const policy = plan.policy
-  const { start, end, split, shiftMinutes } = spanOf(day, plan.shift, timeZone, plan.halfDay)
+  const part = partOf(plan)
+  const { start, end, split, shiftMinutes } = spanOf(day, plan.shift, timeZone, part)
   const sorted = [...punches].sort((a, b) => a.getTime() - b.getTime())
   const firstIn = sorted[0] ?? null
   // an out punch only when it is more than a few minutes after the in punch: two taps at the door (09:00 and 09:01) are one
@@ -419,16 +482,19 @@ function computeDay(day: Date, plan: Plan, punches: Date[], timeZone: string) {
   const span = firstIn && lastOut ? minutes(lastOut.getTime() - firstIn.getTime()) : 0
   // the hours worked shown: the time stayed less the unpaid break (none on a half day - it is the lunch of a full day);
   // the day's status goes by the time stayed (`span`)
-  const worked = plan.halfDay ? span : Math.max(0, span - s.breakMinutes)
+  const worked = part !== 'WHOLE' ? span : Math.max(0, span - s.breakMinutes)
   // how much of a half the punches cover
   const covered = (from: Date, to: Date) => (firstIn && lastOut ? Math.max(0, Math.min(lastOut.getTime(), to.getTime()) - Math.max(firstIn.getTime(), from.getTime())) : 0)
   let first: DayStatus
   let second: DayStatus
   if (plan.kind === 'HOLIDAY') first = second = 'HOLIDAY'
   else if (plan.kind === 'WEEKLY_OFF') first = second = 'WEEKLY_OFF'
-  else if (plan.halfDay) {
-    second = 'WEEKLY_OFF'
-    first = !firstIn ? 'ABSENT' : !lastOut ? 'MISSED_PUNCH' : span >= policy.halfDayMinutes ? 'PRESENT' : 'ABSENT'
+  else if (part !== 'WHOLE') {
+    // one half worked: present = stayed at least the half-day hours; the other half off - the weekly off of a half-day
+    // weekday, or the holiday half
+    const worked = !firstIn ? 'ABSENT' : !lastOut ? 'MISSED_PUNCH' : span >= policy.halfDayMinutes ? 'PRESENT' : 'ABSENT'
+    first = part === 'FIRST' ? worked : 'HOLIDAY'
+    second = part === 'SECOND' ? worked : plan.halfDay ? 'WEEKLY_OFF' : 'HOLIDAY'
   } else if (!firstIn) first = second = 'ABSENT'
   else if (!lastOut) first = second = 'MISSED_PUNCH'
   else if (span >= (policy.fullDayMinutes ?? shiftMinutes)) first = second = 'PRESENT'
@@ -447,7 +513,7 @@ function computeDay(day: Date, plan: Plan, punches: Date[], timeZone: string) {
     first = 'ABSENT'
     notes.push(`In ${clock(inLate)} late - first half absent`)
   }
-  const outEarly = working && lastOut && !plan.halfDay ? minutes(end.getTime() - lastOut.getTime()) : 0
+  const outEarly = working && lastOut && part !== 'FIRST' ? minutes(end.getTime() - lastOut.getTime()) : 0
   if (policy.veryEarlyMinutes !== null && outEarly > policy.veryEarlyMinutes && second !== 'HOLIDAY' && second !== 'WEEKLY_OFF') {
     second = 'ABSENT'
     notes.push(`Out ${clock(outEarly)} early - second half absent`)
@@ -519,6 +585,34 @@ export async function recompute(employeeIds: number[], fromDay: Date, toDay: Dat
 }
 
 const RECOMPUTE_BATCH = 100
+
+// Works out again the attendance months of these dates (up to today) for the employees whose days of that month are
+// already worked out (`employeeIds`: only among them) - when a holiday or someone's holiday list changes (2026-11-24).
+// Months never worked out (before attendance started) stay so - a past holiday never fills them with absent days.
+export async function reworkWorkedOut(dates: Date[], employeeIds?: number[]) {
+  const now = today()
+  const state = await loadLockState()
+  const months = new Map<string, { from: Date; to: Date }>()
+  for (const date of dates.filter((d) => d <= now)) {
+    const cycle = cycleOf(date, state.startDay)
+    months.set(monthKey(cycle.year, cycle.month), cycleRange(cycle.year, cycle.month, state.startDay))
+  }
+  for (const { from, to } of months.values()) {
+    if (employeeIds && !employeeIds.length) return
+    const ids = await daysRepository.listEmployeeIdsWithDays(from, to, employeeIds)
+    await recompute(ids, from, to)
+  }
+}
+
+// After someone's holiday list changed from a date: the holidays' dates since then are worked out again for them
+export async function reworkHolidayDates(employeeIds: number[], from: Date) {
+  if (!employeeIds.length || from > today()) return
+  const holidays = await daysRepository.listHolidays(from, today())
+  await reworkWorkedOut(
+    holidays.map((h) => h.date),
+    employeeIds,
+  )
+}
 
 async function recomputeBatch(tx: DbClient, batch: number[], from: Date, last: Date, now: Date, state: LockState) {
   {
@@ -630,6 +724,8 @@ function dayView(
     pattern: plan?.pattern ?? null,
     // only the first half is worked that day (e.g. Saturday)
     halfDay: plan?.halfDay ?? false,
+    // the half that is a holiday on a half-day holiday (2026-11-24) - `holiday` names it
+    holidayHalf: plan?.holidayHalf ?? null,
     // the rules the day is judged by, and why a rule made a half absent (2026-11-22)
     policy: plan ? { id: plan.policy.id, name: plan.policy.name, graceMinutes: plan.policy.graceMinutes } : null,
     note: row?.note ?? null,

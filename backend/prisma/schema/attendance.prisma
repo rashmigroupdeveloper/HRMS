@@ -268,23 +268,163 @@ model ShiftChangeRequest {
   @@map("shift_change_requests")
 }
 
-// A holiday: for every company (companyId null) or one company, and optionally one work location
+// A holiday (the user, 2026-11-24 - was for every company / one company / one work location): entered once and put in the
+// holiday lists that have it (HolidayListEntry); everyone following one of those lists that day is off. A list has at most
+// one holiday a day (checked in the service).
 model Holiday {
-  id             Int      @id @default(autoincrement())
-  date           DateTime @db.Date
-  name           String
-  companyId      Int?     @map("company_id")
-  workLocationId Int?     @map("work_location_id")
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  createdById    Int      @map("created_by_id")
-  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
-  updatedById    Int      @map("updated_by_id")
+  id          Int        @id @default(autoincrement())
+  date        DateTime   @db.Date
+  name        String
+  categoryId  Int        @map("category_id")
+  // the part of the day that is off (the user, 2026-11-24 - e.g. the second half of Diwali eve); the other half is worked
+  portion     DayPortion @default(FULL_DAY)
+  // how it is given (the user, 2026-11-24): AUTOMATIC - everyone on its lists is off; ON_APPLICATION - a working day unless
+  // someone on its lists applies for it (a restricted / election holiday), taken from the balance of `leaveTypeId`
+  mode         HolidayMode @default(AUTOMATIC)
+  // on application: it may be taken as a half day (HR's choice per holiday); an automatic one uses `portion`
+  allowHalfDay Boolean     @default(false) @map("allow_half_day")
+  // on application: the leave type it is taken from - one "only on its holiday dates" (election leave: 1 day for 2 dates)
+  leaveTypeId  Int?        @map("leave_type_id")
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int        @map("created_by_id")
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int        @map("updated_by_id")
 
-  company      Company?      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  workLocation WorkLocation? @relation(fields: [workLocationId], references: [id], onDelete: Cascade)
+  category  HolidayCategory    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  lists     HolidayListEntry[]
+  leaveType LeaveType?         @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
 
   @@index([date])
+  @@index([categoryId])
+  @@index([leaveTypeId])
   @@map("holidays")
+}
+
+// How a holiday is given (2026-11-24)
+enum HolidayMode {
+  // everyone on its lists is off
+  AUTOMATIC
+  // a working day unless someone on its lists applies to take it (from a leave balance) and it is approved
+  ON_APPLICATION
+
+  @@map("holiday_mode")
+}
+
+// A holiday in a holiday list (2026-11-24): a holiday shared by several lists (26 January) is one holiday in each of them
+model HolidayListEntry {
+  id            Int      @id @default(autoincrement())
+  holidayId     Int      @map("holiday_id")
+  holidayListId Int      @map("holiday_list_id")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int      @map("created_by_id")
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int      @map("updated_by_id")
+
+  holiday     Holiday     @relation(fields: [holidayId], references: [id], onDelete: Cascade)
+  holidayList HolidayList @relation(fields: [holidayListId], references: [id], onDelete: Restrict)
+
+  @@unique([holidayId, holidayListId])
+  @@index([holidayListId])
+  @@map("holiday_list_entries")
+}
+
+// HR's labels for holidays (the user, 2026-11-24): National, Festival, Election... - each holiday has one (from the next
+// step), shown on the calendars and reports in its colour. Shared by every company: Attendance setup Edit for all
+// companies.
+model HolidayCategory {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  // one of the app's status colours (the same tints as its pills, light and dark)
+  tone        HolidayTone @default(NEUTRAL)
+  isActive    Boolean     @default(true) @map("is_active")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int         @map("created_by_id")
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int         @map("updated_by_id")
+
+  holidays Holiday[]
+
+  @@map("holiday_categories")
+}
+
+// The colours a holiday category may have - the app's pill tones
+enum HolidayTone {
+  NEUTRAL
+  INFO
+  GOLD
+  POSITIVE
+  WARNING
+  NEGATIVE
+
+  @@map("holiday_tone")
+}
+
+// A named holiday list (the user, 2026-11-24 - "Corporate", "RML6 Plant"): every employee follows one, from a date (the
+// next step), and gets the holidays in it - two people at the same plant may follow different lists. One company's (only
+// its employees and plants use it - Attendance setup Edit for that whole company) or every company's (companyId null -
+// Edit for all companies).
+model HolidayList {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  // empty = every company may use it
+  companyId   Int?     @map("company_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int      @map("created_by_id")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int      @map("updated_by_id")
+
+  company       Company?                  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  defaultPlants PlantDefaultHolidayList[]
+  employees     EmployeeHolidayList[]
+  holidays      HolidayListEntry[]
+
+  @@index([companyId])
+  @@map("holiday_lists")
+}
+
+// The holiday list an employee follows from a date until their next row (the user, 2026-11-24 - a table of its own, not
+// the job timeline: HR changes it directly, without approval). Chosen on the joining day (the plant's default offered);
+// HR gives or changes it later - one person or many; "give the plant's default" fills those without one. Moving to another
+// plant keeps the list until HR changes it. A day follows the row in force on it, so a change never alters the days
+// before it. No row: no holidays.
+model EmployeeHolidayList {
+  id            Int      @id @default(autoincrement())
+  employeeId    Int      @map("employee_id")
+  holidayListId Int      @map("holiday_list_id")
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int      @map("created_by_id")
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int      @map("updated_by_id")
+
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  holidayList HolidayList @relation(fields: [holidayListId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeId, effectiveFrom])
+  @@index([holidayListId])
+  @@map("employee_holiday_lists")
+}
+
+// A plant's default holiday list (the user, 2026-11-24): the list offered on the joining day, and given by "fill in" (go-live,
+// employees added directly or imported) to those without one - HR may give a person another; moving plant keeps the list.
+// At most one per plant; a list of the plant's company or of every company.
+// Kept here, not on the plant, because the organization module knows nothing of attendance. Not dated: it only decides
+// what is given next - the employee's own dated row says what applied on a day.
+model PlantDefaultHolidayList {
+  id            Int      @id @default(autoincrement())
+  plantId       Int      @unique @map("plant_id")
+  holidayListId Int      @map("holiday_list_id")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int      @map("created_by_id")
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int      @map("updated_by_id")
+
+  plant       Plant       @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  holidayList HolidayList @relation(fields: [holidayListId], references: [id], onDelete: Restrict)
+
+  @@index([holidayListId])
+  @@map("plant_default_holiday_lists")
 }
 
 enum PunchSource {

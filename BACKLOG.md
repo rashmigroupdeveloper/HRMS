@@ -88,8 +88,9 @@ forgotten filters and grant hand-outs) on 2026-11-17. A role says WHAT (areas, V
   (own record, own team and own department still work). An employee with no department is covered only by
   "all departments" rows. Super Admin = everything, decided in one place.
 - **Records** (employees, candidates and what hangs on them) by their company / plant / department. **Belongs to one
-  company** (its holidays, its details, its plants and their departments): Edit covering what it affects. **Shared by
-  all companies** (shifts, default shift, patterns, every-company holidays, joining task types, master lists, letter
+  company** (its holiday lists and their holidays, its details, its plants and their departments): Edit covering what it
+  affects. **Shared by all companies** (shifts, default shift, patterns, every-company holiday lists, holiday categories,
+  joining task types, master lists, letter
   templates, roles, security settings): a role giving that area for All companies at Edit. The whole **Change history**
   page needs All companies; each profile's History tab follows the employee.
 - **Enforced:** every read of employees / candidates takes a required data-access filter (scripts / jobs pass an explicit
@@ -466,10 +467,47 @@ in `scripts/import-old-hrms.ts` where it says so; rows that do not match are ski
 Compared with an "Employment & Job" screen, these were added now: cost centre, functional manager (shown only), position,
 region (on the work location), the work location's address, lay offs, and the job timeline. Deferred:
 - **Pay group** (e.g. RML_CONT - who is paid together in one run) - with the payroll module's pay runs.
-- **Named holiday lists / calendars** per employee (e.g. "Corporate", "PLANT_SO") - today holidays are set by company and
-  work location; plan named lists when holidays are next worked on.
-- **Attendance scheme** - a named set of attendance rules given to an employee (grace, late marks, half-day...); today the
-  rules sit on the shift. Plan when the attendance rules are next worked on (late marks wait for payroll - item 19).
+- **Named holiday lists** per employee (e.g. "Corporate") - **being built (agreed with the user 2026-11-24)**, in steps:
+  1. done 2026-11-24 - the lists (one company's or every company's), each plant's default list, HR's holiday categories
+     with a colour (Attendance setup > Holidays); 2. done 2026-11-24 - the employee's list from a date (a table of its own,
+     not the job timeline - changed without approval): chosen on the joining day next to the reporting manager (the
+     plant's default offered - the user, 2026-11-24), given / changed by HR on Attendance setup > Schedules (one person or
+     many ticked, with a "holiday list" column and filter), and "fill in" on the plants' card gives everyone without a list
+     their plant's default from their joining day (go-live, employees added directly or imported); moving plant keeps the
+     list (the user: HR changes it later if wanted); no list = no holidays. A company transfer keeps the list too - HR
+     changes it (the user, 2026-11-24), though it may be the old company's; 3. done 2026-11-24 - holidays put in lists, each **automatic** (everyone on the list is off) or **on application** (taken
+     from a leave type's balance, approved by the reporting manager, whole or half day as HR sets), with a category and
+     an optional half-day off; the day's holiday then comes from the person's list in force, not company / location;
+     giving or changing someone's list works out again the holidays' dates since then; a holiday or list change works out
+     again only the months already worked out for each person (never fills months before attendance started with absent
+     days); "copy from last year" copies a year's holidays into the next, the same lists. Built in step 3: the automatic
+     holidays with a category, the part of the day off and the lists; the **on-application** part (a holiday taken from a
+     leave type's balance) comes with steps 4-5. **Known limits of step 3 (decide if HR minds):** working a half-day
+     holiday's off half earns no comp-off (only a whole weekly off / holiday does); a late arrival on a day with the first
+     half off never counts towards the monthly late penalty; the roster's rest / week-hours warnings treat either
+     half-day holiday as a morning-only day; the holidays' Excel export ignores the list filter; a company admin's "copy
+     from last year" copies a shared holiday only into their own lists, as a holiday of its own (the shared one is not
+     joined);
+     4. done 2026-11-24 - leave-type timing rules on Team leave > Leave types: notice in calendar days (EL 7, CL 3),
+     "today or past only" (sick), "up to N days back" (empty = until the month locks); checked when applying (the
+     employee's own application - nothing else applies leave), shown on the apply form (its dates limited to match).
+     **HR to fill in:** the real types' values - none is set on the seeded types; 5. done 2026-11-24 - **on-application holidays**: a holiday given "on application" names
+     a leave type "only on its holiday dates" (paid, lapses at the year end) and may allow half days; it stays a working day
+     unless someone on its lists applies (leave of that type, approved by the reporting manager - the day then a holiday for
+     them); HR gives days of a leave type to everyone / chosen / filtered (company, plant, department, holiday list) on Team
+     leave > Balances > Give days, counted first (the election example: 2 dates, 1 day each; people joining later get
+     nothing unless HR gives it); a holiday changed or removed, or someone moved to another list, cancels the leave taking
+     it that no longer fits (waiting: its approval closed; approved: the days back, the days worked out again) and e-mails
+     the employee - **left to HR:** such leave of a year already ended (its balance lapsed); 6. done 2026-11-24 -
+     **My holidays** on My leave: the holidays of the employee's own list for this year / next (automatic ones; on-application
+     ones with the balance left and Apply - then Waiting / Taken); every list's holidays are now Attendance setup View only
+     (the setup page). Also
+     agreed: "copy from last year" for a list (step 3); HR changes many people's list at once (step 2); an on-application
+     holiday moved or deleted after people took it cancels those leaves and gives the days back (with an e-mail); the
+     balance of a holidays-only leave type lapses at year-end (carry forward 0). A holiday on a weekly off is simply lost. "Calendar Name" (e.g.
+     PLANT_SO) is dropped - the user does not know what it was. The one holiday entered before (a test) was deleted
+     2026-11-24 (the user's word) - step 3 starts with no holidays. **Later, if HR asks:** the employee profile showing
+     their holiday list and its history (today: Schedules and the change history).
 - **Probation -> confirmation hike %** ("Join Probation Retain") and the **internship completed date** - with the
   probation / confirmation module (next modules, 5).
 - **Lay offs and attendance / pay** - a lay off does not change the employee's status nor their attendance days yet;
@@ -600,8 +638,8 @@ region (on the work location), the work location's address, lay offs, and the jo
   Leave types, no code needed).
 - **Not built yet (the old HRMS had them):** **encashment** of leave (needs payroll - and at exit, the final settlement);
   **overtime on working days** paid or turned into comp-off (with payroll - comp-off for a weekly off / holiday is built);
-  **restricted
-  holidays** (pick 2 a year); **leave blackout dates** per location; **short permission** (up to 2 hours, in / out
+  **leave blackout dates** per location (restricted holidays moved to item 23 - built as "on application" holidays, the
+  user 2026-11-24); **short permission** (up to 2 hours, in / out
   times); **send back / resubmit** of a request; a **company transfer** carrying over or encashing the balance (item 24).
   (The user chose on 2026-11-22 not to build these now.)
 - **Not in the old HRMS either, maybe later:** an attachment (e.g. a medical certificate for sick leave over 2 days),
@@ -757,7 +795,7 @@ See items 19, 28 and 29.
 **Reference:** `backend/src/modules/leave/` and attendance blackout configuration. **Why waiting:** the user chose
 on 2026-11-22 to finish the core flow first. **Needs:** policy selection; encashment needs payroll/exit. Item 29 owns details.
 
-- [ ] Leave encashment, restricted-holiday selection, location blackout dates and send-back/resubmit.
+- [ ] Leave encashment, location blackout dates and send-back/resubmit (restricted holidays: item 23, being built 2026-11-24).
 - [ ] Company-transfer carry-over/encashment and handling pending requests when locking attendance; agree rules first.
 - **PRESENT:** type rules, ledger/credits/lapse, balances/import, apply/preview, cancellation, team coverage, register,
   comp-off claims/expiry and recounting. Keep the new calendar-year and December/January balance decisions.

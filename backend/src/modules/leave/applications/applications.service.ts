@@ -2,13 +2,13 @@ import { reportFile, reportSheet } from '#core/excel/report'
 import { env } from '#core/config/env'
 import { hasLevelAt, scopeOf } from '#core/auth/scope'
 import { sendMail } from '#core/mail/mailer'
-import { prisma, type DbClient, type LeaveStatus } from '#core/db/prisma'
+import { prisma, SYSTEM_ACTOR, type DbClient, type LeaveStatus } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { approvalsService } from '#modules/approvals'
 import { employeesService } from '#modules/employees'
 import { attendanceService } from '#modules/attendance'
 import { today } from '#shared/utils/dates'
-import { dayKey, eachDay } from '#shared/utils/time'
+import { addDays, DAY_MS, dayKey, eachDay } from '#shared/utils/time'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as balancesService from '../balances/balances.service.js'
@@ -25,8 +25,12 @@ import type { applyInput, cancelInput, listInput, previewInput, recountInput, re
 // - Refused (old HRMS): a type that does not apply to the employee (gender, employment type) or is retired; half days on a
 //   type without them; days when they are not employed; a day of a locked attendance month; any half already on leave or
 //   asked for (leave, a regularization, on duty - approved or waiting); more days than the type allows at once; more than
-//   the balance less what already waits (paid types - leave without pay has no balance). No limit on how far back or
-//   ahead (old HRMS: only the month lock).
+//   the balance less what already waits (paid types - leave without pay has no balance). When it may be asked for is the
+//   type's (the user, 2026-11-24 - HR sets it): at least N calendar days' notice before the first day, only today or days
+//   already passed, the first day at most N days back; beyond those, only the month lock (old HRMS). A type "only on its
+//   holiday dates" (2026-11-24) is taken on the on-application holidays naming it in the employee's holiday list - every
+//   day of the leave one, half days only where the holiday allows; approved, the day is a holiday for them (not leave).
+//   Such leave no longer fitting after a holiday or list change is cancelled and its days given back (the employee told).
 // - Approved through the approval service (kind LEAVE - seeded: the reporting manager, 48 h, then their manager). When
 //   approved, the days are counted again (a holiday / shift changed meanwhile: refused - apply again) and the balance must
 //   still cover them; the days are taken from the balance and the attendance days show the leave.
@@ -52,7 +56,8 @@ async function countDays(employeeId: number, type: typesService.LeaveType, v: Da
   const planOf = new Map(plan.map((d) => [dayKey(d.date), d]))
   const isWorking = (date: Date, half: 'FIRST' | 'SECOND') => {
     const day = planOf.get(dayKey(date))!
-    return day.kind === 'WORK' && !(day.halfDay && half === 'SECOND')
+    // (a half-day holiday's half is off too - 2026-11-24)
+    return day.kind === 'WORK' && !(day.halfDay && half === 'SECOND') && day.holidayHalf !== half
   }
   const leaveHalves = halvesOfLeave(v)
   // a leave starts and ends on a working day - never on a weekly off or a holiday (the user, 2026-11-23: a type that
@@ -65,6 +70,37 @@ async function countDays(employeeId: number, type: typesService.LeaveType, v: Da
   return { days: halves / 2, problem: null }
 }
 
+// When the type may be applied for (the user, 2026-11-24), in calendar days from today (India): the notice before the first
+// day (applied on the 1st with 7 days' notice: the 8th is the earliest), only today or days passed, how far back
+function timingProblems(type: typesService.LeaveType, v: Pick<Days, 'fromDate' | 'toDate'>): Problem[] {
+  const now = today()
+  const daysFromNow = (d: Date) => Math.round((d.getTime() - now.getTime()) / DAY_MS)
+  const problems: Problem[] = []
+  if (type.noticeDays && daysFromNow(v.fromDate) < type.noticeDays) {
+    problems.push({ code: 'BAD_REQUEST', message: `${type.name} needs ${daysText(type.noticeDays)}' notice - the earliest first day applied for today is ${dateText(addDays(now, type.noticeDays))}` })
+  }
+  if (type.todayOrPastOnly && v.toDate > now) problems.push({ code: 'BAD_REQUEST', message: `${type.name} is applied for today or days already passed only` })
+  if (type.maxDaysBack !== null && -daysFromNow(v.fromDate) > type.maxDaysBack) {
+    problems.push({ code: 'BAD_REQUEST', message: `${type.name} goes back at most ${daysText(type.maxDaysBack)} - the first day can be ${dateText(addDays(now, -type.maxDaysBack))} at the earliest` })
+  }
+  return problems
+}
+
+// A type taken only on its holiday dates (2026-11-24): every day of the leave an on-application holiday naming it in the
+// employee's list that day; half of one only where the holiday allows. Refused: says which dates are theirs to take
+async function holidayProblems(employeeId: number, type: Pick<typesService.LeaveType, 'id' | 'name'>, v: Pick<Days, 'fromDate' | 'toDate' | 'fromSecondHalf' | 'toFirstHalf'>): Promise<Problem[]> {
+  const theirs = (from: Date, to: Date) => attendanceService.onApplicationHolidaysOf(employeeId, from, to).then((hs) => hs.filter((h) => h.leaveTypeId === type.id))
+  const byDay = new Map((await theirs(v.fromDate, v.toDate)).map((h) => [dayKey(h.date), h]))
+  if (eachDay(v.fromDate, v.toDate).some((d) => !byDay.has(dayKey(d)))) {
+    const coming = await theirs(today(), addDays(today(), 366))
+    const dates = coming.slice(0, 6).map((h) => `${dateText(h.date)} (${h.name})`)
+    return [{ code: 'BAD_REQUEST', message: `${type.name} is taken only on its holiday dates - ${dates.length ? `yours: ${dates.join(', ')}` : 'none is open to you'}` }]
+  }
+  const whole = [...byDay.values()].find((h) => !h.allowHalfDay)
+  if (whole && (v.fromSecondHalf || v.toFirstHalf)) return [{ code: 'BAD_REQUEST', message: `${whole.name} is taken as a whole day` }]
+  return []
+}
+
 // Every rule an application must meet (create and preview); the days it takes and the balance
 async function check(employeeId: number, v: Days) {
   const problems: Problem[] = []
@@ -75,6 +111,8 @@ async function check(employeeId: number, v: Days) {
   if (!leaveService.typeAppliesTo(type, person)) problems.push({ code: 'BAD_REQUEST', message: `${type.name} does not apply to you` })
   if (!type.allowHalfDay && (v.fromSecondHalf || v.toFirstHalf)) problems.push({ code: 'BAD_REQUEST', message: `${type.name} is taken in whole days only` })
   if (eachDay(v.fromDate, v.toDate).length > MAX_SPAN_DAYS) problems.push({ code: 'BAD_REQUEST', message: `A leave is for at most ${MAX_SPAN_DAYS} days` })
+  problems.push(...timingProblems(type, v))
+  if (type.holidaysOnly) problems.push(...(await holidayProblems(employeeId, type, v)))
   if (problems.length) return { person, type, days: 0, balance: null, problems }
   const counted = await countDays(employeeId, type, v)
   if (counted.problem) problems.push({ code: 'BAD_REQUEST', message: counted.problem })
@@ -287,9 +325,9 @@ async function recountOf(employeeId: number, type: Pick<typesService.LeaveType, 
   let halves = 0
   for (const { date, half } of halvesOfLeave(v)) {
     const day = planOf.get(dayKey(date))
-    if (day && (type.countsOffDays || (day.kind === 'WORK' && !(day.halfDay && half === 'SECOND')))) halves++
+    if (day && (type.countsOffDays || (day.kind === 'WORK' && !(day.halfDay && half === 'SECOND') && day.holidayHalf !== half))) halves++
   }
-  const holidays = plan.filter((d) => d.kind === 'HOLIDAY' && d.holiday).map((d) => `${d.holiday} (${dateText(d.date)})`)
+  const holidays = plan.filter((d) => d.holiday).map((d) => `${d.holiday} (${dateText(d.date)})`)
   return { days: halves / 2, holidays }
 }
 
@@ -438,8 +476,59 @@ attendanceService.registerLeaveCovers(async (employeeIds, from, to, { pending })
   return rows.flatMap((r) =>
     halvesOfLeave(r)
       .filter(({ date }) => date >= from && date <= to)
-      .map(({ date, half }) => ({ employeeId: r.employeeId, date, half, status: 'LEAVE' as const, code: r.leaveType.code, label: r.leaveType.name })),
+      // (a holiday taken from a type only on its holiday dates makes the half a holiday - 2026-11-24)
+      .map(({ date, half }) => ({ employeeId: r.employeeId, date, half, status: r.leaveType.holidaysOnly ? ('HOLIDAY' as const) : ('LEAVE' as const), code: r.leaveType.code, label: r.leaveType.name })),
   )
+})
+
+// --- On-application holidays (2026-11-24): attendance asks when a holiday or someone's list changes ---
+
+// A leave taking an on-application holiday that no longer fits (the holiday moved, removed, off their list): cancelled - a
+// waiting one's approval closed, an approved one's days given back and the days worked out again - and the employee told.
+// One of a year already ended (its balance lapsed) is left to HR.
+async function cancelForHoliday(application: applicationsRepository.ApplicationRow, why: string) {
+  const reason = `The holiday changed - ${why}`
+  if (application.status === 'PENDING') {
+    if (!(await prisma.$transaction((tx) => approvalsService.cancelRequest(application.approvalRequestId, reason, SYSTEM_ACTOR, tx)))) return
+  } else {
+    const type = await typesService.getType(application.leaveTypeId)
+    if (yearLapsed(application.fromDate, type)) return
+    const cancelled = await prisma.$transaction(async (tx) => {
+      await applicationsRepository.lockEmployee(application.employeeId, tx)
+      const record = await applicationsRepository.find(application.id, tx)
+      if (record?.status !== 'APPROVED') return false
+      if (record.cancelApprovalRequestId) await approvalsService.cancelRequest(record.cancelApprovalRequestId, reason, SYSTEM_ACTOR, tx)
+      const days = record.days.toNumber()
+      await balancesRepository.addEntries([{ employeeId: record.employeeId, leaveTypeId: record.leaveTypeId, kind: 'RETURNED', days, effectiveDate: record.fromDate, applicationId: record.id, note: reason }], SYSTEM_ACTOR, tx)
+      await applicationsRepository.update(record.id, { status: 'CANCELLED', cancelReason: reason }, SYSTEM_ACTOR, tx)
+      return true
+    })
+    if (!cancelled) return
+    if (application.fromDate <= today()) await attendanceService.recompute([application.employeeId], application.fromDate, application.toDate)
+  }
+  const contact = await employeesService.findMailContact(application.employeeId)
+  if (contact?.email) {
+    const what = describe(application.leaveType, { ...application, days: application.days.toNumber() })
+    await sendMail({
+      to: contact.email,
+      subject: `Your ${application.leaveType.name} was cancelled - the holiday changed`,
+      text: [`Dear ${contact.name},`, '', `${what} was cancelled: ${why}.`, application.status === 'APPROVED' ? `The days are back in your ${application.leaveType.code} balance.` : 'It was still waiting for approval.', '', `Leave: ${env.APP_URL}/leave`].join('\n'),
+    }).catch((error: unknown) => console.error('[mail] holiday leave cancel e-mail failed:', error))
+  }
+}
+
+attendanceService.registerHolidayLeave({
+  assertLeaveType: async (leaveTypeId) => {
+    const type = await typesService.getType(leaveTypeId)
+    if (!type.isActive) throw new ORPCError('BAD_REQUEST', { message: `${type.name} is no longer used` })
+    if (!type.holidaysOnly) throw new ORPCError('BAD_REQUEST', { message: `${type.name} is not taken only on its holiday dates - tick that on its leave type first` })
+  },
+  recheck: async ({ from, to, employeeIds }) => {
+    for (const application of await applicationsRepository.listHolidayLeave(from, to, employeeIds)) {
+      const [problem] = await holidayProblems(application.employeeId, application.leaveType, application)
+      if (problem) await cancelForHoliday(application, problem.message)
+    }
+  },
 })
 
 // Exports reuse the page's relationship- and data-access-aware readers.
