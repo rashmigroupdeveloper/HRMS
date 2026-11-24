@@ -302,7 +302,7 @@ frontend/src/
   - How to build one: copy the real component's JSX into `components/skeletons/<feature>/<Name>Skeleton.tsx` and swap
     each data expression for a `Skeleton` bar (`@/components/ui/skeleton`); for lists, a typical number of rows of the
     real row markup. Share the real texts instead of copying them where you can (export the page's tab list, headings,
-    labels - e.g. `TOTAL_LABELS` in attendance's labels.ts, `PROFILE_TABS`, `OFFER_ROWS`); a copied list gets a
+    labels - e.g. `TOTAL_LABELS` in attendance's labels.ts, `PROFILE_TABS`, `OFFER_GROUPS`); a copied list gets a
     "change both together" comment. Root element: `role="status"` and `aria-label` from a `label` prop. Match the real
     rows' count and height so nothing jumps when the data arrives. On a dark (`bg-hero`) block, draw the block dark and
     the bars with `bg-hero-foreground/10`, so it does not flash light first.

@@ -10,6 +10,7 @@ import {
   FileText,
   FolderOpen,
   HeartPulse,
+  History,
   Link2,
   type LucideIcon,
   Lock,
@@ -18,6 +19,8 @@ import {
   ShieldCheck,
   Signature,
   UserPlus,
+  UserRound,
+  Wallet,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
@@ -35,11 +38,14 @@ import { JoiningFormTab } from './components/JoiningFormTab'
 import {
   type Candidate,
   candidatePlace,
+  CLOSED_STATUSES,
   EMPLOYMENT_TYPE,
   fullName,
   JOINING_TYPE,
   joiningDatePassed,
   loiOut,
+  progressOf,
+  PROGRESS_STEPS,
   SALUTATION,
   type SentKind,
   statusLabel,
@@ -51,6 +57,7 @@ import { OfferDialog } from './components/OfferDialog'
 import { type LinkResult, LinkDialog, OfferLettersCard, PaperAcceptDialog, SendOfferDialog } from './components/OfferLetters'
 import { Pill } from '@/components/Pill'
 import { ReasonDialog } from './components/ReasonDialog'
+import { DetailCard } from './components/DetailCard'
 
 type Outcome = Parameters<typeof client.candidates.close>[0]['outcome']
 
@@ -170,7 +177,10 @@ function CandidatePanel({ id }: { id: number }) {
         tabs={TABS}
         tab={loadingTab}
         onTab={(value) => setSearchParams({ tab: value }, { replace: true })}
-        fields={OFFER_ROWS.map(([label]) => label)}
+        groups={OFFER_GROUPS}
+        pay={PAY_LABELS}
+        timeline={TIMELINE_LABELS}
+        steps={PROGRESS_STEPS}
         medical={can('MEDICAL', 'READ')}
         label="Loading the candidate"
       />
@@ -208,6 +218,8 @@ function CandidatePanel({ id }: { id: number }) {
   const showActions = closeButtons.length > 0 && canChange
 
   const progress = stageProgress(c, checklist.data?.items ?? [], checks.data ?? [])
+  const journey = progressOf(c)
+  const closed = CLOSED_STATUSES.includes(c.status)
 
   return (
     <Tabs value={tab} onValueChange={(value) => openTab(String(value))} className="gap-4">
@@ -300,6 +312,29 @@ function CandidatePanel({ id }: { id: number }) {
               )}
             </div>
           )}
+        </div>
+        {/* the way from the offer to the joining day (as on the onboarding list): steps done, the next one in gold */}
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-2 pt-1">
+          <ol aria-label="Onboarding progress" className="grid min-w-0 flex-1 grid-cols-5 gap-1.5">
+            {PROGRESS_STEPS.map((step, i) => {
+              const done = i < journey.done
+              return (
+                <li key={step} className="min-w-0" aria-current={i === journey.done && !closed ? 'step' : undefined}>
+                  <span
+                    className={cn(
+                      'block h-1.5 rounded-full',
+                      done ? (closed ? 'bg-hero-foreground/40' : 'bg-hero-foreground') : i === journey.done && !closed ? 'bg-gold' : 'bg-hero-foreground/15',
+                    )}
+                  />
+                  <span className={cn('mt-1.5 block truncate text-xs', done ? 'text-hero-foreground/90' : 'text-hero-foreground/50')}>
+                    {done && <Check className="mr-1 inline size-3 align-[-1px]" strokeWidth={3} />}
+                    {step}
+                  </span>
+                </li>
+              )
+            })}
+          </ol>
+          <p className={cn('shrink-0 text-sm font-medium', closed ? 'text-hero-foreground/75' : 'text-gold')}>{journey.next}</p>
         </div>
         <FormError error={newLink.error} />
         {/* employees with the same mobile or e-mail - a rehire, or an offer made twice (shown, never blocking) */}
@@ -420,92 +455,160 @@ function StageBadge({ progress }: { progress: Progress }) {
 
 const months = (n: number | null) => (n === null ? '—' : `${n} month${n === 1 ? '' : 's'}`)
 
-// The offer's details as label / value rows (the Letter of Intent's two first, when there is one). The labels are also
-// the loading skeleton's.
-type OfferRow = readonly [label: string, value: (c: Candidate) => React.ReactNode]
-const LOI_ROWS: OfferRow[] = [
-  ['Letter of Intent', (c) => c.loiNumber],
-  ['Letter of Intent accepted', (c) => formatDoneBy(c.loiAcceptedAt, c.loiAcceptedBy)],
+// The offer's details in cards: label, value, and whether it takes a whole line. The titles and labels are also the
+// loading skeleton's (CandidatePageSkeleton gets OFFER_GROUPS, PAY_LABELS and TIMELINE_LABELS).
+type OfferRow = readonly [label: string, value: (c: Candidate) => React.ReactNode, wide?: boolean]
+type OfferGroup = { title: string; icon: LucideIcon; columns: string; rows: OfferRow[] }
+const OFFER_GROUPS: OfferGroup[] = [
+  {
+    title: 'Position',
+    icon: BriefcaseBusiness,
+    columns: 'sm:grid-cols-3',
+    rows: [
+      ['Designation', (c) => c.designation.name],
+      ['Department', (c) => c.department?.name ?? '—'],
+      ['Grade', (c) => c.grade?.name ?? '—'],
+      ['Company', (c) => `${c.company.name} (${c.company.code})`],
+      ['Plant', (c) => `${c.plant.plantCode} · ${c.plant.name}`],
+      ['Work location', (c) => (c.workLocation ? `${c.workLocation.name} (${c.workLocation.countryCode})` : '—')],
+      ['Joining type', (c) => JOINING_TYPE[c.joiningType]],
+      ['Employment type', (c) => EMPLOYMENT_TYPE[c.employmentType]],
+      ['Workforce', (c) => WORKFORCE[c.workforceCategory]],
+    ],
+  },
+  {
+    title: 'Candidate',
+    icon: UserRound,
+    columns: 'grid-cols-2',
+    rows: [
+      ['Addressed to', (c) => `${c.salutation ? `${SALUTATION[c.salutation]} ` : ''}${fullName(c)}`],
+      ['Mobile', (c) => c.mobile],
+      ['Personal email', (c) => c.personalEmail ?? '—', true],
+      ['Address', (c) => c.address ?? '—', true],
+    ],
+  },
+  {
+    title: 'Dates and terms',
+    icon: CalendarDays,
+    columns: 'grid-cols-2',
+    rows: [
+      ['Joining date', (c) => formatDate(c.proposedJoiningDate)],
+      ['Offer valid until', (c) => formatDate(c.offerValidUntil)],
+      ['Contract end', (c) => formatDate(c.contractEndDate)],
+      ['Probation', (c) => months(c.probationMonths)],
+      ['Notice (probation / confirmed)', (c) => `${months(c.noticeMonthsProbation)} / ${months(c.noticeMonthsConfirmed)}`, true],
+    ],
+  },
 ]
-const OFFER_ROWS: OfferRow[] = [
-  ['Offer number', (c) => c.offerNumber ?? 'Given when the offer is sent'],
-  ['Addressed to', (c) => `${c.salutation ? `${SALUTATION[c.salutation]} ` : ''}${fullName(c)}`],
-  ['Mobile', (c) => c.mobile],
-  ['Personal email', (c) => c.personalEmail ?? '—'],
-  ['Address', (c) => c.address ?? '—'],
-  ['Company', (c) => `${c.company.name} (${c.company.code})`],
-  ['Plant', (c) => `${c.plant.plantCode} · ${c.plant.name}`],
-  ['Work location', (c) => (c.workLocation ? `${c.workLocation.name} (${c.workLocation.countryCode})` : '—')],
-  ['Designation', (c) => c.designation.name],
-  ['Department', (c) => c.department?.name ?? '—'],
-  ['Grade', (c) => c.grade?.name ?? '—'],
-  ['Joining type', (c) => JOINING_TYPE[c.joiningType]],
-  ['Employment type', (c) => EMPLOYMENT_TYPE[c.employmentType]],
-  ['Workforce', (c) => WORKFORCE[c.workforceCategory]],
-  ['Annual CTC (fixed)', (c) => formatMoney(c.annualCtc, c.ctcCurrency)],
-  ['Performance pay per year', (c) => (c.performancePayAnnual ? formatMoney(c.performancePayAnnual, c.ctcCurrency) : '—')],
-  ['Joining date', (c) => formatDate(c.proposedJoiningDate)],
-  ['Contract end', (c) => formatDate(c.contractEndDate)],
-  ['Offer valid until', (c) => formatDate(c.offerValidUntil)],
-  ['Probation', (c) => months(c.probationMonths)],
-  ['Notice (probation / confirmed)', (c) => `${months(c.noticeMonthsProbation)} / ${months(c.noticeMonthsConfirmed)}`],
-  ['Offer sent', (c) => formatDoneBy(c.offerSentAt, c.offerSentBy)],
-  ['Accepted', (c) => formatDoneBy(c.acceptedAt, c.acceptedBy)],
-  ['Joining confirmed', (c) => formatDoneBy(c.joiningConfirmedAt, c.joiningConfirmedBy)],
-  ['Joined as', (c) => c.employee?.employeeCode ?? '—'],
-  ['Closed', (c) => (c.closedAt ? `${formatDoneBy(c.closedAt, c.closedBy)}${c.closeReason ? ` — ${c.closeReason}` : ''}` : '—')],
-  ['Created', (c) => formatDoneBy(c.createdAt, c.createdBy)],
-  ['Last changed', (c) => formatDoneBy(c.updatedAt, c.updatedBy)],
-]
+const PAY_LABELS = ['Annual CTC (fixed)', 'Performance pay', 'Total CTC']
+
+// The offer's history, oldest first: what happened, when and by whom; a step not reached yet is shown hollow
+type Moment = { label: string; done: boolean; when: string; note?: string | null }
+function momentsOf(c: Candidate): Moment[] {
+  const at = (label: string, date: Date | null, by: { name: string } | null, note?: string | null): Moment => ({ label, done: !!date, when: formatDoneBy(date, by), note })
+  const closed = CLOSED_STATUSES.includes(c.status)
+  return [
+    at('Created', c.createdAt, c.createdBy),
+    ...(c.loiNumber ? [at('Letter of Intent accepted', c.loiAcceptedAt, c.loiAcceptedBy, c.loiNumber)] : []),
+    at('Offer sent', c.offerSentAt, c.offerSentBy, c.offerNumber),
+    at('Accepted', c.acceptedAt, c.acceptedBy),
+    at('Joining confirmed', c.joiningConfirmedAt, c.joiningConfirmedBy),
+    closed ? at('Closed', c.closedAt, c.closedBy, c.closeReason) : { label: 'Joined', done: !!c.employee, when: c.employee ? `as ${c.employee.employeeCode}` : '' },
+  ]
+}
+// the timeline's labels as the skeleton shows them (an open offer without a Letter of Intent)
+const TIMELINE_LABELS = ['Created', 'Offer sent', 'Accepted', 'Joining confirmed', 'Joined']
 
 function OfferDetails({ c }: { c: Candidate }) {
-  const rows = [...(c.loiNumber ? LOI_ROWS : []), ...OFFER_ROWS].map(([label, value]) => [label, value(c)] as const)
+  const money = (n: number) => formatMoney(n, c.ctcCurrency)
   const gross = sumMoney(c.salaryLines.filter((l) => l.salaryComponent.kind === 'EARNING').map((l) => l.monthlyAmount))
   const total = sumMoney(c.salaryLines.map((l) => l.monthlyAmount))
-  return (
-    <>
-      <dl className="grid gap-x-6 gap-y-3.5 rounded-3xl bg-card p-5 shadow-card sm:grid-cols-2 lg:grid-cols-3">
-        {rows.map(([label, value]) => (
-          <div key={label} className="flex min-w-0 flex-col gap-0.5">
-            <dt className="text-xs text-muted-foreground">{label}</dt>
-            <dd className={cn('text-sm whitespace-pre-line', value === '—' ? 'text-muted-foreground' : 'font-medium')}>{value}</dd>
-          </div>
-        ))}
+  const figures = [money(c.annualCtc), c.performancePayAnnual ? money(c.performancePayAnnual) : '—', money(sumMoney([c.annualCtc, c.performancePayAnnual ?? 0]))]
+  const moments = momentsOf(c)
+  const group = ({ title, icon, columns, rows }: OfferGroup) => (
+    <DetailCard key={title} title={title} icon={icon}>
+      <dl className={cn('grid gap-x-6 gap-y-3', columns)}>
+        {rows.map(([label, value, wide]) => {
+          const shown = value(c)
+          return (
+            <div key={label} className={cn('flex min-w-0 flex-col gap-0.5', wide && 'col-span-full')}>
+              <dt className="text-xs text-muted-foreground">{label}</dt>
+              <dd className={cn('text-sm break-words whitespace-pre-line', shown === '—' ? 'text-muted-foreground' : 'font-medium')}>{shown}</dd>
+            </div>
+          )
+        })}
       </dl>
-      {c.salaryLines.length > 0 && (
-        <section className="mt-4 rounded-3xl bg-card p-5 shadow-card">
-          <h3 className="mb-2 text-lg font-light tracking-tight">Salary breakup</h3>
-          <table className="w-full text-sm">
-            <thead className="text-xs text-muted-foreground">
-              <tr>
-                <th className="py-1 text-left font-medium">Component</th>
-                <th className="py-1 text-right font-medium">Monthly</th>
-                <th className="py-1 text-right font-medium">Annual</th>
-              </tr>
-            </thead>
-            <tbody className="tabular-nums">
-              {c.salaryLines.map((l, i) => (
-                <tr key={l.salaryComponent.id} className={i > 0 && l.salaryComponent.kind !== c.salaryLines[i - 1]!.salaryComponent.kind ? 'border-t' : ''}>
-                  <td className="py-1">{l.salaryComponent.name}</td>
-                  <td className="py-1 text-right">{formatMoney(l.monthlyAmount, c.ctcCurrency)}</td>
-                  <td className="py-1 text-right">{formatMoney(sumMoney([l.monthlyAmount * 12]), c.ctcCurrency)}</td>
+    </DetailCard>
+  )
+  return (
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_19rem]">
+      <div className="space-y-4">
+        {group(OFFER_GROUPS[0]!)}
+        <div className="grid items-start gap-4 md:grid-cols-2">{OFFER_GROUPS.slice(1).map(group)}</div>
+
+        <DetailCard title="Pay" icon={Wallet}>
+          {/* the figures the letter prints, big and light */}
+          <dl className="grid grid-cols-3 gap-4">
+            {PAY_LABELS.map((label, i) => (
+              <div key={label} className="flex min-w-0 flex-col-reverse">
+                <dt className="mt-0.5 text-xs text-muted-foreground">{label}</dt>
+                <dd className={cn('truncate text-2xl font-light tracking-tight tabular-nums sm:text-3xl', figures[i] === '—' && 'text-muted-foreground')}>{figures[i]}</dd>
+              </div>
+            ))}
+          </dl>
+          {c.salaryLines.length > 0 && (
+            <table className="mt-4 w-full border-t border-dashed text-sm">
+              <caption className="caption-top pt-3 pb-1 text-left text-xs text-muted-foreground">Salary breakup - Annexure-I of the letter</caption>
+              <thead className="text-xs text-muted-foreground">
+                <tr>
+                  <th className="py-1 text-left font-medium">Component</th>
+                  <th className="py-1 text-right font-medium">Monthly</th>
+                  <th className="py-1 text-right font-medium">Annual</th>
                 </tr>
-              ))}
-              <tr className="border-t text-muted-foreground">
-                <td className="py-1">Monthly gross</td>
-                <td className="py-1 text-right">{formatMoney(gross, c.ctcCurrency)}</td>
-                <td className="py-1 text-right">{formatMoney(sumMoney([gross * 12]), c.ctcCurrency)}</td>
-              </tr>
-              <tr className="border-t font-semibold">
-                <td className="py-1">Total (fixed CTC)</td>
-                <td className="py-1 text-right">{formatMoney(total, c.ctcCurrency)}</td>
-                {/* the agreed annual CTC: 12 x the monthly total can be a few paise off it (2026-11-24) */}
-                <td className="py-1 text-right">{formatMoney(c.annualCtc, c.ctcCurrency)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-      )}
-    </>
+              </thead>
+              <tbody className="tabular-nums">
+                {c.salaryLines.map((l, i) => (
+                  <tr key={l.salaryComponent.id} className={i > 0 && l.salaryComponent.kind !== c.salaryLines[i - 1]!.salaryComponent.kind ? 'border-t' : ''}>
+                    <td className="py-1">{l.salaryComponent.name}</td>
+                    <td className="py-1 text-right">{money(l.monthlyAmount)}</td>
+                    <td className="py-1 text-right">{money(sumMoney([l.monthlyAmount * 12]))}</td>
+                  </tr>
+                ))}
+                <tr className="border-t text-muted-foreground">
+                  <td className="py-1">Monthly gross</td>
+                  <td className="py-1 text-right">{money(gross)}</td>
+                  <td className="py-1 text-right">{money(sumMoney([gross * 12]))}</td>
+                </tr>
+                <tr className="border-t font-semibold">
+                  <td className="py-1">Total (fixed CTC)</td>
+                  <td className="py-1 text-right">{money(total)}</td>
+                  {/* the agreed annual CTC: 12 x the monthly total can be a few paise off it (2026-11-24) */}
+                  <td className="py-1 text-right">{money(c.annualCtc)}</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
+        </DetailCard>
+      </div>
+
+      <DetailCard title="Timeline" icon={History}>
+        <ol>
+          {moments.map((m, i) => (
+            <li key={m.label} className="relative flex gap-3 pb-4 last:pb-0">
+              {i < moments.length - 1 && <span aria-hidden className={cn('absolute top-5 bottom-0 left-[7px] w-px', m.done && moments[i + 1]!.done ? 'bg-hero' : 'bg-border')} />}
+              <span aria-hidden className={cn('mt-0.5 size-[15px] shrink-0 rounded-full border-2', m.done ? 'border-hero bg-hero' : 'border-border bg-card')} />
+              <div className="min-w-0">
+                <p className={cn('text-sm', m.done ? 'font-medium' : 'text-muted-foreground')}>
+                  {m.label}
+                  {m.note && <span className="font-normal text-muted-foreground"> · {m.note}</span>}
+                </p>
+                <p className="text-xs text-muted-foreground">{m.done ? m.when : 'Not yet'}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-4 border-t border-dashed pt-3 text-xs text-muted-foreground">Last changed {formatDoneBy(c.updatedAt, c.updatedBy)}</p>
+      </DetailCard>
+    </div>
   )
 }

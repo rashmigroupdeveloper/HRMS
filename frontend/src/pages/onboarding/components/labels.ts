@@ -1,6 +1,6 @@
 import type { Tone } from '@/components/Pill'
 import type { client } from '@/lib/orpc'
-import { toDateInput, todayDay } from '@/lib/utils'
+import { formatDate, toDateInput, todayDay } from '@/lib/utils'
 
 // Display labels for every backend enum used on the onboarding page. The keys are typed from the API, so a
 // renamed or added value in the backend shows up here as a TypeScript error.
@@ -46,6 +46,28 @@ export const statusLabel = (c: { status: CandidateStatus; offerNumber: string | 
 
 // The two letters sent to a candidate
 export type SentKind = 'LETTER_OF_INTENT' | 'OFFER_LETTER'
+// A candidate's way from the offer to the joining day - the progress bar of each row on the onboarding page (and its
+// skeleton)
+export const PROGRESS_STEPS = ['Offer sent', 'Accepted', 'Joining form signed', 'Joining confirmed', 'Joined'] as const
+
+// How far a candidate is on PROGRESS_STEPS, and what comes next in words (the onboarding list and the candidate's page)
+type ProgressOf = Pick<
+  CandidateRow,
+  'status' | 'offerNumber' | 'offerSentAt' | 'acceptedAt' | 'joiningFormSubmittedAt' | 'joiningFormReturnedAt' | 'joiningConfirmedAt' | 'closedAt' | 'employee'
+>
+export function progressOf(r: ProgressOf): { done: number; next: string } {
+  if (r.status === 'JOINED') return { done: PROGRESS_STEPS.length, next: r.employee ? `Employee ${r.employee.employeeCode}` : 'Joined' }
+  const reached = [!!r.offerSentAt, !!r.acceptedAt, !!r.joiningFormSubmittedAt, !!r.joiningConfirmedAt]
+  const done = reached.indexOf(false) === -1 ? reached.length : reached.indexOf(false)
+  if (CLOSED_STATUSES.includes(r.status)) return { done, next: `Closed ${r.closedAt ? formatDate(r.closedAt) : ''}`.trim() }
+  if (r.status === 'DRAFT') return { done, next: 'Next: send the offer' }
+  if (r.status === 'OFFERED') return { done, next: loiOut(r) ? 'Waiting for the LOI answer' : 'Waiting for the answer' }
+  if (r.status === 'LOI_ACCEPTED') return { done, next: 'Next: send the full offer' }
+  if (!r.joiningFormSubmittedAt) return { done, next: r.joiningFormReturnedAt ? 'Joining form sent back' : 'Next: joining form' }
+  if (!r.joiningConfirmedAt) return { done, next: 'Next: confirm the joining' }
+  return { done, next: 'Ready to join' }
+}
+
 export const SENT_KIND: Record<SentKind, string> = { LETTER_OF_INTENT: 'Letter of Intent', OFFER_LETTER: 'Offer letter' }
 
 export const SALUTATION: Record<NonNullable<Candidate['salutation']>, string> = { MR: 'Mr.', MS: 'Ms.', MRS: 'Mrs.', DR: 'Dr.' }

@@ -1,23 +1,31 @@
-import { BriefcaseBusiness, Building2, CalendarDays, type LucideIcon } from 'lucide-react'
+import { BriefcaseBusiness, Building2, CalendarDays, History, type LucideIcon, Wallet } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
+import { DetailCard } from '@/pages/onboarding/components/DetailCard'
 import { BackgroundChecksTableSkeleton } from './BackgroundChecksTableSkeleton'
 import { DocumentsTableSkeleton } from './DocumentsTableSkeleton'
 import { JoiningFormSkeleton } from './JoiningFormSkeleton'
 
 const VALUE = ['w-36', 'w-44', 'w-28', 'w-40', 'w-32', 'w-24']
 
+// a card of the offer tab as the page describes it (the values are not used here)
+type Group = { title: string; icon: LucideIcon; columns: string; rows: readonly (readonly [label: string, value: unknown, wide?: boolean])[] }
+
 // Loading placeholder for a candidate's page (CandidatePage): the dark header - the initials tile, the name and status,
-// the line of details with its icons - and the real stage tabs along its bottom (usable: `onTab` opens another one),
-// then the open tab's body: the offer's labels with bars for the values (`fields`), the joining form's sections, the
-// documents, the medical or the background checks. `back` is the real link above it.
+// the line of details with its icons, the onboarding steps (`steps`) - and the real stage tabs along its bottom (usable:
+// `onTab` opens another one), then the open tab's body: the offer's cards with their real titles and labels and bars for
+// the values (`groups`, `pay`, `timeline`), the joining form's sections, the documents, the medical or the background
+// checks. `back` is the real link above it.
 export function CandidatePageSkeleton({
   back,
   tabs,
   tab,
   onTab,
-  fields,
+  groups,
+  pay,
+  timeline,
+  steps,
   medical = true,
   label = 'Loading',
 }: {
@@ -25,13 +33,33 @@ export function CandidatePageSkeleton({
   tabs: readonly (readonly [value: string, label: string, icon: LucideIcon])[]
   tab: string
   onTab?: (value: string) => void
-  fields: string[]
+  // the offer tab's cards (their titles, icons, columns and labels), the pay figures' labels and the timeline's steps
+  groups: Group[]
+  pay: readonly string[]
+  timeline: readonly string[]
+  // the onboarding steps of the header's progress bar
+  steps: readonly string[]
   // the viewer may see the joining form's medical section
   medical?: boolean
   label?: string
 }) {
   // on the dark header the bars are a light tint, not the page's grey
   const light = 'bg-hero-foreground/10'
+  // an offer-tab card: its real title and labels, a bar for each value
+  const groupCard = ({ title, icon, columns, rows }: Group) => (
+    <DetailCard key={title} title={title} icon={icon}>
+      <dl className={cn('grid gap-x-6 gap-y-3', columns)}>
+        {rows.map(([field, , wide], i) => (
+          <div key={field} className={cn('flex min-w-0 flex-col gap-0.5', wide && 'col-span-full')}>
+            <dt className="text-xs text-muted-foreground">{field}</dt>
+            <dd className="flex h-5 items-center">
+              <Skeleton className={cn('h-3.5 max-w-full rounded-full', VALUE[i % VALUE.length])} />
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </DetailCard>
+  )
   return (
     <Tabs role="status" aria-label={label} value={tab} onValueChange={(value) => onTab?.(String(value))} className="gap-4">
       {back}
@@ -57,6 +85,19 @@ export function CandidatePageSkeleton({
                 <CalendarDays className="size-3.5" /> Joining <Skeleton className={cn('h-3 w-20 rounded-full', light)} />
               </span>
             </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-2 pt-1">
+          <ol className="grid min-w-0 flex-1 grid-cols-5 gap-1.5">
+            {steps.map((step) => (
+              <li key={step} className="min-w-0">
+                <span className="block h-1.5 rounded-full bg-hero-foreground/15" />
+                <span className="mt-1.5 block truncate text-xs text-hero-foreground/50">{step}</span>
+              </li>
+            ))}
+          </ol>
+          <div className="flex h-5 items-center">
+            <Skeleton className={cn('h-3.5 w-32 rounded-full', light)} />
           </div>
         </div>
         <TabsList
@@ -100,16 +141,43 @@ export function CandidatePageSkeleton({
           <BackgroundChecksTableSkeleton />
         </section>
       ) : (
-        <dl className="grid gap-x-6 gap-y-3.5 rounded-3xl bg-card p-5 shadow-card sm:grid-cols-2 lg:grid-cols-3">
-          {fields.map((field, i) => (
-            <div key={field} className="flex min-w-0 flex-col gap-0.5">
-              <dt className="text-xs text-muted-foreground">{field}</dt>
-              <dd className="flex h-5 items-center">
-                <Skeleton className={cn('h-3.5 max-w-full rounded-full', VALUE[i % VALUE.length])} />
-              </dd>
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_19rem]">
+          <div className="space-y-4">
+            {groupCard(groups[0]!)}
+            <div className="grid items-start gap-4 md:grid-cols-2">{groups.slice(1).map(groupCard)}</div>
+            <DetailCard title="Pay" icon={Wallet}>
+              <dl className="grid grid-cols-3 gap-4">
+                {pay.map((label) => (
+                  <div key={label} className="flex min-w-0 flex-col-reverse">
+                    <dt className="mt-0.5 text-xs text-muted-foreground">{label}</dt>
+                    <dd className="flex h-8 items-center sm:h-9">
+                      <Skeleton className="h-6 w-28 max-w-full rounded-lg" />
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </DetailCard>
+          </div>
+          <DetailCard title="Timeline" icon={History}>
+            <ol>
+              {timeline.map((step, i) => (
+                <li key={step} className="relative flex gap-3 pb-4 last:pb-0">
+                  {i < timeline.length - 1 && <span aria-hidden className="absolute top-5 bottom-0 left-[7px] w-px bg-border" />}
+                  <span aria-hidden className="mt-0.5 size-[15px] shrink-0 rounded-full border-2 border-border bg-card" />
+                  <div className="min-w-0">
+                    <p className="text-sm text-muted-foreground">{step}</p>
+                    <div className="flex h-4 items-center">
+                      <Skeleton className="h-3 w-36 rounded-full" />
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <div className="mt-4 flex h-[1.875rem] items-end border-t border-dashed">
+              <Skeleton className="h-3 w-44 rounded-full" />
             </div>
-          ))}
-        </dl>
+          </DetailCard>
+        </div>
       )}
     </Tabs>
   )

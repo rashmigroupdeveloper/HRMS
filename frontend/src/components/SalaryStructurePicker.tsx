@@ -8,11 +8,11 @@ import { errorMessage } from '@/lib/utils'
 // employee type), one HR picks, or none; "Recalculate from CTC" after a hand change. `Status` says what happened.
 export function SalaryStructurePicker({ s }: { s: StructureBreakup }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <label htmlFor="salary-structure" className="flex items-center gap-2 text-xs text-muted-foreground">
-        Salary structure
-        <NativeSelect id="salary-structure" className="[&_select]:h-8 [&_select]:rounded-full" value={s.choice} onChange={(e) => s.choose(e.target.value as StructureChoice)}>
-          <NativeSelectOption value="auto">{s.choice === 'auto' && s.result?.structure ? `Automatic - ${s.result.structure.name}` : 'Automatic (by the employee type)'}</NativeSelectOption>
+    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+      <label htmlFor="salary-structure" className="flex w-full min-w-0 items-center gap-2 text-xs text-muted-foreground sm:w-auto">
+        <span className="shrink-0">Salary structure</span>
+        <NativeSelect id="salary-structure" className="min-w-0 flex-1 sm:flex-none [&_select]:h-8 [&_select]:rounded-full" value={s.choice} onChange={(e) => s.choose(e.target.value as StructureChoice)}>
+          <NativeSelectOption value="auto">{s.choice === 'auto' && s.result?.structure ? `Auto: ${s.result.structure.name}` : 'Automatic (by the employee type)'}</NativeSelectOption>
           {s.structures.map((structure) => (
             <NativeSelectOption key={structure.id} value={String(structure.id)}>
               {structure.name}
@@ -48,7 +48,7 @@ export function SalaryStructureStatus({ s, needs }: { s: StructureBreakup; needs
               : s.result?.structure
                 ? s.following
                   ? `Filled in from the salary structure "${s.result.structure.name}". Change any line - the balance line keeps the total at the CTC.`
-                  : `Not following the CTC (changed by hand, or the saved breakup). "Recalculate from CTC" fills it in from "${s.result.structure.name}".`
+                  : `Kept as it is (the saved breakup, or changed by hand). "Recalculate from CTC" fills it in from "${s.result.structure.name}".`
                 : 'No salary structure for this kind of employee - pick one above, or type the breakup.'}
     </p>
   )
