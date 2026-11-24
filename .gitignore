@@ -20,6 +20,12 @@ logs/
 *.log
 npm-debug.log*
 
+# Real company data (salaries, employee lists, punches) - never committed (the user, 2026-11-24): it lives in private/
+private/
+/*.xlsx
+/*.xls
+/*.csv
+
 # Uploaded / stored files
 backend/storage/
 backend/storage-test/

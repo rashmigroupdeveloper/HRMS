@@ -33,6 +33,9 @@ HRMS_NEW/
 │                     packs (Regular, Consultant & Intern, Overseas); read them before changing what the form asks.
 │                     joining-form-regular.pdf is also the print template (candidates.printedForms): replacing it
 │                     means re-measuring the positions in modules/candidates/printed-forms/printed-forms.service.ts
+├─ private/           (added 2026-11-24) git-ignored - real company data files from HR kept on this machine for
+│                     reference (the CTC / salary sheet, the employee master, Kent punches); never committed, never
+│                     copied into docs/ or tests - use made-up numbers there
 ├─ backend/
 └─ frontend/
 ```
@@ -154,6 +157,7 @@ frontend/src/
 | One-off admin or import task | `backend/scripts/<task>.ts` |
 | A paper form or document from HR that the system follows (joining form, statutory forms) | `docs/hr-forms/<kebab-case-name>.pdf` |
 | Record a manual end-to-end test run (steps, bugs, suggestions) | `docs/test-runs/<date>-<what>.md` |
+| Keep a real data file from HR (salaries, employee list, punches) | `private/` - git-ignored, never committed (2026-11-24); a sample without real people (e.g. formulas only) may go to `docs/hr-forms/` |
 | Seed data | `backend/prisma/seeds/` |
 | New environment variable | zod schema in `core/config/env.ts` + `backend/.env.example` |
 | New page | `frontend/src/pages/<feature>/<Name>Page.tsx` + route in `app/router.tsx` |

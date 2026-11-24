@@ -33,6 +33,7 @@ HRMS_NEW/
 ├─ BACKLOG.md                   work deferred for later + open questions for HR
 ├─ docs/test-runs/              one log per manual end-to-end test run: steps, results, bugs, suggestions
 ├─ docs/hr-forms/               HR's joining form RML/HR/02/01 (Regular, Consultant & Intern, Overseas packs) - also the template the filled forms are printed on
+├─ private/                     (git-ignored, never committed) real company data files kept for reference: salaries, employee lists, punches
 ├─ backend/
 │  ├─ package.json              also defines the import aliases (#core, #modules, #shared)
 │  ├─ prisma.config.ts          Prisma CLI config (reads DATABASE_URL)
