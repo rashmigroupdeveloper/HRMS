@@ -349,7 +349,9 @@ model SalaryComponent {
   id           Int                 @id @default(autoincrement())
   name         String              @unique
   // EARNING: paid to the employee (the earnings add up to the Monthly Gross);
-  // EMPLOYER_CONTRIBUTION: paid by the company on top (PF, ESI, gratuity) - part of the CTC, not of the gross
+  // EMPLOYER_CONTRIBUTION: paid by the company on top (PF, ESI, gratuity) - part of the CTC, not of the gross;
+  // DEDUCTION: taken out of the month's pay by payroll (employee PF, professional tax, canteen recovery - the payslip,
+  // 2026-11-24) - never a line of a salary breakup (offer / salary / revision), which is the agreed CTC
   kind         SalaryComponentKind
   // Order of the lines in the breakup (lower first)
   displayOrder Int                 @map("display_order") @db.SmallInt
@@ -370,6 +372,7 @@ model SalaryComponent {
 enum SalaryComponentKind {
   EARNING
   EMPLOYER_CONTRIBUTION
+  DEDUCTION
 
   @@map("salary_component_kind")
 }

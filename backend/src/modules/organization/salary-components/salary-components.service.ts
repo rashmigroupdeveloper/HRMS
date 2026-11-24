@@ -20,13 +20,17 @@ export function listSalaryComponentsFor(viewer: CurrentUser, includeInactive = f
   return listSalaryComponents(includeInactive)
 }
 
-// A salary breakup (an offer's, or a revision's - 2026-11-20): every line an active component, and the monthly lines x
-// 12 adding up to the annual fixed CTC. Throws BAD_REQUEST. An empty breakup is allowed (no lines given).
+// A salary breakup (an offer's, or a revision's - 2026-11-20): every line an active earning or employer contribution -
+// never a deduction, which payroll takes out of the month's pay (2026-11-24) - and the monthly lines x 12 adding up to
+// the annual fixed CTC. Throws BAD_REQUEST. An empty breakup is allowed (no lines given).
 export async function checkBreakup(lines: { salaryComponentId: number; monthlyAmount: number }[], annualCtc: number) {
   if (lines.length === 0) return
-  const active = new Set((await listSalaryComponents()).map((c) => c.id))
-  if (lines.some((line) => !active.has(line.salaryComponentId))) {
+  const kindOf = new Map((await listSalaryComponents()).map((c) => [c.id, c.kind]))
+  if (lines.some((line) => !kindOf.has(line.salaryComponentId))) {
     throw new ORPCError('BAD_REQUEST', { message: 'The salary breakup uses a salary component that is not active' })
+  }
+  if (lines.some((line) => kindOf.get(line.salaryComponentId) === 'DEDUCTION')) {
+    throw new ORPCError('BAD_REQUEST', { message: 'A deduction is not part of a salary breakup - payroll takes it out of the monthly pay' })
   }
   const annual = lines.reduce((total, line) => total + line.monthlyAmount, 0) * 12
   if (annual !== annualCtc) {
@@ -38,7 +42,15 @@ export function createSalaryComponent(input: z.infer<typeof createSalaryComponen
   return salaryComponentsRepository.create(input, actorId)
 }
 
-export function updateSalaryComponent({ id, ...changes }: z.infer<typeof updateSalaryComponentInput>, actorId: ActorId) {
+// A component cannot turn into a deduction or stop being one: the earnings and employer contributions sit on salary
+// breakups (adding up to the CTC), a deduction never does (2026-11-24). Unknown id -> 404 (mapped centrally).
+export async function updateSalaryComponent({ id, ...changes }: z.infer<typeof updateSalaryComponentInput>, actorId: ActorId) {
+  if (changes.kind) {
+    const current = await salaryComponentsRepository.findById(id)
+    if (current && current.kind !== changes.kind && (current.kind === 'DEDUCTION' || changes.kind === 'DEDUCTION')) {
+      throw new ORPCError('BAD_REQUEST', { message: 'A deduction cannot become an earning or an employer contribution, nor the other way round - add a new component instead' })
+    }
+  }
   return salaryComponentsRepository.update(id, changes, actorId)
 }
 

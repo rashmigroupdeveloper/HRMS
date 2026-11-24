@@ -11,6 +11,10 @@ export function list(includeInactive: boolean, db: DbClient = prisma) {
   })
 }
 
+export function findById(id: number, db: DbClient = prisma) {
+  return db.salaryComponent.findUnique({ where: { id }, select: salaryComponentSelect })
+}
+
 export function create(data: NewRow<Prisma.SalaryComponentCreateInput>, actorId: ActorId, db: DbClient = prisma) {
   return db.salaryComponent.create({ data: { ...data, ...createdBy(actorId) }, select: salaryComponentSelect })
 }

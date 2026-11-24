@@ -11,7 +11,7 @@ type EmployeeProfile = Awaited<ReturnType<typeof client.employees.getByCode>>
 export function SalaryCard({ s, tiles: showTiles = true }: { s: NonNullable<EmployeeProfile['salary']>; tiles?: boolean }) {
   const money = (amount: number) => formatMoney(amount, s.currency)
   const earnings = s.lines.filter((l) => l.salaryComponent.kind === 'EARNING')
-  const employer = s.lines.filter((l) => l.salaryComponent.kind !== 'EARNING')
+  const employer = s.lines.filter((l) => l.salaryComponent.kind === 'EMPLOYER_CONTRIBUTION')
   const gross = earnings.reduce((sum, l) => sum + l.monthlyAmount, 0)
   const total = s.lines.reduce((sum, l) => sum + l.monthlyAmount, 0)
   const tiles: [string, string, boolean?][] = [

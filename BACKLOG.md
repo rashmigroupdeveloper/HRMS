@@ -401,7 +401,8 @@ the HRMS_NEW way when picked up, not copied)
 - [ ] Work locations tied to a company (old: one company per location; ours: one group-wide list - it already has a
   state code, which state-wise rules such as professional tax will use).
 - [ ] Salary components with a code and a "part of gross" flag (old: in payroll; ours: name, kind and order) - with
-  the payroll module.
+  the payroll module. (The kind `DEDUCTION` was added 2026-11-24 with the payslip's Employee PF, Professional Tax and
+  Canteen Recovery; how each component is calculated and which are cut for LOP waits for HR's answer - mail sent.)
 - [ ] HR adding new kinds of letters themselves (old: any letter code; ours: seven fixed kinds, a new one needs code).
 
 ### 19. Attendance: what is still open (module built 2026-11-16)

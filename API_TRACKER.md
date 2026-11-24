@@ -1449,7 +1449,7 @@ together with their time, e.g. when a changed offer goes back to draft). Calenda
   | `address` | string | no (the letter needs it) | 1-300 chars - printed under the name |
   | `probationMonths` | number | no (the letter needs it) | 0-24 |
   | `noticeMonthsProbation`, `noticeMonthsConfirmed` | number | no (the letter needs them) | 0-24 - notice during probation / after confirmation |
-  | `salaryLines` | `[{ salaryComponentId, monthlyAmount }]` | no (the letter needs it) | active salary components, each once; whole units per month; **monthly total x 12 must equal `annualCtc`** |
+  | `salaryLines` | `[{ salaryComponentId, monthlyAmount }]` | no (the letter needs it) | active salary components (earnings / employer contributions - never a `DEDUCTION`), each once; whole units per month; **monthly total x 12 must equal `annualCtc`** |
   | `extraRequiredDocuments` | DocumentType[] | no | documents this offer needs on top of the pack's compulsory ones (2026-11-20) - only types from `documents.requirements` `requestable`; duplicates dropped. The candidate uploads them before signing and HR verifies them before joining (`joining.checklist`). Not printed on the letter |
   | `joiningFormOnAcceptance` | boolean | no | default `false` (2026-11-20): `true` = the joining form opens when the candidate accepts and its link is e-mailed with the acceptance; `false` = HR opens it later with `offerLetters.newLink` ("Send link"). Not printed on the letter |
 
@@ -2531,17 +2531,19 @@ site can be used by several companies.
 - **Scope:** not limited by data access (one list for every company).
 - **Input (optional):** `{ includeInactive?: boolean }`
 - **Returns:** `[{ id, name, kind, displayOrder, isActive }]` in breakup order (`displayOrder`, then name). `kind`:
-  `EARNING` (adds up to the Monthly Gross) or `EMPLOYER_CONTRIBUTION` (PF / ESI / gratuity paid on top - part of the
-  CTC, not of the gross).
+  `EARNING` (adds up to the Monthly Gross), `EMPLOYER_CONTRIBUTION` (PF / ESI / gratuity paid on top - part of the
+  CTC, not of the gross) or `DEDUCTION` (taken out of the monthly pay by payroll - never a line of a salary breakup;
+  2026-11-24).
 - **What it does:** the lines an offer's salary breakup is made of (seeded with the 12 lines of the RML offer letter
-  Annexure-I). One group-wide list; payroll will reuse it.
+  Annexure-I), and the payslip's deductions (seeded 2026-11-24: Employee PF, Professional Tax, Canteen Recovery). One
+  group-wide list; payroll will reuse it. The offer / salary forms offer only earnings and employer contributions.
 - **Errors:** `400` invalid input · `403 FORBIDDEN` `includeInactive` without Organization: View.
 
 ### `organization.salaryComponents.create`
 - **HTTP:** `POST /api/rpc/organization/salaryComponents/create` · **Code:** `backend/src/modules/organization/salary-components/`
 - **Access:** Organization: Edit.
 - **Scope:** shared by every company - needs Organization Edit for **all companies** (`403`).
-- **Input:** `{ name: string (1-100, unique), kind: 'EARNING' | 'EMPLOYER_CONTRIBUTION', displayOrder: number (0-999) }`
+- **Input:** `{ name: string (1-100, unique), kind: 'EARNING' | 'EMPLOYER_CONTRIBUTION' | 'DEDUCTION', displayOrder: number (0-999) }`
 - **Returns:** the new component.
 - **Errors:** `400` invalid input · `409 CONFLICT` name already exists.
 
@@ -2552,8 +2554,10 @@ site can be used by several companies.
 - **Input:** `{ id: number, name?, kind?, displayOrder?, isActive?: boolean }` (rules as `create`)
 - **Returns:** the component.
 - **What it does:** changes, or retires / re-activates a component. A retired one stays on the offers that use it but
-  cannot be added to an offer.
-- **Errors:** `400` invalid input · `404 NOT_FOUND` unknown id · `409 CONFLICT` name already used.
+  cannot be added to an offer. A component cannot change between `DEDUCTION` and the other two kinds (2026-11-24) - the
+  earnings and employer contributions sit on salary breakups, a deduction never does.
+- **Errors:** `400` invalid input, or `kind` changed to / from `DEDUCTION` · `404 NOT_FOUND` unknown id · `409 CONFLICT`
+  name already used.
 
 ---
 
@@ -3572,7 +3576,7 @@ salary figures). One open change per employee at a time (waiting for approval, o
   | `reportingManagerCode` | string \| null | no | an employee who has not left, not the employee, no loop |
   | `functionalManagerCode` | string \| null | no | an employee who has not left, not the employee |
   | `employmentType`, `workforceCategory` | enum | no | |
-  | `salary` | object | for `SALARY_*` | `{ annualCtc (int > 0), performancePayAnnual? (int \| null), currency? (3 letters, default the current salary's), lines [{ salaryComponentId, monthlyAmount }] (1-50, each component once, active, x 12 = annualCtc) }` |
+  | `salary` | object | for `SALARY_*` | `{ annualCtc (int > 0), performancePayAnnual? (int \| null), currency? (3 letters, default the current salary's), lines [{ salaryComponentId, monthlyAmount }] (1-50, each component once, active, not a `DEDUCTION`, x 12 = annualCtc) }` |
 
 - **Returns:** the change, as `get`.
 - **What it does:** raises the request for approval - the job chain when job details change, the salary chain when the salary

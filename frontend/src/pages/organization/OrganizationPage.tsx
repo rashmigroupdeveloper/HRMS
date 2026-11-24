@@ -33,7 +33,13 @@ const regionChoices = (values: Record<string, string>) => ((values.countryCode ?
 
 type PlantRow = Awaited<ReturnType<typeof client.organization.plants.list>>[number]
 type SalaryKind = Awaited<ReturnType<typeof client.organization.salaryComponents.list>>[number]['kind']
-const SALARY_KIND: Record<SalaryKind, string> = { EARNING: 'Earning', EMPLOYER_CONTRIBUTION: 'Employer contribution' }
+const SALARY_KIND: Record<SalaryKind, string> = { EARNING: 'Earning', EMPLOYER_CONTRIBUTION: 'Employer contribution', DEDUCTION: 'Deduction' }
+// The groups on the page, in this order (as the breakup prints them, then the payslip's deductions - 2026-11-24)
+const SALARY_KIND_GROUP: Record<SalaryKind, { order: number; label: string }> = {
+  EARNING: { order: 1, label: 'Earnings - add up to the Monthly Gross' },
+  EMPLOYER_CONTRIBUTION: { order: 2, label: 'Employer contributions - paid on top, part of the CTC' },
+  DEDUCTION: { order: 3, label: 'Deductions - taken out of the monthly pay by payroll, never in a salary breakup' },
+}
 
 // The API of a master that only has a name (designations)
 type NameOnlyApi = {
@@ -721,14 +727,14 @@ export function OrganizationPage() {
           <MasterSection
             title="Salary components"
             singular="salary component"
-            about="A line of the salary breakup in offer letters."
+            about="A line of the salary breakup in offer letters, or a deduction on the payslip."
             canChange={canChange}
             shared
             rows={salaryComponents.data ?? []}
             loading={salaryComponents.isPending}
-            // as the offer letter's breakup prints them: earnings first, each group in its order
-            sort={(a, b) => a.kind.localeCompare(b.kind) || a.displayOrder - b.displayOrder}
-            groupBy={(s) => ({ key: s.kind, label: s.kind === 'EARNING' ? 'Earnings - add up to the Monthly Gross' : 'Employer contributions - paid on top, part of the CTC' })}
+            // as the offer letter's breakup prints them: earnings first, each group in its order; deductions last
+            sort={(a, b) => SALARY_KIND_GROUP[a.kind].order - SALARY_KIND_GROUP[b.kind].order || a.displayOrder - b.displayOrder}
+            groupBy={(s) => ({ key: s.kind, label: SALARY_KIND_GROUP[s.kind].label })}
             searchText={(s) => `${s.name} ${SALARY_KIND[s.kind]}`}
             preview={(v) => ({
               lead: <OrderBadge value={v.displayOrder || '?'} title="Order" />,
@@ -737,7 +743,7 @@ export function OrganizationPage() {
             })}
             item={(s) => ({ lead: <OrderBadge value={s.displayOrder} title="Order in the breakup" />, title: s.name })}
             fields={[
-              { name: 'name', label: 'Name', required: true, placeholder: 'e.g. Special Allowance', hint: 'As printed in the salary breakup of the offer letter' },
+              { name: 'name', label: 'Name', required: true, placeholder: 'e.g. Special Allowance', hint: 'As printed in the salary breakup of the offer letter, or on the payslip' },
               {
                 name: 'kind',
                 label: 'Type',
