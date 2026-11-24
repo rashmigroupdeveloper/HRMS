@@ -53,10 +53,12 @@ export const calculateInput = z
     joiningType: z.enum(JoiningType).optional(),
     employmentType: z.enum(EmploymentType).optional(),
     workforceCategory: z.enum(WorkforceCategory).optional(),
+    // the structure HR chose on the offer in place of the one it matches (2026-11-24)
+    structureId: idSchema.optional(),
     draft: z.object({ basicComponentId: idSchema.nullable().optional(), lines: linesInput }).optional(),
   })
-  .refine((v) => v.draft || (v.joiningType && v.employmentType && v.workforceCategory), {
-    message: 'Give the joining type, employment type and category - or a draft structure',
+  .refine((v) => v.draft || v.structureId || (v.joiningType && v.employmentType && v.workforceCategory), {
+    message: 'Give the joining type, employment type and category - or a structure, or a draft structure',
   })
 
 export type StructureLineInput = z.infer<typeof lineInput>

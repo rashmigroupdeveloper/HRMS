@@ -11,6 +11,7 @@ import { errorMessage, sumMoney } from '@/lib/utils'
 import { FieldsGrid } from '@/components/FormFields'
 import { type BreakupValues, breakupLines, changedValues, type FieldDef, type FormValues, fromFormValues, toFormValues } from '@/lib/form-values'
 import { Checkbox } from '@/components/ui/checkbox'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { type Candidate, DOCUMENT_TYPE, EMPLOYMENT_TYPE, EMPLOYMENT_TYPES_FOR, FIXED_PERIOD, JOINING_TYPE, type Option, SALUTATION, toOptions, WORKFORCE } from './labels'
 import { SalaryBreakupFields } from '@/components/SalaryBreakupFields'
 
@@ -97,9 +98,9 @@ const ALL_FIELDS = SECTIONS.flatMap((s) => s.fields)
 
 const breakupOf = (candidate?: Candidate): BreakupValues =>
   Object.fromEntries((candidate?.salaryLines ?? []).map((l) => [l.salaryComponent.id, String(l.monthlyAmount)]))
-// the calculated lines as the form holds them
+// the calculated lines as the form holds them - a line that comes to 0 is left out (not shown, not saved)
 const breakupFrom = (lines: { salaryComponentId: number; monthlyAmount: number }[]): BreakupValues =>
-  Object.fromEntries(lines.map((l) => [l.salaryComponentId, String(l.monthlyAmount)]))
+  Object.fromEntries(lines.filter((l) => l.monthlyAmount > 0).map((l) => [l.salaryComponentId, String(l.monthlyAmount)]))
 
 const sameBreakup = (a: BreakupValues, b: BreakupValues) => JSON.stringify(breakupLines(a).sort((x, y) => x.salaryComponentId - y.salaryComponentId)) === JSON.stringify(breakupLines(b).sort((x, y) => x.salaryComponentId - y.salaryComponentId))
 
@@ -144,6 +145,10 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
   // the breakup follows the CTC (salary structures, 2026-11-24) until HR changes a line by hand - a new offer starts so,
   // an offer with a saved breakup keeps it until HR recalculates
   const [following, setFollowing] = useState(() => !candidate?.salaryLines.length)
+  // which salary structure works the breakup out (2026-11-24): 'auto' = the one the offer's joining type, employment
+  // type and workforce match; a structure's id = the one HR picked instead; 'none' = HR types the breakup
+  const [structureChoice, setStructureChoice] = useState<'auto' | 'none' | `${number}`>('auto')
+  const structures = useQuery(orpc.organization.salaryStructures.list.queryOptions())
 
   const companies = useQuery(orpc.organization.companies.list.queryOptions())
   // the plants of the chosen company, and the departments of the chosen plant
@@ -190,7 +195,12 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
       JSON.stringify({ annualCtc: Number(values.annualCtc) || 0, joiningType: values.joiningType, employmentType: values.employmentType, workforceCategory: values.workforceCategory }),
     ),
   ) as OfferKind
-  const canCalculate = !accepted && offerKind.annualCtc > 0 && !!offerKind.joiningType && !!offerKind.employmentType && !!offerKind.workforceCategory
+  const chosenId = structureChoice === 'auto' || structureChoice === 'none' ? undefined : Number(structureChoice)
+  const canCalculate =
+    !accepted &&
+    structureChoice !== 'none' &&
+    offerKind.annualCtc > 0 &&
+    (chosenId !== undefined || (!!offerKind.joiningType && !!offerKind.employmentType && !!offerKind.workforceCategory))
   const calculated = useQuery({
     ...orpc.organization.salaryStructures.calculate.queryOptions({
       input: {
@@ -198,6 +208,7 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
         joiningType: offerKind.joiningType || undefined,
         employmentType: offerKind.employmentType || undefined,
         workforceCategory: offerKind.workforceCategory || undefined,
+        structureId: chosenId,
       },
     }),
     enabled: canCalculate,
@@ -342,17 +353,48 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs font-medium text-muted-foreground">Salary breakup (Annexure-I of the letter) - monthly amounts</p>
-                {result?.structure && !following && (
+                {!accepted && (
+                  <label htmlFor="offer-structure" className="flex items-center gap-2 text-xs text-muted-foreground">
+                    Salary structure
+                    <NativeSelect
+                      id="offer-structure"
+                      className="[&_select]:h-8 [&_select]:rounded-full"
+                      value={structureChoice}
+                      onChange={(e) => {
+                        setStructureChoice(e.target.value as typeof structureChoice)
+                        // a new choice fills the breakup in again
+                        setFollowing(true)
+                      }}
+                    >
+                      <NativeSelectOption value="auto">
+                        {structureChoice === 'auto' && result?.structure ? `Automatic - ${result.structure.name}` : 'Automatic (by the offer type)'}
+                      </NativeSelectOption>
+                      {(structures.data ?? []).map((s) => (
+                        <NativeSelectOption key={s.id} value={String(s.id)}>
+                          {s.name}
+                        </NativeSelectOption>
+                      ))}
+                      <NativeSelectOption value="none">None - type the breakup</NativeSelectOption>
+                    </NativeSelect>
+                  </label>
+                )}
+              </div>
+              {result?.structure && !following && (
+                <div className="flex justify-end">
                   <Button type="button" size="sm" variant="secondary" onClick={() => setFollowing(true)}>
                     <RefreshCw className="size-3.5" />
                     Recalculate from CTC
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
               {!accepted && (
                 <p role="status" className="text-xs text-muted-foreground">
-                  {!canCalculate
-                    ? 'Type the annual CTC and choose the joining type, employment type and workforce - the breakup fills in from the salary structure.'
+                  {structureChoice === 'none'
+                    ? 'No salary structure chosen - type the breakup.'
+                    : !canCalculate
+                    ? chosenId === undefined
+                      ? 'Type the annual CTC and choose the joining type, employment type and workforce - the breakup fills in from the salary structure they match.'
+                      : 'Type the annual CTC - the breakup fills in from the chosen salary structure.'
                     : calculated.isPending
                       ? 'Working out the breakup…'
                       : calculated.error
@@ -361,13 +403,14 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
                           ? following
                             ? `Filled in from the salary structure "${result.structure.name}". Change any line - the balance line keeps the total at the CTC.`
                             : `Changed by hand. "Recalculate from CTC" fills it in again from "${result.structure.name}".`
-                          : 'No salary structure for this kind of offer - type the breakup.'}
+                          : 'No salary structure for this kind of offer - pick one above, or type the breakup.'}
                 </p>
               )}
               <SalaryBreakupFields
                 components={components}
                 values={breakup}
                 onChange={changeBreakup}
+                hideEmpty={!!result?.structure}
                 annualCtc={Number(values.annualCtc) || 0}
                 currency={values.ctcCurrency || 'INR'}
                 onUseTotal={(annual) => set('annualCtc', String(annual))}

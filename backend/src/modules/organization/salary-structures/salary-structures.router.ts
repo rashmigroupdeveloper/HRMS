@@ -3,14 +3,14 @@ import { listInput } from '#shared/schemas/common.schema'
 import { calculateInput, createSalaryStructureInput, updateSalaryStructureInput } from './salary-structures.schema.js'
 import * as salaryStructuresService from './salary-structures.service.js'
 
-// Routes + controller layer. List: ORGANIZATION READ; create / update: ORGANIZATION WRITE (for all companies - checked in
+// Routes + controller layer. List: any logged-in employee (retired ones: ORGANIZATION READ); create / update: ORGANIZATION WRITE (for all companies - checked in
 // the service); calculate: any logged-in employee (the offer and salary forms - a calculation, nobody's record).
 const changeProcedure = accessProcedure('ORGANIZATION', 'WRITE')
 
 export const salaryStructuresRouter = {
-  list: accessProcedure('ORGANIZATION', 'READ')
+  list: authedProcedure
     .input(listInput)
-    .handler(({ input }) => salaryStructuresService.listSalaryStructures(input?.includeInactive)),
+    .handler(({ input, context }) => salaryStructuresService.listSalaryStructuresFor(context.user, input?.includeInactive)),
   create: changeProcedure
     .input(createSalaryStructureInput)
     .handler(({ input, context }) => salaryStructuresService.createSalaryStructureFor(context.user, input)),

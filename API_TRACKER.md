@@ -176,7 +176,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 87 | `organization.salaryComponents.list` | Logged in | List salary components (lines of an offer's salary breakup) |
 | 88 | `organization.salaryComponents.create` | Organization: Edit | Add a salary component |
 | 89 | `organization.salaryComponents.update` | Organization: Edit | Change or retire a salary component |
-| 90 | `organization.salaryStructures.list` | Organization: View | List salary structures (how an offer's breakup is worked out from its CTC) |
+| 90 | `organization.salaryStructures.list` | Logged in (retired ones: Organization: View) | List salary structures (how an offer's breakup is worked out from its CTC) |
 | 91 | `organization.salaryStructures.create` | Organization: Edit (all companies) | Add a salary structure with its lines |
 | 92 | `organization.salaryStructures.update` | Organization: Edit (all companies) | Change, re-line or retire a salary structure |
 | 93 | `organization.salaryStructures.calculate` | Logged in | The breakup of an annual CTC by the structure an offer matches (or a draft) |
@@ -2592,7 +2592,8 @@ site can be used by several companies.
 
 ### `organization.salaryStructures.list`
 - **HTTP:** `POST /api/rpc/organization/salaryStructures/list` · **Code:** `backend/src/modules/organization/salary-structures/`
-- **Access:** Organization: View.
+- **Access:** any logged-in employee (the offer form lets HR pick a structure - 2026-11-24); `includeInactive: true` needs
+  Organization: View.
 - **Scope:** not limited by data access (one list for every company - no one's records).
 - **Input (optional):** `{ includeInactive?: boolean }`
 - **Returns:** `[{ id, name, joiningType, employmentType, workforceCategory (each null = any), basicComponentId, isActive,
@@ -2605,7 +2606,7 @@ site can be used by several companies.
   200 + medical 1,250 (white collar only), employer PF 12% and gratuity 4.81% of Basic, employer ESI 3.25% of the gross
   while the gross is at most 21,000, special allowance the balance; "Trainee" (Consultant & Intern trainees) - the whole
   CTC as stipend.
-- **Errors:** `400` invalid input · `403` without Organization: View.
+- **Errors:** `400` invalid input · `403 FORBIDDEN` `includeInactive` without Organization: View.
 
 ### `organization.salaryStructures.create`
 - **HTTP:** `POST /api/rpc/organization/salaryStructures/create` · **Code:** `backend/src/modules/organization/salary-structures/`
@@ -2637,8 +2638,10 @@ site can be used by several companies.
 - **HTTP:** `POST /api/rpc/organization/salaryStructures/calculate` · **Code:** `backend/src/modules/organization/salary-structures/`
 - **Access:** any logged-in employee (the offer and salary forms).
 - **Scope:** not limited by data access - a calculation; it returns no one's records.
-- **Input:** `{ annualCtc: int (1 - 240 crore), joiningType, employmentType, workforceCategory }` (the offer's), or
-  `{ annualCtc, draft: { basicComponentId?, lines } }` (a structure being edited - its live example).
+- **Input:** `{ annualCtc: int (1 - 240 crore), joiningType, employmentType, workforceCategory }` (the offer's - the
+  closest structure is used), or `{ annualCtc, structureId }` (the structure HR chose on the offer in place of the match -
+  2026-11-24; an active one), or `{ annualCtc, draft: { basicComponentId?, lines } }` (a structure being edited - its live
+  example).
 - **Returns:** `{ structure: { id, name } | null, monthlyCtc, balanceComponentId (the BALANCE line's component, or null),
   lines: [{ salaryComponentId, monthlyAmount }] }` -
   `monthlyCtc` = annualCtc / 12 to the paisa; the lines add up to it exactly. No structure for the offer: `structure:
@@ -2649,7 +2652,7 @@ site can be used by several companies.
   the rupee (the user, 2026-11-24: stored paise can be shown rounded later, rounded amounts cannot be undone) - the "% of
   Basic" ones from the Basic so rounded, and gives the balance line what is left.
 - **Errors:** `400` invalid input, a draft breaking the rules of `create`, or a CTC too low for the structure (its other
-  lines come to more than the monthly CTC).
+  lines come to more than the monthly CTC) · `404 NOT_FOUND` `structureId` unknown or retired.
 
 ---
 

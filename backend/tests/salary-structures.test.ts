@@ -62,6 +62,17 @@ describe('salary structures: the breakup from the CTC', () => {
     expect(trainee.byName).toEqual({ Stipend: 18_000 })
   })
 
+  it('uses the structure HR chose on the offer in place of the one it matches', async () => {
+    const blue = (await salaryStructuresService.listSalaryStructures()).find((s) => s.name === 'Regular - Blue collar')!
+    const r = await breakup({ annualCtc: 300_000, ...regular('WHITE_COLLAR'), structureId: blue.id })
+    expect(r.structure?.name).toBe('Regular - Blue collar')
+    expect(r.byName['Medical']).toBeUndefined()
+    // an offer no structure matches can still use one
+    const consultant = await breakup({ annualCtc: 300_000, joiningType: 'CONSULTANT_INTERN', employmentType: 'CONSULTANT', workforceCategory: 'WHITE_COLLAR', structureId: blue.id })
+    expect(consultant.byName['Special Allowance']).toBe(4_804.9)
+    await expect(salaryStructuresService.calculateBreakup({ annualCtc: 300_000, structureId: 999_999 })).rejects.toThrow('not in use')
+  })
+
   it('gives consultants, apprentices and overseas offers no structure until HR defines one', async () => {
     for (const offer of [
       { joiningType: 'CONSULTANT_INTERN', employmentType: 'CONSULTANT', workforceCategory: 'WHITE_COLLAR' },

@@ -1,5 +1,6 @@
 import { Check, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Input } from '@/components/ui/input'
 import { cn, formatMoney, monthlyOf, sumMoney, toPaise } from '@/lib/utils'
 import { AMOUNT_PATTERN, type BreakupValues, breakupLines } from '@/lib/form-values'
@@ -28,6 +29,7 @@ export function SalaryBreakupFields({
   currency,
   onUseTotal,
   disabled,
+  hideEmpty = false,
 }: {
   // active components + any retired one this offer already uses
   components: Line[]
@@ -38,9 +40,15 @@ export function SalaryBreakupFields({
   // sets the annual CTC to the breakup total
   onUseTotal: (annual: number) => void
   disabled?: boolean
+  // a breakup worked out by a salary structure (2026-11-24): only the lines with an amount show; the others can be added
+  // by hand from "Add a component"
+  hideEmpty?: boolean
 }) {
-  const earnings = components.filter((c) => c.kind === 'EARNING')
-  const employer = components.filter((c) => c.kind === 'EMPLOYER_CONTRIBUTION')
+  // a line with an entry shows - even one HR emptied to type again, or just added; the ones the calculation left out do not
+  const shown = (c: Line) => !hideEmpty || values[c.id] !== undefined
+  const hidden = components.filter((c) => c.kind !== 'DEDUCTION' && !shown(c))
+  const earnings = components.filter((c) => c.kind === 'EARNING' && shown(c))
+  const employer = components.filter((c) => c.kind === 'EMPLOYER_CONTRIBUTION' && shown(c))
   const sum = (lines: Line[]) => sumMoney(lines.map((c) => amount(values[c.id])))
   const gross = sum(earnings)
   const total = sumMoney([gross, sum(employer)])
@@ -94,6 +102,21 @@ export function SalaryBreakupFields({
       {subtotal('Monthly gross', gross)}
       {employer.map(row)}
       {subtotal('Total (fixed CTC)', total, true, matches ? annualCtc : sumMoney([total * 12]))}
+      {hideEmpty && hidden.length > 0 && !disabled && (
+        <NativeSelect
+          aria-label="Add a component"
+          className="mt-2 w-full sm:w-64 [&_select]:h-9 [&_select]:rounded-full"
+          value=""
+          onChange={(e) => e.target.value && onChange({ ...values, [Number(e.target.value)]: '' })}
+        >
+          <NativeSelectOption value="">+ Add a component…</NativeSelectOption>
+          {hidden.map((c) => (
+            <NativeSelectOption key={c.id} value={String(c.id)}>
+              {c.name}
+            </NativeSelectOption>
+          ))}
+        </NativeSelect>
+      )}
       {used && (
         <div
           role="status"

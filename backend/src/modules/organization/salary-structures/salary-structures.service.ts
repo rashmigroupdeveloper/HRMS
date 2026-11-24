@@ -1,3 +1,4 @@
+import { assertAccess } from '#core/auth/access'
 import { assertGroupWide } from '#core/auth/scope'
 import { prisma, type ActorId, type EmploymentType, type JoiningType, type SalaryCalcMethod, type SalaryComponentKind, type WorkforceCategory } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
@@ -25,6 +26,13 @@ const toStructure = (row: StructureRow) => ({
 
 export async function listSalaryStructures(includeInactive = false) {
   return (await salaryStructuresRepository.list(includeInactive)).map(toStructure)
+}
+
+// For the API: the active ones for everyone (the offer form lets HR pick one - 2026-11-24); retired ones need
+// Organization View
+export function listSalaryStructuresFor(viewer: CurrentUser, includeInactive = false) {
+  if (includeInactive) assertAccess(viewer.access, 'ORGANIZATION', 'READ')
+  return listSalaryStructures(includeInactive)
 }
 
 // --- The calculation ---
@@ -128,7 +136,9 @@ export async function calculateBreakup(input: z.infer<typeof calculateInput>) {
     const lines = await checkLines(input.draft.lines, input.draft.basicComponentId ?? null)
     return { structure: null, monthlyCtc, balanceComponentId: balanceOf(lines), lines: computeBreakup(lines, input.draft.basicComponentId ?? null, monthlyCtc) }
   }
-  const structure = pickStructure(await listSalaryStructures(), input as Offer)
+  const active = await listSalaryStructures()
+  const structure = input.structureId ? active.find((s) => s.id === input.structureId) : pickStructure(active, input as Offer)
+  if (input.structureId && !structure) throw new ORPCError('NOT_FOUND', { message: 'That salary structure is not in use (any more)' })
   if (!structure) return { structure: null, monthlyCtc, balanceComponentId: null, lines: [] }
   // a component retired after the structure was saved: the offer could not save the line - HR fixes the structure first
   const retired = structure.lines.find((line) => !line.salaryComponent.isActive)
