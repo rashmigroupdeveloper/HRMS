@@ -1,19 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { RefreshCw } from 'lucide-react'
-import { useState } from 'react'
+import { BriefcaseBusiness, CalendarRange, Check, FileCheck2, Lock, type LucideIcon, PenLine, Send, TriangleAlert, UserRound, Wallet } from 'lucide-react'
+import { Pill } from '@/components/Pill'
+import { useCallback, useRef, useState } from 'react'
 import { DrawerCancel, FormDrawer } from '@/components/FormDrawer'
 import { FormError } from '@/components/FormError'
 import { Button } from '@/components/ui/button'
 import { useAccess, type Where } from '@/hooks/useAccess'
-import { useSettled } from '@/hooks/useSettled'
+import { useStructureBreakup } from '@/hooks/useStructureBreakup'
 import { client, orpc } from '@/lib/orpc'
-import { errorMessage, sumMoney } from '@/lib/utils'
+import { cn, formatMoney, monthlyOf, sumMoney } from '@/lib/utils'
 import { FieldsGrid } from '@/components/FormFields'
-import { type BreakupValues, breakupLines, changedValues, type FieldDef, type FormValues, fromFormValues, toFormValues } from '@/lib/form-values'
-import { Checkbox } from '@/components/ui/checkbox'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import { type Candidate, DOCUMENT_TYPE, EMPLOYMENT_TYPE, EMPLOYMENT_TYPES_FOR, FIXED_PERIOD, JOINING_TYPE, type Option, SALUTATION, toOptions, WORKFORCE } from './labels'
+import { type BreakupValues, breakupLines, changedValues, type FieldDef, type FormValues, fromFormValues, isShown, toFormValues } from '@/lib/form-values'
+import { type Candidate, DOCUMENT_TYPE, EMPLOYMENT_TYPE, EMPLOYMENT_TYPES_FOR, FIXED_PERIOD, fullName, JOINING_TYPE, type Option, SALUTATION, STATUS_TONE, statusLabel, toOptions, WORKFORCE } from './labels'
 import { SalaryBreakupFields } from '@/components/SalaryBreakupFields'
+import { SalaryStructurePicker, SalaryStructureStatus } from '@/components/SalaryStructurePicker'
 
 type CreateInput = Parameters<typeof client.candidates.create>[0]
 type UpdateInput = Parameters<typeof client.candidates.update>[0]
@@ -25,9 +25,13 @@ const CHANGEABLE_WHEN_ACCEPTED = ['proposedJoiningDate', 'extraRequiredDocuments
 const ID_FIELDS = ['companyId', 'plantId', 'workLocationId', 'departmentId', 'designationId', 'gradeId']
 
 // The form in sections; every field is printed on the offer letter or decides which letter / joining pack is used
-const SECTIONS: { title: string; hint?: string; fields: FieldDef[] }[] = [
+// (`short` names the step in the bar on top; the section's element id is `offer-<id>`)
+const SECTIONS: { id: string; title: string; short: string; icon: LucideIcon; hint?: string; fields: FieldDef[] }[] = [
   {
+    id: 'candidate',
     title: 'Candidate',
+    short: 'Candidate',
+    icon: UserRound,
     hint: 'Who the offer letter is addressed to.',
     fields: [
       { name: 'salutation', label: 'Salutation', type: 'select', options: toOptions(SALUTATION) },
@@ -40,7 +44,11 @@ const SECTIONS: { title: string; hint?: string; fields: FieldDef[] }[] = [
     ],
   },
   {
+    id: 'position',
     title: 'Position',
+    short: 'Position',
+    icon: BriefcaseBusiness,
+    hint: 'Where the person joins and on what terms - it decides the letter and the joining pack.',
     fields: [
       { name: 'companyId', label: 'Company', type: 'select', required: true },
       // company -> plant -> department (2026-11-18): the plant is one of the company's, the department one of the plant's
@@ -55,7 +63,11 @@ const SECTIONS: { title: string; hint?: string; fields: FieldDef[] }[] = [
     ],
   },
   {
+    id: 'dates',
     title: 'Dates, probation and notice',
+    short: 'Dates',
+    icon: CalendarRange,
+    hint: 'When the person joins, and the probation and notice periods printed on the letter.',
     fields: [
       { name: 'proposedJoiningDate', label: 'Joining date', type: 'date', required: true },
       { name: 'offerValidUntil', label: 'Offer valid until', type: 'date' },
@@ -67,7 +79,10 @@ const SECTIONS: { title: string; hint?: string; fields: FieldDef[] }[] = [
     ],
   },
   {
+    id: 'pay',
     title: 'Pay',
+    short: 'Pay',
+    icon: Wallet,
     hint: 'Annual CTC is the fixed CTC; performance pay comes on top (Total CTC on the letter).',
     fields: [
       { name: 'annualCtc', label: 'Annual CTC (fixed)', type: 'number', required: true, placeholder: 'e.g. 840000' },
@@ -76,12 +91,18 @@ const SECTIONS: { title: string; hint?: string; fields: FieldDef[] }[] = [
     ],
   },
   {
+    id: 'documents',
     title: 'Documents needed',
-    hint: 'Ticked and greyed: always needed for this joining type. Tick any others this offer needs - the candidate uploads them before signing the joining form, and HR verifies them before joining. Can change until joining.',
+    short: 'Documents',
+    icon: FileCheck2,
+    hint: 'The documents under "Always needed" are required for this joining type. Tick any others this offer needs - the candidate uploads them before signing the joining form, and HR verifies them before joining. Can change until joining.',
     fields: [{ name: 'extraRequiredDocuments', label: 'Also needed for this offer', type: 'checks', wide: true }],
   },
   {
+    id: 'after',
     title: 'After acceptance',
+    short: 'After acceptance',
+    icon: Send,
     hint: "Not printed on the letter. Unticked, HR sends the joining form link from the candidate's Joining form tab after they accept.",
     fields: [
       {
@@ -98,9 +119,6 @@ const ALL_FIELDS = SECTIONS.flatMap((s) => s.fields)
 
 const breakupOf = (candidate?: Candidate): BreakupValues =>
   Object.fromEntries((candidate?.salaryLines ?? []).map((l) => [l.salaryComponent.id, String(l.monthlyAmount)]))
-// the calculated lines as the form holds them - a line that comes to 0 is left out (not shown, not saved)
-const breakupFrom = (lines: { salaryComponentId: number; monthlyAmount: number }[]): BreakupValues =>
-  Object.fromEntries(lines.filter((l) => l.monthlyAmount > 0).map((l) => [l.salaryComponentId, String(l.monthlyAmount)]))
 
 const sameBreakup = (a: BreakupValues, b: BreakupValues) => JSON.stringify(breakupLines(a).sort((x, y) => x.salaryComponentId - y.salaryComponentId)) === JSON.stringify(breakupLines(b).sort((x, y) => x.salaryComponentId - y.salaryComponentId))
 
@@ -140,15 +158,6 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
   )
   const [values, setValues] = useState(initial)
   const [initialBreakup] = useState(() => breakupOf(candidate))
-  // the breakup as HR changed it by hand (while it follows the CTC, the calculated one is shown - `shownBreakup`)
-  const [typedBreakup, setTypedBreakup] = useState(initialBreakup)
-  // the breakup follows the CTC (salary structures, 2026-11-24) until HR changes a line by hand - a new offer starts so,
-  // an offer with a saved breakup keeps it until HR recalculates
-  const [following, setFollowing] = useState(() => !candidate?.salaryLines.length)
-  // which salary structure works the breakup out (2026-11-24): 'auto' = the one the offer's joining type, employment
-  // type and workforce match; a structure's id = the one HR picked instead; 'none' = HR types the breakup
-  const [structureChoice, setStructureChoice] = useState<'auto' | 'none' | `${number}`>('auto')
-  const structures = useQuery(orpc.organization.salaryStructures.list.queryOptions())
 
   const companies = useQuery(orpc.organization.companies.list.queryOptions())
   // the plants of the chosen company, and the departments of the chosen plant
@@ -187,47 +196,18 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
   }
   const accepted = candidate?.status === 'ACCEPTED'
 
-  // The breakup worked out from the CTC by the offer's salary structure (when HR stops typing)
-  type OfferKind = { annualCtc: number; joiningType: Candidate['joiningType'] | ''; employmentType: Candidate['employmentType'] | ''; workforceCategory: Candidate['workforceCategory'] | '' }
-  // settled as text, so it changes only when a value does (an object would be new on every render)
-  const offerKind = JSON.parse(
-    useSettled(
-      JSON.stringify({ annualCtc: Number(values.annualCtc) || 0, joiningType: values.joiningType, employmentType: values.employmentType, workforceCategory: values.workforceCategory }),
-    ),
-  ) as OfferKind
-  const chosenId = structureChoice === 'auto' || structureChoice === 'none' ? undefined : Number(structureChoice)
-  const canCalculate =
-    !accepted &&
-    structureChoice !== 'none' &&
-    offerKind.annualCtc > 0 &&
-    (chosenId !== undefined || (!!offerKind.joiningType && !!offerKind.employmentType && !!offerKind.workforceCategory))
-  const calculated = useQuery({
-    ...orpc.organization.salaryStructures.calculate.queryOptions({
-      input: {
-        annualCtc: offerKind.annualCtc,
-        joiningType: offerKind.joiningType || undefined,
-        employmentType: offerKind.employmentType || undefined,
-        workforceCategory: offerKind.workforceCategory || undefined,
-        structureId: chosenId,
-      },
-    }),
-    enabled: canCalculate,
-    retry: false,
+  // The breakup worked out from the CTC by a salary structure (2026-11-24): a new offer fills in at once; an offer with a
+  // saved breakup keeps it until HR recalculates or picks a structure
+  const structure = useStructureBreakup({
+    annualCtc: Number(values.annualCtc) || 0,
+    joiningType: values.joiningType as Candidate['joiningType'] | '',
+    employmentType: values.employmentType as Candidate['employmentType'] | '',
+    workforceCategory: values.workforceCategory as Candidate['workforceCategory'] | '',
+    start: initialBreakup,
+    startFollowing: !candidate?.salaryLines.length,
+    disabled: accepted,
   })
-  const result = canCalculate ? calculated.data : undefined
-  // while it follows the CTC, the breakup is the calculated one
-  const breakup = following && result?.structure ? breakupFrom(result.lines) : typedBreakup
-  // HR changes a line: the balance line (e.g. special allowance) takes the difference so the total stays the CTC; the
-  // breakup no longer follows the CTC (a new CTC asks for "Recalculate")
-  const changeBreakup = (next: BreakupValues) => {
-    setFollowing(false)
-    const balance = result?.balanceComponentId
-    const changed = Object.keys(next).find((id) => next[Number(id)] !== breakup[Number(id)])
-    if (!balance || !result || changed === undefined || Number(changed) === balance) return setTypedBreakup(next)
-    const others = sumMoney(Object.entries(next).filter(([id]) => Number(id) !== balance).map(([, v]) => Number(v) || 0))
-    const rest = sumMoney([result.monthlyCtc, -others])
-    setTypedBreakup({ ...next, [balance]: String(Math.max(rest, 0)) })
-  }
+  const breakup = structure.breakup
 
   // the employment types that fit the chosen joining type
   const joiningType = values.joiningType as Candidate['joiningType'] | ''
@@ -257,6 +237,16 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
   const pending = create.isPending || update.isPending
   const breakupChanged = !sameBreakup(initialBreakup, breakup)
   const dirty = fields.some((f) => (values[f.name] ?? '') !== (initial[f.name] ?? '')) || breakupChanged
+
+  // Editing: what changed in each section (Pay counts the breakup too), and the sections an accepted offer locks
+  const changedFields = fields.filter((f) => (values[f.name] ?? '') !== (initial[f.name] ?? '')).map((f) => f.name)
+  const changedCount: Record<string, number> = Object.fromEntries(
+    SECTIONS.map((s) => [s.id, s.fields.filter((f) => changedFields.includes(f.name)).length + (s.id === 'pay' && breakupChanged ? 1 : 0)]),
+  )
+  const totalChanges = Object.values(changedCount).reduce((a, b) => a + b, 0)
+  const locked = (id: string) => SECTIONS.find((s) => s.id === id)!.fields.every((f) => prepare(f).disabled)
+  // a sent letter goes back to Draft when an offer term changes (the backend decides; this only warns)
+  const termsChanged = candidate?.status === 'OFFERED' && (breakupChanged || changedFields.some((name) => !PERSON.includes(name)))
 
   // The id selects hold strings; the API wants numbers
   const withIds = (payload: Record<string, unknown>) => {
@@ -298,12 +288,67 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
       return next
     })
 
+  // required fields still empty, per section - the step bar, the section badges and the footer show them
+  const missing: Record<string, number> = Object.fromEntries(
+    SECTIONS.map((s) => [s.id, s.fields.map(prepare).filter((f) => f.required && isShown(f, values) && !(values[f.name] ?? '').trim()).length]),
+  )
+  const hasRequired = (id: string) => SECTIONS.find((s) => s.id === id)!.fields.some((f) => f.required)
+  const totalMissing = Object.values(missing).reduce((a, b) => a + b, 0)
+
+  // The step bar follows the scrolling: the section crossing a line 20% down the panel, or the last one at the very end
+  // (a short last section never reaches the line). A clicked step stays marked while the panel scrolls to it - near the
+  // end the panel cannot bring it to the top.
+  const [active, setActive] = useState(SECTIONS[0]!.id)
+  const clicked = useRef<{ id: string; timer?: ReturnType<typeof setTimeout> } | null>(null)
+  const follow = useCallback((nav: HTMLElement | null) => {
+    const scroller = nav?.parentElement
+    if (!nav || !scroller) return
+    const update = () => {
+      if (clicked.current) {
+        // still scrolling to the clicked step: wait until the scrolling stops
+        clearTimeout(clicked.current.timer)
+        clicked.current.timer = setTimeout(() => (clicked.current = null), 150)
+        return
+      }
+      if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4) return setActive(SECTIONS.at(-1)!.id)
+      const line = scroller.getBoundingClientRect().top + nav.offsetHeight + scroller.clientHeight * 0.2
+      let current = SECTIONS[0]!.id
+      for (const s of SECTIONS) if ((document.getElementById(`offer-${s.id}`)?.getBoundingClientRect().top ?? Infinity) <= line) current = s.id
+      setActive(current)
+    }
+    scroller.addEventListener('scroll', update, { passive: true })
+    return () => scroller.removeEventListener('scroll', update)
+  }, [])
+  const goTo = (id: string) => {
+    clicked.current = { id }
+    setActive(id)
+    document.getElementById(`offer-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const currency = values.ctcCurrency || 'INR'
+  const ctc = Number(values.annualCtc) || 0
+  const performancePay = Number(values.performancePayAnnual) || 0
+  const money = (n: number) => formatMoney(n, currency)
+
   return (
     <FormDrawer
       onClose={onDone}
       dirty={dirty}
-      width={760}
-      title={<>{candidate ? 'Edit offer' : 'New offer'}</>}
+      width={800}
+      bodyClassName="border-t bg-surface-2/50"
+      title={
+        candidate ? (
+          <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            Edit offer
+            <span className="text-muted-foreground">· {fullName(candidate)}</span>
+            <Pill tone={STATUS_TONE[candidate.status]} className="tracking-normal">
+              {statusLabel(candidate)}
+            </Pill>
+          </span>
+        ) : (
+          'New offer'
+        )
+      }
       description={
         <>
           {!candidate && 'Saved as a draft. Sending it writes the offer letter and e-mails it to the candidate.'}
@@ -318,106 +363,175 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
       }
       footer={
         <>
+          <p
+            role="status"
+            className={cn('mr-auto flex items-center gap-1.5 text-xs font-medium', totalMissing || (candidate && !totalChanges) ? 'text-muted-foreground' : 'text-positive-ink')}
+          >
+            {totalMissing ? (
+              <>
+                <span className="grid size-5 place-items-center rounded-full bg-gold-soft text-xs text-foreground tabular-nums">{totalMissing}</span>
+                required {totalMissing === 1 ? 'field' : 'fields'} left
+              </>
+            ) : candidate ? (
+              totalChanges ? (
+                <>
+                  <span className="grid size-5 place-items-center rounded-full bg-gold text-xs text-gold-foreground tabular-nums">{totalChanges}</span>
+                  <span className="text-foreground">unsaved {totalChanges === 1 ? 'change' : 'changes'}</span>
+                </>
+              ) : (
+                'No changes yet'
+              )
+            ) : (
+              <>
+                <Check className="size-4" /> Ready to save
+              </>
+            )}
+          </p>
           <DrawerCancel />
-          <Button variant="gold" disabled={pending} onClick={submit}>
+          <Button variant="gold" disabled={pending || (!!candidate && !dirty)} onClick={submit}>
             {pending ? 'Saving…' : candidate ? 'Save changes' : 'Create draft offer'}
           </Button>
         </>
       }
     >
+      {/* the steps: jump to a section; a tick once its required fields are filled */}
+      <nav ref={follow} aria-label="Offer sections" className="sticky top-0 z-10 -mx-6 bg-card">
+        <div className="flex gap-1 overflow-x-auto border-b border-border/60 bg-surface-2/50 px-6 py-2 [scrollbar-width:none]">
+          {SECTIONS.map((s, index) => {
+            const current = active === s.id
+            const complete = hasRequired(s.id) && missing[s.id] === 0
+            // editing: a pencil on a changed section, a lock on one the accepted offer locks
+            const edited = !!candidate && !!changedCount[s.id]
+            const isLocked = locked(s.id)
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => goTo(s.id)}
+                aria-current={current ? 'step' : undefined}
+                className={cn(
+                  'flex shrink-0 items-center gap-1.5 rounded-full py-1 pr-3 pl-1 text-xs font-medium transition-colors',
+                  current ? 'bg-hero text-hero-foreground' : 'text-muted-foreground hover:bg-card hover:text-foreground',
+                )}
+              >
+                <span
+                  className={cn(
+                    'grid size-5 place-items-center rounded-full text-xs tabular-nums',
+                    isLocked
+                      ? 'bg-surface-2 text-muted-foreground ring-1 ring-border'
+                      : edited || (current && !complete)
+                        ? 'bg-gold text-gold-foreground'
+                        : complete
+                          ? 'bg-positive text-white'
+                          : 'bg-card ring-1 ring-border',
+                  )}
+                >
+                  {isLocked ? <Lock className="size-3" /> : edited ? <PenLine className="size-3" /> : complete ? <Check className="size-3" /> : index + 1}
+                </span>
+                {s.short}
+              </button>
+            )
+          })}
+        </div>
+      </nav>
+      {termsChanged && (
+        <p role="status" className="flex items-start gap-2 rounded-xl bg-gold-soft px-3 py-2 text-xs font-medium">
+          <TriangleAlert className="mt-px size-4 shrink-0" />
+          An offer term changed: saving moves this offer back to Draft - send it again as a revised letter.
+        </p>
+      )}
       {SECTIONS.map((section) => (
-        <section key={section.title} className="space-y-3">
-          <div>
-            <h3 className="flex items-center gap-3 text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase after:h-px after:flex-1 after:bg-border">
-              {section.title}
-            </h3>
-            {section.hint && <p className="mt-1 text-xs text-muted-foreground">{section.hint}</p>}
-          </div>
-          {section.title === 'Documents needed' && (
-            <div className="flex flex-wrap gap-x-5 gap-y-2">
-              {joiningType ? (
-                (docRules.data?.compulsory[joiningType] ?? []).map((type) => (
-                  <label key={type} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Checkbox checked disabled />
-                    {DOCUMENT_TYPE[type]}
-                    {type === 'ESIC_FORM_1' && ' (when ESIC applies)'}
-                  </label>
-                ))
-              ) : (
-                <p className="text-xs text-muted-foreground">Choose the joining type to see the documents it always needs.</p>
-              )}
+        <section
+          key={section.id}
+          id={`offer-${section.id}`}
+          className="scroll-mt-14 overflow-hidden rounded-2xl border border-border/70 bg-card shadow-card"
+        >
+          <header className="flex items-center gap-3 border-b border-border/60 px-4 py-3">
+            <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-gold-soft">
+              <section.icon className="size-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-semibold tracking-tight">{section.title}</h3>
+              {section.hint && <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{section.hint}</p>}
             </div>
-          )}
-          <FieldsGrid fields={section.fields.map(prepare)} values={values} onChange={set} />
-          {section.title === 'Pay' && (
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-medium text-muted-foreground">Salary breakup (Annexure-I of the letter) - monthly amounts</p>
-                {!accepted && (
-                  <label htmlFor="offer-structure" className="flex items-center gap-2 text-xs text-muted-foreground">
-                    Salary structure
-                    <NativeSelect
-                      id="offer-structure"
-                      className="[&_select]:h-8 [&_select]:rounded-full"
-                      value={structureChoice}
-                      onChange={(e) => {
-                        setStructureChoice(e.target.value as typeof structureChoice)
-                        // a new choice fills the breakup in again
-                        setFollowing(true)
-                      }}
-                    >
-                      <NativeSelectOption value="auto">
-                        {structureChoice === 'auto' && result?.structure ? `Automatic - ${result.structure.name}` : 'Automatic (by the offer type)'}
-                      </NativeSelectOption>
-                      {(structures.data ?? []).map((s) => (
-                        <NativeSelectOption key={s.id} value={String(s.id)}>
-                          {s.name}
-                        </NativeSelectOption>
-                      ))}
-                      <NativeSelectOption value="none">None - type the breakup</NativeSelectOption>
-                    </NativeSelect>
-                  </label>
+            {locked(section.id) ? (
+              <span className="flex shrink-0 items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                <Lock className="size-3.5" /> Locked
+              </span>
+            ) : missing[section.id] ? (
+              <span className="shrink-0 rounded-full bg-gold-soft px-2 py-0.5 text-xs font-medium tabular-nums">{missing[section.id]} required left</span>
+            ) : candidate ? (
+              !!changedCount[section.id] && (
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-gold px-2 py-0.5 text-xs font-medium text-gold-foreground tabular-nums">
+                  <PenLine className="size-3.5" /> {changedCount[section.id]} changed
+                </span>
+              )
+            ) : (
+              hasRequired(section.id) && (
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-positive/10 px-2 py-0.5 text-xs font-medium text-positive-ink">
+                  <Check className="size-3.5" /> Complete
+                </span>
+              )
+            )}
+          </header>
+          <div className="space-y-3 p-4">
+            {section.id === 'documents' && (
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Always needed</p>
+                {joiningType ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {(docRules.data?.compulsory[joiningType] ?? []).map((type) => (
+                      <span key={type} className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-xs">
+                        <Check className="size-3.5 text-positive-ink" />
+                        {DOCUMENT_TYPE[type]}
+                        {type === 'ESIC_FORM_1' && ' (when ESIC applies)'}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Choose the joining type to see the documents it always needs.</p>
                 )}
               </div>
-              {result?.structure && !following && (
-                <div className="flex justify-end">
-                  <Button type="button" size="sm" variant="secondary" onClick={() => setFollowing(true)}>
-                    <RefreshCw className="size-3.5" />
-                    Recalculate from CTC
-                  </Button>
+            )}
+            <FieldsGrid fields={section.fields.map(prepare)} values={values} onChange={set} />
+            {section.id === 'pay' && ctc > 0 && (
+              // what the letter will say: the fixed CTC, performance pay on top, and the Total CTC
+              <dl className="grid grid-cols-3 overflow-hidden rounded-xl bg-hero text-hero-foreground">
+                {[
+                  { label: 'Fixed CTC', value: money(ctc), note: `${money(monthlyOf(ctc))} a month` },
+                  { label: 'Performance pay', value: performancePay ? money(performancePay) : '—', note: 'a year, on top' },
+                  { label: 'Total CTC', value: money(sumMoney([ctc, performancePay])), note: 'printed on the letter' },
+                ].map((item, index) => (
+                  <div key={item.label} className={cn('min-w-0 px-3 py-2.5 sm:px-4', index > 0 && 'border-l border-hero-foreground/10')}>
+                    <dt className="text-xs text-hero-muted">{item.label}</dt>
+                    <dd className={cn('truncate text-sm font-semibold tabular-nums sm:text-base', index === 2 && 'text-gold')}>{item.value}</dd>
+                    <dd className="truncate text-xs text-hero-muted">{item.note}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {section.id === 'pay' && (
+              <div className="space-y-2 border-t border-dashed pt-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium">
+                    Salary breakup <span className="text-xs font-normal text-muted-foreground">· Annexure-I of the letter, monthly amounts</span>
+                  </p>
+                  {!accepted && <SalaryStructurePicker s={structure} />}
                 </div>
-              )}
-              {!accepted && (
-                <p role="status" className="text-xs text-muted-foreground">
-                  {structureChoice === 'none'
-                    ? 'No salary structure chosen - type the breakup.'
-                    : !canCalculate
-                    ? chosenId === undefined
-                      ? 'Type the annual CTC and choose the joining type, employment type and workforce - the breakup fills in from the salary structure they match.'
-                      : 'Type the annual CTC - the breakup fills in from the chosen salary structure.'
-                    : calculated.isPending
-                      ? 'Working out the breakup…'
-                      : calculated.error
-                        ? errorMessage(calculated.error)
-                        : result?.structure
-                          ? following
-                            ? `Filled in from the salary structure "${result.structure.name}". Change any line - the balance line keeps the total at the CTC.`
-                            : `Changed by hand. "Recalculate from CTC" fills it in again from "${result.structure.name}".`
-                          : 'No salary structure for this kind of offer - pick one above, or type the breakup.'}
-                </p>
-              )}
-              <SalaryBreakupFields
-                components={components}
-                values={breakup}
-                onChange={changeBreakup}
-                hideEmpty={!!result?.structure}
-                annualCtc={Number(values.annualCtc) || 0}
-                currency={values.ctcCurrency || 'INR'}
-                onUseTotal={(annual) => set('annualCtc', String(annual))}
-                disabled={accepted}
-              />
-            </div>
-          )}
+                {!accepted && <SalaryStructureStatus s={structure} needs="Type the annual CTC and choose the joining type, employment type and workforce" />}
+                <SalaryBreakupFields
+                  components={components}
+                  values={breakup}
+                  onChange={structure.change}
+                  hideEmpty={!!structure.result?.structure}
+                  annualCtc={Number(values.annualCtc) || 0}
+                  currency={values.ctcCurrency || 'INR'}
+                  onUseTotal={(annual) => set('annualCtc', String(annual))}
+                  disabled={accepted}
+                />
+              </div>
+            )}
+          </div>
         </section>
       ))}
       <FormError error={create.error ?? update.error} />

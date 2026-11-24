@@ -35,6 +35,7 @@ export function FormDrawer({
   description,
   footer,
   width = 460,
+  bodyClassName,
   children,
 }: {
   // runs after the drawer has slid out
@@ -49,6 +50,8 @@ export function FormDrawer({
   footer?: React.ReactNode
   // desktop width in px (wide forms: 640-720)
   width?: number
+  // extra classes for the scrolling body (e.g. a tinted background behind section cards)
+  bodyClassName?: string
   children?: React.ReactNode
 }) {
   const phone = useIsPhone()
@@ -97,7 +100,7 @@ export function FormDrawer({
           </SheetClose>
         </div>
         {/* grows with the form and scrolls when the panel is full (min-h-0 lets it shrink inside the flex column) */}
-        {children ? <div className="min-h-0 flex-auto space-y-4 overflow-y-auto overscroll-contain px-6 pb-6">{children}</div> : <div className="flex-auto" />}
+        {children ? <div className={cn('min-h-0 flex-auto space-y-4 overflow-y-auto overscroll-contain px-6 pb-6', bodyClassName)}>{children}</div> : <div className="flex-auto" />}
         {confirming ? (
           <div role="alertdialog" aria-label="Discard changes" className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t bg-gold-soft px-6 py-4">
             <p className="text-sm font-medium">Discard your changes?</p>

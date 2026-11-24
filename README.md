@@ -129,7 +129,7 @@ HRMS_NEW/
                            SearchableSelect (type-to-filter dropdown), FormDrawer (where every add / edit form opens), FormDialog (a small form in a centred dialog; both ask before
                            discarding unsaved input),
                            FormFields (field-list form sections), JoiningFormSections (the joining form - HR + candidate)
-      ├─ hooks/            useCurrentUser (accounts.me), useAccess (can(area, level) - what to show)
+      ├─ hooks/            useCurrentUser (accounts.me), useAccess (can(area, level) - what to show), useSettled (a value once typing stops), useStructureBreakup (an offer / salary revision breakup from the CTC by a salary structure)
       └─ pages/<feature>/  one folder per feature (auth/ login + change password, home/, onboarding/ list + one page per candidate, employees/
                            directory + profile, organization/ masters, access/ roles + logins, letter-templates/
                            list + one page per template with the Word-like letter editor, joining-tasks/ My tasks + the task list,

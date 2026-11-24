@@ -7,9 +7,11 @@ import { FormError } from '@/components/FormError'
 import { FieldsGrid } from '@/components/FormFields'
 import { JobChangeKindIcon } from '@/components/JobChangeDetails'
 import { SalaryBreakupFields } from '@/components/SalaryBreakupFields'
+import { SalaryStructurePicker, SalaryStructureStatus } from '@/components/SalaryStructurePicker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAccess } from '@/hooks/useAccess'
+import { useStructureBreakup } from '@/hooks/useStructureBreakup'
 import { type BreakupValues, breakupLines, changedValues, type FieldDef, type FormValues, type Option, toFormValues, toOptions } from '@/lib/form-values'
 import { type client, orpc } from '@/lib/orpc'
 import { cn, formatDate, formatMoney, fromDateInput, toDateInput } from '@/lib/utils'
@@ -98,13 +100,25 @@ export function RequestChangeDrawer({ employee, onClose }: { employee: EmployeeP
   const [withSalary, setWithSalary] = useState(false)
   const [annualCtc, setAnnualCtc] = useState(current ? String(current.annualCtc) : '')
   const [performancePay, setPerformancePay] = useState(current?.performancePayAnnual ? String(current.performancePayAnnual) : '')
-  const [breakup, setBreakup] = useState<BreakupValues>(startBreakup)
   const [closed, setClosed] = useState(false)
 
   const kind = values.kind as Kind
   const salaryOnly = SALARY_KINDS.includes(kind)
   const companyTransfer = kind === 'COMPANY_TRANSFER'
   const salaryShown = salaryOnly || withSalary
+  // the breakup worked out from the new CTC by a salary structure (2026-11-24, as on the offer): it starts from the salary
+  // in force and fills in from the structure once a new CTC is typed (or "Recalculate" / a structure is picked); the
+  // employment type and workforce are the ones after this change
+  const structure = useStructureBreakup({
+    annualCtc: Number(annualCtc) || 0,
+    joiningType: employee.joiningType,
+    employmentType: values.employmentType as EmployeeProfile['employmentType'],
+    workforceCategory: values.workforceCategory as EmployeeProfile['workforceCategory'],
+    start: startBreakup,
+    startFollowing: !current,
+    disabled: !canSalary || !salaryShown,
+  })
+  const breakup = structure.breakup
   const shows = (name: Detail) => !salaryOnly && (!DETAILS_OF[kind] || DETAILS_OF[kind]!.includes(name))
   const shownDetails = DETAILS.filter((f) => shows(f.name))
   const companyId = companyTransfer ? Number(values.companyId) || 0 : employee.company.id
@@ -193,7 +207,13 @@ export function RequestChangeDrawer({ employee, onClose }: { employee: EmployeeP
   const lines = breakupLines(breakup)
   const salaryReady = !salaryShown || (Number(annualCtc) > 0 && lines.length > 0)
   const dirty =
-    changesJob || withSalary || values.effectiveFrom !== '' || values.reason !== '' || values.kind !== initial.kind || annualCtc !== (current ? String(current.annualCtc) : '')
+    changesJob ||
+    withSalary ||
+    values.effectiveFrom !== '' ||
+    values.reason !== '' ||
+    values.kind !== initial.kind ||
+    annualCtc !== (current ? String(current.annualCtc) : '') ||
+    JSON.stringify(lines) !== JSON.stringify(breakupLines(startBreakup))
   const money = (amount: number) => formatMoney(amount, current?.currency ?? 'INR')
   // what is asked for, above the buttons: [what, from, to]
   const summary: [string, string, string][] = []
@@ -420,7 +440,12 @@ export function RequestChangeDrawer({ employee, onClose }: { employee: EmployeeP
                   <label htmlFor="request-ctc" className="text-xs font-medium text-muted-foreground">
                     Fixed CTC / year ({current?.currency ?? 'INR'})
                   </label>
-                  <Input id="request-ctc" inputMode="numeric" className="rounded-xl tabular-nums" value={annualCtc} onChange={(e) => setAnnualCtc(e.target.value.replace(/\D/g, '').slice(0, 10))} />
+                  <Input id="request-ctc" inputMode="numeric" className="rounded-xl tabular-nums" value={annualCtc} onChange={(e) => {
+                      setAnnualCtc(e.target.value.replace(/\D/g, '').slice(0, 10))
+                      // a new CTC: the breakup fills in from the structure (unless lines were changed by hand)
+                      structure.followIfUntouched()
+                    }}
+                  />
                 </div>
                 <div className="space-y-1">
                   <label htmlFor="request-performance" className="text-xs font-medium text-muted-foreground">
@@ -435,10 +460,13 @@ export function RequestChangeDrawer({ employee, onClose }: { employee: EmployeeP
                   />
                 </div>
               </div>
+              <SalaryStructurePicker s={structure} />
+              <SalaryStructureStatus s={structure} needs="Type the new fixed CTC" />
               <SalaryBreakupFields
                 components={(components.data ?? []).map((c) => ({ id: c.id, name: c.name, kind: c.kind }))}
                 values={breakup}
-                onChange={setBreakup}
+                onChange={structure.change}
+                hideEmpty={!!structure.result?.structure}
                 annualCtc={Number(annualCtc) || 0}
                 currency={current?.currency ?? 'INR'}
                 onUseTotal={(annual) => setAnnualCtc(String(annual))}
