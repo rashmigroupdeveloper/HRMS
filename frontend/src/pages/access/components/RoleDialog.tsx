@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Trash2 } from 'lucide-react'
+import { Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { DrawerCancel, FormDrawer } from '@/components/FormDrawer'
 import { FormError } from '@/components/FormError'
@@ -30,6 +30,8 @@ export function RoleDialog({
 function RoleForm({ role, areas, onDone }: { role: Role | null; areas: AreaInfo[]; onDone: () => void }) {
   const queryClient = useQueryClient()
   const { me } = useAccess()
+  const [search, setSearch] = useState('')
+  const shownAreas = areas.filter((a) => `${a.label} ${a.read} ${a.write}`.toLowerCase().includes(search.trim().toLowerCase()))
   const [name, setName] = useState(role?.name ?? '')
   const [description, setDescription] = useState(role?.description ?? '')
   const [access, setAccess] = useState<RoleAccess>(role?.access ?? {})
@@ -109,7 +111,7 @@ function RoleForm({ role, areas, onDone }: { role: Role | null; areas: AreaInfo[
             )}
             <div className="flex gap-2">
               <DrawerCancel />
-              <Button variant="gold" disabled={pending || name.trim().length < 2} onClick={save}>
+              <Button variant="gold" disabled={pending || !dirty || name.trim().length < 2} onClick={save}>
                 {create.isPending || update.isPending ? 'Saving…' : role ? 'Save role' : 'Create role'}
               </Button>
             </div>
@@ -117,7 +119,7 @@ function RoleForm({ role, areas, onDone }: { role: Role | null; areas: AreaInfo[
         </>
       }
     >
-      <div className="space-y-4">
+      <fieldset disabled={pending} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="role-name">Name</Label>
@@ -149,10 +151,13 @@ function RoleForm({ role, areas, onDone }: { role: Role | null; areas: AreaInfo[
         </div>
 
         <div className="space-y-2">
-          {areas.map((info) => {
+          <div className="relative"><Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" /><Input aria-label="Find a permission to edit" placeholder="Find a permission" value={search} onChange={(e) => setSearch(e.target.value)} className="h-9 rounded-full pl-9" /></div>
+          <p role="status" className="text-xs text-muted-foreground">{shownAreas.length} of {areas.length} areas · Changes are saved together.</p>
+          {shownAreas.length === 0 && <p className="py-4 text-sm text-muted-foreground">No permissions match. Try another search.</p>}
+          {shownAreas.map((info) => {
             const current = access[info.area] ?? 'NONE'
             return (
-              <div key={info.area} className="space-y-2 rounded-2xl bg-surface-2 p-4">
+              <div key={info.area} className="space-y-2 rounded-2xl bg-surface-2 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="font-medium">{info.label}</p>
                   <LevelPicker
@@ -186,7 +191,7 @@ function RoleForm({ role, areas, onDone }: { role: Role | null; areas: AreaInfo[
           </p>
         )}
         <FormError error={create.error ?? update.error ?? remove.error} />
-      </div>
+      </fieldset>
       {dialog}
     </FormDrawer>
   )

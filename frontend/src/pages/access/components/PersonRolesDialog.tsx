@@ -12,7 +12,7 @@ import { needsConfirmation, useConfirmPassword } from './useConfirmPassword'
 import { type Account, type AreaInfo, LEVEL_LABEL, type Role } from './labels'
 
 // Tick the roles one employee should have, and for each the data access - whose records it covers (company -> plant ->
-// department, 2026-11-18). Their access is the highest level any ticked role gives for that record.
+// department, 2026-11-18). Only the role selected in their account menu contributes role permissions.
 export function PersonRolesDialog({
   account,
   roles,
@@ -74,13 +74,13 @@ export function PersonRolesDialog({
       description={
         <>
           {account.employeeCode} · Every employee can always use their own self-service pages; roles add access on top of that. Each role&apos;s data access
-          says whose records it covers.
+          says whose records it covers. They switch between assigned roles in their account menu.
         </>
       }
       footer={
         <>
           <DrawerCancel />
-          <Button variant="gold" disabled={save.isPending} onClick={saveRoles}>
+          <Button variant="gold" disabled={save.isPending || !dirty} onClick={saveRoles}>
             {save.isPending ? 'Saving…' : 'Save roles'}
           </Button>
         </>
@@ -94,7 +94,7 @@ export function PersonRolesDialog({
           return (
             <div key={role.id} className="space-y-3 rounded-2xl bg-surface-2 p-4 has-[button[role=checkbox]:disabled]:opacity-50">
               <label className="flex cursor-pointer items-start gap-3 has-disabled:cursor-not-allowed">
-                <Checkbox className="mt-0.5" checked={rows !== undefined} disabled={!allowed} onCheckedChange={(checked) => toggle(role.id, checked)} />
+                <Checkbox className="mt-0.5" checked={rows !== undefined} disabled={!allowed || save.isPending} onCheckedChange={(checked) => toggle(role.id, checked)} />
                 <span className="min-w-0 flex-1 space-y-1">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{role.name}</span>
@@ -116,10 +116,10 @@ export function PersonRolesDialog({
                 </span>
               </label>
               {rows !== undefined && !role.isSuperAdmin && (
-                <div className="space-y-1.5 border-t border-border/70 pt-3 sm:pl-7">
+                <fieldset disabled={!allowed || save.isPending} className="space-y-1.5 border-t border-border/70 pt-3 sm:pl-7">
                   <p className="text-xs font-medium text-muted-foreground">Data access - whose records this role covers</p>
                   <DataAccessRows idPrefix={`role-${role.id}`} rows={rows} onChange={(next) => setRows(role.id, next)} />
-                </div>
+                </fieldset>
               )}
             </div>
           )

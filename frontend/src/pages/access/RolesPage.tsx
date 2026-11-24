@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Download, KeyRound, LockOpen, LogOut, Plus, Power, PowerOff, Search, UserCog, UserPlus } from 'lucide-react'
-import { useState } from 'react'
+import { Download, Ellipsis, KeyRound, LockOpen, LogOut, Plus, Power, PowerOff, Search, UserCog, UserPlus } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useBlocker } from 'react-router'
 import { FormError } from '@/components/FormError'
 import { SharedListNote } from '@/components/SharedListNote'
 import { Pill } from '@/components/Pill'
 import { SessionsList } from '@/components/SessionsList'
-import { AccessGridSkeleton } from '@/components/skeletons/access/AccessGridSkeleton'
+import { RoleWorkspaceSkeleton } from '@/components/skeletons/access/RoleWorkspaceSkeleton'
 import { LoginsTableSkeleton } from '@/components/skeletons/access/LoginsTableSkeleton'
 import { SessionsSkeleton } from '@/components/skeletons/access/SessionsSkeleton'
 import { SecurityRules } from './components/SecurityRules'
@@ -13,11 +14,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PillTabsList, PillTabsTrigger } from '@/components/PillTabs'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
 import { downloadFile, formatDateTime } from '@/lib/utils'
-import { AccessGrid } from './components/AccessGrid'
+import { RoleWorkspace } from './components/RoleWorkspace'
 import { DisableLoginDialog } from './components/DisableLoginDialog'
 import { ACCOUNT_STATUS, type Account, describeDataAccess, LEVEL_LABEL, type Role } from './components/labels'
 import { LoginDialog } from './components/LoginDialog'
@@ -34,9 +36,18 @@ export function RolesPage() {
   const canChangeRoles = coversGroup('ACCESS')
   const roles = useQuery(orpc.accounts.roles.list.queryOptions())
   const accounts = useQuery(orpc.accounts.list.queryOptions())
+  const [tab, setTab] = useState('roles')
   const [editingRole, setEditingRole] = useState<Role | 'new' | null>(null)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
   const [search, setSearch] = useState('')
+  const [securityDirty, setSecurityDirty] = useState(false)
+  const blocker = useBlocker(securityDirty)
+  useEffect(() => {
+    if (!securityDirty) return
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [securityDirty])
   // "give a login" (null) or "reset password" (an account)
   const [loginDialog, setLoginDialog] = useState<{ reset: Account | null } | null>(null)
   const queryClient = useQueryClient()
@@ -57,24 +68,47 @@ export function RolesPage() {
     (a) => !term || a.name.toLowerCase().includes(term) || a.employeeCode.toLowerCase().includes(term),
   )
 
+  const accountActions = (account: Account) => <>
+                          {account.employeeCode === me?.employeeCode ? (
+                            <span className="text-xs text-muted-foreground" title="Nobody can change their own roles or reset their own password here">
+                              You
+                            </span>
+                          ) : (
+                            canChange && (
+                              <div className="flex justify-end gap-1">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger aria-label={`Account actions for ${account.name}`} className="grid size-9 place-items-center rounded-full text-muted-foreground outline-none transition-colors hover:bg-surface-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"><Ellipsis aria-hidden className="size-4" /></DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-56 rounded-2xl p-1.5 shadow-float motion-reduce:animate-none">
+                                    {account.lockedUntil && <DropdownMenuItem disabled={unlock.isPending} onClick={() => unlock.mutate({ employeeCode: account.employeeCode })}><LockOpen />Unlock login</DropdownMenuItem>}
+                                    <DropdownMenuItem onClick={() => setLoginDialog({ reset: account })}><KeyRound />Reset password</DropdownMenuItem>
+                                    {account.disabled
+                                      ? <DropdownMenuItem disabled={enable.isPending} onClick={() => enable.mutate({ employeeCode: account.employeeCode })}><Power />Turn on login</DropdownMenuItem>
+                                      : <DropdownMenuItem onClick={() => setDisabling(account)}><PowerOff />Turn off login</DropdownMenuItem>}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem disabled={endAll.isPending || !sessions.data?.some((s) => s.employee?.employeeCode === account.employeeCode)} onClick={() => endAll.mutate({ employeeCode: account.employeeCode })}><LogOut />Log out everywhere</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Button variant="secondary" size="sm" disabled={!roles.data} onClick={() => setEditingAccount(account)}>
+                                  <UserCog /> Change roles
+                                </Button>
+                              </div>
+                            )
+                          )}
+  </>
+
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-6">
+    <div className="access-workspace space-y-4">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm text-muted-foreground">Administration</p>
-          <h1 className="mt-1 text-3xl font-light tracking-tight sm:text-4xl">Roles &amp; access</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">
-            A role gives <strong className="font-medium text-foreground">View</strong> or{' '}
-            <strong className="font-medium text-foreground">Edit</strong> access to each part of the system. An employee can have several
-            roles and gets the highest level any of them gives.
-          </p>
+          <h1 className="text-3xl font-light tracking-tight sm:text-[2rem]">Roles &amp; access</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Define permissions, assign roles and manage sign-ins.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="secondary" size="lg" onClick={() => void downloadFile(() => client.accounts.roles.export(), setExportError)}>
+          <Button variant="secondary" size="default" onClick={() => void downloadFile(() => client.accounts.roles.export(), setExportError)}>
             <Download /> Excel
           </Button>
-          {canChangeRoles ? (
-            <Button variant="gold" size="lg" onClick={() => setEditingRole('new')} disabled={!roles.data}>
+          {canChangeRoles && tab === 'roles' ? (
+            <Button variant="gold" size="default" onClick={() => setEditingRole('new')} disabled={!roles.data}>
               <Plus /> New role
             </Button>
           ) : canChange ? null : (
@@ -84,7 +118,8 @@ export function RolesPage() {
         {exportError && <p className="w-full text-right text-sm text-negative-ink">{exportError}</p>}
       </header>
 
-      <Tabs defaultValue="roles">
+      {blocker.state === 'blocked' && <div role="alertdialog" aria-label="Unsaved security rules" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gold-soft px-4 py-3"><p className="text-sm">You have unsaved security rules. Discard them and leave?</p><div className="flex gap-2"><Button variant="secondary" onClick={() => blocker.reset()}>Keep editing</Button><Button variant="destructive" onClick={() => blocker.proceed()}>Discard</Button></div></div>}
+      <Tabs value={tab} onValueChange={(value) => setTab(String(value))}>
         <PillTabsList>
           <PillTabsTrigger value="roles">
             Roles {roles.data && <span className="text-xs opacity-70">{roleList.length}</span>}
@@ -100,17 +135,18 @@ export function RolesPage() {
           </PillTabsTrigger>
         </PillTabsList>
 
-        <TabsContent value="roles" className="mt-5">
+        <TabsContent value="roles" className="access-tab-panel mt-4">
+          <p className="mb-3 text-xs text-muted-foreground">Only the active role supplies permissions and data access.</p>
           <SharedListNote area="ACCESS" label="Roles & access" what="changing a role" className="mb-3" />
           <FormError error={roles.error} />
           {roles.isPending ? (
-            <AccessGridSkeleton canChange={canChangeRoles} label="Loading roles" />
-          ) : (
-            <AccessGrid roles={roleList} areas={areas} canChange={canChangeRoles} onEdit={setEditingRole} />
+            <RoleWorkspaceSkeleton label="Loading roles" />
+          ) : roles.isError ? null : (
+            <RoleWorkspace roles={roleList} areas={areas} canChange={canChangeRoles} onEdit={setEditingRole} />
           )}
         </TabsContent>
 
-        <TabsContent value="people" className="mt-5">
+        <TabsContent value="people" className="access-tab-panel mt-4">
           <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -122,7 +158,7 @@ export function RolesPage() {
               <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                 <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-none">
                   <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input className="h-9 rounded-full pl-9 sm:h-8" placeholder="Search name or code" value={search} onChange={(e) => setSearch(e.target.value)} />
+                  <Input aria-label="Search logins by name or code" className="h-9 rounded-full pl-9" placeholder="Search name or code" value={search} onChange={(e) => setSearch(e.target.value)} />
                 </div>
                 {canChange && (
                   <Button size="sm" className="max-sm:h-9" onClick={() => setLoginDialog({ reset: null })}>
@@ -134,22 +170,31 @@ export function RolesPage() {
             <FormError error={accounts.error ?? unlock.error ?? enable.error} />
             {accounts.isPending ? (
               <LoginsTableSkeleton canChange={canChange} label="Loading logins" />
-            ) : people.length === 0 ? (
+            ) : accounts.isError ? null : people.length === 0 ? (
               <p className="text-sm text-muted-foreground">{term ? 'Nobody matches.' : 'Nobody has a login yet.'}</p>
             ) : (
-              <Table>
+              <>
+              <ul className="divide-y divide-border sm:hidden">
+                {people.map((account) => <li key={account.employeeCode} className="space-y-3 py-4 first:pt-1">
+                  <div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="break-words text-sm font-medium">{account.name}</h3><p className="text-xs text-muted-foreground">{account.employeeCode}</p></div><Pill tone={ACCOUNT_STATUS[account.status].tone}>{ACCOUNT_STATUS[account.status].label}</Pill></div>
+                  <div className="flex flex-wrap gap-1.5">{account.disabled && <Pill tone="negative">Login turned off</Pill>}{account.lockedUntil && <Pill tone="negative">Locked</Pill>}{account.mustChangePassword && <Pill tone="warning">Temporary password</Pill>}</div>
+                  {account.disabled?.reason && <p className="text-xs text-muted-foreground">{account.disabled.reason}</p>}
+                  <div className="space-y-1.5">{account.roles.length === 0 ? <p className="text-xs text-muted-foreground">Self-service only</p> : account.roles.map((role) => <div key={role.id} className="text-xs"><span className="font-medium">{role.name}</span><span className="text-muted-foreground"> · {describeDataAccess(role.dataAccess, role.isSuperAdmin)}</span></div>)}</div>
+                  <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs text-muted-foreground">Last login: {account.lastLoginAt ? formatDateTime(account.lastLoginAt) : 'Never'}</p>{accountActions(account)}</div>
+                </li>)}
+              </ul>
+              <div className="max-sm:hidden"><Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="sticky left-0 z-10 bg-card">Employee</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Roles</TableHead>
                     <TableHead>Last login</TableHead>
-                    <TableHead className="text-right" />
+                    <TableHead className="text-right"><span className="sr-only">Actions</span></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {people.map((account) => {
-                    const isMe = account.employeeCode === me?.employeeCode
                     return (
                       <TableRow key={account.employeeCode} className="group/row">
                         <TableCell className="sticky left-0 z-10 bg-card py-1.5 group-hover/row:bg-[color-mix(in_srgb,var(--muted)_50%,var(--card))] max-sm:max-w-36 max-sm:whitespace-normal">
@@ -169,7 +214,7 @@ export function RolesPage() {
                           </div>
                           {account.disabled?.reason && <p className="mt-1 max-w-56 truncate text-xs text-muted-foreground">{account.disabled.reason}</p>}
                         </TableCell>
-                        <TableCell className="whitespace-normal">
+                        <TableCell className="max-w-80 whitespace-normal">
                           <div className="flex flex-wrap gap-1.5">
                             {account.roles.length === 0 && <span className="text-xs text-muted-foreground">Self-service only</span>}
                             {account.roles.map((r) => (
@@ -189,60 +234,24 @@ export function RolesPage() {
                           {account.lastLoginAt ? formatDateTime(account.lastLoginAt) : 'Never'}
                         </TableCell>
                         <TableCell className="text-right whitespace-nowrap">
-                          {isMe ? (
-                            <span className="text-xs text-muted-foreground" title="Nobody can change their own roles or reset their own password here">
-                              You
-                            </span>
-                          ) : (
-                            canChange && (
-                              <div className="flex justify-end gap-1">
-                                {account.lockedUntil && (
-                                  <Button variant="ghost" size="sm" disabled={unlock.isPending} onClick={() => unlock.mutate({ employeeCode: account.employeeCode })}>
-                                    <LockOpen /> Unlock
-                                  </Button>
-                                )}
-                                <Button variant="ghost" size="sm" onClick={() => setLoginDialog({ reset: account })}>
-                                  <KeyRound /> Reset password
-                                </Button>
-                                {account.disabled ? (
-                                  <Button variant="ghost" size="sm" disabled={enable.isPending} onClick={() => enable.mutate({ employeeCode: account.employeeCode })}>
-                                    <Power /> Turn on
-                                  </Button>
-                                ) : (
-                                  <Button variant="ghost" size="sm" onClick={() => setDisabling(account)}>
-                                    <PowerOff /> Turn off
-                                  </Button>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  disabled={endAll.isPending || !sessions.data?.some((s) => s.employee?.employeeCode === account.employeeCode)}
-                                  onClick={() => endAll.mutate({ employeeCode: account.employeeCode })}
-                                >
-                                  <LogOut /> Log out everywhere
-                                </Button>
-                                <Button variant="secondary" size="sm" disabled={!roles.data} onClick={() => setEditingAccount(account)}>
-                                  <UserCog /> Change roles
-                                </Button>
-                              </div>
-                            )
-                          )}
+                          {accountActions(account)}
                         </TableCell>
                       </TableRow>
                     )
                   })}
                 </TableBody>
-              </Table>
+              </Table></div>
+              </>
             )}
           </section>
         </TabsContent>
 
-        <TabsContent value="security" className="mt-5">
+        <TabsContent value="security" keepMounted className="access-tab-panel mt-4">
           <SharedListNote area="ACCESS" label="Roles & access" what="changing the security rules" className="mb-3" />
-          <SecurityRules canChange={canChangeRoles} />
+          <SecurityRules canChange={canChangeRoles} onDirtyChange={setSecurityDirty} />
         </TabsContent>
 
-        <TabsContent value="sessions" className="mt-5">
+        <TabsContent value="sessions" className="access-tab-panel mt-4">
           <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
             <div>
               <h2 className="text-lg font-light tracking-tight">Signed in now</h2>
@@ -251,7 +260,7 @@ export function RolesPage() {
             <FormError error={sessions.error ?? endSession.error ?? endAll.error} />
             {sessions.isPending ? (
               <SessionsSkeleton canEnd={canChange} label="Loading who is signed in" />
-            ) : (
+            ) : sessions.isError ? null : (
               <SessionsList
                 sessions={sessions.data ?? []}
                 ending={endSession.isPending}

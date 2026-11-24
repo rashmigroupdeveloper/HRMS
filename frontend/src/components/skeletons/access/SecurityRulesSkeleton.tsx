@@ -34,7 +34,7 @@ export function SecurityRulesSkeleton({ groups, canChange = false, label = 'Load
       <div className="grid gap-5 md:grid-cols-2">
         {groups.map((group) => (
           <fieldset key={group.title} className="space-y-3 rounded-2xl bg-surface-2/60 p-4">
-            <legend className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">{group.title}</legend>
+            <legend className="text-sm font-medium text-foreground">{group.title}</legend>
             {group.rules.map((rule) => (
               <div key={rule.label} className="space-y-1">
                 <p className="pt-0.5 pb-1 text-[13px] leading-none font-medium">{rule.label}</p>

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ShieldCheck } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FormError } from '@/components/FormError'
 import { SecurityRulesSkeleton } from '@/components/skeletons/access/SecurityRulesSkeleton'
 import { Button } from '@/components/ui/button'
@@ -46,7 +46,7 @@ const GROUPS: { title: string; rules: { key: RuleKey; label: string; unit: strin
   },
 ]
 
-export function SecurityRules({ canChange }: { canChange: boolean }) {
+export function SecurityRules({ canChange, onDirtyChange }: { canChange: boolean; onDirtyChange: (dirty: boolean) => void }) {
   const queryClient = useQueryClient()
   const current = useQuery(orpc.accounts.security.get.queryOptions())
   const [draft, setDraft] = useState<Record<RuleKey, string> | null>(null)
@@ -65,6 +65,9 @@ export function SecurityRules({ canChange }: { canChange: boolean }) {
       },
     }),
   )
+
+  const draftChanged = !!draft && !!current.data && (Object.keys(current.data.rules) as RuleKey[]).some((key) => draft[key] !== String(current.data.rules[key]))
+  useEffect(() => onDirtyChange(draftChanged), [draftChanged, onDirtyChange])
 
   if (current.isPending) return <SecurityRulesSkeleton groups={GROUPS} canChange={canChange} label="Loading the security rules" />
   if (current.error) return <FormError error={current.error} />
@@ -115,7 +118,7 @@ export function SecurityRules({ canChange }: { canChange: boolean }) {
       <div className="grid gap-5 md:grid-cols-2">
         {GROUPS.map((group) => (
           <fieldset key={group.title} className="space-y-3 rounded-2xl bg-surface-2/60 p-4">
-            <legend className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">{group.title}</legend>
+            <legend className="text-sm font-medium text-foreground">{group.title}</legend>
             {group.rules.map((rule) => (
               <div key={rule.key} className="space-y-1">
                 <Label htmlFor={`rule-${rule.key}`} className="text-[13px]">
@@ -128,7 +131,7 @@ export function SecurityRules({ canChange }: { canChange: boolean }) {
                     inputMode="numeric"
                     min={rule.min}
                     max={rule.max}
-                    disabled={!canChange}
+                    disabled={!canChange || save.isPending}
                     className="h-9 w-24 rounded-xl tabular-nums"
                     value={values[rule.key]}
                     onChange={(e) => set(rule.key, e.target.value)}
