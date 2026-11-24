@@ -959,6 +959,9 @@ export type ColleagueFilter = {
   reportingManagerId?: number | undefined
   // my department: these employees (the HOD's)
   ids?: number[] | undefined
+  // only these (data access): the directory's Excel export of "everyone" (the user, 2026-11-24 - an export holds only
+  // the records the viewer's access covers; the page itself stays open to all)
+  scope?: DataScope | undefined
 }
 
 // One page of the directory, by name
@@ -981,6 +984,7 @@ export async function listDirectory(filter: ColleagueFilter, paging: { skip: num
       ...(filter.departmentIds?.length ? [{ departmentId: { in: filter.departmentIds } }] : []),
       ...(filter.reportingManagerId !== undefined ? [{ reportingManagerId: filter.reportingManagerId }] : []),
       ...(filter.ids ? [{ id: { in: filter.ids } }] : []),
+      ...(filter.scope ? [scopeWhere(filter.scope)] : []),
     ],
   }
   const [rows, total] = await Promise.all([

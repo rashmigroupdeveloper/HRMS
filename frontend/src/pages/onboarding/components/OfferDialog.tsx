@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { DrawerCancel, FormDrawer } from '@/components/FormDrawer'
 import { FormError } from '@/components/FormError'
 import { Button } from '@/components/ui/button'
 import { useAccess, type Where } from '@/hooks/useAccess'
+import { useSettled } from '@/hooks/useSettled'
 import { client, orpc } from '@/lib/orpc'
+import { errorMessage, sumMoney } from '@/lib/utils'
 import { FieldsGrid } from '@/components/FormFields'
 import { type BreakupValues, breakupLines, changedValues, type FieldDef, type FormValues, fromFormValues, toFormValues } from '@/lib/form-values'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -94,6 +97,10 @@ const ALL_FIELDS = SECTIONS.flatMap((s) => s.fields)
 
 const breakupOf = (candidate?: Candidate): BreakupValues =>
   Object.fromEntries((candidate?.salaryLines ?? []).map((l) => [l.salaryComponent.id, String(l.monthlyAmount)]))
+// the calculated lines as the form holds them
+const breakupFrom = (lines: { salaryComponentId: number; monthlyAmount: number }[]): BreakupValues =>
+  Object.fromEntries(lines.map((l) => [l.salaryComponentId, String(l.monthlyAmount)]))
+
 const sameBreakup = (a: BreakupValues, b: BreakupValues) => JSON.stringify(breakupLines(a).sort((x, y) => x.salaryComponentId - y.salaryComponentId)) === JSON.stringify(breakupLines(b).sort((x, y) => x.salaryComponentId - y.salaryComponentId))
 
 // New offer (candidate = undefined) or edit an existing one.
@@ -132,7 +139,11 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
   )
   const [values, setValues] = useState(initial)
   const [initialBreakup] = useState(() => breakupOf(candidate))
-  const [breakup, setBreakup] = useState(initialBreakup)
+  // the breakup as HR changed it by hand (while it follows the CTC, the calculated one is shown - `shownBreakup`)
+  const [typedBreakup, setTypedBreakup] = useState(initialBreakup)
+  // the breakup follows the CTC (salary structures, 2026-11-24) until HR changes a line by hand - a new offer starts so,
+  // an offer with a saved breakup keeps it until HR recalculates
+  const [following, setFollowing] = useState(() => !candidate?.salaryLines.length)
 
   const companies = useQuery(orpc.organization.companies.list.queryOptions())
   // the plants of the chosen company, and the departments of the chosen plant
@@ -170,6 +181,43 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
     masterOptions.departmentId!.push({ value: String(own.id), label: own.name })
   }
   const accepted = candidate?.status === 'ACCEPTED'
+
+  // The breakup worked out from the CTC by the offer's salary structure (when HR stops typing)
+  type OfferKind = { annualCtc: number; joiningType: Candidate['joiningType'] | ''; employmentType: Candidate['employmentType'] | ''; workforceCategory: Candidate['workforceCategory'] | '' }
+  // settled as text, so it changes only when a value does (an object would be new on every render)
+  const offerKind = JSON.parse(
+    useSettled(
+      JSON.stringify({ annualCtc: Number(values.annualCtc) || 0, joiningType: values.joiningType, employmentType: values.employmentType, workforceCategory: values.workforceCategory }),
+    ),
+  ) as OfferKind
+  const canCalculate = !accepted && offerKind.annualCtc > 0 && !!offerKind.joiningType && !!offerKind.employmentType && !!offerKind.workforceCategory
+  const calculated = useQuery({
+    ...orpc.organization.salaryStructures.calculate.queryOptions({
+      input: {
+        annualCtc: offerKind.annualCtc,
+        joiningType: offerKind.joiningType || undefined,
+        employmentType: offerKind.employmentType || undefined,
+        workforceCategory: offerKind.workforceCategory || undefined,
+      },
+    }),
+    enabled: canCalculate,
+    retry: false,
+  })
+  const result = canCalculate ? calculated.data : undefined
+  // while it follows the CTC, the breakup is the calculated one
+  const breakup = following && result?.structure ? breakupFrom(result.lines) : typedBreakup
+  // HR changes a line: the balance line (e.g. special allowance) takes the difference so the total stays the CTC; the
+  // breakup no longer follows the CTC (a new CTC asks for "Recalculate")
+  const changeBreakup = (next: BreakupValues) => {
+    setFollowing(false)
+    const balance = result?.balanceComponentId
+    const changed = Object.keys(next).find((id) => next[Number(id)] !== breakup[Number(id)])
+    if (!balance || !result || changed === undefined || Number(changed) === balance) return setTypedBreakup(next)
+    const others = sumMoney(Object.entries(next).filter(([id]) => Number(id) !== balance).map(([, v]) => Number(v) || 0))
+    const rest = sumMoney([result.monthlyCtc, -others])
+    setTypedBreakup({ ...next, [balance]: String(Math.max(rest, 0)) })
+  }
+
   // the employment types that fit the chosen joining type
   const joiningType = values.joiningType as Candidate['joiningType'] | ''
   const employmentOptions = joiningType ? EMPLOYMENT_TYPES_FOR[joiningType].map((t) => ({ value: t, label: EMPLOYMENT_TYPE[t] })) : undefined
@@ -292,11 +340,34 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
           <FieldsGrid fields={section.fields.map(prepare)} values={values} onChange={set} />
           {section.title === 'Pay' && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Salary breakup (Annexure-I of the letter) - monthly amounts</p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-medium text-muted-foreground">Salary breakup (Annexure-I of the letter) - monthly amounts</p>
+                {result?.structure && !following && (
+                  <Button type="button" size="sm" variant="secondary" onClick={() => setFollowing(true)}>
+                    <RefreshCw className="size-3.5" />
+                    Recalculate from CTC
+                  </Button>
+                )}
+              </div>
+              {!accepted && (
+                <p role="status" className="text-xs text-muted-foreground">
+                  {!canCalculate
+                    ? 'Type the annual CTC and choose the joining type, employment type and workforce - the breakup fills in from the salary structure.'
+                    : calculated.isPending
+                      ? 'Working out the breakup…'
+                      : calculated.error
+                        ? errorMessage(calculated.error)
+                        : result?.structure
+                          ? following
+                            ? `Filled in from the salary structure "${result.structure.name}". Change any line - the balance line keeps the total at the CTC.`
+                            : `Changed by hand. "Recalculate from CTC" fills it in again from "${result.structure.name}".`
+                          : 'No salary structure for this kind of offer - type the breakup.'}
+                </p>
+              )}
               <SalaryBreakupFields
                 components={components}
                 values={breakup}
-                onChange={setBreakup}
+                onChange={changeBreakup}
                 annualCtc={Number(values.annualCtc) || 0}
                 currency={values.ctcCurrency || 'INR'}
                 onUseTotal={(annual) => set('annualCtc', String(annual))}

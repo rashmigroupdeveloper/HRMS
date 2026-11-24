@@ -405,7 +405,9 @@ the HRMS_NEW way when picked up, not copied)
   Canteen Recovery. How each component is calculated is done since 2026-11-24 as salary structures (from HR's "CTC
   Structure" sheet - Organization page); which components are cut for LOP waits for payroll - all of them on the old
   payslip. **Ask HR:** the structures for consultants, apprentices and Overseas offers (none seeded - typed by hand until
-  HR adds them on the page).)
+  HR adds them on the page).) **Next (agreed 2026-11-24):** a salary revision (job change - Pay & career "Request a
+  change") fills its breakup from the structure the same way as the offer (`organization.salaryStructures.calculate` with
+  the employee's joining type / employment type / workforce); built for the offer first, as the user asked.
 - [ ] HR adding new kinds of letters themselves (old: any letter code; ours: seven fixed kinds, a new one needs code).
 
 ### 19. Attendance: what is still open (module built 2026-11-16)

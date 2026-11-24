@@ -348,7 +348,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 259 | `attendance.days.exportBoard` | Logged in; as board | Excel review report |
 | 260 | `attendance.exportSetup` | Attendance setup: View; locks additionally group-wide Edit | Excel review report |
 | 261 | `attendance.rosters.export` | Attendance setup: View | Excel review report |
-| 262 | `employees.exportDirectory` | Logged in | Excel review report |
+| 262 | `employees.exportDirectory` | Logged in; everyone needs Employees: View | Excel review report |
 | 263 | `employees.hods.export` | Logged in; heads additionally HOD appointments: View | Excel review report |
 | 264 | `joiningTasks.export` | Logged in; MINE Joining tasks: View, ALL Onboarding: View | Excel review report |
 | 265 | `joiningTasks.types.export` | As joiningTasks.types.list | Excel review report |
@@ -2639,7 +2639,8 @@ site can be used by several companies.
 - **Scope:** not limited by data access - a calculation; it returns no one's records.
 - **Input:** `{ annualCtc: int (1 - 240 crore), joiningType, employmentType, workforceCategory }` (the offer's), or
   `{ annualCtc, draft: { basicComponentId?, lines } }` (a structure being edited - its live example).
-- **Returns:** `{ structure: { id, name } | null, monthlyCtc, lines: [{ salaryComponentId, monthlyAmount }] }` -
+- **Returns:** `{ structure: { id, name } | null, monthlyCtc, balanceComponentId (the BALANCE line's component, or null),
+  lines: [{ salaryComponentId, monthlyAmount }] }` -
   `monthlyCtc` = annualCtc / 12 to the paisa; the lines add up to it exactly. No structure for the offer: `structure:
   null, lines: []` (HR types the breakup).
 - **What it does:** picks the active structure closest to the offer (a given employment type counts most, then the joining
@@ -4017,10 +4018,10 @@ leave year is the calendar year.
 
 ### `employees.exportDirectory`
 - **HTTP:** `POST /api/rpc/employees/exportDirectory` · **Code:** `backend/src/modules/employees/`
-- **Access:** Logged in.
-- **Scope:** Not limited by role data access, exactly like the public work directory. TEAM uses the reporting relationship; DEPARTMENT actual HOD relationship. Only basic work fields, never HR-only personal/identity/bank/salary fields.
+- **Access:** Logged in; exporting everyone (no `group`) needs Employees: View.
+- **Scope:** An export holds only what the viewer's access covers (the user, 2026-11-24 - the directory page itself stays open to all): TEAM uses the reporting relationship; DEPARTMENT the actual HOD relationship; everyone (no `group`) only the employees the viewer's **Employees View data access** covers (`scopeOf` -> `scopeWhere`). Only basic work fields, never HR-only personal/identity/bank/salary fields.
 - **Input:** Same optional input as `employees.directory`: group TEAM/DEPARTMENT (omitted everyone), search up to 100 characters, companyIds up to 100, plantIds up to 200, departmentIds up to 100; no pagination fields.
-- **Returns:** Excel File with report data and Review notes. All matching currently working colleagues, maximum 20,000; code, name, designation, company, plant, department, location, work email, manager and joined date. Above limit returns BAD_REQUEST asking for narrower filters, never a partial workbook.
+- **Returns:** Excel File with report data and Review notes. All matching currently working colleagues inside that scope, maximum 20,000; code, name, designation, company, plant, department, location, work email, manager and joined date. Above limit returns BAD_REQUEST asking for narrower filters, never a partial workbook.
 - **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
 - **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
 
@@ -4090,7 +4091,7 @@ leave year is the calendar year.
 ### `approvals.report`
 - **HTTP:** `POST /api/rpc/approvals/report` · **Code:** `backend/src/modules/approvals/reports/`
 - **Access:** logged-in employee. TEAM/DEPARTMENT are relationship views. ALL needs Leave or Attendance View; each feature still uses its own area/data scope.
-- **Scope:** TEAM uses the current reporting tree's explicit employee IDs with SYSTEM_SCOPE; DEPARTMENT the current HOD department employee IDs with SYSTEM_SCOPE, excluding oneself. ALL: LEAVE and COMP_OFF use Leave View data access; REGULARIZATION and SHIFT_CHANGE use Attendance View data access. Each branch applies scopeWhere inside its own employee predicate, then all date/search/kind/status filters are ANDed. Having one area's access never grants the other. Current relationships/placement apply to historical requests. No job or salary/confidential request data.
+- **Scope:** TEAM uses the current reporting tree's explicit employee IDs with SYSTEM_SCOPE; DEPARTMENT the current HOD department employee IDs with SYSTEM_SCOPE, excluding oneself. A manager / HOD so sees every step, approver and remark of their people's leave and attendance requests, even on chains they are not on - wider than `approvals.get`; approved by the user 2026-11-24. ALL: LEAVE and COMP_OFF use Leave View data access; REGULARIZATION and SHIFT_CHANGE use Attendance View data access. Each branch applies scopeWhere inside its own employee predicate, then all date/search/kind/status filters are ANDed. Having one area's access never grants the other. Current relationships/placement apply to historical requests. No job or salary/confidential request data.
 - **Input:** `{ scope?: 'TEAM'|'DEPARTMENT'|'ALL', from: Date, to: Date, dateBy?: 'WORK_DATES'|'RAISED', kind?, status?, search?, page?, pageSize? }`. Scope defaults TEAM; dateBy defaults WORK_DATES. Inclusive UTC calendar dates, ordered and at most 366 days apart. WORK_DATES matches overlapping leave/regularisation spans, comp-off work date or shift-change date; RAISED matches request creation day. Kind: LEAVE, LEAVE_CANCEL, REGULARIZATION (missed punch), ON_DUTY, COMP_OFF or SHIFT_CHANGE. Status: PENDING (waiting, excludes held), HELD (pending plus heldAt), APPROVED, REJECTED, CANCELLED (withdrawn) or EXPIRED. Omitted kind/status = every supported type/status. Search trimmed max 100 characters: every word matches employee code or name. Page positive integer default 1; pageSize 1–100 default 25.
 - **Returns:** `{ total, items, page, pageSize }`. Items: id, employeeCode/name, company/department, kind label, request summary, from/to/portion/days where available, complete source reason, sourceAvailable, raisedAt/raisedBy, status label (Held separate), currentStep (only while not held), heldReason, closedAt, withdrawalReason and decisions `{step,status,at,by,comment,automatic}[]`. Actor names use the existing lookup service. No encrypted/private employee fields. Newest raised first, ID descending as tie-breaker. Count and page use a repeatable-read snapshot; an oversized page number is clamped to the last page.
 - **What it does:** one browsable report of current team's or HOD department's leave, leave cancellations, missed-punch regularisations, OD, comp-off and shift changes across waiting and completed outcomes, independent of whether a step currently waits for this viewer. The Approvals Team requests tab starts with this month's work/leave dates, stores filters/page in the URL and exports through `approvals.export` mode team. Table previews expand in place; export always contains full stored text and all matching pages.

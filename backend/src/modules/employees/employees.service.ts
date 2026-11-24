@@ -1,6 +1,7 @@
 import { reportFile, reportSheet } from '#core/excel/report'
 import { writeReport } from '#core/excel/report'
-import { hasLevelAt, type Placement, scopeAllows, scopeOf } from '#core/auth/scope'
+import { hasAccess } from '#core/auth/access'
+import { type DataScope, hasLevelAt, type Placement, scopeAllows, scopeOf } from '#core/auth/scope'
 import { encrypt, fingerprint, last4 } from '#core/crypto/encryption'
 import { prisma, SYSTEM_ACTOR, type AccessArea, type AccessLevel, type ActorId, type EmployeeStatus, type DbClient, type EmploymentType, type IdentityDocumentType, type MedicalResult, type Prisma } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
@@ -1026,7 +1027,8 @@ const wordsOf = (text: string | undefined) => (text ?? '').split(/\s+/).filter(B
 
 // `group`: my team (who reports to the viewer) or my department (whose HOD the viewer is now) - relationships worked out
 // here from the viewer, never from the request (CLAUDE.md section 8, rule 7)
-export async function listDirectory(viewer: CurrentUser, input: z.infer<typeof directoryInput>) {
+// `scope` (the Excel export of everyone): only the employees it covers
+export async function listDirectory(viewer: CurrentUser, input: z.infer<typeof directoryInput>, scope?: DataScope) {
   const page = input?.page ?? 1
   const pageSize = input?.pageSize ?? 50
   const group = input?.group
@@ -1039,6 +1041,7 @@ export async function listDirectory(viewer: CurrentUser, input: z.infer<typeof d
       departmentIds: input?.departmentIds,
       reportingManagerId: group === 'TEAM' ? viewer.employeeId : undefined,
       ids,
+      scope,
     },
     { skip: (page - 1) * pageSize, take: pageSize },
   )
@@ -1065,8 +1068,14 @@ export async function orgChart(viewer: CurrentUser, input: z.infer<typeof orgCha
   return { person: directoryCard(person), managers: managers.map(directoryCard), reports: reports.map(directoryCard) }
 }
 
+// The directory as Excel - only what the viewer's access covers (the user, 2026-11-24): their team or HOD department as on
+// the page; "everyone" only with Employees View, limited to its data access (the page shows everyone, a file is not given)
 export async function exportDirectory(viewer:CurrentUser,input:z.infer<typeof exportDirectoryInput>){
-  const {items,total}=await listDirectory(viewer,{...input,page:1,pageSize:20_000})
+  if (!input?.group && !hasAccess(viewer.access, 'EMPLOYEES', 'READ')) {
+    throw new ORPCError('FORBIDDEN', { message: 'Exporting everyone needs Employees View - export your team or department instead' })
+  }
+  const scope = input?.group ? undefined : scopeOf(viewer, 'EMPLOYEES', 'READ')
+  const {items,total}=await listDirectory(viewer,{...input,page:1,pageSize:20_000},scope)
   if(total>items.length)throw new ORPCError('BAD_REQUEST',{message:'The directory exceeds 20,000 records. Narrow the filters and export again.'})
   return reportFile([reportSheet('Directory',items,[
     {header:'Employee code',text:true,value:r=>r.employeeCode},{header:'Name',value:r=>r.name},
@@ -1076,7 +1085,7 @@ export async function exportDirectory(viewer:CurrentUser,input:z.infer<typeof ex
     {header:'Reporting manager code',text:true,value:r=>r.reportingManager?.employeeCode},
     {header:'Reporting manager',value:r=>r.reportingManager?.name},{header:'Joined',date:true,value:r=>r.dateOfJoining},
   ])],{title:'People directory',preparedBy:`${viewer.name} (${viewer.employeeCode})`,
-    coverage:'Basic work-directory fields only, for currently working colleagues. Uses the same team or HOD relationship and place/search filters as the directory, across all matching pages.',
+    coverage:input?.group?'Basic work-directory fields only, for currently working colleagues of your team or HOD department, with the place/search filters of the directory, across all matching pages.':'Basic work-directory fields only, for currently working colleagues inside your Employees data access, with the place/search filters of the directory, across all matching pages.',
     filters:[{label:'Group',value:input?.group??'Everyone'},{label:'Search',value:input?.search??'All'},
       {label:'Placement filters',value:JSON.stringify({companyIds:input?.companyIds,plantIds:input?.plantIds,departmentIds:input?.departmentIds})}],
   },'people-directory')

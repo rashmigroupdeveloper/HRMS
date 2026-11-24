@@ -41,11 +41,17 @@ describe('review exports preserve list access',()=>{
    const own=await days.exportMonth(userWith(a,[]),input)
    expect(own.name).toContain(a.employeeCode)
  })
- it('preserves team relationships and basic fields for the public directory',async()=>{
+ it('exports from the directory only what the access of the viewer covers (2026-11-24)',async()=>{
+   // own team: the reporting relationship, no role needed
    const team=await cells(await employees.exportDirectory(userWith(a,[]),{group:'TEAM'}))
    expect(team).not.toContain(b.employeeCode)
-   const everyone=await cells(await employees.exportDirectory(userWith(a,[]),{companyIds:[companyB]}))
-   expect(everyone).toContain(b.employeeCode);expect(everyone).not.toContain('Salary');expect(everyone).not.toContain('PAN')
+   // everyone: not without Employees View (the page still shows everyone - a file is not given)
+   await expect(employees.exportDirectory(userWith(a,[]),{companyIds:[companyB]})).rejects.toMatchObject({code:'FORBIDDEN'})
+   // with Employees View for company A: A's people only - company B's not even when asked for
+   const everyone=await cells(await employees.exportDirectory(viewer,{}))
+   expect(everyone).toContain(a.employeeCode);expect(everyone).not.toContain(b.employeeCode)
+   expect(everyone).not.toContain('Salary');expect(everyone).not.toContain('PAN')
+   expect(await cells(await employees.exportDirectory(viewer,{companyIds:[companyB]}))).not.toContain(b.employeeCode)
  })
  it('keeps own leave export identity-bound and held requests permission-bound',async()=>{
    const own=await cells(await leave.exportMine(userWith(a,[])),'Review notes')

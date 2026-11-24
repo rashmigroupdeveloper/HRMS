@@ -21,6 +21,7 @@ describe('salary structures: the breakup from the CTC', () => {
   it('works out a white-collar offer by HR\'s formulas - no ESIC above 21,000 gross (the sheet charges it there: its slip)', async () => {
     const r = await breakup({ annualCtc: 300_000, ...regular('WHITE_COLLAR') })
     expect(r.structure?.name).toBe('Regular - White collar')
+    expect(r.balanceComponentId).toBe(await componentId('Special Allowance'))
     expect(r.byName).toEqual({
       Basic: 11_530.83,
       HRA: 5_765.42,

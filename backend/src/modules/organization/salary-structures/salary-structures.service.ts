@@ -126,18 +126,21 @@ export async function calculateBreakup(input: z.infer<typeof calculateInput>) {
   const monthlyCtc = monthlyOf(input.annualCtc)
   if (input.draft) {
     const lines = await checkLines(input.draft.lines, input.draft.basicComponentId ?? null)
-    return { structure: null, monthlyCtc, lines: computeBreakup(lines, input.draft.basicComponentId ?? null, monthlyCtc) }
+    return { structure: null, monthlyCtc, balanceComponentId: balanceOf(lines), lines: computeBreakup(lines, input.draft.basicComponentId ?? null, monthlyCtc) }
   }
   const structure = pickStructure(await listSalaryStructures(), input as Offer)
-  if (!structure) return { structure: null, monthlyCtc, lines: [] }
+  if (!structure) return { structure: null, monthlyCtc, balanceComponentId: null, lines: [] }
   // a component retired after the structure was saved: the offer could not save the line - HR fixes the structure first
   const retired = structure.lines.find((line) => !line.salaryComponent.isActive)
   if (retired) {
     throw new ORPCError('BAD_REQUEST', { message: `The salary structure "${structure.name}" uses ${retired.salaryComponent.name}, which is retired - change the structure first` })
   }
   const lines = structure.lines.map((line) => ({ ...line, kind: line.salaryComponent.kind }))
-  return { structure: { id: structure.id, name: structure.name }, monthlyCtc, lines: computeBreakup(lines, structure.basicComponentId, monthlyCtc) }
+  return { structure: { id: structure.id, name: structure.name }, monthlyCtc, balanceComponentId: balanceOf(lines), lines: computeBreakup(lines, structure.basicComponentId, monthlyCtc) }
 }
+
+// the line that takes what is left - the form adjusts it when HR changes another line, so the total stays the CTC
+const balanceOf = (lines: { salaryComponentId: number; method: SalaryCalcMethod }[]) => lines.find((line) => line.method === 'BALANCE')?.salaryComponentId ?? null
 
 // --- Changing ---
 

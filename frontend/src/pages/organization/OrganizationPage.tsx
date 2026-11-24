@@ -11,6 +11,7 @@ import { CompanyDetail, CompanyTile } from './components/CompanyDetail'
 import { lacksEmployerDetails, nextCodeOf } from './components/company-facts'
 import { MasterSection } from './components/MasterSection'
 import { PlantDepartmentsDrawer } from './components/PlantDepartmentsDrawer'
+import { SalaryStructuresTab } from './components/SalaryStructuresTab'
 import { COUNTRY_OPTIONS, INDIAN_STATE_NAME_OPTIONS, INDIAN_STATE_OPTIONS, TIME_ZONE_OPTIONS } from '@/lib/choices'
 
 // Organization masters (Organization: View; changing needs Organization: Edit): companies, work locations (where employees / candidates are placed), plants and cost centres (SAP), departments,
@@ -67,6 +68,8 @@ export function OrganizationPage() {
   const positions = useQuery({ ...orpc.organization.positions.list.queryOptions({ input: ALL }), enabled: canSeeMasters })
   const regions = useQuery({ ...orpc.organization.regions.list.queryOptions({ input: ALL }), enabled: canSeeMasters })
   const salaryComponents = useQuery({ ...orpc.organization.salaryComponents.list.queryOptions({ input: ALL }), enabled: canSeeMasters })
+  // the same list the tab shows (one cache) - for the count on the tab
+  const salaryStructures = useQuery({ ...orpc.organization.salaryStructures.list.queryOptions({ input: ALL }), enabled: canSeeMasters })
   // the plant whose departments are open
   const [plantDepartments, setPlantDepartments] = useState<PlantRow | null>(null)
   const companyOptions = (companies.data ?? [])
@@ -132,6 +135,7 @@ export function OrganizationPage() {
                     ['positions', 'Positions', positions.data],
                     ['grades', 'Grades', grades.data],
                     ['salary-components', 'Salary components', salaryComponents.data],
+                    ['salary-structures', 'Salary structures', salaryStructures.data],
                   ]
                 : []),
               ...(canSeeHods && !canSeeMasters ? [['department-heads', 'Department heads']] : []),
@@ -768,6 +772,12 @@ export function OrganizationPage() {
             }
           />
         </TabsContent>
+
+        {canSeeMasters && (
+          <TabsContent value="salary-structures" className="mt-5">
+            <SalaryStructuresTab canChange={canChange} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )
