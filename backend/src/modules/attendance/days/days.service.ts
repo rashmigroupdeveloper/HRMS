@@ -890,7 +890,7 @@ export async function getDayPunches(viewer: CurrentUser, { employeeCode, date }:
     person.timezone,
   )
   const mine = new Set((byDay.get(dayKey(date)) ?? []).map((p) => p.getTime()))
-  return punches.filter((p) => mine.has(p.punchedAt.getTime())).map((p) => ({ at: p.punchedAt, time: clockOf(p.punchedAt, person.timezone), device: p.device }))
+  return punches.filter((p) => mine.has(p.punchedAt.getTime())).map((p) => ({ id: p.id, employeeCode: p.employeeCode, at: p.punchedAt, time: clockOf(p.punchedAt, person.timezone), timezone: person.timezone, device: p.device, source: p.source, uploadId: p.uploadId, uploadFile: p.upload?.fileName ?? null, storedAt: p.createdAt }))
 }
 
 // HR sets one half or both with a reason (an empty half keeps following the punches); the day is worked out again

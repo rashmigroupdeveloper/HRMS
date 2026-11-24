@@ -1,3 +1,4 @@
+import { reportsRouter } from './reports/reports.router.js'
 import { exportSetupInput } from './shifts/shifts.schema.js'
 import { accessProcedure, authedProcedure } from '#core/rpc/procedures'
 import * as attendanceService from './attendance.service.js'
@@ -18,6 +19,7 @@ export const attendanceRouter = {
   // the viewer's today, team size, what waits for them, what they may do
   overview: authedProcedure.handler(({ context }) => attendanceService.getOverview(context.user)),
   days: daysRouter,
+  reports: reportsRouter,
   shifts: shiftsRouter,
   policies: policiesRouter,
   // the attendance month lock (2026-11-22)

@@ -1,166 +1,91 @@
+import { HomePersonalAttendance } from './components/HomePersonalAttendance'
+import { HomeJoiningWork, HomePreJoining } from './components/HomeOnboarding'
 import { useQuery } from '@tanstack/react-query'
-import {
-  ArrowRight,
-  Building2,
-  FileText,
-  FolderOpen,
-  History,
-  IdCard,
-  ListChecks,
-  type LucideIcon,
-  ShieldCheck,
-  UserPlus,
-  Users,
-  UserRound,
-  Wallet,
-} from 'lucide-react'
+import { ArrowRight, Building2, FileText, FolderOpen, History, IdCard, ListChecks, ShieldCheck, UserPlus, Users, UserRound, Wallet, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { FormError } from '@/components/FormError'
 import { TodayCardSkeleton } from '@/components/skeletons/common/TodayCardSkeleton'
-import { Button } from '@/components/ui/button'
+import { HomeAttendanceSkeleton, HomeRoleSkeleton } from '@/components/skeletons/home/HomePanelsSkeleton'
+import { TodayCard } from '@/components/TodayCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccess } from '@/hooks/useAccess'
-import { TodayCard } from '@/components/TodayCard'
 import { orpc } from '@/lib/orpc'
-import { formatDate } from '@/lib/utils'
+import { formatDate, todayDay } from '@/lib/utils'
+import { HomeAttendance } from './components/HomeAttendance'
+import { HomeLeave } from './components/HomeLeave'
+import { HomeDecisions, HomeMyRequests } from './components/HomeRequests'
 
-// The employee's own home after signing in: who they are and where they work, quick links into their profile, and
-// the areas their roles give them, and today's attendance.
+// Home is arranged around real work, inspired by main's employee/manager/HR dashboards. The active area's access and
+// actual team/HOD relationships decide which sections exist; no role-name checks, invented KPIs or new stores.
 export function HomePage() {
   const { me, can } = useAccess()
-  // read once when the page opens
   const [now] = useState(() => new Date())
+  const [date] = useState(todayDay)
   const profile = useQuery({ ...orpc.employees.getByCode.queryOptions({ input: { employeeCode: me?.employeeCode ?? '' } }), enabled: !!me })
-  const overview = useQuery({ ...orpc.attendance.overview.queryOptions(), enabled: !!me })
-  const firstName = me?.name.split(' ')[0] ?? ''
+  const overview = useQuery(orpc.attendance.overview.queryOptions())
   const e = profile.data
-  // the employee's own profile (and one of its tabs)
-  const mine = (tab: string) => `/me${tab ? `?tab=${tab}` : ''}`
+  const activeRole = me?.availableRoles.find(r => r.id === me.activeRoleId)?.name ?? 'Employee'
+  const dashboard = can('ACCESS', 'WRITE') ? 'Administration' : can('ONBOARDING') ? 'HR workspace' : (overview.data?.teamSize ?? 0) > 0 || (overview.data?.departmentSize ?? 0) > 0 ? 'Team workspace' : 'My workspace'
+  const isPersonal = !!overview.data && dashboard === 'My workspace'
+  const hasPeople = !!overview.data && (overview.data.canSeeAll || overview.data.teamSize > 0 || overview.data.departmentSize > 0)
+  const isHR = can('ONBOARDING')
+  const isAdmin = dashboard === 'Administration'
+  const work: Shortcut[] = [
+    ...(can('ONBOARDING') ? [{ to: '/onboarding', icon: UserPlus, title: 'Onboarding', text: 'Offers & joining' }] : []),
+    ...(can('EMPLOYEES') ? [{ to: '/employees?view=records', icon: Users, title: 'Employee records', text: 'Find a colleague' }] : []),
+    ...(can('JOINING_TASKS') || can('ONBOARDING') || can('JOINING_TASK_TYPES') ? [{ to: '/joining-tasks', icon: ListChecks, title: 'Joining checklist', text: 'Tasks for new joiners' }] : []),
+    ...(can('ORGANIZATION') ? [{ to: '/organization', icon: Building2, title: 'Organization', text: 'Companies & places' }] : []),
+    ...(can('LETTER_TEMPLATES') ? [{ to: '/letter-templates', icon: FileText, title: 'Letter templates', text: 'Manage your letters' }] : []),
+    ...(can('ACCESS') ? [{ to: '/access', icon: ShieldCheck, title: 'Roles & access', text: 'Logins & permissions' }] : []),
+    ...(can('CHANGE_HISTORY') ? [{ to: '/change-history', icon: History, title: 'Change history', text: 'Who changed what' }] : []),
+  ]
+  const workspace = (
+    <section className="home-panel min-w-0 space-y-3 p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-medium tracking-tight">{isAdmin ? 'Administration' : 'Your workspace'}</h2><Link to="/employees" className="flex min-h-9 items-center gap-1 text-sm underline underline-offset-4">People directory <ArrowRight aria-hidden className="size-3.5" /></Link></div>
+      {work.length > 0 ? <div className="grid grid-cols-2 gap-x-4 gap-y-1">{work.map(item => <QuickLink key={item.to} {...item} />)}</div> : <p className="text-sm text-muted-foreground">Find a colleague in the directory, or open your personal details.</p>}
 
-  // the areas this person's roles open (none for most employees)
-  const work = [
-    can('ONBOARDING') && { to: '/onboarding', icon: UserPlus, title: 'Onboarding', text: 'Offers, joining forms, documents' },
-    can('EMPLOYEES') && { to: '/employees?view=records', icon: Users, title: 'People', text: 'Employee records and profiles' },
-    can('ORGANIZATION') && { to: '/organization', icon: Building2, title: 'Organization', text: 'Companies, locations, departments' },
-    can('JOINING_TASKS') && { to: '/joining-tasks', icon: ListChecks, title: 'Joining checklist', text: 'Tasks for new employees' },
-    can('LETTER_TEMPLATES') && { to: '/letter-templates', icon: FileText, title: 'Letter templates', text: 'The wording of letters' },
-    can('ACCESS') && { to: '/access', icon: ShieldCheck, title: 'Roles & access', text: 'Roles, logins and who can see what' },
-    can('CHANGE_HISTORY') && { to: '/change-history', icon: History, title: 'History', text: 'Who changed what and when' },
-  ].filter(Boolean) as Shortcut[]
-
-  return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-        <p className="text-sm text-muted-foreground">{now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-        <h1 className="mt-1 text-3xl font-light tracking-tight sm:text-4xl">
-          {greeting(now)}
-          {firstName && `, ${firstName}`}
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">Your attendance, your profile, your documents and the pages your role gives you.</p>
-        </div>
-        {/* today's attendance, opening the attendance page */}
-        {overview.isPending ? (
-          <TodayCardSkeleton label="Loading today's attendance" />
-        ) : overview.data && (
-          <Link to="/attendance" title="Open my attendance" className="inline-block max-w-full transition-transform hover:-translate-y-0.5">
-            <TodayCard today={overview.data.today} />
-          </Link>
-        )}
-      </header>
-
-      <section className="u-grain relative overflow-hidden rounded-3xl bg-hero p-5 text-hero-foreground shadow-card sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-4">
-            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-hero-foreground/10 text-base font-semibold">{initials(me?.name ?? '')}</span>
-            <div className="min-w-0">
-              <p className="text-xs text-hero-foreground/75">My profile · {me?.employeeCode}</p>
-              <h2 className="truncate text-2xl font-light tracking-tight">{me?.name}</h2>
-              {e || profile.isError ? (
-                <p className="mt-1 text-sm text-hero-muted">
-                  {e ? [e.designation?.name, e.department?.name, e.company.name, e.workLocation?.name].filter(Boolean).join(' · ') : 'Open your profile to see your details.'}
-                </p>
-              ) : (
-                // the work line and the joining date, in the same lines as the loaded ones
-                <div role="status" aria-label="Loading your details" className="text-sm text-hero-muted">
-                  <p className="mt-1 flex h-5 items-center">
-                    <Skeleton className="h-3.5 w-72 max-w-full rounded-full bg-hero-foreground/10" />
-                  </p>
-                  <p className="mt-0.5 flex h-5 items-center gap-1">
-                    Joined <Skeleton className="h-3.5 w-20 rounded-full bg-hero-foreground/10" />
-                  </p>
-                </div>
-              )}
-              {e && <p className="mt-0.5 text-sm text-hero-muted">Joined {formatDate(e.dateOfJoining)}</p>}
-            </div>
-          </div>
-          <Button variant="gold" nativeButton={false} render={<Link to={mine('')} />}>
-            Open my profile <ArrowRight />
-          </Button>
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-light tracking-tight">Quick links</h2>
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-          <QuickLink to={mine('personal')} icon={UserRound} title="Personal details" text="Name, family, contacts" />
-          <QuickLink to={mine('ids')} icon={IdCard} title="IDs & bank" text="Aadhaar, PAN, salary account" />
-          <QuickLink to={mine('documents')} icon={FolderOpen} title="My documents" text="Copies you gave when joining" />
-          {profile.isPending ? (
-            // salary or PF & ESIC - known once the profile is in
-            <div role="status" aria-label="Loading your links" className="flex min-w-0 items-center gap-2.5 rounded-2xl bg-card p-2.5 shadow-card sm:gap-3 sm:p-3">
-              <Skeleton className="size-9 shrink-0 rounded-xl sm:size-10" />
-              <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <Skeleton className="h-3.5 w-24 rounded-full" />
-                <Skeleton className="h-3 w-36 max-w-full rounded-full max-sm:hidden" />
-              </span>
-            </div>
-          ) : e?.salary ? (
-            <QuickLink to={mine('salary')} icon={Wallet} title="My salary" text="CTC and monthly breakup" />
-          ) : (
-            <QuickLink to={mine('statutory')} icon={ShieldCheck} title="PF & ESIC" text="UAN, PF and ESIC numbers" />
-          )}
-        </div>
-      </section>
-
-      {work.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-light tracking-tight">Your work</h2>
-          <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-            {work.map((s) => (
-              <QuickLink key={s.to} {...s} />
-            ))}
-          </div>
-        </section>
-      )}
-
-    </div>
+      <FormError error={profile.error} />
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3 text-xs text-muted-foreground"><p>{me ? `${me.name} · ${me.employeeCode}` : 'Your employee record'}{e && ` · ${e.company.name}`}</p>{e ? <p>Joined {formatDate(e.dateOfJoining)}</p> : profile.isPending && <Skeleton className="h-3 w-28 rounded" />}</div>
+    </section>
   )
+  return <div className="home-dashboard space-y-4">
+    <header className="home-arrive flex flex-wrap items-end justify-between gap-x-6 gap-y-3 pb-1">
+      <div><h1 className="text-[28px] font-light leading-tight tracking-tight sm:text-[40px]">{greeting(now)}{me ? `, ${me.name.split(' ')[0]}` : ''}</h1><p className="mt-2 text-sm text-muted-foreground">{dashboard === 'HR workspace' ? 'Joining, people and the decisions that need you.' : dashboard === 'Team workspace' ? 'Your team, today. Keep the next steps moving.' : isAdmin ? 'Your people, access and administration in one place.' : 'Your attendance, time off and requests in one place.'}</p></div>
+      <div className="flex flex-wrap items-center gap-2 text-xs"><span className="max-w-full break-words rounded-full bg-card px-3 py-2 font-medium">{activeRole}</span><span className="text-muted-foreground">{now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'short', day: 'numeric', month: 'short' })}</span></div>
+    </header>
+    <div className="grid min-w-0 gap-3 lg:grid-cols-12">
+      <div className="min-w-0 lg:col-span-8">
+        {!overview.data ? <HomeRoleSkeleton /> : isAdmin ? workspace : isPersonal ? <HomeMyRequests /> : <HomeDecisions light />}
+      </div>
+      <div className="min-w-0 space-y-3 lg:col-span-4 lg:row-span-2">
+        {isHR ? <><HomeJoiningWork /><HomePreJoining /></> : !overview.data ? <HomeRoleSkeleton /> : hasPeople ? <HomeAttendance overview={overview.data} date={date} dark /> : <HomePersonalAttendance overview={overview.data} />}
+      </div>
+      <div className="min-w-0 lg:col-span-8">
+        {isHR && overview.data && hasPeople ? <HomeAttendance overview={overview.data} date={date} /> : isAdmin ? <HomeDecisions light /> : isPersonal ? <PersonalLinks hasSalary={!!e?.salary} loading={profile.isPending} /> : <HomeMyRequests />}
+        {overview.isPending && <section className="home-panel p-4 sm:p-5"><h2 className="text-lg font-medium tracking-tight">People today</h2><HomeAttendanceSkeleton /></section>}
+      </div>
+    </div>
+    <div className="grid min-w-0 items-start gap-3 lg:grid-cols-3">
+      <div className="min-w-0 space-y-3">
+        {overview.isPending ? <TodayCardSkeleton /> : overview.data && <Link to="/attendance" className="block rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Open my attendance"><TodayCard today={overview.data.today} className="min-w-0 [&>span]:shrink-0 [&>div]:min-w-0" /></Link>}
+        <FormError error={overview.error} /><HomeLeave />
+      </div>
+      <div className="min-w-0">{isPersonal ? <HomeDecisions light compact /> : isAdmin ? <HomeMyRequests /> : workspace}</div>
+      <div className="min-w-0">{isPersonal ? workspace : <PersonalLinks hasSalary={!!e?.salary} loading={profile.isPending} />}</div>
+    </div>
+  </div>
 }
 
 type Shortcut = { to: string; icon: LucideIcon; title: string; text: string }
-
 function QuickLink({ to, icon: Icon, title, text }: Shortcut) {
-  return (
-    <Link to={to} className="group flex min-w-0 items-center gap-2.5 rounded-2xl bg-card p-2.5 shadow-card sm:gap-3 sm:p-3 transition-shadow hover:shadow-float">
-      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-surface-2 text-foreground sm:size-10">
-        <Icon className="size-5" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium">{title}</span>
-        <span className="block truncate text-xs text-muted-foreground max-sm:hidden" title={text}>{text}</span>
-      </span>
-      <ArrowRight className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 max-sm:hidden" />
-    </Link>
-  )
+  return <Link to={to} className="group flex min-h-14 min-w-0 items-center gap-2 rounded-xl py-2 transition-colors hover:bg-surface-2/60 outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-surface-2"><Icon aria-hidden className="size-4" /></span><span className="min-w-0"><span className="block text-sm font-medium">{title}</span><span className="block text-xs text-muted-foreground">{text}</span></span></Link>
 }
-
-function greeting(now: Date) {
-  const hour = now.getHours()
+function PersonalLinks({ hasSalary, loading }: { hasSalary: boolean; loading: boolean }) {
+  const links: Shortcut[] = [{ to: '/me?tab=personal', icon: UserRound, title: 'Personal details', text: 'Family & contacts' }, { to: '/me?tab=ids', icon: IdCard, title: 'IDs & bank', text: 'Your saved information' }, { to: '/me?tab=documents', icon: FolderOpen, title: 'My documents', text: 'Joining documents' }, hasSalary ? { to: '/me?tab=salary', icon: Wallet, title: 'My salary', text: 'CTC & monthly breakup' } : { to: '/me?tab=statutory', icon: ShieldCheck, title: 'PF & ESIC', text: 'Your statutory numbers' }]
+  return <div className="home-panel p-4 sm:p-5"><h2 className="mb-2 text-lg font-medium tracking-tight">My details &amp; documents</h2><div className="grid grid-cols-2 gap-x-4">{links.slice(0, 3).map(item => <QuickLink key={item.to} {...item} />)}{loading ? <div role="status" aria-label="Loading your salary link" className="flex min-h-16 items-center gap-3"><Skeleton className="size-9 shrink-0 rounded-xl" /><div className="space-y-2"><Skeleton className="h-3 w-24 rounded" /><Skeleton className="h-3 w-20 rounded" /></div></div> : <QuickLink {...links[3]!} />}</div></div>
+}
+function greeting(date: Date) {
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', hourCycle: 'h23' }).format(date))
   return hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
-}
-
-function initials(name: string) {
-  const words = name.split(/\s+/).filter(Boolean)
-  return ((words[0]?.[0] ?? '') + (words.length > 1 ? (words[words.length - 1]?.[0] ?? '') : '')).toUpperCase() || '?'
 }

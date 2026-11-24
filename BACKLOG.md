@@ -8,6 +8,9 @@ Work we decided **not** to do yet, so nothing is forgotten. Each item says why i
 
 ## To build later
 
+The module-by-module inventory from `main`, its intentional exclusions and the method for bringing work into
+`hrms-new` are in **item 31** below. Existing numbered items retain the detailed decisions; item 31 links to them.
+
 ### Next modules - in the order an employee lives them (decided by the user, 2026-11-16)
 After onboarding and the employee's own login / profile (done), the modules follow a regular employee's working life,
 one at a time, each planned with the user before it is built (the old HRMS is inspiration only):
@@ -67,9 +70,8 @@ and the "Reports to" filter.
 - **Done (2026-11-16, phase 3):** sign in with the work e-mail too; passwords of 10+ characters, not one of the last 5;
   the password re-entered before changing roles (10 minutes); everyone's sessions on Roles & access and one's own on
   Change password, with "log out"; last login; turning a login off / on; roles x access as Excel.
-- **Still to do:** a job that deletes expired sessions (today they are removed at the next login of that account) -
-  needs the background-jobs worker (phase 5). Passwords set before 2026-11-16 may be shorter than 10 characters
-  (decided: the rules apply at the next change, nobody is forced).
+- **Done (phase 5; status corrected 2026-11-24):** the worker removes expired sessions hourly (item 6). Passwords
+  set before 2026-11-16 may be shorter than 10 characters (decided: the rules apply at the next change, nobody is forced).
 - **Logins for employees who joined before 2026-11-15, were added with "Add employee" or imported** (as in the old
   HRMS, 2026-11-16: no automatic login): HR gives them one by one on the Roles & access page. **Later:** "give logins"
   to many employees at once (e.g. a whole import), e-mailed in batches.
@@ -267,8 +269,9 @@ Compared with an employee-profile screen from another HR system (2026-11-14); th
 - **Salary:** since 2026-11-15 the offer's salary and breakup are copied on the joining day as the employee's first
   salary (`employee_salaries` + `employee_salary_lines` in `payroll.prisma`, effective from the date of joining; the
   employees who had already joined were filled in from their offers); the profile's Salary tab shows the salary in
-  effect (the employee themselves or the `SALARY` access, 2026-11-15). Not yet: revisions / increments (a new row from its effective date), salary for
-  employees without an offer (entered by HR), pay runs and deductions. **Needs:** the payroll module.
+  effect (the employee themselves or the `SALARY` access, 2026-11-15). **Revisions / increments are done** through
+  approved job changes (2026-11-20; status corrected 2026-11-24), with a salary row from its effective date.
+  Pay runs and deductions still need the payroll module (item 31).
 - **Residential status** (resident / non-resident for income tax): decides how tax is deducted from salary, so it
   belongs to the **payroll** module - HR / payroll sets it, not the candidate. **Needs:** the payroll module, and the
   status values as payroll uses them.
@@ -313,10 +316,14 @@ Compared with an employee-profile screen from another HR system (2026-11-14); th
 - The old HRMS received accepted offers from an ATS (recruitment app) machine to machine.
 - **Needs:** only if an ATS is used - which one, and what it sends.
 
-### 16. Home pages per role (phase 7 - skipped for now)
-- **Now:** one home page for everyone (profile, quick links, the areas their roles open).
-- **Later (old HRMS):** a home page for HR (to-dos), managers (team), payroll, leadership.
-- **Needs:** data to show - attendance, leave and payroll (later modules).
+### 16. Home pages per role (initial delivery 2026-11-24)
+- **Built 2026-11-24 after the user selected this work:** one useful Home adapting to active access and actual team/HOD
+  relationships: decisions with request drill-down, own attendance/leave/recent requests, scoped People today and report
+  links, profile/documents and permitted workspace links. Employee attendance cycle, HR open joining tasks/accepted
+  offers and administration-first links give distinct capability-based layouts. Crextio informs the visual hierarchy.
+  Uses existing APIs, with no schema changes or role-name checks.
+- **Still deferred:** broader HR workload trends, payroll console, executive trends and device-health panels.
+  **Needs:** agreed metrics and the owning source modules; payroll/KPI/device values must not be invented.
 
 ### 17. Directory: saved views per browser
 - **Now (2026-11-16):** saved views of the employee directory are kept in the browser (a view is the page address).
@@ -418,8 +425,9 @@ the HRMS_NEW way when picked up, not copied)
 - **The Kent machines' automatic feed** - needs IT: how the machines give punches (push to a link, a database to read,
   or a file drop) and their codes; it adds punches through the same path as the upload.
 - **App check-in** (web / mobile, with location) for staff away from the machines - decided "later" (2026-11-16).
-- **With payroll:** overtime (and comp-off), late-mark penalties (e.g. "3 lates = half day" - ask HR), closing / locking
-  the month, and whether managers sign off their team's month (decided: decide with payroll).
+- **With payroll:** working-day overtime (pay or comp-off), late-mark penalties (e.g. "3 lates = half day" - ask HR),
+  and whether managers sign off their team's month (decided: decide with payroll). **Already built (2026-11-22; status
+  corrected 2026-11-24):** month locking and weekly-off/holiday comp-off claims (items 29 and 31).
 - **Ask HR:** the real shifts (the seeded General 09:00-18:00 with a 30-minute break makes 51 hours in a 6-day week - more
   than 48), the weekly offs per company / plant (the default is Sunday only), and the holiday list.
 - **Later, if needed:** remembering an unmatched machine code for the next uploads (today each upload's unknown code is
@@ -482,7 +490,8 @@ region (on the work location), the work location's address, lay offs, and the jo
   history; "Edit details" / the import change job details only with "Approve job & salary changes" (D7).
 - **Later, each with its module:** exit as a kind of the approval service (leave, its cancelling, regularization and on
   duty: done 2026-11-22); offer approval
-  (item 2 - needs candidate subjects); moving the attendance shift-change approval onto it (today its own two steps).
+  (item 2 - needs candidate subjects). Shift-change and swap approvals already use this service (2026-11-22);
+  they are not a migration gap.
 - **Later, if needed:** delegating approvals while away; approving from the e-mail itself; expiring held requests (the old
   HRMS does - ours wait until repaired); more than one open job change per employee (decided: one at a time). (Time limits
   per step - wait / escalate / approve / expire / reject - were built 2026-11-20.)
@@ -647,6 +656,254 @@ moment) and the test setup using the installed Prisma; and the frontend review's
   approvals daily job's skip / fallback / give-back / pool / retry / remind branches have no race test (only reassign);
   test files are not type-checked (backend tsconfig covers src only).
 
+### 31. Main-to-new feature inventory and implementation method (2026-11-24)
+
+Requested by the user after comparing `origin/main` **4e87cf2** with `origin/hrms-new` **a3b3e3e**.
+The local `hrms-new` checkout was **cd1f732**; the newer remote commit changes onboarding UI, not the inventory below.
+These branches have separate histories. This is a business-capability inventory from source, not a list of commits
+to cherry-pick or proof that the old implementation works. Recheck both branches before implementing a slice.
+
+**Status key:**
+- **DEFERRED:** a missing capability recorded for planning; inclusion here does not approve its schema or business rules.
+- **INTENTIONALLY DEFERRED:** the user explicitly postponed it; keep it waiting until selected again.
+- **INTENTIONALLY EXCLUDED:** a current decision replaces the old behaviour; do not restore it without changing that decision.
+- **DECISION NEEDED:** an old capability or design difference whose need/rule has not been agreed.
+- **PRESENT:** already rebuilt; extend it where needed rather than building another version.
+
+#### How to bring a feature from main
+
+1. **Select one coherent slice**, following the existing employee-life roadmap above (payroll is next). Announce it,
+   finish it and wait for “continue”. Recording this inventory does not start implementation of every module.
+2. **Read the owning old code without changing branches:**
+   `git show 4e87cf2:backend/src/modules/<module>/<file>` and
+   `git ls-tree -r --name-only 4e87cf2 backend/src/modules/<module>`.
+   Read its router, service, tests and relevant specifications together. Use current `origin/main` only after checking
+   what changed from this snapshot. Old paths below are relative to the repository at that main commit.
+3. **Extract the business rule:** inputs, eligibility, states, calculations, approvers, side effects, reports and edge
+   cases. Compare with current `API_TRACKER.md`, schemas and services. Label each part already present, still needed,
+   intentionally excluded or awaiting a decision. Old tests are examples to verify, not authority over newer decisions.
+4. **Agree the design first:** propose only the necessary model/field changes, one model at a time, with a concrete
+   HR/form/statutory purpose. Ask for required schema, library or folder-structure approval under `CLAUDE.md`.
+   For payroll/statutory work, verify current rules and obtain HR's actual policy; never carry old rates forward blindly.
+5. **Reimplement in the new architecture:** Prisma schema/migrations; router -> service -> repository; typed oRPC
+   client; existing approval service, audit, encryption, file storage and jobs. Keep one active role, company/plant/
+   department data access and scoped recipients. Do not merge/cherry-pick the old feature wholesale, copy Kysely/SQL
+   migrations or triggers, restore hard-coded role checks, add compatibility layers or create a second approval engine.
+6. **Treat data migration separately:** agree source-to-target mappings, business keys, opening balances and historical
+   records to retain. Use an explicit import with validation, dry run and reconciliation; no production writes or
+   copying real HR data into tests/docs as part of a code port. Deployment and cutover need their own concrete plan.
+7. **Verify the complete slice:** happy path, outside-scope access, state transitions, amounts, retries/concurrency
+   where relevant, reports and exports. For UI, review desktop 1440 px and phone 390 px before/after, plus loaded/loading
+   layouts. Run all section 6 checks; update the API tracker and every affected rule/doc. Delete completed backlog
+   tasks and their duplicate references together; preserve intentional exclusions until the decision changes.
+
+#### Payroll, statutory and income tax — DEFERRED, next core module
+
+**Reference:** `backend/src/modules/payroll-core/`, `payroll-outputs/`, `tds/`; related screens in
+`frontend/src/pages/payroll/` and `tax/`. **Needs:** agreed pay groups/cycles, attendance and leave inputs, statutory
+policy, sample reconciled payslips/registers and approved schema. See items 11, 18, 19, 23, 24 and 29.
+
+- [ ] Pay-run lifecycle: create/list/detail, lock inputs, compute, issues, review, approve, finalize, mark paid,
+  return to draft/reopen and reconciliation.
+- [ ] Employee run inputs: one-off earnings/deductions, uploads, calculated items, payable days/LOP, component
+  proration and backdated salary arrears. Salary components' codes/gross flags and LOP treatment need agreement.
+- [ ] Salary holds and releases, with the effect on calculation/payment defined.
+- [ ] Payslips and own-payslip downloads; run output bundles; bank payment files, SAP GL/JV mapping/exports and variance reports.
+- [ ] PF/EPS/EDLI, ESIC, PT and LWF calculations; effective statutory parameters/rates and PT slabs; ECR, ESIC return,
+  PTRC and Form D outputs, with current eligibility/rates verified before implementation.
+- [ ] Income tax: employee declarations, proofs and review, regime choice, tax projection/TDS, challans,
+  reconciliation, Form 24Q and Form 16; agree tax residential status (item 11).
+- [ ] Annual bonus true-up, bulk annual-increment simulation/application and retroactive arrears scheduling.
+- [ ] Parallel-run migration: vendor/Protiviti register parsing/import, component-level variance comparison,
+  cutover acceptance and historical YTD opening data.
+- **PRESENT:** salary structures/calculation, dated employee salary/history and individual approved revisions,
+  promotions and transfers. Reuse Organization, employees and job-changes; these are not missing payroll modules.
+
+#### Probation, confirmation and employee exit — DEFERRED core modules
+
+**Reference:** `backend/src/modules/lifecycle/probation/`, `separation/`, `boarding-exit.service.ts`,
+`frontend/src/pages/lifecycle/`. **Needs:** HR's review/notice/clearance rules and payroll for financial settlement.
+See items 5, 24 and 26; reuse employee dates, letters, HOD appointments and approvals.
+
+- [ ] Probation review creation/evaluation, due alerts, confirmation/extension decisions, confirmation salary switch
+  and confirmation letter tied to the approved process.
+- [ ] Resignation, notice calculation, approval/rejection/withdrawal, absconding and agreed last-working-day handling.
+- [ ] Department clearance, F&F calculation/review/calendar/payment and experience/relieving letters tied to exit.
+- [ ] End leavers' access/HOD appointments and other assignments under explicit exit rules; alumni view of exit/settlement.
+- [ ] Combined joiner/leaver report, Excel and scheduled email; agree recipients (item 18).
+- **PRESENT:** manual confirmation-date editing, manual issue of employee letters, job changes/transfers and layoff APIs.
+  A dedicated layoff/resignation page still waits under item 26; avoid rebuilding these existing APIs.
+
+#### Attendance and biometric devices — DEFERRED extensions
+
+**Reference:** `backend/src/modules/attendance/`, `backend/src/jobs/worker.ts`, attendance/team screens.
+**Needs:** IT's device connection details/codes, HR's OT and closure policy; payroll where amounts are involved.
+See items 19, 28 and 29.
+
+- [ ] Kent automatic feed: webhook/API pull/database read/file drop as actually supported; safe retry/deduplication,
+  device-health view, biometric-enrolment verification, quarantined punches and re-ingestion.
+- [ ] Working-day OT detection, full/partial approval, rejection, conversion to comp-off, decision deadlines/lapse
+  and summaries. Keep existing weekly-off/holiday comp-off claims.
+- [ ] Short permission with in/out times — **INTENTIONALLY DEFERRED** on 2026-11-22 (item 29).
+- [ ] Consecutive-absence cases, stages, follow-up letters and scheduled scans; confirm the old four-day trigger with HR.
+- [ ] Manager month sign-off and separate week close; agree their purpose alongside the existing month lock.
+- [ ] Roster publication status/revisions, coverage/meters, publication notifications and deadline reminders;
+  assess what the current grid already supplies before adding any endpoint.
+- **PRESENT:** shifts, patterns, dated policy, corrections, rosters/publishing, approved shift changes/swaps,
+  regularization/OD, muster exports and month locking. Old shift bidding is **DECISION NEEDED** if distinct from swaps.
+
+#### Leave — INTENTIONALLY DEFERRED extensions
+
+**Reference:** `backend/src/modules/leave/` and attendance blackout configuration. **Why waiting:** the user chose
+on 2026-11-22 to finish the core flow first. **Needs:** policy selection; encashment needs payroll/exit. Item 29 owns details.
+
+- [ ] Leave encashment, restricted-holiday selection, location blackout dates and send-back/resubmit.
+- [ ] Company-transfer carry-over/encashment and handling pending requests when locking attendance; agree rules first.
+- **PRESENT:** type rules, ledger/credits/lapse, balances/import, apply/preview, cancellation, team coverage, register,
+  comp-off claims/expiry and recounting. Keep the new calendar-year and December/January balance decisions.
+
+#### Approvals, offers and letters
+
+**Reference:** `backend/src/modules/workflows/`, `lifecycle/offers/`, `letters/`.
+**Needs:** delegation authority, candidate-subject design, letter approvers and held-request expiry policy. See items 2, 5, 18, 24.
+
+- [ ] **DEFERRED:** approval delegation while away; send-back/resubmit; expiry of requests held for broken routing.
+- [ ] **INTENTIONALLY DEFERRED:** offer approval before sending (skipped 2026-11-16). Implement only when selected,
+  using the existing approvals service with candidate subjects and an agreed chain.
+- [ ] **DECISION NEEDED:** letter-signature approval and user-defined letter kinds/codes; new currently has seven fixed kinds.
+- **PRESENT:** configurable approval chains, SLA actions/escalation/expiry, routing holds/retry, reminders, job/leave/
+  regularization/OD/comp-off/shift-change approvals, editable templates and manual employee-letter issue.
+  Held-request expiry is distinct from the existing timed approval-step expiry.
+
+#### Employees, documents and imports
+
+**Reference:** `backend/src/modules/employees/`, `documents/`, `bulk/registry.ts` and `bulk/importers/`.
+**Needs:** sensitive-column merge rules, expiry-bearing document types and permissions per imported person.
+See items 12, 13, 18 and 27.
+
+- [ ] **DEFERRED:** sensitive ID/bank/statutory import columns (Aadhaar, PAN, UAN, PF/ESIC, salary bank account),
+  encryption, existing-value matching and per-row access checks.
+- [ ] **DEFERRED:** document expiry dates/status and attention filters. Reminder jobs are an additional new need;
+  the previous comparison found no working expiry-reminder job in main.
+- [ ] **DEFERRED with owning module:** salary-assignment/payroll-input, legacy-loan, asset, holiday, statutory-rate
+  and PT-slab imports; preview/commit/discard and error-report workflow. Reuse current imports where sufficient;
+  a generic import framework is not a requirement by itself.
+- **INTENTIONALLY EXCLUDED (2026-11-16):** employee self-service family/nominee change requests, profile editing and
+  employee document uploads. Employees contact HR outside the system; HR edits/uploads. Do not restore main's flow.
+- **PRESENT:** employee import/update/history/error files, punch upload and opening leave-balance import.
+
+#### Loans and advances — DEFERRED
+
+**Reference:** `backend/src/modules/loans/`; payroll Loans page. **Why waiting:** depends on payroll and approved lending policy.
+**Needs:** eligibility, limits, interest, repayment and approval rules.
+
+- [ ] Application/approval, eligibility and amortization preview, immutable posting ledger, payroll repayment,
+  perquisite valuation and legacy SAP/greytHR loan import/reconciliation.
+
+#### Reimbursements and payment batches — DEFERRED
+
+**Reference:** `backend/src/modules/claims/` (including receipts and payments); Claims and ReimbursementPayments pages.
+**Why waiting:** needs entitlements and finance/payment policy; payroll for salary-routed amounts.
+
+- [ ] Entitlements, claims/receipts, approval, direct-payout/payroll routing and year-end recovery.
+- [ ] Eligible-claim payment batches, bank files and paid status; define retry protection and reconciliation.
+
+#### Travel — DEFERRED
+
+**Reference:** `backend/src/modules/travel/`, `frontend/src/pages/travel/`.
+**Why waiting:** core HR comes first. **Needs:** travel approval chains, budgets, advance and settlement rules.
+
+- [ ] Trip requests, itineraries, submit/approve, budgets/reservations/headroom, advances and approvals,
+  expense claims/items, settlement and wallet/ledger; reuse approvals and payment services when available.
+
+#### Assets — INTENTIONALLY DEFERRED until after core HR
+
+**Reference:** `backend/src/modules/assets/`, Assets page. The user explicitly deferred this on 2026-11-20;
+**item 25** owns the fuller new design and HR questions.
+
+- [ ] Register/import, assign/return, maintenance, employee holdings, unreturned assets and exports;
+  connect returnable assets to exit clearance when both modules exist.
+- Main's asset model does not approve the proposed lockers/kits schema in item 25; agree each model first.
+
+#### Helpdesk, engagement and policies — DEFERRED
+
+**Reference:** `backend/src/modules/helpdesk/`, `engagement/`, `policies/`; workplace and policy screens.
+**Why waiting:** core HR first. **Needs:** owners, employee visibility and escalation/acknowledgement rules.
+
+- [ ] Helpdesk categories, tickets, thread/replies, statuses, SLA escalation and performance/export.
+- [ ] Announcements; polls/surveys with responses, results and closing/withdrawal rules.
+- [ ] Policy catalogue/files, publication, employee acknowledgements, outstanding acknowledgements, reminders and reports.
+
+#### Statutory compliance, industrial relations and privacy — DEFERRED
+
+**Reference:** `backend/src/modules/compliance/`, `ird/`, `privacy/`; Compliance page and IRD panels.
+**Why waiting:** dedicated policy/access design required. **Needs:** HR/legal ownership, confidentiality, retention
+and actual registration/filing obligations; verify current legal requirements when implementing.
+
+- [ ] Compliance registrations/retirement, posture, filing calendar, evidence, filing/waiver and expiry/due reminders.
+- [ ] Internal committee, POSH cases/assignment, named or anonymous reporting/status, grievances and whistleblower cases.
+- [ ] Privacy notices/acknowledgements, consents, rights requests/fulfilment/refusal, processor register, breach register,
+  DPO details, personal export, retention and proposed/confirmed purge.
+- **DECISION NEEDED:** retention/purge policy changes to today's retained audit history (item 3b); do not silently
+  delete history. An access-history endpoint/table in main is not evidence of working read auditing: item 3b records
+  that reads were not filled. Decide what to record before promising “who viewed my data”.
+
+#### Accounts, SSO and recruitment integration
+
+**Reference:** `backend/src/modules/auth/`, `sso/`, `ats-bridge/`.
+**Needs:** account ownership/authentication model, identity provider, actual ATS contract and service-actor design.
+See items 3, 15 and 18.
+
+- [ ] **DEFERRED / DECISION NEEDED:** SSO account linking/unlinking, external-account lookup, authorization/token,
+  introspection and logout integration; confirm the provider and required interoperability.
+- [ ] **INTENTIONALLY DEFERRED (phase 7, 2026-11-16):** external ATS employing-entity lookup and accepted-offer ingestion;
+  only needed if an ATS will be used (item 15).
+- [ ] **DECISION NEEDED:** non-employee admin/service accounts; current actors are employee ids or SYSTEM_ACTOR.
+- [ ] **DECISION NEEDED:** increasing lockout duration on repeated lockouts versus the new configurable fixed duration.
+- **PRESENT:** password re-entry, password history/reset codes, session administration, security rules and active-role
+  data access. Reuse these; main's combined-role behaviour is **INTENTIONALLY EXCLUDED** by the 2026-11-23 decision.
+
+#### Dashboards, reports, audit search and feedback
+
+**Reference:** `backend/src/modules/reports/`, `audit/`, `feedback/`; home/executive/report screens.
+**Needs:** scoped source data and agreed metrics/recipients; avoid counting the same capability twice.
+
+- **PRESENT (2026-11-24, selected by the user):** daily-work Home with decisions/request drill-down, own leave and
+  attendance, recent requests, manager/HOD/Attendance View People today, scope selector and Reports & Excel links (item 16).
+  Home separates employee, manager, HR joining-work/pre-joining and administration priorities using active capabilities.
+- **PRESENT (Stage 1, 2026-11-24):** attendance detail, retained raw punches and exceptions at `/attendance-reports`,
+  with calendar-date/place/person/status/exception filters, scoped summaries, paging, night-shift drill-down and full
+  matching Excel exports up to 20,000 attendance days. No schema changes; current placement and stored-day limitations
+  are explicit. See API_TRACKER attendance.reports.* and docs/test-runs/2026-11-24-attendance-reports-home.md.
+- [ ] **Stage 2:** extend/reuse Team requests for regularization/OD reporting; no second request/message store.
+- [ ] **Stage 3:** joiner/recorded-leaver register and probation-due list from existing dates; full exit/review details
+  still wait for the owning workflows.
+- [ ] **DEFERRED with owning modules (Stage 4):** OT, absence-case, probation-outcome, complete attrition, asset,
+  helpdesk, policy and claim reports/exports. Needs their approved business process/schema, not report-only tables.
+- [ ] **Still deferred (Stage 5 / item 16):** broader HR workload trends, payroll/leadership/device-health dashboards,
+  historical headcount/movement/attrition/payroll costs and executive trends/snapshots. Agree metric definitions,
+  historical placement and data access first; no snapshot model approved by Stage 1.
+- [ ] **DEFERRED:** free-text history search, retaining current access rules, filters, integrity checks and export (item 18).
+- [ ] **DEFERRED:** beta feedback with context, screenshot attachment and administrative triage; agree who sees it.
+- **PRESENT:** change history/integrity/export, muster, employee/candidate/job-change exports and combined team-request
+  reports. Preserve original reasons/comments and the known cancellation-history limitation recorded below.
+
+#### Delivery, operations and reference material — DEFERRED release work
+
+**Reference:** `.github/workflows/ci.yml`, `.github/workflows/deploy.yml`, `scripts/deploy.sh`, `scripts/backup.sh`,
+`scripts/restore.sh`, `ecosystem.config.cjs`, `DEPLOY.md`, `backend/src/modules/system/`, old `docs/` and `plans/`.
+**Needs:** chosen hosting/worker/storage topology, credentials handled outside docs, recovery targets and release owner.
+
+- [ ] Adapt CI to new workspaces/checks; design deployment, worker supervision and database migration/cutover for the
+  chosen host. cPanel/GitHub Actions/PM2 from main are references, not an approved hosting choice.
+- [ ] Database and stored-file backup/restore, retention/manifest and a demonstrated restore drill.
+- [ ] Database readiness and broader service health suitable for the new API/worker deployment; preserve existing health.check.
+- [ ] Review old SOW/requirements, phase plans, guides and E2E evidence for uncovered business rules; map relevant
+  requirements to new APIs/tests and write current guides. Old green checks/screenshots do not validate new.
+- **INTENTIONALLY EXCLUDED:** copying old architecture, SQL schema/migration history, hard-coded roles, duplicate
+  stores/services, obsolete plans or stale test results into new as current truth. Adapt useful test scenarios instead.
+- New deployment files/folders or libraries must first follow the structure/approval rules in `CLAUDE.md`.
+
 ## Questions to settle with HR
 
 - **OU / OUMIS and DEPTMIS** (on the "Employment & Job" screen, 2026-11-19): what are they - the company code / SAP code
@@ -665,8 +922,8 @@ moment) and the test setup using the installed Prisma; and the frontend review's
   one)?
 - **Previous-employment table:** what is the unlabeled column on the joining form?
 - **Overseas employees' bank:** do we need SWIFT / IBAN for salary paid abroad?
-- **Reporting manager:** do we store it on the employee? (8 employees in the old HRMS have one; it was not
-  imported.)
+- **Reporting manager — settled:** stored on the employee since phase 1 (2026-11-16, item 0); this is no longer
+  an open HR question (status corrected 2026-11-24).
 
 ### Combined team-request reports (2026-11-24)
 

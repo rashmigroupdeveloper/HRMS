@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 270**
+**Total APIs: 273**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -357,6 +357,9 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 268 | `leave.applications.exportRecounts` | Leave: View | Excel review report |
 | 269 | `leave.types.export` | Logged in | Excel review report |
 | 270 | `approvals.report` | Logged in; team/HOD relationship or scoped area access | Combined leave and attendance request report with messages and history |
+| 271 | `attendance.reports.list` | Logged in; team/HOD relationship or Attendance View | Paged attendance detail/exceptions with scoped summaries and filters |
+| 272 | `attendance.reports.export` | Same as reports.list | All filtered attendance days, summary and Excel review notes |
+| 273 | `attendance.reports.exportPunches` | Same as days.punches | Raw punches owned by one employee work date, with stored provenance |
 
 ---
 
@@ -3115,7 +3118,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Access:** as `employeeMonth`.
 - **Scope:** one's own; someone in the caller's reporting tree or of a place the caller heads as HOD (relationships); anyone else: Attendance View covering the employee (else `404`).
 - **Input:** `{ employeeCode, date }`
-- **Returns:** `[{ at, time ("09:04"), device }]` - the punches that belong to that day (a night shift's morning punch belongs to the night before).
+- **Returns:** `[{ id, employeeCode, at, time ("09:04"), timezone, device, source, uploadId, uploadFile, storedAt }]` (extended 2026-11-24). `employeeCode` is the stored machine code; source is UPLOAD / MANUAL; upload reference/file nullable, storedAt is database creation time, not proof of device receipt. Exact `at` timestamps and work-location time zone accompany the local clock. Only punches owned by this work date are returned, including night-shift exits; no new day is computed or stored.
 - **What it does:** the day's details.
 - **Errors:** `400` · `403` · `404`.
 
@@ -4100,3 +4103,31 @@ leave year is the calendar year.
 - **What it does:** one browsable report of current team's or HOD department's leave, leave cancellations, missed-punch regularisations, OD, comp-off and shift changes across waiting and completed outcomes, independent of whether a step currently waits for this viewer. The Approvals Team requests tab starts with this month's work/leave dates, stores filters/page in the URL and exports through `approvals.export` mode team. Table previews expand in place; export always contains full stored text and all matching pages.
 - **Source boundaries:** reads the original domain records through explicit approval-request relations, with no duplicated message store. When an older source link no longer exists (e.g. a cancellation superseded by a later cancellation), dates/message cannot be reconstructed: RAISED can show it with sourceAvailable false and the retained summary; WORK_DATES requires a linked source with dates. Missing details are labelled, never invented. Approval remarks are stored step comments, not messages sent outside HRMS.
 - **Errors:** `400 BAD_REQUEST` invalid fields/range; `401` no session; `403 FORBIDDEN` ALL without either area. A caller with no current team/HOD relationship gets an empty relationship report. Export cap errors are documented under approvals.export.
+
+
+### `attendance.reports.list`
+- **HTTP:** `POST /api/rpc/attendance/reports/list` · **Code:** `backend/src/modules/attendance/reports/`
+- **Access:** any logged-in employee, with the requested scope checked in the service.
+- **Scope:** TEAM = current reporting-tree ids; DEPARTMENT = current HOD employees; ALL requires Attendance View and that active role's company/plant/department DataScope. No relationship gives an empty list. Supplied company/plant/department/work-location ids and search only narrow this scope. Identical scope applies to rows, total, all summaries and employee-period totals. Picker options contain only scoped employees' current places within the employment/date range, before report filters; no private employee fields returned. No broad Reports permission.
+- **Input:** `{scope?: TEAM|DEPARTMENT|ALL (TEAM), from: Date, to: Date, mode?: DETAIL|EXCEPTIONS (DETAIL), companyIds?, plantIds?, departmentIds?, workLocationIds?, search?, status?, exception?: ANY|LATE|EARLY|ABSENT|MISSED_PUNCH (ANY), page?: number (1), pageSize?: number (25)}`. Dates required UTC-midnight calendar dates, years 2020–2100, inclusive ordered span at most 366 calendar days; independent of the attendance/payroll cycle. Id arrays positive integers, max 100 each. Search trimmed max 100; every word matches code/first/middle/last name. Status is a DayStatus. Exception applies only in EXCEPTIONS mode: late/early minutes >0, ABSENT/MISSED_PUNCH in either half; ANY matches their union. Other filters combine with AND. Page positive integer; size 1–100.
+- **Returns:** `{total,page,pageSize,items,summary,options}`. Rows: id, work date, employee code/name, current company/plant/department, shift code/name, overall/punch-derived/half statuses, first/last punch instants, worked/late/early minutes, stored punch count, calculation note, employee matching-day/late/early totals for the same filtered period. Summary: matching days, distinct employees, worked/late/early minutes, stored punch count, late/early/absent/missed-punch day counts. Counts include either half, not fractional-day absence totals; categories can overlap. Options: authorized companies/plants/departments. Internal employee ids/contacts are not returned.
+- **What it does:** read-only register of stored computed days; does not recompute or infer uncomputed/missing days as absent. Current placement/team membership governs visibility; historical placement is not claimed. Stable order date descending, employee code ascending, id ascending; pages above the end clamp to the last. Count/page/summaries share a repeatable-read transaction. UI `/attendance-reports`: scope, calendar dates, employee search, company/plant/department/status, detail/exception tabs, filter persistence in URL, compact summaries, pagination and existing days.punches drill-down. All-scoped company/group access works through ALL and the existing grants.
+- **Errors:** `400 BAD_REQUEST` invalid input/range; `401` no usable session; `403 FORBIDDEN` ALL without Attendance View. Outside-scope filters return no rows, not expanded access.
+
+### `attendance.reports.export`
+- **HTTP:** `POST /api/rpc/attendance/reports/export` · **Code:** `backend/src/modules/attendance/reports/`
+- **Access:** same as attendance.reports.list.
+- **Scope:** same identity/DataScope and filters as list, including every summary and employee-period total; never just the current page.
+- **Input:** the list filters without page/pageSize; same defaults and validation.
+- **Returns:** XLSX File with Attendance detail or Attendance exceptions, Summary and Review notes sheets. All matching rows, max 20,000; above cap refuses the export, never silently truncates. Codes and exact UTC ISO first/last timestamps are text; minutes/counts are numeric; work dates are date cells. Includes per-half/punch-derived statuses, shift, current placement, employee filtered-period totals and full stored calculation notes.
+- **What it does:** uses the same query and repeatable-read summary as the list; filters, current-placement/time/date limitations and preparer recorded in Review notes. Read-only, no corrections/approvals or payroll changes. No OT pay or penalty inferred.
+- **Errors:** same as list; `400 BAD_REQUEST` over 20,000 matching attendance days, asking for narrower dates/filters.
+
+### `attendance.reports.exportPunches`
+- **HTTP:** `POST /api/rpc/attendance/reports/exportPunches` · **Code:** `backend/src/modules/attendance/reports/`
+- **Access:** logged in, same as attendance.days.punches.
+- **Scope:** checks the employee first through the existing own/reporting-tree/HOD/Attendance View reader; outside View returns NOT_FOUND. Uses exactly the same shift-owned punches as the screen, including overnight exits and night-to-morning handover rules.
+- **Input:** `{employeeCode, date}` as attendance.days.punches.
+- **Returns:** XLSX File: Raw punches and Review notes; stored machine code, exact UTC ISO punch timestamp, work-location local clock/time zone, device, source, upload reference/file and exact UTC ISO storedAt. Codes and source filenames are safe string cells, not formulas.
+- **What it does:** exports retained punches for one attendance work date; not a lossless original machine payload, rejected/duplicate-input report or unmatched-code report. Does not invent card/direction/GPS/door fields. StoredAt is database storage time. No record changes.
+- **Errors:** `400` invalid input or more than 20,000 punches in the work date; `401` no usable session; `404 NOT_FOUND` unknown/outside-scope employee.

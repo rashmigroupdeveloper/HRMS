@@ -34,7 +34,7 @@ export function AppLayout() {
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
   const activeRole = me.data?.availableRoles.find((role) => role.id === me.data.activeRoleId)?.name ?? 'Employee'
-  const switchingRole = me.data?.availableRoles.find((role) => role.id === location.state?.switchRoleTo)
+  const switchingRole = me.data?.availableRoles.find((role) => role.id === location.state?.switchRoleTo && role.id !== me.data?.activeRoleId)
   const switchingRoleId = switchingRole?.id
   useEffect(() => {
     if (switchingRoleId === undefined) return
@@ -86,6 +86,7 @@ export function AppLayout() {
   ]
   // the set-up pages - under "More" on wide screens
   const moreItems: NavItem[] = [
+    ...(seesTeamAttendance ? [{ to: '/attendance-reports', label: 'Attendance reports', short: 'Reports' }] : []),
     // the tasks given to me (Joining tasks), or all of them (Onboarding) - moved here from the bar on 2026-11-22, when Leave
     // was added and the bar no longer fitted at 1440 px
     ...(can('JOINING_TASKS') || can('ONBOARDING') || can('JOINING_TASK_TYPES') ? [{ to: '/joining-tasks', label: 'Joining checklist', short: 'Checklist' }] : []),
@@ -227,7 +228,7 @@ export function AppLayout() {
       {/* narrow screens: every page, then the account */}
       {me.data && (
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-          <SheetContent side="right" className="gap-0 overflow-y-auto border-0 bg-background">
+          <SheetContent side="right" className="sheet-travel gap-0 overflow-y-auto border-0 bg-background">
             <SheetHeader className="flex-row items-center gap-3 p-5 pr-14">
               <span className="grid size-10 shrink-0 place-items-center rounded-full bg-gold-soft text-sm font-semibold">{me.data.name.slice(0, 1)}</span>
               <div className="min-w-0">

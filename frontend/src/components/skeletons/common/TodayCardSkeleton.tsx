@@ -12,9 +12,9 @@ export function TodayCardSkeleton({ label = 'Loading', className }: { label?: st
       </span>
       <div>
         <p className="text-xs text-muted-foreground">Today</p>
-        <p className="flex h-5 items-center">
+        <div className="flex h-5 items-center">
           <Skeleton className="h-3.5 w-20 rounded-full" />
-        </p>
+        </div>
       </div>
     </div>
   )

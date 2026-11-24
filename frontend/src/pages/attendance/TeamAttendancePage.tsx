@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Navigate, useSearchParams } from 'react-router'
+import { Link, Navigate, useSearchParams } from 'react-router'
 import { FormError } from '@/components/FormError'
 import { TeamAttendanceSkeleton } from '@/components/skeletons/attendance/TeamAttendanceSkeleton'
 import { orpc } from '@/lib/orpc'
@@ -32,6 +32,7 @@ export function TeamAttendancePage() {
   return (
     <div className="space-y-6">
       <header>
+        <Link to="/attendance-reports" className="float-right flex min-h-10 items-center text-sm underline underline-offset-4">Reports</Link>
         <p className="text-sm text-muted-foreground">Time &amp; shifts</p>
         <h1 className="mt-1 text-3xl font-light tracking-tight sm:text-4xl">Team attendance</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">{subtitle}</p>

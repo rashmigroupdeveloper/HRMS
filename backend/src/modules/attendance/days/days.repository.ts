@@ -62,7 +62,7 @@ export function listPunches(employeeIds: number[], from: Date, to: Date, db: DbC
   return db.punch.findMany({
     where: { employeeId: { in: employeeIds }, punchedAt: { gte: from, lte: to } },
     orderBy: { punchedAt: 'asc' },
-    select: { employeeId: true, punchedAt: true, device: true },
+    select: { id: true, employeeId: true, employeeCode: true, punchedAt: true, device: true, source: true, uploadId: true, createdAt: true, upload: { select: { fileName: true } } },
   })
 }
 

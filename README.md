@@ -93,7 +93,7 @@ HRMS_NEW/
 │     │  ├─ attendance/         sub-folders: shifts/ (shifts, default shifts, roster patterns) holidays/ punches/ (machine
 │     │  │                      uploads, unmatched codes) days/ (each day worked out, month, board, muster, corrections)
 │     │  │                      rosters/ shift-changes/ (employee -> manager -> HR) regularizations/ (missed punch / on
-│     │  │                      duty requests, through approval); attendance.jobs.ts (nightly close)
+│     │  │                      duty requests, through approval); reports/ (scoped detail/exceptions and raw-punch Excel); attendance.jobs.ts (nightly close)
 │     │  ├─ leave/              sub-folders: types/ (leave types and their rules) balances/ (the ledger: monthly credits,
 │     │  │                      year-end lapse, HR's adjustments, the register) applications/ (apply, withdraw, cancel -
 │     │  │                      through approval; its leave on the attendance days); leave.jobs.ts (credits)
@@ -133,10 +133,25 @@ HRMS_NEW/
       └─ pages/<feature>/  one folder per feature (auth/ login + change password, home/, onboarding/ list + one page per candidate, employees/
                            directory + profile, organization/ masters, access/ roles + logins, letter-templates/
                            list + one page per template with the Word-like letter editor, joining-tasks/ My tasks + the task list,
-                           attendance/ one page: my month, my team, everyone (board + muster), roster, approvals, setup,
+                           attendance/ My attendance, Team attendance (board + muster), Attendance setup and Attendance reports,
                            leave/ My leave (balances, applying, history) + Team leave (who is away, the register, leave types),
                            offer-response/ the candidate's public offer page + their joining form after accepting, not-found/)
 ```
+
+## Home and attendance reports (2026-11-24)
+
+Home adapts to the active role's capabilities and actual team/HOD relationships: employees see their attendance
+cycle, managers see decisions and scoped People today, HR sees open joining tasks and accepted offers awaiting joining,
+and administrators get their permitted administration links first. Own leave, recent requests and profile/documents
+remain available. The cream/charcoal/gold layout takes visual cues from Crextio and business priorities from main.
+It reuses existing typed APIs, without schema changes, role-name checks or invented payroll/KPI values. Switching
+roles reloads once; an already-active role does not restart the switch transition.
+
+`/attendance-reports` shows attendance detail and exceptions over explicit calendar work dates. People scope, dates,
+search, company/plant/department/status and exception filters persist in the URL. Summaries cover every matching page;
+Excel exports all matching stored rows (maximum 20,000, refusing larger files). Whole-company/group viewing and exports
+follow Attendance View data access. Raw-punch drill-down/export reuses night-shift ownership and shows only retained
+source metadata. Missing days are not inferred as absence; current placement/team membership is used.
 
 ## Getting started
 

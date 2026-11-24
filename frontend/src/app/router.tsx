@@ -1,3 +1,4 @@
+import { AttendanceReportsPage } from '@/pages/attendance/AttendanceReportsPage'
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { RequireAccess, RequireLogin } from '@/components/RouteGuards'
@@ -69,6 +70,7 @@ export const router = createBrowserRouter([
           { path: 'attendance', element: <MyAttendancePage /> },
           // others' attendance: a team, an HOD department or Attendance: View (nobody to see: back to /attendance)
           { path: 'team-attendance', element: <TeamAttendancePage /> },
+          { path: 'attendance-reports', element: <AttendanceReportsPage /> },
           // everyone's own leave (2026-11-22); others' (a team, an HOD department or Leave: View - nobody to see: back to /leave)
           { path: 'leave', element: <LeavePage /> },
           { path: 'team-leave', element: <TeamLeavePage /> },
