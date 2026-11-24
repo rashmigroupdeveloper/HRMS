@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { EmptyState } from '@/components/EmptyState'
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAccess } from '@/hooks/useAccess'
-import { orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { fromDateInput, toDateInput } from '@/lib/utils'
 import { daysText, spanText } from './labels'
 
@@ -35,6 +36,7 @@ export function LeaveRecounts() {
           Approved leave whose days the calendar now counts otherwise - a holiday added or removed on it, a weekly off changed. It keeps the days it was approved with until you put it right; the employee is e-mailed.
         </p>
         <div className="flex flex-wrap items-end gap-2">
+          <ExportButton disabled={!span.from || !span.to || !list.data?.length || list.isFetching} load={() => client.leave.applications.exportRecounts({from:span.from!,to:span.to!})} />
           <div className="space-y-1">
             <Label htmlFor="rc-from" className="text-xs text-muted-foreground">
               Leave from

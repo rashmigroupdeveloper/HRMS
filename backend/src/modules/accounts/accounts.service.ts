@@ -1,3 +1,4 @@
+import { writeReport } from '#core/excel/report'
 import { ACCESS_AREAS, assertAccess, hasAccess, higherLevel, type AccessMap } from '#core/auth/access'
 import { assertPasswordConfirmed } from '#core/auth/confirm'
 import { ALL_OF_GROUP, beyondGiver, hasLevelAt, levelOver, type Placement, type RoleGrant, scopeAllows, scopeOf, type ScopeRow, sliceCovers } from '#core/auth/scope'
@@ -6,7 +7,6 @@ import { generatePassword, hashPassword, verifyPassword } from '#core/auth/passw
 import { clearSessionCookie, hashSessionToken, newSessionToken, readSessionToken, writeSessionCookie } from '#core/auth/session'
 import { env } from '#core/config/env'
 import { prisma, SYSTEM_ACTOR, type AccessArea, type AccessLevel, type DbClient, type EmployeeStatus } from '#core/db/prisma'
-import { writeWorkbook } from '#core/excel/workbook'
 import { sendMail } from '#core/mail/mailer'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { employeesService, hodsService } from '#modules/employees'
@@ -868,7 +868,7 @@ export async function endAllSessions(user: CurrentUser, { employeeCode }: z.infe
 export async function exportAccess(viewer: CurrentUser) {
   const [{ areas, roles }, accounts] = await Promise.all([rolesService.listRoles(), listAccounts(viewer)])
   const level = { READ: 'View', WRITE: 'Edit' } as const
-  const bytes = await writeWorkbook([
+  const bytes = await writeReport([
     {
       name: 'Roles',
       columns: [
@@ -903,7 +903,7 @@ export async function exportAccess(viewer: CurrentUser) {
         lastLogin: a.lastLoginAt ? a.lastLoginAt.toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : 'Never',
       })),
     },
-  ])
+  ], { title: 'Roles and access', preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage: 'All roles; employee logins within the active role data scope.' })
   return new File([new Uint8Array(bytes)], `roles-and-access-${today().toISOString().slice(0, 10)}.xlsx`, {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   })

@@ -153,7 +153,7 @@ export function OrganizationPage() {
 
         <TabsContent value="companies" className="mt-5">
           <MasterSection
-            title="Companies"
+            title="Companies" exportSection="companies"
             singular="company"
             about="A legal entity of the group. Its employer details are printed on EPF Form 11, ESIC Form 1 and Gratuity Form F."
             canChange={canChange}
@@ -352,7 +352,7 @@ export function OrganizationPage() {
 
         <TabsContent value="work-locations" className="mt-5">
           <MasterSection
-            title="Work locations"
+            title="Work locations" exportSection="workLocations"
             singular="work location"
             about="A place where people work - any company can use it. Its state decides Professional Tax and LWF."
             canChange={canChange}
@@ -441,12 +441,12 @@ export function OrganizationPage() {
         </TabsContent>
 
         <TabsContent value="regions" className="mt-5">
-          <MasterSection title="Regions" canChange={canChange} shared rows={regions.data ?? []} loading={regions.isPending} {...nameOnly('region', client.organization.regions)} />
+          <MasterSection title="Regions" exportSection="regions" canChange={canChange} shared rows={regions.data ?? []} loading={regions.isPending} {...nameOnly('region', client.organization.regions)} />
         </TabsContent>
 
         <TabsContent value="plants" className="mt-5">
           <MasterSection
-            title="Plants"
+            title="Plants" exportSection="plants"
             singular="plant"
             about="An SAP plant of one company. After saving, tick the departments that run at it."
             canChange={canChange}
@@ -568,7 +568,7 @@ export function OrganizationPage() {
 
         <TabsContent value="cost-centres" className="mt-5">
           <MasterSection
-            title="Cost centres"
+            title="Cost centres" exportSection="costCenters"
             singular="cost centre"
             about="An SAP cost centre of one company, optionally tied to one of its plants."
             canChange={canChange}
@@ -653,7 +653,7 @@ export function OrganizationPage() {
 
         <TabsContent value="departments" className="mt-5">
           <MasterSection
-            title="Departments"
+            title="Departments" exportSection="departments"
             singular="department"
             about="Shared by every company - tick it at each plant where it runs (Plants tab)."
             canChange={canChange}
@@ -679,7 +679,7 @@ export function OrganizationPage() {
         </TabsContent>
         <TabsContent value="designations" className="mt-5">
           <MasterSection
-            title="Designations"
+            title="Designations" exportSection="designations"
             canChange={canChange}
             shared
             rows={designations.data ?? []}
@@ -688,11 +688,11 @@ export function OrganizationPage() {
           />
         </TabsContent>
         <TabsContent value="positions" className="mt-5">
-          <MasterSection title="Positions" canChange={canChange} shared rows={positions.data ?? []} loading={positions.isPending} {...nameOnly('position', client.organization.positions)} />
+          <MasterSection title="Positions" exportSection="positions" canChange={canChange} shared rows={positions.data ?? []} loading={positions.isPending} {...nameOnly('position', client.organization.positions)} />
         </TabsContent>
         <TabsContent value="grades" className="mt-5">
           <MasterSection
-            title="Grades"
+            title="Grades" exportSection="grades"
             singular="grade"
             about="A seniority level. The rank orders grades: 1 is the most senior."
             canChange={canChange}
@@ -725,7 +725,7 @@ export function OrganizationPage() {
 
         <TabsContent value="salary-components" className="mt-5">
           <MasterSection
-            title="Salary components"
+            title="Salary components" exportSection="salaryComponents"
             singular="salary component"
             about="A line of the salary breakup in offer letters, or a deduction on the payslip."
             canChange={canChange}

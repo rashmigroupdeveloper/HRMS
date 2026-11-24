@@ -1,3 +1,4 @@
+import { reportFile, reportSheet } from '#core/excel/report'
 import { scopeOf, SYSTEM_SCOPE } from '#core/auth/scope'
 import { hasAccess } from '#core/auth/access'
 import { prisma, type DbClient } from '#core/db/prisma'
@@ -214,4 +215,23 @@ export async function setPublishedDay(employeeId: number, date: Date, shiftId: n
     return
   }
   await rostersRepository.upsertEntry({ employeeId, date, shiftId, publish: true }, actorId, db)
+}
+
+export async function exportGrid(viewer: CurrentUser,input:z.infer<typeof rosterGridInput>){
+  const grid=await getGrid(viewer,input)
+  const shift=(id:number|null)=>id===null?'Off':grid.shifts.find(s=>s.id===id)?.code??'Unknown shift'
+  return reportFile([reportSheet('Roster',grid.rows,[
+    {header:'Employee code',text:true,value:r=>r.employeeCode},{header:'Employee',value:r=>r.name},
+    {header:'Department',value:r=>r.department},{header:'Designation',value:r=>r.designation},
+    ...grid.days.map(date=>({header:date.toISOString().slice(0,10),width:24,value:(r:typeof grid.rows[number])=>{
+      const c=r.cells.find(c=>c.date.getTime()===date.getTime())!
+      return c.entry?`${shift(c.entry.shiftId)} (${c.entry.published?'Published':'Draft'})`:
+        c.planned.kind==='HOLIDAY'?`Holiday: ${c.planned.holiday??''}`:
+        c.planned.kind==='WEEKLY_OFF'?'Off':`${shift(c.planned.shiftId)}${c.planned.halfDay?' (half day)':''}`
+    }})),
+  ])],{title:'Attendance roster',preparedBy:`${viewer.name} (${viewer.employeeCode})`,
+    coverage:'Same authorized employees and date range as the roster grid. Draft and published overrides are explicitly labelled; other cells show the plan.',
+    filters:[{label:'From',value:input.from.toISOString().slice(0,10)},{label:'To',value:input.to.toISOString().slice(0,10)},
+    {label:'Search',value:input.search||'All'},{label:'Changed employees only',value:input.onlyChanges?'Yes':'No'}],
+  },'attendance-roster')
 }

@@ -32,3 +32,7 @@ export function refreshAfterDecision(queryClient: QueryClient) {
     void queryClient.invalidateQueries({ queryKey: key })
   }
 }
+
+// Change the real rows and the skeleton together; all headings remain real text while values load.
+export const TEAM_REPORT_COLUMNS = ['Employee', 'Request', 'Dates', 'Employee message', 'Status & remarks']
+export const TEAM_REPORT_WIDTHS = ['17%', '14%', '14%', '29%', '26%']

@@ -1,5 +1,6 @@
 import { accessProcedure, authedProcedure } from '#core/rpc/procedures'
 import {
+  exportTasksInput,
   assigneesInput,
   assignTaskInput,
   completeTaskInput,
@@ -19,7 +20,9 @@ const hrProcedure = accessProcedure('ONBOARDING', 'WRITE')
 const typesProcedure = accessProcedure('JOINING_TASK_TYPES', 'WRITE')
 
 export const joiningTasksRouter = {
+  export: authedProcedure.input(exportTasksInput).handler(({ input, context }) => joiningTasksService.exportTasks(input, context.user)),
   types: {
+    export: authedProcedure.input(listTaskTypesInput).handler(({ input, context }) => joiningTasksService.exportTaskTypes(context.user, input?.includeInactive)),
     list: authedProcedure.input(listTaskTypesInput).handler(({ input, context }) => joiningTasksService.listTaskTypes(context.user, input?.includeInactive)),
     create: typesProcedure.input(createTaskTypeInput).handler(({ input, context }) => joiningTasksService.createTaskType(input, context.user)),
     update: typesProcedure.input(updateTaskTypeInput).handler(({ input, context }) => joiningTasksService.updateTaskType(input, context.user)),

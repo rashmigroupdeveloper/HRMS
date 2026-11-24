@@ -33,3 +33,5 @@ export const removeCorrectionInput = z.object({ employeeCode: employeeCodeSchema
 
 // The punches of one employee on one day (the day's details)
 export const dayPunchesInput = z.object({ employeeCode: employeeCodeSchema, date: z.date() })
+
+export const exportMonthInput = monthSchema.extend({ employeeCode: employeeCodeSchema.optional() })

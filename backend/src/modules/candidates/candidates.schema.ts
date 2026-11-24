@@ -32,6 +32,9 @@ export const listCandidatesInput = z
   .object({ status: z.enum(CandidateStatus).optional(), companyId: idSchema.optional() })
   .optional()
 
+// Export accepts grouped lifecycle filters used by the board, while retaining the list's company/single-status filters.
+export const exportCandidatesInput = listCandidatesInput.unwrap().extend({statuses:z.array(z.enum(CandidateStatus)).max(20).optional()}).optional()
+
 export const createCandidateInput = z.object({
   // person
   salutation: z.enum(Salutation).optional(),

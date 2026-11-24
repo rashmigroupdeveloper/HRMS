@@ -3,6 +3,7 @@ import { employeeDocumentsRouter } from './documents/documents.router.js'
 import {
   addEmployeeInput,
   directoryInput,
+  exportDirectoryInput,
   orgChartInput,
   exportEmployeesInput,
   getEmployeeByCodeInput,
@@ -22,6 +23,7 @@ import * as employeesService from './employees.service.js'
 
 // Routes + controller layer: auth, input validation -> service -> result. No business logic here.
 export const employeesRouter = {
+  exportDirectory: authedProcedure.input(exportDirectoryInput).handler(({input,context})=>employeesService.exportDirectory(context.user,input)),
   // The employee directory: search + filters, one page at a time.
   list: accessProcedure('EMPLOYEES', 'READ')
     .input(listEmployeesInput)

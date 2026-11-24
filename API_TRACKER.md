@@ -80,7 +80,10 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 ## Summary
 
-**Total APIs: 250**
+
+**Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
+
+**Total APIs: 266**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -334,6 +337,22 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 248 | `leave.compOff.claim` | Logged in (their own) | claims comp-off for work on a weekly off / holiday - goes for approval |
 | 249 | `leave.compOff.cancel` | the employee (their own) | withdraws a claim still waiting |
 | 250 | `leave.compOff.mine` | Logged in | the employee's comp-off claims |
+| 251 | `organization.export` | Organization: View | Excel review report |
+| 252 | `approvals.export` | Logged in; held mode additionally Approval chains: Edit | Excel review report |
+| 253 | `approvals.chains.export` | Approval chains: View | Excel review report |
+| 254 | `attendance.days.exportMonth` | Logged in; another employee as employeeMonth | Excel review report |
+| 255 | `attendance.days.exportBoard` | Logged in; as board | Excel review report |
+| 256 | `attendance.exportSetup` | Attendance setup: View; locks additionally group-wide Edit | Excel review report |
+| 257 | `attendance.rosters.export` | Attendance setup: View | Excel review report |
+| 258 | `employees.exportDirectory` | Logged in | Excel review report |
+| 259 | `employees.hods.export` | Logged in; heads additionally HOD appointments: View | Excel review report |
+| 260 | `joiningTasks.export` | Logged in; MINE Joining tasks: View, ALL Onboarding: View | Excel review report |
+| 261 | `joiningTasks.types.export` | As joiningTasks.types.list | Excel review report |
+| 262 | `leave.applications.export` | Logged in; as applications.list | Excel review report |
+| 263 | `leave.applications.exportMine` | Logged in | Excel review report |
+| 264 | `leave.applications.exportRecounts` | Leave: View | Excel review report |
+| 265 | `leave.types.export` | Logged in | Excel review report |
+| 266 | `approvals.report` | Logged in; team/HOD relationship or scoped area access | Combined leave and attendance request report with messages and history |
 
 ---
 
@@ -450,6 +469,8 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 - **What it does:** the directory as an Excel file (old HRMS export, 2026-11-16). The "PF / ESIC numbers to record"
   column only with Employee · IDs, bank & statutory View.
 - **Errors:** `400` invalid input · `403` (see Access).
+
+- **Review format (2026-11-24):** shared Excel review-report formatting and separate Review notes sheet described above; existing data columns and authorization retained. More than 20,000 matching records returns `400 BAD_REQUEST` with instructions to narrow filters; no silently truncated workbook.
 
 ### `employees.search`
 - **HTTP:** `POST /api/rpc/employees/search` · **Code:** `backend/src/modules/employees/`
@@ -1277,6 +1298,8 @@ access.
 - **What it does:** the roles x access table as Excel (old HRMS, 2026-11-16).
 - **Errors:** `403` (see Access).
 
+- **Review format (2026-11-24):** shared Excel review-report formatting and separate Review notes sheet described above; existing data columns and authorization retained.
+
 ### `accounts.roles.create`
 - **HTTP:** `POST /api/rpc/accounts/roles/create` · **Code:** `backend/src/modules/accounts/roles/`
 - **Access:** Roles & access: Edit.
@@ -1407,6 +1430,10 @@ together with their time, e.g. when a changed offer goes back to draft). Calenda
   joined as, close reason.
 - **What it does:** the "Offers & candidates" report (2026-11-16, inspired by the old HRMS's R21).
 - **Errors:** `400` · `403`.
+- **Review format (2026-11-24):** shared Excel review-report formatting and separate Review notes sheet described above; existing data columns and authorization retained.
+
+- **Lifecycle groups (2026-11-24):** optional `statuses` array, up to 20 valid CandidateStatus values, narrows the authorized rows after existing status/company filters. Omitted = every status; empty = none. Onboarding sends the current lifecycle group, so the report matches its table.
+
 ### `candidates.get`
 - **HTTP:** `POST /api/rpc/candidates/get` · **Code:** `backend/src/modules/candidates/`
 - **Access:** Onboarding: View.
@@ -2770,6 +2797,8 @@ profile's Letters tab (and on one's own `/me`).
   Values the caller may not see are "(hidden)", as on the page.
 - **What it does:** the change history as an Excel file (2026-11-16, inspired by the old HRMS's download).
 - **Errors:** `400` · `403`.
+- **Review format (2026-11-24):** shared Excel review-report formatting and separate Review notes sheet described above; existing data columns and authorization retained. More than 20,000 matching records returns `400 BAD_REQUEST` with instructions to narrow filters; no silently truncated workbook.
+
 ### `employeeLetters.list`
 - **HTTP:** `POST /api/rpc/employeeLetters/list` · **Code:** `backend/src/modules/employee-letters/`
 - **Access:** own record: any logged-in employee; someone else's: Employee · Directory & job: View + Employee · Documents & letters:
@@ -3010,6 +3039,8 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Returns:** a file `muster-YYYY-MM.xlsx` (codes per day - two halves as `P/WO` -, `*` = late, totals in halves, and a sheet explaining the codes).
 - **What it does:** the muster as Excel.
 - **Errors:** `400` · `403`.
+
+- **Review format (2026-11-24):** shared Excel review-report formatting and separate Review notes sheet described above; existing data columns and authorization retained.
 
 ### `attendance.days.punches`
 - **HTTP:** `POST /api/rpc/attendance/days/punches` · **Code:** `backend/src/modules/attendance/days/`
@@ -3628,6 +3659,8 @@ salary figures). One open change per employee at a time (waiting for approval, o
 - **What it does:** the list as Excel.
 - **Errors:** `400` · `403`.
 
+- **Review format (2026-11-24):** shared Excel review-report formatting and separate Review notes sheet described above; existing data columns and authorization retained. More than 20,000 matching records returns `400 BAD_REQUEST` with instructions to narrow filters; no silently truncated workbook.
+
 ### `jobChanges.cancel`
 - **HTTP:** `POST /api/rpc/jobChanges/cancel` · **Code:** `backend/src/modules/job-changes/`
 - **Access:** waiting for approval: the requester, or Employees: Edit covering the employee; approved and not in force: Employees: Edit covering the employee.
@@ -3709,6 +3742,8 @@ leave year is the calendar year.
 - **Returns:** a file `leave-balances-YYYY.xlsx` (per type: the balance and the days taken in the year).
 - **What it does:** the register as Excel.
 - **Errors:** `400` · `403`.
+
+- **Review format (2026-11-24):** shared Excel review-report formatting and separate Review notes sheet described above; existing data columns and authorization retained.
 
 ### `leave.balances.adjust`
 - **HTTP:** `POST /api/rpc/leave/balances/adjust` · **Code:** `backend/src/modules/leave/balances/`
@@ -3850,3 +3885,150 @@ leave year is the calendar year.
 - **Returns:** the viewer's claims (latest 50), as `claim`.
 - **What it does:** the employee's comp-off claims and where they stand.
 - **Errors:** `401`.
+
+### `organization.export`
+- **HTTP:** `POST /api/rpc/organization/export` · **Code:** `backend/src/modules/organization/`
+- **Access:** Organization: View.
+- **Scope:** Not limited by data access: shared organization reference lists, using the same authorized `list*For` readers as Organization. Client IDs only narrow the result; they cannot authorize a record.
+- **Input:** `{ section, ids, selection? }`: section is companies/plants/costCenters/workLocations/departments/designations/regions/positions/grades/salaryComponents; `ids`: up to 20,000 positive IDs, in display order; `selection`: optional text up to 300 characters.
+- **Returns:** Excel File with report data and Review notes. One worksheet of explicit master fields and status, plus Review notes. Unknown IDs are ignored; duplicates removed. Current client search, status, attention filter and sorting are represented by the selected IDs.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `approvals.export`
+- **HTTP:** `POST /api/rpc/approvals/export` · **Code:** `backend/src/modules/approvals/`
+- **Access:** Logged in; held mode additionally Approval chains: Edit.
+- **Scope:** Same readers as the corresponding inbox tab: named relationships, selected-role approver pools, own requests or held requests within Approval chains Edit data access.
+- **Input:** `{ mode, feature? }`: mode waiting/decided/mine/held; feature optional string up to 50 characters.
+- **Returns:** Excel File with report data and Review notes. Request identifiers, employee, kind, summary, status, raised-by/time, open step, due date, hold and close details, plus your decision status/time/comment where present. Mine is latest 100; decided latest 200, then narrowed by feature, matching the page. Other modes export their complete authorized list.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+- **Team report mode (2026-11-24):** `mode: 'team'` accepts the filters of `approvals.report` without page/pageSize. Uses that report's identity/area scopes and exports all matches in a repeatable-read snapshot, max 20,000. Above the cap returns `400 BAD_REQUEST`, never a partial file. Workbook: Team requests (full messages, dates/portion/days where stored, overall status/current step, remarks, provenance and withdrawal/hold reasons), Approval history (one row per recorded step outcome/comment with person/time/automatic flag), Review notes. Job/salary requests excluded. No approval or record changes. Existing waiting/decided/mine/held modes are unchanged.
+
+### `approvals.chains.export`
+- **HTTP:** `POST /api/rpc/approvals/chains/export` · **Code:** `backend/src/modules/approvals/chains/`
+- **Access:** Approval chains: View.
+- **Scope:** Not limited by data access: shared and company routing definitions, matching `approvals.chains.list`. Does not export approval-request content.
+- **Input:** None.
+- **Returns:** Excel File with report data and Review notes. One row per configured approval step: request kind, company/shared, active state, step, approver type, role/area/named person, confidentiality, SLA/breach action and modification provenance. Empty and unconfigured chains have explicit rows with blank step values.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `attendance.days.exportMonth`
+- **HTTP:** `POST /api/rpc/attendance/days/exportMonth` · **Code:** `backend/src/modules/attendance/days/`
+- **Access:** Logged in; another employee as employeeMonth.
+- **Scope:** Own identity or the same reporting-tree, HOD department or Attendance View data access check as `attendance.days.employeeMonth`. Out-of-range employee is not found.
+- **Input:** `{ year, month, employeeCode? }`: year/month use month input rules; employeeCode optional valid employee code, omitted means caller.
+- **Returns:** Excel File with report data and Review notes. Attendance-day worksheet for the actual configured cycle: date/status, halves, shift/holiday, local in/out clock times, worked/late/early minutes, correction reason. Review notes identify employee, exact cycle and lock state.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `attendance.days.exportBoard`
+- **HTTP:** `POST /api/rpc/attendance/days/exportBoard` · **Code:** `backend/src/modules/attendance/days/`
+- **Access:** Logged in; as board.
+- **Scope:** Identical to `attendance.days.board`: TEAM reporting relationship, DEPARTMENT HOD relationship, or ALL Attendance View data access.
+- **Input:** Same as `attendance.days.board`: date, scope TEAM/DEPARTMENT/ALL (default TEAM), optional search, companyIds, workLocationIds, departmentIds.
+- **Returns:** Excel File with report data and Review notes. One row per authorized employee on the selected date, with code/name/company/department, state, shift, in/out, worked/late minutes and correction reason.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `attendance.exportSetup`
+- **HTTP:** `POST /api/rpc/attendance/exportSetup` · **Code:** `backend/src/modules/attendance/`
+- **Access:** Attendance setup: View; locks additionally group-wide Edit.
+- **Scope:** Shared shifts/patterns/policies/holidays and ingestion metadata match their existing readers and are not restricted by employee data access. Schedules use Attendance setup View data access. Locks call the existing group-wide Edit reader.
+- **Input:** `{ section, year?, schedules? }`: shifts/patterns/policies/holidays/punches/schedules/locks. Year integer 2020-2100, required for holidays/locks. Schedules optional same filters as `attendance.shifts.schedules` (search, company/plant/department/cost-center ID arrays, patternId, policyId).
+- **Returns:** Excel File with report data and Review notes. Selected setup section: current effective definitions including retired records and labelled upcoming timings, cycle/default changes and policy rules; selected-year holidays/month locks; scoped current employee schedules; or latest 30 uploads plus unmatched codes in separate sheets. Does not export raw matched biometric punches.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `attendance.rosters.export`
+- **HTTP:** `POST /api/rpc/attendance/rosters/export` · **Code:** `backend/src/modules/attendance/rosters/`
+- **Access:** Attendance setup: View.
+- **Scope:** Same as roster grid: Attendance setup View data access on employees, narrowed by company and search filters.
+- **Input:** Same as `attendance.rosters.grid`: required from/to dates (at most six weeks, validated by reader), optional companyIds, search (100 characters), onlyChanges boolean.
+- **Returns:** Excel File with report data and Review notes. Employee rows and a column per selected date. Draft/published overrides labelled explicitly; other cells show the planned shift/off/holiday. Exports stored data, not unsaved edits.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `employees.exportDirectory`
+- **HTTP:** `POST /api/rpc/employees/exportDirectory` · **Code:** `backend/src/modules/employees/`
+- **Access:** Logged in.
+- **Scope:** Not limited by role data access, exactly like the public work directory. TEAM uses the reporting relationship; DEPARTMENT actual HOD relationship. Only basic work fields, never HR-only personal/identity/bank/salary fields.
+- **Input:** Same optional input as `employees.directory`: group TEAM/DEPARTMENT (omitted everyone), search up to 100 characters, companyIds up to 100, plantIds up to 200, departmentIds up to 100; no pagination fields.
+- **Returns:** Excel File with report data and Review notes. All matching currently working colleagues, maximum 20,000; code, name, designation, company, plant, department, location, work email, manager and joined date. Above limit returns BAD_REQUEST asking for narrower filters, never a partial workbook.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `employees.hods.export`
+- **HTTP:** `POST /api/rpc/employees/hods/export` · **Code:** `backend/src/modules/employees/hods/`
+- **Access:** Logged in; heads additionally HOD appointments: View.
+- **Scope:** Department view uses actual current HOD relationship via `myDepartment`, independent of active role. Heads view uses `listPlaces` with HOD appointments View data access.
+- **Input:** `{ view, postId?, search?, onlyGaps? }`: view department/heads; optional positive post ID for department; search trimmed up to 200 characters; onlyGaps for heads.
+- **Returns:** Excel File with report data and Review notes. Department employee work fields, filtered by post and search; or head-coverage rows (company/plant/department, head count, current/next HOD and dates), optionally unheaded populated departments only.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `joiningTasks.export`
+- **HTTP:** `POST /api/rpc/joiningTasks/export` · **Code:** `backend/src/modules/joining-tasks/`
+- **Access:** Logged in; MINE Joining tasks: View, ALL Onboarding: View.
+- **Scope:** Uses `joiningTasks.list` unchanged: assigned-to-caller tasks and Joining tasks View data access for MINE, Onboarding View data access for ALL.
+- **Input:** `{ scope, status, team?, search?, ids? }`: same list input, scope default MINE, status default OPEN; ids optionally up to 1,000 positive task IDs narrowing quick-filtered visible rows.
+- **Returns:** Excel File with report data and Review notes. Employee, company/department, task/team, due, assignee, status and completion provenance. Same list window: up to 1,000 open or latest 200 done tasks. Review notes state coverage explicitly. Client IDs only narrow the authorized reader result.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `joiningTasks.types.export`
+- **HTTP:** `POST /api/rpc/joiningTasks/types/export` · **Code:** `backend/src/modules/joining-tasks/`
+- **Access:** As joiningTasks.types.list.
+- **Scope:** Not limited by data access: shared task-type definitions. Existing reader requires Joining task types View for inactive types, or Onboarding Edit for active joining-form choices.
+- **Input:** Optional `{ includeInactive?: boolean }`.
+- **Returns:** Excel File with report data and Review notes. Task, description, team, due days, joining types, default assignee and active/retired status, using the same authorized task-type reader.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `leave.applications.export`
+- **HTTP:** `POST /api/rpc/leave/applications/export` · **Code:** `backend/src/modules/leave/applications/`
+- **Access:** Logged in; as applications.list.
+- **Scope:** Same as applications.list: TEAM reporting tree, DEPARTMENT HOD department, or ALL Leave View data access.
+- **Input:** Same as `leave.applications.list`: required from/to dates, scope default TEAM, optional companyIds/departmentIds (up to 100), search up to 100, statuses up to four PENDING/APPROVED/REJECTED/CANCELLED (default pending and approved).
+- **Returns:** Excel File with report data and Review notes. All authorized overlapping applications matching the selected filters: employee, type, dates, half-day boundaries, days, status, reason, request time and cancellation reason. Does not approve or cancel leave.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `leave.applications.exportMine`
+- **HTTP:** `POST /api/rpc/leave/applications/exportMine` · **Code:** `backend/src/modules/leave/applications/`
+- **Access:** Logged in.
+- **Scope:** Own identity only: balances/ledger from `balances.get` without another employee code, and applications from `listMine`. No role permission required.
+- **Input:** None.
+- **Returns:** Excel File with report data and Review notes. Current-year balances and complete current-year ledger, plus latest 100 own applications matching My leave. Blank balances are unmetered leave types. Review notes state year and application window.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `leave.applications.exportRecounts`
+- **HTTP:** `POST /api/rpc/leave/applications/exportRecounts` · **Code:** `backend/src/modules/leave/applications/`
+- **Access:** Leave: View.
+- **Scope:** Same as recounts: Leave View data access on employees. Reuses the authorized recount reader, with no updates.
+- **Input:** Same as recounts: `{ from: Date, to: Date }`.
+- **Returns:** Excel File with report data and Review notes. Approved leave currently counted differently: employee/type, dates, approved days, days now and difference. Does not apply corrections, change balances or send messages.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `leave.types.export`
+- **HTTP:** `POST /api/rpc/leave/types/export` · **Code:** `backend/src/modules/leave/types/`
+- **Access:** Logged in.
+- **Scope:** Not limited by data access: shared leave-type rules, same as list. Retired types only when requested and the active role has Leave View.
+- **Input:** Optional `{ includeInactive?: boolean }`.
+- **Returns:** Excel File with report data and Review notes. Code/name, paid, credit and carry/request limits, half/off-day rules, eligible genders/employment types, comp-off designation and status.
+- **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
+- **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
+
+### `approvals.report`
+- **HTTP:** `POST /api/rpc/approvals/report` · **Code:** `backend/src/modules/approvals/reports/`
+- **Access:** logged-in employee. TEAM/DEPARTMENT are relationship views. ALL needs Leave or Attendance View; each feature still uses its own area/data scope.
+- **Scope:** TEAM uses the current reporting tree's explicit employee IDs with SYSTEM_SCOPE; DEPARTMENT the current HOD department employee IDs with SYSTEM_SCOPE, excluding oneself. ALL: LEAVE and COMP_OFF use Leave View data access; REGULARIZATION and SHIFT_CHANGE use Attendance View data access. Each branch applies scopeWhere inside its own employee predicate, then all date/search/kind/status filters are ANDed. Having one area's access never grants the other. Current relationships/placement apply to historical requests. No job or salary/confidential request data.
+- **Input:** `{ scope?: 'TEAM'|'DEPARTMENT'|'ALL', from: Date, to: Date, dateBy?: 'WORK_DATES'|'RAISED', kind?, status?, search?, page?, pageSize? }`. Scope defaults TEAM; dateBy defaults WORK_DATES. Inclusive UTC calendar dates, ordered and at most 366 days apart. WORK_DATES matches overlapping leave/regularisation spans, comp-off work date or shift-change date; RAISED matches request creation day. Kind: LEAVE, LEAVE_CANCEL, REGULARIZATION (missed punch), ON_DUTY, COMP_OFF or SHIFT_CHANGE. Status: PENDING (waiting, excludes held), HELD (pending plus heldAt), APPROVED, REJECTED, CANCELLED (withdrawn) or EXPIRED. Omitted kind/status = every supported type/status. Search trimmed max 100 characters: every word matches employee code or name. Page positive integer default 1; pageSize 1–100 default 25.
+- **Returns:** `{ total, items, page, pageSize }`. Items: id, employeeCode/name, company/department, kind label, request summary, from/to/portion/days where available, complete source reason, sourceAvailable, raisedAt/raisedBy, status label (Held separate), currentStep (only while not held), heldReason, closedAt, withdrawalReason and decisions `{step,status,at,by,comment,automatic}[]`. Actor names use the existing lookup service. No encrypted/private employee fields. Newest raised first, ID descending as tie-breaker. Count and page use a repeatable-read snapshot; an oversized page number is clamped to the last page.
+- **What it does:** one browsable report of current team's or HOD department's leave, leave cancellations, missed-punch regularisations, OD, comp-off and shift changes across waiting and completed outcomes, independent of whether a step currently waits for this viewer. The Approvals Team requests tab starts with this month's work/leave dates, stores filters/page in the URL and exports through `approvals.export` mode team. Table previews expand in place; export always contains full stored text and all matching pages.
+- **Source boundaries:** reads the original domain records through explicit approval-request relations, with no duplicated message store. When an older source link no longer exists (e.g. a cancellation superseded by a later cancellation), dates/message cannot be reconstructed: RAISED can show it with sourceAvailable false and the retained summary; WORK_DATES requires a linked source with dates. Missing details are labelled, never invented. Approval remarks are stored step comments, not messages sent outside HRMS.
+- **Errors:** `400 BAD_REQUEST` invalid fields/range; `401` no session; `403 FORBIDDEN` ALL without either area. A caller with no current team/HOD relationship gets an empty relationship report. Export cap errors are documented under approvals.export.

@@ -1,5 +1,6 @@
+import { ExportButton } from '@/components/ExportButton'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Download, ShieldCheck, ShieldX, SlidersHorizontal } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ShieldCheck, ShieldX, SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { ChangeHistoryList } from '@/components/ChangeHistoryList'
@@ -13,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAccess } from '@/hooks/useAccess'
 import { HISTORY_ACTION_OPTIONS as ACTION_OPTIONS, type HistoryAction } from '@/lib/choices'
 import { client, orpc } from '@/lib/orpc'
-import { cn, downloadFile, errorMessage, formatDateTime, fromDateInput } from '@/lib/utils'
+import { cn, errorMessage, formatDateTime, fromDateInput } from '@/lib/utils'
 
 const PAGE_SIZE = 50
 
@@ -54,7 +55,6 @@ export function ChangeHistoryPage() {
     ...orpc.changeHistory.list.queryOptions({ input: { ...filters, page, pageSize: PAGE_SIZE } }),
     placeholderData: keepPreviousData,
   })
-  const [downloadError, setDownloadError] = useState<string | null>(null)
   const verify = useMutation(orpc.changeHistory.verify.mutationOptions())
   const total = history.data?.total ?? 0
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -91,18 +91,7 @@ export function ChangeHistoryPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button
-            variant="secondary"
-            size="lg"
-            disabled={!total}
-            title="Every entry matching the filters (up to 20,000), one row per changed field"
-            onClick={() => {
-              setDownloadError(null)
-              void downloadFile(() => client.changeHistory.export(filters), setDownloadError)
-            }}
-          >
-            <Download /> Excel
-          </Button>
+          <ExportButton load={() => client.changeHistory.export(filters)} disabled={!total} title="All matching audit entries; narrow the filters if the report is too large" />
           <Button variant="secondary" size="lg" disabled={verify.isPending} onClick={() => verify.mutate({})}>
             <ShieldCheck /> {verify.isPending ? 'Checking…' : 'Check integrity'}
           </Button>
@@ -120,7 +109,7 @@ export function ChangeHistoryPage() {
             </p>
           )}
           {verify.error && <p className="w-full text-right text-xs text-negative-ink">{errorMessage(verify.error)}</p>}
-          {downloadError && <p className="w-full text-right text-xs text-negative-ink">{downloadError}</p>}
+
         </div>
       </header>
 

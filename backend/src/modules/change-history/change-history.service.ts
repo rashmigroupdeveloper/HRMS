@@ -1,7 +1,7 @@
+import { writeReport } from '#core/excel/report'
 import { ORPCError } from '@orpc/server'
 import { ALL_OF_GROUP, hasLevelAt, levelOver } from '#core/auth/scope'
 import { GENESIS_HASH, hashEntry } from '#core/audit/hash'
-import { writeWorkbook } from '#core/excel/workbook'
 import { today } from '#shared/utils/dates'
 import { assertAccess } from '#core/auth/access'
 import { SYSTEM_ACTOR, type AccessArea } from '#core/db/prisma'
@@ -278,7 +278,8 @@ const cell = (value: unknown) => (value === null || value === undefined ? '' : t
 // The change history as an Excel file (2026-11-16, inspired by the old HRMS's download): the entries matching the
 // filters, newest first (up to 20,000), one row per changed field - with the same hidden values as on the page
 export async function exportChangeHistory(viewer: CurrentUser, input: z.infer<typeof exportChangeHistoryInput>) {
-  const { items } = await listChangeHistory(viewer, { ...input, page: 1, pageSize: 20_000 })
+  const { items, total } = await listChangeHistory(viewer, { ...input, page: 1, pageSize: 20_000 })
+  if (total > items.length) throw new ORPCError('BAD_REQUEST', { message: 'This report exceeds 20,000 audit entries. Narrow the filters and export again.' })
   const rows = items.flatMap((item) => {
     const base = {
       at: item.at,
@@ -293,7 +294,7 @@ export async function exportChangeHistory(viewer: CurrentUser, input: z.infer<ty
       ? item.changes.map((c) => ({ ...base, field: c.label, before: cell(c.before), after: cell(c.after) }))
       : [{ ...base, field: '', before: '', after: '' }]
   })
-  const bytes = await writeWorkbook([
+  const bytes = await writeReport([
     {
       name: 'Change history',
       columns: [
@@ -310,7 +311,7 @@ export async function exportChangeHistory(viewer: CurrentUser, input: z.infer<ty
       ],
       rows,
     },
-  ])
+  ], { filters: [{label:'Filters',value:JSON.stringify(input ?? {})}], title: 'Change history', preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage: 'Audit entries matching the current filters, within the active role data scope. One row per changed field.' })
   return new File([new Uint8Array(bytes)], `change-history-${today().toISOString().slice(0, 10)}.xlsx`, {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   })

@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs'
+import type { ReportDetails } from './report.js'
 
 // Excel files (.xlsx): writing a sheet (exports, import templates) and reading one back (imports). Knows nothing
 // about HR - callers give the columns and rows.
@@ -33,9 +34,11 @@ export type CellValue = string | number | Date | null
 const DATE_FORMAT = 'dd-mm-yyyy'
 
 // The .xlsx file with these sheets (the first is the one that opens).
-export async function writeWorkbook(sheets: ExcelSheet[]): Promise<Uint8Array> {
+export async function writeWorkbook(sheets: ExcelSheet[], report?: ReportDetails): Promise<Uint8Array> {
   const workbook = new ExcelJS.Workbook()
   const lists = sheets.some((s) => s.columns.some((c) => c.list?.length)) ? workbook.addWorksheet('Lists', { state: 'hidden' }) : null
+  const exportedAt = report?.exportedAt ?? new Date()
+  if (report) { workbook.creator = report.preparedBy; workbook.created = exportedAt; workbook.subject = report.title }
   let listColumns = 0
   for (const sheet of sheets) {
     const ws = workbook.addWorksheet(sheet.name, { views: [{ state: 'frozen', ySplit: 1 }] })
@@ -71,7 +74,9 @@ export async function writeWorkbook(sheets: ExcelSheet[]): Promise<Uint8Array> {
         }
       }
     })
+    if (report) formatReportSheet(ws, sheet, report, exportedAt)
   }
+  if (report) addReviewSheet(workbook, sheets, report, exportedAt)
   return new Uint8Array(await workbook.xlsx.writeBuffer())
 }
 
@@ -140,4 +145,68 @@ function columnLetter(n: number): string {
   let s = ''
   for (; n > 0; n = Math.floor((n - 1) / 26)) s = String.fromCharCode(65 + ((n - 1) % 26)) + s
   return s
+}
+
+
+// Excel header/footer control characters must not interpret a person's name or report title as formatting.
+const printText = (value: string) => value.replace(/&/g, '&&').replace(/[\r\n]/g, ' ').slice(0, 180)
+const stamp = (at: Date) => `${at.toISOString().slice(0, 19).replace('T', ' ')} UTC`
+
+function formatReportSheet(ws: ExcelJS.Worksheet, sheet: ExcelSheet, report: ReportDetails, exportedAt: Date) {
+  const wide = sheet.columns.reduce((sum, c) => sum + (c.width ?? Math.max(12, c.header.length + 2)), 0) > 180
+  ws.pageSetup = {
+    paperSize: 9, orientation: 'landscape', fitToPage: !wide,
+    ...(wide ? { scale: 85 } : { fitToWidth: 1, fitToHeight: 0 }),
+    margins: { left: .3, right: .3, top: .7, bottom: .75, header: .25, footer: .25 },
+    printTitlesRow: '1:1', ...(sheet.columns.length > 2 ? { printTitlesColumn: 'A:B' } : {}),
+    printArea: `A1:${columnLetter(sheet.columns.length)}${Math.max(1, sheet.rows.length + 1)}`,
+  }
+  ws.headerFooter.oddHeader = `&L&"Arial,Bold"&11${printText(report.title)}&R&8${stamp(exportedAt)}`
+  ws.headerFooter.oddFooter = '&L&8Reviewed by: __________________  Date: __________&R&8Page &P of &N'
+  ws.getRow(1).height = 32
+  ws.getRow(1).alignment = { vertical: 'middle', wrapText: true }
+  ws.getRow(1).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF242424' } }
+  if (sheet.rows.length) ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: sheet.rows.length + 1, column: sheet.columns.length } }
+  for (let n = 2; n <= sheet.rows.length + 1; n++) {
+    const row = ws.getRow(n)
+    row.font = { name: 'Arial', size: 10 }
+    row.alignment = { vertical: 'top', wrapText: true }
+    let lines = 1
+    sheet.columns.forEach((column, index) => {
+      const value = row.getCell(index + 1).value
+      if (typeof value === 'string') lines = Math.max(lines, ...value.split('\n').map((line) => Math.ceil(line.length / (column.width ?? 20))))
+    })
+    row.height = Math.min(409, Math.max(20, lines * 14))
+    if (n % 2 === 0) row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F6F0' } }
+  }
+}
+
+function addReviewSheet(workbook: ExcelJS.Workbook, sheets: ExcelSheet[], report: ReportDetails, exportedAt: Date) {
+  let name = 'Review notes'
+  for (let i = 2; workbook.getWorksheet(name); i++) name = `Review notes ${i}`
+  const ws = workbook.addWorksheet(name)
+  ws.columns = [{ key: 'label', width: 25 }, { key: 'value', width: 85 }]
+  ws.addRow([report.title, ''])
+  ws.mergeCells('A1:B1')
+  ws.getRow(1).font = { name: 'Arial', size: 18, bold: true }
+  ws.getRow(1).height = 36
+  for (const [label, value] of [
+    ['Prepared by', report.preparedBy], ['Exported at', stamp(exportedAt)], ['Coverage', report.coverage],
+    ...(report.filters ?? []).map((f) => [f.label, f.value]),
+    ...sheets.map((s) => [`${s.name} — rows`, String(s.rows.length)]),
+    ['Reviewed by', ''], ['Review date', ''], ['Review outcome', 'Approved / Changes requested (mark one)'],
+    ['Agreed changes / remarks', ''], ['Next step', 'Record agreed changes through the usual HRMS forms. This printout does not change records or approve requests in HRMS.'],
+  ]) {
+    const row = ws.addRow([label, value])
+    row.alignment = { vertical: 'top', wrapText: true }
+    row.font = { name: 'Arial', size: 11 }
+    const lines = String(value).split('\n').reduce((count, line) => count + Math.max(1, Math.ceil(line.length / 80)), 0)
+    const minimum = label === 'Agreed changes / remarks' ? 100 : label === 'Next step' || label === 'Coverage' ? 45 : 28
+    row.height = Math.min(409, Math.max(minimum, lines * 15))
+    row.getCell(1).font = { name: 'Arial', size: 11, bold: true }
+    row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3EFE4' } }
+    row.getCell(2).border = { bottom: { style: 'hair', color: { argb: 'FFD8D3C8' } } }
+  }
+  ws.pageSetup = { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: .4, right: .4, top: .5, bottom: .5, header: .2, footer: .2 } }
+  ws.headerFooter.oddFooter = '&RPage &P of &N'
 }

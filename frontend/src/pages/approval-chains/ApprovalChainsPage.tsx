@@ -1,3 +1,5 @@
+import { ExportButton } from '@/components/ExportButton'
+import { client } from '@/lib/orpc'
 import { useAccess } from '@/hooks/useAccess'
 import { ApprovalChains } from './components/ApprovalChains'
 
@@ -8,12 +10,15 @@ export function ApprovalChainsPage() {
   const { can } = useAccess()
   return (
     <div className="space-y-5">
-      <div>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
         <p className="text-sm text-muted-foreground">Administration</p>
         <h1 className="mt-1 text-3xl font-light tracking-tight sm:text-4xl">Approval rules</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">
           Who approves each kind of request, step by step.
         </p>
+        </div>
+        <ExportButton load={() => client.approvals.chains.export()} />
       </div>
       <ApprovalChains canChange={can('APPROVAL_CHAINS', 'WRITE')} />
     </div>

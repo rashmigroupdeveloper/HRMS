@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarPlus, Check, FileClock, Repeat } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -6,7 +7,7 @@ import { Pill } from '@/components/Pill'
 import { MonthSkeleton } from '@/components/skeletons/attendance/MonthSkeleton'
 import { AttendanceRequestsSkeleton } from '@/components/skeletons/attendance/AttendanceRequestsSkeleton'
 import { Button } from '@/components/ui/button'
-import { orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { formatDate, todayDay } from '@/lib/utils'
 import { compOffDays, cycleRange, type MonthDay, REQUEST_STATUS, type Regularization } from './labels'
 import { useAttendanceMonth, useCycleStartDay } from './useAttendanceMonth'
@@ -73,6 +74,7 @@ export function MyAttendance() {
           <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:gap-4">
             <h2 className="text-lg font-light tracking-tight">My month</h2>
             <MonthPicker year={ym.year} month={ym.month} onChange={showMonth} range={month.data ?? range} locked={month.data?.locked} />
+            <ExportButton disabled={!month.data || month.isFetching} load={() => client.attendance.days.exportMonth(ym)} />
             {chosenMonth && (chosenMonth.year !== currentMonth.year || chosenMonth.month !== currentMonth.month) && (
               <Button variant="ghost" size="sm" onClick={() => { showMonth(currentMonth.year, currentMonth.month); setYm(null) }}>
                 Current month

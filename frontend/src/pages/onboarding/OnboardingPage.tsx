@@ -1,5 +1,6 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useQuery } from '@tanstack/react-query'
-import { Download, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { CandidatesTableSkeleton } from '@/components/skeletons/onboarding/CandidatesTableSkeleton'
@@ -8,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
-import { cn, downloadFile, errorMessage, formatDate } from '@/lib/utils'
+import { cn, errorMessage, formatDate } from '@/lib/utils'
 import { type CandidateRow, type CandidateStatus, CLOSED_STATUSES, fullName, JOINING_TYPE, statusLabel, STATUS_TONE } from './components/labels'
 import { OfferDialog } from './components/OfferDialog'
 import { EmptyState } from '@/components/EmptyState'
@@ -34,7 +35,6 @@ export function OnboardingPage() {
   const navigate = useNavigate()
   const open = (id: number) => void navigate(`/onboarding/${id}`)
   const canChange = useAccess().can('ONBOARDING', 'WRITE')
-  const [exportError, setExportError] = useState<string | null>(null)
 
   const rows = candidates.data ?? []
   const statuses = FILTERS.find((f) => f.key === filter)?.statuses
@@ -55,18 +55,8 @@ export function OnboardingPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {/* the "Offers & candidates" report: every candidate with the Letter of Intent and offer steps */}
-          <Button
-            variant="secondary"
-            disabled={!rows.length}
-            title="Every candidate, with the Letter of Intent and offer steps, as an Excel file"
-            onClick={() => {
-              setExportError(null)
-              void downloadFile(() => client.candidates.export({}), setExportError)
-            }}
-          >
-            <Download /> Excel report
-          </Button>
+          {/* The report follows the selected lifecycle group. */}
+          <ExportButton load={() => client.candidates.export({statuses:statuses ?? undefined})} disabled={!shown.length || candidates.isFetching} title="Export candidates in the selected lifecycle group" />
           {canChange ? (
             <Button variant="gold" onClick={() => setCreating(true)}>
               <Plus /> New offer
@@ -75,7 +65,7 @@ export function OnboardingPage() {
             <span className="rounded-full bg-card px-4 py-2 text-sm text-muted-foreground shadow-card">View only</span>
           )}
         </div>
-        {exportError && <p className="w-full text-right text-sm text-negative-ink">{exportError}</p>}
+
       </header>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

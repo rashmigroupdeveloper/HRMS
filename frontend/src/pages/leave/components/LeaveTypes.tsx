@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
@@ -13,7 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAccess } from '@/hooks/useAccess'
 import { EMPLOYMENT_TYPE } from '@/lib/choices'
-import { orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
 import { type LeaveType, TYPE_HEADINGS } from './labels'
 
@@ -51,6 +52,7 @@ export function LeaveTypes() {
   return (
     <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
+        <ExportButton disabled={!types.data?.length || types.isFetching} load={() => client.leave.types.export({includeInactive:true})} />
         <p className="text-xs text-muted-foreground">Leave is credited on the 1st of each month by the nightly job; at the year end the balance above the carry-forward limit lapses.</p>
         {canEdit && (
           <div className="flex flex-wrap gap-2">
@@ -63,6 +65,7 @@ export function LeaveTypes() {
           </div>
         )}
       </div>
+
       <SharedListNote area="LEAVE" label="Leave" />
       {run.data && (
         <p className="text-xs text-positive-ink">

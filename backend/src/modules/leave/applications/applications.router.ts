@@ -6,6 +6,9 @@ import * as applicationsService from './applications.service.js'
 // reporting tree's, an HOD their department's, Leave View everyone's in its data access. Deciding is on the Approvals
 // page (the approval service, kinds LEAVE / LEAVE_CANCEL).
 export const applicationsRouter = {
+  exportRecounts: accessProcedure('LEAVE','READ').input(recountsInput).handler(({input,context})=>applicationsService.exportRecounts(context.user,input)),
+  export: authedProcedure.input(listInput).handler(({input,context})=>applicationsService.exportApplications(context.user,input)),
+  exportMine: authedProcedure.handler(({context})=>applicationsService.exportMine(context.user)),
   preview: authedProcedure.input(previewInput).handler(({ input, context }) => applicationsService.preview(context.user, input)),
   apply: authedProcedure.input(applyInput).handler(({ input, context }) => applicationsService.apply(context.user, input)),
   cancel: authedProcedure.input(cancelInput).handler(({ input, context }) => applicationsService.cancel(context.user, input)),

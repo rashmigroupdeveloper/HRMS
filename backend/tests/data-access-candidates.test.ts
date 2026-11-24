@@ -1,3 +1,4 @@
+import ExcelJS from 'exceljs'
 import { prisma, SYSTEM_ACTOR } from '#core/db/prisma'
 import { candidatesService } from '#modules/candidates'
 import { designationsService } from '#modules/organization'
@@ -51,6 +52,19 @@ describe('candidates inside and outside the data access', () => {
     expect(ids).not.toContain(inB)
     await expect(candidatesService.getCandidateDetails(inA, hrForA)).resolves.toMatchObject({ id: inA })
     await expect(candidatesService.getCandidateDetails(inB, hrForA)).rejects.toThrow(`No candidate found with id ${inB}`)
+  })
+
+  it('exports the selected lifecycle group without exposing candidates outside its data access',async()=>{
+    const read=async(statuses:('DRAFT'|'ACCEPTED')[])=>{
+      const file=await candidatesService.exportCandidates({statuses},hrForA)
+      const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(await file.arrayBuffer())
+      const ids:number[]=[];workbook.worksheets[0]!.eachRow((row,n)=>{if(n>1)ids.push(Number(row.getCell(1).value))})
+      return ids
+    }
+    expect(await read(['DRAFT'])).toContain(inA)
+    expect(await read(['DRAFT'])).not.toContain(inB)
+    expect(await read(['ACCEPTED'])).not.toContain(inA)
+    expect(await read([])).toEqual([])
   })
 
   it('creates, changes and moves offers only inside the Edit data access', async () => {

@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useQuery } from '@tanstack/react-query'
 import { CalendarCheck, Search } from 'lucide-react'
 import { useState } from 'react'
@@ -8,7 +9,7 @@ import { DepartmentTableSkeleton } from '@/components/skeletons/my-department/De
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { cn, formatDate, formatLastDay, formatMoment } from '@/lib/utils'
 
 const HEADINGS = ['Employee', 'Designation', 'Department · plant', 'Joined', 'Reports to', 'Work e-mail']
@@ -43,6 +44,7 @@ export function MyDepartmentPage() {
           <h1 className="mt-1 text-3xl font-light tracking-tight sm:text-4xl">My department</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">The employees whose HOD you are. View only - HR keeps their records.</p>
         </div>
+        <ExportButton disabled={!rows.length || department.isPending} load={() => client.employees.hods.export({ view: 'department', postId: postId ?? undefined, search: search.trim() || undefined })} />
         {data && data.employees.length > 0 && (
           <Button variant="secondary" nativeButton={false} render={<Link to="/team-attendance?view=department" />}>
             <CalendarCheck /> Their attendance

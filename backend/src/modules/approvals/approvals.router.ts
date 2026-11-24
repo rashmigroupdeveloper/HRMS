@@ -1,5 +1,6 @@
+import { reportsRouter } from './reports/reports.router.js'
 import { accessProcedure, authedProcedure } from '#core/rpc/procedures'
-import { approvalIdInput, cancelApprovalInput, decideApprovalInput } from './approvals.schema.js'
+import { approvalIdInput, cancelApprovalInput, decideApprovalInput, exportApprovalsInput } from './approvals.schema.js'
 import * as approvalsService from './approvals.service.js'
 import { chainsRouter } from './chains/chains.router.js'
 
@@ -7,6 +8,8 @@ import { chainsRouter } from './chains/chains.router.js'
 // they may see, decide or cancel a request is checked in the service (it depends on the request). Held requests:
 // Approval chains Edit (covering the employee - in the service).
 export const approvalsRouter = {
+  report: reportsRouter.list,
+  export: authedProcedure.input(exportApprovalsInput).handler(({ input, context }) => approvalsService.exportApprovals(context.user, input)),
   listToDecide: authedProcedure.handler(({ context }) => approvalsService.listToDecide(context.user)),
   countToDecide: authedProcedure.handler(({ context }) => approvalsService.countToDecide(context.user)),
   listMine: authedProcedure.handler(({ context }) => approvalsService.listMine(context.user)),

@@ -1,7 +1,8 @@
+import type { exportMonthInput } from './days.schema.js'
+import { reportFile, reportSheet, writeReport } from '#core/excel/report'
 import { hasLevelAt, type Placement, scopeOf, SYSTEM_SCOPE } from '#core/auth/scope'
 import { assertAccess } from '#core/auth/access'
 import { prisma, type DayStatus, type DbClient } from '#core/db/prisma'
-import { writeWorkbook } from '#core/excel/workbook'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { employeesService, hodsService } from '#modules/employees'
 import { today } from '#shared/utils/dates'
@@ -823,7 +824,7 @@ export async function getMuster(viewer: CurrentUser, { year, month, ...filter }:
 export async function exportMuster(viewer: CurrentUser, input: z.infer<typeof musterInput>) {
   const muster = await getMuster(viewer, input)
   const dayColumns = muster.days.map((d, i) => ({ header: String(d.getUTCDate()), key: `d${i}`, width: 5 }))
-  const bytes = await writeWorkbook([
+  const bytes = await writeReport([
     {
       name: 'Muster',
       columns: [
@@ -871,7 +872,7 @@ export async function exportMuster(viewer: CurrentUser, input: z.infer<typeof mu
         { code: '*', means: 'Late that day' },
       ],
     },
-  ])
+  ], { title: 'Attendance muster', preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage: 'Attendance for the selected month, people view and placement filters.', filters: [{ label: 'Period', value: `${muster.from.toISOString().slice(0, 10)} to ${muster.to.toISOString().slice(0, 10)}` }] })
   return new File([new Uint8Array(bytes)], `muster-${input.year}-${String(input.month).padStart(2, '0')}.xlsx`, {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   })
@@ -923,4 +924,28 @@ export async function removeCorrection({ employeeCode, date }: z.infer<typeof re
   if (!removed.count) throw new ORPCError('NOT_FOUND', { message: 'That day has no correction' })
   await recompute([id], date, date)
   return { removed: true }
+}
+
+export async function exportMonth(viewer: CurrentUser, input: z.infer<typeof exportMonthInput>) {
+  const data = input.employeeCode ? await getEmployeeMonth(viewer, { ...input, employeeCode: input.employeeCode }) : await getMyMonth(viewer, input)
+  return reportFile([reportSheet('Attendance days', data.days, [
+    { header: 'Date', value: r => r.date, date: true }, { header: 'Status', value: r => r.status ?? (r.employed ? 'Scheduled' : 'Outside employment'), width: 22 },
+    { header: 'First half', value: r => r.firstHalf }, { header: 'Second half', value: r => r.secondHalf },
+    { header: 'Shift', value: r => r.shift?.code }, { header: 'Holiday', value: r => r.holiday, width: 25 },
+    { header: 'First in', value: r => r.inAt }, { header: 'Last out', value: r => r.outAt },
+    { header: 'Worked minutes', value: r => r.workedMinutes }, { header: 'Late minutes', value: r => r.lateMinutes },
+    { header: 'Early-out minutes', value: r => r.earlyMinutes }, { header: 'Correction reason', value: r => r.correction?.reason, width: 40 },
+  ])], { title: `Attendance · ${data.employee.name}`, preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage: 'The visible employee and selected attendance cycle, using the same access and relationship checks as the month page.', filters: [{ label: 'Employee code', value: data.employee.employeeCode }, { label: 'Period', value: `${data.from.toISOString().slice(0, 10)} to ${data.to.toISOString().slice(0, 10)}` }, { label: 'Month locked', value: data.locked ? 'Yes' : 'No' }] }, `attendance-${data.employee.employeeCode}-${data.year}-${String(data.month).padStart(2, '0')}`)
+}
+
+export async function exportBoard(viewer: CurrentUser, input: z.infer<typeof boardInput>) {
+  const data = await getBoard(viewer, input)
+  return reportFile([reportSheet('Day board', data.items, [
+    { header: 'Employee code', value: r => r.employeeCode, text: true }, { header: 'Employee', value: r => r.name, width: 30 },
+    { header: 'Company', value: r => r.company }, { header: 'Department', value: r => r.department, width: 25 },
+    { header: 'Status', value: r => r.state }, { header: 'Shift', value: r => r.shift?.code },
+    { header: 'First in', value: r => r.inAt }, { header: 'Last out', value: r => r.outAt },
+    { header: 'Worked minutes', value: r => r.workedMinutes }, { header: 'Late minutes', value: r => r.lateMinutes },
+    { header: 'Correction reason', value: r => r.correction?.reason, width: 40 },
+  ])], { title: 'Attendance day board', preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage: 'The selected date and people filters, inside the same attendance scope as the board.', filters: [{ label: 'Date', value: input.date.toISOString().slice(0, 10) }, { label: 'View', value: input.scope }, { label: 'Search', value: input.search ?? 'None' }] }, `attendance-board-${input.date.toISOString().slice(0, 10)}`)
 }

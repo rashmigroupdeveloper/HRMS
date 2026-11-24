@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { ArrowLeft, ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-react'
 import { useDeferredValue, useEffect, useRef, useState } from 'react'
@@ -9,7 +10,7 @@ import { SearchableSelect } from '@/components/SearchableSelect'
 import { ColleagueCardSkeleton } from '@/components/skeletons/employees/ColleagueCardSkeleton'
 import { DirectoryListSkeleton } from '@/components/skeletons/employees/DirectoryListSkeleton'
 import { useAccess } from '@/hooks/useAccess'
-import { orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { cn, initialsOf } from '@/lib/utils'
 import { ColleagueCard } from './ColleagueCard'
 
@@ -66,6 +67,7 @@ export function DirectoryView({ onChart }: { onChart: (employeeCode: string) => 
 
   return (
     <div className="grid items-start gap-3 lg:grid-cols-[24rem_minmax(0,1fr)]">
+
       <section className={cn('space-y-2 rounded-2xl bg-card p-2 shadow-card', picked && 'max-lg:hidden')}>
         <div role="tablist" aria-label="Whose list" className="flex gap-0.5 rounded-xl bg-surface-2/70 p-0.5">
           {groups.map(([value, label]) => (
@@ -89,6 +91,7 @@ export function DirectoryView({ onChart }: { onChart: (employeeCode: string) => 
           ))}
         </div>
         <div className="flex items-center gap-2">
+          <ExportButton disabled={!list.data?.total || list.isFetching} load={() => client.employees.exportDirectory({group:group==='ALL'?undefined:group,search:deferred||undefined,companyIds:place.companyId?[Number(place.companyId)]:undefined,plantIds:place.plantId?[Number(place.plantId)]:undefined,departmentIds:place.departmentId?[Number(place.departmentId)]:undefined})} />
           <div className="relative min-w-0 flex-1">
             <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input

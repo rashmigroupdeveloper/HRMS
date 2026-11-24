@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Plus, Search, Send, X } from 'lucide-react'
 import { useState } from 'react'
@@ -13,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { cn, formatDate, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
 import { ROSTER_HINT } from './labels'
 
@@ -62,6 +63,7 @@ export function RosterView() {
   return (
     <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
+        <ExportButton className="order-last" disabled={!data?.rows.length || grid.isFetching} load={() => client.attendance.rosters.export({from:start,to,search:search.trim()||undefined,onlyChanges:true})} />
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <div className="flex items-center gap-0.5">
             <Button variant="ghost" size="icon" aria-label="Previous two weeks" onClick={() => setStart(new Date(start.getTime() - 14 * DAY))}>

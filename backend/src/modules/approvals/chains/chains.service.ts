@@ -1,3 +1,4 @@
+import { reportFile, reportSheet } from '#core/excel/report'
 import { assertGroupWide, assertWholeSlice } from '#core/auth/scope'
 import type { AccessArea, ApprovalBreachAction, ApprovalKind, ApproverType } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
@@ -191,4 +192,19 @@ export async function removeChain(viewer: CurrentUser, { kind, companyId }: z.in
   const removed = await chainsRepository.remove(kind, companyId)
   if (!removed.count) throw new ORPCError('NOT_FOUND', { message: 'This company has no chain of its own for that kind' })
   return { kind, companyId, removed: true }
+}
+
+export async function exportChains(viewer:CurrentUser){
+  const data=await listChains()
+  const rows=data.kinds.flatMap(k=>(k.chains.length?k.chains:[null]).flatMap(c=>(c?.steps.length?c.steps:[null]).map((step,index)=>({kind:k.label,chain:c,step,number:step?index+1:null}))))
+  return reportFile([reportSheet('Approval steps',rows,[
+    {header:'Request kind',value:r=>r.kind},{header:'Company',value:r=>r.chain ? r.chain.company?.code??'Shared' : 'No chain configured'},
+    {header:'Status',value:r=>r.chain ? (r.chain.isActive?'Active':'Inactive') : 'Not configured'},{header:'Step',value:r=>r.number},
+    {header:'Approver type',value:r=>r.step?.approverType},{header:'Role',value:r=>r.step?.roleName},
+    {header:'Access area',value:r=>r.step?.accessArea},{header:'Named approver',value:r=>r.step?.approver?.name},
+    {header:'Confidential data',value:r=>r.step ? (r.step.seesConfidential?'Yes':'No') : null},
+    {header:'Time limit (hours)',value:r=>r.step?.slaHours},{header:'When overdue',value:r=>r.step?.onBreach},
+    {header:'Updated by',value:r=>r.chain?.updatedBy?.name},{header:'Updated at',dateTime:true,value:r=>r.chain?.updatedAt},
+  ])],{title:'Approval chains',preparedBy:`${viewer.name} (${viewer.employeeCode})`,
+    coverage:'Shared and company approval-chain settings visible on this page; one row per configured step, with explicit rows for empty or unconfigured chains. Exporting does not decide requests.'},'approval-chains')
 }

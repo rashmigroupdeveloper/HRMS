@@ -1,3 +1,5 @@
+import type { exportTasksInput } from './joining-tasks.schema.js'
+import { reportFile, reportSheet } from '#core/excel/report'
 import { assertAccess, hasAccess } from '#core/auth/access'
 import { assertGroupWide, hasLevelAt, type Placement, scopeOf } from '#core/auth/scope'
 import { env } from '#core/config/env'
@@ -368,4 +370,27 @@ export async function remindDueTasks() {
     }).catch((error: unknown) => console.error(`[mail] joining tasks reminder to ${mail.to.employeeCode} failed:`, error))
   }
   return `${tasks.length} task(s), ${mails.length} reminder(s) sent`
+}
+
+export async function exportTasks(input: z.infer<typeof exportTasksInput>, viewer: CurrentUser) {
+  const data = await listTasks(input, viewer)
+  const wanted = input.ids ? new Set(input.ids) : null
+  const items = data.items.filter((row) => !wanted || wanted.has(row.id))
+  return reportFile([reportSheet('Joining tasks', items, [
+    { header: 'Employee code', value: r => r.employee.employeeCode, text: true }, { header: 'Employee', value: r => r.employee.name, width: 30 },
+    { header: 'Company', value: r => r.employee.company }, { header: 'Department', value: r => r.employee.department, width: 25 },
+    { header: 'Task', value: r => r.name, width: 32 }, { header: 'Team', value: r => r.team, width: 25 },
+    { header: 'Due date', value: r => r.dueDate, date: true }, { header: 'Assigned to', value: r => r.assignedTo?.name, width: 28 },
+    { header: 'Status', value: r => r.doneAt ? 'Done' : r.overdue ? 'Overdue' : 'Open' }, { header: 'Done at', value: r => r.doneAt, dateTime: true },
+    { header: 'Done by', value: r => r.doneBy?.name, width: 28 },
+  ])], { title: 'Joining tasks', preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage: input.status === 'DONE' ? 'The latest 200 completed tasks matching the current task filters, as on this tab.' : 'Up to 1,000 open tasks matching the current task filters, as on this tab.', filters: [{ label: 'View', value: input.scope }, { label: 'Status', value: input.status }, { label: 'Search', value: input.search ?? 'None' }, { label: 'Team', value: input.team ?? 'All teams' }] }, 'joining-tasks')
+}
+
+export async function exportTaskTypes(viewer: CurrentUser, includeInactive = false) {
+  const rows = await listTaskTypes(viewer, includeInactive)
+  return reportFile([reportSheet('Joining task types', rows, [
+    { header: 'Task', value: r => r.name, width: 32 }, { header: 'Description', value: r => r.description, width: 45 }, { header: 'Team', value: r => r.team },
+    { header: 'Due days after joining', value: r => r.dueDays }, { header: 'Joining types', value: r => r.joiningTypes.join(', ') || 'All' },
+    { header: 'Default assignee', value: r => r.defaultAssignee?.name, width: 28 }, { header: 'Status', value: r => r.isActive ? 'Active' : 'Retired' },
+  ])], { title: 'Joining task types', preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage: includeInactive ? 'Authorized task types, including retired types where allowed.' : 'Active joining task types.' }, 'joining-task-types')
 }

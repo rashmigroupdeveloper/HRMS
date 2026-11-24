@@ -1,3 +1,5 @@
+import { TeamRequests } from './components/TeamRequests'
+import { ExportButton } from '@/components/ExportButton'
 import { useQuery } from '@tanstack/react-query'
 import { CircleCheck, CircleX, X } from 'lucide-react'
 import { useState } from 'react'
@@ -9,7 +11,7 @@ import { RequestsSkeleton } from '@/components/skeletons/approvals/RequestsSkele
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/useAccess'
-import { orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
 import { ApprovalDrawer } from './components/ApprovalDrawer'
 import { type ApprovalRow, type ListMode, REQUEST_KINDS } from './components/request-kinds'
@@ -34,6 +36,7 @@ export function ApprovalsPage() {
     ['waiting', 'Waiting for me', toDecide.data?.length],
     ['decided', 'Decided by me', undefined],
     ['mine', 'Raised by me', undefined],
+    ['team', 'Team requests', undefined],
     ...(canRepair ? ([['held', 'Held', held.data?.length]] as [string, string, number | undefined][]) : []),
   ]
   const asked = params.get('tab')
@@ -42,21 +45,24 @@ export function ApprovalsPage() {
   const go = (next: { tab?: string; kind?: string | null }) => {
     const t = next.tab ?? tab
     const k = next.kind === undefined ? kind : next.kind
-    setParams({ ...(t !== 'waiting' && { tab: t }), ...(k && { kind: k }) }, { replace: true })
+    const nextParams = new URLSearchParams(params)
+    if (t !== 'waiting') nextParams.set('tab', t); else nextParams.delete('tab')
+    if (k) nextParams.set('kind', k); else nextParams.delete('kind')
+    setParams(nextParams, { replace: true })
   }
   const late = toDecide.data?.filter((r) => r.step?.late).length ?? 0
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm text-muted-foreground">Decisions</p>
-          <h1 className="mt-1 text-3xl font-light tracking-tight sm:text-4xl">Approvals</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">
+          <h1 className="text-2xl font-light tracking-tight sm:text-3xl">Approvals</h1>
+          {tab !== 'team' && <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">
             Each request goes through its approval chain one step at a time, and applies on its day once the last step approves it.
-          </p>
+          </p>}
         </div>
-        {late > 0 && (
+        {tab !== 'team' && <ExportButton load={() => client.approvals.export({ mode: tab as 'waiting' | 'decided' | 'mine' | 'held', feature: REQUEST_KINDS.some((k) => k.feature === kind) ? kind! : undefined })} />}
+        {tab !== 'team' && late > 0 && (
           <p className="rounded-full bg-destructive/10 px-3 py-1.5 text-sm font-medium text-negative-ink">
             {late} {late === 1 ? 'request is' : 'requests are'} past the time limit
           </p>
@@ -116,6 +122,7 @@ export function ApprovalsPage() {
           <FormError error={mine.error} />
           <Requests rows={mine.data} loading={mine.isPending} mode="mine" kind={kind} onKind={(k) => go({ kind: k })} empty="You have not raised a request." onOpen={setOpen} />
         </TabsContent>
+        <TabsContent value="team" className="mt-4"><TeamRequests /></TabsContent>
         {canRepair && (
           <TabsContent value="held" className="mt-4">
             <FormError error={held.error} />

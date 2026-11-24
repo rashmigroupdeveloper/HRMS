@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Plus } from 'lucide-react'
 import { useState } from 'react'
@@ -13,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAccess } from '@/hooks/useAccess'
-import { type client, orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { formatDate, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
 import { hours } from './labels'
 
@@ -38,12 +39,11 @@ export function PoliciesSetup({ card: Card }: { card: (props: { title: string; h
     <Card
       title="Attendance policies"
       hint="The rules a day is judged by: grace, the hours from the first punch in to the last out for a full and a half day, and the late rules. Given on an employee's schedule - without one, the default policy. A change applies from a date you choose; the days before keep the rules they had."
-      action={
-        canChange && (
+      action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!policies.data?.length || policies.isFetching} load={() => client.attendance.exportSetup({section:'policies'})} />{canChange && (
           <Button variant="gold" size="sm" onClick={() => setEditing('new')}>
             <Plus /> Add a policy
           </Button>
-        )
+        )}</div>
       }
     >
       <SharedListNote area="ATTENDANCE_SETUP" label="Attendance setup" what="changing the policies" />

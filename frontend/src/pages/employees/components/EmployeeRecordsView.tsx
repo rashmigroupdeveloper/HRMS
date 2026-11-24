@@ -1,5 +1,6 @@
+import { ExportButton } from '@/components/ExportButton'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Columns3, Download, Plus, Search, SlidersHorizontal, Upload, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Columns3, Plus, Search, SlidersHorizontal, Upload, X } from 'lucide-react'
 import { useDeferredValue, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { EmployeePicker, type PickedEmployee } from '@/components/EmployeePicker'
@@ -14,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
-import { cn, downloadFile, errorMessage, formatDate, toDateInput } from '@/lib/utils'
+import { cn, errorMessage, formatDate, toDateInput } from '@/lib/utils'
 import { EmployeeDetailsDrawer } from './EmployeeDetailsDrawer'
 import { ImportEmployeesDrawer } from './ImportEmployeesDrawer'
 import { EMPLOYMENT_TYPE, type EmployeeRow, type EmployeeStatus, STATUS_LABEL, STATUS_TONE, WORKFORCE } from './labels'
@@ -83,7 +84,6 @@ export function EmployeeRecordsView() {
   const [columnsOpen, setColumnsOpen] = useState(false)
   const [adding, setAdding] = useState(false)
   const [importing, setImporting] = useState(false)
-  const [exportError, setExportError] = useState<string | null>(null)
 
   // the list's state, from the address
   const status = (params.get('status') ?? 'ACTIVE') as EmployeeStatus | 'ALL'
@@ -296,20 +296,9 @@ export function EmployeeRecordsView() {
               setParams(next, { replace: true })
             }}
           />
-          <Button
-            variant="secondary"
-            className="h-10 rounded-full px-4"
-            disabled={!total}
-            title="Every employee in this list, in this order, as an Excel file"
-            onClick={() => {
-              setExportError(null)
-              void downloadFile(() => client.employees.export(filters), setExportError)
-            }}
-          >
-            <Download /> Export
-          </Button>
+          <ExportButton load={() => client.employees.export(filters)} disabled={!total} />
         </div>
-        {exportError && <p className="text-sm text-negative-ink">{exportError}</p>}
+
 
         {/* the columns to show - ticked ones in the table, in this order; kept in the address (and saved views) */}
         {columnsOpen && (

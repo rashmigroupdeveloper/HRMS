@@ -1,7 +1,8 @@
+import { reportFile, reportSheet } from '#core/excel/report'
+import { writeReport } from '#core/excel/report'
 import { hasLevelAt, type Placement, scopeAllows, scopeOf } from '#core/auth/scope'
 import { encrypt, fingerprint, last4 } from '#core/crypto/encryption'
 import { prisma, SYSTEM_ACTOR, type AccessArea, type AccessLevel, type ActorId, type EmployeeStatus, type DbClient, type EmploymentType, type IdentityDocumentType, type MedicalResult, type Prisma } from '#core/db/prisma'
-import { writeWorkbook } from '#core/excel/workbook'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { companiesService, costCentersService, departmentsService, designationsService, gradesService, plantsService, positionsService, workLocationsService } from '#modules/organization'
 import { formatDate, today } from '#shared/utils/dates'
@@ -24,6 +25,7 @@ import {
   type exportEmployeesInput,
   type searchEmployeesInput,
   type directoryInput,
+  type exportDirectoryInput,
   type orgChartInput,
   familyMemberSchema,
   identityDocumentSchema,
@@ -711,8 +713,9 @@ export async function searchPeople(input: z.infer<typeof searchEmployeesInput>) 
 export async function exportEmployees(input: z.infer<typeof exportEmployeesInput>, viewer: CurrentUser) {
   const scopes = directoryScopes(viewer)
   const seesNumbers = seesAnyNumbers(scopes)
-  const { rows } = await employeesRepository.list(directoryFilter(input, scopes), { skip: 0, take: 20_000 }, { field: input?.sort ?? 'code', direction: input?.direction ?? 'asc' })
-  const bytes = await writeWorkbook([
+  const { rows, total } = await employeesRepository.list(directoryFilter(input, scopes), { skip: 0, take: 20_000 }, { field: input?.sort ?? 'code', direction: input?.direction ?? 'asc' })
+  if (total > rows.length) throw new ORPCError('BAD_REQUEST', { message: 'This report exceeds 20,000 employees. Narrow the filters and export again.' })
+  const bytes = await writeReport([
     {
       name: 'Employees',
       columns: [
@@ -760,7 +763,7 @@ export async function exportEmployees(input: z.infer<typeof exportEmployeesInput
           : '',
       })),
     },
-  ])
+  ], { filters: [{label:'Filters',value:JSON.stringify(input ?? {})}], title: 'Employee records', preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage: 'Employees matching the current filters and sort order, within the active role data scope.' })
   return new File([new Uint8Array(bytes)], `employees-${today().toISOString().slice(0, 10)}.xlsx`, {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   })
@@ -1060,4 +1063,21 @@ export async function orgChart(viewer: CurrentUser, input: z.infer<typeof orgCha
   }
   const reports = await employeesRepository.listDirectReports(person.id)
   return { person: directoryCard(person), managers: managers.map(directoryCard), reports: reports.map(directoryCard) }
+}
+
+export async function exportDirectory(viewer:CurrentUser,input:z.infer<typeof exportDirectoryInput>){
+  const {items,total}=await listDirectory(viewer,{...input,page:1,pageSize:20_000})
+  if(total>items.length)throw new ORPCError('BAD_REQUEST',{message:'The directory exceeds 20,000 records. Narrow the filters and export again.'})
+  return reportFile([reportSheet('Directory',items,[
+    {header:'Employee code',text:true,value:r=>r.employeeCode},{header:'Name',value:r=>r.name},
+    {header:'Designation',value:r=>r.designation},{header:'Company',value:r=>r.company.code},
+    {header:'Plant',value:r=>r.plant.name},{header:'Department',value:r=>r.department?.name},
+    {header:'Work location',value:r=>r.workLocation},{header:'Work email',value:r=>r.workEmail},
+    {header:'Reporting manager code',text:true,value:r=>r.reportingManager?.employeeCode},
+    {header:'Reporting manager',value:r=>r.reportingManager?.name},{header:'Joined',date:true,value:r=>r.dateOfJoining},
+  ])],{title:'People directory',preparedBy:`${viewer.name} (${viewer.employeeCode})`,
+    coverage:'Basic work-directory fields only, for currently working colleagues. Uses the same team or HOD relationship and place/search filters as the directory, across all matching pages.',
+    filters:[{label:'Group',value:input?.group??'Everyone'},{label:'Search',value:input?.search??'All'},
+      {label:'Placement filters',value:JSON.stringify({companyIds:input?.companyIds,plantIds:input?.plantIds,departmentIds:input?.departmentIds})}],
+  },'people-directory')
 }

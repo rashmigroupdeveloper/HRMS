@@ -1,3 +1,6 @@
+import { accessProcedure } from '#core/rpc/procedures'
+import { exportOrganizationInput } from './organization.schema.js'
+import * as organizationService from './organization.service.js'
 import { companiesRouter } from './companies/companies.router.js'
 import { costCentersRouter } from './cost-centers/cost-centers.router.js'
 import { departmentsRouter } from './departments/departments.router.js'
@@ -11,6 +14,7 @@ import { salaryComponentsRouter } from './salary-components/salary-components.ro
 
 // Organization masters: organization.companies.list, organization.departments.create, ...
 export const organizationRouter = {
+  export: accessProcedure('ORGANIZATION', 'READ').input(exportOrganizationInput).handler(({ input, context }) => organizationService.exportOrganization(context.user, input)),
   companies: companiesRouter,
   regions: regionsRouter,
   workLocations: workLocationsRouter,

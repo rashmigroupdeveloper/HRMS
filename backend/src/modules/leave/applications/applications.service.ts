@@ -1,3 +1,4 @@
+import { reportFile, reportSheet } from '#core/excel/report'
 import { env } from '#core/config/env'
 import { hasLevelAt, scopeOf } from '#core/auth/scope'
 import { sendMail } from '#core/mail/mailer'
@@ -440,3 +441,64 @@ attendanceService.registerLeaveCovers(async (employeeIds, from, to, { pending })
       .map(({ date, half }) => ({ employeeId: r.employeeId, date, half, status: 'LEAVE' as const, code: r.leaveType.code, label: r.leaveType.name })),
   )
 })
+
+// Exports reuse the page's relationship- and data-access-aware readers.
+function applicationSheet(rows: Awaited<ReturnType<typeof listMine>>) {
+  return reportSheet('Applications', rows, [
+    {header:'Employee code',text:true,value:r=>r.employee.employeeCode},
+    {header:'Employee',value:r=>r.employee.name},
+    {header:'Leave type',value:r=>r.leaveType.name},
+    {header:'From',date:true,value:r=>r.fromDate},
+    {header:'To',date:true,value:r=>r.toDate},
+    {header:'Starts in second half',value:r=>r.fromSecondHalf?'Yes':'No'},
+    {header:'Ends in first half',value:r=>r.toFirstHalf?'Yes':'No'},
+    {header:'Days',value:r=>r.days},
+    {header:'Status',value:r=>r.status},
+    {header:'Reason',width:45,value:r=>r.reason},
+    {header:'Requested at',dateTime:true,value:r=>r.createdAt},
+    {header:'Cancellation reason',width:35,value:r=>r.cancelReason},
+  ])
+}
+export async function exportApplications(viewer: CurrentUser, input: z.infer<typeof listInput>) {
+  return reportFile([applicationSheet(await list(viewer,input))], {
+    title:'Leave applications',preparedBy:`${viewer.name} (${viewer.employeeCode})`,
+    coverage:'Applications overlapping the selected dates within the same team, HOD department or Leave View data access as the page.',
+    filters:[{label:'Scope',value:input.scope},{label:'From',value:input.from.toISOString().slice(0,10)},
+      {label:'To',value:input.to.toISOString().slice(0,10)},{label:'Status',value:input.statuses?.join(', ')||'PENDING, APPROVED'},
+      {label:'Search',value:input.search||'All'}],
+  },'leave-applications')
+}
+export async function exportMine(viewer: CurrentUser) {
+  const [balance, applications] = await Promise.all([balancesService.getBalances(viewer,{}),listMine(viewer)])
+  return reportFile([
+    reportSheet('Balances',balance.balances,[
+      {header:'Leave code',text:true,value:r=>r.leaveType.code},
+      {header:'Leave type',value:r=>r.leaveType.name},
+      {header:'Balance',value:r=>r.balance},{header:'Pending',value:r=>r.pending},
+      {header:'Available',value:r=>r.available},{header:'Credited',value:r=>r.credited},
+      {header:'Adjusted',value:r=>r.adjusted},{header:'Taken',value:r=>r.taken},{header:'Lapsed',value:r=>r.lapsed},
+    ]),
+    reportSheet('Balance history',balance.entries,[
+      {header:'Date',date:true,value:r=>r.date},{header:'Leave type',value:r=>r.leaveType.name},
+      {header:'Entry',value:r=>r.what},{header:'Days',value:r=>r.days},{header:'Note',width:45,value:r=>r.note},
+      {header:'Expires on',date:true,value:r=>r.expiresOn},{header:'Recorded by',value:r=>r.by?.name},
+      {header:'Recorded at',dateTime:true,value:r=>r.at},
+    ]),applicationSheet(applications),
+  ],{title:'My leave',preparedBy:`${viewer.name} (${viewer.employeeCode})`,
+    coverage:`Your own ${balance.year} balances and ledger; latest 100 applications, matching My leave. Blank balances mean an unmetered leave type.`,
+    filters:[{label:'Employee code',value:viewer.employeeCode},{label:'Balance year',value:String(balance.year)}],
+  },`my-leave-${balance.year}`)
+}
+
+export async function exportRecounts(viewer:CurrentUser,input:z.infer<typeof recountsInput>){
+  const rows=await listRecounts(viewer,input)
+  return reportFile([reportSheet('Recounts',rows,[
+    {header:'Employee code',text:true,value:r=>r.employee.employeeCode},{header:'Employee',value:r=>r.employee.name},
+    {header:'Leave type',value:r=>r.leaveType.name},{header:'From',date:true,value:r=>r.fromDate},
+    {header:'To',date:true,value:r=>r.toDate},{header:'Approved days',value:r=>r.days},
+    {header:'Days now',value:r=>r.now},{header:'Difference',value:r=>r.difference},
+  ])],{title:'Leave recounts',preparedBy:`${viewer.name} (${viewer.employeeCode})`,
+    coverage:'Approved leave currently counted differently, within Leave View data access. Matches the selected dates. Exporting does not recount or adjust balances.',
+    filters:[{label:'From',value:input.from.toISOString().slice(0,10)},{label:'To',value:input.to.toISOString().slice(0,10)}],
+  },'leave-recounts')
+}

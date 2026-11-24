@@ -1,5 +1,6 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Download, Ellipsis, KeyRound, LockOpen, LogOut, Plus, Power, PowerOff, Search, UserCog, UserPlus } from 'lucide-react'
+import { Ellipsis, KeyRound, LockOpen, LogOut, Plus, Power, PowerOff, Search, UserCog, UserPlus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useBlocker } from 'react-router'
 import { FormError } from '@/components/FormError'
@@ -18,7 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
-import { downloadFile, formatDateTime } from '@/lib/utils'
+import { formatDateTime } from '@/lib/utils'
 import { RoleWorkspace } from './components/RoleWorkspace'
 import { DisableLoginDialog } from './components/DisableLoginDialog'
 import { ACCOUNT_STATUS, type Account, describeDataAccess, LEVEL_LABEL, type Role } from './components/labels'
@@ -59,7 +60,6 @@ export function RolesPage() {
   const sessions = useQuery({ ...orpc.accounts.sessions.list.queryOptions(), refetchInterval: 60_000 })
   const endSession = useMutation(orpc.accounts.sessions.end.mutationOptions({ onSuccess: refresh }))
   const endAll = useMutation(orpc.accounts.sessions.endAll.mutationOptions({ onSuccess: refresh }))
-  const [exportError, setExportError] = useState<string | null>(null)
 
   const areas = roles.data?.areas ?? []
   const roleList = roles.data?.roles ?? []
@@ -104,9 +104,7 @@ export function RolesPage() {
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Define permissions, assign roles and manage sign-ins.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="secondary" size="default" onClick={() => void downloadFile(() => client.accounts.roles.export(), setExportError)}>
-            <Download /> Excel
-          </Button>
+          <ExportButton load={() => client.accounts.roles.export()} />
           {canChangeRoles && tab === 'roles' ? (
             <Button variant="gold" size="default" onClick={() => setEditingRole('new')} disabled={!roles.data}>
               <Plus /> New role
@@ -115,7 +113,7 @@ export function RolesPage() {
             <span className="rounded-full bg-card px-4 py-2 text-sm text-muted-foreground shadow-card">View only</span>
           )}
         </div>
-        {exportError && <p className="w-full text-right text-sm text-negative-ink">{exportError}</p>}
+
       </header>
 
       {blocker.state === 'blocked' && <div role="alertdialog" aria-label="Unsaved security rules" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gold-soft px-4 py-3"><p className="text-sm">You have unsaved security rules. Discard them and leave?</p><div className="flex gap-2"><Button variant="secondary" onClick={() => blocker.reset()}>Keep editing</Button><Button variant="destructive" onClick={() => blocker.proceed()}>Discard</Button></div></div>}

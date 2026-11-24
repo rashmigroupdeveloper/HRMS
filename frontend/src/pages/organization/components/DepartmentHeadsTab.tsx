@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useQuery } from '@tanstack/react-query'
 import { CircleAlert, CircleCheck, LayoutGrid, type LucideIcon, Plus, Search, Users } from 'lucide-react'
 import { useState } from 'react'
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccess } from '@/hooks/useAccess'
-import { orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { cn, formatMoment } from '@/lib/utils'
 import { HodAvatar } from './HodAvatar'
 import { HodDetail } from './HodDetail'
@@ -60,7 +61,9 @@ export function DepartmentHeadsTab() {
 
   return (
     <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
+
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <ExportButton className="order-last" disabled={!places.data?.length} title="Export authorized department-head coverage with current search and gap filters" load={() => client.employees.hods.export({ view: 'heads', search: search.trim() || undefined, onlyGaps: view === 'places' && onlyGaps })} />
         <h2 className="mr-auto flex items-baseline gap-2 text-lg font-light tracking-tight" title="Every employee's HOD is whoever heads their department at their plant">
           HODs
           {hods.isPending ? (

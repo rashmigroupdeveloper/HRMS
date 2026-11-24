@@ -1,3 +1,4 @@
+import { writeReport } from '#core/excel/report'
 import { hasLevelAt, assertGroupWide, SYSTEM_SCOPE } from '#core/auth/scope'
 import { prisma, SYSTEM_ACTOR } from '#core/db/prisma'
 import { readFirstSheet, writeWorkbook, type CellValue } from '#core/excel/workbook'
@@ -165,7 +166,7 @@ export async function getRegister(viewer: CurrentUser, { year: asked, ...filter 
 
 export async function exportRegister(viewer: CurrentUser, input: z.infer<typeof registerInput>) {
   const register = await getRegister(viewer, input)
-  const bytes = await writeWorkbook([
+  const bytes = await writeReport([
     {
       name: `Leave ${register.year}`,
       columns: [
@@ -186,7 +187,7 @@ export async function exportRegister(viewer: CurrentUser, input: z.infer<typeof 
         ...Object.fromEntries(register.types.flatMap((t) => [[`b${t.id}`, r.balances[t.id]?.balance ?? null], [`t${t.id}`, r.balances[t.id]?.taken ?? null]])),
       })),
     },
-  ])
+  ], { filters: [{label:'Filters',value:JSON.stringify(input ?? {})}], title: 'Leave balances', preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage: 'Balances for the selected year, people view and placement filters.' })
   return new File([new Uint8Array(bytes)], `leave-balances-${register.year}.xlsx`, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
 }
 

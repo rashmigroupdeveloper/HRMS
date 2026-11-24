@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import { useState } from 'react'
@@ -6,7 +7,7 @@ import { FormError } from '@/components/FormError'
 import { LeaveRowsSkeleton } from '@/components/skeletons/leave/LeaveRowsSkeleton'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { cn, fromDateInput, toDateInput } from '@/lib/utils'
 import { segment, SEGMENTS } from '@/pages/attendance/components/labels'
 import { LeaveList } from './LeaveList'
@@ -36,6 +37,7 @@ export function TeamLeaveList({ scope }: { scope: Scope }) {
   return (
     <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
       <div className="flex flex-wrap items-end gap-3">
+        <ExportButton className="order-last ml-auto" disabled={!valid || !list.data?.length || list.isFetching} load={() => client.leave.applications.export({scope,from:fromDateInput(from)!,to:fromDateInput(to)!,statuses:[...STATUS_FILTER[status]],search:search.trim()||undefined})} />
         <div className="space-y-1">
           <Label htmlFor="tl-from" className="text-xs text-muted-foreground">
             From

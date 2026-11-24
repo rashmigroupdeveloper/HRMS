@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Lock, LockOpen } from 'lucide-react'
 import { useState } from 'react'
@@ -12,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAccess } from '@/hooks/useAccess'
-import { type client, orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { cn, errorMessage, formatDate, formatDoneBy, todayDay } from '@/lib/utils'
 
 type MonthRow = Awaited<ReturnType<typeof client.attendance.locks.months>>['months'][number]
@@ -45,14 +46,14 @@ export function MonthLockSetup({ card: Card }: { card: (props: CardProps) => Rea
       <Card
         title="Month lock"
         hint="A locked month does not change any more - its days are not worked out again, and punches, corrections, roster days and shift changes for it are refused. For payroll. One lock for every company."
-        action={
+        action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!months.data || months.isFetching} load={() => client.attendance.exportSetup({section:'locks',year})} />
           <NativeSelect className="[&_select]:h-9 [&_select]:rounded-full" aria-label="Year" value={String(year)} onChange={(e) => setYear(Number(e.target.value))}>
             {[year - 1, year, year + 1].map((y) => (
               <NativeSelectOption key={y} value={String(y)}>
                 {y}
               </NativeSelectOption>
             ))}
-          </NativeSelect>
+          </NativeSelect></div>
         }
       >
         <FormError error={months.error ?? unlock.error} />

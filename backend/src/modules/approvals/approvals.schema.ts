@@ -1,3 +1,4 @@
+import { reportFilter } from './reports/reports.schema.js'
 import { idSchema } from '#shared/schemas/common.schema'
 import { z } from 'zod'
 
@@ -15,3 +16,10 @@ export const cancelApprovalInput = z.object({
   id: idSchema,
   reason: z.string().trim().min(1).max(500).optional(),
 })
+
+const inboxExportInput = z.object({
+  mode: z.enum(['waiting', 'decided', 'mine', 'held']),
+  feature: z.string().max(50).optional(),
+})
+
+export const exportApprovalsInput = z.union([inboxExportInput, reportFilter.extend({mode:z.literal('team')})])

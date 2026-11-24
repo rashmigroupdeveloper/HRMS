@@ -1,3 +1,5 @@
+import { assertAccess } from '#core/auth/access'
+import { reportFile, reportSheet } from '#core/excel/report'
 import { hasLevelAt, type Placement, scopeAllows, scopeOf, SYSTEM_SCOPE } from '#core/auth/scope'
 import { type ActorId, type DbClient, prisma } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
@@ -8,7 +10,7 @@ import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as employeesService from '../employees.service.js'
 import * as hodsRepository from './hods.repository.js'
-import type { appointHodInput, endHodInput, hodHistoryInput, clockSchema } from './hods.schema.js'
+import type { appointHodInput, endHodInput, hodHistoryInput, clockSchema, exportHodsInput } from './hods.schema.js'
 
 // HOD appointments (BACKLOG 3e, changed with the user 2026-11-19).
 // - An HOD POST is a plant-department: one company + one of its plants + one department running there. It exists as soon
@@ -457,4 +459,29 @@ export async function listDepartmentIds(employeeId: number) {
 export async function listPostLabels() {
   const posts = await plantsService.listAllPlantDepartments()
   return new Map(posts.map((post) => [post.id, postLabel(post)]))
+}
+
+export async function exportHods(viewer: CurrentUser, input: z.infer<typeof exportHodsInput>) {
+  const words = (input.search ?? '').toLowerCase().split(/\s+/).filter(Boolean)
+  const preparedBy = `${viewer.name} (${viewer.employeeCode})`
+  if (input.view === 'department') {
+    const data = await myDepartment(viewer)
+    const rows = data.employees.filter((e) => (!input.postId || e.postId === input.postId) && words.every((w) => `${e.employeeCode} ${e.name}`.toLowerCase().includes(w)))
+    return reportFile([reportSheet('My department', rows, [
+      { header: 'Employee code', value: r => r.employeeCode, text: true }, { header: 'Employee', value: r => r.name, width: 30 },
+      { header: 'Designation', value: r => r.designation, width: 28 }, { header: 'Company', value: r => r.company },
+      { header: 'Plant', value: r => `${r.plant.plantCode} · ${r.plant.name}`, width: 28 }, { header: 'Department', value: r => r.department, width: 28 },
+      { header: 'Joined', value: r => r.dateOfJoining, date: true }, { header: 'Reporting manager', value: r => r.reportingManager?.name, width: 28 },
+      { header: 'Work email', value: r => r.workEmail, width: 34 }, { header: 'Status', value: r => r.status },
+    ])], { title: 'My department', preparedBy, coverage: 'Only employees in the departments you currently head, with the selected department and search filters.' }, 'my-department')
+  }
+  assertAccess(viewer.access, 'HOD_APPOINTMENTS', 'READ')
+  const rows = (await listPlaces(viewer)).filter((r) => (!input.onlyGaps || (r.employees > 0 && !r.hod)) && words.every((w) => `${r.label} ${r.hod?.name ?? ''} ${r.hod?.employeeCode ?? ''} ${r.next?.name ?? ''}`.toLowerCase().includes(w)))
+  return reportFile([reportSheet('Department heads', rows, [
+    { header: 'Company', value: r => r.company.code, text: true }, { header: 'Plant', value: r => `${r.plant.plantCode} · ${r.plant.name}`, width: 30 },
+    { header: 'Department', value: r => r.department.name, width: 30 }, { header: 'Employees', value: r => r.employees },
+    { header: 'Current HOD code', value: r => r.hod?.employeeCode, text: true }, { header: 'Current HOD', value: r => r.hod?.name, width: 30 },
+    { header: 'Since', value: r => r.hod?.since, dateTime: true }, { header: 'Until', value: r => r.hod?.until, dateTime: true },
+    { header: 'Next HOD', value: r => r.next?.name, width: 30 }, { header: 'Next starts', value: r => r.next?.from, dateTime: true },
+  ])], { title: 'Department head coverage', preparedBy, coverage: 'Places within your active role HOD appointments View scope, with current search and gap filters.' }, 'department-heads')
 }

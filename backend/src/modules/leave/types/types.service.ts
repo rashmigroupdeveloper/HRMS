@@ -1,3 +1,4 @@
+import { reportFile, reportSheet } from '#core/excel/report'
 import { hasAccess } from '#core/auth/access'
 import { assertGroupWide } from '#core/auth/scope'
 import type { CurrentUser } from '#core/rpc/procedures'
@@ -106,4 +107,18 @@ export async function updateType(viewer: CurrentUser, input: z.infer<typeof upda
     if (creditsFrom < first) throw new ORPCError('BAD_REQUEST', { message: `${current.code} was added in ${monthText(current.createdAt)} - its credits start ${monthText(first)} at the earliest` })
   }
   return toType(await typesRepository.update(input.id, { ...next, ...(input.isActive !== undefined && { isActive: input.isActive }), ...(creditsFrom && { creditsFrom }) }, viewer.employeeId))
+}
+
+export async function exportTypes(viewer: CurrentUser, includeInactive = false) {
+  return reportFile([reportSheet('Leave types',await listTypes(viewer,includeInactive),[
+    {header:'Code',text:true,value:r=>r.code},{header:'Name',value:r=>r.name},
+    {header:'Paid',value:r=>r.isPaid?'Yes':'No'},{header:'Credit per month',value:r=>r.creditPerMonth},
+    {header:'Credit after months',value:r=>r.creditAfterMonths},{header:'Carry forward limit',value:r=>r.maxCarryForward??'All'},
+    {header:'Per-request limit',value:r=>r.maxPerRequest??'No limit'},{header:'Half days',value:r=>r.allowHalfDay?'Yes':'No'},
+    {header:'Counts off days',value:r=>r.countsOffDays?'Yes':'No'},
+    {header:'Genders',value:r=>r.genders.join(', ')||'All'},
+    {header:'Employment types',width:35,value:r=>r.employmentTypes.join(', ')||'All'},
+    {header:'Comp-off',value:r=>r.isCompOff?'Yes':'No'},{header:'Status',value:r=>r.isActive?'Active':'Retired'},
+  ])],{title:'Leave types',preparedBy:`${viewer.name} (${viewer.employeeCode})`,
+    coverage:'Shared leave rules. Retired types are included only when requested and the active role has Leave View.'},'leave-types')
 }

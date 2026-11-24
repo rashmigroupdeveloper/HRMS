@@ -1,10 +1,11 @@
 import { accessProcedure, authedProcedure } from '#core/rpc/procedures'
-import { appointHodInput, endHodInput, hodHistoryInput } from './hods.schema.js'
+import { appointHodInput, endHodInput, hodHistoryInput, exportHodsInput } from './hods.schema.js'
 import * as hodsService from './hods.service.js'
 
 // HOD appointments (BACKLOG 3e - an HOD post is a plant-department). Routes + controller only - the rules are in
 // hods.service.ts.
 export const hodsRouter = {
+  export: authedProcedure.input(exportHodsInput).handler(({ input, context }) => hodsService.exportHods(context.user, input)),
   // The HODs with the posts each heads now or will head (inside the viewer's data access).
   list: accessProcedure('HOD_APPOINTMENTS', 'READ').handler(({ context }) => hodsService.listHods(context.user)),
   // Every post (company + plant + department) inside the viewer's data access, with who heads it now and next.

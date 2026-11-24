@@ -33,3 +33,10 @@ export const endHodInput = z.object({
 
 // One post's history - or the posts one employee headed
 export const hodHistoryInput = z.union([z.object({ postId: idSchema }), z.object({ employeeCode: employeeCodeSchema })])
+
+export const exportHodsInput = z.object({
+  view: z.enum(['department', 'heads']),
+  postId: idSchema.optional(),
+  search: z.string().trim().max(200).optional(),
+  onlyGaps: z.boolean().optional(),
+})

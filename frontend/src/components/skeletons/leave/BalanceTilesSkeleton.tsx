@@ -8,17 +8,17 @@ export function BalanceTilesSkeleton({ tiles = 6, label }: { tiles?: number; lab
     <div role="status" aria-label={label} className={TILES_GRID}>
       {Array.from({ length: tiles }, (_, i) => (
         <div key={i} className="min-w-0 rounded-2xl bg-surface-2/60 px-3 py-2.5">
-          <p className="flex h-4 items-center gap-1.5">
+          <div className="flex h-4 items-center gap-1.5">
             <Skeleton className="h-3 w-6 rounded-full" />
             <Skeleton className="h-3 w-20 rounded-full" />
-          </p>
-          <p className="mt-0.5 flex h-8 items-center gap-1">
+          </div>
+          <div className="mt-0.5 flex h-8 items-center gap-1">
             <Skeleton className="h-6 w-8 rounded-lg" />
             <span className="text-xs text-muted-foreground">available</span>
-          </p>
-          <p className="flex h-4 items-center">
+          </div>
+          <div className="flex h-4 items-center">
             <Skeleton className="h-3 w-28 rounded-full" />
-          </p>
+          </div>
         </div>
       ))}
     </div>

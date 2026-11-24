@@ -88,3 +88,9 @@ export const updatePatternInput = z
     isActive: z.boolean().optional(),
   })
   .refine((v) => v.effectiveFrom !== undefined || (v.days === undefined && v.halfDays === undefined), { message: 'Give the date the new days apply from', path: ['effectiveFrom'] })
+
+export const exportSetupInput = z.object({
+  section:z.enum(['shifts','patterns','policies','holidays','punches','schedules','locks']),
+  year:z.number().int().min(2020).max(2100).optional(),
+  schedules:listSchedulesInput,
+}).refine(v=>!['holidays','locks'].includes(v.section)||v.year!==undefined,{message:'Choose a year',path:['year']})

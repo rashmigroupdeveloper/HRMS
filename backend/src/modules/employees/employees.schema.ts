@@ -615,3 +615,5 @@ export const EMPLOYMENT_TYPE_LABEL: Record<EmploymentType, string> = {
 }
 export const WORKFORCE_LABEL: Record<WorkforceCategory, string> = { WHITE_COLLAR: 'White collar (staff)', BLUE_COLLAR: 'Blue collar (worker)' }
 export const STATUS_LABEL: Record<EmployeeStatus, string> = { ACTIVE: 'Active', ON_NOTICE: 'On notice', EXITED: 'Exited' }
+
+export const exportDirectoryInput = directoryInput.unwrap().omit({page:true,pageSize:true}).optional()

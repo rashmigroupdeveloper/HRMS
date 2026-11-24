@@ -1,6 +1,6 @@
+import { writeReport } from '#core/excel/report'
 import type { CurrentUser } from '#core/rpc/procedures'
 import type { AccessLevel } from '#core/db/prisma'
-import { writeWorkbook } from '#core/excel/workbook'
 import { sendMail } from '#core/mail/mailer'
 import { env } from '#core/config/env'
 import { accountsService } from '#modules/accounts'
@@ -16,6 +16,7 @@ import type {
   closeCandidateInput,
   createCandidateInput,
   listCandidatesInput,
+  exportCandidatesInput,
   recordMedicalInput,
   updateCandidateInput,
 } from './candidates.schema.js'
@@ -209,10 +210,11 @@ function loiStatus(c: { loiNumber: string | null; loiAcceptedAt: Date | null; of
 
 // The "Offers & candidates" report (2026-11-16, inspired by the old HRMS's R21): every candidate matching the filters,
 // with the Letter of Intent and offer steps, as an Excel file
-export async function exportCandidates(input: z.infer<typeof listCandidatesInput>, viewer: CurrentUser) {
-  const rows = await candidatesRepository.list({ scope: scopeOf(viewer, 'ONBOARDING', 'READ'), status: input?.status, companyId: input?.companyId })
+export async function exportCandidates(input: z.infer<typeof exportCandidatesInput>, viewer: CurrentUser) {
+  const authorized = await candidatesRepository.list({ scope: scopeOf(viewer, 'ONBOARDING', 'READ'), status: input?.status, companyId: input?.companyId })
+  const rows = input?.statuses ? authorized.filter(r=>input.statuses!.includes(r.status)) : authorized
   const name = (c: { firstName: string; middleName: string | null; lastName: string | null }) => [c.firstName, c.middleName, c.lastName].filter(Boolean).join(' ')
-  const bytes = await writeWorkbook([
+  const bytes = await writeReport([
     {
       name: 'Offers & candidates',
       columns: [
@@ -258,7 +260,7 @@ export async function exportCandidates(input: z.infer<typeof listCandidatesInput
         closeReason: c.closeReason,
       })),
     },
-  ])
+  ], { filters: [{label:'Filters',value:JSON.stringify(input ?? {})}], title: 'Offers and candidates', preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage: 'Candidates matching the supplied report filters, within the active role data scope.' })
   return new File([new Uint8Array(bytes)], `offers-and-candidates-${today().toISOString().slice(0, 10)}.xlsx`, {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   })

@@ -5,6 +5,7 @@ import * as rostersService from './rosters.service.js'
 // attendance.rosters.* - part of the attendance setup (2026-11-22): seen with Attendance setup: View, changed with Edit -
 // each employee inside the caller's data access (checked in the service).
 export const rostersRouter = {
+  export: accessProcedure('ATTENDANCE_SETUP','READ').input(rosterGridInput).handler(({input,context})=>rostersService.exportGrid(context.user,input)),
   grid: accessProcedure('ATTENDANCE_SETUP', 'READ').input(rosterGridInput).handler(({ input, context }) => rostersService.getGrid(context.user, input)),
   save: accessProcedure('ATTENDANCE_SETUP', 'WRITE').input(saveRosterInput).handler(({ input, context }) => rostersService.saveCells(context.user, input)),
   clear: accessProcedure('ATTENDANCE_SETUP', 'WRITE').input(clearRosterInput).handler(({ input, context }) => rostersService.clearCells(context.user, input)),

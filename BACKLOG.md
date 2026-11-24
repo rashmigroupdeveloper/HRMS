@@ -346,7 +346,7 @@ sign-in lasts 7 days from signing in (now a security rule).
 **E-mail and history**
 - [x] An e-mail the mail server refused is kept (encrypted) and tried again by the worker - after 1, 5, 15 and 60
   minutes, 5 tries in all (`core/mail/retry.ts`, table `mail_retries`); HR is told it will be tried again.
-- [x] Change history as an Excel download (`changeHistory.export`, the "Excel" button on the History page).
+- [x] Change history as an Excel download (`changeHistory.export`, the "Export" button on the History page).
 - [?] A daily e-mail of the day's joiners (old: joiners + leavers, but nobody was set up to receive it). **Ask:** who
   receives it? The leavers half waits for the exit module.
 
@@ -378,7 +378,7 @@ sign-in lasts 7 days from signing in (now a security rule).
   rehire or an offer made twice; it never blocks.
 - [x] The medical consent kept word for word with the medical information (`consentText`; the text lives in
   `employees.schema.ts` MEDICAL_CONSENT_TEXT and is shown by the joining form).
-- [x] "Offers & candidates" Excel report (`candidates.export`, the "Excel report" button on Onboarding): status, the
+- [x] "Offers & candidates" Excel report (`candidates.export`, the "Export" button on Onboarding): status, the
   Letter of Intent's number and status, the offer, dates, CTC, joined as.
 - [?] The candidate's background at the interview (old: current CTC, expected CTC, total experience, previous
   company). **Ask HR:** is it needed in the HRMS (and for what), or does it stay in recruitment? Added and taken out
@@ -664,3 +664,8 @@ moment) and the test setup using the installed Prisma; and the frontend review's
 - **Overseas employees' bank:** do we need SWIFT / IBAN for salary paid abroad?
 - **Reporting manager:** do we store it on the employee? (8 employees in the old HRMS have one; it was not
   imported.)
+
+### Combined team-request reports (2026-11-24)
+
+- [x] Approvals → Team requests: current team/HOD department or separately scoped Leave/Attendance access; all leave, cancellation, regularisation, OD, comp-off and shift-change outcomes with original employee messages and approval remarks. Inclusive date basis, type/status/person filters, URL persistence, paged compact table and one full Excel review export.
+- [ ] Preserve source details of older, superseded leave-cancellation requests. A leave application points only to its latest cancellation approval; another cancellation can replace that relation and its reason. The new report labels unavailable details rather than reconstructing text from summaries; request-raised date filtering can still show these approval rows. Retaining every future cancellation's original dates/reason needs an agreed schema/history change; already-lost text may be unrecoverable. No speculative backfill or audit-log workaround.

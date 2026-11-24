@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, Search, Undo2 } from 'lucide-react'
 import { type CSSProperties, useState } from 'react'
@@ -15,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccess } from '@/hooks/useAccess'
-import { orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { cn, formatDate, formatDoneBy, initialsOf } from '@/lib/utils'
 import { PersonChip, TeamChip } from './Chips'
 import { daysFromToday, dueStatus, type JoiningTask, openTasksInput, type Scope } from './labels'
@@ -78,6 +79,7 @@ export function TasksView({ scope }: { scope: Scope }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-card p-2 shadow-card">
+        <ExportButton className="order-last ml-auto" disabled={!shown.length || tasks.isFetching} load={() => client.joiningTasks.export({ ...input, ids: shown.map((t) => t.id) })} />
         <div className="flex gap-1 rounded-full bg-surface-2 p-1">
           {(['OPEN', 'DONE'] as const).map((value) => (
             <button

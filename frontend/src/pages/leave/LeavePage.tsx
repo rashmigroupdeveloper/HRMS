@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarPlus } from 'lucide-react'
 import { useState } from 'react'
@@ -8,7 +9,7 @@ import { ReasonDialog } from '@/components/ReasonDialog'
 import { BalanceTilesSkeleton } from '@/components/skeletons/leave/BalanceTilesSkeleton'
 import { LeaveRowsSkeleton } from '@/components/skeletons/leave/LeaveRowsSkeleton'
 import { Button } from '@/components/ui/button'
-import { orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { cn, formatDate, todayDay } from '@/lib/utils'
 import { ApplyLeaveDialog } from './components/ApplyLeaveDialog'
 import { LeavePages } from './components/LeavePages'
@@ -57,6 +58,7 @@ export function LeavePage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <LeavePages />
+          <ExportButton disabled={!b || balances.isFetching || mine.isFetching} load={() => client.leave.applications.exportMine()} title="Export your balances, ledger and latest 100 applications" />
           <Button variant="gold" disabled={!b} onClick={() => setApplying({})}>
             <CalendarPlus /> Apply for leave
           </Button>

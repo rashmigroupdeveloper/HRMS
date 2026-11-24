@@ -65,3 +65,5 @@ export const completeTaskInput = z.object({ id: idSchema, note: z.string().trim(
 export const assignTaskInput = z.object({ id: idSchema, assigneeCode: assigneeCodeSchema })
 
 export const taskIdInput = z.object({ id: idSchema })
+
+export const exportTasksInput = listTasksInput.extend({ ids: z.array(idSchema).max(1000).optional() })

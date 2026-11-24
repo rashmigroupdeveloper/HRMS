@@ -1,3 +1,11 @@
+import { reportFile, reportSheet, type ReportField } from '#core/excel/report'
+import type { z } from 'zod'
+import type { exportSetupInput } from './shifts/shifts.schema.js'
+import * as shiftsService from './shifts/shifts.service.js'
+import * as policiesService from './policies/policies.service.js'
+import * as holidaysService from './holidays/holidays.service.js'
+import * as punchesService from './punches/punches.service.js'
+import * as locksService from './locks/locks.service.js'
 import { hasAccess } from '#core/auth/access'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { employeesService, hodsService } from '#modules/employees'
@@ -63,4 +71,72 @@ export async function workedOn(employeeId: number, date: Date) {
   if (!person) return null
   const day = await daysService.getDayOf(person, date)
   return { planned: day.planned, holiday: day.holiday, status: day.status, firstHalf: day.firstHalf, secondHalf: day.secondHalf, workedMinutes: day.workedMinutes, inAt: day.inAt, outAt: day.outAt }
+}
+
+// Each section uses exactly its existing page reader; shared setup is separate from scoped employee schedules.
+export async function exportSetup(viewer: CurrentUser,input:z.infer<typeof exportSetupInput>) {
+  const details={title:`Attendance ${input.section}`,preparedBy:`${viewer.name} (${viewer.employeeCode})`,
+    coverage:input.section==='schedules'?'Current schedules within Attendance setup View data access and selected filters.':
+      input.section==='punches'?'Latest 30 uploads and all unmatched machine codes, matching the shared ingestion lists.':
+      'Shared attendance setup, matching the selected section. Includes retired definitions and current effective rules.',
+    filters:[{label:'Year',value:input.year?String(input.year):'Not applicable'},
+      {label:'Schedule filters',value:input.schedules?JSON.stringify(input.schedules):'All'}]}
+  const file=<T>(name:string,rows:T[],fields:ReportField<T>[])=>reportFile([reportSheet(name,rows,fields)],details,`attendance-${input.section}${input.year?'-'+input.year:''}`)
+  switch(input.section){
+    case 'shifts':return file('Shifts',await shiftsService.listShifts(viewer,true),[
+      {header:'Code',text:true,value:r=>r.code},{header:'Name',value:r=>r.name},
+      {header:'Start',text:true,value:r=>r.start},{header:'End',text:true,value:r=>r.end},
+      {header:'Break minutes',value:r=>r.breakMinutes},{header:'First half ends',text:true,value:r=>r.halfSplit},
+      {header:'Effective from',date:true,value:r=>r.from},{header:'Status',value:r=>r.isActive?'Active':'Retired'},
+      {header:'Upcoming timings',width:48,value:r=>r.versions.filter(v=>v.upcoming).map(v=>`${v.effectiveFrom.toISOString().slice(0,10)}: ${v.start}–${v.end}; break ${v.breakMinutes}m; first half ${v.halfSplit??'midpoint'}`).join('\n')},
+    ])
+    case 'patterns':{
+      const shifts=await shiftsService.listShifts(viewer,true)
+      return file('Weekly patterns',await shiftsService.listPatterns(viewer,true),[
+        {header:'Name',value:r=>r.name},{header:'Default',value:r=>r.isDefault?'Yes':'No'},
+        {header:'Cycle days',width:70,value:r=>r.days.map((id,i)=>`${i+1}: ${id===0?'Off':shifts.find(s=>s.id===id)?.code??id}${r.halfDays.includes(i+1)?' (half day)':''}`).join('\n')},
+        {header:'Upcoming cycles',width:65,value:r=>r.versions.filter(v=>v.upcoming).map(v=>`${v.effectiveFrom.toISOString().slice(0,10)}: ${v.days.map((id,i)=>`${i+1}: ${id===0?'Off':shifts.find(s=>s.id===id)?.code??id}${v.halfDays.includes(i+1)?' (half day)':''}`).join(', ')}`).join('\n')},
+        {header:'Becomes default',date:true,value:r=>r.defaultFrom},
+        {header:'Effective from',date:true,value:r=>r.from},{header:'Status',value:r=>r.isActive?'Active':'Retired'},
+      ])
+    }
+    case 'policies':return file('Policies',await policiesService.listPolicies(viewer,true),[
+      {header:'Name',value:r=>r.name},{header:'Default',value:r=>r.isDefault?'Yes':'No'},
+      {header:'Grace minutes',value:r=>r.graceMinutes},{header:'Full day minutes',value:r=>r.fullDayMinutes},
+      {header:'Half day minutes',value:r=>r.halfDayMinutes},{header:'Lates per half day cut',value:r=>r.latesPerHalfDayCut},
+      {header:'Very late minutes',value:r=>r.veryLateMinutes},{header:'Very early minutes',value:r=>r.veryEarlyMinutes},
+      {header:'Upcoming rules',width:65,value:r=>r.versions.filter(v=>v.upcoming).map(v=>`${v.effectiveFrom.toISOString().slice(0,10)}: grace ${v.graceMinutes}m, full ${v.fullDayMinutes??'shift'}m, half ${v.halfDayMinutes}m, late cut every ${v.latesPerHalfDayCut??'none'}, very late ${v.veryLateMinutes??'none'}m, very early ${v.veryEarlyMinutes??'none'}m`).join('\n')},
+      {header:'Effective from',date:true,value:r=>r.from},{header:'Status',value:r=>r.isActive?'Active':'Retired'},
+    ])
+    case 'holidays':return file('Holidays',await holidaysService.listHolidays(input.year!),[
+      {header:'Date',date:true,value:r=>r.date},{header:'Name',value:r=>r.name},
+      {header:'Company',value:r=>r.company?.code??'Every company'},{header:'Work location',value:r=>r.workLocation?.name??'Every location'},
+    ])
+    case 'schedules':return file('Schedules',await shiftsService.listSchedules(viewer,input.schedules??{}),[
+      {header:'Employee code',text:true,value:r=>r.employee.employeeCode},{header:'Employee',value:r=>r.employee.name},
+      {header:'Company',value:r=>r.employee.company},{header:'Plant',value:r=>r.employee.plant},
+      {header:'Department',value:r=>r.employee.department},{header:'Cost center',value:r=>r.employee.costCenter},
+      {header:'Work location',value:r=>r.employee.workLocation},{header:'Pattern',value:r=>r.pattern?.name},
+      {header:'Policy',value:r=>r.policy?.name},{header:'Since',date:true,value:r=>r.since},
+      {header:'Next pattern',value:r=>r.next?.pattern?.name},{header:'Next from',date:true,value:r=>r.next?.from},
+    ])
+    case 'locks':return file('Month locks',(await locksService.listMonths(viewer,input.year!)).months,[
+      {header:'Month',value:r=>r.name},{header:'From',date:true,value:r=>r.from},{header:'To',date:true,value:r=>r.to},
+      {header:'Status',value:r=>r.locked?'Locked':'Open'},{header:'Locked by',value:r=>r.locked?.by?.name},
+      {header:'Locked at',dateTime:true,value:r=>r.locked?.at},
+      {header:'Reopened',width:50,value:r=>r.reopened.map(o=>`${o.unlockedAt?.toISOString()} ${o.unlockedBy?.name}: ${o.reason}`).join('\n')},
+    ])
+    case 'punches':{
+      const [uploads,unmatched]=await Promise.all([punchesService.listUploads(),punchesService.listUnmatched()])
+      return reportFile([reportSheet('Uploads',uploads,[
+        {header:'File',width:40,value:r=>r.fileName},{header:'Rows',value:r=>r.rowCount},
+        {header:'Added',value:r=>r.addedCount},{header:'Duplicates',value:r=>r.duplicateCount},
+        {header:'Unmatched',value:r=>r.unmatchedCount},{header:'Uploaded by',value:r=>r.by?.name},
+        {header:'Uploaded at',dateTime:true,value:r=>r.createdAt},
+      ]),reportSheet('Unmatched codes',unmatched,[
+        {header:'Machine code',text:true,value:r=>r.code},{header:'Punches',value:r=>r.punches},
+        {header:'First punch',dateTime:true,value:r=>r.first},{header:'Last punch',dateTime:true,value:r=>r.last},
+      ])],details,'attendance-punches')
+    }
+  }
 }

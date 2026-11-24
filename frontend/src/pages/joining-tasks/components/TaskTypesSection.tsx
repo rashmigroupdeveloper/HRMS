@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, ChevronDown, Pencil, Plus } from 'lucide-react'
 import { useState } from 'react'
@@ -14,7 +15,7 @@ import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import { useAccess } from '@/hooks/useAccess'
-import { orpc } from '@/lib/orpc'
+import { client, orpc } from '@/lib/orpc'
 import { cn, initialsOf } from '@/lib/utils'
 import { PersonChip, TeamChip } from './Chips'
 import { JOINING_TYPE, type JoiningType, type TaskType, teamDot } from './labels'
@@ -57,6 +58,7 @@ export function TaskTypesSection() {
           )}
           <span className="max-md:hidden"> · changes apply to employees joining from now on</span>
         </p>
+        <ExportButton disabled={!types.data?.length} load={() => client.joiningTasks.types.export({ includeInactive: showRetired && canChange })} />
         {canChange && (
           <Button variant="gold" size="sm" onClick={() => setEditing('new')}>
             <Plus /> Add a task

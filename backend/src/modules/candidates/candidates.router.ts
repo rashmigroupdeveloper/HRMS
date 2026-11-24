@@ -4,6 +4,7 @@ import {
   closeCandidateInput,
   createCandidateInput,
   listCandidatesInput,
+  exportCandidatesInput,
   recordMedicalInput,
   updateCandidateInput,
 } from './candidates.schema.js'
@@ -26,7 +27,7 @@ const changeProcedure = accessProcedure('ONBOARDING', 'WRITE')
 export const candidatesRouter = {
   list: viewProcedure.input(listCandidatesInput).handler(({ input, context }) => candidatesService.listCandidates(input, context.user)),
   // The offers and candidates (same filters as list) as an Excel file - the "Offers & candidates" report
-  export: viewProcedure.input(listCandidatesInput).handler(({ input, context }) => candidatesService.exportCandidates(input, context.user)),
+  export: viewProcedure.input(exportCandidatesInput).handler(({ input, context }) => candidatesService.exportCandidates(input, context.user)),
   get: viewProcedure.input(candidateIdInput).handler(({ input, context }) => candidatesService.getCandidateDetails(input.id, context.user)),
   create: changeProcedure.input(createCandidateInput).handler(({ input, context }) => candidatesService.createCandidate(input, context.user)),
   update: changeProcedure.input(updateCandidateInput).handler(({ input, context }) => candidatesService.updateCandidate(input, context.user)),

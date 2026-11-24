@@ -1,5 +1,6 @@
+import { ExportButton } from '@/components/ExportButton'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Download, Search, Upload } from 'lucide-react'
+import { Search, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState } from '@/components/EmptyState'
 import { FormError } from '@/components/FormError'
@@ -13,7 +14,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { client, orpc } from '@/lib/orpc'
-import { cn, downloadFile } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { useAccess } from '@/hooks/useAccess'
 import { ImportBalancesDrawer } from './ImportBalancesDrawer'
 import type { Register } from './labels'
@@ -26,7 +27,6 @@ type Row = Register['rows'][number]
 
 export function LeaveRegister({ scope }: { scope: Scope }) {
   const [search, setSearch] = useState('')
-  const [exportError, setExportError] = useState<string | null>(null)
   const [adjusting, setAdjusting] = useState<Row | null>(null)
   const [importing, setImporting] = useState(false)
   // the opening balances import: Leave Edit (each row's employee is checked by the backend)
@@ -47,20 +47,10 @@ export function LeaveRegister({ scope }: { scope: Scope }) {
               <Upload /> Import
             </Button>
           )}
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={!r?.rows.length}
-          onClick={() => {
-            setExportError(null)
-            void downloadFile(() => client.leave.balances.export(input), setExportError)
-          }}
-        >
-          <Download /> Excel
-        </Button>
+        <ExportButton load={() => client.leave.balances.export(input)} disabled={!r?.rows.length} />
         </div>
       </div>
-      {exportError && <p className="text-xs text-negative-ink">{exportError}</p>}
+
       <FormError error={register.error} />
       {register.isPending && <RegisterSkeleton label="Loading the leave balances" />}
       {r?.rows.length === 0 && <EmptyState className="py-6" title="Nobody to show" hint="Nobody matches the search." />}

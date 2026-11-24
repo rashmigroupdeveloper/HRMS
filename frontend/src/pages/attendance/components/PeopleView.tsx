@@ -1,5 +1,6 @@
+import { ExportButton } from '@/components/ExportButton'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Download, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { EmptyState } from '@/components/EmptyState'
 import { FormDrawer } from '@/components/FormDrawer'
@@ -13,7 +14,7 @@ import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { client, orpc } from '@/lib/orpc'
-import { cn, downloadFile, formatDate, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
+import { cn, formatDate, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
 import { BOARD_STATE, cycleRange, HALF_STATUSES, type HalfStatus, hours, type MonthDay, MUSTER_TOTALS, segment, SEGMENTS, STATUS, splitFill, statusOfCode } from './labels'
 import { useAttendanceMonth, useCycleStartDay } from './useAttendanceMonth'
 import { MonthCalendar, MonthPicker, MonthTotals } from './MonthCalendar'
@@ -93,7 +94,8 @@ function DayBoard({ filter, date, onOpen }: { filter: Filter; date: string; onOp
   if (board.isPending) return <DayBoardSkeleton label="Loading the day board" />
   return (
     <div className="space-y-2">
-      {s && (
+
+      <div className="flex flex-wrap items-center justify-between gap-2">{s && (
         <p className="text-xs text-muted-foreground">
           {counts.map(([n, label], i) => (
             <span key={label}>
@@ -105,6 +107,8 @@ function DayBoard({ filter, date, onOpen }: { filter: Filter; date: string; onOp
           ))}
         </p>
       )}
+        <ExportButton className="ml-auto" disabled={!board.data?.items.length || board.isFetching} load={() => client.attendance.days.exportBoard({ ...filter, date: fromDateInput(date)! })} />
+      </div>
       <FormError error={board.error} />
       {board.data?.items.length === 0 && <EmptyState className="py-6" title="Nobody to show" hint="Nobody matches the search on this day." />}
       {!!board.data?.items.length && (
@@ -159,7 +163,6 @@ function DayBoard({ filter, date, onOpen }: { filter: Filter; date: string; onOp
 
 function Muster({ filter, onOpen }: { filter: Filter; onOpen: (code: string) => void }) {
   const [ym, setYm] = useState(useAttendanceMonth())
-  const [exportError, setExportError] = useState<string | null>(null)
   const muster = useQuery({ ...orpc.attendance.days.muster.queryOptions({ input: { ...filter, ...ym } }), placeholderData: keepPreviousData })
   // the attendance month's days before the muster answers (its skeleton's day columns)
   const range = cycleRange(ym.year, ym.month, useCycleStartDay())
@@ -169,19 +172,9 @@ function Muster({ filter, onOpen }: { filter: Filter; onOpen: (code: string) => 
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <MonthPicker year={ym.year} month={ym.month} onChange={(year, month) => setYm({ year, month })} range={muster.data ?? range} locked={muster.data?.locked} />
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={!muster.data?.rows.length}
-          onClick={() => {
-            setExportError(null)
-            void downloadFile(() => client.attendance.days.exportMuster({ ...filter, ...ym }), setExportError)
-          }}
-        >
-          <Download /> Excel
-        </Button>
+        <ExportButton load={() => client.attendance.days.exportMuster({ ...filter, ...ym })} disabled={!muster.data?.rows.length} />
       </div>
-      {exportError && <p className="text-xs text-negative-ink">{exportError}</p>}
+
       <FormError error={muster.error} />
       {muster.isPending && (
         <MusterSkeleton
@@ -304,6 +297,7 @@ export function PersonMonth({ employeeCode, canEdit, onClose }: { employeeCode: 
     >
       <div className="space-y-4">
         <MonthPicker year={ym.year} month={ym.month} onChange={(year, month) => setYm({ year, month })} range={month.data ?? range} locked={month.data?.locked} />
+        <ExportButton disabled={!month.data || month.isFetching} load={() => client.attendance.days.exportMonth({employeeCode,...ym})} />
         <FormError error={month.error} />
         {month.isPending && <MonthSkeleton year={ym.year} month={ym.month} range={range} label="Loading the month" />}
         {month.data && (

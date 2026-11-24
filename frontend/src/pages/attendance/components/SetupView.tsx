@@ -1,3 +1,4 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Plus, Search, Star, Trash2, Upload, X } from 'lucide-react'
 import { useState } from 'react'
@@ -147,7 +148,7 @@ function Punches() {
         </Card>
       )}
 
-      <Card title="Earlier uploads">
+      <Card title="Earlier uploads" action={<ExportButton disabled={uploads.isFetching || unmatched.isFetching} load={() => client.attendance.exportSetup({section:"punches"})} />} >
         {uploads.isPending && <UploadRowsSkeleton label="Loading the uploads" />}
         {uploads.data?.length === 0 && <EmptyState className="py-6" title="Nothing uploaded yet" hint="Each upload is listed here with who did it and what it added." />}
         <ul className="divide-y text-sm">
@@ -224,12 +225,11 @@ function Shifts() {
     <Card
       title="Shifts"
       hint="When work starts and ends, the break and where the first half ends - how a day is judged is the attendance policy. A night shift simply ends at an earlier time (it ends the next day). Which days people work which shift is set in Schedule patterns."
-      action={
-        canChange && (
+      action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!shifts.data?.length || shifts.isFetching} load={() => client.attendance.exportSetup({section:'shifts'})} />{canChange && (
           <Button variant="gold" size="sm" onClick={() => setEditing('new')}>
             <Plus /> Add a shift
           </Button>
-        )
+        )}</div>
       }
     >
       <SharedListNote area="ATTENDANCE_SETUP" label="Attendance setup" what="changing the shifts" />
@@ -436,12 +436,11 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
     <Card
       title="Schedules"
       hint="Each employee's schedule pattern and attendance policy today - “default” where none was given (the ★ pattern, the default policy) - since when, and a change already set for later. A new schedule runs from its date until changed again; days already passed from that date are worked out again. The roster is only for rare one-off changes."
-      action={
-        canEdit && (
+      action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!rows.data?.length || rows.isFetching} load={() => client.attendance.exportSetup({section:'schedules',schedules:{search:search.trim()||undefined,companyIds:ids(companyId),plantIds:ids(plantId),departmentIds:ids(departmentId),costCenterIds:ids(costCenterId),patternId:patternId?Number(patternId):undefined,policyId:policyId?Number(policyId):undefined}})} />{canEdit && (
           <Button variant="gold" size="sm" onClick={() => setEditing({ people: [], patternId: '', policyId: '' })}>
             <Plus /> Give a schedule
           </Button>
-        )
+        )}</div>
       }
     >
       <div className="flex flex-wrap items-center gap-2">
@@ -831,8 +830,7 @@ function Holidays() {
     <Card
       title="Holidays"
       hint="For every company, one company, and optionally one work location. A holiday on a day already passed works that day out again. Leave will use the same calendar."
-      action={
-        <div className="flex items-center gap-2">
+      action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!holidays.data?.length || holidays.isFetching} load={() => client.attendance.exportSetup({section:'holidays',year})} />{<div className="flex items-center gap-2">
           <NativeSelect className="[&_select]:h-9 [&_select]:rounded-full" aria-label="Year" value={String(year)} onChange={(e) => setYear(Number(e.target.value))}>
             {[year - 1, year, year + 1].map((y) => (
               <NativeSelectOption key={y} value={String(y)}>
@@ -845,7 +843,7 @@ function Holidays() {
               <Plus /> Add a holiday
             </Button>
           )}
-        </div>
+        </div>}</div>
       }
     >
       <SharedListNote area="ATTENDANCE_SETUP" label="Attendance setup" what="a holiday for every company" />
@@ -1030,12 +1028,11 @@ function Patterns() {
     <Card
       title="Schedule patterns"
       hint="Weeks of Monday-Sunday that repeat: each day a shift, its first half only (½ - half worked, half off) or off - e.g. Mon A, Tue B, Wed C, Thu GEN, Fri GEN, Sat GEN ½, Sun Off. Give one to employees under Schedules. The starred pattern is the default: everyone never given one follows it - click another star to move it."
-      action={
-        canChange && (
+      action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!patterns.data?.length || patterns.isFetching} load={() => client.attendance.exportSetup({section:'patterns'})} />{canChange && (
           <Button variant="gold" size="sm" onClick={() => setEditing('new')}>
             <Plus /> Add a pattern
           </Button>
-        )
+        )}</div>
       }
     >
       <SharedListNote area="ATTENDANCE_SETUP" label="Attendance setup" what="changing the schedule patterns" />

@@ -1,16 +1,15 @@
+import { ExportButton } from '@/components/ExportButton'
 import { useQuery } from '@tanstack/react-query'
-import { Download } from 'lucide-react'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { EmptyState } from '@/components/EmptyState'
 import { FormError } from '@/components/FormError'
 import { JobChangeDrawer } from '@/components/JobChangeDrawer'
 import { ChangeListSkeleton } from '@/components/skeletons/pay-career/ChangeListSkeleton'
-import { Button } from '@/components/ui/button'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { JOB_CHANGE_KIND } from '@/lib/choices'
 import { client, orpc } from '@/lib/orpc'
-import { cn, downloadFile } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { ChangeList, Pager } from './ChangeList'
 
 // "Change register" on Pay & career (/pay-career?view=register; the Job changes page of 2026-11-20, a sidebar item since
@@ -36,7 +35,6 @@ export function ChangeRegisterView() {
   const kind = (params.get('kind') ?? '') as Kind | ''
   const page = Number(params.get('page')) || 1
   const [open, setOpen] = useState<number | null>(null)
-  const [exportError, setExportError] = useState<string | null>(null)
   const filters = { ...(status !== 'ALL' && { statuses: [status] }), ...(kind && { kinds: [kind] }) }
   const list = useQuery(orpc.jobChanges.list.queryOptions({ input: { ...filters, page, pageSize: PAGE_SIZE } }))
   const set = (changes: Record<string, string | null>) => {
@@ -87,10 +85,8 @@ export function ChangeRegisterView() {
             {total} {total === 1 ? 'change' : 'changes'}
           </span>
         )}
-        <Button variant="secondary" className="ml-auto" onClick={() => void downloadFile(() => client.jobChanges.export(filters), setExportError)}>
-          <Download /> Excel
-        </Button>
-        {exportError && <p className="w-full text-right text-sm text-negative-ink">{exportError}</p>}
+        <ExportButton load={() => client.jobChanges.export(filters)} />
+
       </div>
 
       <FormError error={list.error} />

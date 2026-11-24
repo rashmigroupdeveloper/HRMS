@@ -1,3 +1,6 @@
+import * as reportsService from './reports/reports.service.js'
+import { assertAccess } from '#core/auth/access'
+import { reportFile, reportSheet } from '#core/excel/report'
 import { hasLevelAt, type Placement } from '#core/auth/scope'
 import { env } from '#core/config/env'
 import { prisma, SYSTEM_ACTOR, type ActorId, type ApprovalFeature, type ApprovalKind, type ApproverType, type DbClient } from '#core/db/prisma'
@@ -9,7 +12,7 @@ import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as approvalsRepository from './approvals.repository.js'
 import type { RequestRow, StepRow } from './approvals.repository.js'
-import type { cancelApprovalInput, decideApprovalInput } from './approvals.schema.js'
+import type { cancelApprovalInput, decideApprovalInput, exportApprovalsInput } from './approvals.schema.js'
 import * as chainsService from './chains/chains.service.js'
 
 // The approval service (the user, 2026-11-20): a feature raises a request about an employee; it follows the chain(s) of
@@ -838,4 +841,25 @@ async function timeLimits(only?: JobFilter) {
   }
   const done = Object.entries(counts).map(([action, n]) => `${n} ${action.toLowerCase()}`).join(', ') || 'none late'
   return failures.length ? `${done}; ${failures.length} failed - ${failures.join('; ')}` : done
+}
+
+// Reuse the inbox readers: selected-role pools, named relationships, own requests and held-request scopes stay intact.
+export async function exportApprovals(viewer: CurrentUser, input: z.infer<typeof exportApprovalsInput>) {
+  if (input.mode === 'team') return reportsService.exportReport(viewer,input)
+  if (input.mode === 'held') assertAccess(viewer.access, 'APPROVAL_CHAINS', 'WRITE')
+  const title = { waiting: 'Waiting for me', decided: 'Decided by me', mine: 'Raised by me', held: 'Held requests' }[input.mode]
+  const base = input.mode === 'waiting' ? await listToDecide(viewer) : input.mode === 'decided' ? await listDecided(viewer) : input.mode === 'mine' ? await listMine(viewer) : await listHeld(viewer)
+  const rows = (input.feature ? base.filter((r) => r.feature === input.feature) : base).map(r=>({...r,decision:'decision' in r ? r.decision as {status:string;decidedAt:Date|null;comment:string|null} : null}))
+  const sheet = reportSheet(title, rows, [
+    { header: 'Request number', value: r => String(r.id), text: true }, { header: 'Employee code', value: r => r.employee.employeeCode, text: true },
+    { header: 'Employee', value: r => r.employee.name, width: 30 }, { header: 'Request', value: r => r.label, width: 25 },
+    { header: 'Summary', value: r => r.summary, width: 48 }, { header: 'Status', value: r => r.status },
+    { header: 'Raised by', value: r => r.requestedBy?.name, width: 28 }, { header: 'Raised at', value: r => r.raisedAt, dateTime: true, width: 22 },
+    { header: 'Current step', value: r => r.step ? `${r.step.stepNo} of ${r.step.of} · ${r.step.who}` : '', width: 32 },
+    { header: 'Due at', value: r => r.step?.dueAt, dateTime: true, width: 22 }, { header: 'Held reason', value: r => r.held?.reason, width: 40 },
+    { header: 'Closed at', value: r => r.closedAt, dateTime: true, width: 22 },
+    { header:'Your decision',value:r=>r.decision?.status }, { header:'Decided at',dateTime:true,value:r=>r.decision?.decidedAt }, { header:'Decision comment',width:40,value:r=>r.decision?.comment },
+  ])
+  const coverage = input.mode === 'mine' ? 'The latest 100 requests raised by you, as on this tab, then narrowed by request kind.' : input.mode === 'decided' ? 'The latest 200 requests you decided, as on this tab, then narrowed by request kind.' : 'The current authorized tab, narrowed by request kind. This file does not decide any request.'
+  return reportFile([sheet], { title: `Approvals · ${title}`, preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage, filters: [{ label: 'Request kind', value: input.feature ?? 'All kinds' }] }, `approvals-${input.mode}`)
 }

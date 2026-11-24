@@ -1,8 +1,8 @@
+import { writeReport } from '#core/excel/report'
 import { assertAccess } from '#core/auth/access'
 import { hasLevelAt, type Placement, SYSTEM_SCOPE, scopeOf } from '#core/auth/scope'
 import { env } from '#core/config/env'
 import { prisma, SYSTEM_ACTOR, type ActorId, type ApprovalKind, type DbClient, type JobChangeKind, type Prisma } from '#core/db/prisma'
-import { writeWorkbook } from '#core/excel/workbook'
 import { deleteFile } from '#core/storage/file-storage'
 import { sendMail } from '#core/mail/mailer'
 import type { CurrentUser } from '#core/rpc/procedures'
@@ -524,9 +524,10 @@ async function filterOf(viewer: CurrentUser, input: z.infer<typeof exportJobChan
 
 // The same list as an Excel file
 export async function exportJobChanges(viewer: CurrentUser, input: z.infer<typeof exportJobChangesInput>) {
-  const { rows } = await jobChangesRepository.list(await filterOf(viewer, input), { skip: 0, take: 20_000 })
+  const { rows, total } = await jobChangesRepository.list(await filterOf(viewer, input), { skip: 0, take: 20_000 })
+  if (total > rows.length) throw new ORPCError('BAD_REQUEST', { message: 'This report exceeds 20,000 changes. Narrow the filters and export again.' })
   const items = await toRows(rows)
-  const bytes = await writeWorkbook([
+  const bytes = await writeReport([
     {
       name: 'Job changes',
       columns: [
@@ -556,7 +557,7 @@ export async function exportJobChanges(viewer: CurrentUser, input: z.infer<typeo
         on: r.raisedAt,
       })),
     },
-  ])
+  ], { filters: [{label:'Filters',value:JSON.stringify(input ?? {})}], title: 'Job and salary changes', preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage: 'Changes matching the current filters, within the active role data scope. Salary values retain their separate access checks.' })
   return new File([new Uint8Array(bytes)], `job-changes-${day(today())}.xlsx`, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
 }
 

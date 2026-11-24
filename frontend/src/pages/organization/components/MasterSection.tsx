@@ -1,3 +1,5 @@
+import { client } from '@/lib/orpc'
+import { ExportButton } from '@/components/ExportButton'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Archive, ArchiveRestore, BadgeCheck, Building2, Check, CircleAlert, Factory, FileText, type LucideIcon, MapPin, Pencil, Plus, Search } from 'lucide-react'
 import { Children, Fragment, isValidElement, useEffect, useRef, useState } from 'react'
@@ -72,6 +74,7 @@ type Status = 'all' | 'active' | 'retired'
 
 export function MasterSection<T extends MasterRow>({
   title,
+  exportSection,
   singular,
   rows,
   loading,
@@ -95,6 +98,7 @@ export function MasterSection<T extends MasterRow>({
   update,
 }: {
   title: string
+  exportSection?: Parameters<typeof client.organization.export>[0]['section']
   // "company", "location"... for button labels
   singular: string
   rows: T[]
@@ -224,7 +228,8 @@ export function MasterSection<T extends MasterRow>({
   return (
     <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h2 className="flex items-baseline gap-2 text-lg font-light tracking-tight">
+        {exportSection && <ExportButton className="order-1 ml-auto sm:order-last" disabled={loading || !shown.length} load={() => client.organization.export({ section: exportSection, ids: shown.map((r) => r.id), selection: [status, activeFilter?.label, query.trim()].filter(Boolean).join(' · ') })} />}
+        <h2 className="flex items-baseline gap-2 text-lg font-light tracking-tight max-sm:flex-1">
           {title}
           {loading ? (
             <Skeleton className="h-3 w-6 rounded-full" />
@@ -258,7 +263,7 @@ export function MasterSection<T extends MasterRow>({
             ))}
           </div>
         )}
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 max-sm:order-2 max-sm:w-full max-sm:justify-end">
           {rows.length >= 8 && (
             <div className="relative w-36 sm:w-56">
               <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />

@@ -1,4 +1,5 @@
-import { authedProcedure } from '#core/rpc/procedures'
+import { exportSetupInput } from './shifts/shifts.schema.js'
+import { accessProcedure, authedProcedure } from '#core/rpc/procedures'
 import * as attendanceService from './attendance.service.js'
 import { daysRouter } from './days/days.router.js'
 import { holidaysRouter } from './holidays/holidays.router.js'
@@ -13,6 +14,7 @@ import { shiftsRouter } from './shifts/shifts.router.js'
 // attendance.* (2026-11-16): one's own attendance for everyone; a manager's reporting tree; the "Attendance" area for
 // everyone's (View) and the setup, corrections and HR's approvals (Edit).
 export const attendanceRouter = {
+  exportSetup: accessProcedure('ATTENDANCE_SETUP','READ').input(exportSetupInput).handler(({input,context})=>attendanceService.exportSetup(context.user,input)),
   // the viewer's today, team size, what waits for them, what they may do
   overview: authedProcedure.handler(({ context }) => attendanceService.getOverview(context.user)),
   days: daysRouter,
