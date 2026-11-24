@@ -45,14 +45,19 @@ export function FieldInput({
             >
               <SelectValue placeholder={field.required ? 'Select…' : '—'} />
             </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} sideOffset={6} className="rounded-2xl p-1.5 shadow-float ring-border">
+            {/* as wide as the longest option (never narrower than the field, never off the screen), so long names show in full */}
+            <SelectContent
+              alignItemWithTrigger={false}
+              sideOffset={6}
+              className="w-max max-w-[min(32rem,calc(100vw-2rem))] min-w-(--anchor-width) rounded-2xl p-1.5 shadow-float ring-border"
+            >
               {!field.required && (
                 <SelectItem value={null} className="rounded-xl py-2 pl-3 text-muted-foreground">
                   —
                 </SelectItem>
               )}
               {opts.map((o) => (
-                <SelectItem key={o.value} value={o.value} className="rounded-xl py-2 pl-3 data-selected:font-medium">
+                <SelectItem key={o.value} value={o.value} className="rounded-xl py-2 pl-3 whitespace-normal data-selected:font-medium">
                   {o.label}
                 </SelectItem>
               ))}

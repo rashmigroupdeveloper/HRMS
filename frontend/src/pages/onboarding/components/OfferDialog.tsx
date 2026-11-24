@@ -177,7 +177,7 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
   const { covers } = useAccess()
   const placeable = (where: Where) => covers('ONBOARDING', 'WRITE', where)
   const masterOptions: Record<string, Option[]> = {
-    companyId: (companies.data ?? []).filter((c) => placeable({ companyId: c.id })).map((c) => ({ value: String(c.id), label: `${c.name} (${c.code})` })),
+    companyId: (companies.data ?? []).filter((c) => placeable({ companyId: c.id })).map((c) => ({ value: String(c.id), label: `${c.code} · ${c.name}` })),
     plantId: companyId
       ? (plants.data ?? []).filter((p) => placeable({ companyId, plantId: p.id })).map((p) => ({ value: String(p.id), label: `${p.plantCode} · ${p.name}` }))
       : [],
@@ -294,6 +294,9 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
   )
   const hasRequired = (id: string) => SECTIONS.find((s) => s.id === id)!.fields.some((f) => f.required)
   const totalMissing = Object.values(missing).reduce((a, b) => a + b, 0)
+  // a step is done (green tick) when its required fields are filled; a step with nothing required (Documents, After
+  // acceptance) once every step before it is done
+  const stepDone = SECTIONS.map((s, i) => (hasRequired(s.id) ? missing[s.id] === 0 : SECTIONS.slice(0, i).every((p) => !hasRequired(p.id) || missing[p.id] === 0)))
 
   // The step bar follows the scrolling: the section crossing a line 20% down the panel, or the last one at the very end
   // (a short last section never reaches the line). A clicked step stays marked while the panel scrolls to it - near the
@@ -399,7 +402,7 @@ function OfferForm({ candidate, onDone, onCreated }: { candidate?: Candidate; on
         <div className="flex gap-1 overflow-x-auto border-b border-border/60 bg-surface-2/50 px-6 py-2 [scrollbar-width:none]">
           {SECTIONS.map((s, index) => {
             const current = active === s.id
-            const complete = hasRequired(s.id) && missing[s.id] === 0
+            const complete = stepDone[index]!
             // editing: a pencil on a changed section, a lock on one the accepted offer locks
             const edited = !!candidate && !!changedCount[s.id]
             const isLocked = locked(s.id)

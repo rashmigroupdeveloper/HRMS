@@ -66,10 +66,6 @@ export function OnboardingPage() {
         <div>
           <p className="text-sm text-muted-foreground">Lifecycle</p>
           <h1 className="mt-1 text-3xl font-light tracking-tight sm:text-4xl">Onboarding</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">
-            From the offer to the joining day: send offers, record answers, collect the joining form and documents, run background checks and
-            the medical.
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {/* The report follows the selected stage. */}

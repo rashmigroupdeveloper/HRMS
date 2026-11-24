@@ -7,8 +7,10 @@ import { client, orpc } from '@/lib/orpc'
 import { cn, openPdf } from '@/lib/utils'
 import type { Candidate } from './labels'
 
-// The checklist items that are parts of the joining form itself (not the offer, the online signature or documents)
-const FORM_PART = (key: string) => key !== 'status' && key !== 'signed' && !key.startsWith('document:') && key !== 'medical'
+// The checklist items that are parts of the joining form itself - the candidate's required items but the offer's status
+// and the online signature. Not HR's items (department, employee code series, medical, paper forms): printing checks
+// only the joining form, as the backend does (printed-forms.service.ts)
+const FORM_PART = (i: { key: string; who: string; required: boolean }) => i.who === 'CANDIDATE' && i.required && i.key !== 'status' && i.key !== 'signed'
 
 // Opens HR's paper forms filled in from the joining form, ready to print and sign (before joining only)
 // - only once every required part of the joining form is filled (the joining checklist's form items)
@@ -17,7 +19,7 @@ export function PrintFormsButton({ candidate, variant = 'secondary' }: { candida
   const [opening, setOpening] = useState(false)
   const checklist = useQuery({ ...orpc.candidates.joining.checklist.queryOptions({ input: { candidateId: candidate.id } }), enabled: candidate.status === 'ACCEPTED' })
   if (candidate.status !== 'ACCEPTED') return null
-  const missing = (checklist.data?.items ?? []).filter((i) => !i.ok && FORM_PART(i.key))
+  const missing = (checklist.data?.items ?? []).filter((i) => !i.ok && FORM_PART(i))
   const blocked = checklist.isPending || missing.length > 0
   return (
     <span className="inline-flex flex-col items-end gap-1">
