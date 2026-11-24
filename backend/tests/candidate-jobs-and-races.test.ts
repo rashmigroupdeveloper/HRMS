@@ -3,7 +3,7 @@ import { createdBy, prisma, SYSTEM_ACTOR } from '#core/db/prisma'
 import { readStoredFile } from '#core/storage/file-storage'
 import { candidatesService, offerLettersService } from '#modules/candidates'
 import { employeeLettersService } from '#modules/employee-letters'
-import { designationsService } from '#modules/organization'
+import { designationsService, salaryStructuresService } from '#modules/organization'
 import { today } from '#shared/utils/dates'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRole, giveLogin } from './helpers/approvals.js'
@@ -113,6 +113,32 @@ describe('candidates: jobs and changes at the same moment (2026-11-23 review)', 
     Object.assign(hooks, { afterRead: null, failReadOf: null, failAfterSave: false })
   })
   afterAll(() => prisma.$disconnect())
+
+  it('saves an offer whose CTC does not divide by 12 with its breakup to the paisa (2026-11-24)', async () => {
+    const offer = { joiningType: 'REGULAR', employmentType: 'PERMANENT', workforceCategory: 'WHITE_COLLAR' } as const
+    const { lines } = await salaryStructuresService.calculateBreakup({ annualCtc: 584_000, ...offer })
+    const created = await candidatesService.createCandidate(
+      {
+        firstName: 'Paise',
+        lastName: `Test ${Date.now()}`,
+        mobile: '9876543210',
+        personalEmail: 'paise.test@example.com',
+        companyId,
+        plantId,
+        designationId,
+        ...offer,
+        annualCtc: 584_000,
+        proposedJoiningDate: new Date(Date.UTC(2099, 0, 15)),
+        offerValidUntil: new Date(Date.UTC(2099, 0, 10)),
+        salaryLines: lines,
+      },
+      admin,
+    )
+    const saved = await candidatesService.getCandidate(created.id)
+    const amounts = saved.salaryLines.map((l) => l.monthlyAmount)
+    expect(amounts).toEqual(expect.arrayContaining([22_446.69, 7_903.53]))
+    expect(amounts.reduce((sum, a) => sum + Math.round(a * 100), 0)).toBe(4_866_667)
+  })
 
   it("HR's withdraw does not overwrite an accept saved a moment before", async () => {
     const id = await sentOffer()

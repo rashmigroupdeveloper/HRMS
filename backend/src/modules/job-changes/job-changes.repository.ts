@@ -1,6 +1,7 @@
 import { type DataScope, scopeWhere } from '#core/auth/scope'
 import {
   createdBy,
+  linesAsNumbers,
   prisma,
   updatedBy,
   type ActorId,
@@ -60,7 +61,10 @@ const changeSelect = {
   },
 } satisfies Prisma.JobChangeRequestSelect
 
-export type ChangeRow = Prisma.JobChangeRequestGetPayload<{ select: typeof changeSelect }>
+type ChangeRecord = Prisma.JobChangeRequestGetPayload<{ select: typeof changeSelect }>
+// the proposed salary's amounts as numbers (2 decimals - 2026-11-24)
+const withAmounts = (row: ChangeRecord) => ({ ...row, salary: row.salary && { ...row.salary, lines: linesAsNumbers(row.salary.lines) } })
+export type ChangeRow = ReturnType<typeof withAmounts>
 
 export function create(data: Omit<Prisma.JobChangeRequestUncheckedCreateInput, 'createdById' | 'updatedById'>, actorId: ActorId, db: DbClient = prisma) {
   return db.jobChangeRequest.create({ data: { ...data, ...createdBy(actorId) }, select: { id: true } })
@@ -80,12 +84,14 @@ export function createSalary(
   })
 }
 
-export function findById(id: number, db: DbClient = prisma) {
-  return db.jobChangeRequest.findUnique({ where: { id }, select: changeSelect })
+export async function findById(id: number, db: DbClient = prisma) {
+  const row = await db.jobChangeRequest.findUnique({ where: { id }, select: changeSelect })
+  return row && withAmounts(row)
 }
 
-export function findByApprovalRequestId(approvalRequestId: number, db: DbClient = prisma) {
-  return db.jobChangeRequest.findUnique({ where: { approvalRequestId }, select: changeSelect })
+export async function findByApprovalRequestId(approvalRequestId: number, db: DbClient = prisma) {
+  const row = await db.jobChangeRequest.findUnique({ where: { approvalRequestId }, select: changeSelect })
+  return row && withAmounts(row)
 }
 
 // The employee's open change (waiting for approval, or approved and waiting for its day), or null - one at a time
@@ -144,16 +150,17 @@ export async function list(filter: ChangeFilter, paging: { skip: number; take: n
     db.jobChangeRequest.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], ...paging, select: changeSelect }),
     db.jobChangeRequest.count({ where }),
   ])
-  return { rows, total }
+  return { rows: rows.map((row) => withAmounts(row)), total }
 }
 
 // Approved changes whose day has come and that are not applied yet (or could not be), earliest first
 // data access: the daily job (jobChanges.applyDue) - every employee's due changes, no logged-in person
-export function listDue(day: Date, db: DbClient = prisma) {
-  return db.jobChangeRequest.findMany({
+export async function listDue(day: Date, db: DbClient = prisma) {
+  const rows = await db.jobChangeRequest.findMany({
     where: { status: 'APPROVED', effectiveFrom: { lte: day } },
     orderBy: [{ effectiveFrom: 'asc' }, { id: 'asc' }],
     select: changeSelect,
   })
+  return rows.map((row) => withAmounts(row))
 }
 

@@ -136,6 +136,7 @@ async function writeOfferLetter(candidate: Candidate, offerNumber: string, templ
             designation: candidate.designation.name,
             currency,
             lines: candidate.salaryLines.map((l) => ({ name: l.salaryComponent.name, kind: l.salaryComponent.kind, monthlyAmount: l.monthlyAmount })),
+            annualCtc: candidate.annualCtc,
             performancePayAnnual: candidate.performancePayAnnual,
           }),
         }

@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 266**
+**Total APIs: 270**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -176,183 +176,187 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 87 | `organization.salaryComponents.list` | Logged in | List salary components (lines of an offer's salary breakup) |
 | 88 | `organization.salaryComponents.create` | Organization: Edit | Add a salary component |
 | 89 | `organization.salaryComponents.update` | Organization: Edit | Change or retire a salary component |
-| 90 | `candidates.list` | Onboarding: View | List candidates (offers), optionally by status / company |
-| 91 | `candidates.get` | Onboarding: View | Get one candidate by id |
-| 92 | `candidates.create` | Onboarding: Edit | Make a new offer (as a draft) |
-| 93 | `candidates.update` | Onboarding: Edit | Change a candidate's details or offer terms |
-| 94 | `candidates.send` | Onboarding: Edit | Write the Letter of Intent or the offer letter from the picked template, number it, e-mail it with the candidate's link |
-| 95 | `candidates.accept` | Onboarding: Edit | Record that the candidate accepted the newest letter (LOI or offer) on paper (signed copy uploaded) |
-| 96 | `candidates.close` | Onboarding: Edit | End the process: declined, expired, withdrawn, backed out or no-show |
-| 97 | `candidates.offerLetters.templates` | Onboarding: View | The offer letter or Letter of Intent templates to pick from when sending (+ the suggested one) |
-| 98 | `candidates.offerLetters.preview` | Onboarding: View | The offer letter PDF as it would be sent now with a template |
-| 99 | `candidates.offerLetters.list` | Onboarding: View | Every letter sent for an offer, with the candidate's online answer |
-| 100 | `candidates.offerLetters.download` | Onboarding: View | One sent letter, exactly as sent |
-| 101 | `candidates.offerLetters.newLink` | Onboarding: Edit | A new link for the candidate (the old one stops), e-mailed again - after acceptance the joining-form link |
-| 102 | `candidates.offerResponse.view` | Public (secret link) | What the candidate's offer page shows |
-| 103 | `candidates.offerResponse.download` | Public (secret link) | The candidate downloads their letter |
-| 104 | `candidates.offerResponse.sendCode` | Public (secret link) | E-mail the candidate a one-time code |
-| 105 | `candidates.offerResponse.accept` | Public (secret link) | The candidate accepts online (code + typed name) |
-| 106 | `candidates.offerResponse.decline` | Public (secret link) | The candidate declines online (code, optional reason) |
-| 107 | `candidates.portal.signIn` | Public (secret link + code) | The candidate opens their joining form: starts a candidate session |
-| 108 | `candidates.portal.me` | Candidate session | The candidate's joining-form page (numbers masked) |
-| 109 | `candidates.portal.save` | Candidate session | The candidate saves sections of their joining form |
-| 110 | `candidates.portal.uploadDocument` | Candidate session | The candidate uploads a document (photo, KYC copies, bank proof, certificates) |
-| 111 | `candidates.portal.removeDocument` | Candidate session | The candidate removes their own upload before HR checks it |
-| 112 | `candidates.portal.document` | Candidate session | The candidate views one of their documents |
-| 113 | `candidates.portal.submit` | Candidate session | The candidate submits and signs the joining form online (code + typed name) |
-| 114 | `candidates.portal.signOut` | Candidate session | Ends the candidate session |
-| 115 | `candidates.joiningForm.get` | Onboarding: View | The candidate's joining-form draft (full numbers) and who changed each section |
-| 116 | `candidates.joiningForm.save` | Onboarding: Edit | Save sections of the joining-form draft |
-| 117 | `candidates.joiningForm.sendBack` | Onboarding: Edit | Send the submitted form back to the candidate for changes (reason e-mailed) |
-| 118 | `candidates.printedForms.print` | Onboarding: View | HR's paper forms of the pack (joining form, Form F, ESIC Form 1, EPF Form 11, medical pages) filled in from the joining form, as one PDF to print and sign |
-| 119 | `candidates.documents.list` | Onboarding: View | A candidate's uploaded documents with verification status |
-| 120 | `candidates.documents.upload` | Onboarding: Edit | Upload a document (PDF / JPG / PNG, 5 MB) |
-| 121 | `candidates.documents.download` | Onboarding: View | Download a document file |
-| 122 | `candidates.documents.review` | Onboarding: Edit | Mark a document verified, or rejected with a reason |
-| 123 | `candidates.documents.delete` | Onboarding: Edit | Delete a wrong or rejected upload (kept, can be restored) |
-| 124 | `candidates.documents.restore` | Onboarding: Edit | Bring back a deleted document |
-| 125 | `candidates.documents.requirements` | Onboarding: View | The documents each joining type always needs, and those an offer may ask for (offer form checklist) |
-| 126 | `candidates.recordMedical` | Onboarding: Edit | Record the pre-employment medical result |
-| 127 | `candidates.confirmJoining` | Onboarding: Edit | Record that the candidate confirmed they are joining |
-| 128 | `candidates.joining.checklist` | Onboarding: View | What must be done before joining, item by item |
-| 129 | `candidates.joining.complete` | Onboarding: Edit | Joining day: create the employee from the candidate (+ joining tasks, appointment letter) |
-| 130 | `candidates.backgroundChecks.list` | Onboarding: View | A candidate's background checks |
-| 131 | `candidates.backgroundChecks.create` | Onboarding: Edit | Start a background check (needs the signed consent) |
-| 132 | `candidates.backgroundChecks.update` | Onboarding: Edit | Record progress or the result of a check |
-| 133 | `candidates.backgroundChecks.delete` | Onboarding: Edit | Remove a check started by mistake |
-| 134 | `letterTemplates.list` | Letter templates: View | The letter templates (every kind) |
-| 135 | `letterTemplates.kinds` | Letter templates: View | The kinds of letter with the fields and blocks of each (for a new template) |
-| 136 | `letterTemplates.get` | Letter templates: View | One template with its text and placeholders |
-| 137 | `letterTemplates.create` | Letter templates: Edit | Add a letter template |
-| 138 | `letterTemplates.update` | Letter templates: Edit | Change the wording / joining type, or retire a template |
-| 139 | `letterTemplates.preview` | Letter templates: View | PDF of (unsaved) wording with example values |
-| 140 | `letterTemplates.uploadImage` | Letter templates: Edit | Upload a new letterhead image for a template (the old one is kept) |
-| 141 | `letterTemplates.setImage` | Letter templates: Edit | Use a letterhead image uploaded before on a template |
-| 142 | `letterTemplates.images` | Letter templates: View | The uploaded letterhead images of one part, to pick from |
-| 143 | `letterTemplates.image` | Letter templates: View | One uploaded letterhead image (by id) |
-| 144 | `changeHistory.list` | Change history: View (one employee: Employees: View) | Who changed what and when, sign-ins - newest first, filtered |
-| 145 | `changeHistory.verify` | Change history: View | Check that no history entry was changed or removed (hash chain) |
-| 146 | `employeeLetters.list` | Own record; others: Employee · Documents & letters: View | The letters issued to an employee (appointment, confirmation...) |
-| 147 | `employeeLetters.download` | Own record; others: Employee · Documents & letters: View | One issued letter's PDF |
-| 148 | `employeeLetters.templates` | Employee · Directory & job: View + Employee · Documents & letters: Edit | The templates of a kind of letter to pick from (+ the suggested one) |
-| 149 | `employeeLetters.preview` | Employee · Directory & job: View + Employee · Documents & letters: Edit | The letter as it would be issued now (PDF) |
-| 150 | `employeeLetters.issue` | Employee · Directory & job: View + Employee · Documents & letters: Edit | Issue a letter: numbered, kept, e-mailed to the employee |
-| 151 | `joiningTasks.types.list` | Joining task types: View (active ones: Onboarding: Edit) | The task list every new employee gets |
-| 152 | `joiningTasks.types.create` | Joining task types: Edit | Add a task to the list (team, due days, default person) |
-| 153 | `joiningTasks.types.update` | Joining task types: Edit | Change or retire a task on the list |
-| 154 | `joiningTasks.assignees` | Onboarding or Joining task types: View | The people a joining task can be given to (Joining tasks: Edit) |
-| 155 | `joiningTasks.list` | Joining tasks: View (mine) / Onboarding: View (all) | My tasks / all tasks - open or done, by team, search |
-| 156 | `joiningTasks.forEmployee` | Own record; others: Employee · Directory & job: View | One employee's joining tasks |
-| 157 | `joiningTasks.createForEmployee` | Onboarding: Edit | Make the joining tasks for an employee added directly (once) |
-| 158 | `joiningTasks.complete` | The person it is given to (Joining tasks: Edit) or Onboarding: Edit | Mark a task done, with an optional note |
-| 159 | `joiningTasks.reopen` | The person it is given to (Joining tasks: Edit) or Onboarding: Edit | Undo "done" |
-| 160 | `joiningTasks.assign` | Onboarding: Edit | Give an open task to someone else |
-| 161 | `accounts.security.get` | Roles & access: View | The security rules (lockout, sign-in length, password rules) |
-| 162 | `accounts.security.update` | Roles & access: Edit (+ password re-entered) | Change the security rules |
-| 163 | `candidates.export` | Onboarding: View | The "Offers & candidates" report (Excel) |
-| 164 | `changeHistory.export` | Change history: View (one employee: Employees: View) | The change history as an Excel file |
-| 165 | `employees.imports.history` | Employees: Edit | The files imported and the ones with errors |
-| 166 | `employees.imports.errorReport` | Employees: Edit | A file's rows to fix, as an Excel file |
-| 167 | `attendance.overview` | any logged-in employee | what the attendance page and the home page's "Today" card show first |
-| 168 | `attendance.days.myMonth` | any logged-in employee (their own) | the employee's month calendar |
-| 169 | `attendance.days.employeeMonth` | own | one employee's month |
-| 170 | `attendance.days.board` | TEAM / DEPARTMENT: any logged-in employee (their reporting tree / the employees whose HOD they are); ALL: Attendance: View | who is in / late / not in yet / absent / off on a day |
-| 171 | `attendance.days.muster` | as `board` | the monthly muster: everyone in the scope x every day |
-| 172 | `attendance.days.exportMuster` | as `board` | the muster as Excel |
-| 173 | `attendance.days.punches` | as `employeeMonth` | the day's details |
-| 174 | `attendance.days.correct` | Attendance: Edit | HR sets the day's status with a reason |
-| 175 | `attendance.days.removeCorrection` | Attendance: Edit | takes HR's correction away; the day goes back to what the punches give |
-| 176 | `attendance.shifts.list` | any logged-in employee (retired ones: Attendance setup: View) | the shifts |
-| 177 | `attendance.shifts.create` | Attendance setup: Edit | adds a shift |
-| 178 | `attendance.shifts.update` | Attendance setup: Edit | changes or retires a shift; new times apply from a date (dated) |
-| 179 | `attendance.shifts.assign` | Attendance setup: Edit | the schedule pattern and attendance policy of employees from a date |
-| 180 | `attendance.shifts.assignments` | own, or Attendance setup: View | one employee's schedules |
-| 181 | `attendance.shifts.schedules` | Attendance setup: View | who follows which schedule pattern and policy today |
-| 182 | `attendance.shifts.patterns.list` | any logged-in employee (retired: Attendance setup: View) | the schedule patterns |
-| 183 | `attendance.shifts.patterns.create` | Attendance setup: Edit | adds a schedule pattern |
-| 184 | `attendance.shifts.patterns.update` | Attendance setup: Edit | changes, retires or stars (makes the default) a schedule pattern |
-| 185 | `attendance.policies.list` | any logged-in employee (retired ones: Attendance setup: View) | the attendance policies |
-| 186 | `attendance.policies.create` | Attendance setup: Edit (all companies) | adds an attendance policy |
-| 187 | `attendance.policies.update` | Attendance setup: Edit (all companies) | changes the rules from a date, renames, makes default or retires a policy |
-| 188 | `attendance.locks.months` | Attendance setup: Edit (all companies) | a year's attendance months - locked or not |
-| 189 | `attendance.locks.checklist` | Attendance setup: Edit (all companies) | what is still open in a month before locking |
-| 190 | `attendance.locks.lock` | Attendance setup: Edit (all companies) | locks an attendance month (the whole group) |
-| 191 | `attendance.locks.unlock` | Attendance setup: Edit (all companies) | opens a locked month again, with a reason |
-| 192 | `attendance.locks.setCycleStart` | Attendance setup: Edit (all companies) | the day an attendance month starts |
-| 193 | `attendance.holidays.list` | any logged-in employee | the holiday calendar of a year |
-| 194 | `attendance.holidays.create` | Attendance setup: Edit | adds a holiday; a day already passed is worked out again for everyone |
-| 195 | `attendance.holidays.update` | Attendance setup: Edit | changes a holiday |
-| 196 | `attendance.holidays.delete` | Attendance setup: Edit | removes a holiday |
-| 197 | `attendance.punches.upload` | Attendance setup: Edit | the biometric machines' export until the Kent feed is connected |
-| 198 | `attendance.punches.uploads` | Attendance setup: View | the earlier uploads |
-| 199 | `attendance.punches.unmatched` | Attendance setup: View | the codes on the machines that matched no employee |
-| 200 | `attendance.punches.link` | Attendance setup: Edit | gives every unmatched punch of a code to an employee; their days are worked out again |
-| 201 | `attendance.punches.addManual` | Attendance setup: Edit | testing only: punches typed by hand for one employee on one day |
-| 202 | `attendance.rosters.grid` | Attendance setup: View | the roster: who works which shift on which day |
-| 203 | `attendance.rosters.save` | Attendance setup: Edit | sets days of the draft |
-| 204 | `attendance.rosters.clear` | as `save` | takes draft days out |
-| 205 | `attendance.rosters.publish` | as `save` | publishes the draft days of these employees in the range - attendance follows them; days already come are work |
-| 206 | `attendance.shiftChanges.create` | any logged-in employee (their own) | asks to change one day - goes for approval (approval service) |
-| 207 | `attendance.shiftChanges.cancel` | the employee (their own request) | takes back a request still waiting |
-| 208 | `attendance.shiftChanges.mine` | any logged-in employee | the employee's requests and where they stand |
-| 209 | `attendance.regularizations.create` | any logged-in employee (their own) | asks for a missed punch to count as present, or for on duty - goes for approval |
-| 210 | `attendance.regularizations.cancel` | the employee (their own request) | withdraws a request still waiting |
-| 211 | `attendance.regularizations.mine` | any logged-in employee | the employee's regularization / on-duty requests and where they stand |
-| 212 | `approvals.listToDecide` | Logged in | What waits for my decision, of every kind |
-| 213 | `approvals.countToDecide` | Logged in | How many requests wait for my decision (the menu) |
-| 214 | `approvals.listMine` | Logged in | The requests I raised |
-| 215 | `approvals.listDecided` | Logged in | The requests I approved or rejected, and where they stand now |
-| 216 | `approvals.get` | The request's people (or as the feature allows) | One request with its steps |
-| 217 | `approvals.decide` | The step's approver | Approve, or reject with a reason |
-| 218 | `approvals.cancel` | The requester (or as the feature allows) | Take back a request still waiting |
-| 219 | `approvals.listHeld` | Approval chains: Edit | Requests nobody can decide - routing to repair |
-| 220 | `approvals.retryRouting` | Approval chains: Edit | Send a held request through its chain again |
-| 221 | `approvals.chains.list` | Approval chains: View | The approval chains of every kind |
-| 222 | `approvals.chains.save` | Approval chains: Edit | Set the steps of a chain (shared, or a company's own) |
-| 223 | `approvals.chains.remove` | Approval chains: Edit | Remove a company's own chain |
-| 224 | `jobChanges.create` | Request job changes: Edit / Request salary changes: Edit (+ Employee · Salary: View) | Ask for a job / salary change from a day on - goes for approval |
-| 225 | `jobChanges.get` | Employees: View, the employee themselves, or the approval's people | One job change |
-| 226 | `jobChanges.list` | Employees: View; own (about me / asked by me): any logged-in employee | Job changes, filtered |
-| 227 | `jobChanges.export` | Employees: View | Job changes as Excel |
-| 228 | `jobChanges.cancel` | The requester, or Employees: Edit | Cancel a change not in force yet |
-| 229 | `leave.overview` | Logged in | whether the viewer has a team / department to see, and what they may do |
-| 230 | `leave.types.list` | Logged in (retired ones: Leave: View) | the leave types and their rules |
-| 231 | `leave.types.create` | Leave: Edit (all companies) | adds a leave type |
-| 232 | `leave.types.update` | Leave: Edit (all companies) | changes / retires a leave type |
-| 233 | `leave.balances.get` | own; team / department; Leave: View | one employee's balances in a year and every row behind them |
-| 234 | `leave.balances.register` | team / department; Leave: View for everyone | everyone's balance of each leave type |
-| 235 | `leave.balances.export` | as `register` | the register as Excel |
-| 236 | `leave.balances.adjust` | Leave: Edit | HR adds or takes away days with a reason |
-| 237 | `leave.balances.runCredits` | Leave: Edit (all companies) | credits the months due and lapses the years ended now |
-| 238 | `leave.balances.importTemplate` | Leave: Edit | the opening balances Excel template |
-| 239 | `leave.balances.importBalances` | Leave: Edit | checks / saves an Excel of opening balances (all rows or none) |
-| 240 | `leave.applications.preview` | Logged in (their own) | what a leave would take, before applying |
-| 241 | `leave.applications.apply` | Logged in (their own) | applies for leave - goes for approval |
-| 242 | `leave.applications.cancel` | the employee (their own) | withdraws a leave still waiting, or asks to cancel an approved one |
-| 243 | `leave.applications.mine` | Logged in | the employee's leave and where it stands |
-| 244 | `leave.applications.list` | team / department; Leave: View for everyone | who is on leave over a span |
-| 245 | `leave.applications.forApproval` | the approval request's people | the leave behind an approval request, with the balance |
-| 246 | `leave.applications.recounts` | Leave: View | approved leave the calendar now counts otherwise |
-| 247 | `leave.applications.recount` | Leave: Edit | puts one approved leave right by today's calendar |
-| 248 | `leave.compOff.claim` | Logged in (their own) | claims comp-off for work on a weekly off / holiday - goes for approval |
-| 249 | `leave.compOff.cancel` | the employee (their own) | withdraws a claim still waiting |
-| 250 | `leave.compOff.mine` | Logged in | the employee's comp-off claims |
-| 251 | `organization.export` | Organization: View | Excel review report |
-| 252 | `approvals.export` | Logged in; held mode additionally Approval chains: Edit | Excel review report |
-| 253 | `approvals.chains.export` | Approval chains: View | Excel review report |
-| 254 | `attendance.days.exportMonth` | Logged in; another employee as employeeMonth | Excel review report |
-| 255 | `attendance.days.exportBoard` | Logged in; as board | Excel review report |
-| 256 | `attendance.exportSetup` | Attendance setup: View; locks additionally group-wide Edit | Excel review report |
-| 257 | `attendance.rosters.export` | Attendance setup: View | Excel review report |
-| 258 | `employees.exportDirectory` | Logged in | Excel review report |
-| 259 | `employees.hods.export` | Logged in; heads additionally HOD appointments: View | Excel review report |
-| 260 | `joiningTasks.export` | Logged in; MINE Joining tasks: View, ALL Onboarding: View | Excel review report |
-| 261 | `joiningTasks.types.export` | As joiningTasks.types.list | Excel review report |
-| 262 | `leave.applications.export` | Logged in; as applications.list | Excel review report |
-| 263 | `leave.applications.exportMine` | Logged in | Excel review report |
-| 264 | `leave.applications.exportRecounts` | Leave: View | Excel review report |
-| 265 | `leave.types.export` | Logged in | Excel review report |
-| 266 | `approvals.report` | Logged in; team/HOD relationship or scoped area access | Combined leave and attendance request report with messages and history |
+| 90 | `organization.salaryStructures.list` | Organization: View | List salary structures (how an offer's breakup is worked out from its CTC) |
+| 91 | `organization.salaryStructures.create` | Organization: Edit (all companies) | Add a salary structure with its lines |
+| 92 | `organization.salaryStructures.update` | Organization: Edit (all companies) | Change, re-line or retire a salary structure |
+| 93 | `organization.salaryStructures.calculate` | Logged in | The breakup of an annual CTC by the structure an offer matches (or a draft) |
+| 94 | `candidates.list` | Onboarding: View | List candidates (offers), optionally by status / company |
+| 95 | `candidates.get` | Onboarding: View | Get one candidate by id |
+| 96 | `candidates.create` | Onboarding: Edit | Make a new offer (as a draft) |
+| 97 | `candidates.update` | Onboarding: Edit | Change a candidate's details or offer terms |
+| 98 | `candidates.send` | Onboarding: Edit | Write the Letter of Intent or the offer letter from the picked template, number it, e-mail it with the candidate's link |
+| 99 | `candidates.accept` | Onboarding: Edit | Record that the candidate accepted the newest letter (LOI or offer) on paper (signed copy uploaded) |
+| 100 | `candidates.close` | Onboarding: Edit | End the process: declined, expired, withdrawn, backed out or no-show |
+| 101 | `candidates.offerLetters.templates` | Onboarding: View | The offer letter or Letter of Intent templates to pick from when sending (+ the suggested one) |
+| 102 | `candidates.offerLetters.preview` | Onboarding: View | The offer letter PDF as it would be sent now with a template |
+| 103 | `candidates.offerLetters.list` | Onboarding: View | Every letter sent for an offer, with the candidate's online answer |
+| 104 | `candidates.offerLetters.download` | Onboarding: View | One sent letter, exactly as sent |
+| 105 | `candidates.offerLetters.newLink` | Onboarding: Edit | A new link for the candidate (the old one stops), e-mailed again - after acceptance the joining-form link |
+| 106 | `candidates.offerResponse.view` | Public (secret link) | What the candidate's offer page shows |
+| 107 | `candidates.offerResponse.download` | Public (secret link) | The candidate downloads their letter |
+| 108 | `candidates.offerResponse.sendCode` | Public (secret link) | E-mail the candidate a one-time code |
+| 109 | `candidates.offerResponse.accept` | Public (secret link) | The candidate accepts online (code + typed name) |
+| 110 | `candidates.offerResponse.decline` | Public (secret link) | The candidate declines online (code, optional reason) |
+| 111 | `candidates.portal.signIn` | Public (secret link + code) | The candidate opens their joining form: starts a candidate session |
+| 112 | `candidates.portal.me` | Candidate session | The candidate's joining-form page (numbers masked) |
+| 113 | `candidates.portal.save` | Candidate session | The candidate saves sections of their joining form |
+| 114 | `candidates.portal.uploadDocument` | Candidate session | The candidate uploads a document (photo, KYC copies, bank proof, certificates) |
+| 115 | `candidates.portal.removeDocument` | Candidate session | The candidate removes their own upload before HR checks it |
+| 116 | `candidates.portal.document` | Candidate session | The candidate views one of their documents |
+| 117 | `candidates.portal.submit` | Candidate session | The candidate submits and signs the joining form online (code + typed name) |
+| 118 | `candidates.portal.signOut` | Candidate session | Ends the candidate session |
+| 119 | `candidates.joiningForm.get` | Onboarding: View | The candidate's joining-form draft (full numbers) and who changed each section |
+| 120 | `candidates.joiningForm.save` | Onboarding: Edit | Save sections of the joining-form draft |
+| 121 | `candidates.joiningForm.sendBack` | Onboarding: Edit | Send the submitted form back to the candidate for changes (reason e-mailed) |
+| 122 | `candidates.printedForms.print` | Onboarding: View | HR's paper forms of the pack (joining form, Form F, ESIC Form 1, EPF Form 11, medical pages) filled in from the joining form, as one PDF to print and sign |
+| 123 | `candidates.documents.list` | Onboarding: View | A candidate's uploaded documents with verification status |
+| 124 | `candidates.documents.upload` | Onboarding: Edit | Upload a document (PDF / JPG / PNG, 5 MB) |
+| 125 | `candidates.documents.download` | Onboarding: View | Download a document file |
+| 126 | `candidates.documents.review` | Onboarding: Edit | Mark a document verified, or rejected with a reason |
+| 127 | `candidates.documents.delete` | Onboarding: Edit | Delete a wrong or rejected upload (kept, can be restored) |
+| 128 | `candidates.documents.restore` | Onboarding: Edit | Bring back a deleted document |
+| 129 | `candidates.documents.requirements` | Onboarding: View | The documents each joining type always needs, and those an offer may ask for (offer form checklist) |
+| 130 | `candidates.recordMedical` | Onboarding: Edit | Record the pre-employment medical result |
+| 131 | `candidates.confirmJoining` | Onboarding: Edit | Record that the candidate confirmed they are joining |
+| 132 | `candidates.joining.checklist` | Onboarding: View | What must be done before joining, item by item |
+| 133 | `candidates.joining.complete` | Onboarding: Edit | Joining day: create the employee from the candidate (+ joining tasks, appointment letter) |
+| 134 | `candidates.backgroundChecks.list` | Onboarding: View | A candidate's background checks |
+| 135 | `candidates.backgroundChecks.create` | Onboarding: Edit | Start a background check (needs the signed consent) |
+| 136 | `candidates.backgroundChecks.update` | Onboarding: Edit | Record progress or the result of a check |
+| 137 | `candidates.backgroundChecks.delete` | Onboarding: Edit | Remove a check started by mistake |
+| 138 | `letterTemplates.list` | Letter templates: View | The letter templates (every kind) |
+| 139 | `letterTemplates.kinds` | Letter templates: View | The kinds of letter with the fields and blocks of each (for a new template) |
+| 140 | `letterTemplates.get` | Letter templates: View | One template with its text and placeholders |
+| 141 | `letterTemplates.create` | Letter templates: Edit | Add a letter template |
+| 142 | `letterTemplates.update` | Letter templates: Edit | Change the wording / joining type, or retire a template |
+| 143 | `letterTemplates.preview` | Letter templates: View | PDF of (unsaved) wording with example values |
+| 144 | `letterTemplates.uploadImage` | Letter templates: Edit | Upload a new letterhead image for a template (the old one is kept) |
+| 145 | `letterTemplates.setImage` | Letter templates: Edit | Use a letterhead image uploaded before on a template |
+| 146 | `letterTemplates.images` | Letter templates: View | The uploaded letterhead images of one part, to pick from |
+| 147 | `letterTemplates.image` | Letter templates: View | One uploaded letterhead image (by id) |
+| 148 | `changeHistory.list` | Change history: View (one employee: Employees: View) | Who changed what and when, sign-ins - newest first, filtered |
+| 149 | `changeHistory.verify` | Change history: View | Check that no history entry was changed or removed (hash chain) |
+| 150 | `employeeLetters.list` | Own record; others: Employee · Documents & letters: View | The letters issued to an employee (appointment, confirmation...) |
+| 151 | `employeeLetters.download` | Own record; others: Employee · Documents & letters: View | One issued letter's PDF |
+| 152 | `employeeLetters.templates` | Employee · Directory & job: View + Employee · Documents & letters: Edit | The templates of a kind of letter to pick from (+ the suggested one) |
+| 153 | `employeeLetters.preview` | Employee · Directory & job: View + Employee · Documents & letters: Edit | The letter as it would be issued now (PDF) |
+| 154 | `employeeLetters.issue` | Employee · Directory & job: View + Employee · Documents & letters: Edit | Issue a letter: numbered, kept, e-mailed to the employee |
+| 155 | `joiningTasks.types.list` | Joining task types: View (active ones: Onboarding: Edit) | The task list every new employee gets |
+| 156 | `joiningTasks.types.create` | Joining task types: Edit | Add a task to the list (team, due days, default person) |
+| 157 | `joiningTasks.types.update` | Joining task types: Edit | Change or retire a task on the list |
+| 158 | `joiningTasks.assignees` | Onboarding or Joining task types: View | The people a joining task can be given to (Joining tasks: Edit) |
+| 159 | `joiningTasks.list` | Joining tasks: View (mine) / Onboarding: View (all) | My tasks / all tasks - open or done, by team, search |
+| 160 | `joiningTasks.forEmployee` | Own record; others: Employee · Directory & job: View | One employee's joining tasks |
+| 161 | `joiningTasks.createForEmployee` | Onboarding: Edit | Make the joining tasks for an employee added directly (once) |
+| 162 | `joiningTasks.complete` | The person it is given to (Joining tasks: Edit) or Onboarding: Edit | Mark a task done, with an optional note |
+| 163 | `joiningTasks.reopen` | The person it is given to (Joining tasks: Edit) or Onboarding: Edit | Undo "done" |
+| 164 | `joiningTasks.assign` | Onboarding: Edit | Give an open task to someone else |
+| 165 | `accounts.security.get` | Roles & access: View | The security rules (lockout, sign-in length, password rules) |
+| 166 | `accounts.security.update` | Roles & access: Edit (+ password re-entered) | Change the security rules |
+| 167 | `candidates.export` | Onboarding: View | The "Offers & candidates" report (Excel) |
+| 168 | `changeHistory.export` | Change history: View (one employee: Employees: View) | The change history as an Excel file |
+| 169 | `employees.imports.history` | Employees: Edit | The files imported and the ones with errors |
+| 170 | `employees.imports.errorReport` | Employees: Edit | A file's rows to fix, as an Excel file |
+| 171 | `attendance.overview` | any logged-in employee | what the attendance page and the home page's "Today" card show first |
+| 172 | `attendance.days.myMonth` | any logged-in employee (their own) | the employee's month calendar |
+| 173 | `attendance.days.employeeMonth` | own | one employee's month |
+| 174 | `attendance.days.board` | TEAM / DEPARTMENT: any logged-in employee (their reporting tree / the employees whose HOD they are); ALL: Attendance: View | who is in / late / not in yet / absent / off on a day |
+| 175 | `attendance.days.muster` | as `board` | the monthly muster: everyone in the scope x every day |
+| 176 | `attendance.days.exportMuster` | as `board` | the muster as Excel |
+| 177 | `attendance.days.punches` | as `employeeMonth` | the day's details |
+| 178 | `attendance.days.correct` | Attendance: Edit | HR sets the day's status with a reason |
+| 179 | `attendance.days.removeCorrection` | Attendance: Edit | takes HR's correction away; the day goes back to what the punches give |
+| 180 | `attendance.shifts.list` | any logged-in employee (retired ones: Attendance setup: View) | the shifts |
+| 181 | `attendance.shifts.create` | Attendance setup: Edit | adds a shift |
+| 182 | `attendance.shifts.update` | Attendance setup: Edit | changes or retires a shift; new times apply from a date (dated) |
+| 183 | `attendance.shifts.assign` | Attendance setup: Edit | the schedule pattern and attendance policy of employees from a date |
+| 184 | `attendance.shifts.assignments` | own, or Attendance setup: View | one employee's schedules |
+| 185 | `attendance.shifts.schedules` | Attendance setup: View | who follows which schedule pattern and policy today |
+| 186 | `attendance.shifts.patterns.list` | any logged-in employee (retired: Attendance setup: View) | the schedule patterns |
+| 187 | `attendance.shifts.patterns.create` | Attendance setup: Edit | adds a schedule pattern |
+| 188 | `attendance.shifts.patterns.update` | Attendance setup: Edit | changes, retires or stars (makes the default) a schedule pattern |
+| 189 | `attendance.policies.list` | any logged-in employee (retired ones: Attendance setup: View) | the attendance policies |
+| 190 | `attendance.policies.create` | Attendance setup: Edit (all companies) | adds an attendance policy |
+| 191 | `attendance.policies.update` | Attendance setup: Edit (all companies) | changes the rules from a date, renames, makes default or retires a policy |
+| 192 | `attendance.locks.months` | Attendance setup: Edit (all companies) | a year's attendance months - locked or not |
+| 193 | `attendance.locks.checklist` | Attendance setup: Edit (all companies) | what is still open in a month before locking |
+| 194 | `attendance.locks.lock` | Attendance setup: Edit (all companies) | locks an attendance month (the whole group) |
+| 195 | `attendance.locks.unlock` | Attendance setup: Edit (all companies) | opens a locked month again, with a reason |
+| 196 | `attendance.locks.setCycleStart` | Attendance setup: Edit (all companies) | the day an attendance month starts |
+| 197 | `attendance.holidays.list` | any logged-in employee | the holiday calendar of a year |
+| 198 | `attendance.holidays.create` | Attendance setup: Edit | adds a holiday; a day already passed is worked out again for everyone |
+| 199 | `attendance.holidays.update` | Attendance setup: Edit | changes a holiday |
+| 200 | `attendance.holidays.delete` | Attendance setup: Edit | removes a holiday |
+| 201 | `attendance.punches.upload` | Attendance setup: Edit | the biometric machines' export until the Kent feed is connected |
+| 202 | `attendance.punches.uploads` | Attendance setup: View | the earlier uploads |
+| 203 | `attendance.punches.unmatched` | Attendance setup: View | the codes on the machines that matched no employee |
+| 204 | `attendance.punches.link` | Attendance setup: Edit | gives every unmatched punch of a code to an employee; their days are worked out again |
+| 205 | `attendance.punches.addManual` | Attendance setup: Edit | testing only: punches typed by hand for one employee on one day |
+| 206 | `attendance.rosters.grid` | Attendance setup: View | the roster: who works which shift on which day |
+| 207 | `attendance.rosters.save` | Attendance setup: Edit | sets days of the draft |
+| 208 | `attendance.rosters.clear` | as `save` | takes draft days out |
+| 209 | `attendance.rosters.publish` | as `save` | publishes the draft days of these employees in the range - attendance follows them; days already come are work |
+| 210 | `attendance.shiftChanges.create` | any logged-in employee (their own) | asks to change one day - goes for approval (approval service) |
+| 211 | `attendance.shiftChanges.cancel` | the employee (their own request) | takes back a request still waiting |
+| 212 | `attendance.shiftChanges.mine` | any logged-in employee | the employee's requests and where they stand |
+| 213 | `attendance.regularizations.create` | any logged-in employee (their own) | asks for a missed punch to count as present, or for on duty - goes for approval |
+| 214 | `attendance.regularizations.cancel` | the employee (their own request) | withdraws a request still waiting |
+| 215 | `attendance.regularizations.mine` | any logged-in employee | the employee's regularization / on-duty requests and where they stand |
+| 216 | `approvals.listToDecide` | Logged in | What waits for my decision, of every kind |
+| 217 | `approvals.countToDecide` | Logged in | How many requests wait for my decision (the menu) |
+| 218 | `approvals.listMine` | Logged in | The requests I raised |
+| 219 | `approvals.listDecided` | Logged in | The requests I approved or rejected, and where they stand now |
+| 220 | `approvals.get` | The request's people (or as the feature allows) | One request with its steps |
+| 221 | `approvals.decide` | The step's approver | Approve, or reject with a reason |
+| 222 | `approvals.cancel` | The requester (or as the feature allows) | Take back a request still waiting |
+| 223 | `approvals.listHeld` | Approval chains: Edit | Requests nobody can decide - routing to repair |
+| 224 | `approvals.retryRouting` | Approval chains: Edit | Send a held request through its chain again |
+| 225 | `approvals.chains.list` | Approval chains: View | The approval chains of every kind |
+| 226 | `approvals.chains.save` | Approval chains: Edit | Set the steps of a chain (shared, or a company's own) |
+| 227 | `approvals.chains.remove` | Approval chains: Edit | Remove a company's own chain |
+| 228 | `jobChanges.create` | Request job changes: Edit / Request salary changes: Edit (+ Employee · Salary: View) | Ask for a job / salary change from a day on - goes for approval |
+| 229 | `jobChanges.get` | Employees: View, the employee themselves, or the approval's people | One job change |
+| 230 | `jobChanges.list` | Employees: View; own (about me / asked by me): any logged-in employee | Job changes, filtered |
+| 231 | `jobChanges.export` | Employees: View | Job changes as Excel |
+| 232 | `jobChanges.cancel` | The requester, or Employees: Edit | Cancel a change not in force yet |
+| 233 | `leave.overview` | Logged in | whether the viewer has a team / department to see, and what they may do |
+| 234 | `leave.types.list` | Logged in (retired ones: Leave: View) | the leave types and their rules |
+| 235 | `leave.types.create` | Leave: Edit (all companies) | adds a leave type |
+| 236 | `leave.types.update` | Leave: Edit (all companies) | changes / retires a leave type |
+| 237 | `leave.balances.get` | own; team / department; Leave: View | one employee's balances in a year and every row behind them |
+| 238 | `leave.balances.register` | team / department; Leave: View for everyone | everyone's balance of each leave type |
+| 239 | `leave.balances.export` | as `register` | the register as Excel |
+| 240 | `leave.balances.adjust` | Leave: Edit | HR adds or takes away days with a reason |
+| 241 | `leave.balances.runCredits` | Leave: Edit (all companies) | credits the months due and lapses the years ended now |
+| 242 | `leave.balances.importTemplate` | Leave: Edit | the opening balances Excel template |
+| 243 | `leave.balances.importBalances` | Leave: Edit | checks / saves an Excel of opening balances (all rows or none) |
+| 244 | `leave.applications.preview` | Logged in (their own) | what a leave would take, before applying |
+| 245 | `leave.applications.apply` | Logged in (their own) | applies for leave - goes for approval |
+| 246 | `leave.applications.cancel` | the employee (their own) | withdraws a leave still waiting, or asks to cancel an approved one |
+| 247 | `leave.applications.mine` | Logged in | the employee's leave and where it stands |
+| 248 | `leave.applications.list` | team / department; Leave: View for everyone | who is on leave over a span |
+| 249 | `leave.applications.forApproval` | the approval request's people | the leave behind an approval request, with the balance |
+| 250 | `leave.applications.recounts` | Leave: View | approved leave the calendar now counts otherwise |
+| 251 | `leave.applications.recount` | Leave: Edit | puts one approved leave right by today's calendar |
+| 252 | `leave.compOff.claim` | Logged in (their own) | claims comp-off for work on a weekly off / holiday - goes for approval |
+| 253 | `leave.compOff.cancel` | the employee (their own) | withdraws a claim still waiting |
+| 254 | `leave.compOff.mine` | Logged in | the employee's comp-off claims |
+| 255 | `organization.export` | Organization: View | Excel review report |
+| 256 | `approvals.export` | Logged in; held mode additionally Approval chains: Edit | Excel review report |
+| 257 | `approvals.chains.export` | Approval chains: View | Excel review report |
+| 258 | `attendance.days.exportMonth` | Logged in; another employee as employeeMonth | Excel review report |
+| 259 | `attendance.days.exportBoard` | Logged in; as board | Excel review report |
+| 260 | `attendance.exportSetup` | Attendance setup: View; locks additionally group-wide Edit | Excel review report |
+| 261 | `attendance.rosters.export` | Attendance setup: View | Excel review report |
+| 262 | `employees.exportDirectory` | Logged in | Excel review report |
+| 263 | `employees.hods.export` | Logged in; heads additionally HOD appointments: View | Excel review report |
+| 264 | `joiningTasks.export` | Logged in; MINE Joining tasks: View, ALL Onboarding: View | Excel review report |
+| 265 | `joiningTasks.types.export` | As joiningTasks.types.list | Excel review report |
+| 266 | `leave.applications.export` | Logged in; as applications.list | Excel review report |
+| 267 | `leave.applications.exportMine` | Logged in | Excel review report |
+| 268 | `leave.applications.exportRecounts` | Leave: View | Excel review report |
+| 269 | `leave.types.export` | Logged in | Excel review report |
+| 270 | `approvals.report` | Logged in; team/HOD relationship or scoped area access | Combined leave and attendance request report with messages and history |
 
 ---
 
@@ -1476,7 +1480,7 @@ together with their time, e.g. when a changed offer goes back to draft). Calenda
   | `address` | string | no (the letter needs it) | 1-300 chars - printed under the name |
   | `probationMonths` | number | no (the letter needs it) | 0-24 |
   | `noticeMonthsProbation`, `noticeMonthsConfirmed` | number | no (the letter needs them) | 0-24 - notice during probation / after confirmation |
-  | `salaryLines` | `[{ salaryComponentId, monthlyAmount }]` | no (the letter needs it) | active salary components (earnings / employer contributions - never a `DEDUCTION`), each once; whole units per month; **monthly total x 12 must equal `annualCtc`** |
+  | `salaryLines` | `[{ salaryComponentId, monthlyAmount }]` | no (the letter needs it) | active salary components (earnings / employer contributions - never a `DEDUCTION`), each once; per month, up to 2 decimals (paise - 2026-11-24); **the monthly total must equal `annualCtc` / 12 to the paisa** (5,84,000 -> 48,666.67) |
   | `extraRequiredDocuments` | DocumentType[] | no | documents this offer needs on top of the pack's compulsory ones (2026-11-20) - only types from `documents.requirements` `requestable`; duplicates dropped. The candidate uploads them before signing and HR verifies them before joining (`joining.checklist`). Not printed on the letter |
   | `joiningFormOnAcceptance` | boolean | no | default `false` (2026-11-20): `true` = the joining form opens when the candidate accepts and its link is e-mailed with the acceptance; `false` = HR opens it later with `offerLetters.newLink` ("Send link"). Not printed on the letter |
 
@@ -2586,6 +2590,66 @@ site can be used by several companies.
 - **Errors:** `400` invalid input, or `kind` changed to / from `DEDUCTION` · `404 NOT_FOUND` unknown id · `409 CONFLICT`
   name already used.
 
+### `organization.salaryStructures.list`
+- **HTTP:** `POST /api/rpc/organization/salaryStructures/list` · **Code:** `backend/src/modules/organization/salary-structures/`
+- **Access:** Organization: View.
+- **Scope:** not limited by data access (one list for every company - no one's records).
+- **Input (optional):** `{ includeInactive?: boolean }`
+- **Returns:** `[{ id, name, joiningType, employmentType, workforceCategory (each null = any), basicComponentId, isActive,
+  lines [{ salaryComponentId, method, value (number | null), minimumBase, onlyIfGrossAtMost, salaryComponent {id, name,
+  kind, isActive} }] }]` by name; lines in breakup order. `method`: `PERCENT_OF_CTC` / `PERCENT_OF_GROSS` /
+  `PERCENT_OF_BASIC` (value = %) · `FIXED` (value = monthly amount) · `BALANCE` (what is left; no value).
+- **What it does:** how an offer's salary breakup is worked out from its CTC, one structure per type of employee (the
+  user, 2026-11-24 - HR's "CTC Structure" sheet). Seeded: "Regular - White collar" and "Regular - Blue collar" (Regular
+  offers: Permanent / Contract) - Basic 50% of gross, HRA 50% and bonus 8.33% of Basic (minimum base 7,000), education
+  200 + medical 1,250 (white collar only), employer PF 12% and gratuity 4.81% of Basic, employer ESI 3.25% of the gross
+  while the gross is at most 21,000, special allowance the balance; "Trainee" (Consultant & Intern trainees) - the whole
+  CTC as stipend.
+- **Errors:** `400` invalid input · `403` without Organization: View.
+
+### `organization.salaryStructures.create`
+- **HTTP:** `POST /api/rpc/organization/salaryStructures/create` · **Code:** `backend/src/modules/organization/salary-structures/`
+- **Access:** Organization: Edit.
+- **Scope:** shared by every company - needs Organization Edit for **all companies** (`403`).
+- **Input:**
+  | Field | Type | Required | Rules |
+  |---|---|---|---|
+  | `name` | string | yes | 1-100, unique |
+  | `joiningType` / `employmentType` / `workforceCategory` | enum \| null | no | which offers it is for; empty = any. Two **active** structures never have the same three (`409`) |
+  | `basicComponentId` | number \| null | when a line is `PERCENT_OF_BASIC` | one of its lines, not the balance nor itself a "% of Basic" |
+  | `lines` | `[{ salaryComponentId, method, value?, minimumBase?, onlyIfGrossAtMost? }]` | yes (1-50) | each component once, active, not a `DEDUCTION`; exactly one `BALANCE`, an earning, with no value / condition; every other line a value (up to 2 decimals; a % at most 100); `minimumBase` only on a percentage |
+- **Returns:** the structure (as in `list`).
+- **Errors:** `400` the rules above · `403` not for all companies · `409 CONFLICT` name used, or another active structure
+  for the same offers.
+
+### `organization.salaryStructures.update`
+- **HTTP:** `POST /api/rpc/organization/salaryStructures/update` · **Code:** `backend/src/modules/organization/salary-structures/`
+- **Access:** Organization: Edit.
+- **Scope:** shared by every company - needs Organization Edit for **all companies** (`403`).
+- **Input:** `{ id: number, name?, joiningType?, employmentType?, workforceCategory?, basicComponentId?, lines?, isActive?:
+  boolean }` (rules as `create`; `lines` given = the whole new list).
+- **What it does:** changes a structure - e.g. HRA from 50% to 40% of Basic. Offers already made keep their amounts; new
+  offers use the new rules. Retiring one (`isActive: false`) lets offers of its kind be typed by hand again.
+- **Returns:** the structure.
+- **Errors:** `400` the rules of `create` · `403` · `404 NOT_FOUND` unknown id · `409 CONFLICT` as `create`.
+
+### `organization.salaryStructures.calculate`
+- **HTTP:** `POST /api/rpc/organization/salaryStructures/calculate` · **Code:** `backend/src/modules/organization/salary-structures/`
+- **Access:** any logged-in employee (the offer and salary forms).
+- **Scope:** not limited by data access - a calculation; it returns no one's records.
+- **Input:** `{ annualCtc: int (1 - 240 crore), joiningType, employmentType, workforceCategory }` (the offer's), or
+  `{ annualCtc, draft: { basicComponentId?, lines } }` (a structure being edited - its live example).
+- **Returns:** `{ structure: { id, name } | null, monthlyCtc, lines: [{ salaryComponentId, monthlyAmount }] }` -
+  `monthlyCtc` = annualCtc / 12 to the paisa; the lines add up to it exactly. No structure for the offer: `structure:
+  null, lines: []` (HR types the breakup).
+- **What it does:** picks the active structure closest to the offer (a given employment type counts most, then the joining
+  type, then the category), works out the Monthly Gross from the CTC less the employer contributions, drops a line whose
+  "only if the gross is at most" fails (ESIC above 21,000) and works it out again, rounds every line to the paisa - never to
+  the rupee (the user, 2026-11-24: stored paise can be shown rounded later, rounded amounts cannot be undone) - the "% of
+  Basic" ones from the Basic so rounded, and gives the balance line what is left.
+- **Errors:** `400` invalid input, a draft breaking the rules of `create`, or a CTC too low for the structure (its other
+  lines come to more than the monthly CTC).
+
 ---
 
 ## letterTemplates
@@ -3607,7 +3671,7 @@ salary figures). One open change per employee at a time (waiting for approval, o
   | `reportingManagerCode` | string \| null | no | an employee who has not left, not the employee, no loop |
   | `functionalManagerCode` | string \| null | no | an employee who has not left, not the employee |
   | `employmentType`, `workforceCategory` | enum | no | |
-  | `salary` | object | for `SALARY_*` | `{ annualCtc (int > 0), performancePayAnnual? (int \| null), currency? (3 letters, default the current salary's), lines [{ salaryComponentId, monthlyAmount }] (1-50, each component once, active, not a `DEDUCTION`, x 12 = annualCtc) }` |
+  | `salary` | object | for `SALARY_*` | `{ annualCtc (int > 0), performancePayAnnual? (int \| null), currency? (3 letters, default the current salary's), lines [{ salaryComponentId, monthlyAmount (up to 2 decimals) }] (1-50, each component once, active, not a `DEDUCTION`, total = annualCtc / 12 to the paisa) }` |
 
 - **Returns:** the change, as `get`.
 - **What it does:** raises the request for approval - the job chain when job details change, the salary chain when the salary

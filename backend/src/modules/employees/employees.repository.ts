@@ -1,6 +1,7 @@
 import { type DataScope, scopeWhere } from '#core/auth/scope'
 import {
   createdBy,
+  linesAsNumbers,
   updatedBy,
   prisma,
   type ActorId,
@@ -375,8 +376,9 @@ const salaryRowSelect = {
 } satisfies Prisma.EmployeeSalarySelect
 
 // Every salary of the employee, the latest first (future ones too) - confidential: the service checked the viewer
-export function listSalaries(employeeId: number, db: DbClient = prisma) {
-  return db.employeeSalary.findMany({ where: { employeeId }, orderBy: { effectiveFrom: 'desc' }, select: salaryRowSelect })
+export async function listSalaries(employeeId: number, db: DbClient = prisma) {
+  const rows = await db.employeeSalary.findMany({ where: { employeeId }, orderBy: { effectiveFrom: 'desc' }, select: salaryRowSelect })
+  return rows.map((row) => ({ ...row, lines: linesAsNumbers(row.lines) }))
 }
 
 export type SalaryInput = {
@@ -412,8 +414,8 @@ export function replaceSalary(id: number, data: Omit<SalaryInput, 'effectiveFrom
 
 // The salary that applies today (the newest one already in effect), with its monthly breakup in the components'
 // order, or null - confidential: only for the employee and SALARY READ (checked in the service)
-export function findCurrentSalary(employeeId: number, db: DbClient = prisma) {
-  return db.employeeSalary.findFirst({
+export async function findCurrentSalary(employeeId: number, db: DbClient = prisma) {
+  const row = await db.employeeSalary.findFirst({
     where: { employeeId, effectiveFrom: { lte: new Date() } },
     orderBy: { effectiveFrom: 'desc' },
     select: {
@@ -427,6 +429,7 @@ export function findCurrentSalary(employeeId: number, db: DbClient = prisma) {
       },
     },
   })
+  return row && { ...row, lines: linesAsNumbers(row.lines) }
 }
 
 // The employee with this exact (upper-case) code, or null.

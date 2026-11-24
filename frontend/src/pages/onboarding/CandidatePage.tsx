@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
-import { cn, errorMessage, formatDate, formatDoneBy, formatMoney } from '@/lib/utils'
+import { cn, errorMessage, formatDate, formatDoneBy, formatMoney, sumMoney } from '@/lib/utils'
 import { BackgroundChecksTab } from './components/BackgroundChecksTab'
 import { DocumentsTab } from './components/DocumentsTab'
 import { JoiningDialog } from './components/JoiningDialog'
@@ -460,8 +460,8 @@ const OFFER_ROWS: OfferRow[] = [
 
 function OfferDetails({ c }: { c: Candidate }) {
   const rows = [...(c.loiNumber ? LOI_ROWS : []), ...OFFER_ROWS].map(([label, value]) => [label, value(c)] as const)
-  const gross = c.salaryLines.filter((l) => l.salaryComponent.kind === 'EARNING').reduce((t, l) => t + l.monthlyAmount, 0)
-  const total = c.salaryLines.reduce((t, l) => t + l.monthlyAmount, 0)
+  const gross = sumMoney(c.salaryLines.filter((l) => l.salaryComponent.kind === 'EARNING').map((l) => l.monthlyAmount))
+  const total = sumMoney(c.salaryLines.map((l) => l.monthlyAmount))
   return (
     <>
       <dl className="grid gap-x-6 gap-y-3.5 rounded-3xl bg-card p-5 shadow-card sm:grid-cols-2 lg:grid-cols-3">
@@ -488,18 +488,19 @@ function OfferDetails({ c }: { c: Candidate }) {
                 <tr key={l.salaryComponent.id} className={i > 0 && l.salaryComponent.kind !== c.salaryLines[i - 1]!.salaryComponent.kind ? 'border-t' : ''}>
                   <td className="py-1">{l.salaryComponent.name}</td>
                   <td className="py-1 text-right">{formatMoney(l.monthlyAmount, c.ctcCurrency)}</td>
-                  <td className="py-1 text-right">{formatMoney(l.monthlyAmount * 12, c.ctcCurrency)}</td>
+                  <td className="py-1 text-right">{formatMoney(sumMoney([l.monthlyAmount * 12]), c.ctcCurrency)}</td>
                 </tr>
               ))}
               <tr className="border-t text-muted-foreground">
                 <td className="py-1">Monthly gross</td>
                 <td className="py-1 text-right">{formatMoney(gross, c.ctcCurrency)}</td>
-                <td className="py-1 text-right">{formatMoney(gross * 12, c.ctcCurrency)}</td>
+                <td className="py-1 text-right">{formatMoney(sumMoney([gross * 12]), c.ctcCurrency)}</td>
               </tr>
               <tr className="border-t font-semibold">
                 <td className="py-1">Total (fixed CTC)</td>
                 <td className="py-1 text-right">{formatMoney(total, c.ctcCurrency)}</td>
-                <td className="py-1 text-right">{formatMoney(total * 12, c.ctcCurrency)}</td>
+                {/* the agreed annual CTC: 12 x the monthly total can be a few paise off it (2026-11-24) */}
+                <td className="py-1 text-right">{formatMoney(c.annualCtc, c.ctcCurrency)}</td>
               </tr>
             </tbody>
           </table>

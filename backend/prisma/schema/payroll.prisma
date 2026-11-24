@@ -11,7 +11,7 @@ model EmployeeSalary {
   employeeId           Int      @map("employee_id")
   // The day this salary applies from - the date of joining for the one copied from the offer
   effectiveFrom        DateTime @map("effective_from") @db.Date
-  // Annual FIXED cost to company in whole units of the currency; the monthly lines x 12 add up to it
+  // Annual FIXED cost to company in whole units of the currency; the monthly lines add up to it / 12, to the paisa
   annualCtc            Int      @map("annual_ctc")
   // "Performance pay (Target Oriented Earnings)" per year, on top of the fixed CTC
   performancePayAnnual Int?     @map("performance_pay_annual")
@@ -57,8 +57,8 @@ model EmployeeSalaryLine {
   id                Int      @id @default(autoincrement())
   employeeSalaryId  Int      @map("employee_salary_id")
   salaryComponentId Int      @map("salary_component_id")
-  // Whole units of the salary's currency per month
-  monthlyAmount     Int      @map("monthly_amount")
+  // per month in the currency, to the paisa / cent (2 decimals - the user, 2026-11-24: a CTC that does not divide by 12)
+  monthlyAmount     Decimal  @map("monthly_amount") @db.Decimal(12, 2)
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById       Int      @map("created_by_id")
   updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)

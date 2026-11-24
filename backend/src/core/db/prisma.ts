@@ -36,5 +36,11 @@ export const updatedBy = (actorId: ActorId) => ({ updatedById: actorId })
 // Data for a new row without its "by" columns - the repository adds them from the actorId
 export type NewRow<T> = Omit<T, 'createdById' | 'updatedById'>
 
+// Salary lines read with a Decimal amount (2 decimals - 2026-11-24) as plain numbers, so services, checks and the API get
+// 48666.67 and not a Decimal object. Repositories that select salary lines return them through this.
+export function linesAsNumbers<L extends { monthlyAmount: { toNumber(): number } }>(lines: L[]): (Omit<L, 'monthlyAmount'> & { monthlyAmount: number })[] {
+  return lines.map((line) => ({ ...line, monthlyAmount: line.monthlyAmount.toNumber() }))
+}
+
 // Re-export generated types and enums so modules import everything database-related from '#core/db/prisma'.
 export * from '../../generated/prisma/client.js'

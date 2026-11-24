@@ -37,7 +37,7 @@ model Candidate {
   employmentType        EmploymentType    @map("employment_type")
   workforceCategory     WorkforceCategory @map("workforce_category")
   // Annual FIXED cost to company stated on the offer letter, in whole units of ctcCurrency. When the offer has a
-  // salary breakup (salaryLines), the monthly lines x 12 must add up to exactly this.
+  // salary breakup (salaryLines), the monthly lines add up to exactly this / 12, to the paisa (2026-11-24).
   annualCtc             Int               @map("annual_ctc")
   // "Performance pay (Target Oriented Earnings)" per year, on top of the fixed CTC (offer letter Annexure-I);
   // Total CTC = annualCtc + this
@@ -311,13 +311,14 @@ enum Salutation {
 }
 
 // The salary breakup of an offer (offer letter Annexure-I): one monthly amount per salary component.
-// Annual = monthly x 12. Replaced as a whole when HR edits the offer (decided 2026-11-12: HR types it).
+// Annual = monthly x 12. Replaced as a whole when HR edits the offer (decided 2026-11-12: HR types it; since 2026-11-24
+// filled in from the CTC by a salary structure, HR may still change lines).
 model CandidateSalaryLine {
   id                Int      @id @default(autoincrement())
   candidateId       Int      @map("candidate_id")
   salaryComponentId Int      @map("salary_component_id")
-  // Whole units of the offer's ctcCurrency per month
-  monthlyAmount     Int      @map("monthly_amount")
+  // per month in the currency, to the paisa / cent (2 decimals - the user, 2026-11-24: a CTC that does not divide by 12)
+  monthlyAmount     Decimal  @map("monthly_amount") @db.Decimal(12, 2)
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById       Int      @map("created_by_id")
   updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)

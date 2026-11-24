@@ -1,5 +1,5 @@
 import { type DataScope, scopeWhere } from '#core/auth/scope'
-import { createdBy, prisma, updatedBy, type ActorId, type CandidateStatus, type DbClient, type NewRow, type Prisma } from '#core/db/prisma'
+import { createdBy, linesAsNumbers, prisma, updatedBy, type ActorId, type CandidateStatus, type DbClient, type NewRow, type Prisma } from '#core/db/prisma'
 
 // Database access for candidates - the only file that queries the candidates table.
 
@@ -88,6 +88,7 @@ const candidateDetailSelect = {
   },
 } satisfies Prisma.CandidateSelect
 
+
 // `scope`: whose candidates may be listed (data access - required, so no list can leave it out)
 export function list(
   filter: { scope: DataScope; status?: CandidateStatus | undefined; companyId?: number | undefined },
@@ -104,17 +105,22 @@ export function list(
   })
 }
 
+// The salary breakup's amounts as numbers (2 decimals - 2026-11-24)
+type DetailRecord = Prisma.CandidateGetPayload<{ select: typeof candidateDetailSelect }>
+const withAmounts = (row: DetailRecord) => ({ ...row, salaryLines: linesAsNumbers(row.salaryLines) })
+const maybeWithAmounts = (row: DetailRecord | null) => (row ? withAmounts(row) : null)
+
 // The candidate with this id, or null.
-export function findById(id: number, db: DbClient = prisma) {
-  return db.candidate.findUnique({ where: { id }, select: candidateDetailSelect })
+export async function findById(id: number, db: DbClient = prisma) {
+  return maybeWithAmounts(await db.candidate.findUnique({ where: { id }, select: candidateDetailSelect }))
 }
 
-export function create(data: NewRow<Prisma.CandidateUncheckedCreateInput>, actorId: ActorId, db: DbClient = prisma) {
-  return db.candidate.create({ data: { ...data, ...createdBy(actorId) }, select: candidateDetailSelect })
+export async function create(data: NewRow<Prisma.CandidateUncheckedCreateInput>, actorId: ActorId, db: DbClient = prisma) {
+  return withAmounts(await db.candidate.create({ data: { ...data, ...createdBy(actorId) }, select: candidateDetailSelect }))
 }
 
-export function update(id: number, data: Prisma.CandidateUncheckedUpdateInput, actorId: ActorId, db: DbClient = prisma) {
-  return db.candidate.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: candidateDetailSelect })
+export async function update(id: number, data: Prisma.CandidateUncheckedUpdateInput, actorId: ActorId, db: DbClient = prisma) {
+  return withAmounts(await db.candidate.update({ where: { id }, data: { ...data, ...updatedBy(actorId) }, select: candidateDetailSelect }))
 }
 
 // Changes the candidate only while they are still in `status` (the one read before) - false when someone changed it a

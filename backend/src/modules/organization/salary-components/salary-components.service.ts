@@ -2,6 +2,7 @@ import { assertGroupWide } from '#core/auth/scope'
 import { assertAccess } from '#core/auth/access'
 import type { ActorId } from '#core/db/prisma'
 import { ORPCError } from '@orpc/server'
+import { fromPaise, monthlyOf, toPaise } from '#shared/utils/money'
 import type { CurrentUser } from '#core/rpc/procedures'
 import type { z } from 'zod'
 import * as salaryComponentsRepository from './salary-components.repository.js'
@@ -21,8 +22,9 @@ export function listSalaryComponentsFor(viewer: CurrentUser, includeInactive = f
 }
 
 // A salary breakup (an offer's, or a revision's - 2026-11-20): every line an active earning or employer contribution -
-// never a deduction, which payroll takes out of the month's pay (2026-11-24) - and the monthly lines x 12 adding up to
-// the annual fixed CTC. Throws BAD_REQUEST. An empty breakup is allowed (no lines given).
+// never a deduction, which payroll takes out of the month's pay (2026-11-24) - and the monthly lines adding up to the
+// annual fixed CTC / 12 to the paisa (2026-11-24: 5,84,000 -> 48,666.67 a month; compared in whole paise). Throws
+// BAD_REQUEST. An empty breakup is allowed (no lines given).
 export async function checkBreakup(lines: { salaryComponentId: number; monthlyAmount: number }[], annualCtc: number) {
   if (lines.length === 0) return
   const kindOf = new Map((await listSalaryComponents()).map((c) => [c.id, c.kind]))
@@ -32,9 +34,12 @@ export async function checkBreakup(lines: { salaryComponentId: number; monthlyAm
   if (lines.some((line) => kindOf.get(line.salaryComponentId) === 'DEDUCTION')) {
     throw new ORPCError('BAD_REQUEST', { message: 'A deduction is not part of a salary breakup - payroll takes it out of the monthly pay' })
   }
-  const annual = lines.reduce((total, line) => total + line.monthlyAmount, 0) * 12
-  if (annual !== annualCtc) {
-    throw new ORPCError('BAD_REQUEST', { message: `The salary breakup adds up to ${annual} a year (monthly total x 12), but the annual CTC is ${annualCtc}` })
+  const total = lines.reduce((sum, line) => sum + toPaise(line.monthlyAmount), 0)
+  const expected = toPaise(monthlyOf(annualCtc))
+  if (total !== expected) {
+    throw new ORPCError('BAD_REQUEST', {
+      message: `The salary breakup adds up to ${fromPaise(total).toFixed(2)} a month, but the annual CTC ${annualCtc} / 12 is ${fromPaise(expected).toFixed(2)}`,
+    })
   }
 }
 

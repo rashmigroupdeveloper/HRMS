@@ -1,5 +1,5 @@
 import { CandidateStatus, EmploymentType, JoiningType, MedicalResult, Salutation, WorkforceCategory } from '#core/db/prisma'
-import { emailSchema, idSchema, mobileSchema, nameSchema } from '#shared/schemas/common.schema'
+import { emailSchema, idSchema, mobileSchema, monthlyAmountSchema, nameSchema } from '#shared/schemas/common.schema'
 import { z } from 'zod'
 import { REQUESTABLE_DOCUMENTS } from './documents/documents.service.js'
 
@@ -22,7 +22,7 @@ const monthsSchema = z.number().int().min(0).max(24)
 // The salary breakup (offer letter Annexure-I): one monthly amount per salary component, each component at most
 // once. Sent as a whole - it replaces the offer's breakup ([] removes it).
 const salaryLinesSchema = z
-  .array(z.object({ salaryComponentId: idSchema, monthlyAmount: z.number().int().min(0).max(200_000_000) }))
+  .array(z.object({ salaryComponentId: idSchema, monthlyAmount: monthlyAmountSchema }))
   .max(50)
   .refine((lines) => new Set(lines.map((l) => l.salaryComponentId)).size === lines.length, 'Each salary component can appear only once')
 

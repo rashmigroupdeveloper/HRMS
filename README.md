@@ -85,7 +85,7 @@ HRMS_NEW/
 │     │  │                      sub-folders: roles/ (roles and their View / Edit per area), security/ (the security
 │     │  │                      rules: lockout, sign-in length, password rules)
 │     │  ├─ organization/       sub-folders: companies/ work-locations/ plants/ cost-centers/ departments/
-│     │  │                      designations/ grades/ salary-components/
+│     │  │                      designations/ grades/ salary-components/ salary-structures/ (an offer's breakup from its CTC)
 │     │  ├─ letter-templates/   the wording + letterhead images of letters, placeholders, writing a letter PDF (Annexure-I table)
 │     │  ├─ change-history/     reading the change history (filters, names for ids, hidden values) and checking its chain
 │     │  ├─ employee-letters/   letters issued to employees: appointment (on the joining day), confirmation, experience, relieving

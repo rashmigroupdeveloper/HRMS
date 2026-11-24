@@ -11,6 +11,7 @@ import { regionsRouter } from './regions/regions.router.js'
 import { workLocationsRouter } from './work-locations/work-locations.router.js'
 import { plantsRouter } from './plants/plants.router.js'
 import { salaryComponentsRouter } from './salary-components/salary-components.router.js'
+import { salaryStructuresRouter } from './salary-structures/salary-structures.router.js'
 
 // Organization masters: organization.companies.list, organization.departments.create, ...
 export const organizationRouter = {
@@ -25,4 +26,5 @@ export const organizationRouter = {
   grades: gradesRouter,
   positions: positionsRouter,
   salaryComponents: salaryComponentsRouter,
+  salaryStructures: salaryStructuresRouter,
 }

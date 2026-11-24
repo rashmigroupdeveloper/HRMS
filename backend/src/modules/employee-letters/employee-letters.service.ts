@@ -91,6 +91,7 @@ async function writePdf(kind: EmployeeLetterKind, templateId: number, details: D
               designation: e.designation?.name ?? '',
               currency: s.currency,
               lines: s.lines.map((l) => ({ name: l.salaryComponent.name, kind: l.salaryComponent.kind, monthlyAmount: l.monthlyAmount })),
+              annualCtc: s.annualCtc,
               performancePayAnnual: s.performancePayAnnual,
             }),
           }

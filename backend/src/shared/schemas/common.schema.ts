@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { isValidMobile } from '../utils/identity.js'
+import { hasPaiseOnly } from '../utils/money.js'
 
 // Reusable zod pieces shared by many modules.
 
@@ -7,6 +8,13 @@ export const idSchema = z.number().int().positive()
 
 // A short name: a master-data entry (department, designation, ...) or part of a person's name
 export const nameSchema = z.string().trim().min(1, 'Name is required').max(100)
+
+// A monthly salary amount: 0 - 20 crore, to the paisa (2 decimals - 2026-11-24)
+export const monthlyAmountSchema = z
+  .number()
+  .min(0)
+  .max(200_000_000)
+  .refine(hasPaiseOnly, { message: 'An amount has at most 2 decimals' })
 
 // Optional input of every "list" procedure: inactive entries are hidden unless asked for
 export const listInput = z.object({ includeInactive: z.boolean().optional() }).optional()

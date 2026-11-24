@@ -1,5 +1,5 @@
 import { EmploymentType, JobChangeKind, JobChangeStatus, WorkforceCategory } from '#core/db/prisma'
-import { idSchema } from '#shared/schemas/common.schema'
+import { idSchema, monthlyAmountSchema } from '#shared/schemas/common.schema'
 import { employeesSchemas } from '#modules/employees'
 import { z } from 'zod'
 
@@ -12,7 +12,7 @@ const salarySchema = z.object({
   performancePayAnnual: z.number().int().min(0).max(2_000_000_000).nullable().optional(),
   currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/, 'Use a 3-letter currency code, e.g. INR').optional(),
   lines: z
-    .array(z.object({ salaryComponentId: idSchema, monthlyAmount: z.number().int().min(0).max(200_000_000) }))
+    .array(z.object({ salaryComponentId: idSchema, monthlyAmount: monthlyAmountSchema }))
     .min(1, 'Give the monthly breakup')
     .max(50)
     .refine((lines) => new Set(lines.map((l) => l.salaryComponentId)).size === lines.length, 'Each salary component can appear only once'),

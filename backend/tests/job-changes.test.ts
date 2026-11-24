@@ -8,6 +8,7 @@ import { readStoredFile } from '#core/storage/file-storage'
 import { changeHistoryService } from '#modules/change-history'
 import { employeeDocumentsService } from '#modules/employees'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { monthlyAmountSchema } from '#shared/schemas/common.schema'
 import * as chainsService from '../src/modules/approvals/chains/chains.service.js'
 import * as importsService from '../src/modules/employees/imports/imports.service.js'
 import * as jobHistoryService from '../src/modules/employees/job-history/job-history.service.js'
@@ -278,7 +279,7 @@ describe('job changes', () => {
       await approvalsService.decide(approver2, { id: change.approvalRequestId, approve: true })
       return jobChangesService.getJobChange(hr, changeId)
     }
-    const component = (await salaryComponentsService.listSalaryComponents()).find((c) => c.kind === 'EARNING')!.id
+    const [component, other] = (await salaryComponentsService.listSalaryComponents()).filter((c) => c.kind === 'EARNING').map((c) => c.id) as [number, number]
     const salary = (monthly: number) => ({ annualCtc: monthly * 12, lines: [{ salaryComponentId: component, monthlyAmount: monthly }] })
     const employee = await createEmployee({ companyId: companyA, plantId: plantA })
     const code = employee.employeeCode
@@ -296,7 +297,7 @@ describe('job changes', () => {
     }
     const askAs = (fields: Partial<Parameters<typeof jobChangesService.createJobChange>[0]>) =>
       jobChangesService.createJobChange({ employeeCode: code, effectiveFrom: date(2026, 2, 1), kind: 'SALARY_REVISION', reason: 'Yearly increment', ...fields }, withSalary)
-    await expect(askAs({ salary: { annualCtc: 600_000, lines: [{ salaryComponentId: component, monthlyAmount: 40_000 }] } })).rejects.toThrow('adds up to 480000')
+    await expect(askAs({ salary: { annualCtc: 600_000, lines: [{ salaryComponentId: component, monthlyAmount: 40_000 }] } })).rejects.toThrow('adds up to 40000.00 a month')
     await expect(askAs({ salary: salary(50_000), designationId: senior })).rejects.toThrow('changes the salary only')
     // an employee added directly has no salary yet: the first one is a revision
     const first = await approveBoth((await askAs({ salary: salary(50_000) })).id)
@@ -331,6 +332,16 @@ describe('job changes', () => {
     expect(history[0]!.approvedBy?.employeeCode).toBe(approver2Employee.employeeCode)
     // the history is confidential too
     await expect(employeesService.salaryHistory(hr, code)).rejects.toThrow()
+
+    // a CTC that does not divide by 12 (2026-11-24): the lines add up to it / 12 to the paisa, kept with their 2 decimals
+    const paise = (lines: number[]) => ({ annualCtc: 584_000, lines: lines.map((monthlyAmount, n) => ({ salaryComponentId: n ? other : component, monthlyAmount })) })
+    await expect(askAs({ kind: 'SALARY_REVISION', effectiveFrom: date(2026, 5, 1), salary: paise([40_000, 8_667]) })).rejects.toThrow('the annual CTC 584000 / 12 is 48666.67')
+    // the API takes at most 2 decimals (the input schema)
+    expect([monthlyAmountSchema.safeParse(8_666.62).success, monthlyAmountSchema.safeParse(8_666.666).success]).toEqual([true, false])
+    const inPaise = await approveBoth((await askAs({ kind: 'SALARY_REVISION', effectiveFrom: date(2026, 5, 1), salary: paise([40_000.05, 8_666.62]) })).id)
+    expect(inPaise.status).toBe('APPLIED')
+    const latest = (await employeesService.salaryHistory(withSalary, code))[0]!
+    expect([latest.annualCtc, latest.lines.map((l) => l.monthlyAmount)]).toEqual([584_000, [40_000.05, 8_666.62]])
     // and in the change history: the proposed figures only with the salary access
     const historyOf = async (access: Parameters<typeof userWith>[1][number]['access']) =>
       (await changeHistoryService.listChangeHistory(userWith({ id: 0, employeeCode: 'AUDIT' }, [{ access, rows: [row(null, null, null)] }]), { model: 'JobChangeSalary', pageSize: 50 })).items

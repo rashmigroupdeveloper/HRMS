@@ -102,7 +102,7 @@ model JobChangeRequest {
 }
 
 // The salary a job change proposes (the user, 2026-11-20): an increment alone, or a promotion's hike - the annual fixed
-// CTC, performance pay and the full monthly breakup (lines x 12 = the CTC, as on the offer). Confidential: the change
+// CTC, performance pay and the full monthly breakup (the lines add up to the CTC / 12 to the paisa, as on the offer). Confidential: the change
 // history shows it only with Employee · Salary access, and an approver sees it only on a step set to see it.
 model JobChangeSalary {
   id                   Int      @id @default(autoincrement())
@@ -127,8 +127,8 @@ model JobChangeSalaryLine {
   id                Int      @id @default(autoincrement())
   jobChangeSalaryId Int      @map("job_change_salary_id")
   salaryComponentId Int      @map("salary_component_id")
-  // whole units of the salary's currency per month
-  monthlyAmount     Int      @map("monthly_amount")
+  // per month in the currency, to the paisa / cent (2 decimals - the user, 2026-11-24: a CTC that does not divide by 12)
+  monthlyAmount     Decimal  @map("monthly_amount") @db.Decimal(12, 2)
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById       Int      @map("created_by_id")
   updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)

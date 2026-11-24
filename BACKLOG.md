@@ -402,7 +402,10 @@ the HRMS_NEW way when picked up, not copied)
   state code, which state-wise rules such as professional tax will use).
 - [ ] Salary components with a code and a "part of gross" flag (old: in payroll; ours: name, kind and order) - with
   the payroll module. (The kind `DEDUCTION` was added 2026-11-24 with the payslip's Employee PF, Professional Tax and
-  Canteen Recovery; how each component is calculated and which are cut for LOP waits for HR's answer - mail sent.)
+  Canteen Recovery. How each component is calculated is done since 2026-11-24 as salary structures (from HR's "CTC
+  Structure" sheet - Organization page); which components are cut for LOP waits for payroll - all of them on the old
+  payslip. **Ask HR:** the structures for consultants, apprentices and Overseas offers (none seeded - typed by hand until
+  HR adds them on the page).)
 - [ ] HR adding new kinds of letters themselves (old: any letter code; ours: seven fixed kinds, a new one needs code).
 
 ### 19. Attendance: what is still open (module built 2026-11-16)

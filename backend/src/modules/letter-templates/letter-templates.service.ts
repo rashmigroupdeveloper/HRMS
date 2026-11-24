@@ -6,6 +6,7 @@ import { copyFile, deleteFile, isOldKey, namedOwner, readStoredFile, saveFile, t
 import { employeesService } from '#modules/employees'
 import { cleanFileName, detectFileType } from '#shared/utils/file-type'
 import { today } from '#shared/utils/dates'
+import { sumMoney } from '#shared/utils/money'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as letterTemplatesRepository from './letter-templates.repository.js'
@@ -209,21 +210,24 @@ export type CtcTableInput = {
   name: string
   designation: string
   currency: string
-  // monthly amounts; annual = monthly x 12
+  // monthly amounts to the paisa; a line's annual = monthly x 12
   lines: { name: string; kind: SalaryComponentKind; monthlyAmount: number }[]
+  // the annual fixed CTC as agreed - the "Fixed CTC" and "Total" rows show it (the lines add up to it / 12 to the paisa,
+  // so 12 x the monthly total can be a few paise off it - 2026-11-24)
+  annualCtc: number
   performancePayAnnual: number | null
 }
 
 // Annexure-I of the offer letter: the salary breakup with its sub-totals, as on the printed RML letter
-export function ctcTable({ name, designation, currency, lines, performancePayAnnual }: CtcTableInput): PdfTable {
-  const sum = (kind?: SalaryComponentKind) => lines.filter((l) => !kind || l.kind === kind).reduce((total, l) => total + l.monthlyAmount, 0)
-  const row = (label: string, monthly: number | null, options: { bold?: boolean; shaded?: boolean } = {}): PdfCell[] => [
+export function ctcTable({ name, designation, currency, lines, annualCtc, performancePayAnnual }: CtcTableInput): PdfTable {
+  const sum = (kind?: SalaryComponentKind) => sumMoney(lines.filter((l) => !kind || l.kind === kind).map((l) => l.monthlyAmount))
+  const row = (label: string, monthly: number | null, options: { bold?: boolean; shaded?: boolean } = {}, annual = monthly === null ? null : sumMoney([monthly * 12])): PdfCell[] => [
     { text: label, ...options },
     { text: monthly === null ? '' : money(monthly, currency), align: 'center', ...options },
-    { text: monthly === null ? '' : money(monthly * 12, currency), align: 'center', ...options },
+    { text: annual === null ? '' : money(annual, currency), align: 'center', ...options },
   ]
   const fixed = sum()
-  const totalCtc = fixed * 12 + (performancePayAnnual ?? 0)
+  const totalCtc = annualCtc + (performancePayAnnual ?? 0)
   return {
     kind: 'table',
     widths: ['*', 120, 120],
@@ -235,11 +239,11 @@ export function ctcTable({ name, designation, currency, lines, performancePayAnn
         { text: `Monthly (In ${currency})`, bold: true, align: 'center', shaded: true },
         { text: `Annual (In ${currency})`, bold: true, align: 'center', shaded: true },
       ],
-      row(`FIXED CTC Amount in ${currency}`, fixed, { bold: true }),
+      row(`FIXED CTC Amount in ${currency}`, fixed, { bold: true }, annualCtc),
       ...lines.filter((l) => l.kind === 'EARNING').map((l) => row(l.name, l.monthlyAmount)),
       row('Monthly Gross', sum('EARNING'), { shaded: true }),
       ...lines.filter((l) => l.kind === 'EMPLOYER_CONTRIBUTION').map((l) => row(l.name, l.monthlyAmount)),
-      row('Total', fixed, { bold: true, shaded: true }),
+      row('Total', fixed, { bold: true, shaded: true }, annualCtc),
       ...(performancePayAnnual
         ? [
             [{ text: 'In addition to the above you will also be eligible for target-oriented earnings based on your performance.', align: 'center' as const, colSpan: 3 }],
@@ -651,7 +655,7 @@ const EXAMPLE_LINES: CtcTableInput['lines'] = [
 ]
 
 // The example tables of each kind of letter (in the preview PDF and on the editor's page)
-const EXAMPLE_CTC = () => ctcTable({ name: 'Mr. Rahul Kumar Sharma', designation: 'Junior Graduate Engineer', currency: 'INR', lines: EXAMPLE_LINES, performancePayAnnual: 120000 })
+const EXAMPLE_CTC = () => ctcTable({ name: 'Mr. Rahul Kumar Sharma', designation: 'Junior Graduate Engineer', currency: 'INR', lines: EXAMPLE_LINES, annualCtc: 840000, performancePayAnnual: 120000 })
 const EXAMPLE_TABLES: Record<LetterKind, Partial<Record<string, PdfTable>>> = {
   OFFER_LETTER: { ctc_table: EXAMPLE_CTC() },
   LETTER_OF_INTENT: {},

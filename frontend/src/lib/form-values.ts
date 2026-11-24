@@ -108,9 +108,12 @@ export function changedValues(fields: FieldDef[], initial: FormValues, values: F
 
 export type BreakupValues = Record<number, string>
 
+// An amount as typed: whole, or with up to 2 decimals (paise - 2026-11-24); a half-typed "12." or ".5" counts as 12 / 0.5
+export const AMOUNT_PATTERN = /^(\d+(\.\d{0,2})?|\.\d{1,2})$/
+
 // The lines to save: components with an amount (0 is kept - e.g. "Reimbursement 0")
 export function breakupLines(values: BreakupValues) {
   return Object.entries(values)
-    .filter(([, v]) => v !== '' && /^\d+$/.test(v))
+    .filter(([, v]) => v !== '' && AMOUNT_PATTERN.test(v))
     .map(([id, v]) => ({ salaryComponentId: Number(id), monthlyAmount: Number(v) }))
 }

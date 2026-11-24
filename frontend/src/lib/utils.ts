@@ -63,13 +63,22 @@ export function formatDoneBy(date: Date | null | undefined, person: { name: stri
 }
 
 // "₹6,00,000" / "USD 85,000"
+// Whole amounts without decimals (₹1,250), others to the paisa (₹48,666.67 - salary lines have 2 decimals, 2026-11-24)
 export function formatMoney(amount: number, currency: string): string {
+  const digits = Number.isInteger(Math.round(amount * 100) / 100) ? 0 : 2
   try {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(amount)
   } catch {
-    return `${currency} ${amount.toLocaleString('en-IN')}`
+    return `${currency} ${amount.toLocaleString('en-IN', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`
   }
 }
+
+// Money to the paisa, as the backend checks it (backend shared/utils/money.ts - change both together): sums in whole
+// paise so floating point never adds a stray fraction
+export const toPaise = (amount: number) => Math.round(amount * 100)
+export const sumMoney = (amounts: number[]) => amounts.reduce((total, amount) => total + toPaise(amount), 0) / 100
+// a salary breakup's monthly total for an annual CTC: 5,84,000 -> 48,666.67
+export const monthlyOf = (annual: number) => Math.round((annual * 100) / 12) / 100
 
 // ---- People ---------------------------------------------------------------------------------------------------
 

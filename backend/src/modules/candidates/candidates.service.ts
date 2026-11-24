@@ -9,6 +9,7 @@ import { prisma, SYSTEM_ACTOR, type ActorId, type CandidateStatus, type DbClient
 import { employeesService } from '#modules/employees'
 import { plantsService, salaryComponentsService, workLocationsService } from '#modules/organization'
 import { formatDate, today } from '#shared/utils/dates'
+import { toPaise } from '#shared/utils/money'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as candidatesRepository from './candidates.repository.js'
@@ -132,7 +133,7 @@ function checkSalaryLines(lines: SalaryLineInput[], annualCtc: number) {
 
 // Same lines (in any order) as the offer has now
 function sameLines(current: { monthlyAmount: number; salaryComponent: { id: number } }[], next: SalaryLineInput[]) {
-  const key = (lines: SalaryLineInput[]) => lines.map((l) => `${l.salaryComponentId}:${l.monthlyAmount}`).sort().join(',')
+  const key = (lines: SalaryLineInput[]) => lines.map((l) => `${l.salaryComponentId}:${toPaise(l.monthlyAmount)}`).sort().join(',')
   return key(current.map((l) => ({ salaryComponentId: l.salaryComponent.id, monthlyAmount: l.monthlyAmount }))) === key(next)
 }
 

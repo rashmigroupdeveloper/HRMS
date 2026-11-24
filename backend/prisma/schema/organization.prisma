@@ -365,6 +365,9 @@ model SalaryComponent {
   employeeLines  EmployeeSalaryLine[]
   // lines of salaries proposed by job changes
   jobChangeLines JobChangeSalaryLine[]
+  // how salary structures calculate it (2026-11-24)
+  structureLines      SalaryStructureLine[]
+  basicForStructures  SalaryStructure[]
 
   @@map("salary_components")
 }
@@ -375,4 +378,73 @@ enum SalaryComponentKind {
   DEDUCTION
 
   @@map("salary_component_kind")
+}
+
+// How an offer's salary breakup is worked out from its CTC, for one type of employee (the user, 2026-11-24 - HR's
+// "CTC Structure" sheet: HR types only the CTC, the lines fill in). Defined by HR on the Organization page; the offer
+// still saves the amounts (candidate_salary_lines), so changing a structure never changes an offer already made.
+// An offer uses the active structure matching its joining type, employment type and category most closely (empty =
+// any); no match = HR types the breakup by hand. Two active structures never match the same combination (service).
+model SalaryStructure {
+  id                Int                @id @default(autoincrement())
+  // e.g. "Regular - White collar", shown on the offer form
+  name              String             @unique
+  joiningType       JoiningType?       @map("joining_type")
+  employmentType    EmploymentType?    @map("employment_type")
+  workforceCategory WorkforceCategory? @map("workforce_category")
+  // the line "% of Basic" means (code never names a component) - required when a line uses PERCENT_OF_BASIC
+  basicComponentId  Int?               @map("basic_component_id")
+  isActive          Boolean            @default(true) @map("is_active")
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       Int                @map("created_by_id")
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById       Int                @map("updated_by_id")
+
+  basicComponent SalaryComponent?      @relation(fields: [basicComponentId], references: [id], onDelete: Restrict)
+  lines          SalaryStructureLine[]
+
+  @@index([basicComponentId])
+  @@map("salary_structures")
+}
+
+// One component of a structure and how it is calculated from the monthly CTC. Exactly one BALANCE line per structure,
+// an earning (it takes what is left, rounding included, so the lines always add up to the CTC); never a deduction.
+model SalaryStructureLine {
+  id                Int               @id @default(autoincrement())
+  structureId       Int               @map("structure_id")
+  salaryComponentId Int               @map("salary_component_id")
+  method            SalaryCalcMethod
+  // a percentage (50, 8.33, 4.81) or a monthly amount in whole units (1250); none for BALANCE
+  value             Decimal?          @db.Decimal(10, 2)
+  // the percentage applies to at least this amount (the sheet's bonus: 8.33% of Basic, but of no less than 7,000)
+  minimumBase       Int?              @map("minimum_base")
+  // only when the Monthly Gross is at most this (ESIC: gross <= 21,000 - the law, the user 2026-11-24)
+  onlyIfGrossAtMost Int?              @map("only_if_gross_at_most")
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById       Int               @map("created_by_id")
+  updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById       Int               @map("updated_by_id")
+
+  structure       SalaryStructure @relation(fields: [structureId], references: [id], onDelete: Cascade)
+  salaryComponent SalaryComponent @relation(fields: [salaryComponentId], references: [id], onDelete: Restrict)
+
+  @@unique([structureId, salaryComponentId])
+  @@index([salaryComponentId])
+  @@map("salary_structure_lines")
+}
+
+// How a structure line is worked out from the monthly CTC
+enum SalaryCalcMethod {
+  // value % of the monthly fixed CTC
+  PERCENT_OF_CTC
+  // value % of the Monthly Gross (the earnings) - e.g. Basic 50%
+  PERCENT_OF_GROSS
+  // value % of the structure's Basic line - e.g. HRA 50%, employer PF 12%, gratuity 4.81%
+  PERCENT_OF_BASIC
+  // a fixed monthly amount - e.g. medical 1,250
+  FIXED
+  // what is left of the CTC - e.g. special allowance, a trainee's stipend
+  BALANCE
+
+  @@map("salary_calc_method")
 }

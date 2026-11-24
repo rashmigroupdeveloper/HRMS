@@ -1,6 +1,6 @@
 import { Wallet } from 'lucide-react'
 import type { client } from '@/lib/orpc'
-import { cn, formatDate, formatMoney } from '@/lib/utils'
+import { cn, formatDate, formatMoney, sumMoney } from '@/lib/utils'
 import { Chip, InfoCard } from './ProfileCards'
 
 type EmployeeProfile = Awaited<ReturnType<typeof client.employees.getByCode>>
@@ -12,8 +12,8 @@ export function SalaryCard({ s, tiles: showTiles = true }: { s: NonNullable<Empl
   const money = (amount: number) => formatMoney(amount, s.currency)
   const earnings = s.lines.filter((l) => l.salaryComponent.kind === 'EARNING')
   const employer = s.lines.filter((l) => l.salaryComponent.kind === 'EMPLOYER_CONTRIBUTION')
-  const gross = earnings.reduce((sum, l) => sum + l.monthlyAmount, 0)
-  const total = s.lines.reduce((sum, l) => sum + l.monthlyAmount, 0)
+  const gross = sumMoney(earnings.map((l) => l.monthlyAmount))
+  const total = sumMoney(s.lines.map((l) => l.monthlyAmount))
   const tiles: [string, string, boolean?][] = [
     ['Fixed CTC / year', money(s.annualCtc)],
     ['Performance pay / year', s.performancePayAnnual ? money(s.performancePayAnnual) : '—'],
@@ -32,7 +32,7 @@ export function SalaryCard({ s, tiles: showTiles = true }: { s: NonNullable<Empl
           <tr key={l.salaryComponent.id} className="border-b border-dashed border-border/80">
             <td className="py-1.5">{l.salaryComponent.name}</td>
             <td className="py-1.5 text-right">{money(l.monthlyAmount)}</td>
-            <td className="py-1.5 text-right text-muted-foreground">{money(l.monthlyAmount * 12)}</td>
+            <td className="py-1.5 text-right text-muted-foreground">{money(sumMoney([l.monthlyAmount * 12]))}</td>
           </tr>
         ))}
       </>
@@ -65,14 +65,15 @@ export function SalaryCard({ s, tiles: showTiles = true }: { s: NonNullable<Empl
                 <tr className="text-muted-foreground">
                   <td className="py-1.5">Monthly gross</td>
                   <td className="py-1.5 text-right">{money(gross)}</td>
-                  <td className="py-1.5 text-right">{money(gross * 12)}</td>
+                  <td className="py-1.5 text-right">{money(sumMoney([gross * 12]))}</td>
                 </tr>
               )}
               {group('Employer contributions', employer)}
               <tr className="font-semibold">
                 <td className="pt-3">Total (fixed CTC)</td>
                 <td className="pt-3 text-right">{money(total)}</td>
-                <td className="pt-3 text-right">{money(total * 12)}</td>
+                {/* the agreed annual CTC: 12 x the monthly total can be a few paise off it (2026-11-24) */}
+                <td className="pt-3 text-right">{money(s.annualCtc)}</td>
               </tr>
             </tbody>
           </table>
