@@ -47,7 +47,7 @@ export async function exportOrganization(viewer: CurrentUser, input: z.infer<typ
         { header: 'Region', value: r => r.region?.name }, { header: 'Time zone', value: r => r.timezone, width: 25 }, { header: 'Address', value: r => r.address, width: 45 }, { header: 'Postal code', value: r => r.postalCode, text: true },
       ])
       case 'grades': return build('Grades', await grades.listGradesFor(viewer, true), [{ header: 'Code', value: r => r.code, text: true }, { header: 'Name', value: r => r.name, width: 36 }, { header: 'Rank', value: r => r.rank }])
-      case 'salaryComponents': return build('Salary components', await salary.listSalaryComponentsFor(viewer, true), [{ header: 'Name', value: r => r.name, width: 36 }, { header: 'Kind', value: r => r.kind === 'EARNING' ? 'Earning' : 'Employer contribution' }, { header: 'Order', value: r => r.displayOrder }])
+      case 'salaryComponents': return build('Salary components', await salary.listSalaryComponentsFor(viewer, true), [{ header: 'Name', value: r => r.name, width: 36 }, { header: 'Kind', value: r => ({ EARNING: 'Earning', EMPLOYER_CONTRIBUTION: 'Employer contribution', DEDUCTION: 'Deduction' } as const)[r.kind] }, { header: 'Order', value: r => r.displayOrder }])
       case 'departments': return build('Departments', await departments.listDepartmentsFor(viewer, all), [{ header: 'Code', value: r => r.code, text: true }, { header: 'Name', value: r => r.name, width: 36 }])
       case 'designations': return build('Designations', await designations.listDesignationsFor(viewer, true), [{ header: 'Name', value: r => r.name, width: 40 }])
       case 'regions': return build('Regions', await regions.listRegionsFor(viewer, true), [{ header: 'Name', value: r => r.name, width: 40 }])
