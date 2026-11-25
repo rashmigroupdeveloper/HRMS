@@ -107,6 +107,7 @@ HRMS_NEW/
 │     │  │                      printed-forms/ (HR's paper forms printed filled in from the joining form)
 │     │  └─ employees/          directory (+ Excel export), profile, "Add employee" / "Edit details", reporting manager,
 │     │     │                           creating the employee on the joining day, codes from the company's series
+│     │     ├─ movements/               recorded joining/leaving events, scoped summaries and Excel (no exit workflow)
 │     │     ├─ documents/               sub-folder: the employee's documents (moved in on the joining day)
 │     │     ├─ imports/                 sub-folder: Excel import of existing employees (template, check, save)
 │     │     ├─ employees.router.ts      layer 1: routes + controller (thin)
@@ -163,7 +164,19 @@ Employees can add a PDF/JPG/PNG up to 5 MB in **My profile → Documents**. Subm
 scoped HR reviewer verifies or rejects them. Employees see review status/reasons and can submit a corrected copy.
 An existing verified copy stays current while its replacement waits; pending employee evidence does not satisfy
 consent checks. HR reviews through the employee's Documents tab; employees cannot verify/delete/restore submissions.
-Family/nominee requests and the report/import/biometric stages are tracked in BACKLOG item 32; they are not yet built.
+Family/nominee requests, scheduled report emails, additional imports and biometric stages remain in BACKLOG item 32.
+
+## Recorded joiners and leavers (2026-11-25)
+
+**People → Joiners & leavers** (`/employees?view=movements`) requires Employee directory & job View. Inclusive dates,
+joining/leaving type, name/code and company/plant/department filters stay in the URL. Company-wide and group-wide views
+follow the active role's permitted range; totals and full Excel exports share those filters and scope. One employee
+may have both events. Viewing/exporting above 20,000 matching events is refused rather than truncated.
+
+This uses recorded employee dates and current placement/status, including imported/directly added employees. Future
+dates are marked. Leaving dates do not confirm approved exits, clearance or settlement; missing rehire/exit history is
+not reconstructed. No salary, identity, bank or medical data is selected. Scheduled email/configuration remains the
+next separate stage; no schema changes are needed for this report.
 
 ## Getting started
 

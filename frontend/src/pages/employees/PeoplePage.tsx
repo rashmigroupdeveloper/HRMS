@@ -1,3 +1,4 @@
+import { MovementReportView } from './components/MovementReportView'
 import { useSearchParams } from 'react-router'
 import { PillTabsList, PillTabsTrigger } from '@/components/PillTabs'
 import { Tabs } from '@/components/ui/tabs'
@@ -16,7 +17,7 @@ export function PeoplePage() {
   const hr = can('EMPLOYEES')
   const asked = params.get('view')
   // (?view=records is kept until accounts.me answers - a hard refresh - so the page does not open the directory first)
-  const view = asked === 'chart' || (asked === 'records' && (hr || !ready)) ? asked : 'directory'
+  const view = asked === 'chart' || ((asked === 'records' || asked === 'movements') && (hr || !ready)) ? asked : 'directory'
   // a new tab starts without the other tab's address values (records keep their own filters there)
   const go = (next: string, extra: Record<string, string> = {}) => setParams(next === 'directory' ? extra : { view: next, ...extra }, { replace: next !== 'chart' })
 
@@ -27,12 +28,13 @@ export function PeoplePage() {
         <PillTabsList>
           <PillTabsTrigger value="directory">Directory</PillTabsTrigger>
           <PillTabsTrigger value="chart">Org chart</PillTabsTrigger>
-          {hr && <PillTabsTrigger value="records">Employee records</PillTabsTrigger>}
+          {hr && <><PillTabsTrigger value="records">Employee records</PillTabsTrigger><PillTabsTrigger value="movements">Joiners &amp; leavers</PillTabsTrigger></>}
         </PillTabsList>
       </div>
       {view === 'directory' && <DirectoryView onChart={(code) => go('chart', { code })} />}
       {view === 'chart' && <OrgChartView employeeCode={params.get('code')} onMove={(code) => go('chart', { code })} />}
       {view === 'records' && <EmployeeRecordsView />}
+      {view === 'movements' && <MovementReportView />}
     </Tabs>
   )
 }
