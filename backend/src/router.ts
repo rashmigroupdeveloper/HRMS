@@ -1,3 +1,4 @@
+import { dailyMovementReportsRouter } from '#modules/daily-movement-reports'
 import { accountsRouter } from '#modules/accounts'
 import { approvalsRouter } from '#modules/approvals'
 import { attendanceRouter } from '#modules/attendance'
@@ -17,6 +18,7 @@ import { organizationRouter } from '#modules/organization'
 export const router = {
   health: healthRouter,
   accounts: accountsRouter,
+  dailyMovementReports: dailyMovementReportsRouter,
   organization: organizationRouter,
   employees: employeesRouter,
   candidates: candidatesRouter,

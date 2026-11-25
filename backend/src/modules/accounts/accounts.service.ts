@@ -1090,3 +1090,8 @@ export async function mailRecipients(area: AccessArea, level: AccessLevel, place
   const ids = accounts.filter((a) => accountHas(a, area, level, placement)).map((a) => a.employeeId)
   return (await employeesService.listMailContacts(ids)).filter((person) => CAN_LOG_IN.includes(person.status))
 }
+
+// Shared configuration uses this metadata-only picker; choosing a role never changes its permissions.
+export function listRoleChoicesForAccess(area: AccessArea, level: AccessLevel) {
+  return rolesService.listRoleChoicesForAccess(area, level)
+}

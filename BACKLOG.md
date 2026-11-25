@@ -981,8 +981,8 @@ See items 3, 15 and 18.
 ### 32. Selected extensions — new-only execution plan (2026-11-25)
 
 The user selected these four areas and requested work using **only hrms-new's current context**. This execution plan
-is based on its current schema/services, not main's architecture. Deliver one tested slice at a time. Proposed schema
-below is **not approved or added**; each model/field is proposed before its migration per CLAUDE.md section 2.
+is based on its current schema/services, not main's architecture. Deliver one tested slice at a time. Only `DailyMovementReportSetting` is approved/built below; other proposed models remain unapproved. Each model/field
+is proposed before its migration per CLAUDE.md section 2.
 
 **Confirmed decisions:** employee family/nominee submissions and document uploads require HR review (supersedes the
 16 November exclusion). Daily report goes to the HR Head; only an active Super Admin configures additional recipients
@@ -1004,17 +1004,22 @@ below is **not approved or added**; each model/field is proposed before its migr
    bounded snapshot with a 20,000-event refusal, stable pagination and future-date markers. Owning sources: employees.schema/service/repository.ts,
    employee.prisma, employees/movements and core/excel. The directory returns employees; movement APIs return events
    (two per employee when both dates match), so they have a distinct contract. No email is sent.
-3. **Daily report configuration/email — schema proposal needed.** Reuse worker.ts, core/jobs/scheduler and
-   core/mail retry/attachments. Proposed first model `DailyMovementReportSetting`: enabled, HR-head role FK,
-   IST minute-of-day, coverage (same day / previous day), plus standard audit fields. Select the HR Head role by ID,
+3. **Daily report configuration — built 2026-11-25; email delivery deferred.** Approved `DailyMovementReportSetting`
+   singleton stores enabled (kept false), HR-head role FK, IST minute-of-day, coverage (same day / previous day),
+   sendEmpty and standard audit fields. Defaults approved: 09:00 IST, PREVIOUS_DAY and no-movement summaries on.
+   Active Super Admin configures it in People → Joiners & leavers → Email settings. Reads do not seed a role or row;
+   saves check role reporting access, preserve actor history and reject stale edits. Delivery cannot be enabled yet.
+   Reuse worker.ts, core/jobs/scheduler and core/mail retry/attachments for the next stage. Select the HR Head role by ID,
    never code against its name. Proposed recipient relation names employee IDs selected by Super Admin; HR Head
    role holders are included automatically, duplicates removed. Resolve recipient eligibility and role-specific
    employee data access at delivery time; do not union all assigned roles or send one group-wide attachment to
    differently scoped recipients. Missing email/disabled/exited/no longer authorized recipients are skipped visibly.
    Propose a per-date/per-recipient delivery record when adding reliable retries, with explicit attempt state and
    uniqueness; scheduler JobRun alone is not a delivery receipt. SMTP retries cannot promise exactly-once delivery.
-   **Still needed:** confirm time/coverage (recommend 09:00 IST, previous day, not yet approved), choose the actual
-   HR Head role and decide zero-event mail behavior. No real scheduled email is enabled by this plan.
+   **Still needed:** Super Admin selects the actual HR Head role. Propose/approve the recipient and delivery models
+   one at a time; build scoped recipient resolution, scheduler integration and guarded/regenerated retries before
+   activation. Existing generic frozen-payload MailRetry is insufficient for changing recipient access. No real
+   scheduled email is enabled by this stage.
 4. **Family/nominee change requests — schema proposal needed.** Reuse employeesSchemas family/nominee validation,
    core encryption, FormDialog/FormDrawer and approvalsService.registerFeature/raiseRequest. Proposed one
    `EmployeeProfileChangeRequest` model: employee FK, section FAMILY/NOMINEES, encrypted before/proposed snapshots,

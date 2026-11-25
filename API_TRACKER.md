@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 288**
+**Total APIs: 290**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -375,6 +375,8 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 286 | `attendance.holidayLists.ofEmployee` | own, or Employees: View | one employee's holiday list today (the profile's Job tab) |
 | 287 | `employees.movements.list` | Employee directory & job: View | Scoped recorded joining/leaving events, full summaries and pagination |
 | 288 | `employees.movements.export` | Employee directory & job: View | All matching joining/leaving events as Excel, with review notes |
+| 289 | `dailyMovementReports.settings.get` | Active Super Admin only | Daily movement email configuration and eligible HR Head roles |
+| 290 | `dailyMovementReports.settings.save` | Active Super Admin only | Save the schedule and HR Head role; delivery stays disabled |
 
 ---
 
@@ -4309,3 +4311,22 @@ and can include two events per employee. No existing API provides that contract.
   IDs, bank, medical, personal contacts or documents. Review notes include filters, current placement/recorded-date
   limitations, prepared-by and export time. No email is sent or scheduled.
 - **Errors:** same validation/access/cap errors as list. Invalid/outside-range selections do not broaden the report.
+
+
+### `dailyMovementReports.settings.get`
+- **HTTP:** `POST /api/rpc/dailyMovementReports/settings/get` · **Code:** `backend/src/modules/daily-movement-reports/`
+- **Access:** authenticated, non-temporary login with `CurrentUser.isSuperAdmin` on the active role; ACCESS Edit alone is insufficient.
+- **Scope:** not limited by data access: one group-wide configuration, restricted to active Super Admin (section 8 settings); returns eligible role IDs/names, no role holders or employee records.
+- **Input:** none.
+- **Returns:** `{ setting: { id, isEnabled, hrHeadRole: { id, name } | null, sendAtMinutes, coverage, sendEmpty, updatedAt: Date | null }, roles: { id, name }[] }`. Eligible roles provide EMPLOYEES READ (WRITE includes READ).
+- **Does:** reads singleton id 1. Before first save returns virtual defaults (disabled, no role, 540 minutes/09:00 IST, PREVIOUS_DAY, sendEmpty true, updatedAt null); GET never creates a row or selects a role. A saved role remains visible even if no longer eligible, so it can be corrected.
+- **Errors:** UNAUTHORIZED; FORBIDDEN unless the active role is Super Admin.
+
+### `dailyMovementReports.settings.save`
+- **HTTP:** `POST /api/rpc/dailyMovementReports/settings/save` · **Code:** `backend/src/modules/daily-movement-reports/`
+- **Access:** same active Super Admin requirement as settings.get, checked in service before other work.
+- **Scope:** not limited by data access: singleton shared configuration reserved to active Super Admin; selecting a role never grants employee data access.
+- **Input:** required `hrHeadRoleId` positive integer (existing role with EMPLOYEES READ), `sendAtMinutes` integer 0–1439 in IST, `coverage` TODAY | PREVIOUS_DAY, `sendEmpty` boolean, `expectedUpdatedAt` Date | null (null only for first creation). Strict object: unknown fields, including isEnabled and audit actors, rejected.
+- **Returns:** saved configuration with the same setting fields as settings.get; updatedAt is the next edit's concurrency token.
+- **Does:** atomically creates/updates id 1 with the logged-in actor and automatic change history. Conditional write rejects stale edits/duplicate first saves. Delivery stays disabled; no scheduler, recipients, mail or outbox are created in this stage. Role deletion is restricted while referenced.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST for invalid input/ineligible role, CONFLICT for a stale edit; central FK error mapping if a role is concurrently removed.

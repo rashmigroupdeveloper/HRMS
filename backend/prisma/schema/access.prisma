@@ -126,6 +126,7 @@ model Role {
   approvalRequestSteps ApprovalRequestStep[] @relation("RequestStepRole")
   // joining task types done by this role's holders (the team)
   joiningTaskTypes     JoiningTaskType[]
+  dailyMovementReportSettings DailyMovementReportSetting[]
 
   @@map("roles")
 }

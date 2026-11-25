@@ -632,3 +632,31 @@ enum EmployeeImportStatus {
 
   @@map("employee_import_status")
 }
+
+// Daily joining/leaving email configuration: approved 2026-11-25. One group-wide setting;
+// the HR Head is a selected role, never a hard-coded name. Delivery stays disabled until its own stage.
+model DailyMovementReportSetting {
+  id Int @id
+  isEnabled Boolean @default(false) @map("is_enabled")
+  hrHeadRoleId Int @map("hr_head_role_id")
+  // IST minute of day: 09:00 = 540; timezone is fixed, so no redundant timezone column.
+  sendAtMinutes Int @default(540) @map("send_at_minutes") @db.SmallInt
+  coverage MovementReportCoverage @default(PREVIOUS_DAY)
+  // Send a summary even when the recipient has no recorded movements (approved 2026-11-25).
+  sendEmpty Boolean @default(true) @map("send_empty")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int @map("created_by_id")
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int @map("updated_by_id")
+
+  hrHeadRole Role @relation(fields: [hrHeadRoleId], references: [id], onDelete: Restrict)
+
+  @@map("daily_movement_report_settings")
+}
+
+enum MovementReportCoverage {
+  TODAY
+  PREVIOUS_DAY
+
+  @@map("movement_report_coverage")
+}

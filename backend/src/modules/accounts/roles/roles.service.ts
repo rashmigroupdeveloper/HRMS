@@ -353,3 +353,8 @@ export async function deleteRole(id: number, user: CurrentUser) {
   await rolesRepository.deleteById(role.id)
   return { id: role.id, deleted: true }
 }
+
+// Configuration pickers need role metadata only, not a directory of their holders.
+export async function listRoleChoicesForAccess(area: AccessArea, level: AccessLevel) {
+  return (await rolesRepository.list()).filter(role => hasAccess(accessOf(role), area, level)).map(({ id, name }) => ({ id, name }))
+}

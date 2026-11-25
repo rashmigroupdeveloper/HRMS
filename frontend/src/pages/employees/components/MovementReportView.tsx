@@ -1,6 +1,6 @@
 import { STATUS_LABEL } from './labels'
 import { useQuery } from '@tanstack/react-query'
-import { useDeferredValue } from 'react'
+import { useDeferredValue, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
 import { ExportButton } from '@/components/ExportButton'
@@ -18,9 +18,12 @@ import { formatDate, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
 import { MovementReportSummary } from './MovementReportSummary'
 import { MOVEMENT_COLUMNS, MOVEMENT_KINDS, MOVEMENT_NOTE } from './movement-labels'
 
+import { MovementReportSettings } from './MovementReportSettings'
+
 const id = (v: string | null) => v && /^\d+$/.test(v) && Number.isSafeInteger(Number(v)) && Number(v) > 0 ? Number(v) : undefined
 export function MovementReportView() {
-  const { ready, can } = useAccess()
+  const { ready, can, me } = useAccess()
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [params, setParams] = useSearchParams()
   const now = todayDay()
   const from = params.get('from') ?? toDateInput(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)))
@@ -41,7 +44,8 @@ export function MovementReportView() {
     setParams(old => { const p = new URLSearchParams(old); if (value) p.set(key, value); else p.delete(key); if (key !== 'page') p.delete('page'); if (key === 'company') { p.delete('plant'); p.delete('department') } if (key === 'plant') p.delete('department'); return p }, { replace: true })
   }
   return <section className="min-w-0 space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2"><h2 className="text-lg font-medium tracking-tight">Recorded joiners &amp; leavers</h2><ExportButton disabled={!data?.total || !valid || stale} load={() => client.employees.movements.export(filter)} /></div>
+    <div className="flex flex-wrap items-start justify-between gap-2"><h2 className="text-lg font-medium tracking-tight">Recorded joiners &amp; leavers</h2><div className="flex flex-wrap items-center gap-2">{me?.isSuperAdmin && <Button variant="secondary" className="min-h-9 rounded-full" onClick={() => setSettingsOpen(true)}>Email settings</Button>}<ExportButton disabled={!data?.total || !valid || stale} load={() => client.employees.movements.export(filter)} /></div></div>
+    {settingsOpen && me?.isSuperAdmin && <MovementReportSettings close={() => setSettingsOpen(false)} />}
     <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-4">
       <div className="space-y-1"><Label htmlFor="movement-from" className="text-xs text-muted-foreground">From</Label><Input id="movement-from" type="date" min="1900-01-01" max="2100-12-31" className="min-w-0 rounded-xl px-2 text-sm" value={from} onChange={e => change('from', e.target.value)} /></div>
       <div className="space-y-1"><Label htmlFor="movement-to" className="text-xs text-muted-foreground">To</Label><Input id="movement-to" type="date" min="1900-01-01" max="2100-12-31" className="min-w-0 rounded-xl px-2 text-sm" value={to} onChange={e => change('to', e.target.value)} /></div>

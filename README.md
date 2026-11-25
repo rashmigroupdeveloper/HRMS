@@ -105,6 +105,7 @@ HRMS_NEW/
 │     │  │                      page: accept / decline online with a one-time code) portal/ (the candidate's own
 │     │  │                      joining-form page: sign-in with link + code, fill, upload, sign online)
 │     │  │                      printed-forms/ (HR's paper forms printed filled in from the joining form)
+│     │  ├─ daily-movement-reports/ group-wide email schedule and HR Head role settings; delivery follows later
 │     │  └─ employees/          directory (+ Excel export), profile, "Add employee" / "Edit details", reporting manager,
 │     │     │                           creating the employee on the joining day, codes from the company's series
 │     │     ├─ movements/               recorded joining/leaving events, scoped summaries and Excel (no exit workflow)
@@ -179,8 +180,14 @@ may have both events. Viewing/exporting above 20,000 matching events is refused 
 
 This uses recorded employee dates and current placement/status, including imported/directly added employees. Future
 dates are marked. Leaving dates do not confirm approved exits, clearance or settlement; missing rehire/exit history is
-not reconstructed. No salary, identity, bank or medical data is selected. Scheduled email/configuration remains the
-next separate stage; no schema changes are needed for this report.
+not reconstructed. No salary, identity, bank or medical data is selected. The register itself requires no schema change;
+the separate daily email configuration below uses the approved setting model. Scheduled delivery remains deferred.
+
+Daily movement email settings (2026-11-25): only the **active Super Admin** sees **Email settings** in People → Joiners
+& leavers. Choose the HR Head role (must have Employee directory & job View); defaults are 09:00 IST, previous-day
+coverage and summaries even on no-movement days. Settings are global, audited and reject stale edits. Configuration
+is saved with delivery disabled: scheduled email, extra recipients and safe delivery/retries remain the next stage.
+The approved migration adds only DailyMovementReportSetting; apply pending migrations to the app database before use.
 
 ## Getting started
 
