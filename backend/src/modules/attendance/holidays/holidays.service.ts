@@ -1,6 +1,6 @@
 import { prisma } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
-import { formatDate } from '#shared/utils/dates'
+import { formatDate, today } from '#shared/utils/dates'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as daysService from '../days/days.service.js'
@@ -59,6 +59,16 @@ async function checkHowGiven(h: HowGiven, leaveTypeChanged: boolean) {
     if (leaveTypeChanged) await daysService.holidayLeaveHooks().assertLeaveType(h.leaveTypeId)
   } else if (h.leaveTypeId !== null || h.allowHalfDay) {
     throw new ORPCError('BAD_REQUEST', { message: 'An automatic holiday is taken from no leave type - use the part of the day off instead' })
+  }
+}
+
+// An on-application holiday whose day has passed and that someone took is never moved, removed, taken off a list or given
+// otherwise (the user, 2026-11-25: people have taken it) - a new name or category is still fine
+async function assertNotTakenInPast(current: Holiday) {
+  if (current.mode !== 'ON_APPLICATION' || !current.leaveType || current.date >= today()) return
+  const taken = await daysService.holidayLeaveHooks().takenCount(current.leaveType.id, current.date)
+  if (taken) {
+    throw new ORPCError('CONFLICT', { message: `${current.name} (${formatDate(current.date)}) has passed and ${taken} employee${taken === 1 ? '' : 's'} took it - it can no longer be moved, removed or given otherwise` })
   }
 }
 
@@ -122,7 +132,10 @@ export async function updateHoliday({ id, holidayListIds, ...changes }: z.infer<
     how.mode !== current.mode ||
     how.leaveTypeId !== (current.leaveType?.id ?? null) ||
     how.allowHalfDay !== current.allowHalfDay
-  if (moved) await daysService.assertOpenDays([current.date, date])
+  if (moved) {
+    await assertNotTakenInPast(current)
+    await daysService.assertOpenDays([current.date, date])
+  }
   await assertFree(date, lists, id)
   await prisma.$transaction(async (tx) => {
     const { mode: _mode, portion: _portion, allowHalfDay: _half, leaveTypeId: _type, ...rest } = changes
@@ -140,6 +153,7 @@ export async function updateHoliday({ id, holidayListIds, ...changes }: z.infer<
 export async function deleteHoliday(id: number, viewer: CurrentUser) {
   const current = await getHoliday(id)
   for (const { holidayList } of current.lists) listsService.assertMayChange(viewer, holidayList.companyId)
+  await assertNotTakenInPast(current)
   await daysService.assertOpenDays([current.date])
   await holidaysRepository.remove(id)
   if (current.mode === 'AUTOMATIC') await daysService.reworkWorkedOut([current.date])

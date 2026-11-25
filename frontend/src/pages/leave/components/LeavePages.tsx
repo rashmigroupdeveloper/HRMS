@@ -3,20 +3,21 @@ import { NavLink } from 'react-router'
 import { orpc } from '@/lib/orpc'
 import { segment, SEGMENTS } from '@/pages/attendance/components/labels'
 
-// The switch between My leave and Team leave at the top of both pages (one "Leave" item in the menu - 2026-11-22). Only for
-// those with someone else's leave to see: a team, an HOD department or Leave View; nothing for everyone else.
+// The switch between the leave pages at the top of each (one "Leave" item in the menu - 2026-11-22): My leave and Holidays
+// for everyone (2026-11-25), Team leave only for those with someone else's leave to see - a team, an HOD department or
+// Leave View (it appears once that is known)
 export function LeavePages() {
   const overview = useQuery(orpc.leave.overview.queryOptions())
   const o = overview.data
-  if (!o || (!o.canSeeAll && !o.teamSize && !o.departmentSize)) return null
+  const team = !!o && (o.canSeeAll || o.teamSize > 0 || o.departmentSize > 0)
+  const pages: [string, string][] = [
+    ['/leave', 'My leave'],
+    ['/holidays', 'Holidays'],
+    ...(team ? ([['/team-leave', 'Team leave']] as [string, string][]) : []),
+  ]
   return (
     <nav aria-label="Leave pages" className={SEGMENTS}>
-      {(
-        [
-          ['/leave', 'My leave'],
-          ['/team-leave', 'Team leave'],
-        ] as const
-      ).map(([to, label]) => (
+      {pages.map(([to, label]) => (
         <NavLink key={to} to={to} end className={({ isActive }) => segment(isActive)}>
           {label}
         </NavLink>

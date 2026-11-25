@@ -90,10 +90,12 @@ export async function getGrid(viewer: CurrentUser, { from, to, onlyChanges, comp
       const effective = (day: Date) => {
         const entry = own.get(dayKey(day))
         const planned = plan.get(dayKey(day))
-        if (planned?.kind === 'HOLIDAY') return { working: false, shiftId: planned.shift?.id ?? null, halfDay: false }
-        if (entry) return { working: entry.shiftId !== null, shiftId: entry.shiftId, halfDay: false }
-        // (a half-day holiday counts as a half day for the rest and week-hours warnings)
-        return { working: planned?.kind === 'WORK', shiftId: planned?.shift?.id ?? null, halfDay: (planned?.halfDay || !!planned?.holidayHalf) ?? false }
+        if (planned?.kind === 'HOLIDAY') return { working: false, shiftId: planned.shift?.id ?? null, part: 'WHOLE' as const }
+        if (entry) return { working: entry.shiftId !== null, shiftId: entry.shiftId, part: 'WHOLE' as const }
+        // the half worked (the user, 2026-11-25): a half-day weekday or a second-half holiday - the morning; a first-half
+        // holiday - the afternoon (from the split to the end), for the rest and week-hours warnings
+        const part = planned?.halfDay || planned?.holidayHalf === 'SECOND' ? ('FIRST' as const) : planned?.holidayHalf === 'FIRST' ? ('SECOND' as const) : ('WHOLE' as const)
+        return { working: planned?.kind === 'WORK', shiftId: planned?.shift?.id ?? null, part }
       }
       const span = (day: Date) => {
         const e = effective(day)
@@ -102,8 +104,9 @@ export async function getGrid(viewer: CurrentUser, { from, to, onlyChanges, comp
         const full = shift.endMinute > shift.startMinute ? shift.endMinute : shift.endMinute + 1440
         // a half day (e.g. Saturday) ends where the first half ends, without the break (2026-11-22)
         const split = shift.halfSplitMinute === null ? Math.round((shift.startMinute + full) / 2) : shift.halfSplitMinute > shift.startMinute ? shift.halfSplitMinute : shift.halfSplitMinute + 1440
-        const end = e.halfDay ? split : full
-        return { start: zonedInstant(day, shift.startMinute, person.timezone), end: zonedInstant(day, end, person.timezone), minutes: end - shift.startMinute - (e.halfDay ? 0 : shift.breakMinutes) }
+        const start = e.part === 'SECOND' ? split : shift.startMinute
+        const end = e.part === 'FIRST' ? split : full
+        return { start: zonedInstant(day, start, person.timezone), end: zonedInstant(day, end, person.timezone), minutes: end - start - (e.part === 'WHOLE' ? shift.breakMinutes : 0) }
       }
       // the hours of each week (Monday to Sunday) shown - all its days
       const weekMinutes = new Map<string, number>()

@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import * as daysService from '../src/modules/attendance/days/days.service.js'
 import * as policiesService from '../src/modules/attendance/policies/policies.service.js'
 import * as shiftsService from '../src/modules/attendance/shifts/shifts.service.js'
+import { followList, holidaySetup } from './helpers/holidays.js'
 import { createCompany, createEmployee, createPlant } from './helpers/organization.js'
 import { row, userWith } from './helpers/users.js'
 
@@ -28,6 +29,10 @@ function lastWeek() {
 describe('the attendance policy', () => {
   let employee: { id: number; employeeCode: string }
   let timezone: string
+  let patternId: number
+  let policyId: number
+  let companyIdOf: number
+  let plantIdOf: number
   const week = lastWeek()
 
   async function punch(day: Date, ...clocks: string[]) {
@@ -43,6 +48,8 @@ describe('the attendance policy', () => {
   beforeAll(async () => {
     const companyId = (await createCompany()).id
     const plantId = (await createPlant(companyId)).id
+    companyIdOf = companyId
+    plantIdOf = plantId
     employee = await createEmployee({ companyId, plantId })
     const [person] = await employeesService.listAttendancePeople({ scope: SYSTEM_SCOPE, ids: [employee.id], from: week[0]!, to: week[4]! })
     timezone = person!.timezone
@@ -55,6 +62,8 @@ describe('the attendance policy', () => {
     )
     const pattern = await shiftsService.createPattern({ name: `Policy ${tag}`, days: [shift.id, shift.id, shift.id, shift.id, shift.id, shift.id, 0], halfDays: [] }, hr)
     await shiftsService.assignShift({ employeeCodes: [employee.employeeCode], patternId: pattern.id, startWeek: 1, policyId: policy.id, effectiveFrom: new Date(week[0]!.getTime() - 7 * DAY) }, hr)
+    patternId = pattern.id
+    policyId = policy.id
   })
   afterAll(() => prisma.$disconnect())
 
@@ -72,6 +81,34 @@ describe('the attendance policy', () => {
     if (daysService.cycleOf(mon, 26).month === daysService.cycleOf(wed, 26).month) expect(await dayOf(wed)).toMatchObject({ firstHalf: 'ABSENT', secondHalf: 'PRESENT', status: 'HALF_DAY', note: '2nd late this month - first half absent' })
     expect(await dayOf(thu)).toMatchObject({ firstHalf: 'ABSENT', secondHalf: 'PRESENT', note: 'In 2h 30m late - first half absent' })
     expect(await dayOf(fri)).toMatchObject({ firstHalf: 'PRESENT', secondHalf: 'ABSENT' })
+  })
+
+  // a first-half holiday (Holi morning off): arriving late for the second half counts as a late day, and when it is the
+  // Nth it is the second half - the half worked - that is absent (the user, 2026-11-25)
+  it('counts a late arrival after a morning holiday, and the penalty takes that afternoon', async () => {
+    const [mon, tue] = week.map((d) => new Date(d.getTime() - 7 * DAY)) as [Date, Date]
+    const person = await createEmployee({ companyId: companyIdOf, plantId: plantIdOf })
+    await shiftsService.assignShift({ employeeCodes: [person.employeeCode], patternId, startWeek: 1, policyId, effectiveFrom: new Date(mon.getTime() - 7 * DAY) }, hr)
+    const lists = await holidaySetup(companyIdOf)
+    await followList([person.id], lists.holidayListId)
+    await prisma.holiday.create({
+      data: { date: tue, name: `Holi ${tag}`, portion: 'FIRST_HALF', categoryId: lists.categoryId, createdById: 0, updatedById: 0, lists: { create: { holidayListId: lists.holidayListId, createdById: 0, updatedById: 0 } } },
+    })
+    const tap = (day: Date, ...clocks: string[]) =>
+      prisma.punch.createMany({
+        data: clocks.map((c) => {
+          const [h, m] = c.split(':').map(Number) as [number, number]
+          return { employeeId: person.id, employeeCode: person.employeeCode, punchedAt: zonedInstant(day, h * 60 + m, timezone), source: 'UPLOAD' as const, createdById: 0, updatedById: 0 }
+        }),
+      })
+    await tap(mon, '09:20', '18:00') // 1st late
+    await tap(tue, '13:40', '18:00') // the afternoon's start is 13:00: 40 minutes late - the 2nd
+    await daysService.recompute([person.id], mon, tue)
+    const day = await prisma.attendanceDay.findUniqueOrThrow({ where: { employeeId_date: { employeeId: person.id, date: tue } }, select: { firstHalf: true, secondHalf: true, lateMinutes: true, note: true } })
+    expect(day.lateMinutes).toBe(30)
+    if (daysService.cycleOf(mon, 26).month === daysService.cycleOf(tue, 26).month) {
+      expect(day).toMatchObject({ firstHalf: 'HOLIDAY', secondHalf: 'ABSENT', note: '2nd late this month - second half absent' })
+    }
   })
 
   it('only Attendance Edit for all companies changes a policy; the default cannot be retired', async () => {

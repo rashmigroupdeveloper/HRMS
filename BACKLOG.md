@@ -482,12 +482,12 @@ region (on the work location), the work location's address, lay offs, and the jo
      again only the months already worked out for each person (never fills months before attendance started with absent
      days); "copy from last year" copies a year's holidays into the next, the same lists. Built in step 3: the automatic
      holidays with a category, the part of the day off and the lists; the **on-application** part (a holiday taken from a
-     leave type's balance) comes with steps 4-5. **Known limits of step 3 (decide if HR minds):** working a half-day
-     holiday's off half earns no comp-off (only a whole weekly off / holiday does); a late arrival on a day with the first
-     half off never counts towards the monthly late penalty; the roster's rest / week-hours warnings treat either
-     half-day holiday as a morning-only day; the holidays' Excel export ignores the list filter; a company admin's "copy
-     from last year" copies a shared holiday only into their own lists, as a holiday of its own (the shared one is not
-     joined);
+     leave type's balance) comes with steps 4-5. **Settled with the user 2026-11-25:** working a half-day
+     holiday's off half earns no comp-off (only a whole weekly off / holiday does) and a company admin's "copy from last
+     year" copies a shared holiday only into their own lists, as a holiday of its own - both right as they are; done the
+     same day: a late arrival after a first-half holiday counts towards the monthly late penalty and, when it is the Nth,
+     that day's second half (the half worked) is absent; the roster's rest / week-hours warnings use the half really worked
+     (a first-half holiday: the afternoon); the holidays' Excel export follows the list filter;
      4. done 2026-11-24 - leave-type timing rules on Team leave > Leave types: notice in calendar days (EL 7, CL 3),
      "today or past only" (sick), "up to N days back" (empty = until the month locks); checked when applying (the
      employee's own application - nothing else applies leave), shown on the apply form (its dates limited to match).
@@ -498,16 +498,18 @@ region (on the work location), the work location's address, lay offs, and the jo
      leave > Balances > Give days, counted first (the election example: 2 dates, 1 day each; people joining later get
      nothing unless HR gives it); a holiday changed or removed, or someone moved to another list, cancels the leave taking
      it that no longer fits (waiting: its approval closed; approved: the days back, the days worked out again) and e-mails
-     the employee - **left to HR:** such leave of a year already ended (its balance lapsed); 6. done 2026-11-24 -
-     **My holidays** on My leave: the holidays of the employee's own list for this year / next (automatic ones; on-application
-     ones with the balance left and Apply - then Waiting / Taken); every list's holidays are now Attendance setup View only
-     (the setup page). Also
+     the employee; an on-application holiday whose day has passed and that someone took can no longer be moved, removed
+     or given otherwise (the user, 2026-11-25 - a new name / category still can), and a list change from a past date
+     leaves such taken holidays as they were; 6. done 2026-11-24 -
+     **My holidays**: the holidays of the employee's own list for this year / next (automatic ones; on-application ones with
+     the balance left and Apply - then Waiting / Taken) - on a **Holidays** page of its own for every employee (/holidays,
+     a tab beside My leave - the user, 2026-11-25); every list's holidays are Attendance setup View only (the setup page). Also
      agreed: "copy from last year" for a list (step 3); HR changes many people's list at once (step 2); an on-application
      holiday moved or deleted after people took it cancels those leaves and gives the days back (with an e-mail); the
      balance of a holidays-only leave type lapses at year-end (carry forward 0). A holiday on a weekly off is simply lost. "Calendar Name" (e.g.
      PLANT_SO) is dropped - the user does not know what it was. The one holiday entered before (a test) was deleted
-     2026-11-24 (the user's word) - step 3 starts with no holidays. **Later, if HR asks:** the employee profile showing
-     their holiday list and its history (today: Schedules and the change history).
+     2026-11-24 (the user's word) - step 3 starts with no holidays. The profile's Job tab shows the name of the holiday list
+     followed today (the user, 2026-11-25 - the name only; its history: Schedules and the change history).
 - **Probation -> confirmation hike %** ("Join Probation Retain") and the **internship completed date** - with the
   probation / confirmation module (next modules, 5).
 - **Lay offs and attendance / pay** - a lay off does not change the employee's status nor their attendance days yet;

@@ -169,6 +169,13 @@ export async function assignHolidayList({ employeeCodes, holidayListId, effectiv
   return { assigned: changed.length, unchanged: found.length - changed.length }
 }
 
+// One employee's holiday list today, and a change set for later (their profile shows its name - the user, 2026-11-25): their
+// own, or with Employees View covering them (else "not found")
+export async function holidayListOf(viewer: CurrentUser, employeeCode: string) {
+  const employee = await employeesService.getEmployeeFor(viewer, employeeCode)
+  return (await listsOn([employee.id])).get(employee.id)!
+}
+
 // The joining day (candidates module): the list HR chose, from the date of joining - checked first with
 // assertJoiningList, saved in the joining's transaction
 export async function assertJoiningList(holidayListId: number, companyId: number) {

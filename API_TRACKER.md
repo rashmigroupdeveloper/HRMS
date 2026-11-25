@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 285**
+**Total APIs: 286**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -372,6 +372,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 283 | `attendance.holidays.copyYear` | Attendance setup: Edit (the lists copied into) | copies last year's holidays into a year, the same lists |
 | 284 | `leave.balances.giveMany` | Leave: Edit (covering each person) | gives days of a leave type to many - chosen, or everyone matching |
 | 285 | `attendance.holidays.mine` | Logged in (their own) | one's own holidays of a year - those of the list followed on each date |
+| 286 | `attendance.holidayLists.ofEmployee` | own, or Employees: View | one employee's holiday list today (the profile's Job tab) |
 
 ---
 
@@ -3249,7 +3250,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **HTTP:** `POST /api/rpc/attendance/policies/create` · **Code:** `backend/src/modules/attendance/policies/`
 - **Access:** Attendance setup: Edit.
 - **Scope:** shared by every company - needs Attendance setup Edit for **all companies** (`403`).
-- **Input:** `{ name (unique), graceMinutes 0-120, fullDayMinutes (minutes from the first in to the last out, break inside; null = the whole shift), halfDayMinutes (also a pattern's half day), latesPerHalfDayCut (1-31: every Nth late day of an attendance month loses its first half; null = off), veryLateMinutes (in later than this after the start = first half absent; null = off), veryEarlyMinutes (out earlier than this before the end = second half absent; null = off), isDefault? }`
+- **Input:** `{ name (unique), graceMinutes 0-120, fullDayMinutes (minutes from the first in to the last out, break inside; null = the whole shift), halfDayMinutes (also a pattern's half day), latesPerHalfDayCut (1-31: every Nth late day of an attendance month loses its first half - on a day with the first half a holiday, its second half, the half worked (2026-11-25); null = off), veryLateMinutes (in later than this after the start = first half absent; null = off), veryEarlyMinutes (out earlier than this before the end = second half absent; null = off), isDefault? }`
 - **Returns:** the policy (as in `list`).
 - **What it does:** adds a policy - its rules are its first version, from the start; `isDefault` makes it the one for employees with none set (the others lose the flag). A day judged by a rule keeps the reason in its `note`.
 - **Errors:** `400` half day longer than the full day · `403` · `409` name used.
@@ -3324,7 +3325,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Scope:** not limited by data access - the caller's own holidays only.
 - **Input:** `{ year }`
 - **Returns:** `{ holidayList {id, name} | null (followed today), next {from, holidayList} | null (a change set for later), holidays [{ id, date, name, portion, mode, allowHalfDay, leaveType {id, code, name} | null, category {id, name, tone}, list {id, name} }] }` by date.
-- **What it does:** "My holidays" (the user, 2026-11-24 - on My leave): the holidays of the list the caller follows on each date of the year (a list changed in the year: each part its own); automatic ones are days off, an on-application one is theirs to apply for (`leave.applications.apply` with its leave type). No list: none. Their applications and balances come from `leave.applications.mine` / `leave.balances.get`.
+- **What it does:** "My holidays" (the user, 2026-11-24 - the Holidays page, /holidays, a tab beside My leave for every employee since 2026-11-25): the holidays of the list the caller follows on each date of the year (a list changed in the year: each part its own); automatic ones are days off, an on-application one is theirs to apply for (`leave.applications.apply` with its leave type). No list: none. Their applications and balances come from `leave.applications.mine` / `leave.balances.get`.
 - **Errors:** `400`.
 
 ### `attendance.holidays.create`
@@ -3342,8 +3343,8 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Scope:** as `create`, for every list it is in and every list it goes in (`403`).
 - **Input:** `{ id, ...the fields of create (optional) - holidayListIds: the lists that have it from now on }`
 - **Returns:** the holiday, as `list`.
-- **What it does:** changes a holiday; moved, put in other lists, another part of the day or how it is given: both dates must be in open months and are worked out again (as `create`); a new name or category alone may be fixed in a locked month (2026-11-23). An on-application holiday changed (2026-11-24): the leave taking it, waiting or approved, that no longer fits (another date, off the person's list) is cancelled - an approved one's days given back, the employee e-mailed.
-- **Errors:** as `create` · `404`.
+- **What it does:** changes a holiday; moved, put in other lists, another part of the day or how it is given: both dates must be in open months and are worked out again (as `create`); a new name or category alone may be fixed in a locked month (2026-11-23). An on-application holiday changed (2026-11-24): the leave taking it, waiting or approved, that no longer fits (another date, off the person's list) is cancelled - an approved one's days given back, the employee e-mailed. One whose day has passed and that someone took is never moved, put in other lists or given otherwise (the user, 2026-11-25) - a new name or category is fine.
+- **Errors:** as `create` · `404` · `409` an on-application holiday already passed and taken (2026-11-25).
 
 ### `attendance.holidays.delete`
 - **HTTP:** `POST /api/rpc/attendance/holidays/delete` · **Code:** `backend/src/modules/attendance/holidays/`
@@ -3351,8 +3352,8 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Scope:** every list it is in (as `create`, `403`).
 - **Input:** `{ id }`
 - **Returns:** `{ deleted: true }`.
-- **What it does:** removes a holiday from every list (its month worked out again, as `create`) - not in a locked attendance month (2026-11-23). An on-application one: the leave taking it is cancelled and its days given back (the employee e-mailed - 2026-11-24).
-- **Errors:** `403` · `404` · `409` a locked month.
+- **What it does:** removes a holiday from every list (its month worked out again, as `create`) - not in a locked attendance month (2026-11-23). An on-application one: the leave taking it is cancelled and its days given back (the employee e-mailed - 2026-11-24) - never one already passed and taken (the user, 2026-11-25).
+- **Errors:** `403` · `404` · `409` a locked month, or an on-application holiday already passed and taken.
 
 ### `attendance.holidays.copyYear`
 - **HTTP:** `POST /api/rpc/attendance/holidays/copyYear` · **Code:** `backend/src/modules/attendance/holidays/`
@@ -3405,8 +3406,17 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Scope:** each employee: Attendance setup Edit covering the employee (outside the View data access `404`, View only `403`).
 - **Input:** `{ employeeCodes (1-2000), holidayListId, effectiveFrom }`
 - **Returns:** `{ assigned, unchanged }` - `unchanged`: already following that list from that day, with no later change.
-- **What it does:** the employees follow the list from the date until their next row (one per employee per date, a row the same day replaced) - HR's change of one person or many (ticked on Attendance setup > Schedules, or added in the drawer); the days before keep the list they had. A list in use, of each employee's company or of every company. From a day already passed, the holidays' dates since then are worked out again for them (2026-11-24) - only months of theirs already worked out. Their leave taking on-application holidays from that date that are not on the new list is cancelled (an approved one's days given back, the employee e-mailed).
+- **What it does:** the employees follow the list from the date until their next row (one per employee per date, a row the same day replaced) - HR's change of one person or many (ticked on Attendance setup > Schedules, or added in the drawer); the days before keep the list they had. A list in use, of each employee's company or of every company. From a day already passed, the holidays' dates since then are worked out again for them (2026-11-24) - only months of theirs already worked out. Their leave taking on-application holidays still to come that are not on the new list is cancelled (an approved one's days given back, the employee e-mailed); one already passed stays (2026-11-25).
 - **Errors:** `400` an unknown code, a retired list, another company's list · `403` · `404` no such list · `409` a locked attendance month on or after the date.
+
+### `attendance.holidayLists.ofEmployee`
+- **HTTP:** `POST /api/rpc/attendance/holidayLists/ofEmployee` · **Code:** `backend/src/modules/attendance/holiday-lists/`
+- **Access:** Logged in.
+- **Scope:** one's own record, or Employees View covering the employee (`getEmployeeFor` - outside it `404`).
+- **Input:** `{ employeeCode }`
+- **Returns:** `{ holidayList {id, name} | null (none: no holidays), since, next {from, holidayList} | null }`.
+- **What it does:** the holiday list the employee follows today - its name on the profile's Job tab (the user, 2026-11-25). Given / changed on Attendance setup > Schedules (`assign`).
+- **Errors:** `404`.
 
 ### `attendance.holidayLists.fillMissing`
 - **HTTP:** `POST /api/rpc/attendance/holidayLists/fillMissing` · **Code:** `backend/src/modules/attendance/holiday-lists/`
@@ -4131,7 +4141,7 @@ leave year is the calendar year.
 - **HTTP:** `POST /api/rpc/attendance/exportSetup` · **Code:** `backend/src/modules/attendance/`
 - **Access:** Attendance setup: View; locks additionally group-wide Edit.
 - **Scope:** Shared shifts/patterns/policies/holidays and ingestion metadata match their existing readers and are not restricted by employee data access. Schedules use Attendance setup View data access. Locks call the existing group-wide Edit reader.
-- **Input:** `{ section, year?, schedules? }`: shifts/patterns/policies/holidays/punches/schedules/locks. Year integer 2020-2100, required for holidays/locks. Schedules optional same filters as `attendance.shifts.schedules` (search, company/plant/department/cost-center ID arrays, patternId, policyId).
+- **Input:** `{ section, year?, schedules?, holidayListId? }`: shifts/patterns/policies/holidays/punches/schedules/locks. Year integer 2020-2100, required for holidays/locks. Schedules optional same filters as `attendance.shifts.schedules` (search, company/plant/department/cost-center ID arrays, patternId, policyId, holidayListId). `holidayListId` (holidays, 2026-11-25): only that list's holidays - the page's list filter; named in the file's details.
 - **Returns:** Excel File with report data and Review notes. Selected setup section: current effective definitions including retired records and labelled upcoming timings, cycle/default changes and policy rules; selected-year holidays/month locks; scoped current employee schedules; or latest 30 uploads plus unmatched codes in separate sheets. Does not export raw matched biometric punches.
 - **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
 - **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.

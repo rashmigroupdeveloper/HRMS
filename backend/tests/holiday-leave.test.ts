@@ -150,6 +150,22 @@ describe('on-application holidays', () => {
     expect(await balance()).toBe(1)
   })
 
+  // the user, 2026-11-25: once its day has passed and someone took it, an on-application holiday stays as it is
+  it('never moves or removes an on-application holiday already passed and taken', async () => {
+    const lastTuesday = new Date(monday(-1).getTime() + DAY)
+    const past = await holidaysService.createHoliday(
+      { date: lastTuesday, name: `Past election ${tag}`, categoryId: list.categoryId, holidayListIds: [list.holidayListId], mode: 'ON_APPLICATION', leaveTypeId: electionType },
+      hr,
+    )
+    const leave = await applicationsService.apply(self, { ...asked(lastTuesday), reason: 'Voted' })
+    await approvalsService.decide(approver, { id: leave.approvalRequestId, approve: true })
+    await expect(holidaysService.deleteHoliday(past.id, hr)).rejects.toThrow('has passed and 1 employee took it')
+    await expect(holidaysService.updateHoliday({ id: past.id, date: new Date(lastTuesday.getTime() + DAY) }, hr)).rejects.toThrow('can no longer be moved')
+    // a new name is still fine; the leave stays approved
+    await expect(holidaysService.updateHoliday({ id: past.id, name: `Past election (renamed) ${tag}` }, hr)).resolves.toMatchObject({ name: `Past election (renamed) ${tag}` })
+    expect((await applicationsService.listMine(self)).find((l) => l.id === leave.id)).toMatchObject({ status: 'APPROVED' })
+  })
+
   it('gives days only to employees inside the Leave Edit data access', async () => {
     const otherCompany = (await createCompany()).id
     const outside = await createEmployee({ companyId: otherCompany, plantId: (await createPlant(otherCompany)).id })

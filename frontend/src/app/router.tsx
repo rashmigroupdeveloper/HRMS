@@ -16,6 +16,7 @@ import { AttendanceSetupPage } from '@/pages/attendance/AttendanceSetupPage'
 import { MyAttendancePage } from '@/pages/attendance/MyAttendancePage'
 import { TeamAttendancePage } from '@/pages/attendance/TeamAttendancePage'
 import { LeavePage } from '@/pages/leave/LeavePage'
+import { HolidaysPage } from '@/pages/leave/HolidaysPage'
 import { TeamLeavePage } from '@/pages/leave/TeamLeavePage'
 import { PayCareerPage } from '@/pages/pay-career/PayCareerPage'
 import { JoiningTasksPage } from '@/pages/joining-tasks/JoiningTasksPage'
@@ -47,7 +48,8 @@ import { MyDepartmentPage } from '@/pages/my-department/MyDepartmentPage'
 //   /access       - also needs view access to ACCESS (roles and who has them)
 //   /attendance            - one's own attendance (everyone); /team-attendance - others' (a team, an HOD department or
 //                            Attendance: View); /attendance-setup - Attendance setup: View (2026-11-22)
-//   /leave                 - one's own leave (everyone); /team-leave - others' (a team, an HOD department or Leave: View)
+//   /leave                 - one's own leave (everyone); /team-leave - others' (a team, an HOD department or Leave: View);
+//                            /holidays - one's own holiday list's holidays (everyone - 2026-11-25)
 //   /change-history        - Change history: View (who changed what and when; one employee's history is on the profile)
 //   /letter-templates      - Letter templates: View (the wording of the offer letter)
 //   /letter-templates/new, /letter-templates/:id - one template on its own page (changing it needs Letter templates: Edit)
@@ -74,6 +76,8 @@ export const router = createBrowserRouter([
           // everyone's own leave (2026-11-22); others' (a team, an HOD department or Leave: View - nobody to see: back to /leave)
           { path: 'leave', element: <LeavePage /> },
           { path: 'team-leave', element: <TeamLeavePage /> },
+          // everyone's own holidays (2026-11-25)
+          { path: 'holidays', element: <HolidaysPage /> },
           { path: 'employees/:employeeCode', element: <EmployeeProfilePage /> },
           // an HOD's own department (BACKLOG 3e) - read-only, no role needed
           { path: 'my-department', element: <MyDepartmentPage /> },

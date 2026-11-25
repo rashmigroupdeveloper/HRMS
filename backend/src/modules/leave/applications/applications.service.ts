@@ -523,12 +523,16 @@ attendanceService.registerHolidayLeave({
     if (!type.isActive) throw new ORPCError('BAD_REQUEST', { message: `${type.name} is no longer used` })
     if (!type.holidaysOnly) throw new ORPCError('BAD_REQUEST', { message: `${type.name} is not taken only on its holiday dates - tick that on its leave type first` })
   },
+  // (only holidays still to come: one already passed and taken stays as it was - the user, 2026-11-25)
   recheck: async ({ from, to, employeeIds }) => {
-    for (const application of await applicationsRepository.listHolidayLeave(from, to, employeeIds)) {
+    const start = from > today() ? from : today()
+    if (start > to) return
+    for (const application of await applicationsRepository.listHolidayLeave(start, to, employeeIds)) {
       const [problem] = await holidayProblems(application.employeeId, application.leaveType, application)
       if (problem) await cancelForHoliday(application, problem.message)
     }
   },
+  takenCount: (leaveTypeId, date) => applicationsRepository.countCovering(leaveTypeId, date),
 })
 
 // Exports reuse the page's relationship- and data-access-aware readers.

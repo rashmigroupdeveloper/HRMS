@@ -1,3 +1,4 @@
+import { employeesSchemas } from '#modules/employees'
 import { idSchema, nameSchema } from '#shared/schemas/common.schema'
 import { z } from 'zod'
 
@@ -26,6 +27,9 @@ export const assignHolidayListInput = z.object({
   holidayListId: idSchema,
   effectiveFrom: z.date(),
 })
+
+// One employee's holiday list (their profile - the user, 2026-11-25)
+export const employeeListInput = z.object({ employeeCode: employeesSchemas.employeeCodeSchema })
 
 // Gives everyone without a list (inside the viewer's data access) their plant's default, from their joining day -
 // `dryRun`: only count them

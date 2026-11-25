@@ -16,7 +16,7 @@ import { RoleOptions } from './RoleOptions'
 // short: the name on the "More" button while that page is open (the page's title says the rest)
 type NavItem = { to: string; label: string; short?: string; count?: number; also?: string[] }
 
-// `also`: other pages the item stands for (Leave: My leave and Team leave)
+// `also`: other pages the item stands for (Leave: My leave, Holidays and Team leave)
 const isCurrent = (item: NavItem, pathname: string) =>
   item.to === '/' ? pathname === '/' : [item.to, ...(item.also ?? [])].some((to) => pathname === to || pathname.startsWith(`${to}/`))
 
@@ -73,7 +73,7 @@ export function AppLayout() {
     ...(seesTeamAttendance ? [{ to: '/team-attendance', label: 'Team attendance' }] : []),
     // everyone: their own leave; others' (Team leave) is switched to on the leave pages - one item, so the menu still fits
     // (2026-11-22)
-    { to: '/leave', label: 'Leave', also: ['/team-leave'] },
+    { to: '/leave', label: 'Leave', also: ['/team-leave', '/holidays'] },
     // everyone: their own job and salary; others' changes are a tab inside (2026-11-21, was "Job changes" under More)
     { to: '/pay-career', label: 'Pay & career' },
     ...(can('ONBOARDING') ? [{ to: '/onboarding', label: 'Onboarding' }] : []),

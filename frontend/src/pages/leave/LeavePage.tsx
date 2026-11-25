@@ -16,12 +16,10 @@ import { LeavePages } from './components/LeavePages'
 import { BalanceTiles } from './components/BalanceTiles'
 import { type Application, daysText, LEAVE_STATUS } from './components/labels'
 import { LeaveList } from './components/LeaveList'
-import { MyHolidays } from './components/MyHolidays'
 
-// My leave (/leave - everyone, 2026-11-22): the balance of each leave type, applying for leave, one's own holidays (their
-// holiday list's - 2026-11-24; an on-application one applied for from here), one's applications (withdraw one still
-// waiting; ask to cancel an approved one - that goes for approval too) and the year's balance history (every credit and
-// debit). The leave shows on My attendance as well.
+// My leave (/leave - everyone, 2026-11-22): the balance of each leave type, applying for leave, one's applications (withdraw
+// one still waiting; ask to cancel an approved one - that goes for approval too) and the year's balance history (every
+// credit and debit). The leave shows on My attendance as well; one's holidays are on Holidays (/holidays - 2026-11-25).
 export function LeavePage() {
   const queryClient = useQueryClient()
   const balances = useQuery(orpc.leave.balances.get.queryOptions({ input: {} }))
@@ -29,7 +27,7 @@ export function LeavePage() {
   // comp-off claims for work on a weekly off / holiday (2026-11-22) - claimed from My attendance
   const claims = useQuery(orpc.leave.compOff.mine.queryOptions())
   const withdrawClaim = useMutation(orpc.leave.compOff.cancel.mutationOptions({ onSuccess: refreshLater }))
-  const [applying, setApplying] = useState<{ typeId?: number; date?: Date } | null>(null)
+  const [applying, setApplying] = useState<{ typeId?: number } | null>(null)
   const [cancelling, setCancelling] = useState<Application | null>(null)
   // the balance history grows all year: the latest 5 until asked
   const [allHistory, setAllHistory] = useState(false)
@@ -73,8 +71,6 @@ export function LeavePage() {
         {balances.isPending && <BalanceTilesSkeleton label="Loading your leave balances" />}
         {b && (b.balances.length ? <BalanceTiles balances={b.balances} year={b.year} onPick={(typeId) => setApplying({ typeId })} /> : <EmptyState title="No leave types apply to you yet" />)}
       </section>
-
-      <MyHolidays balances={b?.balances} applications={mine.data} onApply={(typeId, date) => setApplying({ typeId, date })} />
 
       <section className="space-y-2 rounded-3xl bg-card p-4 shadow-card sm:p-5">
         <h2 className="text-lg font-light tracking-tight">My applications</h2>
@@ -171,7 +167,7 @@ export function LeavePage() {
           ))}
       </section>
 
-      {applying && b && <ApplyLeaveDialog balances={b.balances} initialTypeId={applying.typeId} initialDate={applying.date} onClose={() => setApplying(null)} />}
+      {applying && b && <ApplyLeaveDialog balances={b.balances} initialTypeId={applying.typeId} onClose={() => setApplying(null)} />}
       {cancelling && (
         <ReasonDialog
           title="Cancel this leave?"

@@ -4,6 +4,7 @@ import type { exportSetupInput } from './shifts/shifts.schema.js'
 import * as shiftsService from './shifts/shifts.service.js'
 import * as policiesService from './policies/policies.service.js'
 import * as holidaysService from './holidays/holidays.service.js'
+import * as holidayListsService from './holiday-lists/holiday-lists.service.js'
 import * as punchesService from './punches/punches.service.js'
 import * as locksService from './locks/locks.service.js'
 import { hasAccess } from '#core/auth/access'
@@ -82,12 +83,15 @@ export async function workedOn(employeeId: number, date: Date) {
 
 // Each section uses exactly its existing page reader; shared setup is separate from scoped employee schedules.
 export async function exportSetup(viewer: CurrentUser,input:z.infer<typeof exportSetupInput>) {
+  // the holidays of one list (the page's filter - 2026-11-25): its name in the file's details
+  const listName=input.section==='holidays'&&input.holidayListId?(await holidayListsService.getHolidayLists([input.holidayListId]))[0]!.name:null
   const details={title:`Attendance ${input.section}`,preparedBy:`${viewer.name} (${viewer.employeeCode})`,
     coverage:input.section==='schedules'?'Current schedules within Attendance setup View data access and selected filters.':
       input.section==='punches'?'Latest 30 uploads and all unmatched machine codes, matching the shared ingestion lists.':
       'Shared attendance setup, matching the selected section. Includes retired definitions and current effective rules.',
     filters:[{label:'Year',value:input.year?String(input.year):'Not applicable'},
-      {label:'Schedule filters',value:input.schedules?JSON.stringify(input.schedules):'All'}]}
+      {label:'Schedule filters',value:input.schedules?JSON.stringify(input.schedules):'All'},
+      ...(input.section==='holidays'?[{label:'Holiday list',value:listName??'Every list'}]:[])]}
   const file=<T>(name:string,rows:T[],fields:ReportField<T>[])=>reportFile([reportSheet(name,rows,fields)],details,`attendance-${input.section}${input.year?'-'+input.year:''}`)
   switch(input.section){
     case 'shifts':return file('Shifts',await shiftsService.listShifts(viewer,true),[
@@ -115,7 +119,7 @@ export async function exportSetup(viewer: CurrentUser,input:z.infer<typeof expor
       {header:'Upcoming rules',width:65,value:r=>r.versions.filter(v=>v.upcoming).map(v=>`${v.effectiveFrom.toISOString().slice(0,10)}: grace ${v.graceMinutes}m, full ${v.fullDayMinutes??'shift'}m, half ${v.halfDayMinutes}m, late cut every ${v.latesPerHalfDayCut??'none'}, very late ${v.veryLateMinutes??'none'}m, very early ${v.veryEarlyMinutes??'none'}m`).join('\n')},
       {header:'Effective from',date:true,value:r=>r.from},{header:'Status',value:r=>r.isActive?'Active':'Retired'},
     ])
-    case 'holidays':return file('Holidays',await holidaysService.listHolidays(input.year!),[
+    case 'holidays':return file('Holidays',await holidaysService.listHolidays(input.year!,input.holidayListId),[
       {header:'Date',date:true,value:r=>r.date},{header:'Name',value:r=>r.name},
       {header:'Category',value:r=>r.category.name},
       {header:'Day off',value:r=>r.portion==='FULL_DAY'?'Whole day':r.portion==='FIRST_HALF'?'First half':'Second half'},

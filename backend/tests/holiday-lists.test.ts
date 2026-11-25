@@ -135,6 +135,15 @@ describe("employees' holiday lists", () => {
     expect((await listsService.listsOn([joiner.id], from)).get(joiner.id)?.holidayList?.id).toBe(ofA.id)
   })
 
+  // the profile's "Holiday list" (2026-11-25): one's own, or with Employees View covering them - else not found
+  it("shows an employee's holiday list on their profile - to them, and to those who may see them", async () => {
+    const own = await listsService.holidayListOf(userWith(inA, [{ access: {}, rows: [] }]), inA.employeeCode)
+    expect(own).toHaveProperty('holidayList')
+    const directoryOfA = userWith({ id: 0, employeeCode: 'DIRA' }, [{ access: { EMPLOYEES: 'READ' }, rows: [row(companyA, null, null)] }])
+    await expect(listsService.holidayListOf(directoryOfA, inA.employeeCode)).resolves.toHaveProperty('holidayList')
+    await expect(listsService.holidayListOf(directoryOfA, inB.employeeCode)).rejects.toThrow('No employee found')
+  })
+
   it("never gives a list to someone outside the data access", async () => {
     const shared = await listsService.createHolidayList({ name: `Shared B ${companyA}` }, setupForAll)
     await expect(listsService.assignHolidayList({ employeeCodes: [inB.employeeCode], holidayListId: shared.id, effectiveFrom: from }, setupForA)).rejects.toThrow('No employee found')

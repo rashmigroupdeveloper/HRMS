@@ -67,6 +67,12 @@ export function listHolidayLeave(from: Date, to: Date, employeeIds: number[] | u
   })
 }
 
+// How many waiting / approved leave of this type cover the date - an on-application holiday already taken (2026-11-25)
+// data access: a check on the holiday itself (may it still change?) - only a count, no one's leave is returned
+export function countCovering(leaveTypeId: number, date: Date, db: DbClient = prisma) {
+  return db.leaveApplication.count({ where: { leaveTypeId, fromDate: { lte: date }, toDate: { gte: date }, status: { in: ['PENDING', 'APPROVED'] } } })
+}
+
 // Holds this employee's leave requests until the transaction ends: an application is checked again after it, so two sent at
 // the same moment (a double click) cannot both pass the overlap and balance checks (2026-11-23)
 export async function lockEmployee(employeeId: number, db: DbClient) {

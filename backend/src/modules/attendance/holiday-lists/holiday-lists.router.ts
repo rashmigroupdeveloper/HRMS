@@ -1,6 +1,6 @@
 import { accessProcedure, authedProcedure } from '#core/rpc/procedures'
 import { listInput } from '#shared/schemas/common.schema'
-import { assignHolidayListInput, createHolidayListInput, fillMissingInput, setPlantDefaultInput, updateHolidayListInput } from './holiday-lists.schema.js'
+import { assignHolidayListInput, createHolidayListInput, employeeListInput, fillMissingInput, setPlantDefaultInput, updateHolidayListInput } from './holiday-lists.schema.js'
 import * as listsService from './holiday-lists.service.js'
 
 // attendance.holidayLists.* (2026-11-24) - read: any logged-in employee (retired ones: Attendance setup: View); changed:
@@ -14,6 +14,8 @@ export const holidayListsRouter = {
   setPlantDefault: editProcedure.input(setPlantDefaultInput).handler(({ input, context }) => listsService.setPlantDefault(input, context.user)),
   // employees follow a list from a date (one or many - 2026-11-24)
   assign: editProcedure.input(assignHolidayListInput).handler(({ input, context }) => listsService.assignHolidayList(input, context.user)),
+  // one employee's list (their profile - 2026-11-25): their own, or Employees View covering them
+  ofEmployee: authedProcedure.input(employeeListInput).handler(({ input, context }) => listsService.holidayListOf(context.user, input.employeeCode)),
   // everyone without a list gets their plant's default
   fillMissing: editProcedure.input(fillMissingInput).handler(({ input, context }) => listsService.fillMissing(input, context.user)),
 }

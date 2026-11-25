@@ -110,6 +110,8 @@ export type HolidayLeaveHooks = {
   // holidays or someone's list changed from..to (`employeeIds`: only theirs): the on-application holidays taken or asked
   // for then are checked again - those no longer theirs are cancelled, the days given back, the employee told
   recheck: (change: { from: Date; to: Date; employeeIds?: number[] }) => Promise<void>
+  // how many employees took (or asked for) an on-application holiday of this leave type on this date
+  takenCount: (leaveTypeId: number, date: Date) => Promise<number>
 }
 let holidayLeave: HolidayLeaveHooks | null = null
 export function registerHolidayLeave(hooks: HolidayLeaveHooks) {
@@ -547,18 +549,21 @@ function finish(employeeId: number, c: Computed, correction: Correction | undefi
 // The late penalty: every Nth late day of an attendance month (late after the grace, its first half present) loses its
 // first half - counted in date order, each day by its own policy's N
 // (a day whose first half is covered by leave or a request is not counted late - 2026-11-22)
+// A day with its first half a holiday (worked from the second half) counts too - late after the second half's start - and
+// loses its second half (the user, 2026-11-25: Holi morning off, in at 13:40 as the 3rd late = that afternoon absent)
 function applyLatePenalty(days: { date: Date; plan: Plan; computed: Computed; covers: DayCover[] }[], startDay: number) {
   const counts = new Map<string, number>()
   for (const { date, plan, computed, covers } of days) {
-    if (computed.lateMinutes <= 0 || computed.auto.first !== 'PRESENT' || covers.some((c) => c.half === 'FIRST')) continue
+    const half: 'first' | 'second' = plan.holidayHalf === 'FIRST' ? 'second' : 'first'
+    if (computed.lateMinutes <= 0 || computed.auto[half] !== 'PRESENT' || covers.some((c) => c.half === (half === 'first' ? 'FIRST' : 'SECOND'))) continue
     const cycle = cycleOf(date, startDay)
     const month = monthKey(cycle.year, cycle.month)
     const n = (counts.get(month) ?? 0) + 1
     counts.set(month, n)
     const every = plan.policy.latesPerHalfDayCut
     if (every && n % every === 0) {
-      computed.auto.first = 'ABSENT'
-      computed.notes.push(`${ordinal(n)} late this month - first half absent`)
+      computed.auto[half] = 'ABSENT'
+      computed.notes.push(`${ordinal(n)} late this month - ${half} half absent`)
     }
   }
 }

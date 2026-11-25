@@ -95,4 +95,6 @@ export const exportSetupInput = z.object({
   section:z.enum(['shifts','patterns','policies','holidays','punches','schedules','locks']),
   year:z.number().int().min(2020).max(2100).optional(),
   schedules:listSchedulesInput,
+  // holidays: only one holiday list's (the page's list filter - 2026-11-25)
+  holidayListId:idSchema.optional(),
 }).refine(v=>!['holidays','locks'].includes(v.section)||v.year!==undefined,{message:'Choose a year',path:['year']})

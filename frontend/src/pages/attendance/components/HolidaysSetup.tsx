@@ -48,7 +48,7 @@ export function HolidaysSetup({ card: Card }: { card: (props: CardProps) => Reac
       hint="Each holiday is in the holiday lists that have it - everyone following one of them that day is off, the whole day or one half (the other half is worked). A list has one holiday a day. A holiday on a day already worked out works that month out again."
       action={
         <div className="flex flex-wrap items-center gap-2">
-          <ExportButton disabled={!holidays.data?.length || holidays.isFetching} load={() => client.attendance.exportSetup({ section: 'holidays', year })} />
+          <ExportButton disabled={!holidays.data?.length || holidays.isFetching} load={() => client.attendance.exportSetup({ section: 'holidays', year, ...(listId && { holidayListId: Number(listId) }) })} />
           <NativeSelect className="[&_select]:h-9 [&_select]:rounded-full" aria-label="Year" value={String(year)} onChange={(e) => setYear(Number(e.target.value))}>
             {[year - 1, year, year + 1].map((y) => (
               <NativeSelectOption key={y} value={String(y)}>

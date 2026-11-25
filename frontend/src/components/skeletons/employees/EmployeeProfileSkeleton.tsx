@@ -205,6 +205,8 @@ const JOB_LABELS = [
   'Grade',
   'Position',
   'Cost centre',
+  // (2026-11-25)
+  'Holiday list',
   'Reports to',
   'Functional manager',
   'HOD',
@@ -536,4 +538,9 @@ function SalaryTab() {
       </InfoCard>
     </div>
   )
+}
+
+// The holiday list's name on the Job tab while it loads on its own (JobOverview - 2026-11-25)
+export function HolidayListValueSkeleton() {
+  return <Skeleton className="inline-block h-3.5 w-28 rounded-full align-middle" />
 }

@@ -1,10 +1,12 @@
+import { useQuery } from '@tanstack/react-query'
 import { AtSign, BriefcaseBusiness, CalendarClock, Mail, Phone, Smartphone, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
-import type { client } from '@/lib/orpc'
+import { type client, orpc } from '@/lib/orpc'
 import { cn, formatDate, formatLastDay, formatMoment, relativeDay } from '@/lib/utils'
 import { EMPLOYMENT_TYPE, JOINING_TYPE, WORKFORCE } from '@/lib/choices'
 import { InfoCard, Lines } from './ProfileCards'
+import { HolidayListValueSkeleton } from './skeletons/employees/EmployeeProfileSkeleton'
 
 // The profile's Job tab (redesigned 2026-11-17, compact): the position as label-value rows in two columns, the contact
 // lines beside it, and the dates as a timeline (joined -> probation ends -> confirmed -> contract ends / left) whose
@@ -18,6 +20,8 @@ export function JobOverview({ employee: e, self }: { employee: Employee; self: b
   // the HOD of their plant + department (BACKLOG 3e) - none when nobody heads it (HR approves)
   const hod = e.hod
   const headsOwnPlace = !!hod?.holder && hod.holder.employeeCode === e.employeeCode
+  // the holiday list they follow (the user, 2026-11-25 - its name only; HR changes it on Attendance setup > Schedules)
+  const holidayList = useQuery(orpc.attendance.holidayLists.ofEmployee.queryOptions({ input: { employeeCode: e.employeeCode } }))
   return (
     <div className="grid gap-4 lg:grid-cols-5">
       <InfoCard icon={BriefcaseBusiness} title="Job & placement" className="lg:col-span-3">
@@ -35,6 +39,14 @@ export function JobOverview({ employee: e, self }: { employee: Employee; self: b
             ['Grade', e.grade?.name],
             ['Position', e.position?.name],
             ['Cost centre', e.costCenter && `${e.costCenter.code} · ${e.costCenter.name}`],
+            [
+              'Holiday list',
+              holidayList.isPending ? (
+                <HolidayListValueSkeleton key="holidays" />
+              ) : (
+                (holidayList.data?.holidayList?.name ?? (holidayList.data ? <span key="holidays" className="font-normal text-muted-foreground">None - no holidays</span> : null))
+              ),
+            ],
             [
               'Reports to',
               manager &&
