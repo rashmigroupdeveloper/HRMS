@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 286**
+**Total APIs: 288**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -373,6 +373,8 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 284 | `leave.balances.giveMany` | Leave: Edit (covering each person) | gives days of a leave type to many - chosen, or everyone matching |
 | 285 | `attendance.holidays.mine` | Logged in (their own) | one's own holidays of a year - those of the list followed on each date |
 | 286 | `attendance.holidayLists.ofEmployee` | own, or Employees: View | one employee's holiday list today (the profile's Job tab) |
+| 287 | `employees.movements.list` | Employee directory & job: View | Scoped recorded joining/leaving events, full summaries and pagination |
+| 288 | `employees.movements.export` | Employee directory & job: View | All matching joining/leaving events as Excel, with review notes |
 
 ---
 
@@ -4266,3 +4268,42 @@ leave year is the calendar year.
 - **Returns:** XLSX File: Raw punches and Review notes; stored machine code, exact UTC ISO punch timestamp, work-location local clock/time zone, device, source, upload reference/file and exact UTC ISO storedAt. Codes and source filenames are safe string cells, not formulas.
 - **What it does:** exports retained punches for one attendance work date; not a lossless original machine payload, rejected/duplicate-input report or unmatched-code report. Does not invent card/direction/GPS/door fields. StoredAt is database storage time. No record changes.
 - **Errors:** `400` invalid input or more than 20,000 punches in the work date; `401` no usable session; `404 NOT_FOUND` unknown/outside-scope employee.
+
+## Recorded joiners and leavers (2026-11-25)
+
+The directory APIs return one employee per row, with status/placement filters; this report returns one event per date
+and can include two events per employee. No existing API provides that contract. No new schema or exit workflow.
+
+### `employees.movements.list`
+- **HTTP:** `POST /api/rpc/employees/movements/list` · **Code:** `backend/src/modules/employees/movements/`
+- **Access:** Employee · Directory & job: View, on the active role.
+- **Scope:** `scopeOf(viewer, 'EMPLOYEES', 'READ')` applied with `scopeWhere` inside AND, alongside the joining/leaving
+  date OR and every filter. Rows/options/totals use the same scope and snapshot. No own/team/HOD scope exemption.
+- **Input:** `{ from: Date, to: Date, kind?: 'ALL'|'JOINER'|'LEAVER' (ALL), search?: string (trimmed, max 100),
+  companyIds?: positiveInt[] (max 100), plantIds?: positiveInt[] (max 100), departmentIds?: positiveInt[] (max 100),
+  page?: int (1–20000, default 1), pageSize?: int (1–100, default 25) }`. Dates must be UTC-midnight calendar dates,
+  year 1900–2100; ordered, inclusive range of at most 366 days. Empty place arrays mean all authorized places.
+- **Returns:** `{ items, total, page, pageSize, asOf, summary: { joiners, leavers, people, future },
+  options: { companies, plants, departments } }`. Each item: employeeCode/name/current status, current company/plant/
+  department `{id,name}`, designation or null, kind JOINER/LEAVER, date, future (date after current IST day).
+- **What it does:** selects the existing employee joining/leaving dates. One employee may contribute both events;
+  distinct people count once. Search matches every whitespace-separated term against code/name fields. Stable ascending
+  event date, employee code, then event kind. Summaries/options cover every matching event, not only the page. Options
+  come only from authorized matching records; selecting another place returns no matches. Includes imported/directly
+  added records and all current employment statuses. No writes/recomputation. A recorded leaving date is not confirmed
+  resignation/clearance/settlement. Historical placement, old codes and rehire events absent from the current record
+  are not reconstructed. Both viewing and exporting are bounded to 20,000 events; larger sets are refused, never truncated.
+- **Errors:** `400` invalid dates/filter/page or report over 20,000 events (narrow filters); `401` invalid session;
+  `403` active role lacks EMPLOYEES View. Outside-range places produce an empty report, never reveal hidden metadata.
+
+### `employees.movements.export`
+- **HTTP:** `POST /api/rpc/employees/movements/export` · **Code:** `backend/src/modules/employees/movements/`
+- **Access:** Employee · Directory & job: View, on the active role.
+- **Scope:** identical to employees.movements.list, freshly checked at export time for rows, totals and metadata.
+- **Input:** list filters above, without page/pageSize.
+- **Returns:** File, `joiners-leavers-YYYY-MM-DD-YYYY-MM-DD.xlsx`, with Joiners and leavers, Summary and Review notes.
+- **What it does:** exports all filtered events up to 20,000, not just the page. Explicit columns: recorded date,
+  event type, future marker, employee code/name, current company/plant/department/designation/status. No salary,
+  IDs, bank, medical, personal contacts or documents. Review notes include filters, current placement/recorded-date
+  limitations, prepared-by and export time. No email is sent or scheduled.
+- **Errors:** same validation/access/cap errors as list. Invalid/outside-range selections do not broaden the report.

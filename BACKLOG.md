@@ -358,7 +358,7 @@ sign-in lasts 7 days from signing in (now a security rule).
 - [x] An e-mail the mail server refused is kept (encrypted) and tried again by the worker - after 1, 5, 15 and 60
   minutes, 5 tries in all (`core/mail/retry.ts`, table `mail_retries`); HR is told it will be tried again.
 - [x] Change history as an Excel download (`changeHistory.export`, the "Export" button on the History page).
-- [ ] Daily joiner/recorded-leaver report and email (selected 2026-11-25): HR Head receives it; Super Admin configures
+- [ ] Daily joiner/recorded-leaver email (report + Excel built 2026-11-25): HR Head receives it; Super Admin configures
   additional recipients. Time/coverage and recipient mapping remain to be agreed. Existing leaving dates support a
   recorded-leaver register; full exit workflow details still wait for exit. See item 32.
 
@@ -774,7 +774,8 @@ See items 5, 24 and 26; reuse employee dates, letters, HOD appointments and appr
 - [ ] Resignation, notice calculation, approval/rejection/withdrawal, absconding and agreed last-working-day handling.
 - [ ] Department clearance, F&F calculation/review/calendar/payment and experience/relieving letters tied to exit.
 - [ ] End leavers' access/HOD appointments and other assignments under explicit exit rules; alumni view of exit/settlement.
-- [ ] Combined joiner/leaver report, Excel and scheduled email; agree recipients (item 18).
+- [ ] Scheduled joiner/leaver email/configuration remains (item 32); recorded-date report + Excel are built 2026-11-25.
+  HR Head receives it, Super Admin configures others; agree time/coverage and schema before enabling delivery.
 - **PRESENT:** manual confirmation-date editing, manual issue of employee letters, job changes/transfers and layoff APIs.
   A dedicated layoff/resignation page still waits under item 26; avoid rebuilding these existing APIs.
 
@@ -921,8 +922,8 @@ See items 3, 15 and 18.
   matching Excel exports up to 20,000 attendance days. No schema changes; current placement and stored-day limitations
   are explicit. See API_TRACKER attendance.reports.* and docs/test-runs/2026-11-24-attendance-reports-home.md.
 - [ ] **Stage 2:** extend/reuse Team requests for regularization/OD reporting; no second request/message store.
-- [ ] **Stage 3:** joiner/recorded-leaver register and probation-due list from existing dates; full exit/review details
-  still wait for the owning workflows.
+- **PRESENT (2026-11-25):** recorded joiner/leaver register and Excel, scoped to Employee directory & job View (item 32).
+- [ ] **Stage 3 remaining:** probation-due list from existing dates; full exit/review details wait for their owning workflows.
 - [ ] **DEFERRED with owning modules (Stage 4):** OT, absence-case, probation-outcome, complete attrition, asset,
   helpdesk, policy and claim reports/exports. Needs their approved business process/schema, not report-only tables.
 - [ ] **Still deferred (Stage 5 / item 16):** broader HR workload trends, payroll/leadership/device-health dashboards,
@@ -991,14 +992,16 @@ below is **not approved or added**; each model/field is proposed before its migr
    evidence cannot satisfy consent; verified copies stay current until a replacement is verified. HR uses the
    employee's Documents tab. Remaining improvement: a consolidated scoped HR submission queue/notifications, using
    these same rows and reviewers rather than a second document store.
-2. **Recorded joiner/leaver register + Excel — next schema-free report slice.** Employee.dateOfJoining and
+2. **Recorded joiner/leaver register + Excel — built 2026-11-25, no schema changes.** Employee.dateOfJoining and
    dateOfLeaving exist; a complete resignation/clearance/F&F domain does not. Use inclusive work-date range, event
    type, person and company/plant/department filters; summaries and full matching export share EMPLOYEES READ scope.
    Group/company reports include only the role's authorized slice. One person may have both joining/leaving events
    in a period. Label current placement, future recorded leaving dates and the absence of exit confirmation/history;
    never infer resignation approval, clearance or settlement. Reuse core/excel review metadata. Do not call a
-   current-directory export a historical exit register. Owning sources: employees.schema/service/repository.ts,
-   employee.prisma, core/excel. Inspect existing list/export first; extend only if event semantics fit their contract.
+   current-directory export a historical exit register. Delivered in People → Joiners & leavers; list/export use one
+   bounded snapshot with a 20,000-event refusal, stable pagination and future-date markers. Owning sources: employees.schema/service/repository.ts,
+   employee.prisma, employees/movements and core/excel. The directory returns employees; movement APIs return events
+   (two per employee when both dates match), so they have a distinct contract. No email is sent.
 3. **Daily report configuration/email — schema proposal needed.** Reuse worker.ts, core/jobs/scheduler and
    core/mail retry/attachments. Proposed first model `DailyMovementReportSetting`: enabled, HR-head role FK,
    IST minute-of-day, coverage (same day / previous day), plus standard audit fields. Select the HR Head role by ID,

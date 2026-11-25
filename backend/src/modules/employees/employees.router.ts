@@ -1,3 +1,4 @@
+import { movementsRouter } from './movements/movements.router.js'
 import { accessAllProcedure, accessProcedure, authedProcedure } from '#core/rpc/procedures'
 import { employeeDocumentsRouter } from './documents/documents.router.js'
 import {
@@ -68,6 +69,7 @@ export const employeesRouter = {
   layoffs: layoffsRouter,
   jobHistory: jobHistoryRouter,
   imports: employeeImportsRouter,
+  movements: movementsRouter,
   // HR edits the employee's records (the joining form's sections) after joining
   form: employeeFormRouter,
   // HOD posts and appointments, the employees' HOD, the gap list and an HOD's "My department" (BACKLOG 3e)
