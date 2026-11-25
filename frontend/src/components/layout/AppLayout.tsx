@@ -91,8 +91,8 @@ export function AppLayout() {
         ]
       : [
           { to: home, label: 'Home', end: true },
-          // the directory, org chart, HR's employee records and joiners & leavers
-          { to: '/manage/employees', label: 'People' },
+          // HR's employee records and joiners & leavers (the directory and org chart are self-service's People - 2026-11-25)
+          ...(can('EMPLOYEES') ? [{ to: '/manage/employees', label: 'Employees' }] : []),
           ...(can('ONBOARDING') ? [{ to: '/manage/onboarding', label: 'Onboarding' }] : []),
           // the role's records plus one's own team (the user, 2026-11-25)
           ...(can('ATTENDANCE') || team ? [{ to: '/manage/team-attendance', label: 'Attendance' }] : []),

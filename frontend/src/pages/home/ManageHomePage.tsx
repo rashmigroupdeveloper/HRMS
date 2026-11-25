@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, Building2, CalendarCog, FileText, History, ListChecks, ShieldCheck, UserPlus, Users, Workflow } from 'lucide-react'
+import { Building2, CalendarCog, FileText, History, ListChecks, ShieldCheck, UserPlus, Users, Workflow } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router'
 import { FormError } from '@/components/FormError'
 import { HomeRoleSkeleton } from '@/components/skeletons/home/HomePanelsSkeleton'
 import { ManageWorkspaceSkeleton } from '@/components/skeletons/home/ManageWorkspaceSkeleton'
@@ -38,10 +37,7 @@ export function ManageHomePage() {
   ]
   const workspace = (
     <section className="home-panel min-w-0 space-y-3 p-4 sm:p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-medium tracking-tight">Your role&apos;s pages</h2>
-        <Link to="/manage/employees" className="flex min-h-9 items-center gap-1 text-sm underline underline-offset-4">People directory <ArrowRight aria-hidden className="size-3.5" /></Link>
-      </div>
+      <h2 className="text-lg font-medium tracking-tight">Your role&apos;s pages</h2>
       {work.length > 0 ? (
         <div className="grid grid-cols-2 gap-x-4 gap-y-1">{work.map((item) => <QuickLink key={item.to} {...item} />)}</div>
       ) : (

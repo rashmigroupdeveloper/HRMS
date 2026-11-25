@@ -55,7 +55,8 @@ import { MyDepartmentPage } from '@/pages/my-department/MyDepartmentPage'
 //   /manage/...   the role portal - a role active; each page also needs its area (RequireAccess or in the page). Its
 //                 lists show the role's records plus one's own team (the user, 2026-11-25)
 //     /manage                      - home
-//     /manage/employees            - the directory, org chart, HR's employee records (Employees: View) and joiners & leavers
+//     /manage/employees            - Employees: View - HR's employee records and joiners & leavers (the directory and the
+//                                    org chart are self-service's /ess/employees - the user, 2026-11-25)
 //     /manage/employees/:code      - HR's view of a profile: Employees: View (one's own code goes to /ess/me)
 //     /manage/onboarding, /manage/onboarding/:id - Onboarding: View (changing needs Onboarding: Edit)
 //     /manage/joining-tasks        - Joining tasks or Onboarding view access - checked on the page
