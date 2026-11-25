@@ -124,7 +124,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 35 | `employees.salaryHistory` | Own record; others: Employee · Salary: View | An employee's salaries from each day, why and who approved |
 | 36 | `employees.documents.list` | Own record; others: Employee · Documents & letters: View | An employee's documents |
 | 37 | `employees.documents.download` | Own record; others: Employee · Documents & letters: View | Download an employee's document |
-| 38 | `employees.documents.upload` | Own: logged in; others: scoped Documents Edit | Submit an own document for HR review, or HR adds one |
+| 38 | `employees.documents.upload` | Own: Employee self-service; others: scoped Documents Edit | Submit an own document for HR review, or HR adds one |
 | 39 | `employees.documents.review` | Employee · Documents & letters: Edit | Mark an employee's document verified, or rejected with a reason |
 | 40 | `employees.documents.delete` | Employee · Documents & letters: Edit | Delete a wrong document (kept, can be restored) |
 | 41 | `employees.documents.restore` | Employee · Documents & letters: Edit | Bring back a deleted document |
@@ -296,19 +296,19 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 207 | `attendance.rosters.save` | Attendance setup: Edit | sets days of the draft |
 | 208 | `attendance.rosters.clear` | as `save` | takes draft days out |
 | 209 | `attendance.rosters.publish` | as `save` | publishes the draft days of these employees in the range - attendance follows them; days already come are work |
-| 210 | `attendance.shiftChanges.create` | any logged-in employee (their own) | asks to change one day - goes for approval (approval service) |
-| 211 | `attendance.shiftChanges.cancel` | the employee (their own request) | takes back a request still waiting |
+| 210 | `attendance.shiftChanges.create` | any logged-in employee (their own), Employee self-service only | asks to change one day - goes for approval (approval service) |
+| 211 | `attendance.shiftChanges.cancel` | the employee (their own request), Employee self-service only | takes back a request still waiting |
 | 212 | `attendance.shiftChanges.mine` | any logged-in employee | the employee's requests and where they stand |
-| 213 | `attendance.regularizations.create` | any logged-in employee (their own) | asks for a missed punch to count as present, or for on duty - goes for approval |
-| 214 | `attendance.regularizations.cancel` | the employee (their own request) | withdraws a request still waiting |
+| 213 | `attendance.regularizations.create` | any logged-in employee (their own), Employee self-service only | asks for a missed punch to count as present, or for on duty - goes for approval |
+| 214 | `attendance.regularizations.cancel` | the employee (their own request), Employee self-service only | withdraws a request still waiting |
 | 215 | `attendance.regularizations.mine` | any logged-in employee | the employee's regularization / on-duty requests and where they stand |
-| 216 | `approvals.listToDecide` | Logged in | What waits for my decision, of every kind |
-| 217 | `approvals.countToDecide` | Logged in | How many requests wait for my decision (the menu) |
-| 218 | `approvals.listMine` | Logged in | The requests I raised |
-| 219 | `approvals.listDecided` | Logged in | The requests I approved or rejected, and where they stand now |
+| 216 | `approvals.listToDecide` | Logged in, per portal | What waits for my decision, of every kind |
+| 217 | `approvals.countToDecide` | Logged in, per portal | How many requests wait for my decision (the menu) |
+| 218 | `approvals.listMine` | Logged in, per portal | The requests I raised |
+| 219 | `approvals.listDecided` | Logged in, per portal | The requests I approved or rejected, and where they stand now |
 | 220 | `approvals.get` | The request's people (or as the feature allows) | One request with its steps |
-| 221 | `approvals.decide` | The step's approver | Approve, or reject with a reason |
-| 222 | `approvals.cancel` | The requester (or as the feature allows) | Take back a request still waiting |
+| 221 | `approvals.decide` | The step's approver, in its portal | Approve, or reject with a reason |
+| 222 | `approvals.cancel` | The requester (or as the feature allows); one's own in self-service | Take back a request still waiting |
 | 223 | `approvals.listHeld` | Approval chains: Edit | Requests nobody can decide - routing to repair |
 | 224 | `approvals.retryRouting` | Approval chains: Edit | Send a held request through its chain again |
 | 225 | `approvals.chains.list` | Approval chains: View | The approval chains of every kind |
@@ -330,16 +330,16 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 241 | `leave.balances.runCredits` | Leave: Edit (all companies) | credits the months due and lapses the years ended now |
 | 242 | `leave.balances.importTemplate` | Leave: Edit | the opening balances Excel template |
 | 243 | `leave.balances.importBalances` | Leave: Edit | checks / saves an Excel of opening balances (all rows or none) |
-| 244 | `leave.applications.preview` | Logged in (their own) | what a leave would take, before applying |
-| 245 | `leave.applications.apply` | Logged in (their own) | applies for leave - goes for approval |
-| 246 | `leave.applications.cancel` | the employee (their own) | withdraws a leave still waiting, or asks to cancel an approved one |
+| 244 | `leave.applications.preview` | Logged in (their own), Employee self-service only | what a leave would take, before applying |
+| 245 | `leave.applications.apply` | Logged in (their own), Employee self-service only | applies for leave - goes for approval |
+| 246 | `leave.applications.cancel` | the employee (their own), Employee self-service only | withdraws a leave still waiting, or asks to cancel an approved one |
 | 247 | `leave.applications.mine` | Logged in | the employee's leave and where it stands |
 | 248 | `leave.applications.list` | team / department; Leave: View for everyone | who is on leave over a span |
 | 249 | `leave.applications.forApproval` | the approval request's people | the leave behind an approval request, with the balance |
 | 250 | `leave.applications.recounts` | Leave: View | approved leave the calendar now counts otherwise |
 | 251 | `leave.applications.recount` | Leave: Edit | puts one approved leave right by today's calendar |
-| 252 | `leave.compOff.claim` | Logged in (their own) | claims comp-off for work on a weekly off / holiday - goes for approval |
-| 253 | `leave.compOff.cancel` | the employee (their own) | withdraws a claim still waiting |
+| 252 | `leave.compOff.claim` | Logged in (their own), Employee self-service only | claims comp-off for work on a weekly off / holiday - goes for approval |
+| 253 | `leave.compOff.cancel` | the employee (their own), Employee self-service only | withdraws a claim still waiting |
 | 254 | `leave.compOff.mine` | Logged in | the employee's comp-off claims |
 | 255 | `organization.export` | Organization: View | Excel review report |
 | 256 | `approvals.export` | Logged in; held mode additionally Approval chains: Edit | Excel review report |
@@ -688,7 +688,8 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 ### `employees.documents.upload`
 - **HTTP:** `POST /api/rpc/employees/documents/upload` · **Code:** `backend/src/modules/employees/documents/`
-- **Access:** authenticated employee for their own submission (approved 2026-11-25); anyone else's record requires
+- **Access:** authenticated employee for their own submission (approved 2026-11-25) - in Employee self-service only (no
+  active role; `403` while a role is active, 2026-11-25); anyone else's record requires
   Employee · Directory & job View + Employee · Documents & letters Edit, plus sensitive-type View as before.
 - **Scope:** own record is matched to the authenticated employee ID, never trusted from the employeeCode input;
   other records keep the scoped HR checks (`404` outside View, `403` when visible without required Edit/sensitive access).
@@ -1071,7 +1072,7 @@ access.
   (`accounts.confirmPassword`), else null; `passwordRule` `{ minLength, history }` what a new password needs (the
   security rules - `accounts.security.*`, 2026-11-16);
   `roles` lists all assigned role names; `availableRoles: { id, name }[]` lists the choices and
-  `activeRoleId: number | null` identifies the selection. `access`, `dataAccess` and `isSuperAdmin` come only from
+  `activeRoleId: number | null` identifies the selection - `null` = Employee self-service (no `x-hrms-role` header: no role at all, 2026-11-25). `access`, `dataAccess` and `isSuperAdmin` come only from
   the selected role (the selected super admin gets Edit on every area);
   `mustChangePassword` = signed in with a temporary password (the frontend sends them to "Change password");
   `hodPosts` (2026-11-18) how many places (plant + department) the caller heads now as HOD (0: no "My department" page).
@@ -3542,7 +3543,7 @@ not exist is skipped, not rolled over; a file is read as Excel only when it is o
 
 ### `attendance.shiftChanges.create`
 - **HTTP:** `POST /api/rpc/attendance/shiftChanges/create` · **Code:** `backend/src/modules/attendance/shift-changes/`
-- **Access:** any logged-in employee (their own).
+- **Access:** any logged-in employee (their own). **Employee self-service only** (2026-11-25, `selfServiceProcedure`): no active role - `403` while a role is active ("Switch to Employee self-service"), even for a Super Admin.
 - **Scope:** not limited by data access - the caller's own.
 - **Input:** `{ date (today onwards), kind: CHANGE | SWAP, requestedShiftId? (CHANGE: a shift id or null = off), swapWithCode? (SWAP), reason (3-500) }`
 - **Returns:** the request `{ id, employee, date, kind, requestedShift, swapWith, reason, status (PENDING | APPROVED | REJECTED | CANCELLED), approvalRequestId, approval {status, held, closedAt, closedById, step {stepNo, of, who, approver, byFallback, late} | null} | null, createdAt }`.
@@ -3555,7 +3556,7 @@ not exist is skipped, not rolled over; a file is read as Excel only when it is o
 
 ### `attendance.shiftChanges.cancel`
 - **HTTP:** `POST /api/rpc/attendance/shiftChanges/cancel` · **Code:** `backend/src/modules/attendance/shift-changes/`
-- **Access:** the employee (their own request).
+- **Access:** the employee (their own request). **Employee self-service only** (2026-11-25, `selfServiceProcedure`): no active role - `403` while a role is active ("Switch to Employee self-service"), even for a Super Admin.
 - **Scope:** not limited by data access - the caller's own.
 - **Input:** `{ id }`
 - **Returns:** the request, `CANCELLED`.
@@ -3573,7 +3574,7 @@ not exist is skipped, not rolled over; a file is read as Excel only when it is o
 
 ### `attendance.regularizations.create`
 - **HTTP:** `POST /api/rpc/attendance/regularizations/create` · **Code:** `backend/src/modules/attendance/regularizations/`
-- **Access:** any logged-in employee (their own).
+- **Access:** any logged-in employee (their own). **Employee self-service only** (2026-11-25, `selfServiceProcedure`): no active role - `403` while a role is active ("Switch to Employee self-service"), even for a Super Admin.
 - **Scope:** not limited by data access - the caller's own.
 - **Input:** `{ kind: MISSED_PUNCH | ON_DUTY, fromDate, toDate (>= fromDate, at most 31 days), portion: FULL_DAY | FIRST_HALF | SECOND_HALF (a half: one day only), reason (5-500) }`
 - **Returns:** the request `{ id, employee {employeeCode, name}, kind, fromDate, toDate, portion, reason, status (PENDING | APPROVED | REJECTED | CANCELLED), approvalRequestId, approval {status, held, closedAt, closedById, step {...} | null} | null, createdAt }`.
@@ -3587,7 +3588,7 @@ not exist is skipped, not rolled over; a file is read as Excel only when it is o
 
 ### `attendance.regularizations.cancel`
 - **HTTP:** `POST /api/rpc/attendance/regularizations/cancel` · **Code:** `backend/src/modules/attendance/regularizations/`
-- **Access:** the employee (their own request).
+- **Access:** the employee (their own request). **Employee self-service only** (2026-11-25, `selfServiceProcedure`): no active role - `403` while a role is active ("Switch to Employee self-service"), even for a Super Admin.
 - **Scope:** not limited by data access - the caller's own (another's request: `404`).
 - **Input:** `{ id }`
 - **Returns:** the request, as `create`.
@@ -3633,8 +3634,8 @@ already raised go on.
 
 ### `approvals.listToDecide`
 - **HTTP:** `POST /api/rpc/approvals/listToDecide` · **Code:** `backend/src/modules/approvals/`
-- **Access:** any logged-in employee.
-- **Scope:** steps named to the viewer (as reporting / functional manager or HOD, or - a late step escalated - as the late approver's reporting manager: the relationship, CLAUDE.md section 8 rule 7) and role / access / fallback steps whose holders' data access covers the employee (and a move's new place) - never one about the viewer or raised by them.
+- **Access:** any logged-in employee. Per portal (2026-11-25): in Employee self-service (no active role) only the steps named to the viewer (manager, HOD, escalation); in the role portal only the role / access / fallback steps of the active role.
+- **Scope:** In Employee self-service (no active role) the steps named to the viewer; in the role portal the active role's role / access / fallback steps (2026-11-25). steps named to the viewer (as reporting / functional manager or HOD, or - a late step escalated - as the late approver's reporting manager: the relationship, CLAUDE.md section 8 rule 7) and role / access / fallback steps whose holders' data access covers the employee (and a move's new place) - never one about the viewer or raised by them.
 - **Input:** none.
 - **Returns:** `[{ id, feature, label (its kinds in words - "Salary revision", "Job / position change + Salary revision"), status, summary, employee {employeeCode, name}, requestedBy, raisedAt, closedAt, held, step
   {stepNo, of, who, approver, byFallback, note, openedAt, dueAt, late}, link }]`, the oldest-waiting first. `status` also
@@ -3644,7 +3645,7 @@ already raised go on.
 
 ### `approvals.countToDecide`
 - **HTTP:** `POST /api/rpc/approvals/countToDecide` · **Code:** `backend/src/modules/approvals/`
-- **Access:** any logged-in employee.
+- **Access:** any logged-in employee. Per portal, as `listToDecide` (2026-11-25).
 - **Scope:** as `listToDecide`.
 - **Input:** none.
 - **Returns:** a number.
@@ -3653,8 +3654,8 @@ already raised go on.
 
 ### `approvals.listMine`
 - **HTTP:** `POST /api/rpc/approvals/listMine` · **Code:** `backend/src/modules/approvals/`
-- **Access:** any logged-in employee.
-- **Scope:** the viewer's own requests (they raised them).
+- **Access:** any logged-in employee. Per portal (2026-11-25): in Employee self-service the requests about the viewer; in the role portal the ones they raised about others.
+- **Scope:** In Employee self-service the requests about the viewer, in the role portal the ones they raised about others (2026-11-25). the viewer's own requests (they raised them).
 - **Input:** none.
 - **Returns:** the latest 100, as in `listToDecide`.
 - **What it does:** the Approvals page's "Raised by me".
@@ -3662,8 +3663,8 @@ already raised go on.
 
 ### `approvals.listDecided`
 - **HTTP:** `POST /api/rpc/approvals/listDecided` · **Code:** `backend/src/modules/approvals/`
-- **Access:** any logged-in employee.
-- **Scope:** the viewer's own decisions - requests in which they approved or rejected a step (they could see each when deciding); not limited by data access otherwise.
+- **Access:** any logged-in employee. Per portal (2026-11-25): in Employee self-service the decisions on named steps (manager, HOD, escalation); in the role portal those on role / access / fallback steps.
+- **Scope:** Per portal: decisions on named steps in Employee self-service, on role / access / fallback steps in the role portal (2026-11-25). the viewer's own decisions - requests in which they approved or rejected a step (they could see each when deciding); not limited by data access otherwise.
 - **Input:** none.
 - **Returns:** the latest 200 (by when raised), as in `listToDecide`, each with `decision: { status (APPROVED | REJECTED), decidedAt, comment }` - the viewer's own (the last, if they decided several steps); the latest decision first.
 - **What it does:** the Approvals page's "Decided by me" (the user, 2026-11-22): what the viewer approved or rejected and where each request stands now.
@@ -3685,8 +3686,8 @@ already raised go on.
 
 ### `approvals.decide`
 - **HTTP:** `POST /api/rpc/approvals/decide` · **Code:** `backend/src/modules/approvals/`
-- **Access:** the open step's approver (checked in the service).
-- **Scope:** a named step (manager / HOD, or an escalation to the late approver's manager): the person it is named to; a role / access / fallback step: someone holding it whose data access covers the employee (and a move's new place); never the employee themselves nor the requester (`403`); not visible to the viewer `404`.
+- **Access:** the open step's approver (checked in the service). A named step only in Employee self-service (no active role); a role / access / fallback step only with that role active (2026-11-25) - otherwise `403`.
+- **Scope:** A named step in Employee self-service only, a role / access / fallback step with that role active only (2026-11-25). a named step (manager / HOD, or an escalation to the late approver's manager): the person it is named to; a role / access / fallback step: someone holding it whose data access covers the employee (and a move's new place); never the employee themselves nor the requester (`403`); not visible to the viewer `404`.
 - **Input:** `{ id: number, approve: boolean, comment?: string (1-500 - required to reject) }`
 - **Returns:** the request (as `get`).
 - **What it does:** approves or rejects the step that waits. Approved: the next step someone can decide opens (vacant
@@ -3699,7 +3700,7 @@ already raised go on.
 
 ### `approvals.cancel`
 - **HTTP:** `POST /api/rpc/approvals/cancel` · **Code:** `backend/src/modules/approvals/`
-- **Access:** the requester, or as the feature allows (job changes: Employees Edit covering the employee).
+- **Access:** the requester, or as the feature allows (job changes: Employees Edit covering the employee). Withdrawing one's own request (raised by the viewer about themselves) only in Employee self-service (`403` while a role is active - 2026-11-25).
 - **Scope:** as above; not visible to the viewer `404`.
 - **Input:** `{ id: number, reason?: string (1-500) }`
 - **Returns:** the request.
@@ -3990,7 +3991,7 @@ leave year is the calendar year.
 
 ### `leave.applications.preview`
 - **HTTP:** `POST /api/rpc/leave/applications/preview` · **Code:** `backend/src/modules/leave/applications/`
-- **Access:** Logged in (their own).
+- **Access:** Logged in (their own). **Employee self-service only** (2026-11-25, `selfServiceProcedure`): no active role - `403` while a role is active ("Switch to Employee self-service"), even for a Super Admin.
 - **Scope:** not limited by data access - the caller's own; `teamOff` covers the caller's teammates (the same reporting manager - a relationship, not data-access rows), names and days only.
 - **Input:** `{ leaveTypeId, fromDate, toDate (>= fromDate), fromSecondHalf? (the first day from its second half), toFirstHalf? (the last day to its first half) }`
 - **Returns:** `{ teamOff: [{ employee {employeeCode, name}, fromDate, toDate, fromSecondHalf, toFirstHalf, waiting }], days, available (null: unpaid), after (null: unpaid), problems: string[] }` - what `apply` would refuse, in words; `teamOff` (2026-11-22, the old HRMS's team coverage warning - never a block) the caller's teammates (the same reporting manager) with leave approved or waiting on those days - name and days only, no type or reason.
@@ -3999,7 +4000,7 @@ leave year is the calendar year.
 
 ### `leave.applications.apply`
 - **HTTP:** `POST /api/rpc/leave/applications/apply` · **Code:** `backend/src/modules/leave/applications/`
-- **Access:** Logged in (their own).
+- **Access:** Logged in (their own). **Employee self-service only** (2026-11-25, `selfServiceProcedure`): no active role - `403` while a role is active ("Switch to Employee self-service"), even for a Super Admin.
 - **Scope:** not limited by data access - the caller's own.
 - **Input:** as `preview` + `reason` (3-500).
 - **Returns:** the application `{ id, employee {employeeCode, name}, leaveType {id, code, name, isPaid}, fromDate, toDate, fromSecondHalf, toFirstHalf, days, reason, status (PENDING | APPROVED | REJECTED | CANCELLED), approvalRequestId, approval {status, held, closedAt, closedById, step} | null, cancelRequest {approvalRequestId, status, held, closedAt, closedById, step} | null, cancelReason, createdAt }`.
@@ -4010,7 +4011,7 @@ leave year is the calendar year.
 
 ### `leave.applications.cancel`
 - **HTTP:** `POST /api/rpc/leave/applications/cancel` · **Code:** `backend/src/modules/leave/applications/`
-- **Access:** the employee (their own).
+- **Access:** the employee (their own). **Employee self-service only** (2026-11-25, `selfServiceProcedure`): no active role - `403` while a role is active ("Switch to Employee self-service"), even for a Super Admin.
 - **Scope:** not limited by data access - the caller's own (another's: `404`).
 - **Input:** `{ id, reason? (needed for an approved leave) }`
 - **Returns:** the application, as `apply`.
@@ -4066,7 +4067,7 @@ leave year is the calendar year.
 
 ### `leave.compOff.claim`
 - **HTTP:** `POST /api/rpc/leave/compOff/claim` · **Code:** `backend/src/modules/leave/comp-off/`
-- **Access:** Logged in (their own).
+- **Access:** Logged in (their own). **Employee self-service only** (2026-11-25, `selfServiceProcedure`): no active role - `403` while a role is active ("Switch to Employee self-service"), even for a Super Admin.
 - **Scope:** not limited by data access - the caller's own.
 - **Input:** `{ workDate, reason (3-500) }`
 - **Returns:** the claim `{ id, employee {employeeCode, name}, workDate, days (0.5 | 1), reason, status (PENDING | APPROVED | REJECTED | CANCELLED), expiresOn (approved), approvalRequestId, approval {status, held, closedAt, closedById, step} | null, createdAt }`.
@@ -4076,7 +4077,7 @@ leave year is the calendar year.
 
 ### `leave.compOff.cancel`
 - **HTTP:** `POST /api/rpc/leave/compOff/cancel` · **Code:** `backend/src/modules/leave/comp-off/`
-- **Access:** the employee (their own).
+- **Access:** the employee (their own). **Employee self-service only** (2026-11-25, `selfServiceProcedure`): no active role - `403` while a role is active ("Switch to Employee self-service"), even for a Super Admin.
 - **Scope:** not limited by data access - the caller's own (another's: `404`).
 - **Input:** `{ id }`
 - **Returns:** the claim, as `claim`.

@@ -100,11 +100,13 @@ function accessFromRoles(account: AccountRoles): Pick<CurrentUser, 'roles' | 'is
   }
 }
 
-// A role selection can only narrow an authenticated account's existing grants. Unknown / revoked selections
-// have no role permissions, so a stale tab never silently regains another role's privileges.
+// A role selection can only narrow an authenticated account's existing grants. No selection = Employee self-service
+// (no role at all - the user, 2026-11-25: everyone signs in to the employee portal and picks a role to open the role
+// portal). Unknown / revoked selections have no role permissions either, so a stale tab never silently regains another
+// role's privileges.
 function selectActiveRole(account: AccountRoles, selection?: string) {
   const assigned = [...account.roles].sort((a, b) => a.role.id - b.role.id)
-  const selected = selection === undefined ? assigned[0] : assigned.find((given) => String(given.role.id) === selection)
+  const selected = selection === undefined || selection === '' ? undefined : assigned.find((given) => String(given.role.id) === selection)
   return {
     ...accessFromRoles({ roles: selected ? [selected] : [] }),
     availableRoles: assigned.map(({ role }) => ({ id: role.id, name: role.name })),

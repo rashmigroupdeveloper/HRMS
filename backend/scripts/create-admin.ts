@@ -60,7 +60,7 @@ try {
   const password = option('--password') ?? generatePassword()
   const result = await accountsService.setPassword(created.employeeCode, password, 'Super Admin')
   console.log(`Created ${result.employeeCode} (${result.name}) at ${company.code} · ${plant.plantCode} ${plant.name} · ${department.name}`)
-  console.log(`Login with roles: ${result.roles.join(', ')}`)
+  console.log(`Login with roles: ${result.roles.join(', ')} - it signs in to Employee self-service; pick the role in the account menu`)
   console.log(`Temporary password: ${password}  (must be changed at the first sign-in)`)
   process.exit(0)
 } catch (error) {

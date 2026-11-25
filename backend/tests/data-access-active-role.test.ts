@@ -59,11 +59,12 @@ describe('active role authorization on an authenticated request', () => {
     expect(hasLevelAt(editor, 'EMPLOYEES', atA(), 'READ')).toBe(false)
   })
 
-  it('activates Super Admin only when selected, with one default role when the header is absent', async () => {
+  it('activates Super Admin only when selected; no header = Employee self-service with no role (2026-11-25)', async () => {
     expect((await resolve(adminId))?.isSuperAdmin).toBe(true)
     expect((await resolve(readerId))?.isSuperAdmin).toBe(false)
-    expect((await resolve())?.roles).toHaveLength(1)
-    expect((await resolve())?.activeRoleId).toBe(Math.min(readerId, editorId, adminId))
+    const employee = (await resolve())!
+    expect(employee).toMatchObject({ activeRoleId: null, roles: [], access: {}, grants: [], isSuperAdmin: false })
+    expect(employee.availableRoles?.map((r) => r.id)).toEqual(expect.arrayContaining([readerId, editorId, adminId]))
   })
 
   it('fails closed for an unassigned or revoked selection, while retaining other switch choices', async () => {

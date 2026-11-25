@@ -193,7 +193,7 @@ npm run dev
 - Tests: set `TEST_DATABASE_URL` in `backend/.env` (a database whose name ends in `_test`, see `.env.example`), then
   `npm run test`. The tests migrate it themselves and add their own uniquely named data - nothing is deleted.
 
-- Frontend: http://localhost:5180 - log in with an employee code; on an empty database create the first super admin with `npm run create-admin`, later logins with `npm run set-password` or the Roles & access page.
+- Frontend: http://localhost:5180 - log in with an employee code; on an empty database create the first super admin with `npm run create-admin` (every login signs in to Employee self-service; the Super Admin role is picked in the account menu - 2026-11-25), later logins with `npm run set-password` or the Roles & access page.
   For testing, list accounts in `frontend/.env.development.local` (`VITE_TEST_ACCOUNTS`, see `frontend/.env.example`; never
   committed): the login page then shows them for one-click sign-in (development only, never in a production build).
 - API: http://localhost:5200/api/rpc (health check: `POST /api/rpc/health/check`)

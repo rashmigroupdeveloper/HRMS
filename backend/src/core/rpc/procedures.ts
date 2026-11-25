@@ -2,7 +2,7 @@ import type { IncomingHttpHeaders } from 'node:http'
 import { ORPCError, os } from '@orpc/server'
 import type { ResponseHeadersPluginContext } from '@orpc/server/plugins'
 import { setAuditActor } from '../audit/request.js'
-import { assertAccess, type AccessMap } from '../auth/access.js'
+import { assertAccess, assertSelfService, type AccessMap } from '../auth/access.js'
 import type { RoleGrant } from '../auth/scope.js'
 import type { AccessArea, AccessLevel } from '../db/prisma.js'
 
@@ -75,6 +75,14 @@ export const authedProcedure = sessionProcedure.use(({ context, next }) => {
   if (context.user.mustChangePassword) {
     throw new ORPCError('FORBIDDEN', { message: 'Change your temporary password first', data: { passwordChangeRequired: true } })
   }
+  return next()
+})
+
+// One's own action in Employee self-service (2026-11-25): a logged-in employee with no active role. Refused in the role
+// portal - even a Super Admin applies for their own leave as an employee. A mixed API (own record or HR's change of
+// someone else's) uses authedProcedure and calls assertSelfService on its own-record branch.
+export const selfServiceProcedure = authedProcedure.use(({ context, next }) => {
+  assertSelfService(context.user)
   return next()
 })
 

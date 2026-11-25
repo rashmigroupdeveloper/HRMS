@@ -208,12 +208,15 @@ export async function breachStepIfDue(id: number, now: Date, data: Prisma.Approv
 // The requests in which the employee decided a step (approved or rejected), the latest raised first - the Approvals
 // page's "Decided by me" (the user, 2026-11-22)
 // data access: the viewer's own decisions (they decided a step of each, so they could see it then)
-export function listDecidedBy(decidedById: number, take: number, db: DbClient = prisma) {
-  return db.approvalRequest.findMany({ where: { steps: { some: { decidedById } } }, orderBy: { createdAt: 'desc' }, take, select: requestSelect })
+// `namedTypes` + `named`: only the steps of those approver types (true) or of the others (false) - each portal its own
+export function listDecidedBy(decidedById: number, namedTypes: ApproverType[], named: boolean, take: number, db: DbClient = prisma) {
+  const approverType = named ? { in: namedTypes } : { notIn: namedTypes }
+  return db.approvalRequest.findMany({ where: { steps: { some: { decidedById, approverType } } }, orderBy: { createdAt: 'desc' }, take, select: requestSelect })
 }
 
-// The requests the viewer raised, the latest first
+// The requests the viewer raised, the latest first - about themselves (SELF) or about others (OTHERS)
 // data access: the viewer's own requests (they raised them)
-export function listRaisedBy(requestedById: number, take: number, db: DbClient = prisma) {
-  return db.approvalRequest.findMany({ where: { requestedById }, orderBy: { createdAt: 'desc' }, take, select: requestSelect })
+export function listRaisedBy(requestedById: number, about: 'SELF' | 'OTHERS', take: number, db: DbClient = prisma) {
+  const employeeId = about === 'SELF' ? requestedById : { not: requestedById }
+  return db.approvalRequest.findMany({ where: { requestedById, employeeId }, orderBy: { createdAt: 'desc' }, take, select: requestSelect })
 }

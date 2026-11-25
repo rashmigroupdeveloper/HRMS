@@ -1,5 +1,5 @@
 import * as reportsService from './reports/reports.service.js'
-import { assertAccess } from '#core/auth/access'
+import { assertAccess, assertSelfService, inSelfService } from '#core/auth/access'
 import { reportFile, reportSheet } from '#core/excel/report'
 import { hasLevelAt, type Placement } from '#core/auth/scope'
 import { env } from '#core/config/env'
@@ -59,8 +59,11 @@ function handlerOf(feature: ApprovalFeature) {
 // --- Who decides a step ---
 
 const NAMED: Partial<Record<ApproverType, string>> = { REPORTING_MANAGER: 'reporting manager', FUNCTIONAL_MANAGER: 'functional manager', HOD: 'HOD' }
-// named to one person: a manager / functional manager / HOD step, or an escalation to the late approver's manager
-const isNamed = (step: Pick<StepRow, 'approverType'>) => step.approverType in NAMED || step.approverType === 'ESCALATION'
+// named to one person: a manager / functional manager / HOD step, or an escalation to the late approver's manager.
+// These are decided in Employee self-service; role / access / fallback steps in the role portal, with that role active
+// (the user, 2026-11-25).
+const NAMED_TYPES: ApproverType[] = ['REPORTING_MANAGER', 'FUNCTIONAL_MANAGER', 'HOD', 'ESCALATION']
+const isNamed = (step: Pick<StepRow, 'approverType'>) => NAMED_TYPES.includes(step.approverType)
 const HOUR_MS = 60 * 60 * 1000
 // a fallback step the service adds itself waits, its approvers reminded every 3 days
 const FALLBACK_REMIND_HOURS = 72
@@ -137,7 +140,7 @@ async function poolsOf(items: { step: Pick<StepRow, 'approverType' | 'roleId' | 
 // The viewer may decide this open step
 async function mayDecide(viewer: CurrentUser, request: RequestRow, step: StepRow) {
   if (viewer.employeeId === request.employeeId || viewer.employeeId === request.requestedById) return false
-  if (isNamed(step)) return step.approverId === viewer.employeeId
+  if (isNamed(step)) return inSelfService(viewer) && step.approverId === viewer.employeeId
   if (!activeRoleCoversStep(viewer, request, step)) return false
   const [pool] = await poolsOf([{ step, request }])
   return pool!.includes(viewer.employeeId)
@@ -492,8 +495,9 @@ async function toRows(requests: RequestRow[]) {
   })
 }
 
-// What waits for the viewer's decision: steps named to them, and role / access / fallback steps they hold for the
-// employee - oldest first
+// What waits for the viewer's decision - oldest first: in Employee self-service the steps named to them (manager, HOD,
+// escalation); in the role portal the role / access / fallback steps the active role holds for the employee (with no
+// role active there is no role, access or fallback to match)
 async function waitingFor(viewer: CurrentUser) {
   const open = (await approvalsRepository.listPending())
     .filter((r) => !r.heldAt && r.employeeId !== viewer.employeeId && r.requestedById !== viewer.employeeId)
@@ -501,7 +505,7 @@ async function waitingFor(viewer: CurrentUser) {
       const step = request.steps.find((s) => s.status === 'OPEN')
       return step ? [{ request, step }] : []
     })
-  const named = open.filter(({ step }) => isNamed(step) && step.approverId === viewer.employeeId)
+  const named = inSelfService(viewer) ? open.filter(({ step }) => isNamed(step) && step.approverId === viewer.employeeId) : []
   const pooled = open.filter(({ request, step }) => !isNamed(step) && activeRoleCoversStep(viewer, request, step))
   const pools = await poolsOf(pooled)
   return [...named, ...pooled.filter((_, n) => pools[n]!.includes(viewer.employeeId))]
@@ -517,19 +521,23 @@ export async function countToDecide(viewer: CurrentUser) {
   return (await waitingFor(viewer)).length
 }
 
-// The requests the viewer raised, the latest first
+// The requests the viewer raised, the latest first: in Employee self-service their own (leave, regularizations...); in
+// the role portal the ones they raised for others (job and salary changes)
 export async function listMine(viewer: CurrentUser) {
-  return toRows(await approvalsRepository.listRaisedBy(viewer.employeeId, 100))
+  return toRows(await approvalsRepository.listRaisedBy(viewer.employeeId, inSelfService(viewer) ? 'SELF' : 'OTHERS', 100))
 }
 
 // The requests in which the viewer decided a step - with their own decision (the last, if they decided more than one
-// step) and where the request stands now - the latest decision first (the user, 2026-11-22: "Decided by me")
+// step) and where the request stands now - the latest decision first (the user, 2026-11-22: "Decided by me"). Each
+// portal shows the decisions made there: named steps in Employee self-service, role / access / fallback steps in the
+// role portal (2026-11-25).
 export async function listDecided(viewer: CurrentUser) {
-  const requests = await approvalsRepository.listDecidedBy(viewer.employeeId, 200)
+  const named = inSelfService(viewer)
+  const requests = await approvalsRepository.listDecidedBy(viewer.employeeId, NAMED_TYPES, named, 200)
   const rows = await toRows(requests)
   return rows
     .map((row, n) => {
-      const mine = requests[n]!.steps.filter((s) => s.decidedById === viewer.employeeId).at(-1)!
+      const mine = requests[n]!.steps.filter((s) => s.decidedById === viewer.employeeId && isNamed(s) === named).at(-1)!
       return { ...row, decision: { status: mine.status, decidedAt: mine.decidedAt, comment: mine.comment } }
     })
     .sort((a, b) => (b.decision.decidedAt?.getTime() ?? 0) - (a.decision.decidedAt?.getTime() ?? 0))
@@ -548,6 +556,8 @@ export async function decide(viewer: CurrentUser, { id, approve, comment }: z.in
     if (request.status !== 'PENDING') throw new ORPCError('CONFLICT', { message: 'This request is already decided' })
     const step = request.steps.find((s) => s.status === 'OPEN')
     if (!step) throw new ORPCError('CONFLICT', { message: 'This request is held - nobody can decide it until its approval routing is repaired' })
+    // a step named to the viewer, opened in the role portal: theirs, but decided in Employee self-service
+    if (isNamed(step) && step.approverId === viewer.employeeId) assertSelfService(viewer)
     if (!(await mayDecide(viewer, request, step))) throw new ORPCError('FORBIDDEN', { message: 'This step is not yours to decide' })
     const decided = await approvalsRepository.decideStepIfOpen(
       step.id,
@@ -569,6 +579,8 @@ export async function decide(viewer: CurrentUser, { id, approve, comment }: z.in
 export async function cancel(viewer: CurrentUser, { id, reason }: z.infer<typeof cancelApprovalInput>) {
   await prisma.$transaction(async (tx) => {
     const request = await getVisible(viewer, id, tx)
+    // withdrawing one's own request (raised by them about themselves) is self-service (2026-11-25)
+    if (request.employeeId === viewer.employeeId && request.requestedById === viewer.employeeId) assertSelfService(viewer)
     if (request.status !== 'PENDING') throw new ORPCError('CONFLICT', { message: 'This request is already decided' })
     if (request.requestedById !== viewer.employeeId && !handlerOf(request.feature).canCancel(viewer, placementsOf(request)[0]!)) {
       throw new ORPCError('FORBIDDEN', { message: 'Only the person who raised it (or HR for the employee) can cancel it' })

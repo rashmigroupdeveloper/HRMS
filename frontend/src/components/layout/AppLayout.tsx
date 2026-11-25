@@ -10,7 +10,7 @@ import { useAccess } from '@/hooks/useAccess'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
-import { writeActiveRole } from '@/lib/active-role'
+import { SELF_SERVICE, SELF_SERVICE_NAME, writeActiveRole } from '@/lib/active-role'
 import { RoleOptions } from './RoleOptions'
 
 // short: the name on the "More" button while that page is open (the page's title says the rest)
@@ -33,15 +33,18 @@ export function AppLayout() {
   const { pathname } = location
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
-  const activeRole = me.data?.availableRoles.find((role) => role.id === me.data.activeRoleId)?.name ?? 'Employee'
-  const switchingRole = me.data?.availableRoles.find((role) => role.id === location.state?.switchRoleTo && role.id !== me.data?.activeRoleId)
+  const activeRole = me.data?.availableRoles.find((role) => role.id === me.data.activeRoleId)?.name ?? SELF_SERVICE_NAME
+  // the choice being switched to: Employee self-service (SELF_SERVICE) or one of the roles given
+  const switchingRole = me.data && [{ id: SELF_SERVICE, name: SELF_SERVICE_NAME }, ...me.data.availableRoles].find(
+    (role) => role.id === location.state?.switchRoleTo && role.id !== (me.data.activeRoleId ?? SELF_SERVICE),
+  )
   const switchingRoleId = switchingRole?.id
   useEffect(() => {
     if (switchingRoleId === undefined) return
     // Keep the old role in force until the transition commits. The fresh document clears all
     // cached records and in-flight reads before the new role's data is shown.
     const timer = window.setTimeout(() => {
-      writeActiveRole(switchingRoleId)
+      writeActiveRole(switchingRoleId === SELF_SERVICE ? null : switchingRoleId)
       window.location.replace('/')
     }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 220)
     return () => window.clearTimeout(timer)

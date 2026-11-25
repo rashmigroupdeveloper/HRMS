@@ -244,7 +244,9 @@ frontend/src/
   2026-11-15), `candidateProcedure` (ONLY for `candidates.portal.*`: a candidate signed in to their own joining-form page
   with a session of its own, not an employee login; gives `context.candidate` and the handler works only on
   `context.candidate.candidateId`, never on an id from the request - approved 2026-11-13), `authedProcedure` (any
-  logged-in employee, gives `context.user`), or
+  logged-in employee, gives `context.user`), `selfServiceProcedure` (one's own action - applying for leave, comp-off,
+  regularizations, shift changes: a logged-in employee with no active role, refused in the role portal - 2026-11-25; a
+  mixed API calls `assertSelfService` from `#core/auth/access` on its own-record branch), or
   `accessProcedure(<area>, 'READ' | 'WRITE')` (READ = view, WRITE = change; WRITE includes READ), or
   `accessAllProcedure([area, level], ...)` when several areas are needed at once (a part of someone else's employee
   record: its area + `EMPLOYEES` View - the employee areas were split 2026-11-16; one's own record needs none, checked in
@@ -254,10 +256,15 @@ frontend/src/
 - **Roles are data, areas are code.** Roles are created on the "Roles & access" page and give a level per area; an
   employee can have several. **One role at a time** (decided 2026-11-23): the user picks the active role in the account
   menu (per browser tab, sent as the `x-hrms-role` header); `resolveUser` checks it against the roles actually given and
-  builds `context.user.access` and `grants` (data access) from that role alone - roles are never combined. No header = the
-  lowest role id given; an unknown or removed role = no role access (never another role silently). One's own record, the
-  reporting tree, the HOD and approval steps naming a person work whatever role is active; approval steps for a role, an
-  area or the "Admin" fallback need that role active. Code never names a role. A new module adds its area to `AccessArea`
+  builds `context.user.access` and `grants` (data access) from that role alone - roles are never combined; an unknown or
+  removed role = no role access (never another role silently). **Two portals** (the user, 2026-11-25 - replaces "no header
+  = the lowest role id given"): no header = **Employee self-service**, no role at all - everyone signs in there, even a
+  Super Admin; picking a role opens the **role portal**. One's own actions (leave, comp-off, regularizations, shift
+  changes, one's own document uploads, withdrawing one's own requests) are done in self-service only and refused with a
+  role active (`selfServiceProcedure` / `assertSelfService`). Approval steps naming a person (reporting / functional
+  manager, HOD, escalation) are decided in self-service only; steps for a role, an area or the "Admin" fallback need that
+  role active. Reading one's own record, the reporting tree and the HOD department work in both portals (the role portal's
+  lists show the role's records plus one's own team - the user, 2026-11-25). Code never names a role. A new module adds its area to `AccessArea`
   (`prisma/schema/access.prisma`) and its View / Edit text to `AREA_INFO` (`modules/accounts/roles/roles.service.ts`).
   Reading APIs use READ, changing APIs use WRITE. A rule that depends on the input (e.g. "own record, or EMPLOYEES
   READ") goes in the service with `assertAccess` from `#core/auth/access`.

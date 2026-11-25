@@ -32,7 +32,7 @@ export function LoginPage() {
   const login = useMutation(
     orpc.accounts.login.mutationOptions({
       onSuccess: (user) => {
-        // a new login starts on its first role, and nothing of a previous login stays (the query keys do not name the user)
+        // a new login starts in Employee self-service (no role - 2026-11-25), and nothing of a previous login stays (the query keys do not name the user)
         writeActiveRole(null)
         queryClient.removeQueries()
         queryClient.setQueryData(orpc.accounts.me.queryKey(), user)

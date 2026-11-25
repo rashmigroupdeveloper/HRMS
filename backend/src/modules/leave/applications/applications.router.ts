@@ -1,4 +1,4 @@
-import { accessProcedure, authedProcedure } from '#core/rpc/procedures'
+import { accessProcedure, authedProcedure, selfServiceProcedure } from '#core/rpc/procedures'
 import { applyInput, cancelInput, forApprovalInput, listInput, previewInput, recountInput, recountsInput } from './applications.schema.js'
 import * as applicationsService from './applications.service.js'
 
@@ -9,9 +9,9 @@ export const applicationsRouter = {
   exportRecounts: accessProcedure('LEAVE','READ').input(recountsInput).handler(({input,context})=>applicationsService.exportRecounts(context.user,input)),
   export: authedProcedure.input(listInput).handler(({input,context})=>applicationsService.exportApplications(context.user,input)),
   exportMine: authedProcedure.handler(({context})=>applicationsService.exportMine(context.user)),
-  preview: authedProcedure.input(previewInput).handler(({ input, context }) => applicationsService.preview(context.user, input)),
-  apply: authedProcedure.input(applyInput).handler(({ input, context }) => applicationsService.apply(context.user, input)),
-  cancel: authedProcedure.input(cancelInput).handler(({ input, context }) => applicationsService.cancel(context.user, input)),
+  preview: selfServiceProcedure.input(previewInput).handler(({ input, context }) => applicationsService.preview(context.user, input)),
+  apply: selfServiceProcedure.input(applyInput).handler(({ input, context }) => applicationsService.apply(context.user, input)),
+  cancel: selfServiceProcedure.input(cancelInput).handler(({ input, context }) => applicationsService.cancel(context.user, input)),
   mine: authedProcedure.handler(({ context }) => applicationsService.listMine(context.user)),
   list: authedProcedure.input(listInput).handler(({ input, context }) => applicationsService.list(context.user, input)),
   forApproval: authedProcedure.input(forApprovalInput).handler(({ input, context }) => applicationsService.getForApproval(context.user, input.approvalRequestId)),

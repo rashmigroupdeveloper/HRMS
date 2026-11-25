@@ -15,6 +15,7 @@ import { formatDate, todayDay } from '@/lib/utils'
 import { HomeAttendance } from './components/HomeAttendance'
 import { HomeLeave } from './components/HomeLeave'
 import { HomeDecisions, HomeMyRequests } from './components/HomeRequests'
+import { SELF_SERVICE_NAME } from '@/lib/active-role'
 
 // Home is arranged around real work, inspired by main's employee/manager/HR dashboards. The active area's access and
 // actual team/HOD relationships decide which sections exist; no role-name checks, invented KPIs or new stores.
@@ -27,7 +28,7 @@ export function HomePage() {
   // Start the decision reader alongside overview: choosing a role layout must not create a second loading sequence.
   useQuery({ ...orpc.approvals.listToDecide.queryOptions(), enabled: ready })
   const e = profile.data
-  const activeRole = me?.availableRoles.find(r => r.id === me.activeRoleId)?.name ?? 'Employee'
+  const activeRole = me?.availableRoles.find(r => r.id === me.activeRoleId)?.name ?? SELF_SERVICE_NAME
   const dashboard = can('ACCESS', 'WRITE') ? 'Administration' : can('ONBOARDING') ? 'HR workspace' : (overview.data?.teamSize ?? 0) > 0 || (overview.data?.departmentSize ?? 0) > 0 ? 'Team workspace' : 'My workspace'
   const isPersonal = !!overview.data && dashboard === 'My workspace'
   const hasPeople = !!overview.data && (overview.data.canSeeAll || overview.data.teamSize > 0 || overview.data.departmentSize > 0)

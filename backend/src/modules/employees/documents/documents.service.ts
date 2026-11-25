@@ -1,4 +1,5 @@
 import type { ActorId, DbClient, DocumentType, DocumentVerificationStatus } from '#core/db/prisma'
+import { assertSelfService } from '#core/auth/access'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { copyFile, deleteFile, isOldKey, readStoredFile, saveFile, type FilePlace } from '#core/storage/file-storage'
 import { cleanFileName, detectFileType, type DetectedFileType } from '#shared/utils/file-type'
@@ -214,7 +215,9 @@ async function withPeopleOne(row: DocumentRow) {
 export async function uploadDocument({ employeeCode, type, file }: z.infer<typeof uploadEmployeeDocumentInput>, viewer: CurrentUser) {
   const actorId = viewer.employeeId
   const employee = await getEmployeeFor(viewer, employeeCode)
-  if (employee.id !== viewer.employeeId) assertPart(viewer, employee, 'EMPLOYEE_DOCUMENTS', 'WRITE')
+  // one's own upload is self-service (in Employee self-service only - 2026-11-25); anyone else's is HR's
+  if (employee.id === viewer.employeeId) assertSelfService(viewer)
+  else assertPart(viewer, employee, 'EMPLOYEE_DOCUMENTS', 'WRITE')
   assertMayOpen(viewer, employee, type)
   const bytes = new Uint8Array(await file.arrayBuffer())
   const mimeType = detectFileType(bytes)
