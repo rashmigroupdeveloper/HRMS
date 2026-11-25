@@ -11,6 +11,7 @@ import { RequestsSkeleton } from '@/components/skeletons/approvals/RequestsSkele
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/useAccess'
+import { usePortal } from '@/hooks/usePortal'
 import { client, orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
 import { ApprovalDrawer } from './components/ApprovalDrawer'
@@ -21,9 +22,12 @@ import { type Decided, RequestList } from './components/RequestList'
 // decision, of every kind (job changes, salary revisions, shift changes, leave and its cancelling, regularization and on
 // duty, comp off), what they approved or rejected before (Decided by me), the requests they raised, and - for those who can repair approval routing (Approval chains: Edit) -
 // the requests held because nobody can decide them. Each list has a tab per kind (?kind=LEAVE), with its count.
+// Per portal (2026-11-25 - the backend lists them so): in Employee self-service the steps named to them (manager, HOD) and
+// their own requests; in the role portal the role's steps and the requests they raised for others.
 
 export function ApprovalsPage() {
   const { can } = useAccess()
+  const { portal } = usePortal()
   const [params, setParams] = useSearchParams()
   const [open, setOpen] = useState<number | null>(null)
   const [decided, setDecided] = useState<Decided | null>(null)
@@ -35,7 +39,7 @@ export function ApprovalsPage() {
   const tabs: [string, string, number | undefined][] = [
     ['waiting', 'Waiting for me', toDecide.data?.length],
     ['decided', 'Decided by me', undefined],
-    ['mine', 'Raised by me', undefined],
+    ['mine', portal === 'ess' ? 'My requests' : 'Raised for others', undefined],
     ['team', 'Team requests', undefined],
     ...(canRepair ? ([['held', 'Held', held.data?.length]] as [string, string, number | undefined][]) : []),
   ]

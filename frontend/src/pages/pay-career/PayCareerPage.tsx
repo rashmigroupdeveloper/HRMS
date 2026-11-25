@@ -1,7 +1,9 @@
-import { useSearchParams } from 'react-router'
+import { Navigate, useSearchParams } from 'react-router'
+import { ChangeListSkeleton } from '@/components/skeletons/pay-career/ChangeListSkeleton'
 import { PayOverviewSkeleton } from '@/components/skeletons/pay-career/PayOverviewSkeleton'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccess } from '@/hooks/useAccess'
+import { usePortal } from '@/hooks/usePortal'
 import { cn } from '@/lib/utils'
 import { ChangeRegisterView } from './components/ChangeRegisterView'
 import { OverviewView } from './components/OverviewView'
@@ -12,13 +14,16 @@ import { RaiseChangeView } from './components/RaiseChangeView'
 // - Overview: the employee's own job, salary, and the changes asked for them
 // - Raise a change (?view=raise): "Request job changes" or "Request salary changes" - ask for others, follow what they asked
 // - Change register (?view=register): Employees: View - every change of the employees inside their data access
+// Two portals (2026-11-25): /ess/pay-career is the Overview alone (no role, so the others never show); /manage/pay-career
+// the role's sections without one's own Overview (none of them: back to the role portal's home).
 // On a phone the sidebar becomes a row of pills above the section. Compact (the user, 2026-11-21: "so much gap"): a one-line
 // title, a narrow sidebar with tight items.
 export function PayCareerPage() {
   const { me, ready, can } = useAccess()
+  const { portal } = usePortal()
   const [params, setParams] = useSearchParams()
   const sections = [
-    { key: 'mine', label: 'Overview', show: true },
+    { key: 'mine', label: 'Overview', show: portal === 'ess' },
     { key: 'raise', label: 'Raise a change', show: can('JOB_CHANGE_REQUEST', 'WRITE') || can('SALARY_CHANGE_REQUEST', 'WRITE') },
     { key: 'register', label: 'Change register', show: can('EMPLOYEES') },
   ].filter((s) => s.show)
@@ -26,9 +31,10 @@ export function PayCareerPage() {
   const OLD: Record<string, string> = { others: 'register', all: 'register', requests: 'raise' }
   const asked = OLD[params.get('view') ?? ''] ?? params.get('view')
   // (until accounts.me answers - a hard refresh - the asked section is kept, so the page does not open Overview first)
-  const view = sections.find((s) => s.key === asked)?.key ?? (!ready && (asked === 'raise' || asked === 'register') ? asked : 'mine')
+  const view = sections.find((s) => s.key === asked)?.key ?? (!ready && (asked === 'raise' || asked === 'register') ? asked : (sections[0]?.key ?? 'mine'))
   // a new section starts without the other's filters
   const go = (key: string) => setParams(key === 'mine' ? {} : { view: key }, { replace: true })
+  if (portal === 'manage' && ready && !sections.length) return <Navigate to="/manage" replace />
 
   return (
     <div className="space-y-3">
@@ -64,6 +70,9 @@ export function PayCareerPage() {
             <RaiseChangeView />
           ) : view === 'register' ? (
             <ChangeRegisterView />
+          ) : portal === 'manage' ? (
+            // the role portal before accounts.me answers: its sections are lists of changes
+            <ChangeListSkeleton label="Loading the changes" />
           ) : me ? (
             <OverviewView employeeCode={me.employeeCode} />
           ) : (

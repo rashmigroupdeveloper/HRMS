@@ -4106,7 +4106,8 @@ leave year is the calendar year.
 
 ### `approvals.export`
 - **HTTP:** `POST /api/rpc/approvals/export` · **Code:** `backend/src/modules/approvals/`
-- **Access:** Logged in; held mode additionally Approval chains: Edit.
+- **Access:** Logged in; held mode additionally Approval chains: Edit. The waiting / decided / mine lists are per portal, as
+  `listToDecide` / `listDecided` / `listMine` (2026-11-25).
 - **Scope:** Same readers as the corresponding inbox tab: named relationships, selected-role approver pools, own requests or held requests within Approval chains Edit data access.
 - **Input:** `{ mode, feature? }`: mode waiting/decided/mine/held; feature optional string up to 50 characters.
 - **Returns:** Excel File with report data and Review notes. Request identifiers, employee, kind, summary, status, raised-by/time, open step, due date, hold and close details, plus your decision status/time/comment where present. Mine is latest 100; decided latest 200, then narrowed by feature, matching the page. Other modes export their complete authorized list.

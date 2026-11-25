@@ -12,6 +12,7 @@ import { EmployeeProfilePage } from '@/pages/employees/EmployeeProfilePage'
 import { MyProfilePage } from '@/pages/employees/MyProfilePage'
 import { PeoplePage } from '@/pages/employees/PeoplePage'
 import { HomePage } from '@/pages/home/HomePage'
+import { ManageHomePage } from '@/pages/home/ManageHomePage'
 import { AttendanceSetupPage } from '@/pages/attendance/AttendanceSetupPage'
 import { MyAttendancePage } from '@/pages/attendance/MyAttendancePage'
 import { TeamAttendancePage } from '@/pages/attendance/TeamAttendancePage'
@@ -107,7 +108,7 @@ export const router = createBrowserRouter([
             path: 'manage',
             element: <RequirePortal portal="manage" />,
             children: [
-              { index: true, element: <HomePage /> },
+              { index: true, element: <ManageHomePage /> },
               { path: 'employees', element: <PeoplePage /> },
               { path: 'employees/:employeeCode', element: <EmployeeProfilePage /> },
               { path: 'joining-tasks', element: <JoiningTasksPage /> },

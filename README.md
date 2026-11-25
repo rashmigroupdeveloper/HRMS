@@ -140,17 +140,21 @@ HRMS_NEW/
                            offer-response/ the candidate's public offer page + their joining form after accepting, not-found/)
 ```
 
-## Home and attendance reports (2026-11-24)
+## Two portals, home and attendance reports (2026-11-24, portals 2026-11-25)
 
-Home adapts to the active role's capabilities and actual team/HOD relationships: employees see their attendance
-cycle, managers see decisions and scoped People today, HR sees open joining tasks and accepted offers awaiting joining,
-and administrators get their permitted administration links first. Own leave, recent requests and profile/documents
-remain available. The cream/charcoal/gold layout follows Crextio's composition: a wide light work column beside a
-narrower charcoal role focus (joining work, team attendance or own attendance), with grouped personal tools below.
-On phones the work list and role focus precede personal tools. Business priorities come from main. Decision data
-loads alongside the attendance overview; known HR/admin layouts do not wait for that overview.
-It reuses existing typed APIs, without schema changes, role-name checks or invented payroll/KPI values. Switching
-roles reloads once; an already-active role does not restart the switch transition.
+Everyone signs in to **Employee self-service** (`/ess/...`): one's own attendance, leave, pay & career, profile and
+requests, plus one's team and HOD department (team attendance and leave, the steps named to them on Approvals). Picking a
+role in the account menu opens the **role portal** (`/manage/...`): the role's pages, its approval steps and the requests
+raised for others; its lists show the role's records plus one's own team. One's own actions (leave, comp-off,
+regularizations, shift changes, own documents) are refused there. Each browser tab keeps its own choice; a page of the
+other portal shows a switch screen and comes back to it, and the old addresses redirect.
+
+The self-service home (`/ess`) shows the employee's attendance cycle, leave, recent requests and details - for a manager
+or HOD also the decisions named to them and their People today. The role home (`/manage`) shows the role's pages,
+its decisions, open joining tasks and accepted offers (Onboarding), People today in its access and the requests raised for
+others. The cream/charcoal/gold layout follows Crextio's composition: a wide light work column beside a narrower
+charcoal focus. Business priorities come from main. Both reuse existing typed APIs, without schema changes, role-name
+checks or invented payroll/KPI values. Switching reloads once at the new portal.
 
 `/attendance-reports` shows attendance detail and exceptions over explicit calendar work dates. People scope, dates,
 search, company/plant/department/status and exception filters persist in the URL. Summaries cover every matching page;
