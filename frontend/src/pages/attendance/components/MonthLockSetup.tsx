@@ -4,26 +4,30 @@ import { Lock, LockOpen } from 'lucide-react'
 import { useState } from 'react'
 import { DialogCancel, FormDialog } from '@/components/FormDialog'
 import { FormError } from '@/components/FormError'
-import { Pill } from '@/components/Pill'
 import { LockChecklistSkeleton } from '@/components/skeletons/attendance/LockChecklistSkeleton'
+import { CycleStartSkeleton, MonthTilesSkeleton } from '@/components/skeletons/attendance/MonthLockSkeleton'
 import { ReasonDialog } from '@/components/ReasonDialog'
 import { Button } from '@/components/ui/button'
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
 import { cn, errorMessage, formatDate, formatDoneBy, todayDay } from '@/lib/utils'
+import { CYCLE_HINT, CYCLE_LABEL, FILTER_SELECT, LOCK_HINT, SETUP_ICONS } from './labels'
+import { SetupCard } from './SetupCard'
 
 type MonthRow = Awaited<ReturnType<typeof client.attendance.locks.months>>['months'][number]
-type CardProps = { title: string; hint?: string; action?: React.ReactNode; children: React.ReactNode }
+
+// "26 Oct" - a day of a month's range on its tile
+const shortDay = (d: Date) => d.toLocaleDateString('en-IN', { timeZone: 'UTC', day: 'numeric', month: 'short' })
 
 // The attendance month lock (the user, 2026-11-22 - for payroll): one lock for the whole group (Attendance setup Edit for all
-// companies). Each attendance month of a year (RML: the 26th to the 25th) with its state; "Lock" shows what is still open
-// (a warning - it does not block), works the month out once more and locks it; "Open again" needs a reason. The month's
-// start day is set here too (not while a month is locked).
-export function MonthLockSetup({ card: Card }: { card: (props: CardProps) => React.ReactNode }) {
+// companies). Each attendance month of a year (RML: the 26th to the 25th) as a tile with its state - locked quiet grey, over
+// and still open soft gold (the one to act on), not over yet hatched (the redesign, 2026-11-25); "Lock" shows what is still open (a warning - it does not
+// block), works the month out once more and locks it; "Open again" needs a reason. The month's start day is set at the
+// foot of the card (not while a month is locked).
+export function MonthLockSetup() {
   const queryClient = useQueryClient()
   const [year, setYear] = useState(todayDay().getUTCFullYear())
   const canChange = useAccess().coversGroup('ATTENDANCE_SETUP')
@@ -32,83 +36,85 @@ export function MonthLockSetup({ card: Card }: { card: (props: CardProps) => Rea
   const [opening, setOpening] = useState<MonthRow | null>(null)
   const refresh = () => void queryClient.invalidateQueries({ queryKey: orpc.attendance.key() })
   const unlock = useMutation(orpc.attendance.locks.unlock.mutationOptions({ onSuccess: () => (refresh(), setOpening(null)) }))
-  const range = (m: MonthRow) => `${formatDate(m.from)} – ${formatDate(m.to)}`
+  const lockedCount = months.data?.months.filter((m) => m.locked).length
 
   if (!canChange) {
     return (
-      <Card title="Month lock">
+      <SetupCard icon={SETUP_ICONS.lock} title="Month lock">
         <p className="text-sm text-muted-foreground">Locking a month is for the whole group - it needs Attendance setup: Edit for all companies.</p>
-      </Card>
+      </SetupCard>
     )
   }
   return (
-    <div className="space-y-3">
-      <Card
-        title="Month lock"
-        hint="A locked month does not change any more - its days are not worked out again, and punches, corrections, roster days and shift changes for it are refused. For payroll. One lock for every company."
-        action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!months.data || months.isFetching} load={() => client.attendance.exportSetup({section:'locks',year})} />
-          <NativeSelect className="[&_select]:h-9 [&_select]:rounded-full" aria-label="Year" value={String(year)} onChange={(e) => setYear(Number(e.target.value))}>
+    <SetupCard
+      icon={SETUP_ICONS.lock}
+      title="Month lock"
+      count={lockedCount === undefined ? undefined : `${lockedCount} locked`}
+      summary="A locked month no longer changes - for payroll, one lock for every company"
+      hint={LOCK_HINT}
+      action={
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportButton disabled={!months.data || months.isFetching} load={() => client.attendance.exportSetup({ section: 'locks', year })} />
+          <NativeSelect className={FILTER_SELECT} aria-label="Year" value={String(year)} onChange={(e) => setYear(Number(e.target.value))}>
             {[year - 1, year, year + 1].map((y) => (
               <NativeSelectOption key={y} value={String(y)}>
                 {y}
               </NativeSelectOption>
             ))}
-          </NativeSelect></div>
-        }
-      >
-        <FormError error={months.error ?? unlock.error} />
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Month</TableHead>
-              <TableHead className="hidden sm:table-cell">Days</TableHead>
-              <TableHead>State</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {months.data?.months.map((m) => (
-              <TableRow key={m.month}>
-                <TableCell className="font-medium">{m.name}</TableCell>
-                <TableCell className="hidden text-sm tabular-nums sm:table-cell">{range(m)}</TableCell>
-                <TableCell className="text-sm">
-                  {m.locked ? (
-                    <span className="flex flex-wrap items-center gap-1.5">
-                      <Pill tone="info">
-                        <Lock className="size-3" /> Locked
-                      </Pill>
-                      <span className="text-xs text-muted-foreground">{formatDoneBy(m.locked.at, m.locked.by)}</span>
-                    </span>
-                  ) : m.ended ? (
-                    <Pill tone="neutral">Open</Pill>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Not over yet</span>
-                  )}
-                  {m.reopened.length > 0 && (
-                    <span className="mt-0.5 block text-xs text-muted-foreground">
-                      Opened again {m.reopened.length}× - last: {m.reopened[0]!.reason}
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  {m.locked ? (
-                    <Button variant="ghost" size="sm" onClick={() => setOpening(m)}>
-                      <LockOpen /> Open again
+          </NativeSelect>
+        </div>
+      }
+    >
+      <FormError error={months.error ?? unlock.error} />
+      {months.isPending && <MonthTilesSkeleton label="Loading the months" />}
+      {months.data && (
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          {months.data.months.map((m) => (
+            <li
+              key={m.month}
+              className={cn(
+                'flex min-w-0 flex-col justify-between gap-2 rounded-2xl p-3',
+                m.locked ? 'bg-surface-2' : m.ended ? 'bg-gold-soft' : 'u-hatch ring-1 ring-border ring-inset',
+              )}
+            >
+              <div className="min-w-0">
+                <p className="flex items-center justify-between gap-1 text-sm font-medium">
+                  <span className="truncate">{m.name}</span>
+                  {m.locked && <Lock aria-label="Locked" className="size-3.5 shrink-0 text-muted-foreground" />}
+                </p>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {shortDay(m.from)} – {shortDay(m.to)}
+                </p>
+              </div>
+              <div className="min-w-0 space-y-1.5">
+                {m.locked ? (
+                  <p className="text-xs text-muted-foreground">Locked {formatDoneBy(m.locked.at, m.locked.by)}</p>
+                ) : (
+                  <p className={cn('text-xs', m.ended ? 'font-medium' : 'text-muted-foreground')}>{m.ended ? 'Over - not locked yet' : 'Not over yet'}</p>
+                )}
+                {m.reopened.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Opened again {m.reopened.length}× - last: {m.reopened[0]!.reason}
+                  </p>
+                )}
+                {m.locked ? (
+                  <Button variant="ghost" size="sm" className="-ml-2 hover:bg-card" onClick={() => setOpening(m)}>
+                    <LockOpen /> Open again
+                  </Button>
+                ) : (
+                  m.ended && (
+                    <Button variant="outline" size="sm" className="bg-card" onClick={() => setLocking(m)}>
+                      <Lock /> Lock
                     </Button>
-                  ) : (
-                    m.ended && (
-                      <Button variant="secondary" size="sm" onClick={() => setLocking(m)}>
-                        <Lock /> Lock
-                      </Button>
-                    )
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
-      {months.data && <CycleStart current={months.data.cycleStartDay} anyLocked={months.data.months.some((m) => m.locked)} onSaved={refresh} card={Card} />}
+                  )
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {months.isPending && <CycleStartSkeleton />}
+      {months.data && <CycleStart current={months.data.cycleStartDay} anyLocked={months.data.months.some((m) => m.locked)} onSaved={refresh} />}
       {locking && <LockDialog month={locking} onClose={() => setLocking(null)} onLocked={refresh} />}
       {opening && (
         <ReasonDialog
@@ -123,7 +129,7 @@ export function MonthLockSetup({ card: Card }: { card: (props: CardProps) => Rea
           onClose={() => setOpening(null)}
         />
       )}
-    </div>
+    </SetupCard>
   )
 }
 
@@ -177,23 +183,23 @@ function LockDialog({ month, onClose, onLocked }: { month: MonthRow; onClose: ()
   )
 }
 
-// The day an attendance month starts (1 = the calendar month; RML: 26)
-function CycleStart({ current, anyLocked, onSaved, card: Card }: { current: number; anyLocked: boolean; onSaved: () => void; card: (props: CardProps) => React.ReactNode }) {
+// The day an attendance month starts (1 = the calendar month; RML: 26) - a row at the foot of the month lock's card
+function CycleStart({ current, anyLocked, onSaved }: { current: number; anyLocked: boolean; onSaved: () => void }) {
   const [day, setDay] = useState(String(current))
   const save = useMutation(orpc.attendance.locks.setCycleStart.mutationOptions({ onSuccess: onSaved }))
   return (
-    <Card title="Attendance month" hint="The day each attendance month starts - e.g. 26: “November” is 26 Oct – 25 Nov; 1: the calendar month. The muster, the month views, the late count and the lock follow it.">
-      <div className="flex flex-wrap items-center gap-2">
-        <label htmlFor="cycle-start" className="text-sm">
-          Starts on day
+    <div className="space-y-2 border-t border-border/60 pt-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <label htmlFor="cycle-start" className="text-sm font-medium">
+          {CYCLE_LABEL}
         </label>
         <Input id="cycle-start" type="number" min={1} max={28} className="h-9 w-20 rounded-xl" value={day} onChange={(e) => setDay(e.target.value)} />
         <Button variant="secondary" size="sm" disabled={anyLocked || save.isPending || Number(day) === current || !(Number(day) >= 1 && Number(day) <= 28)} onClick={() => save.mutate({ cycleStartDay: Number(day) })}>
           Save
         </Button>
-        {anyLocked && <span className="text-xs text-muted-foreground">Open the locked months again to change it.</span>}
+        <span className="text-xs text-muted-foreground">{anyLocked ? 'Open the locked months again to change it.' : CYCLE_HINT}</span>
       </div>
       <FormError error={save.error} />
-    </Card>
+    </div>
   )
 }

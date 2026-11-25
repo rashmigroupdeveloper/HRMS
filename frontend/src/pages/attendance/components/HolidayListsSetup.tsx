@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus, Search } from 'lucide-react'
+import { Factory, ListChecks, Pencil, Plus, Search, Tags } from 'lucide-react'
 import { useState } from 'react'
 import { EmptyState } from '@/components/EmptyState'
 import { DialogCancel, FormDialog } from '@/components/FormDialog'
 import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
 import { SharedListNote } from '@/components/SharedListNote'
-import { FillMissingSkeleton, HolidayCategoryRowsSkeleton, HolidayListRowsSkeleton, PlantCoverageSkeleton, PlantDefaultRowsSkeleton } from '@/components/skeletons/attendance/HolidayListsSkeleton'
+import { FillMissingSkeleton, HolidayCategoryRowsSkeleton, HolidayListRowsSkeleton, PlantDefaultRowsSkeleton } from '@/components/skeletons/attendance/HolidayListsSkeleton'
 import { Button } from '@/components/ui/button'
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -16,27 +16,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAccess } from '@/hooks/useAccess'
 import { cn } from '@/lib/utils'
 import { client, orpc } from '@/lib/orpc'
-import { HOLIDAY_TONES, toneOf } from './labels'
+import { FILTER_SEARCH, FILTER_SELECT, HOLIDAY_TONES, toneOf } from './labels'
+import { SetupCard } from './SetupCard'
 
 // Holiday lists, the plants' default lists and the holiday categories (the user, 2026-11-24) - shown under the setup's
 // Holidays. A list belongs to one company (Attendance setup Edit for that whole company) or every company (Edit for all
 // companies); a plant's default needs Edit for that whole plant; the categories are shared by every company.
 
-type CardProps = { title: string; hint?: string; action?: React.ReactNode; children: React.ReactNode }
 type HolidayList = Awaited<ReturnType<typeof client.attendance.holidayLists.list>>[number]
 type Category = Awaited<ReturnType<typeof client.attendance.holidayCategories.list>>[number]
 type Plant = Awaited<ReturnType<typeof client.organization.plants.list>>[number]
 type HolidayTone = Category['tone']
 
-export function HolidayListsSetup({ card }: { card: (props: CardProps) => React.ReactNode }) {
+export function HolidayListsSetup() {
   return (
     <>
       {/* min-w-0: a card never grows wider than its column (the phone's screen) */}
       <div className="grid gap-3 lg:grid-cols-[3fr_2fr] [&>*]:min-w-0">
-        <Lists card={card} />
-        <Categories card={card} />
+        <Lists />
+        <Categories />
       </div>
-      <PlantDefaults card={card} />
+      <PlantDefaults />
     </>
   )
 }
@@ -54,15 +54,18 @@ const invalidate = (queryClient: ReturnType<typeof useQueryClient>) => {
 
 // --- holiday lists ---
 
-function Lists({ card: Card }: { card: (props: CardProps) => React.ReactNode }) {
+function Lists() {
   const lists = useQuery(orpc.attendance.holidayLists.list.queryOptions({ input: { includeInactive: true } }))
   const companies = useQuery(orpc.organization.companies.list.queryOptions())
   const mayChange = useMayChangeList()
   const canAdd = mayChange(null) || !!companies.data?.some((c) => mayChange(c.id))
   const [editing, setEditing] = useState<HolidayList | 'new' | null>(null)
   return (
-    <Card
+    <SetupCard
+      icon={ListChecks}
       title="Holiday lists"
+      count={lists.data?.filter((l) => l.isActive).length}
+      summary="Each employee follows one list and gets its holidays"
       hint="Each employee follows one list and gets its holidays - two people at the same plant may follow different lists. A list is one company's, or every company's."
       action={
         canAdd && (
@@ -80,7 +83,7 @@ function Lists({ card: Card }: { card: (props: CardProps) => React.ReactNode }) 
             <TableHead>List</TableHead>
             <TableHead className="sm:w-32">Company</TableHead>
             <TableHead className="hidden sm:table-cell sm:w-40">Default for</TableHead>
-            <TableHead className="sm:w-24" />
+            <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -99,8 +102,8 @@ function Lists({ card: Card }: { card: (props: CardProps) => React.ReactNode }) 
               <TableCell className="hidden text-xs text-muted-foreground sm:table-cell">{l.defaultPlants.map((p) => p.plantCode).join(', ') || '—'}</TableCell>
               <TableCell className="text-right">
                 {mayChange(l.companyId) && (
-                  <Button variant="ghost" size="sm" onClick={() => setEditing(l)}>
-                    <Pencil /> Edit
+                  <Button variant="ghost" size="icon" aria-label={`Edit ${l.name}`} title="Edit" onClick={() => setEditing(l)}>
+                    <Pencil />
                   </Button>
                 )}
               </TableCell>
@@ -109,7 +112,7 @@ function Lists({ card: Card }: { card: (props: CardProps) => React.ReactNode }) 
         </TableBody>
       </Table>
       {editing && <ListDialog list={editing === 'new' ? null : editing} mayChange={mayChange} onClose={() => setEditing(null)} />}
-    </Card>
+    </SetupCard>
   )
 }
 
@@ -176,13 +179,15 @@ function ListDialog({ list, mayChange, onClose }: { list: HolidayList | null; ma
 
 // --- holiday categories ---
 
-function Categories({ card: Card }: { card: (props: CardProps) => React.ReactNode }) {
+function Categories() {
   const categories = useQuery(orpc.attendance.holidayCategories.list.queryOptions({ input: { includeInactive: true } }))
   const canChange = useAccess().coversGroup('ATTENDANCE_SETUP')
   const [editing, setEditing] = useState<Category | 'new' | null>(null)
   return (
-    <Card
+    <SetupCard
+      icon={Tags}
       title="Holiday categories"
+      summary="National, Festival… - each in its colour"
       hint="Labels for holidays - National, Festival, Election… - each in its colour on the calendars."
       action={
         canChange && (
@@ -204,15 +209,15 @@ function Categories({ card: Card }: { card: (props: CardProps) => React.ReactNod
               {!c.isActive && <span className="text-xs text-muted-foreground">Retired</span>}
             </span>
             {canChange && (
-              <Button variant="ghost" size="sm" onClick={() => setEditing(c)}>
-                <Pencil /> Edit
+              <Button variant="ghost" size="icon" aria-label={`Edit ${c.name}`} title="Edit" onClick={() => setEditing(c)}>
+                <Pencil />
               </Button>
             )}
           </li>
         ))}
       </ul>
       {editing && <CategoryDialog category={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
-    </Card>
+    </SetupCard>
   )
 }
 
@@ -269,7 +274,7 @@ function CategoryDialog({ category, onClose }: { category: Category | null; onCl
 
 // --- the plants' default lists ---
 
-function PlantDefaults({ card: Card }: { card: (props: CardProps) => React.ReactNode }) {
+function PlantDefaults() {
   const plants = useQuery(orpc.organization.plants.list.queryOptions())
   const lists = useQuery(orpc.attendance.holidayLists.list.queryOptions({ input: { includeInactive: true } }))
   const { coversWhole } = useAccess()
@@ -295,12 +300,15 @@ function PlantDefaults({ card: Card }: { card: (props: CardProps) => React.React
     }),
   )
   return (
-    <Card
+    <SetupCard
+      icon={Factory}
       title="Plants' default lists"
+      count={plants.data && lists.data ? `${withDefault} of ${plants.data.length} set` : undefined}
+      summary="The list given to people who join the plant"
       hint="The list offered when someone joins the plant, and given by “Fill in” to its employees without a list. HR changes a person's list on Schedules; moving plant keeps it."
       action={
         <div className="flex flex-wrap items-center gap-2">
-          <NativeSelect aria-label="Company" className="[&_select]:h-9 [&_select]:rounded-full" value={companyId} disabled={!plants.data || !!term} onChange={(e) => setPicked(e.target.value)}>
+          <NativeSelect aria-label="Company" className={FILTER_SELECT} value={companyId} disabled={!plants.data || !!term} onChange={(e) => setPicked(e.target.value)}>
             <NativeSelectOption value="">Every company</NativeSelectOption>
             {companies.map((c) => (
               <NativeSelectOption key={c.id} value={String(c.id)}>
@@ -310,18 +318,12 @@ function PlantDefaults({ card: Card }: { card: (props: CardProps) => React.React
           </NativeSelect>
           <div className="relative">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input aria-label="Search every plant" className="h-9 w-44 rounded-full pl-9" placeholder="Any plant" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input aria-label="Search every plant" className={cn(FILTER_SEARCH, 'w-44')} placeholder="Any plant" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
       }
     >
       <FormError error={plants.error ?? lists.error ?? missing.error ?? fill.error} />
-      {(plants.isPending || lists.isPending) && <PlantCoverageSkeleton />}
-      {plants.data && lists.data && (
-        <p className="h-4 text-xs text-muted-foreground">
-          {withDefault} of {plants.data.length} plants have a default list
-        </p>
-      )}
       {/* employees without a list get no holidays: offered to fill in from their plants' defaults (2026-11-24) */}
       {canEdit && missing.isPending && <FillMissingSkeleton />}
       {missing.data && missing.data.withoutList > 0 && (
@@ -351,7 +353,7 @@ function PlantDefaults({ card: Card }: { card: (props: CardProps) => React.React
             <TableHead>Plant</TableHead>
             <TableHead className="hidden sm:table-cell sm:w-32">Company</TableHead>
             <TableHead className="sm:w-56">Default list</TableHead>
-            <TableHead className="sm:w-24" />
+            <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -371,8 +373,8 @@ function PlantDefaults({ card: Card }: { card: (props: CardProps) => React.React
                 <TableCell className="whitespace-normal">{defaultOf(p.id)?.name ?? <span className="text-muted-foreground">None yet</span>}</TableCell>
                 <TableCell className="text-right">
                   {coversWhole('ATTENDANCE_SETUP', 'WRITE', { companyId: p.company.id, plantId: p.id }) && (
-                    <Button variant="ghost" size="sm" onClick={() => setEditing(p)}>
-                      <Pencil /> Edit
+                    <Button variant="ghost" size="icon" aria-label={`Edit ${p.plantCode}`} title="Edit" onClick={() => setEditing(p)}>
+                      <Pencil />
                     </Button>
                   )}
                 </TableCell>
@@ -381,7 +383,7 @@ function PlantDefaults({ card: Card }: { card: (props: CardProps) => React.React
         </TableBody>
       </Table>
       {editing && lists.data && <PlantDefaultDialog plant={editing} lists={lists.data} current={defaultOf(editing.id) ?? null} onClose={() => setEditing(null)} />}
-    </Card>
+    </SetupCard>
   )
 }
 

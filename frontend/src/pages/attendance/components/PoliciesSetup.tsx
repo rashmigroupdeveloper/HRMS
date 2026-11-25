@@ -16,7 +16,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
 import { formatDate, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
-import { hours } from './labels'
+import { hours, SETUP_ICONS } from './labels'
+import { SetupCard } from './SetupCard'
 
 type Policy = Awaited<ReturnType<typeof client.attendance.policies.list>>[number]
 
@@ -25,7 +26,7 @@ type Policy = Awaited<ReturnType<typeof client.attendance.policies.list>>[number
 // late in / very early out making that half absent. Given on an employee's schedule; without one, the default policy.
 // Shared by every company: changing them needs Attendance setup Edit for all companies. Dated (the user, 2026-11-23): a
 // change of the rules applies from a date - the days before keep the rules they had.
-export function PoliciesSetup({ card: Card }: { card: (props: { title: string; hint?: string; action?: React.ReactNode; children: React.ReactNode }) => React.ReactNode }) {
+export function PoliciesSetup() {
   const policies = useQuery(orpc.attendance.policies.list.queryOptions({ input: { includeInactive: true } }))
   const canChange = useAccess().coversGroup('ATTENDANCE_SETUP')
   const [editing, setEditing] = useState<Policy | 'new' | null>(null)
@@ -36,14 +37,21 @@ export function PoliciesSetup({ card: Card }: { card: (props: { title: string; h
       p.veryEarlyMinutes !== null && `out > ${hours(p.veryEarlyMinutes)} early = second half absent`,
     ].filter(Boolean)
   return (
-    <Card
+    <SetupCard
+      icon={SETUP_ICONS.policies}
       title="Attendance policies"
+      count={policies.data?.filter((p) => p.isActive).length}
+      summary="The rules a day is judged by - grace, full and half day, lates"
       hint="The rules a day is judged by: grace, the hours from the first punch in to the last out for a full and a half day, and the late rules. Given on an employee's schedule - without one, the default policy. A change applies from a date you choose; the days before keep the rules they had."
-      action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!policies.data?.length || policies.isFetching} load={() => client.attendance.exportSetup({section:'policies'})} />{canChange && (
-          <Button variant="gold" size="sm" onClick={() => setEditing('new')}>
-            <Plus /> Add a policy
-          </Button>
-        )}</div>
+      action={
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportButton disabled={!policies.data?.length || policies.isFetching} load={() => client.attendance.exportSetup({ section: 'policies' })} />
+          {canChange && (
+            <Button variant="gold" size="sm" onClick={() => setEditing('new')}>
+              <Plus /> Add a policy
+            </Button>
+          )}
+        </div>
       }
     >
       <SharedListNote area="ATTENDANCE_SETUP" label="Attendance setup" what="changing the policies" />
@@ -56,7 +64,7 @@ export function PoliciesSetup({ card: Card }: { card: (props: { title: string; h
             <TableHead>Grace</TableHead>
             <TableHead>Full / half day</TableHead>
             <TableHead className="hidden md:table-cell">Late rules</TableHead>
-            <TableHead />
+            <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -72,15 +80,27 @@ export function PoliciesSetup({ card: Card }: { card: (props: { title: string; h
                 </span>
                 {sinceText(p.from) && <span className="block text-xs text-muted-foreground">{sinceText(p.from)}</span>}
               </TableCell>
-              <TableCell className="tabular-nums">{p.graceMinutes}m</TableCell>
+              <TableCell className="tabular-nums">{p.graceMinutes} min</TableCell>
               <TableCell className="tabular-nums">
                 {p.fullDayMinutes === null ? 'whole shift' : hours(p.fullDayMinutes)} / {hours(p.halfDayMinutes)}
               </TableCell>
-              <TableCell className="hidden text-xs text-muted-foreground md:table-cell">{rules(p).join(' · ') || '—'}</TableCell>
+              <TableCell className="hidden md:table-cell">
+                {rules(p).length ? (
+                  <span className="flex flex-wrap gap-1">
+                    {rules(p).map((rule) => (
+                      <span key={String(rule)} className="rounded-full bg-surface-2 px-2.5 py-1 text-xs text-foreground/80">
+                        {rule}
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
+              </TableCell>
               <TableCell className="text-right">
                 {canChange && (
-                  <Button variant="ghost" size="sm" onClick={() => setEditing(p)}>
-                    <Pencil /> Edit
+                  <Button variant="ghost" size="icon" aria-label={`Edit ${p.name}`} title="Edit" onClick={() => setEditing(p)}>
+                    <Pencil />
                   </Button>
                 )}
               </TableCell>
@@ -89,7 +109,7 @@ export function PoliciesSetup({ card: Card }: { card: (props: { title: string; h
         </TableBody>
       </Table>
       {editing && <PolicyDialog policy={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
-    </Card>
+    </SetupCard>
   )
 }
 
