@@ -1,7 +1,7 @@
 import { AttendanceReportsPage } from '@/pages/attendance/AttendanceReportsPage'
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { RequireAccess, RequireLogin } from '@/components/RouteGuards'
+import { MovedToPortal, PortalHome, RequireAccess, RequireLogin, RequirePortal } from '@/components/RouteGuards'
 import { RolesPage } from '@/pages/access/RolesPage'
 import { ApprovalChainsPage } from '@/pages/approval-chains/ApprovalChainsPage'
 import { ApprovalsPage } from '@/pages/approvals/ApprovalsPage'
@@ -36,23 +36,40 @@ import { MyDepartmentPage } from '@/pages/my-department/MyDepartmentPage'
 //   /offer/:token - public: the candidate's own offer page (the secret link from the offer e-mail is the key)
 //   /joining-form/:token   - public: the candidate's joining form after accepting (same secret link + a one-time code)
 //   everything    - needs a logged-in employee (RequireLogin); with a temporary password -> /change-password first
-//   /change-password       - any logged-in employee
-//   /me                    - the employee's own profile (any logged-in employee)
-//   /employees/:code       - HR's view of a profile: Employees: View (checked in the page, after sending one's own
-//                            code to /me); the backend checks every request too
-//   /employees             - any logged-in employee: the directory + org chart; the records tab: Employees: View
-//   /organization          - Organization: View, or HOD appointments: View (the Department heads tab only)
-//   /my-department         - any logged-in employee; shows the employees whose HOD they are (none: an empty page)
-//   /onboarding   - also needs view access to ONBOARDING (RequireAccess); others are sent to / (health page)
-//   /onboarding/:id        - one candidate on its own page (Onboarding: View; changing needs Onboarding: Edit)
-//   /access       - also needs view access to ACCESS (roles and who has them)
-//   /attendance            - one's own attendance (everyone); /team-attendance - others' (a team, an HOD department or
-//                            Attendance: View); /attendance-setup - Attendance setup: View (2026-11-22)
-//   /leave                 - one's own leave (everyone); /team-leave - others' (a team, an HOD department or Leave: View);
-//                            /holidays - one's own holiday list's holidays (everyone - 2026-11-25)
-//   /change-history        - Change history: View (who changed what and when; one employee's history is on the profile)
-//   /letter-templates      - Letter templates: View (the wording of the offer letter)
-//   /letter-templates/new, /letter-templates/:id - one template on its own page (changing it needs Letter templates: Edit)
+//   /change-password       - any logged-in employee, in either portal
+//   /                      - the home of this tab's portal
+//
+// Two portals (the user, 2026-11-25), each page under its own address; opened in the other portal -> the switch screen
+// (RequirePortal). Everyone signs in to Employee self-service; picking a role in the account menu opens the role portal.
+//   /ess/...      Employee self-service - no role active: one's own record and actions, one's team and HOD department
+//     /ess                 - home
+//     /ess/me              - the employee's own profile
+//     /ess/attendance      - one's own attendance; /ess/team-attendance, /ess/attendance-reports - one's reporting tree
+//                            and HOD department (nobody to see: back to /ess/attendance)
+//     /ess/leave           - one's own leave; /ess/holidays - one's holiday list's holidays; /ess/team-leave - one's team's
+//     /ess/pay-career      - one's own job and salary
+//     /ess/employees       - the directory + org chart
+//     /ess/my-department   - the employees whose HOD they are (none: an empty page)
+//     /ess/approvals       - the steps named to them (manager, HOD) and their own requests
+//   /manage/...   the role portal - a role active; each page also needs its area (RequireAccess or in the page). Its
+//                 lists show the role's records plus one's own team (the user, 2026-11-25)
+//     /manage                      - home
+//     /manage/employees            - the directory, org chart, HR's employee records (Employees: View) and joiners & leavers
+//     /manage/employees/:code      - HR's view of a profile: Employees: View (one's own code goes to /ess/me)
+//     /manage/onboarding, /manage/onboarding/:id - Onboarding: View (changing needs Onboarding: Edit)
+//     /manage/joining-tasks        - Joining tasks or Onboarding view access - checked on the page
+//     /manage/team-attendance, /manage/attendance-reports - Attendance: View (and one's team)
+//     /manage/attendance-setup     - Attendance setup: View
+//     /manage/team-leave           - Leave: View (and one's team)
+//     /manage/pay-career           - raising job / salary changes, the change register
+//     /manage/approvals            - the role's steps and the requests raised for others
+//     /manage/organization         - Organization: View, or HOD appointments: View (the Department heads tab only)
+//     /manage/letter-templates[/new|/:id] - Letter templates: View (changing needs Letter templates: Edit)
+//     /manage/access               - Roles & access: View
+//     /manage/approval-chains      - Approval chains: View
+//     /manage/change-history       - Change history: View
+//   The addresses from before (/leave, /onboarding/:id, /approvals... - also in e-mails already sent) go to the same page in
+//   its portal (MovedToPortal); pages in both portals go to this tab's portal.
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
@@ -65,69 +82,88 @@ export const router = createBrowserRouter([
         path: '/',
         element: <AppLayout />,
         children: [
-          { index: true, element: <HomePage /> },
+          { index: true, element: <PortalHome /> },
           { path: 'change-password', element: <ChangePasswordPage /> },
-          { path: 'me', element: <MyProfilePage /> },
-          // everyone's own attendance (old ?tab= links go on to the two pages below - 2026-11-22)
-          { path: 'attendance', element: <MyAttendancePage /> },
-          // others' attendance: a team, an HOD department or Attendance: View (nobody to see: back to /attendance)
-          { path: 'team-attendance', element: <TeamAttendancePage /> },
-          { path: 'attendance-reports', element: <AttendanceReportsPage /> },
-          // everyone's own leave (2026-11-22); others' (a team, an HOD department or Leave: View - nobody to see: back to /leave)
-          { path: 'leave', element: <LeavePage /> },
-          { path: 'team-leave', element: <TeamLeavePage /> },
-          // everyone's own holidays (2026-11-25)
-          { path: 'holidays', element: <HolidaysPage /> },
-          { path: 'employees/:employeeCode', element: <EmployeeProfilePage /> },
-          // an HOD's own department (BACKLOG 3e) - read-only, no role needed
-          { path: 'my-department', element: <MyDepartmentPage /> },
-          // Joining tasks or Onboarding view access - checked on the page
-          { path: 'joining-tasks', element: <JoiningTasksPage /> },
-          // everyone: what waits for my decision, and what I raised (2026-11-20)
-          { path: 'approvals', element: <ApprovalsPage /> },
-          // everyone: their own job and salary; the other sidebar items follow the access (2026-11-21, was /job-changes, then /jobs-salary)
-          { path: 'pay-career', element: <PayCareerPage /> },
-          { path: 'job-changes', element: <Navigate to="/pay-career?view=register" replace /> },
-          // "Jobs & salary" until 2026-11-21 (renamed Pay & career)
-          { path: 'jobs-salary', element: <Navigate to="/pay-career" replace /> },
-          // everyone: the company directory and org chart; HR's employee records are a tab inside (Employee · Directory &
-          // job: View - 2026-11-21, the page needed that access before)
-          { path: 'employees', element: <PeoplePage /> },
           {
-            element: <RequireAccess area={['ORGANIZATION', 'HOD_APPOINTMENTS']} />,
-            children: [{ path: 'organization', element: <OrganizationPage /> }],
-          },
-          {
-            element: <RequireAccess area="ONBOARDING" />,
+            path: 'ess',
+            element: <RequirePortal portal="ess" />,
             children: [
-              { path: 'onboarding', element: <OnboardingPage /> },
-              { path: 'onboarding/:id', element: <CandidatePage /> },
+              { index: true, element: <HomePage /> },
+              { path: 'me', element: <MyProfilePage /> },
+              { path: 'attendance', element: <MyAttendancePage /> },
+              { path: 'team-attendance', element: <TeamAttendancePage /> },
+              { path: 'attendance-reports', element: <AttendanceReportsPage /> },
+              { path: 'leave', element: <LeavePage /> },
+              { path: 'holidays', element: <HolidaysPage /> },
+              { path: 'team-leave', element: <TeamLeavePage /> },
+              { path: 'pay-career', element: <PayCareerPage /> },
+              { path: 'employees', element: <PeoplePage /> },
+              { path: 'my-department', element: <MyDepartmentPage /> },
+              { path: 'approvals', element: <ApprovalsPage /> },
+              { path: '*', element: <NotFoundPage /> },
             ],
           },
           {
-            element: <RequireAccess area="LETTER_TEMPLATES" />,
+            path: 'manage',
+            element: <RequirePortal portal="manage" />,
             children: [
-              { path: 'letter-templates', element: <LetterTemplatesPage /> },
-              { path: 'letter-templates/new', element: <LetterTemplatePage /> },
-              { path: 'letter-templates/:id', element: <LetterTemplatePage /> },
+              { index: true, element: <HomePage /> },
+              { path: 'employees', element: <PeoplePage /> },
+              { path: 'employees/:employeeCode', element: <EmployeeProfilePage /> },
+              { path: 'joining-tasks', element: <JoiningTasksPage /> },
+              { path: 'team-attendance', element: <TeamAttendancePage /> },
+              { path: 'attendance-reports', element: <AttendanceReportsPage /> },
+              { path: 'team-leave', element: <TeamLeavePage /> },
+              { path: 'pay-career', element: <PayCareerPage /> },
+              { path: 'approvals', element: <ApprovalsPage /> },
+              {
+                element: <RequireAccess area={['ORGANIZATION', 'HOD_APPOINTMENTS']} />,
+                children: [{ path: 'organization', element: <OrganizationPage /> }],
+              },
+              {
+                element: <RequireAccess area="ONBOARDING" />,
+                children: [
+                  { path: 'onboarding', element: <OnboardingPage /> },
+                  { path: 'onboarding/:id', element: <CandidatePage /> },
+                ],
+              },
+              {
+                element: <RequireAccess area="LETTER_TEMPLATES" />,
+                children: [
+                  { path: 'letter-templates', element: <LetterTemplatesPage /> },
+                  { path: 'letter-templates/new', element: <LetterTemplatePage /> },
+                  { path: 'letter-templates/:id', element: <LetterTemplatePage /> },
+                ],
+              },
+              {
+                element: <RequireAccess area="ACCESS" />,
+                children: [{ path: 'access', element: <RolesPage /> }],
+              },
+              {
+                element: <RequireAccess area="APPROVAL_CHAINS" />,
+                children: [{ path: 'approval-chains', element: <ApprovalChainsPage /> }],
+              },
+              {
+                element: <RequireAccess area="ATTENDANCE_SETUP" />,
+                children: [{ path: 'attendance-setup', element: <AttendanceSetupPage /> }],
+              },
+              {
+                element: <RequireAccess area="CHANGE_HISTORY" />,
+                children: [{ path: 'change-history', element: <ChangeHistoryPage /> }],
+              },
+              { path: '*', element: <NotFoundPage /> },
             ],
           },
-          {
-            element: <RequireAccess area="ACCESS" />,
-            children: [{ path: 'access', element: <RolesPage /> }],
-          },
-          {
-            element: <RequireAccess area="APPROVAL_CHAINS" />,
-            children: [{ path: 'approval-chains', element: <ApprovalChainsPage /> }],
-          },
-          {
-            element: <RequireAccess area="ATTENDANCE_SETUP" />,
-            children: [{ path: 'attendance-setup', element: <AttendanceSetupPage /> }],
-          },
-          {
-            element: <RequireAccess area="CHANGE_HISTORY" />,
-            children: [{ path: 'change-history', element: <ChangeHistoryPage /> }],
-          },
+          // the addresses from before the two portals (2026-11-25)
+          ...['me', 'attendance', 'leave', 'holidays', 'my-department'].map((path) => ({ path, element: <MovedToPortal portal="ess" /> })),
+          ...['employees/:employeeCode', 'onboarding', 'onboarding/:id', 'joining-tasks', 'organization', 'letter-templates', 'letter-templates/new', 'letter-templates/:id', 'access', 'approval-chains', 'attendance-setup', 'change-history'].map((path) => ({
+            path,
+            element: <MovedToPortal portal="manage" />,
+          })),
+          ...['employees', 'team-attendance', 'attendance-reports', 'team-leave', 'pay-career', 'approvals'].map((path) => ({ path, element: <MovedToPortal /> })),
+          // older names of Pay & career's sections (until 2026-11-21)
+          { path: 'job-changes', element: <Navigate to="/manage/pay-career?view=register" replace /> },
+          { path: 'jobs-salary', element: <Navigate to="/ess/pay-career" replace /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

@@ -25,7 +25,7 @@ export function ApprovalDrawer({ id, onClose }: { id: number; onClose: () => voi
   const { me, can } = useAccess()
   // the employee's profile - only for whoever may open it (the backend's `link` is the requester's own page for leave and
   // attendance, and a profile without Employees View bounced to the home page)
-  const profile = !r ? null : me?.employeeCode === r.employee.employeeCode ? '/me' : can('EMPLOYEES') ? `/employees/${r.employee.employeeCode}` : null
+  const profile = !r ? null : me?.employeeCode === r.employee.employeeCode ? '/ess/me' : can('EMPLOYEES') ? `/manage/employees/${r.employee.employeeCode}` : null
   // after a decision the request loads again: no second click on what it showed before (it would be refused)
   const settling = request.isFetching
   const jobChange = useQuery({ ...orpc.jobChanges.get.queryOptions({ input: { approvalRequestId: id } }), enabled: r?.feature === 'JOB_CHANGE' })

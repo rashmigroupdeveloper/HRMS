@@ -41,7 +41,7 @@ export function EmployeeJoiningTasks({ employeeCode }: { employeeCode: string })
             {(access.can('JOINING_TASKS') || access.can('ONBOARDING')) && (
               <>
                 {' '}
-                <Link to="/joining-tasks" className="underline underline-offset-2">
+                <Link to="/manage/joining-tasks" className="underline underline-offset-2">
                   Joining checklist
                 </Link>
               </>

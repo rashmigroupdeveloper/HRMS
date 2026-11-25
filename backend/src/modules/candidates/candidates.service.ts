@@ -648,7 +648,7 @@ export async function remindUnconfirmedJoining(days: number) {
   const recipients = await accountsService.mailRecipientsFor('ONBOARDING', 'WRITE', candidates.map((c) => ({ ...c, placement: placementOf(c) })))
   for (const { person, items } of recipients) {
     const lines = items.map(
-      (c) => `- ${[c.firstName, c.middleName, c.lastName].filter(Boolean).join(' ')} (${c.company.code}) - joining ${formatDate(c.proposedJoiningDate)}: ${env.APP_URL}/onboarding/${c.id}`,
+      (c) => `- ${[c.firstName, c.middleName, c.lastName].filter(Boolean).join(' ')} (${c.company.code}) - joining ${formatDate(c.proposedJoiningDate)}: ${env.APP_URL}/manage/onboarding/${c.id}`,
     )
     await sendMail({
       to: person.email,

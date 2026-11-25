@@ -116,7 +116,7 @@ forgotten filters and grant hand-outs) on 2026-11-17. A role says WHAT (areas, V
   Kept for now (being told is better than missing it). **Later:** say in the e-mail which role to switch to, or decide
   with the user that e-mails follow something else. **Since 2026-11-25 (two portals, item 33)** every link in an e-mail
   opens in Employee self-service (a fresh tab has no role), so a role-step approval e-mail always needs a switch - item 33
-  step 2 adds the "this page is in the role portal" screen with the role picker.
+  step 2 (done) shows the "pick a role to open this page" screen with the role picker, and comes back to the page.
 - **Narrowing goes top-down:** someone can only manage logins whose roles and data access are within their own. After the
   deploy every role covers every company, so the first narrowing of each person must be done by someone with all
   companies (in practice the Super Admin); an HR person narrowed to RML cannot then reset or re-role people still on
@@ -1062,21 +1062,23 @@ isolation, stale/replayed/concurrent requests, invalid rows/files, true Excel sc
 
 Everyone signs in to **Employee self-service** (no role); picking a role in the account menu opens the **role portal**.
 Decided: manager / HOD approval steps stay in self-service; one's own actions are refused in the role portal (not only
-hidden); role pages move under `/admin`; employees without a role see only self-service; the role portal's lists show
+hidden); pages live under `/ess/...` (self-service) and `/manage/...` (role portal) - not `/admin`, as a role can be
+called anything (the user, 2026-11-25); employees without a role see only self-service; the role portal's lists show
 the role's records plus one's own team (as before). No access area split is needed (each area covers others' records;
 one's own needs none) - a separate "Leave setup" area (leave types out of Leave) was offered and not taken up.
 - [x] **Step 1 - backend (2026-11-25):** no `x-hrms-role` header = no role; `selfServiceProcedure` / `assertSelfService`
   on leave, comp-off, regularizations, shift changes, one's own document upload and withdrawing one's own request; approvals
   per portal (`listToDecide`, `countToDecide`, `decide`, `listMine`, `listDecided`); `tests/portal-mode.test.ts`. The
   switcher offers "Employee self-service" first.
-- [ ] **Step 2 - frontend shell:** two layouts and menus (self-service / role portal) with their skeletons; role pages
-  under `/admin/...` with redirects from the old addresses (also those in sent e-mails: `/onboarding/:id`,
-  `/joining-tasks`); switching to a role lands on `/admin`, to Employee on `/`; a role-portal address opened in
-  self-service shows "this page is in the role portal" with the role picker (each tab keeps its own role, so e-mail
-  links open in self-service). Until then the self-service buttons stay visible with a role active and answer
-  "Switch to Employee self-service".
-- [ ] **Step 3 - split the mixed pages** (same components on two routes): People (directory / HR records), Pay & career
+- [x] **Step 2 - frontend shell (2026-11-25):** `/ess/...` and `/manage/...` (app/router.tsx), a menu per portal
+  following the tab's choice, `/` = the tab's portal home; a page of the other portal shows the switch screen
+  (`RequirePortal` / `WrongPortal`) and the switch comes back to that page; the old addresses redirect (`MovedToPortal`),
+  also those in e-mails already sent; new e-mail links name their portal (approval e-mails: `/ess/approvals` for named
+  steps and one's own request, `/manage/approvals` for role steps); shared pages build links with `usePortal`.
+- [ ] **Step 3 - split the mixed pages** (same components on two routes). Until then the role portal still shows one's
+  own parts inside them (Pay & career's Overview, Home's personal cards), whose self-service actions answer "Switch to
+  Employee self-service": People (directory / HR records), Pay & career
   (own / register), Leave (own + team / register and balances), Attendance (own + team / everyone in the role),
   Approvals (named steps + own requests / role steps + requests raised for others), Joining checklist, Home.
-- [ ] **Step 4 - role portal home** (today's Admin / HR home sections), README Home paragraph and router comments,
+- [ ] **Step 4 - role portal home** (today's Admin / HR home sections), README Home paragraph,
   screenshots of both portals at 1440 / 390.

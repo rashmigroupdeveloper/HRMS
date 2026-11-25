@@ -39,7 +39,7 @@ export function ChangeList({ items, onOpen, linkEmployee = true }: { items: Chan
                     <span className="min-w-0">
                       {linkEmployee ? (
                         <Link
-                          to={`/employees/${c.employee.employeeCode}?tab=job`}
+                          to={`/manage/employees/${c.employee.employeeCode}?tab=job`}
                           onClick={(e) => e.stopPropagation()}
                           className="block font-medium underline-offset-4 hover:underline"
                         >

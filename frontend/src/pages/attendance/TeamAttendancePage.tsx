@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, Navigate, useSearchParams } from 'react-router'
 import { FormError } from '@/components/FormError'
+import { usePortal } from '@/hooks/usePortal'
 import { TeamAttendanceSkeleton } from '@/components/skeletons/attendance/TeamAttendanceSkeleton'
 import { orpc } from '@/lib/orpc'
 import { segment, SEGMENTS, type TeamView, teamViews } from './components/labels'
@@ -18,21 +19,23 @@ const SUBTITLE: Record<TeamView, string> = {
 
 export function TeamAttendancePage() {
   const overview = useQuery(orpc.attendance.overview.queryOptions())
+  const { portal, to } = usePortal()
   const [params, setParams] = useSearchParams()
   const o = overview.data
   const views = o ? teamViews(o) : []
   const asked = params.get('view')
   const view = views.find(([value]) => value === asked)?.[0] ?? views[0]?.[0]
   // the roster moved to the attendance setup (2026-11-22)
-  if (asked === 'roster') return <Navigate to="/attendance-setup?part=roster" replace />
-  if (o && !view) return <Navigate to="/attendance" replace />
+  if (asked === 'roster') return <Navigate to="/manage/attendance-setup?part=roster" replace />
+  // nobody to see: one's own attendance (self-service), or the role portal's home
+  if (o && !view) return <Navigate to={portal === 'ess' ? '/ess/attendance' : '/manage'} replace />
   // before the views are known: the asked one's line (the first view's otherwise)
   const subtitle = SUBTITLE[(view ?? asked ?? 'team') as TeamView] ?? SUBTITLE.team
 
   return (
     <div className="space-y-6">
       <header>
-        <Link to="/attendance-reports" className="float-right flex min-h-10 items-center text-sm underline underline-offset-4">Reports</Link>
+        <Link to={to('/attendance-reports')} className="float-right flex min-h-10 items-center text-sm underline underline-offset-4">Reports</Link>
         <p className="text-sm text-muted-foreground">Time &amp; shifts</p>
         <h1 className="mt-1 text-3xl font-light tracking-tight sm:text-4xl">Team attendance</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">{subtitle}</p>

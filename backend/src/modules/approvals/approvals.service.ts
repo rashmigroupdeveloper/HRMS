@@ -322,16 +322,18 @@ export async function statusOf(requestIds: number[]) {
 
 // --- Notices (after the transaction - an e-mail never undoes a decision) ---
 
-async function mail(to: { email: string | null; name: string } | null | undefined, subject: string, lines: string[]) {
+// `portal`: where the link opens the Approvals page - Employee self-service for a step named to them and one's own request,
+// the role portal for a role / access / fallback step, repairing routing and a request raised for someone else (2026-11-25)
+async function mail(to: { email: string | null; name: string } | null | undefined, subject: string, lines: string[], portal: 'ess' | 'manage') {
   if (!to?.email) return
-  await sendMail({ to: to.email, subject, text: [`Dear ${to.name},`, '', ...lines.filter(Boolean), '', `Approvals: ${env.APP_URL}/approvals`].join('\n') }).catch((error: unknown) =>
+  await sendMail({ to: to.email, subject, text: [`Dear ${to.name},`, '', ...lines.filter(Boolean), '', `Approvals: ${env.APP_URL}/${portal}/approvals`].join('\n') }).catch((error: unknown) =>
     console.error('[mail] approval e-mail failed:', error),
   )
 }
 
 async function mailApprovers(request: RequestRow, step: StepRow, subject: string, lines: string[]) {
   const ids = isNamed(step) ? (step.approverId ? [step.approverId] : []) : (await poolsOf([{ step, request }]))[0]!
-  for (const person of await employeesService.listMailContacts(ids)) await mail(person, subject, lines)
+  for (const person of await employeesService.listMailContacts(ids)) await mail(person, subject, lines, isNamed(step) ? 'ess' : 'manage')
 }
 
 // After a step of a request: the e-mails, then the feature's own step once it is closed (e.g. a job change whose day has
@@ -361,6 +363,8 @@ async function mailNotices(requestId: number, outcome: Outcome) {
   if (!request) return
   const who = `${fullName(request.employee)} (${request.employee.employeeCode})`
   const about = `${labelOf(request)} of ${who}: ${request.summary}`
+  // the requester follows their own request in self-service, one raised for someone else in the role portal
+  const requesterPortal = request.employeeId === request.requestedById ? 'ess' : 'manage'
   try {
     if (outcome.opened) {
       const step = request.steps.find((s) => s.id === outcome.opened)!
@@ -374,7 +378,7 @@ async function mailNotices(requestId: number, outcome: Outcome) {
       const requester = await employeesService.findMailContact(request.requestedById)
       const repairers = await accountsService.mailRecipients('APPROVAL_CHAINS', 'WRITE', placementsOf(request)[0])
       for (const person of [requester, ...repairers]) {
-        await mail(person, `Held: ${labelOf(request).toLowerCase()} of ${who}`, [about, `It is held - not approved: ${outcome.held}.`, 'Repair the approval routing (give the role, appoint the HOD, change the chain), then send it through again from the held list.'])
+        await mail(person, `Held: ${labelOf(request).toLowerCase()} of ${who}`, [about, `It is held - not approved: ${outcome.held}.`, 'Repair the approval routing (give the role, appoint the HOD, change the chain), then send it through again from the held list.'], person === requester ? requesterPortal : 'manage')
       }
     }
     if (outcome.closed === 'APPROVED' || outcome.closed === 'REJECTED' || outcome.closed === 'EXPIRED') {
@@ -387,7 +391,7 @@ async function mailNotices(requestId: number, outcome: Outcome) {
           : outcome.closed === 'EXPIRED'
             ? `It expired: ${request.cancelReason ?? 'not decided in time'}.`
             : `It was rejected (${stepLabel(rejected!)}): ${rejected?.comment ?? ''}`,
-      ])
+      ], requesterPortal)
     }
   } catch (error) {
     console.error('[approvals] notice failed:', error)

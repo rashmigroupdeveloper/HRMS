@@ -153,7 +153,7 @@ export function ChangeHistoryList({
                                 <>
                                   <span className="text-muted-foreground">{entry.model === 'UserAccountRole' ? (entry.action === 'DELETE' ? ' from ' : ' to ') : ' of '}</span>
                                   {linkEmployees && employee.employeeCode ? (
-                                    <Link to={`/employees/${employee.employeeCode}`} className="font-medium underline-offset-4 hover:underline">
+                                    <Link to={`/manage/employees/${employee.employeeCode}`} className="font-medium underline-offset-4 hover:underline">
                                       {employee.name} ({employee.employeeCode})
                                     </Link>
                                   ) : (
@@ -164,7 +164,7 @@ export function ChangeHistoryList({
                               {!hideEmployee && !employee && entry.candidateId && (
                                 <>
                                   <span className="text-muted-foreground"> of </span>
-                                  <Link to={`/onboarding/${entry.candidateId}`} className="font-medium underline-offset-4 hover:underline">
+                                  <Link to={`/manage/onboarding/${entry.candidateId}`} className="font-medium underline-offset-4 hover:underline">
                                     candidate #{entry.candidateId}
                                   </Link>
                                 </>

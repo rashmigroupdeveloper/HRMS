@@ -60,7 +60,7 @@ export function LetterTemplatesPage() {
                         className="max-sm:h-9"
                         aria-label={`New ${KIND[kind].toLowerCase()} template`}
                         nativeButton={false}
-                        render={<Link to={`/letter-templates/new?kind=${kind}`} />}
+                        render={<Link to={`/manage/letter-templates/new?kind=${kind}`} />}
                       >
                         <Plus /> New template
                       </Button>
@@ -82,7 +82,7 @@ export function LetterTemplatesPage() {
                         className="bg-card max-sm:h-9"
                         aria-label={`New ${KIND[kind].toLowerCase()} template`}
                         nativeButton={false}
-                        render={<Link to={`/letter-templates/new?kind=${kind}`} />}
+                        render={<Link to={`/manage/letter-templates/new?kind=${kind}`} />}
                       >
                         <Plus /> New template
                       </Button>
@@ -102,7 +102,7 @@ export function LetterTemplatesPage() {
                       </p>
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      <Button variant="secondary" size="sm" className="max-sm:h-9" nativeButton={false} render={<Link to={`/letter-templates/${t.id}`} />}>
+                      <Button variant="secondary" size="sm" className="max-sm:h-9" nativeButton={false} render={<Link to={`/manage/letter-templates/${t.id}`} />}>
                         <Pencil /> {canChange ? 'Edit' : 'View'}
                       </Button>
                       {canChange && (

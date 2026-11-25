@@ -5,18 +5,12 @@ import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { hasAccess } from '@/hooks/useAccess'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { orpc } from '@/lib/orpc'
 import { writeActiveRole } from '@/lib/active-role'
 import { errorMessage } from '@/lib/utils'
 import { AuthLayout } from './components/AuthLayout'
 import { TestAccounts } from './components/TestAccounts'
-
-// Where to go after signing in when no `next` page was asked for
-function startPage(user: Parameters<typeof hasAccess>[0]) {
-  return hasAccess(user, 'ONBOARDING') ? '/onboarding' : '/'
-}
 
 // Employee sign-in: employee code or work e-mail + password ("Forgot password?" -> ForgotPasswordPage)
 export function LoginPage() {
@@ -36,13 +30,13 @@ export function LoginPage() {
         writeActiveRole(null)
         queryClient.removeQueries()
         queryClient.setQueryData(orpc.accounts.me.queryKey(), user)
-        void navigate(user.mustChangePassword ? '/change-password' : (params.get('next') ?? startPage(user)), { replace: true })
+        void navigate(user.mustChangePassword ? '/change-password' : (params.get('next') ?? '/'), { replace: true })
       },
     }),
   )
 
   // Already logged in - not when the last check said the session is gone (the old data stays in the cache with the error)
-  if (me.data && !me.error && !login.isPending) return <Navigate to={startPage(me.data)} replace />
+  if (me.data && !me.error && !login.isPending) return <Navigate to="/" replace />
 
   return (
     <AuthLayout eyebrow="Employee sign-in" title="Sign in to your account">

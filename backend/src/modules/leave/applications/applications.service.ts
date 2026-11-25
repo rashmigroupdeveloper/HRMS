@@ -402,7 +402,7 @@ export async function recount(viewer: CurrentUser, { id }: z.infer<typeof recoun
     await sendMail({
       to: contact.email,
       subject: `Your leave was counted again - ${change}`,
-      text: [`Dear ${contact.name},`, '', `Your approved leave was counted again by the calendar: ${what} (it was ${daysText(result.before)}).`, `${change[0]!.toUpperCase()}${change.slice(1)} - ${result.why}.`, '', `Leave: ${env.APP_URL}/leave`].join('\n'),
+      text: [`Dear ${contact.name},`, '', `Your approved leave was counted again by the calendar: ${what} (it was ${daysText(result.before)}).`, `${change[0]!.toUpperCase()}${change.slice(1)} - ${result.why}.`, '', `Leave: ${env.APP_URL}/ess/leave`].join('\n'),
     }).catch((error: unknown) => console.error('[mail] leave recount e-mail failed:', error))
   }
   const [view] = await toApplications([(await applicationsRepository.find(id))!])
@@ -512,7 +512,7 @@ async function cancelForHoliday(application: applicationsRepository.ApplicationR
     await sendMail({
       to: contact.email,
       subject: `Your ${application.leaveType.name} was cancelled - the holiday changed`,
-      text: [`Dear ${contact.name},`, '', `${what} was cancelled: ${why}.`, application.status === 'APPROVED' ? `The days are back in your ${application.leaveType.code} balance.` : 'It was still waiting for approval.', '', `Leave: ${env.APP_URL}/leave`].join('\n'),
+      text: [`Dear ${contact.name},`, '', `${what} was cancelled: ${why}.`, application.status === 'APPROVED' ? `The days are back in your ${application.leaveType.code} balance.` : 'It was still waiting for approval.', '', `Leave: ${env.APP_URL}/ess/leave`].join('\n'),
     }).catch((error: unknown) => console.error('[mail] holiday leave cancel e-mail failed:', error))
   }
 }

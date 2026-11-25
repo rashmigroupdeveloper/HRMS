@@ -182,7 +182,7 @@ export function EmployeeProfile({ employeeCode, self }: { employeeCode: string; 
 
   // the way back to the list - shown while the profile loads too
   const back = can('EMPLOYEES') && (
-    <Button variant="ghost" size="sm" className="-ml-3" nativeButton={false} render={<Link to="/employees?view=records" />}>
+    <Button variant="ghost" size="sm" className="-ml-3" nativeButton={false} render={<Link to="/manage/employees?view=records" />}>
       <ArrowLeft /> People
     </Button>
   )
@@ -218,7 +218,7 @@ export function EmployeeProfile({ employeeCode, self }: { employeeCode: string; 
   if (profile.error) return <p className="text-sm text-negative-ink">{errorMessage(profile.error)}</p>
   const e = profile.data
   // a code they had before a company transfer finds them (2026-11-20): the page moves to their code now
-  if (!self && e.employeeCode !== employeeCode.toUpperCase()) return <Navigate to={`/employees/${e.employeeCode}${search}`} replace />
+  if (!self && e.employeeCode !== employeeCode.toUpperCase()) return <Navigate to={`/manage/employees/${e.employeeCode}${search}`} replace />
   // a tab of a part the viewer may not see (e.g. an old link ?tab=ids) opens the job tab instead
   const here = { companyId: e.company.id, plantId: e.plant.id, departmentId: e.department?.id ?? null }
   // what the viewer may change on THIS employee - the area at Edit covering where they are (and Employees View there for a
@@ -299,7 +299,7 @@ export function EmployeeProfile({ employeeCode, self }: { employeeCode: string; 
             <Fact icon={UserRound}>
               Reports to{' '}
               {can('EMPLOYEES') ? (
-                <Link to={`/employees/${e.reportingManager.employeeCode}`} className="font-medium text-hero-foreground underline-offset-2 hover:underline">
+                <Link to={`/manage/employees/${e.reportingManager.employeeCode}`} className="font-medium text-hero-foreground underline-offset-2 hover:underline">
                   {e.reportingManager.name}
                 </Link>
               ) : (

@@ -124,7 +124,7 @@ export function CandidatePage() {
 const initials = (c: { firstName: string; lastName: string | null }) => `${c.firstName.charAt(0)}${c.lastName?.charAt(0) ?? ''}`.toUpperCase()
 
 const back = (
-  <Link to="/onboarding" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+  <Link to="/manage/onboarding" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
     <ArrowLeft className="size-4" /> Onboarding
   </Link>
 )
@@ -306,7 +306,7 @@ function CandidatePanel({ id }: { id: number }) {
                 </>
               )}
               {c.employee && (
-                <Button variant="gold" size="sm" nativeButton={false} render={<Link to={`/employees/${c.employee.employeeCode}`} />}>
+                <Button variant="gold" size="sm" nativeButton={false} render={<Link to={`/manage/employees/${c.employee.employeeCode}`} />}>
                   Joined as {c.employee.employeeCode} <ArrowRight />
                 </Button>
               )}
@@ -348,7 +348,7 @@ function CandidatePanel({ id }: { id: number }) {
                   {d.name} ({d.employeeCode}) - same {d.matchedOn.join(' and ')}
                 </span>
               ) : (
-                <Link key={d.employeeCode} to={`/employees/${d.employeeCode}`} className="underline underline-offset-2">
+                <Link key={d.employeeCode} to={`/manage/employees/${d.employeeCode}`} className="underline underline-offset-2">
                   {d.name} ({d.employeeCode}
                   {d.status === 'EXITED' ? ', left' : ''}) - same {d.matchedOn.join(' and ')}
                 </Link>

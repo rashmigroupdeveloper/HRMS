@@ -61,7 +61,7 @@ function describe(r: { date: Date; kind: 'CHANGE' | 'SWAP'; requestedShift: { na
 
 async function mail(to: { email: string | null; name: string } | null | undefined, subject: string, lines: string[]) {
   if (!to?.email) return
-  await sendMail({ to: to.email, subject, text: [`Dear ${to.name},`, '', ...lines, '', `Attendance: ${env.APP_URL}/attendance`].join('\n') }).catch((error: unknown) =>
+  await sendMail({ to: to.email, subject, text: [`Dear ${to.name},`, '', ...lines, '', `Attendance: ${env.APP_URL}/ess/attendance`].join('\n') }).catch((error: unknown) =>
     console.error('[mail] shift change e-mail failed:', error),
   )
 }

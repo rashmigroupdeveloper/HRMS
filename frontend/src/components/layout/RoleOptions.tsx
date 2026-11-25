@@ -1,15 +1,13 @@
-import { useIsMutating } from '@tanstack/react-query'
-import { useNavigate } from 'react-router'
 import { DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useSwitchRole } from '@/hooks/useSwitchRole'
 import { SELF_SERVICE, SELF_SERVICE_NAME } from '@/lib/active-role'
 
 // Used inside both the desktop account dropdown and the phone's role dropdown. Employee self-service first (where
-// everyone signs in - 2026-11-25), then the roles given, each opening the role portal.
+// everyone signs in - 2026-11-25, its pages under /ess), then the roles given, each opening the role portal (/manage).
 export function RoleOptions() {
   const { data: me } = useCurrentUser()
-  const navigate = useNavigate()
-  const saving = useIsMutating() > 0
+  const { switchRole, saving } = useSwitchRole()
   if (!me) return null
   const current = me.activeRoleId ?? SELF_SERVICE
   const choices = [{ id: SELF_SERVICE, name: SELF_SERVICE_NAME }, ...me.availableRoles]
@@ -21,9 +19,7 @@ export function RoleOptions() {
       ) : (
         <DropdownMenuRadioGroup value={String(current)} onValueChange={(value) => {
           const id = Number(value)
-          if (id === current || saving || !choices.some((choice) => choice.id === id)) return
-          // Normal navigation runs any unsaved-page guard before AppLayout commits the switch.
-          void navigate('/', { state: { switchRoleTo: id } })
+          if (id !== current && choices.some((choice) => choice.id === id)) switchRole(id)
         }}>
           {choices.map((choice) => (
             <DropdownMenuRadioItem key={choice.id} value={String(choice.id)} disabled={saving} className="min-h-9 rounded-xl px-3 pr-8 whitespace-normal break-words">

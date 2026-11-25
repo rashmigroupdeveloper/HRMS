@@ -8,7 +8,7 @@ export function EmployeeProfilePage() {
   const { employeeCode = '' } = useParams()
   const { me, ready, can } = useAccess()
   const { search } = useLocation()
-  if (me && me.employeeCode === employeeCode.toUpperCase()) return <Navigate to={`/me${search}`} replace />
+  if (me && me.employeeCode === employeeCode.toUpperCase()) return <Navigate to={`/ess/me${search}`} replace />
   // (until accounts.me answers the profile shows its skeleton - its own query is refused without access anyway)
   if (ready && !can('EMPLOYEES')) return <Navigate to="/" replace />
   return <EmployeeProfile key={employeeCode} employeeCode={employeeCode} self={false} />

@@ -363,7 +363,7 @@ export async function remindDueTasks() {
         '',
         ...mail.tasks.map(line),
         '',
-        `Open My tasks: ${env.APP_URL}/joining-tasks`,
+        `Open My tasks: ${env.APP_URL}/manage/joining-tasks`,
         '',
         'This reminder is sent every morning while a task is due or overdue.',
       ].join('\n'),

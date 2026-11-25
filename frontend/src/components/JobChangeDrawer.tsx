@@ -38,7 +38,7 @@ export function JobChangeDrawer({ id, onClose }: { id: number; onClose: () => vo
       title={c ? c.employee.name : 'Job change'}
       description={
         c && (
-          <Link to={`/employees/${c.employee.employeeCode}?tab=job`} className="underline-offset-4 hover:underline">
+          <Link to={`/manage/employees/${c.employee.employeeCode}?tab=job`} className="underline-offset-4 hover:underline">
             {c.employee.employeeCode}
           </Link>
         )

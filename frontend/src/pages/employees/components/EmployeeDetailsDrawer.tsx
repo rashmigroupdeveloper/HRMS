@@ -278,7 +278,7 @@ export function EmployeeDetailsDrawer({
               ) : (
                 <>
                   {company.name} has no employee code series yet - set its next employee number on the{' '}
-                  <Link to="/organization" className="font-medium underline underline-offset-2">
+                  <Link to="/manage/organization" className="font-medium underline underline-offset-2">
                     Organization page
                   </Link>{' '}
                   first.

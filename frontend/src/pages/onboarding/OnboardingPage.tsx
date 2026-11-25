@@ -36,7 +36,7 @@ export function OnboardingPage() {
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
   const navigate = useNavigate()
-  const open = (id: number) => void navigate(`/onboarding/${id}`)
+  const open = (id: number) => void navigate(`/manage/onboarding/${id}`)
   const canChange = useAccess().can('ONBOARDING', 'WRITE')
 
   const rows = candidates.data ?? []

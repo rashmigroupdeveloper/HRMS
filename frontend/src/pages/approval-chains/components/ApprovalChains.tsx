@@ -141,7 +141,7 @@ export function ApprovalChains({ canChange }: { canChange: boolean }) {
               <Pill tone="warning" className="py-0.5">
                 Not set
               </Pill>
-              <Link to="/access" className="text-warning-ink underline underline-offset-2">
+              <Link to="/manage/access" className="text-warning-ink underline underline-offset-2">
                 mark a role in Roles &amp; access
               </Link>
             </>

@@ -373,7 +373,7 @@ export function EmployeeRecordsView() {
               </TableHeader>
               <TableBody>
                 {list.data.items.map((e) => (
-                  <TableRow key={e.employeeCode} className="group cursor-pointer" onClick={() => void navigate(`/employees/${e.employeeCode}`)}>
+                  <TableRow key={e.employeeCode} className="group cursor-pointer" onClick={() => void navigate(`/manage/employees/${e.employeeCode}`)}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Initials name={e.name} />
@@ -443,7 +443,7 @@ export function EmployeeRecordsView() {
           onClose={() => setFiltersOpen(false)}
         />
       )}
-      {adding && <EmployeeDetailsDrawer onClose={() => setAdding(false)} onAdded={(code) => void navigate(`/employees/${code}`)} />}
+      {adding && <EmployeeDetailsDrawer onClose={() => setAdding(false)} onAdded={(code) => void navigate(`/manage/employees/${code}`)} />}
       {importing && <ImportEmployeesDrawer onClose={() => setImporting(false)} />}
     </div>
   )

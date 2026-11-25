@@ -2874,7 +2874,7 @@ experience and relieving letters follow the resignation module's approvals). Wri
 (`letterTemplates.*`) with the employee's details (and, for the appointment letter, the current salary breakup),
 numbered `<e-code prefix>/<APPT|CONF|EXP|REL|SAL>/<year>/<0001>`, stored as `employees/<code>/<KIND>/<date>_<random>.pdf`
 with its SHA-256 - kept exactly as issued - and e-mailed to the work e-mail, else the personal one. Seen on the
-profile's Letters tab (and on one's own `/me`).
+profile's Letters tab (and on one's own `/ess/me`).
 
 
 ### `changeHistory.export`

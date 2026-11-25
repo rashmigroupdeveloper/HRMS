@@ -9,7 +9,7 @@ export function MovedToEmployee({ what, employeeCode }: { what: string; employee
       <p className="text-sm text-muted-foreground">
         The candidate joined as <strong className="text-foreground">{employeeCode}</strong> - the {what} moved to the employee record.
       </p>
-      <Button variant="secondary" nativeButton={false} render={<Link to={`/employees/${employeeCode}`} />}>
+      <Button variant="secondary" nativeButton={false} render={<Link to={`/manage/employees/${employeeCode}`} />}>
         Open employee profile <ArrowRight />
       </Button>
     </section>

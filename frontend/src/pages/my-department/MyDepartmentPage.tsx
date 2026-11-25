@@ -46,7 +46,7 @@ export function MyDepartmentPage() {
         </div>
         <ExportButton disabled={!rows.length || department.isPending} load={() => client.employees.hods.export({ view: 'department', postId: postId ?? undefined, search: search.trim() || undefined })} />
         {data && data.employees.length > 0 && (
-          <Button variant="secondary" nativeButton={false} render={<Link to="/team-attendance?view=department" />}>
+          <Button variant="secondary" nativeButton={false} render={<Link to="/ess/team-attendance?view=department" />}>
             <CalendarCheck /> Their attendance
           </Button>
         )}

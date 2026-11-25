@@ -108,7 +108,7 @@ function JoiningForm({ candidate, onClose }: { candidate: Candidate; onClose: ()
         footer={
           <>
             <DrawerCancel>Close</DrawerCancel>
-            <Button variant="gold" nativeButton={false} render={<Link to={`/employees/${complete.data.employeeCode}`} />}>
+            <Button variant="gold" nativeButton={false} render={<Link to={`/manage/employees/${complete.data.employeeCode}`} />}>
               Open employee profile
             </Button>
           </>
@@ -298,7 +298,7 @@ function JoiningForm({ candidate, onClose }: { candidate: Candidate; onClose: ()
             <span>
               No joining tasks are set up{taskTypes.data.length ? ' for this joining type' : ''} - nobody (IT, Admin...) will be given work for this
               employee. Add them on{' '}
-              <Link to="/joining-tasks" className="underline underline-offset-2">
+              <Link to="/manage/joining-tasks" className="underline underline-offset-2">
                 Joining checklist &gt; Task types
               </Link>
               , or confirm:

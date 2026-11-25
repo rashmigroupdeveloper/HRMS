@@ -160,7 +160,7 @@ frontend/src/
 | Keep a real data file from HR (salaries, employee list, punches) | `private/` - git-ignored, never committed (2026-11-24); a sample without real people (e.g. formulas only) may go to `docs/hr-forms/` |
 | Seed data | `backend/prisma/seeds/` |
 | New environment variable | zod schema in `core/config/env.ts` + `backend/.env.example` |
-| New page | `frontend/src/pages/<feature>/<Name>Page.tsx` + route in `app/router.tsx` |
+| New page | `frontend/src/pages/<feature>/<Name>Page.tsx` + route in `app/router.tsx` under `/ess/` (Employee self-service) or `/manage/` (the role portal), or both (section 5) |
 | UI primitive (dialog, table, input...) | `npx shadcn@latest add <name>` (run in `frontend/`) -> `components/ui/` |
 | Loading placeholder (skeleton) for a page or section | the skeleton of that page's own layout -> `components/skeletons/<feature>/<Name>Skeleton.tsx` (not in `pages/<feature>/components/` - the user, 2026-11-21); the skeleton of UI several modules share -> `components/skeletons/common/`; built on `ui/skeleton` (section 5) - never `animate-pulse` boxes drawn in a page |
 | Component for one feature | `frontend/src/pages/<feature>/components/` |
@@ -294,6 +294,11 @@ frontend/src/
 - Call the backend only through `@/lib/orpc`: `useQuery(orpc.x.y.queryOptions(...))`,
   `useMutation(orpc.x.y.mutationOptions())`. Never hand-write API request/response types.
 - `@backend/*` may only be used with `import type`.
+- **Two portals, two address trees** (the user, 2026-11-25): `/ess/...` is Employee self-service (one's own record and
+  actions, one's team and HOD department), `/manage/...` the role portal - never `/admin`, as a role can be called anything.
+  Each page is registered under the portal it belongs to (`RequirePortal` shows the switch screen in the other one); a page
+  in both builds its links with `usePortal().to(...)`, a page in one portal links with its full `/ess/` or `/manage/`
+  address. The menu follows the tab's choice (`portalOf(me.activeRoleId)`); an old address goes on with `MovedToPortal`.
 - shadcn components use Base UI: compose with the `render` prop, not `asChild`.
 - **Unsaved input is never lost by accident** (decided 2026-11-17). Every add / edit form opens in `FormDrawer`
   (`@/components/FormDrawer`) or, for a small form in a centred dialog, `FormDialog` (`@/components/FormDialog`) - never

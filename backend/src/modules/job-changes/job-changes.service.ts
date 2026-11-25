@@ -356,7 +356,7 @@ async function notifyEmployee(id: number) {
   await sendMail({
     to,
     subject: record.changedFields.length ? `Your job details change from ${day(record.effectiveFrom)}` : `Your salary is revised from ${day(record.effectiveFrom)}`,
-    text: [`Dear ${fullName(record.employee)},`, '', `${KIND_LABEL[record.kind]} from ${day(record.effectiveFrom)}:`, ...lines, '', `Your profile: ${env.APP_URL}/me`].join('\n'),
+    text: [`Dear ${fullName(record.employee)},`, '', `${KIND_LABEL[record.kind]} from ${day(record.effectiveFrom)}:`, ...lines, '', `Your profile: ${env.APP_URL}/ess/me`].join('\n'),
   }).catch((error: unknown) => console.error('[mail] job change e-mail failed:', error))
   await jobChangesRepository.update(id, { notifiedAt: new Date(), notifiedById: SYSTEM_ACTOR }, SYSTEM_ACTOR)
 }

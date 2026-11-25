@@ -53,7 +53,7 @@ export function JobOverview({ employee: e, self }: { employee: Employee; self: b
                 (self ? (
                   manager.name
                 ) : (
-                  <Link key="manager" to={`/employees/${manager.employeeCode}`} className="underline-offset-4 hover:underline">
+                  <Link key="manager" to={`/manage/employees/${manager.employeeCode}`} className="underline-offset-4 hover:underline">
                     {manager.name} <span className="font-normal text-muted-foreground">{manager.employeeCode}</span>
                   </Link>
                 )),
@@ -64,7 +64,7 @@ export function JobOverview({ employee: e, self }: { employee: Employee; self: b
                 (self ? (
                   functional.name
                 ) : (
-                  <Link key="functional" to={`/employees/${functional.employeeCode}`} className="underline-offset-4 hover:underline">
+                  <Link key="functional" to={`/manage/employees/${functional.employeeCode}`} className="underline-offset-4 hover:underline">
                     {functional.name} <span className="font-normal text-muted-foreground">{functional.employeeCode}</span>
                   </Link>
                 )),

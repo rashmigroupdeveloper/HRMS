@@ -93,7 +93,7 @@ export function ColleagueCard({ c, onPick, onChart }: { c: Colleague; onPick: (e
           </Button>
         )}
         {opensProfile && (
-          <Button variant="secondary" size="sm" nativeButton={false} render={<Link to={self ? '/me' : `/employees/${c.employeeCode}`} />}>
+          <Button variant="secondary" size="sm" nativeButton={false} render={<Link to={self ? '/ess/me' : `/manage/employees/${c.employeeCode}`} />}>
             <UserRound /> {self ? 'My profile' : 'Open full profile'}
           </Button>
         )}

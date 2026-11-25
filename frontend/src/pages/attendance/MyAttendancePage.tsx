@@ -10,11 +10,11 @@ import { MyAttendance } from './components/MyAttendance'
 // setup are pages of their own in the menu since 2026-11-22 (the user) - Team attendance, Attendance setup.
 // Links from before that (/attendance?tab=...) go on to them.
 const OLD_TABS: Record<string, string> = {
-  team: '/team-attendance',
-  department: '/team-attendance?view=department',
-  all: '/team-attendance?view=all',
-  roster: '/attendance-setup?part=roster',
-  setup: '/attendance-setup',
+  team: '/ess/team-attendance',
+  department: '/ess/team-attendance?view=department',
+  all: '/manage/team-attendance?view=all',
+  roster: '/manage/attendance-setup?part=roster',
+  setup: '/manage/attendance-setup',
 }
 
 export function MyAttendancePage() {

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Navigate, useSearchParams } from 'react-router'
 import { FormError } from '@/components/FormError'
+import { usePortal } from '@/hooks/usePortal'
 import { TeamLeaveSkeleton } from '@/components/skeletons/leave/TeamLeaveSkeleton'
 import { orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
@@ -19,6 +20,7 @@ import { TeamLeaveList } from './components/TeamLeaveList'
 const SCOPE: Record<TeamLeaveView, 'TEAM' | 'DEPARTMENT' | 'ALL'> = { team: 'TEAM', department: 'DEPARTMENT', all: 'ALL' }
 
 export function TeamLeavePage() {
+  const { portal } = usePortal()
   const overview = useQuery(orpc.leave.overview.queryOptions())
   const [params, setParams] = useSearchParams()
   const o = overview.data
@@ -27,7 +29,8 @@ export function TeamLeavePage() {
   // the leave types and the leave to recount: everyone's (Leave View)
   const parts = TEAM_LEAVE_PARTS.filter(([value]) => (value !== 'types' && value !== 'recount') || o?.canSeeAll)
   const part: TeamLeavePart = parts.find(([value]) => value === params.get('part'))?.[0] ?? 'away'
-  if (o && !view) return <Navigate to="/leave" replace />
+  // nobody to see: one's own leave (self-service), or the role portal's home
+  if (o && !view) return <Navigate to={portal === 'ess' ? '/ess/leave' : '/manage'} replace />
   const go = (next: { view?: string; part?: string }) => setParams({ ...(view && { view }), part, ...next }, { replace: true })
 
   return (

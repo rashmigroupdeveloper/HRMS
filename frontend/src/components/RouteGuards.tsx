@@ -1,7 +1,9 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { useAccess, type AccessArea } from '@/hooks/useAccess'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { portalOf, storedPortal, type Portal } from '@/lib/active-role'
 import { errorMessage, isUnauthorized } from '@/lib/utils'
+import { WrongPortal } from './layout/WrongPortal'
 
 function FullPageMessage({ children }: { children: React.ReactNode }) {
   return <div className="grid min-h-svh place-items-center p-6 text-sm text-muted-foreground">{children}</div>
@@ -25,6 +27,27 @@ export function RequireLogin() {
   if (!me.data) return <FullPageMessage>{errorMessage(me.error)}</FullPageMessage>
   if (me.data.mustChangePassword && location.pathname !== '/change-password') return <Navigate to="/change-password" replace />
   return <Outlet />
+}
+
+// The pages of one portal (2026-11-25): /ess/... Employee self-service (no role active), /manage/... the role portal.
+// Opened in the other one -> the WrongPortal screen with the switch, instead of the page. Until accounts.me answers the
+// page shows its skeleton (the tab's stored choice already sent the right header).
+export function RequirePortal({ portal }: { portal: Portal }) {
+  const { me, ready } = useAccess()
+  if (ready && me && portalOf(me.activeRoleId) !== portal) return <WrongPortal portal={portal} />
+  return <Outlet />
+}
+
+// An address from before the two portals (2026-11-25) - links in sent e-mails, bookmarks: the same page in its portal.
+// `portal` for pages of one portal only; pages in both go to this tab's portal.
+export function MovedToPortal({ portal }: { portal?: Portal }) {
+  const { pathname, search, hash } = useLocation()
+  return <Navigate to={`/${portal ?? storedPortal()}${pathname}${search}${hash}`} replace />
+}
+
+// "/" - the home of this tab's portal
+export function PortalHome() {
+  return <Navigate to={`/${storedPortal()}`} replace />
 }
 
 // Pages of one area (e.g. onboarding) - or of any of several (Organization: its masters or the HOD posts): only employees

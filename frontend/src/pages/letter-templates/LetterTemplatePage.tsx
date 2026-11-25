@@ -56,7 +56,7 @@ export function LetterTemplatePage() {
   const canChange = useAccess().coversGroup('LETTER_TEMPLATES')
 
   const back = (
-    <Link to="/letter-templates" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+    <Link to="/manage/letter-templates" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
       <ArrowLeft className="size-4" /> Letter templates
     </Link>
   )
@@ -124,7 +124,7 @@ function TemplateForm({ template, kind, lists, back }: { template: Template | 'n
     ({ currentLocation, nextLocation }) => createdId === null && dirty && currentLocation.pathname !== nextLocation.pathname,
   )
   useEffect(() => {
-    if (createdId !== null) void navigate(`/letter-templates/${createdId}`, { replace: true })
+    if (createdId !== null) void navigate(`/manage/letter-templates/${createdId}`, { replace: true })
   }, [createdId, navigate])
   useEffect(() => {
     if (!dirty) return

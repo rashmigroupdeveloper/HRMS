@@ -166,7 +166,7 @@ export function TasksView({ scope }: { scope: Scope }) {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm">
                   {can('EMPLOYEES') ? (
-                    <Link to={`/employees/${e.employeeCode}`} className="font-medium underline-offset-2 hover:underline">
+                    <Link to={`/manage/employees/${e.employeeCode}`} className="font-medium underline-offset-2 hover:underline">
                       {e.name}
                     </Link>
                   ) : (

@@ -24,7 +24,7 @@ export function EmployeeHistory({ employeeCode }: { employeeCode: string }) {
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <CardTitle icon={History}>Change history</CardTitle>
         {can('CHANGE_HISTORY') && (
-          <Link to={`/change-history?employee=${employeeCode}`} className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+          <Link to={`/manage/change-history?employee=${employeeCode}`} className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
             Open in Change history
           </Link>
         )}
