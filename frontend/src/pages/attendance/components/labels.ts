@@ -1,3 +1,4 @@
+import { CalendarClock, CalendarHeart, Clock3, Fingerprint, Lock, Repeat, Scale, UsersRound, type LucideIcon } from 'lucide-react'
 import type { Tone } from '@/components/Pill'
 import type { client } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
@@ -137,11 +138,15 @@ export function cycleRange(year: number, month: number, startDay: number) {
   return { from: new Date(Date.UTC(year, month - 2, startDay)), to: new Date(Date.UTC(year, month - 1, startDay - 1)) }
 }
 
-// A second-level switch inside a tab (day board / month muster, the setup's parts): a small grey segmented control whose
+// A second-level switch inside a tab (day board / month muster, a pattern's weeks in the setup's forms): a small grey segmented control whose
 // open chip is cream - never dark, that is the page's own tab bar. One line; it scrolls sideways when it does not fit.
 export const SEGMENTS = 'flex w-fit max-w-full gap-0.5 overflow-x-auto rounded-full bg-surface-2 p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 export const segment = (active: boolean) =>
   cn('flex-none rounded-full px-3 py-2.5 text-xs leading-4 font-medium whitespace-nowrap sm:py-1.5', active ? 'bg-card text-foreground shadow-card' : 'text-muted-foreground hover:text-foreground')
+
+// The setup's filters as soft pills - a search and dropdowns on a grey ground, no border (the redesign, 2026-11-25)
+export const FILTER_SEARCH = 'h-9 rounded-full border-transparent bg-surface-2 pl-9 shadow-none focus-visible:bg-card'
+export const FILTER_SELECT = '[&_select]:h-9 [&_select]:rounded-full [&_select]:border-transparent [&_select]:bg-surface-2 [&_select]:pl-3.5 [&_select]:hover:bg-surface-2/70'
 
 // The attendance setup (its own area since 2026-11-22 - Attendance setup: View, changing it: Edit): shifts, attendance
 // policies (2026-11-22), schedule patterns and who follows which (2026-11-23), holidays, the punch upload and the month lock.
@@ -160,8 +165,21 @@ export const SETUP_PARTS = [
   ['lock', 'Month lock'],
 ] as const
 
+// Each part's icon on its tab (the setup's redesign, 2026-11-25 - also drawn by the setup's skeleton)
+export const SETUP_ICONS: Record<(typeof SETUP_PARTS)[number][0], LucideIcon> = {
+  punches: Fingerprint,
+  shifts: Clock3,
+  patterns: Repeat,
+  policies: Scale,
+  assign: UsersRound,
+  roster: CalendarClock,
+  holidays: CalendarHeart,
+  lock: Lock,
+}
+
 // (also drawn by the setup's skeleton)
 export const UPLOAD_TITLE = 'Upload punches'
+export const UPLOAD_SUMMARY = 'Excel or CSV from the biometric machines'
 export const UPLOAD_HINT =
   "The biometric machines' export - Excel or CSV - with an employee code column and the punch time (or a Date and a Time column). The same punch is kept once; the days are worked out at once."
 
@@ -179,6 +197,7 @@ export function teamViews(o: TeamOverview): [TeamView, string][] {
 }
 
 // The roster's line under its toolbar (also drawn by its skeleton)
+export const ROSTER_SUMMARY = 'One-off days that differ from the schedule pattern'
 export const ROSTER_HINT = "Every day follows each person's schedule pattern (Schedules). Only one-off changes from it are listed here."
 
 // The comp-off a weekly off / holiday's work earns (2026-11-22): 8 hours = a day, 4 hours = half a day, less = none
@@ -201,3 +220,9 @@ export const toneOf = (value: HolidayTone): Tone => HOLIDAY_TONES.find((t) => t.
 
 // The part of a holiday's day that is off (2026-11-24) - the holidays' setup, the calendars
 export const HOLIDAY_PORTION: Record<'FULL_DAY' | 'FIRST_HALF' | 'SECOND_HALF', string> = { FULL_DAY: 'Whole day', FIRST_HALF: 'First half off', SECOND_HALF: 'Second half off' }
+
+// The month lock's texts (also drawn by its skeleton)
+export const LOCK_HINT =
+  'A locked month does not change any more - its days are not worked out again, and punches, corrections, roster days and shift changes for it are refused. For payroll. One lock for every company.'
+export const CYCLE_LABEL = 'Each attendance month starts on day'
+export const CYCLE_HINT = '26: “November” is 26 Oct – 25 Nov; 1: the calendar month. The muster, the month views, the late count and the lock follow it.'

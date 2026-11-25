@@ -1,6 +1,6 @@
 import { ExportButton } from '@/components/ExportButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Plus, Search, Star, Upload, X } from 'lucide-react'
+import { CircleCheck, FileSpreadsheet, History, Keyboard, Pencil, Plus, Search, Star, TriangleAlert, Upload, X } from 'lucide-react'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { FormError } from '@/components/FormError'
 import { SharedListNote } from '@/components/SharedListNote'
 import { Pill } from '@/components/Pill'
+import { PillTabsList, PillTabsTrigger } from '@/components/PillTabs'
 import { PatternRowsSkeleton, ScheduleRowsSkeleton, ShiftRowsSkeleton, UploadRowsSkeleton } from '@/components/skeletons/attendance/SetupSkeleton'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -19,10 +20,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
 import { cn, formatDate, formatDoneBy, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
-import { segment, SEGMENTS, SETUP_PARTS, UPLOAD_HINT, UPLOAD_TITLE, type Shift, WEEKDAYS } from './labels'
+import { FILTER_SEARCH, FILTER_SELECT, segment, SEGMENTS, SETUP_ICONS, SETUP_PARTS, UPLOAD_HINT, UPLOAD_SUMMARY, UPLOAD_TITLE, type Shift, WEEKDAYS } from './labels'
 import { AppliesFrom, UpcomingPill } from './AppliesFrom'
 import { HolidayListDrawer, type HolidayListStart } from './HolidayListDrawer'
 import { HolidayListsSetup } from './HolidayListsSetup'
@@ -30,6 +32,8 @@ import { HolidaysSetup } from './HolidaysSetup'
 import { MonthLockSetup } from './MonthLockSetup'
 import { PoliciesSetup } from './PoliciesSetup'
 import { RosterView } from './RosterView'
+import { SetupCard } from './SetupCard'
+import { ShiftCode, ShiftDayBar } from './ShiftChips'
 
 // The attendance setup (its own area since 2026-11-22 - Attendance setup: View, changing it: Edit): its parts are
 // SETUP_PARTS (labels.ts); the open one is in the address (?part=roster - 2026-11-22)
@@ -44,48 +48,42 @@ export function SetupView() {
   const canEdit = useAccess().can('ATTENDANCE_SETUP', 'WRITE')
   return (
     <div className="space-y-3">
-      <div className={SEGMENTS}>
-        {SETUP_PARTS.map(([value, label]) => (
-          <button key={value} type="button" aria-pressed={part === value} onClick={() => setPart(value)} className={segment(part === value)}>
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* the app's tab pill (the open part dark), each part with its icon - the redesign of 2026-11-25 */}
+      <Tabs value={part} onValueChange={(value) => setPart(value as Part)}>
+        {/* keyed by the part: a part opened from the header's numbers is scrolled into view like a clicked tab */}
+        <PillTabsList key={part} aria-label="Parts of the attendance setup">
+          {SETUP_PARTS.map(([value, label]) => {
+            const Icon = SETUP_ICONS[value]
+            return (
+              <PillTabsTrigger key={value} value={value} className="gap-1.5">
+                <Icon aria-hidden className="size-4" />
+                {label}
+              </PillTabsTrigger>
+            )
+          })}
+        </PillTabsList>
+      </Tabs>
       {part === 'punches' && <Punches />}
       {part === 'shifts' && <Shifts />}
-      {part === 'policies' && <PoliciesSetup card={Card} />}
+      {part === 'policies' && <PoliciesSetup />}
       {part === 'assign' && <Schedules canEdit={canEdit} />}
       {part === 'roster' && <RosterView />}
       {part === 'holidays' && (
         <>
-          <HolidaysSetup card={Card} />
-          <HolidayListsSetup card={Card} />
+          <HolidaysSetup />
+          <HolidayListsSetup />
         </>
       )}
       {part === 'patterns' && <Patterns />}
-      {part === 'lock' && <MonthLockSetup card={Card} />}
+      {part === 'lock' && <MonthLockSetup />}
     </div>
-  )
-}
-
-function Card({ title, hint, action, children }: { title: string; hint?: string; action?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-light tracking-tight">{title}</h2>
-          {hint && <p className="max-w-prose text-sm text-muted-foreground">{hint}</p>}
-        </div>
-        {action}
-      </div>
-      {children}
-    </section>
   )
 }
 
 // --- punches ---
 
-
+// Punches: the upload (the part's dark card - its main action) and, for testing, punches typed by hand on the left; the
+// codes that matched no employee and the earlier uploads on the right
 function Punches() {
   const queryClient = useQueryClient()
   const uploads = useQuery(orpc.attendance.punches.uploads.queryOptions())
@@ -97,79 +95,133 @@ function Punches() {
   // View: the earlier uploads and the unmatched codes; uploading and linking need Edit (covering the employees)
   const canEdit = useAccess().can('ATTENDANCE_SETUP', 'WRITE')
   return (
-    <div className="space-y-4">
-      {canEdit && <Card title={UPLOAD_TITLE} hint={UPLOAD_HINT}>
-        {/* the main action of this part: the whole block opens the file chooser */}
-        <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-foreground/25 px-4 py-3 text-center text-sm hover:border-foreground/50 has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
-          <span className="flex items-center gap-2">
-            <Upload className="size-4 text-muted-foreground" />
-            {upload.isPending ? 'Uploading and working out the days…' : 'The machines’ file - .xlsx or .csv'}
-          </span>
-          <span className={cn('rounded-full px-4 py-1.5 text-sm font-medium', upload.isPending ? 'bg-surface-2 text-muted-foreground' : 'bg-gold text-gold-foreground')}>Choose file</span>
-          <input
-            type="file"
-            accept=".xlsx,.csv,.txt"
-            className="sr-only"
-            disabled={upload.isPending}
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) upload.mutate({ file })
-              e.target.value = ''
-            }}
-          />
-        </label>
-        <FormError error={upload.error} />
-        {r && (
-          <div className="space-y-2 rounded-2xl bg-positive/10 px-4 py-3 text-sm text-positive-ink">
-            <p>
-              {r.rowCount} rows: <strong>{r.added} punches added</strong>, {r.duplicates} already there
-              {r.unmatchedCodes > 0 && `, ${r.unmatchedCodes} code(s) matched no employee (below)`}
-              {r.skipped > 0 && `, ${r.skipped} row(s) skipped`}.
-            </p>
-            {r.errors.length > 0 && <p className="text-xs text-warning-ink">{r.errors.slice(0, 5).join(' · ')}{r.errors.length > 5 ? ' …' : ''}</p>}
-          </div>
-        )}
-      </Card>}
-
-      {/* testing only: the dev build shows it, a production server refuses it (2026-11-22) */}
-      {canEdit && import.meta.env.DEV && <ManualPunches />}
-
-      {!!unmatched.data?.length && (
-        <Card title="Unmatched punches" hint={canEdit ? "Codes on the machines that are no employee. Pick who the code belongs to - their punches move to that employee and the days are worked out." : "Codes on the machines that are no employee - linking them to an employee needs Attendance setup: Edit."}>
-          <FormError error={link.error} />
-          <ul className="divide-y">
-            {unmatched.data.map((u) => (
-              <li key={u.code} className="flex flex-wrap items-center gap-3 py-2.5 text-sm">
-                <span className="min-w-32 font-mono font-medium">{u.code}</span>
-                <span className="text-xs text-muted-foreground">
-                  {u.punches} punch{u.punches === 1 ? '' : 'es'} · {formatDate(u.first)} – {formatDate(u.last)}
-                </span>
-                {canEdit && <div className="ml-auto flex w-full items-center gap-2 sm:w-auto sm:min-w-72">
-                  <EmployeePicker value={linking[u.code]?.employeeCode ?? ''} onChange={(p) => setLinking((l) => ({ ...l, [u.code]: p }))} placeholder="Belongs to…" />
-                  <Button size="sm" variant="secondary" disabled={!linking[u.code] || link.isPending} onClick={() => link.mutate({ code: u.code, employeeCode: linking[u.code]!.employeeCode })}>
-                    Link
-                  </Button>
-                </div>}
-              </li>
-            ))}
-          </ul>
-        </Card>
+    <div className={cn('grid items-start gap-3', canEdit && 'lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]')}>
+      {canEdit && (
+        <div className="min-w-0 space-y-3">
+          <SetupCard dark icon={Upload} title={UPLOAD_TITLE} summary={UPLOAD_SUMMARY} hint={UPLOAD_HINT}>
+            {/* the main action of this part: the whole block opens the file chooser */}
+            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-hero-foreground/25 p-3 text-sm transition-colors hover:border-hero-foreground/50 hover:bg-hero-foreground/5 has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-hero-foreground/10">
+                <FileSpreadsheet aria-hidden className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-medium">{upload.isPending ? 'Uploading and working out the days…' : 'The machines’ file'}</span>
+                <span className="block text-xs text-hero-muted">.xlsx or .csv</span>
+              </span>
+              <span className={cn('shrink-0 rounded-full px-4 py-2 text-sm font-medium', upload.isPending ? 'bg-hero-foreground/10 text-hero-muted' : 'bg-gold text-gold-foreground')}>Choose file</span>
+              <input
+                type="file"
+                accept=".xlsx,.csv,.txt"
+                className="sr-only"
+                disabled={upload.isPending}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) upload.mutate({ file })
+                  e.target.value = ''
+                }}
+              />
+            </label>
+            {/* the red box on a light ground - it is not readable on the dark card */}
+            {upload.error && (
+              <div className="rounded-2xl bg-card">
+                <FormError error={upload.error} />
+              </div>
+            )}
+            {r && (
+              <div className="space-y-2 rounded-2xl bg-hero-foreground/10 p-3">
+                <p className="flex items-center gap-1.5 text-xs text-hero-muted">
+                  <CircleCheck aria-hidden className="size-3.5 text-gold" /> {r.rowCount} rows read
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {(
+                    [
+                      ['added', r.added],
+                      ['already there', r.duplicates],
+                      ['unmatched codes', r.unmatchedCodes],
+                      ['skipped', r.skipped],
+                    ] as const
+                  ).map(([label, n]) => (
+                    <p key={label} className="min-w-0">
+                      <span className="block text-2xl leading-8 font-extralight tabular-nums">{n}</span>
+                      <span className="block text-xs leading-4 text-hero-muted">{label}</span>
+                    </p>
+                  ))}
+                </div>
+                {r.errors.length > 0 && (
+                  <p className="text-xs text-gold">
+                    {r.errors.slice(0, 5).join(' · ')}
+                    {r.errors.length > 5 ? ' …' : ''}
+                  </p>
+                )}
+              </div>
+            )}
+          </SetupCard>
+          {/* testing only: the dev build shows it, a production server refuses it (2026-11-22) */}
+          {import.meta.env.DEV && <ManualPunches />}
+        </div>
       )}
 
-      <Card title="Earlier uploads" action={<ExportButton disabled={uploads.isFetching || unmatched.isFetching} load={() => client.attendance.exportSetup({section:"punches"})} />} >
-        {uploads.isPending && <UploadRowsSkeleton label="Loading the uploads" />}
-        {uploads.data?.length === 0 && <EmptyState className="py-6" title="Nothing uploaded yet" hint="Each upload is listed here with who did it and what it added." />}
-        <ul className="divide-y text-sm">
-          {uploads.data?.map((u) => (
-            <li key={u.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-              <span className="font-medium">{u.fileName}</span>
-              <span className="text-xs text-muted-foreground">
-                {formatDoneBy(u.createdAt, u.by)} · {u.addedCount} added, {u.duplicateCount} already there{u.unmatchedCount ? `, ${u.unmatchedCount} unmatched code(s)` : ''}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </Card>
+      <div className="min-w-0 space-y-3">
+        {!!unmatched.data?.length && (
+          <SetupCard
+            icon={TriangleAlert}
+            title="Unmatched codes"
+            count={unmatched.data.length}
+            summary="Codes on the machines that are no employee"
+            hint={canEdit ? 'Pick who the code belongs to - their punches move to that employee and the days are worked out.' : 'Linking them to an employee needs Attendance setup: Edit.'}
+          >
+            <FormError error={link.error} />
+            <ul className="divide-y divide-border/60">
+              {unmatched.data.map((u) => (
+                <li key={u.code} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5 text-sm">
+                  <span className="rounded-lg bg-warning/15 px-2 py-1 font-mono text-xs font-semibold text-warning-ink">{u.code}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {u.punches} punch{u.punches === 1 ? '' : 'es'} · {formatDate(u.first)} – {formatDate(u.last)}
+                  </span>
+                  {canEdit && (
+                    <div className="ml-auto flex w-full items-center gap-2 sm:w-auto sm:min-w-72">
+                      <EmployeePicker value={linking[u.code]?.employeeCode ?? ''} onChange={(p) => setLinking((l) => ({ ...l, [u.code]: p }))} placeholder="Belongs to…" />
+                      <Button size="sm" variant="secondary" disabled={!linking[u.code] || link.isPending} onClick={() => link.mutate({ code: u.code, employeeCode: linking[u.code]!.employeeCode })}>
+                        Link
+                      </Button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </SetupCard>
+        )}
+
+        <SetupCard
+          icon={History}
+          title="Earlier uploads"
+          summary="Who uploaded which file, and what it added"
+          action={<ExportButton disabled={uploads.isFetching || unmatched.isFetching} load={() => client.attendance.exportSetup({ section: 'punches' })} />}
+        >
+          {uploads.isPending && <UploadRowsSkeleton label="Loading the uploads" />}
+          {uploads.data?.length === 0 && <EmptyState className="py-6" title="Nothing uploaded yet" hint="Each upload is listed here with who did it and what it added." />}
+          {!!uploads.data?.length && (
+            <ul className="max-h-[30rem] divide-y divide-border/60 overflow-y-auto text-sm">
+              {uploads.data.map((u) => (
+                <li key={u.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2.5">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-surface-2">
+                    <FileSpreadsheet aria-hidden className="size-4 text-muted-foreground" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{u.fileName}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{formatDoneBy(u.createdAt, u.by)}</span>
+                  </span>
+                  <span className="flex flex-wrap gap-1 max-sm:w-full max-sm:pl-12">
+                    <Pill tone="positive">{u.addedCount} added</Pill>
+                    {u.duplicateCount > 0 && <Pill tone="neutral">{u.duplicateCount} already there</Pill>}
+                    {u.unmatchedCount > 0 && <Pill tone="warning">{u.unmatchedCount} unmatched</Pill>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SetupCard>
+      </div>
     </div>
   )
 }
@@ -183,9 +235,14 @@ function ManualPunches() {
   const list = times.split(/[\s,;]+/).filter(Boolean)
   const add = useMutation(orpc.attendance.punches.addManual.mutationOptions({ onSuccess: () => void queryClient.invalidateQueries({ queryKey: orpc.attendance.key() }) }))
   return (
-    <Card title="Add punches by hand" hint="For testing only - not on the live system. The punches of one employee on one day, on their work location's clock; the day is worked out again.">
-      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem_minmax(0,1fr)_auto] sm:items-end">
-        <div className="space-y-1">
+    <SetupCard
+      icon={Keyboard}
+      title="Add punches by hand"
+      summary="For testing only - not on the live system"
+      hint="The punches of one employee on one day, on their work location's clock; the day is worked out again."
+    >
+      <div className="grid grid-cols-2 gap-3">
+        <div className="col-span-2 space-y-1">
           <Label htmlFor="mp-person" className="text-xs text-muted-foreground">
             Employee
           </Label>
@@ -205,7 +262,7 @@ function ManualPunches() {
         </div>
         <Button
           variant="secondary"
-          className="h-10"
+          className="col-span-2 h-10 justify-self-end"
           disabled={!person || !date || !list.length || add.isPending}
           onClick={() => add.mutate({ employeeCode: person!.employeeCode, date: fromDateInput(date)!, times: list })}
         >
@@ -218,7 +275,7 @@ function ManualPunches() {
           {add.data.added} punch{add.data.added === 1 ? '' : 'es'} added{add.data.duplicates ? `, ${add.data.duplicates} already there` : ''} - the day is worked out again.
         </p>
       )}
-    </Card>
+    </SetupCard>
   )
 }
 
@@ -230,14 +287,21 @@ function Shifts() {
   // shared by every company: Attendance setup Edit for all companies (B13)
   const canChange = useAccess().coversGroup('ATTENDANCE_SETUP')
   return (
-    <Card
+    <SetupCard
+      icon={SETUP_ICONS.shifts}
       title="Shifts"
+      count={shifts.data?.filter((s) => s.isActive).length}
+      summary="When work starts and ends, and the unpaid break"
       hint="When work starts and ends, the break and where the first half ends - how a day is judged is the attendance policy. A night shift simply ends at an earlier time (it ends the next day). Which days people work which shift is set in Schedule patterns."
-      action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!shifts.data?.length || shifts.isFetching} load={() => client.attendance.exportSetup({section:'shifts'})} />{canChange && (
-          <Button variant="gold" size="sm" onClick={() => setEditing('new')}>
-            <Plus /> Add a shift
-          </Button>
-        )}</div>
+      action={
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportButton disabled={!shifts.data?.length || shifts.isFetching} load={() => client.attendance.exportSetup({ section: 'shifts' })} />
+          {canChange && (
+            <Button variant="gold" size="sm" onClick={() => setEditing('new')}>
+              <Plus /> Add a shift
+            </Button>
+          )}
+        </div>
       }
     >
       <SharedListNote area="ATTENDANCE_SETUP" label="Attendance setup" what="changing the shifts" />
@@ -247,8 +311,9 @@ function Shifts() {
           <TableRow>
             <TableHead>Shift</TableHead>
             <TableHead>Time</TableHead>
+            <TableHead className="hidden w-48 md:table-cell">Over the day</TableHead>
             <TableHead className="hidden sm:table-cell">Break</TableHead>
-            <TableHead />
+            <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -256,24 +321,26 @@ function Shifts() {
           {shifts.data?.map((s) => (
             <TableRow key={s.id} className={s.isActive ? undefined : 'text-muted-foreground'}>
               <TableCell>
-                <span className="font-medium">{s.name}</span> <span className="text-xs text-muted-foreground">{s.code}</span>
-                <UpcomingPill versions={s.versions} />
-                {!s.isActive && (
-                  <Pill tone="neutral" className="ml-2">
-                    Retired
-                  </Pill>
-                )}
+                <span className={cn('flex flex-wrap items-center gap-x-2.5 gap-y-1', !s.isActive && 'opacity-60')}>
+                  <ShiftCode code={s.code} />
+                  <span className="font-medium">{s.name}</span>
+                  <UpcomingPill versions={s.versions} />
+                  {!s.isActive && <Pill tone="neutral">Retired</Pill>}
+                </span>
               </TableCell>
               <TableCell className="tabular-nums">
                 {s.start}–{s.end}
                 {s.crossesMidnight && <span className="ml-1 text-xs text-muted-foreground">(next day)</span>}
-                {s.halfSplit && <span className="ml-1 text-xs text-muted-foreground">· 1st half to {s.halfSplit}</span>}
+                {s.halfSplit && <span className="block text-xs text-muted-foreground">1st half to {s.halfSplit}</span>}
               </TableCell>
-              <TableCell className="hidden tabular-nums sm:table-cell">{s.breakMinutes}m</TableCell>
+              <TableCell className="hidden md:table-cell">
+                <ShiftDayBar start={s.start} end={s.end} />
+              </TableCell>
+              <TableCell className="hidden tabular-nums sm:table-cell">{s.breakMinutes} min</TableCell>
               <TableCell className="text-right">
                 {canChange && (
-                  <Button variant="ghost" size="sm" onClick={() => setEditing(s)}>
-                    <Pencil /> Edit
+                  <Button variant="ghost" size="icon" aria-label={`Edit ${s.name}`} title="Edit" onClick={() => setEditing(s)}>
+                    <Pencil />
                   </Button>
                 )}
               </TableCell>
@@ -282,7 +349,7 @@ function Shifts() {
         </TableBody>
       </Table>
       {editing && <ShiftDialog shift={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
-    </Card>
+    </SetupCard>
   )
 }
 
@@ -444,10 +511,16 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
     setHolidayListId('')
   }
   return (
-    <Card
+    <SetupCard
+      icon={SETUP_ICONS.assign}
       title="Schedules"
+      count={rows.data?.length}
+      summary="Each employee's pattern, policy and holiday list today"
       hint="Each employee's schedule pattern, attendance policy and holiday list today - “default” where none was given (the ★ pattern, the default policy; no holiday list = no holidays) - since when, and a change already set for later. A new schedule or list runs from its date until changed again; for a schedule, days already passed from that date are worked out again. The roster is only for rare one-off changes."
-      action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!rows.data?.length || rows.isFetching} load={() => client.attendance.exportSetup({ section: 'schedules', schedules: filters })} />{canEdit && (
+      action={
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportButton disabled={!rows.data?.length || rows.isFetching} load={() => client.attendance.exportSetup({ section: 'schedules', schedules: filters })} />
+          {canEdit && (
           <>
             <Button variant="secondary" size="sm" onClick={() => setGivingList({ people: [], holidayListId: '' })}>
               <Plus /> Give a holiday list
@@ -456,17 +529,18 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
               <Plus /> Give a schedule
             </Button>
           </>
-        )}</div>
+          )}
+        </div>
       }
     >
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-full sm:w-56">
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input aria-label="Search employees" className="h-9 rounded-full pl-9" placeholder="Name or code" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input aria-label="Search employees" className={FILTER_SEARCH} placeholder="Name or code" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <NativeSelect
           aria-label="Company"
-          className="[&_select]:h-9 [&_select]:rounded-full"
+          className={FILTER_SELECT}
           value={companyId}
           onChange={(e) => {
             setCompanyId(e.target.value)
@@ -484,7 +558,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
         </NativeSelect>
         <NativeSelect
           aria-label="Plant"
-          className="[&_select]:h-9 [&_select]:rounded-full"
+          className={FILTER_SELECT}
           value={plantId}
           disabled={!companyId}
           onChange={(e) => {
@@ -499,7 +573,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
             </NativeSelectOption>
           ))}
         </NativeSelect>
-        <NativeSelect aria-label="Department" className="[&_select]:h-9 [&_select]:rounded-full" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
+        <NativeSelect aria-label="Department" className={FILTER_SELECT} value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
           <NativeSelectOption value="">Every department</NativeSelectOption>
           {departments.data?.map((d) => (
             <NativeSelectOption key={d.id} value={String(d.id)}>
@@ -507,7 +581,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
             </NativeSelectOption>
           ))}
         </NativeSelect>
-        <NativeSelect aria-label="Cost centre" className="[&_select]:h-9 [&_select]:rounded-full" value={costCenterId} disabled={!companyId} onChange={(e) => setCostCenterId(e.target.value)}>
+        <NativeSelect aria-label="Cost centre" className={FILTER_SELECT} value={costCenterId} disabled={!companyId} onChange={(e) => setCostCenterId(e.target.value)}>
           <NativeSelectOption value="">{companyId ? 'Every cost centre' : 'Cost centre (pick a company)'}</NativeSelectOption>
           {costCenters.data?.map((c) => (
             <NativeSelectOption key={c.id} value={String(c.id)}>
@@ -515,7 +589,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
             </NativeSelectOption>
           ))}
         </NativeSelect>
-        <NativeSelect aria-label="Schedule pattern" className="[&_select]:h-9 [&_select]:rounded-full" value={patternId} onChange={(e) => setPatternId(e.target.value)}>
+        <NativeSelect aria-label="Schedule pattern" className={FILTER_SELECT} value={patternId} onChange={(e) => setPatternId(e.target.value)}>
           <NativeSelectOption value="">Every pattern</NativeSelectOption>
           {patterns.data?.map((p) => (
             <NativeSelectOption key={p.id} value={String(p.id)}>
@@ -524,7 +598,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
             </NativeSelectOption>
           ))}
         </NativeSelect>
-        <NativeSelect aria-label="Attendance policy" className="[&_select]:h-9 [&_select]:rounded-full" value={policyId} onChange={(e) => setPolicyId(e.target.value)}>
+        <NativeSelect aria-label="Attendance policy" className={FILTER_SELECT} value={policyId} onChange={(e) => setPolicyId(e.target.value)}>
           <NativeSelectOption value="">Every policy</NativeSelectOption>
           {policies.data?.map((p) => (
             <NativeSelectOption key={p.id} value={String(p.id)}>
@@ -532,7 +606,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
             </NativeSelectOption>
           ))}
         </NativeSelect>
-        <NativeSelect aria-label="Holiday list" className="[&_select]:h-9 [&_select]:rounded-full" value={holidayListId} onChange={(e) => setHolidayListId(e.target.value)}>
+        <NativeSelect aria-label="Holiday list" className={FILTER_SELECT} value={holidayListId} onChange={(e) => setHolidayListId(e.target.value)}>
           <NativeSelectOption value="">Every holiday list</NativeSelectOption>
           <NativeSelectOption value="none">No holiday list</NativeSelectOption>
           {holidayLists.data?.map((l) => (
@@ -541,11 +615,6 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
             </NativeSelectOption>
           ))}
         </NativeSelect>
-        {rows.data && (
-          <span className="text-xs text-muted-foreground">
-            {rows.data.length} employee{rows.data.length === 1 ? '' : 's'}
-          </span>
-        )}
         {filtered && (
           <Button variant="ghost" size="sm" onClick={clearFilters}>
             Clear filters
@@ -599,7 +668,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
                 <TableHead className="hidden sm:table-cell">Holiday list</TableHead>
                 <TableHead className="hidden sm:table-cell">Since</TableHead>
                 <TableHead className="hidden md:table-cell">Next change</TableHead>
-                {canEdit && <TableHead />}
+                {canEdit && <TableHead className="w-12" />}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -616,9 +685,16 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
                     </TableCell>
                   )}
                   <TableCell>
-                    <span className="font-medium">{r.employee.name}</span> <span className="text-xs text-muted-foreground">{r.employee.employeeCode}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {[r.employee.company, r.employee.plant, r.employee.department, r.employee.costCenter && `CC ${r.employee.costCenter}`].filter(Boolean).join(' · ')}
+                    <span className="flex items-center gap-2.5">
+                      <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-gold-soft text-xs font-semibold">
+                        {r.employee.name.slice(0, 1)}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="font-medium">{r.employee.name}</span> <span className="text-xs text-muted-foreground">{r.employee.employeeCode}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {[r.employee.company, r.employee.plant, r.employee.department, r.employee.costCenter && `CC ${r.employee.costCenter}`].filter(Boolean).join(' · ')}
+                        </span>
+                      </span>
                     </span>
                   </TableCell>
                   <TableCell>
@@ -643,7 +719,9 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        aria-label={`Change the schedule of ${r.employee.name}`}
+                        title="Change"
                         onClick={() =>
                           setEditing({
                             people: [{ employeeCode: r.employee.employeeCode, name: r.employee.name }],
@@ -652,7 +730,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
                           })
                         }
                       >
-                        <Pencil /> Change
+                        <Pencil />
                       </Button>
                     </TableCell>
                   )}
@@ -678,7 +756,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
           onSaved={() => editing.people.length > 1 && setTicked(new Map())}
         />
       )}
-    </Card>
+    </SetupCard>
   )
 }
 
@@ -889,10 +967,11 @@ function PatternWeeks({ pattern, shifts, highlight }: { pattern: Pick<Pattern, '
                 const half = pattern.halfDays.includes(w * 7 + i + 1)
                 return (
                   <td key={i} className="p-0.5">
+                    {/* a worked day dark (as the shift's code chip), a half day soft gold, a day off hatched */}
                     <span
                       className={cn(
-                        'block min-w-11 rounded-md px-1.5 py-1 text-center font-medium whitespace-nowrap',
-                        d === 0 ? 'bg-surface-2 text-muted-foreground' : half ? 'bg-gold-soft' : 'bg-hero/10',
+                        'block min-w-11 rounded-lg px-1.5 py-1 text-center font-medium whitespace-nowrap',
+                        d === 0 ? 'u-hatch text-muted-foreground' : half ? 'bg-gold-soft text-foreground' : 'bg-hero text-hero-foreground',
                       )}
                     >
                       {d === 0 ? 'Off' : `${code(d)}${half ? ' ½' : ''}`}
@@ -926,56 +1005,59 @@ function Patterns() {
     }),
   )
   return (
-    <Card
+    <SetupCard
+      icon={SETUP_ICONS.patterns}
       title="Schedule patterns"
+      count={patterns.data?.filter((p) => p.isActive).length}
+      summary="Weeks of shifts that repeat - the ★ one is the default"
       hint="Weeks of Monday-Sunday that repeat: each day a shift, its first half only (½ - half worked, half off) or off - e.g. Mon A, Tue B, Wed C, Thu GEN, Fri GEN, Sat GEN ½, Sun Off. Give one to employees under Schedules. The starred pattern is the default: everyone never given one follows it - click another star to move it."
-      action={<div className="flex flex-wrap items-center gap-2"><ExportButton disabled={!patterns.data?.length || patterns.isFetching} load={() => client.attendance.exportSetup({section:'patterns'})} />{canChange && (
-          <Button variant="gold" size="sm" onClick={() => setEditing('new')}>
-            <Plus /> Add a pattern
-          </Button>
-        )}</div>
+      action={
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportButton disabled={!patterns.data?.length || patterns.isFetching} load={() => client.attendance.exportSetup({ section: 'patterns' })} />
+          {canChange && (
+            <Button variant="gold" size="sm" onClick={() => setEditing('new')}>
+              <Plus /> Add a pattern
+            </Button>
+          )}
+        </div>
       }
     >
       <SharedListNote area="ATTENDANCE_SETUP" label="Attendance setup" what="changing the schedule patterns" />
       <FormError error={patterns.error ?? makeDefault.error} />
       {patterns.isPending && <PatternRowsSkeleton />}
-      <ul className="divide-y text-sm">
+      {/* each pattern a tile, two side by side on a wide screen */}
+      <ul className="grid gap-2 text-sm lg:grid-cols-2">
         {patterns.data?.map((p) => (
-          <li key={p.id} className={cn('flex flex-wrap items-start gap-x-3 gap-y-2 py-3', !p.isActive && 'text-muted-foreground')}>
-            {/* the default pattern: a gold star; another active pattern's star makes it the default */}
-            {p.isDefault ? (
-              <span className="grid size-7 shrink-0 place-items-center" title="The default pattern - for everyone never given a schedule">
-                <Star className="size-4 fill-gold text-gold" aria-label="Default pattern" />
-              </span>
-            ) : p.isActive && canChange ? (
-              <Button variant="ghost" size="icon-sm" className="shrink-0" title={`Make ${p.name} the default`} aria-label={`Make ${p.name} the default`} onClick={() => setStarring(p)}>
-                <Star className="text-muted-foreground/60" />
-              </Button>
-            ) : (
-              <span className="size-7 shrink-0" />
-            )}
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <p>
-                <span className="font-medium">{p.name}</span> <span className="text-xs text-muted-foreground">{weeksOf(p.days.length)}</span>
+          <li key={p.id} className={cn('min-w-0 space-y-2 rounded-2xl bg-surface-2/60 p-3', !p.isActive && 'text-muted-foreground')}>
+            <div className="flex items-center gap-2">
+              {/* the default pattern: a gold star; another active pattern's star makes it the default */}
+              {p.isDefault ? (
+                <span className="grid size-8 shrink-0 place-items-center" title="The default pattern - for everyone never given a schedule">
+                  <Star className="size-4 fill-gold text-gold" aria-label="Default pattern" />
+                </span>
+              ) : p.isActive && canChange ? (
+                <Button variant="ghost" size="icon" className="shrink-0" title={`Make ${p.name} the default`} aria-label={`Make ${p.name} the default`} onClick={() => setStarring(p)}>
+                  <Star className="text-muted-foreground/60" />
+                </Button>
+              ) : (
+                <span className="size-8 shrink-0" />
+              )}
+              <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="font-medium">{p.name}</span>
+                <span className="text-xs text-muted-foreground">{weeksOf(p.days.length)}</span>
                 <UpcomingPill versions={p.versions} />
-                {p.isDefault && (
-                  <Pill tone="gold" className="ml-2">
-                    Default
-                  </Pill>
-                )}
-                {!p.isActive && (
-                  <Pill tone="neutral" className="ml-2">
-                    Retired
-                  </Pill>
-                )}
+                {p.isDefault && <Pill tone="gold">Default</Pill>}
+                {!p.isActive && <Pill tone="neutral">Retired</Pill>}
               </p>
+              {canChange && (
+                <Button variant="ghost" size="icon" className="shrink-0" aria-label={`Edit ${p.name}`} title="Edit" onClick={() => setEditing(p)}>
+                  <Pencil />
+                </Button>
+              )}
+            </div>
+            <div className={cn(!p.isActive && 'opacity-60')}>
               <PatternWeeks pattern={p} shifts={shifts.data ?? []} />
             </div>
-            {canChange && (
-              <Button variant="ghost" size="sm" onClick={() => setEditing(p)}>
-                <Pencil /> Edit
-              </Button>
-            )}
           </li>
         ))}
       </ul>
@@ -990,7 +1072,7 @@ function Patterns() {
           onClose={() => setStarring(null)}
         />
       )}
-    </Card>
+    </SetupCard>
   )
 }
 

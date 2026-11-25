@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Copy, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { EmptyState } from '@/components/EmptyState'
 import { ExportButton } from '@/components/ExportButton'
 import { DialogCancel, FormDialog } from '@/components/FormDialog'
@@ -16,18 +17,18 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { useAccess } from '@/hooks/useAccess'
 import { client, orpc } from '@/lib/orpc'
 import { formatDate, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
-import { HOLIDAY_PORTION, toneOf } from './labels'
+import { FILTER_SELECT, HOLIDAY_PORTION, SETUP_ICONS, toneOf } from './labels'
+import { SetupCard } from './SetupCard'
 
 // The holidays of a year (2026-11-24 - each in the holiday lists that have it, with a category and the part of the day
 // off). Changing one needs Attendance setup Edit over every list it is in (a company's list: that whole company; a list of
 // every company: all companies) - only those holidays offer Edit, only those lists can be ticked.
 
-type CardProps = { title: string; hint?: string; action?: React.ReactNode; children: React.ReactNode }
 type Holiday = Awaited<ReturnType<typeof client.attendance.holidays.list>>[number]
 type Portion = Holiday['portion']
 type Mode = Holiday['mode']
 
-export function HolidaysSetup({ card: Card }: { card: (props: CardProps) => React.ReactNode }) {
+export function HolidaysSetup() {
   const queryClient = useQueryClient()
   const [year, setYear] = useState(todayDay().getUTCFullYear())
   // one list's holidays, or every list's ('')
@@ -35,28 +36,33 @@ export function HolidaysSetup({ card: Card }: { card: (props: CardProps) => Reac
   const holidays = useQuery(orpc.attendance.holidays.list.queryOptions({ input: { year, ...(listId && { holidayListId: Number(listId) }) } }))
   const lists = useQuery(orpc.attendance.holidayLists.list.queryOptions({ input: {} }))
   const refresh = () => void queryClient.invalidateQueries({ queryKey: orpc.attendance.key() })
-  const remove = useMutation(orpc.attendance.holidays.delete.mutationOptions({ onSuccess: refresh }))
+  const remove = useMutation(orpc.attendance.holidays.delete.mutationOptions({ onSuccess: () => (refresh(), setRemoving(null)) }))
   const copy = useMutation(orpc.attendance.holidays.copyYear.mutationOptions({ onSuccess: refresh }))
   const [editing, setEditing] = useState<Holiday | 'new' | null>(null)
+  // the holiday to remove - asked first (the Remove button is an icon now, easy to hit)
+  const [removing, setRemoving] = useState<Holiday | null>(null)
   const { can, coversGroup, coversWhole } = useAccess()
   const mayChange = (companyId: number | null) => (companyId === null ? coversGroup('ATTENDANCE_SETUP') : coversWhole('ATTENDANCE_SETUP', 'WRITE', { companyId }))
   // (while the lists load: anyone with Edit - so the toolbar does not jump when they arrive)
   const canAdd = lists.data ? lists.data.some((l) => mayChange(l.companyId)) : can('ATTENDANCE_SETUP', 'WRITE')
   return (
-    <Card
+    <SetupCard
+      icon={SETUP_ICONS.holidays}
       title="Holidays"
+      count={holidays.data?.length}
+      summary={`The days off in ${year}, in the holiday lists that have them`}
       hint="Each holiday is in the holiday lists that have it - everyone following one of them that day is off, the whole day or one half (the other half is worked). A list has one holiday a day. A holiday on a day already worked out works that month out again."
       action={
         <div className="flex flex-wrap items-center gap-2">
           <ExportButton disabled={!holidays.data?.length || holidays.isFetching} load={() => client.attendance.exportSetup({ section: 'holidays', year, ...(listId && { holidayListId: Number(listId) }) })} />
-          <NativeSelect className="[&_select]:h-9 [&_select]:rounded-full" aria-label="Year" value={String(year)} onChange={(e) => setYear(Number(e.target.value))}>
+          <NativeSelect className={FILTER_SELECT} aria-label="Year" value={String(year)} onChange={(e) => setYear(Number(e.target.value))}>
             {[year - 1, year, year + 1].map((y) => (
               <NativeSelectOption key={y} value={String(y)}>
                 {y}
               </NativeSelectOption>
             ))}
           </NativeSelect>
-          <NativeSelect className="[&_select]:h-9 [&_select]:rounded-full" aria-label="Holiday list" value={listId} onChange={(e) => setListId(e.target.value)}>
+          <NativeSelect className={FILTER_SELECT} aria-label="Holiday list" value={listId} onChange={(e) => setListId(e.target.value)}>
             <NativeSelectOption value="">Every list</NativeSelectOption>
             {lists.data?.map((l) => (
               <NativeSelectOption key={l.id} value={String(l.id)}>
@@ -88,38 +94,63 @@ export function HolidaysSetup({ card: Card }: { card: (props: CardProps) => Reac
       {holidays.data?.length === 0 && (
         <EmptyState className="py-6" title={`No holidays in ${year}${listId ? ' in this list' : ''} yet`} hint={canAdd ? `Add them, or copy ${year - 1}'s and move the festivals whose dates differ.` : 'HR adds them.'} />
       )}
-      <ul className="divide-y text-sm">
-        {holidays.data?.map((h) => (
-          <li key={h.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="font-medium tabular-nums">{formatDate(h.date)}</span>
-              <span>{h.name}</span>
-              <Pill tone={toneOf(h.category.tone)}>{h.category.name}</Pill>
-              {h.portion !== 'FULL_DAY' && <span className="text-xs text-muted-foreground">{HOLIDAY_PORTION[h.portion]}</span>}
-              {/* taken on application from a leave balance (2026-11-24) */}
-              {h.mode === 'ON_APPLICATION' && (
-                <span className="text-xs text-info-ink">
-                  On application · {h.leaveType?.code}
-                  {h.allowHalfDay ? ' · half days too' : ''}
+      {/* two columns of holidays on a wide screen, each with its date as a small calendar leaf */}
+      {!!holidays.data?.length && (
+        <ul className="grid gap-x-6 text-sm lg:grid-cols-2">
+          {holidays.data.map((h) => (
+            <li key={h.id} className="flex items-center gap-3 border-b border-border/60 py-2">
+              <span className="grid w-12 shrink-0 justify-items-center rounded-xl bg-surface-2 py-1 leading-none">
+                <span className="text-[11px] text-muted-foreground">{h.date.toLocaleDateString('en-IN', { timeZone: 'UTC', month: 'short' })}</span>
+                <span className="text-xl font-light tabular-nums">{h.date.getUTCDate()}</span>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-medium">{h.name}</span>
+                  <Pill tone={toneOf(h.category.tone)}>{h.category.name}</Pill>
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {[
+                    h.date.toLocaleDateString('en-IN', { timeZone: 'UTC', weekday: 'long' }),
+                    h.portion !== 'FULL_DAY' && HOLIDAY_PORTION[h.portion],
+                    h.lists.map((l) => l.name).join(', '),
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+                {/* taken on application from a leave balance (2026-11-24) */}
+                {h.mode === 'ON_APPLICATION' && (
+                  <span className="block text-xs text-info-ink">
+                    On application · {h.leaveType?.code}
+                    {h.allowHalfDay ? ' · half days too' : ''}
+                  </span>
+                )}
+              </span>
+              {h.lists.every((l) => mayChange(l.companyId)) && (
+                <span className="flex shrink-0">
+                  <Button variant="ghost" size="icon" aria-label={`Edit ${h.name}`} title="Edit" onClick={() => setEditing(h)}>
+                    <Pencil />
+                  </Button>
+                  <Button variant="ghost" size="icon" aria-label={`Remove ${h.name}`} title="Remove" disabled={remove.isPending} onClick={() => setRemoving(h)}>
+                    <Trash2 />
+                  </Button>
                 </span>
               )}
-              <span className="text-xs text-muted-foreground">{h.lists.map((l) => l.name).join(', ')}</span>
-            </span>
-            {h.lists.every((l) => mayChange(l.companyId)) && (
-              <span className="flex gap-1">
-                <Button variant="ghost" size="sm" onClick={() => setEditing(h)}>
-                  <Pencil /> Edit
-                </Button>
-                <Button variant="ghost" size="sm" disabled={remove.isPending} onClick={() => remove.mutate({ id: h.id })}>
-                  <Trash2 /> Remove
-                </Button>
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      )}
+      {removing && (
+        <ConfirmDialog
+          title={`Remove ${removing.name}?`}
+          description={`${formatDate(removing.date)} stops being a holiday in ${removing.lists.map((l) => l.name).join(', ')} and its month is worked out again.${removing.mode === 'ON_APPLICATION' ? ' Leave taken for it is cancelled and the days given back (the employees are e-mailed).' : ''}`}
+          confirm="Remove"
+          pending={remove.isPending}
+          onConfirm={() => remove.mutate({ id: removing.id })}
+          onClose={() => setRemoving(null)}
+        />
+      )}
       {editing && <HolidayDialog holiday={editing === 'new' ? null : editing} mayChange={mayChange} onClose={() => setEditing(null)} />}
-    </Card>
+    </SetupCard>
   )
 }
 

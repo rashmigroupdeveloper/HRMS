@@ -16,7 +16,9 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { client, orpc } from '@/lib/orpc'
 import { cn, formatDate, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
-import { ROSTER_HINT } from './labels'
+import { FILTER_SEARCH, ROSTER_HINT, ROSTER_SUMMARY, SETUP_ICONS } from './labels'
+import { SetupCard } from './SetupCard'
+import { ShiftCode } from './ShiftChips'
 
 const DAY = 86_400_000
 // the Monday of a day's week
@@ -61,46 +63,54 @@ export function RosterView() {
   }
 
   return (
-    <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <ExportButton className="order-last" disabled={!data?.rows.length || grid.isFetching} load={() => client.attendance.rosters.export({from:start,to,search:search.trim()||undefined,onlyChanges:true})} />
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon" aria-label="Previous two weeks" onClick={() => setStart(new Date(start.getTime() - 14 * DAY))}>
-              <ChevronLeft />
-            </Button>
-            <span className="text-sm font-medium tabular-nums">
-              {formatDate(start)} – {formatDate(to)}
-            </span>
-            <Button variant="ghost" size="icon" aria-label="Next two weeks" onClick={() => setStart(new Date(start.getTime() + 14 * DAY))}>
-              <ChevronRight />
-            </Button>
-          </div>
-          <div className="relative w-full sm:w-auto">
-            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="h-9 w-full rounded-full pl-9 sm:w-48" placeholder="Name or code" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-        </div>
-        {data?.canEdit && (
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" onClick={() => setAdding(true)}>
-              <Plus /> Change a day
-            </Button>
-            {/* gold only when there is something to publish */}
-            {drafts.length > 0 && (
-              <Button
-                variant="gold"
-                size="sm"
-                disabled={publish.isPending}
-                onClick={() => publish.mutate({ employeeCodes: [...new Set(drafts.map((d) => d.row.employeeCode))], from: start, to })}
-              >
-                <Send /> {publish.isPending ? 'Publishing…' : `Publish ${drafts.length} draft day${drafts.length === 1 ? '' : 's'}`}
+    <SetupCard
+      icon={SETUP_ICONS.roster}
+      title="Roster changes"
+      count={data ? changes.length : undefined}
+      summary={ROSTER_SUMMARY}
+      hint={ROSTER_HINT}
+      action={
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportButton disabled={!data?.rows.length || grid.isFetching} load={() => client.attendance.rosters.export({ from: start, to, search: search.trim() || undefined, onlyChanges: true })} />
+          {data?.canEdit && (
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setAdding(true)}>
+                <Plus /> Change a day
               </Button>
-            )}
-          </div>
-        )}
+              {/* gold only when there is something to publish */}
+              {drafts.length > 0 && (
+                <Button
+                  variant="gold"
+                  size="sm"
+                  disabled={publish.isPending}
+                  onClick={() => publish.mutate({ employeeCodes: [...new Set(drafts.map((d) => d.row.employeeCode))], from: start, to })}
+                >
+                  <Send /> {publish.isPending ? 'Publishing…' : `Publish ${drafts.length} draft day${drafts.length === 1 ? '' : 's'}`}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      }
+    >
+      {/* the two weeks shown and the search */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-0.5 rounded-full bg-surface-2 p-0.5">
+          <Button variant="ghost" size="icon" className="hover:bg-card" aria-label="Previous two weeks" onClick={() => setStart(new Date(start.getTime() - 14 * DAY))}>
+            <ChevronLeft />
+          </Button>
+          <span className="px-1 text-sm font-medium tabular-nums">
+            {formatDate(start)} – {formatDate(to)}
+          </span>
+          <Button variant="ghost" size="icon" className="hover:bg-card" aria-label="Next two weeks" onClick={() => setStart(new Date(start.getTime() + 14 * DAY))}>
+            <ChevronRight />
+          </Button>
+        </div>
+        <div className="relative w-full sm:w-auto">
+          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input aria-label="Search employees" className={cn(FILTER_SEARCH, 'w-full sm:w-48')} placeholder="Name or code" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
       </div>
-      <p className="text-xs text-muted-foreground">{ROSTER_HINT}</p>
       <FormError error={grid.error ?? save.error ?? clear.error ?? publish.error} />
       {publish.data && <p className="rounded-2xl bg-positive/10 px-4 py-2 text-sm text-positive-ink">Published {publish.data.published} day(s) - attendance follows them now.</p>}
       {grid.isPending && <RosterRowsSkeleton label="Loading the roster" />}
@@ -136,7 +146,7 @@ export function RosterView() {
                     </TableCell>
                     <TableCell className="hidden text-xs text-foreground/70 sm:table-cell">{defaultLabel(cell.planned)}</TableCell>
                     <TableCell>
-                      <span className="font-medium">{shiftCode(entry.shiftId)}</span>
+                      {entry.shiftId === null ? <span className="u-hatch inline-grid min-w-9 place-items-center rounded-lg px-1.5 py-1 text-xs leading-4 font-medium text-muted-foreground">Off</span> : <ShiftCode code={shiftCode(entry.shiftId)} />}
                       {cell.warnings.length > 0 && <p className="text-xs text-negative-ink">{cell.warnings.join(' · ')}</p>}
                     </TableCell>
                     <TableCell className="text-right">
@@ -159,7 +169,7 @@ export function RosterView() {
         </div>
       )}
       {adding && data && <ChangeDayDialog shifts={data.shifts} onClose={() => setAdding(false)} />}
-    </section>
+    </SetupCard>
   )
 }
 
