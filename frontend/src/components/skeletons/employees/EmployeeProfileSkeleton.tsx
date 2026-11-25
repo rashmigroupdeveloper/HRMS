@@ -1,3 +1,4 @@
+import { DOCUMENT_UPLOAD_NOTE } from '@/pages/employees/components/document-labels'
 import {
   Activity,
   AtSign,
@@ -62,6 +63,7 @@ export function EmployeeProfileSkeleton({
   edit,
   hr = false,
   manageDocuments = false,
+  uploadDocuments = false,
   label = 'Loading',
   className,
 }: {
@@ -75,6 +77,7 @@ export function EmployeeProfileSkeleton({
   hr?: boolean
   // may add documents and issue letters - the buttons on those tabs
   manageDocuments?: boolean
+  uploadDocuments?: boolean
   label?: string
   className?: string
 }) {
@@ -152,7 +155,7 @@ export function EmployeeProfileSkeleton({
           })}
         </nav>
 
-        <div className="mt-4 xl:col-start-2 xl:row-start-1 xl:mt-0">{active === 'job' ? <JobTab /> : <OtherTab tab={active} hr={hr} manageDocuments={manageDocuments} />}</div>
+        <div className="mt-4 xl:col-start-2 xl:row-start-1 xl:mt-0">{active === 'job' ? <JobTab /> : <OtherTab tab={active} hr={hr} manageDocuments={manageDocuments} uploadDocuments={uploadDocuments} />}</div>
       </Tabs>
     </div>
   )
@@ -389,22 +392,22 @@ const TAB_CARDS: Record<string, { grid: string; cards: Card[] }> = {
 const RECORD_LABELS = ['Created', 'Last changed', 'Joining completed', 'Joining form signed online', 'Pre-employment medical']
 const OFFICE_CHECKS = ['Joining formalities completed', 'Payroll updated', 'ID card / access created', 'Induction']
 
-function OtherTab({ tab, hr, manageDocuments }: { tab: string; hr: boolean; manageDocuments: boolean }) {
+function OtherTab({ tab, hr, manageDocuments, uploadDocuments }: { tab: string; hr: boolean; manageDocuments: boolean; uploadDocuments: boolean }) {
   if (tab === 'documents')
     return (
       <InfoCard
         icon={FileText}
         title="Documents"
         aside={
-          manageDocuments && (
-            <Button variant="gold" size="sm" className="ml-1" disabled>
+          uploadDocuments && (
+            <Button variant="gold" size="sm" className="ml-1 h-9 sm:h-8" disabled>
               <Plus /> Add document
             </Button>
           )
         }
       >
         <div className="space-y-3">
-          {manageDocuments && <p className="text-xs text-muted-foreground">Employees do not upload - they give documents to HR, who add them here.</p>}
+          {uploadDocuments && <p className="text-xs text-muted-foreground">{DOCUMENT_UPLOAD_NOTE}</p>}
           <DocumentsSkeleton label="Loading the documents" />
         </div>
       </InfoCard>

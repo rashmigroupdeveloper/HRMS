@@ -12,7 +12,7 @@ import type { saveEmployeeFormInput } from './form.schema.js'
 
 // HR edits an employee's records after joining (phase 5, 2026-11-16). Each section belongs to an area (split
 // 2026-11-16, SECTION_AREA): seeing it needs that area's View, saving it its Edit - always with "Employee directory &
-// job" View (the router). Employees change nothing themselves: they ask HR outside the system.
+// job" View (the router). Canonical profile edits remain with HR; document submissions use employees.documents.*.
 // - The sections are the joining form's and are checked with the same schemas (form.schema.ts).
 // - Saved numbers (Aadhaar, PAN, passport, bank account, a family member's Aadhaar) leave only as their last 4 digits;
 //   a number left empty keeps the saved one (identity documents by type, the bank account, a family member by name +

@@ -265,6 +265,11 @@ frontend/src/
   plant -> department ("all" at any level) at View / Edit, worked out only by `core/auth/scope.ts`; only the active role's
   rows count. Every API that
   reads or changes people's records follows **section 8** - read it before writing or changing any API.
+- **Employee document submissions (approved 2026-11-25):** an authenticated employee may upload only to their own
+  record without HR Edit access. Files start pending, cannot satisfy evidence checks until HR verifies them, and do
+  not replace a verified current copy while pending. Existing scoped HR management and sensitive-type access remain;
+  an employee never reviews their own submission. Family/nominee requests are approved in principle but wait for
+  their proposed schema/process (BACKLOG item 32); this exception does not allow direct profile editing.
 - The frontend decides what to show with `useAccess().can(area, level)` and `useAccess().covers(area, level, where)` (from
   `accounts.me`), never with role names; the backend checks the same access on every call.
 - Services throw `ORPCError` with a standard code for expected failures (`NOT_FOUND`, `CONFLICT`, `FORBIDDEN`, ...).

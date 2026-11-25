@@ -18,8 +18,8 @@ import {
   statutorySchema,
 } from '../employees.schema.js'
 
-// HR edits an employee's records after joining (phase 5, decided 2026-11-16: employees change nothing themselves -
-// they ask HR outside the system, HR makes the change here). The sections and rules are the joining form's (same
+// HR edits an employee's records after joining (phase 5, decided 2026-11-16: canonical profile edits remain with HR -
+// HR applies the change here). Employee submissions do not grant direct edit access. The sections and rules are the joining form's (same
 // schemas), so a record is always checked the same way. Saved numbers come back only as their last 4 digits and may be
 // left out to keep them.
 

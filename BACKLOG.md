@@ -36,10 +36,10 @@ and the "Reports to" filter.
 - **Phase 4 - access scopes: skipped for now (2026-11-16 - "we will do this later")** - the plan is in item 3a. Its
   "personal details" access area is done: the employee areas were split in four on 2026-11-16 (Employee directory &
   job / personal details / IDs, bank & PF-ESIC / documents, next to Employee · Salary and medical information).
-- **Phase 5: done (2026-11-16)** - decided instead of self-service: employees change nothing in the system (they write
-  to HR outside it); HR edits every section of the profile (`employees.form.*`) and manages the employee's documents
-  (`employees.documents.upload / review / delete / restore`, 4 new document types); the background worker
-  (`src/worker.ts`) with session clean-up and the reminders of item 6.
+- **Phase 5: built 2026-11-16, decision revised 2026-11-25:** HR still edits canonical profile sections and manages
+  documents. Employees may now submit their own documents for HR review; family/nominee change requests are approved
+  in principle and await their schema (item 32). Employees do not directly edit the canonical family/nominee records.
+  Worker/session cleanup/reminders remain built as before.
 - **Phase 6 - onboarding extras: done (2026-11-16) except the offer approval** (skipped by the user - item 2): the
   Letter of Intent before the full offer, joining tasks for other teams (each task given to one person with the
   "Joining tasks" access, My tasks page, morning reminders), and letters to employees (appointment automatically on
@@ -75,8 +75,9 @@ and the "Reports to" filter.
 - **Logins for employees who joined before 2026-11-15, were added with "Add employee" or imported** (as in the old
   HRMS, 2026-11-16: no automatic login): HR gives them one by one on the Roles & access page. **Later:** "give logins"
   to many employees at once (e.g. a whole import), e-mailed in batches.
-- **Employees changing their own details:** decided 2026-11-16 - **not in the system.** The employee writes to HR
-  outside it; HR (Employees: Edit) changes the record on the profile. No change requests, no uploads by employees.
+- **Employee submissions (revised by the user 2026-11-25):** own document uploads for HR review are built.
+  Family/nominee change requests are now selected work, awaiting schema approval (item 32); direct canonical editing
+  is still HR-only. This supersedes the 2026-11-16 exclusion for these named submission flows.
 
 ### 3a. Data access by company, plant and department (agreed with the user 2026-11-18 - phases 0-5 built)
 Compared with the old HRMS (org units, fails open, gaps) and VBMS (company -> plant -> department tree, leaks through
@@ -322,7 +323,9 @@ Compared with an employee-profile screen from another HR system (2026-11-14); th
   relationships: decisions with request drill-down, own attendance/leave/recent requests, scoped People today and report
   links, profile/documents and permitted workspace links. Employee attendance cycle, HR open joining tasks/accepted
   offers and administration-first links give distinct capability-based layouts. Crextio informs the visual hierarchy.
-  Uses existing APIs, with no schema changes or role-name checks.
+  **Polished 2026-11-25:** consistent wide work column / charcoal role focus, compact rows and empty states,
+  grouped personal tools and matching light/dark loading panels. Uses existing APIs, with no schema changes or
+  role-name checks.
 - **Still deferred:** broader HR workload trends, payroll console, executive trends and device-health panels.
   **Needs:** agreed metrics and the owning source modules; payroll/KPI/device values must not be invented.
 
@@ -355,8 +358,9 @@ sign-in lasts 7 days from signing in (now a security rule).
 - [x] An e-mail the mail server refused is kept (encrypted) and tried again by the worker - after 1, 5, 15 and 60
   minutes, 5 tries in all (`core/mail/retry.ts`, table `mail_retries`); HR is told it will be tried again.
 - [x] Change history as an Excel download (`changeHistory.export`, the "Export" button on the History page).
-- [?] A daily e-mail of the day's joiners (old: joiners + leavers, but nobody was set up to receive it). **Ask:** who
-  receives it? The leavers half waits for the exit module.
+- [ ] Daily joiner/recorded-leaver report and email (selected 2026-11-25): HR Head receives it; Super Admin configures
+  additional recipients. Time/coverage and recipient mapping remain to be agreed. Existing leaving dates support a
+  recorded-leaver register; full exit workflow details still wait for exit. See item 32.
 
 **Employees and documents**
 - [x] Directory: every filter takes several values with live counts in the filter drawer, a workforce (white / blue
@@ -828,8 +832,9 @@ See items 12, 13, 18 and 27.
 - [ ] **DEFERRED with owning module:** salary-assignment/payroll-input, legacy-loan, asset, holiday, statutory-rate
   and PT-slab imports; preview/commit/discard and error-report workflow. Reuse current imports where sufficient;
   a generic import framework is not a requirement by itself.
-- **INTENTIONALLY EXCLUDED (2026-11-16):** employee self-service family/nominee change requests, profile editing and
-  employee document uploads. Employees contact HR outside the system; HR edits/uploads. Do not restore main's flow.
+- **DECISION REVISED (2026-11-25):** the user selected employee family/nominee submissions and document uploads
+  with HR review. Own uploads are built; family/nominee requests await schema approval in item 32. Direct canonical
+  profile editing remains HR-only. The earlier submission exclusion no longer applies to these named flows.
 - **PRESENT:** employee import/update/history/error files, punch upload and opening leave-balance import.
 
 #### Loans and advances — DEFERRED
@@ -969,3 +974,81 @@ See items 3, 15 and 18.
 
 - [x] Approvals → Team requests: current team/HOD department or separately scoped Leave/Attendance access; all leave, cancellation, regularisation, OD, comp-off and shift-change outcomes with original employee messages and approval remarks. Inclusive date basis, type/status/person filters, URL persistence, paged compact table and one full Excel review export.
 - [ ] Preserve source details of older, superseded leave-cancellation requests. A leave application points only to its latest cancellation approval; another cancellation can replace that relation and its reason. The new report labels unavailable details rather than reconstructing text from summaries; request-raised date filtering can still show these approval rows. Retaining every future cancellation's original dates/reason needs an agreed schema/history change; already-lost text may be unrecoverable. No speculative backfill or audit-log workaround.
+
+### 32. Selected extensions — new-only execution plan (2026-11-25)
+
+The user selected these four areas and requested work using **only hrms-new's current context**. This execution plan
+is based on its current schema/services, not main's architecture. Deliver one tested slice at a time. Proposed schema
+below is **not approved or added**; each model/field is proposed before its migration per CLAUDE.md section 2.
+
+**Confirmed decisions:** employee family/nominee submissions and document uploads require HR review (supersedes the
+16 November exclusion). Daily report goes to the HR Head; only an active Super Admin configures additional recipients
+(check `CurrentUser.isSuperAdmin`, not a role name). Choosing recipients never grants data access.
+
+1. **Own document submissions — built, no schema changes.** Reuses EmployeeDocument/PENDING/VERIFIED/REJECTED and
+   employees.documents.*. Own upload is authenticated and bound to employee ID; other employees keep existing HR
+   scope/area checks. Review/delete/restore remain HR management operations. Self-review is forbidden. Pending own
+   evidence cannot satisfy consent; verified copies stay current until a replacement is verified. HR uses the
+   employee's Documents tab. Remaining improvement: a consolidated scoped HR submission queue/notifications, using
+   these same rows and reviewers rather than a second document store.
+2. **Recorded joiner/leaver register + Excel — next schema-free report slice.** Employee.dateOfJoining and
+   dateOfLeaving exist; a complete resignation/clearance/F&F domain does not. Use inclusive work-date range, event
+   type, person and company/plant/department filters; summaries and full matching export share EMPLOYEES READ scope.
+   Group/company reports include only the role's authorized slice. One person may have both joining/leaving events
+   in a period. Label current placement, future recorded leaving dates and the absence of exit confirmation/history;
+   never infer resignation approval, clearance or settlement. Reuse core/excel review metadata. Do not call a
+   current-directory export a historical exit register. Owning sources: employees.schema/service/repository.ts,
+   employee.prisma, core/excel. Inspect existing list/export first; extend only if event semantics fit their contract.
+3. **Daily report configuration/email — schema proposal needed.** Reuse worker.ts, core/jobs/scheduler and
+   core/mail retry/attachments. Proposed first model `DailyMovementReportSetting`: enabled, HR-head role FK,
+   IST minute-of-day, coverage (same day / previous day), plus standard audit fields. Select the HR Head role by ID,
+   never code against its name. Proposed recipient relation names employee IDs selected by Super Admin; HR Head
+   role holders are included automatically, duplicates removed. Resolve recipient eligibility and role-specific
+   employee data access at delivery time; do not union all assigned roles or send one group-wide attachment to
+   differently scoped recipients. Missing email/disabled/exited/no longer authorized recipients are skipped visibly.
+   Propose a per-date/per-recipient delivery record when adding reliable retries, with explicit attempt state and
+   uniqueness; scheduler JobRun alone is not a delivery receipt. SMTP retries cannot promise exactly-once delivery.
+   **Still needed:** confirm time/coverage (recommend 09:00 IST, previous day, not yet approved), choose the actual
+   HR Head role and decide zero-event mail behavior. No real scheduled email is enabled by this plan.
+4. **Family/nominee change requests — schema proposal needed.** Reuse employeesSchemas family/nominee validation,
+   core encryption, FormDialog/FormDrawer and approvalsService.registerFeature/raiseRequest. Proposed one
+   `EmployeeProfileChangeRequest` model: employee FK, section FAMILY/NOMINEES, encrypted before/proposed snapshots,
+   reason, approval request link, and standard audit fields. Review state belongs to the existing approval request;
+   do not duplicate its decisions/status. Add the required ApprovalKind/ApprovalFeature values with that model.
+   Canonical EmployeeFamilyMember/EmployeeNominee rows change only in the final approval transaction, after checking
+   the before snapshot still matches and revalidating current marriage, nomination/share and guardian rules. A stale
+   request requires review/resubmission; never overwrite HR's intervening edits. Owners may read their requests;
+   HR review requires scoped EMPLOYEES READ + EMPLOYEE_PERSONAL_DETAILS WRITE, and relevant sensitive access for the
+   encrypted fields. No self-approval. One pending request per employee/section; withdraw/reject/resubmit preserve
+   history. Confirm HR reviewer chain before activating it. Family/request payloads never appear in plaintext logs.
+5. **Imports — build domain-specific slices before a shared job schema.** Current employee import already previews
+   (`save:false`), commits atomically (`save:true`), records successful/failed files and exports errors; it has no
+   durable staged preview or discard state. Punch upload and opening leave balances have their own real workflows.
+   Holidays now use HolidayList/Category/Mode/portion/leaveType and protected taken holidays/month locks; any holiday
+   import must call those current services, not an obsolete flat company holiday writer. Start with a reviewed
+   holiday template/preview/commit using that model, then salary assignments through salary/job-change rules.
+   Payroll inputs, legacy loans, assets, statutory rates and PT slabs wait for the missing payroll/loan/asset/rate
+   models and agreed templates. Do not store them in generic JSON import rows as a substitute for their owner.
+   Only when the first two staged adapters need persistence, propose ImportJob + ImportJobRow (actor/domain/file
+   key/hash/state/times; row number/validated encrypted payload/errors/target revision), with commit/discard audit,
+   revalidation and scope checks at commit, concurrency protection and file retention. Share UX; keep each adapter
+   in its owning module and one authoritative domain writer. Initial salary imports must not bypass approvals or
+   silently overwrite effective-dated salaries; define opening assignment vs revision with HR first.
+6. **Biometric ingestion — first verify IT's source contract, then propose models.** Current punches module reads
+   CSV/XLSX, normalizes work-location timezones, deduplicates code+instant, preserves uploads/unmatched codes, links
+   unmatched punches and reworks attendance. It does not have a device registry, durable source cursor, enrollment
+   facts, quarantine/replay model or adapters. Reuse this normalization/day-ownership/locking path after separating
+   transport from ingestion; don't manufacture uploads to represent automatic events. Candidate models for separate
+   approval: BiometricDevice (source identity/location/zone/enabled), BiometricSyncState (cursor/success/error),
+   BiometricIdentity (external person mapping/verification source/time), BiometricIngestionItem (source event identity,
+   encrypted retained payload/error/disposition and resolved punch link). Exact fields follow the actual source.
+   Build **one** supported Kent adapter first, not four speculative adapters. Quarantine malformed/unknown/outside
+   scope events with reason; retry/re-ingestion is idempotent and cannot bypass locked attendance or approved changes.
+   Device health distinguishes transport success, last received punch and enrollment verification; a quiet shift is
+   not proof of device failure. No biometric images/templates are stored without a separately approved real need.
+   **IT must provide:** protocol/version, supported push/API/DB/file mode, sanitized payload samples, authentication,
+   stable event/device/person keys, timezone, corrections/deletions/replay behavior, connectivity and retention.
+
+Verification for each slice: outside-company/plant/department reads and writes, own-vs-other records, active-role
+isolation, stale/replayed/concurrent requests, invalid rows/files, true Excel scope/totals, UI loading/empty/error at
+1440/390, audit attribution and all CLAUDE.md section 6 commands. Do not mark later stages built because this plan exists.

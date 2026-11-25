@@ -43,9 +43,9 @@ export function findById(id: number, db: DbClient = prisma) {
   })
 }
 
-// How many documents of this type the employee has that were not rejected (or deleted).
+// Self-submitted evidence only qualifies after verification; preserve the existing HR-upload rule.
 export function countNotRejected(employeeId: number, type: DocumentType, db: DbClient = prisma) {
-  return db.employeeDocument.count({ where: { employeeId, type, verificationStatus: { not: 'REJECTED' }, isDeleted: false } })
+  return db.employeeDocument.count({ where: { employeeId, type, verificationStatus: { not: 'REJECTED' }, isDeleted: false, OR: [{ verificationStatus: 'VERIFIED' }, { createdById: { not: employeeId } }] } })
 }
 
 // Every document's storage key with what its readable name is built from (scripts/rename-stored-files.ts).
@@ -66,7 +66,7 @@ export function createMany(rows: Prisma.EmployeeDocumentCreateManyInput[], db: D
   return db.employeeDocument.createMany({ data: rows })
 }
 
-// A document HR adds to an employee
+// A new document, always pending review; the caller supplies no review state.
 export function create(
   data: { employeeId: number; type: DocumentType; storageKey: string; fileName: string; mimeType: string; sizeBytes: number },
   actorId: ActorId,

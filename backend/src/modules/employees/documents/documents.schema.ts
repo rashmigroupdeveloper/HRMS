@@ -9,7 +9,7 @@ export const employeeDocumentIdInput = z.object({ id: idSchema })
 
 const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024
 
-// HR adds a document to an employee (2026-11-16 - employees do not upload; they hand it to HR). Any type; the file's
+// HR adds a document, or an employee submits one to their own record for HR review (2026-11-25). The file's
 // real type (PDF / JPG / PNG) is checked from its content in the service.
 export const uploadEmployeeDocumentInput = z.object({
   employeeCode: employeeCodeSchema,

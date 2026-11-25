@@ -6,7 +6,7 @@ import { SectionRowsSkeleton } from '@/components/skeletons/employees/SectionRow
 import { type client, orpc } from '@/lib/orpc'
 import { errorMessage } from '@/lib/utils'
 
-// HR edits an employee's records after joining (phase 5, 2026-11-16 - employees change nothing themselves: they ask HR
+// HR edits an employee's records after joining (phase 5, 2026-11-16 - canonical profile edits remain with HR; employees submit documents separately and ask HR
 // outside the system). The same section forms and rules as the joining form; saved numbers show as their last 4
 // digits and may be left empty to keep them. Each section saves on its own and goes into the change history.
 

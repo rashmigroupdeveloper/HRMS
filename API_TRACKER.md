@@ -124,7 +124,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 35 | `employees.salaryHistory` | Own record; others: Employee · Salary: View | An employee's salaries from each day, why and who approved |
 | 36 | `employees.documents.list` | Own record; others: Employee · Documents & letters: View | An employee's documents |
 | 37 | `employees.documents.download` | Own record; others: Employee · Documents & letters: View | Download an employee's document |
-| 38 | `employees.documents.upload` | Employee · Documents & letters: Edit | HR adds a document to an employee (any type) |
+| 38 | `employees.documents.upload` | Own: logged in; others: scoped Documents Edit | Submit an own document for HR review, or HR adds one |
 | 39 | `employees.documents.review` | Employee · Documents & letters: Edit | Mark an employee's document verified, or rejected with a reason |
 | 40 | `employees.documents.delete` | Employee · Documents & letters: Edit | Delete a wrong document (kept, can be restored) |
 | 41 | `employees.documents.restore` | Employee · Documents & letters: Edit | Bring back a deleted document |
@@ -688,17 +688,18 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 ### `employees.documents.upload`
 - **HTTP:** `POST /api/rpc/employees/documents/upload` · **Code:** `backend/src/modules/employees/documents/`
-- **Access:** Employee · Directory & job: View + Employee · Documents & letters: Edit (2026-11-16).
-- **Scope:** Employee · Documents & letters Edit covering the employee (`404` outside the data access).
-- **Input:** `{ employeeCode: string, type: DocumentType, file: File (PDF / JPG / PNG, up to 5 MB) }` - any document type,
-  also the ones added 2026-11-16: `VISA_COPY` (visa / residence permit), `WORK_PERMIT_COPY` (work permit / labour card),
-  `TRADE_LICENCE_COPY` (trade / safety licence), `POLICE_VERIFICATION`.
-- **Returns:** the document (as in `documents.list`), `PENDING`.
-- **What it does:** HR adds a document to the employee (phase 5, 2026-11-16 - employees do not upload: they give
-  documents to HR outside the system). The file's real type is checked from its content; stored as
-  `employees/<code>/<type>/<date>_<random>.<ext>`. A newer document of a type is the current one; older ones stay (the
-  profile shows them as earlier versions).
-- **Errors:** `400` not a PDF / JPG / PNG, empty or too big · `403` (see Access) · `404 NOT_FOUND` unknown employee.
+- **Access:** authenticated employee for their own submission (approved 2026-11-25); anyone else's record requires
+  Employee · Directory & job View + Employee · Documents & letters Edit, plus sensitive-type View as before.
+- **Scope:** own record is matched to the authenticated employee ID, never trusted from the employeeCode input;
+  other records keep the scoped HR checks (`404` outside View, `403` when visible without required Edit/sensitive access).
+- **Input:** `{ employeeCode: string, type: DocumentType, file: File (PDF / JPG / PNG, 1 byte to 5 MB) }`.
+- **Returns:** the new document with uploader attribution and `PENDING`; review fields are not accepted from the caller.
+- **What it does:** content-checks the file and stores it under `employees/<code>/<type>/<date>_<random>.<ext>`.
+  Employee submissions wait for HR review; they cannot satisfy consent/evidence requirements until verified.
+  Existing HR-uploaded evidence keeps its non-rejected/not-deleted rule. The profile keeps a verified copy current
+  until another copy is verified; pending/rejected copies and earlier versions remain visible as history.
+- **Errors:** `400` invalid file/type/size · `401` no valid employee session · `403` missing other-record permissions ·
+  `404` unknown or outside-range employee. File storage is cleaned up if its row cannot be saved.
 
 ### `employees.documents.review`
 - **HTTP:** `POST /api/rpc/employees/documents/review` · **Code:** `backend/src/modules/employees/documents/`
@@ -707,7 +708,8 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 - **Input:** `{ id: number, status: 'VERIFIED' | 'REJECTED', rejectionReason?: string (required when REJECTED, up to 500) }`
 - **Returns:** the document.
 - **What it does:** marks the document verified, or rejected with what is wrong (who and when are recorded).
-- **Errors:** `400` rejected without a reason · `404 NOT_FOUND` · `409 CONFLICT` the document is deleted. Â· `404` "No document found with id N" - also when its employee is outside the viewer's View (never names the employee - 2026-11-23)
+  An employee cannot review a file they submitted to their own record, even if they also hold HR permissions.
+- **Errors:** `403` self-review or missing scoped management/sensitive access · `400` rejected without a reason · `404 NOT_FOUND` · `409 CONFLICT` the document is deleted. Â· `404` "No document found with id N" - also when its employee is outside the viewer's View (never names the employee - 2026-11-23)
 
 ### `employees.documents.delete`
 - **HTTP:** `POST /api/rpc/employees/documents/delete` · **Code:** `backend/src/modules/employees/documents/`
@@ -901,8 +903,8 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
   document's `number` (kept by type), the bank account's `accountNumber`, a family member's `aadhaar` (kept by name +
   `aadhaarLast4`).
 - **Returns:** the form as `form.get`, after saving.
-- **What it does:** HR changes an employee's records after joining (phase 5, 2026-11-16 - employees change nothing
-  themselves; they ask HR outside the system). Each section sent replaces that whole section (an answer left out is
+- **What it does:** HR changes canonical profile sections after joining. Employees' document submissions are separate;
+  family/nominee requests are selected follow-on work (2026-11-25, BACKLOG item 32). Each section sent replaces that whole section (an answer left out is
   cleared; the name and mobile are kept when not sent), all in one transaction. A new identity number is stored
   encrypted with its last 4 digits and fingerprint and may not belong to another employee; a changed date of birth must
   still make the employee 18 on the date of joining. A list section that did not change is not rewritten, so the change

@@ -1,3 +1,4 @@
+import { DOCUMENT_UPLOAD_NOTE } from './document-labels'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Activity,
@@ -207,7 +208,8 @@ export function EmployeeProfile({ employeeCode, self }: { employeeCode: string; 
           self={self}
           edit={editLabel}
           hr={can('EMPLOYEES')}
-          manageDocuments={can('EMPLOYEE_DOCUMENTS', 'WRITE')}
+          manageDocuments={!self && can('EMPLOYEE_DOCUMENTS', 'WRITE')}
+          uploadDocuments={self || can('EMPLOYEE_DOCUMENTS', 'WRITE')}
           label="Loading the profile"
         />
       </div>
@@ -626,7 +628,7 @@ export function EmployeeProfile({ employeeCode, self }: { employeeCode: string; 
         </TabsContent>
 
         <TabsContent value="documents" className="mt-4 xl:col-start-2 xl:row-start-1 xl:mt-0">
-          <Documents employeeCode={e.employeeCode} canManage={mayChange('EMPLOYEE_DOCUMENTS')} />
+          <Documents employeeCode={e.employeeCode} canManage={mayChange('EMPLOYEE_DOCUMENTS')} canUpload={self || mayChange('EMPLOYEE_DOCUMENTS')} />
         </TabsContent>
 
         {/* letters issued to the employee (appointment, confirmation, experience, relieving) - with the documents' access */}
@@ -908,7 +910,7 @@ function Check({ label, done, pending = 'Not yet' }: { label: string; done: stri
   )
 }
 
-function Documents({ employeeCode, canManage }: { employeeCode: string; canManage: boolean }) {
+function Documents({ employeeCode, canManage, canUpload }: { employeeCode: string; canManage: boolean; canUpload: boolean }) {
   const queryClient = useQueryClient()
   const documents = useQuery(orpc.employees.documents.list.queryOptions({ input: { employeeCode } }))
   const [error, setError] = useState<string | null>(null)
@@ -938,23 +940,23 @@ function Documents({ employeeCode, canManage }: { employeeCode: string; canManag
         icon={FileText}
         title="Documents"
         aside={
-          canManage && (
-            <Button variant="gold" size="sm" className="ml-1" disabled>
+          canUpload && (
+            <Button variant="gold" size="sm" className="ml-1 h-9 sm:h-8" disabled>
               <Plus /> Add document
             </Button>
           )
         }
       >
         <div className="space-y-3">
-          {canManage && <p className="text-xs text-muted-foreground">Employees do not upload - they give documents to HR, who add them here.</p>}
+          {canUpload && <p className="text-xs text-muted-foreground">{DOCUMENT_UPLOAD_NOTE}</p>}
           <DocumentsSkeleton label="Loading the documents" />
         </div>
       </InfoCard>
     )
   if (documents.error) return <p className="text-sm text-negative-ink">{errorMessage(documents.error)}</p>
-  // per type the newest one not deleted is current; older ones are earlier versions; deleted ones last
+  // Verified copies remain current while a new submission waits for review.
   const current = new Map<string, number>()
-  for (const d of [...documents.data].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))) {
+  for (const d of [...documents.data].sort((a, b) => Number(b.verificationStatus === 'VERIFIED') - Number(a.verificationStatus === 'VERIFIED') || +new Date(b.createdAt) - +new Date(a.createdAt) || b.id - a.id)) {
     if (!d.isDeleted && !current.has(d.type)) current.set(d.type, d.id)
   }
   const rows = [...documents.data].sort(
@@ -962,7 +964,7 @@ function Documents({ employeeCode, canManage }: { employeeCode: string; canManag
   )
   // the current documents by status, for the counts next to the title
   const currentDocs = documents.data.filter((d) => current.get(d.type) === d.id)
-  const count = (status: EmployeeDocument['verificationStatus']) => currentDocs.filter((d) => d.verificationStatus === status).length
+  const count = (status: EmployeeDocument['verificationStatus']) => (status === 'PENDING' ? documents.data.filter(d => !d.isDeleted) : currentDocs).filter(d => d.verificationStatus === status).length
   return (
     <InfoCard
       icon={FileText}
@@ -972,8 +974,8 @@ function Documents({ employeeCode, canManage }: { employeeCode: string; canManag
           {count('VERIFIED') > 0 && <Chip tone="positive">{count('VERIFIED')} verified</Chip>}
           {count('PENDING') > 0 && <Chip tone="warning">{count('PENDING')} to verify</Chip>}
           {count('REJECTED') > 0 && <Chip tone="negative">{count('REJECTED')} rejected</Chip>}
-          {canManage && (
-            <Button variant="gold" size="sm" className="ml-1" onClick={() => setAdding(true)}>
+          {canUpload && (
+            <Button variant="gold" size="sm" className="ml-1 h-9 sm:h-8" onClick={() => setAdding(true)}>
               <Plus /> Add document
             </Button>
           )}
@@ -981,7 +983,7 @@ function Documents({ employeeCode, canManage }: { employeeCode: string; canManag
       }
     >
       <div className="space-y-3">
-      {canManage && <p className="text-xs text-muted-foreground">Employees do not upload - they give documents to HR, who add them here.</p>}
+      {canUpload && <p className="text-xs text-muted-foreground">{DOCUMENT_UPLOAD_NOTE}</p>}
       {(error || review.error || remove.error || restore.error) && (
         <p className="text-sm text-negative-ink">{error ?? errorMessage(review.error ?? remove.error ?? restore.error)}</p>
       )}
@@ -1000,7 +1002,7 @@ function Documents({ employeeCode, canManage }: { employeeCode: string; canManag
           </TableHeader>
           <TableBody>
             {rows.map((d) => {
-              const earlier = !d.isDeleted && current.get(d.type) !== d.id
+              const earlier = !d.isDeleted && d.verificationStatus !== 'PENDING' && current.get(d.type) !== d.id
               return (
                 <TableRow key={d.id} className={d.isDeleted || earlier ? 'text-muted-foreground' : undefined}>
                   <TableCell className="font-medium">
@@ -1089,7 +1091,7 @@ function Documents({ employeeCode, canManage }: { employeeCode: string; canManag
   )
 }
 
-// HR adds a document for the employee: its type and the file (PDF / JPG / PNG, 5 MB)
+// HR adds a file, or an employee submits their own document for review (PDF / JPG / PNG, 5 MB).
 function AddDocumentDialog({ employeeCode, onClose, onAdded }: { employeeCode: string; onClose: () => void; onAdded: () => void }) {
   const [type, setType] = useState<EmployeeDocument['type'] | ''>('')
   const [file, setFile] = useState<File | null>(null)
@@ -1106,7 +1108,7 @@ function AddDocumentDialog({ employeeCode, onClose, onAdded }: { employeeCode: s
     <FormDialog onOpenChange={(open) => !open && onClose()} dirty={!!type || !!file} className="rounded-3xl sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add a document</DialogTitle>
-          <DialogDescription>It waits for review like any other document. A newer copy of a type replaces the older one, which stays as an earlier version.</DialogDescription>
+          <DialogDescription>{DOCUMENT_UPLOAD_NOTE}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">

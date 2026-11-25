@@ -19,11 +19,13 @@ import { HomeDecisions, HomeMyRequests } from './components/HomeRequests'
 // Home is arranged around real work, inspired by main's employee/manager/HR dashboards. The active area's access and
 // actual team/HOD relationships decide which sections exist; no role-name checks, invented KPIs or new stores.
 export function HomePage() {
-  const { me, can } = useAccess()
+  const { me, can, ready } = useAccess()
   const [now] = useState(() => new Date())
   const [date] = useState(todayDay)
   const profile = useQuery({ ...orpc.employees.getByCode.queryOptions({ input: { employeeCode: me?.employeeCode ?? '' } }), enabled: !!me })
   const overview = useQuery(orpc.attendance.overview.queryOptions())
+  // Start the decision reader alongside overview: choosing a role layout must not create a second loading sequence.
+  useQuery({ ...orpc.approvals.listToDecide.queryOptions(), enabled: ready })
   const e = profile.data
   const activeRole = me?.availableRoles.find(r => r.id === me.activeRoleId)?.name ?? 'Employee'
   const dashboard = can('ACCESS', 'WRITE') ? 'Administration' : can('ONBOARDING') ? 'HR workspace' : (overview.data?.teamSize ?? 0) > 0 || (overview.data?.departmentSize ?? 0) > 0 ? 'Team workspace' : 'My workspace'
@@ -43,7 +45,7 @@ export function HomePage() {
   const workspace = (
     <section className="home-panel min-w-0 space-y-3 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-medium tracking-tight">{isAdmin ? 'Administration' : 'Your workspace'}</h2><Link to="/employees" className="flex min-h-9 items-center gap-1 text-sm underline underline-offset-4">People directory <ArrowRight aria-hidden className="size-3.5" /></Link></div>
-      {work.length > 0 ? <div className="grid grid-cols-2 gap-x-4 gap-y-1">{work.map(item => <QuickLink key={item.to} {...item} />)}</div> : <p className="text-sm text-muted-foreground">Find a colleague in the directory, or open your personal details.</p>}
+      {work.length > 0 ? <div className="grid grid-cols-2 gap-x-4 gap-y-1">{work.map(item => <QuickLink key={item.to} {...item} />)}</div> : <p className="text-sm text-muted-foreground">Find a colleague in the people directory.</p>}
 
       <FormError error={profile.error} />
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3 text-xs text-muted-foreground"><p>{me ? `${me.name} · ${me.employeeCode}` : 'Your employee record'}{e && ` · ${e.company.name}`}</p>{e ? <p>Joined {formatDate(e.dateOfJoining)}</p> : profile.isPending && <Skeleton className="h-3 w-28 rounded" />}</div>
@@ -56,13 +58,13 @@ export function HomePage() {
     </header>
     <div className="grid min-w-0 gap-3 lg:grid-cols-12">
       <div className="min-w-0 lg:col-span-8">
-        {!overview.data ? <HomeRoleSkeleton /> : isAdmin ? workspace : isPersonal ? <HomeMyRequests /> : <HomeDecisions light />}
+        {!ready || (overview.isPending && !isAdmin && !isHR) ? <HomeRoleSkeleton /> : isAdmin ? workspace : isPersonal || overview.isError ? <HomeMyRequests /> : <HomeDecisions light />}
       </div>
       <div className="min-w-0 space-y-3 lg:col-span-4 lg:row-span-2">
-        {isHR ? <><HomeJoiningWork /><HomePreJoining /></> : !overview.data ? <HomeRoleSkeleton /> : hasPeople ? <HomeAttendance overview={overview.data} date={date} dark /> : <HomePersonalAttendance overview={overview.data} />}
+        {isHR ? <><HomeJoiningWork /><HomePreJoining /></> : overview.isPending ? <HomeRoleSkeleton dark /> : overview.isError ? <section className="home-panel p-5"><h2 className="text-lg font-medium">Attendance</h2><FormError error={overview.error} /><Link to="/attendance" className="flex min-h-10 items-center text-sm underline underline-offset-4">Open attendance to retry</Link></section> : hasPeople ? <HomeAttendance overview={overview.data} date={date} dark /> : <HomePersonalAttendance overview={overview.data} />}
       </div>
       <div className="min-w-0 lg:col-span-8">
-        {isHR && overview.data && hasPeople ? <HomeAttendance overview={overview.data} date={date} /> : isAdmin ? <HomeDecisions light /> : isPersonal ? <PersonalLinks hasSalary={!!e?.salary} loading={profile.isPending} /> : <HomeMyRequests />}
+        {!overview.isPending && (isHR && overview.data && hasPeople ? <HomeAttendance overview={overview.data} date={date} /> : isAdmin ? <HomeDecisions light /> : isPersonal ? <PersonalLinks hasSalary={!!e?.salary} loading={profile.isPending} /> : <HomeMyRequests />)}
         {overview.isPending && <section className="home-panel p-4 sm:p-5"><h2 className="text-lg font-medium tracking-tight">People today</h2><HomeAttendanceSkeleton /></section>}
       </div>
     </div>
@@ -83,7 +85,7 @@ function QuickLink({ to, icon: Icon, title, text }: Shortcut) {
 }
 function PersonalLinks({ hasSalary, loading }: { hasSalary: boolean; loading: boolean }) {
   const links: Shortcut[] = [{ to: '/me?tab=personal', icon: UserRound, title: 'Personal details', text: 'Family & contacts' }, { to: '/me?tab=ids', icon: IdCard, title: 'IDs & bank', text: 'Your saved information' }, { to: '/me?tab=documents', icon: FolderOpen, title: 'My documents', text: 'Joining documents' }, hasSalary ? { to: '/me?tab=salary', icon: Wallet, title: 'My salary', text: 'CTC & monthly breakup' } : { to: '/me?tab=statutory', icon: ShieldCheck, title: 'PF & ESIC', text: 'Your statutory numbers' }]
-  return <div className="home-panel p-4 sm:p-5"><h2 className="mb-2 text-lg font-medium tracking-tight">My details &amp; documents</h2><div className="grid grid-cols-2 gap-x-4">{links.slice(0, 3).map(item => <QuickLink key={item.to} {...item} />)}{loading ? <div role="status" aria-label="Loading your salary link" className="flex min-h-16 items-center gap-3"><Skeleton className="size-9 shrink-0 rounded-xl" /><div className="space-y-2"><Skeleton className="h-3 w-24 rounded" /><Skeleton className="h-3 w-20 rounded" /></div></div> : <QuickLink {...links[3]!} />}</div></div>
+  return <div className="home-panel p-4 sm:p-5"><h2 className="mb-2 text-lg font-medium tracking-tight">My details &amp; documents</h2><div className="grid grid-cols-2 gap-x-4">{links.slice(0, 3).map(item => <QuickLink key={item.to} {...item} />)}{loading ? <div role="status" aria-label="Loading your salary link" className="flex min-h-14 items-center gap-2"><Skeleton className="size-8 shrink-0 rounded-full" /><div className="space-y-2"><Skeleton className="h-3 w-24 rounded" /><Skeleton className="h-3 w-20 rounded" /></div></div> : <QuickLink {...links[3]!} />}</div></div>
 }
 function greeting(date: Date) {
   const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', hourCycle: 'h23' }).format(date))

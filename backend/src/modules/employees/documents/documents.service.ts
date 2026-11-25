@@ -9,8 +9,8 @@ import * as documentsRepository from './documents.repository.js'
 import type { deleteEmployeeDocumentInput, reviewEmployeeDocumentInput, uploadEmployeeDocumentInput } from './documents.schema.js'
 
 // Business rules for an employee's documents. They arrive from the candidate on the joining day (already reviewed by
-// HR), and HR adds more later (2026-11-16 - employees do not upload: they hand documents to HR outside the system).
-// A newer document of a type is the current one; the earlier ones stay (the profile shows them as earlier versions).
+// HR). Since 2026-11-25 employees may submit their own files for HR review; HR may still add files for others.
+// Verified copies stay current until a replacement is verified; all submissions remain as history.
 
 type DocumentRow = Awaited<ReturnType<typeof documentsRepository.list>>[number]
 
@@ -121,7 +121,8 @@ export async function downloadDocument(viewer: CurrentUser, id: number) {
   return new File([new Uint8Array(bytes)], document.fileName, { type: document.mimeType })
 }
 
-// True if the employee has this document and it was not rejected or deleted (e.g. a BGV consent form).
+// A self-submitted file only counts after HR verifies it (e.g. consent before a BGV check).
+// Existing HR-uploaded evidence retains its non-rejected/not-deleted rule.
 export async function hasDocument(employeeId: number, type: DocumentType, db?: DbClient) {
   return (await documentsRepository.countNotRejected(employeeId, type, db)) > 0
 }
@@ -192,7 +193,7 @@ export async function renameOldFiles(actorId: ActorId) {
   return renamed
 }
 
-// --- HR adds and reviews documents (Employees: Edit - the router) ---
+// --- Employee self-submission and scoped HR document management ---
 
 // The document, for a change by `viewer` - "Employee · Documents & letters" Edit covering where the employee is (data access),
 // plus a sensitive type's access
@@ -213,7 +214,7 @@ async function withPeopleOne(row: DocumentRow) {
 export async function uploadDocument({ employeeCode, type, file }: z.infer<typeof uploadEmployeeDocumentInput>, viewer: CurrentUser) {
   const actorId = viewer.employeeId
   const employee = await getEmployeeFor(viewer, employeeCode)
-  assertPart(viewer, employee, 'EMPLOYEE_DOCUMENTS', 'WRITE')
+  if (employee.id !== viewer.employeeId) assertPart(viewer, employee, 'EMPLOYEE_DOCUMENTS', 'WRITE')
   assertMayOpen(viewer, employee, type)
   const bytes = new Uint8Array(await file.arrayBuffer())
   const mimeType = detectFileType(bytes)
@@ -235,6 +236,9 @@ export async function uploadDocument({ employeeCode, type, file }: z.infer<typeo
 export async function reviewDocument({ id, status, rejectionReason }: z.infer<typeof reviewEmployeeDocumentInput>, viewer: CurrentUser) {
   const actorId = viewer.employeeId
   const document = await getDocument(id, viewer)
+  if (document.employee.employeeCode === viewer.employeeCode && document.createdById === viewer.employeeId) {
+    throw new ORPCError('FORBIDDEN', { message: 'Your own submission must be reviewed by another authorized HR employee' })
+  }
   if (document.isDeleted) throw new ORPCError('CONFLICT', { message: 'This document is deleted - restore it first' })
   if (status === 'REJECTED' && !rejectionReason) throw new ORPCError('BAD_REQUEST', { message: 'Give the reason for rejecting the document' })
   return withPeopleOne(

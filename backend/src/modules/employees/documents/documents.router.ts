@@ -19,8 +19,8 @@ export const employeeDocumentsRouter = {
   download: authedProcedure
     .input(employeeDocumentIdInput)
     .handler(({ input, context }) => documentsService.downloadDocument(context.user, input.id)),
-  // HR adds and manages the employee's documents (Employees: Edit) - employees do not upload
-  upload: manage()
+  // Own uploads are pending submissions; other people require the existing scoped document-management access.
+  upload: authedProcedure
     .input(uploadEmployeeDocumentInput)
     .handler(({ input, context }) => documentsService.uploadDocument(input, context.user)),
   review: manage()

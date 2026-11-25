@@ -11,6 +11,6 @@ export function HomeAttendanceSkeleton({ dark = false }: { dark?: boolean }) {
   return <div role="status" aria-label="Loading attendance overview" className="space-y-3"><dl className={`grid grid-cols-2 gap-x-4 gap-y-5 border-y border-border/60 py-3 ${dark ? '' : 'sm:grid-cols-4'}`}>{['People', 'Punched in', 'On leave', 'Not in yet'].map(label => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-2"><Skeleton className="h-10 w-12 rounded" /></dd></div>)}</dl><HomeRequestRowsSkeleton dark={dark} /></div>
 }
 
-export function HomeRoleSkeleton() {
-  return <section role="status" aria-label="Loading your workspace" className="home-panel home-panel-dark min-h-64 space-y-4 p-4 sm:p-5"><Skeleton className="h-6 w-40 rounded bg-hero-foreground/10" /><HomeRequestRowsSkeleton dark /></section>
+export function HomeRoleSkeleton({ dark = false }: { dark?: boolean }) {
+  return <section role="status" aria-label="Loading your workspace" className={`home-panel min-h-64 space-y-4 p-4 sm:p-5 ${dark ? 'home-panel-dark text-hero-foreground' : ''}`}><h2 className="text-lg font-medium">Your workspace</h2><HomeRequestRowsSkeleton dark={dark} /></section>
 }

@@ -144,7 +144,10 @@ HRMS_NEW/
 Home adapts to the active role's capabilities and actual team/HOD relationships: employees see their attendance
 cycle, managers see decisions and scoped People today, HR sees open joining tasks and accepted offers awaiting joining,
 and administrators get their permitted administration links first. Own leave, recent requests and profile/documents
-remain available. The cream/charcoal/gold layout takes visual cues from Crextio and business priorities from main.
+remain available. The cream/charcoal/gold layout follows Crextio's composition: a wide light work column beside a
+narrower charcoal role focus (joining work, team attendance or own attendance), with grouped personal tools below.
+On phones the work list and role focus precede personal tools. Business priorities come from main. Decision data
+loads alongside the attendance overview; known HR/admin layouts do not wait for that overview.
 It reuses existing typed APIs, without schema changes, role-name checks or invented payroll/KPI values. Switching
 roles reloads once; an already-active role does not restart the switch transition.
 
@@ -153,6 +156,14 @@ search, company/plant/department/status and exception filters persist in the URL
 Excel exports all matching stored rows (maximum 20,000, refusing larger files). Whole-company/group viewing and exports
 follow Attendance View data access. Raw-punch drill-down/export reuses night-shift ownership and shows only retained
 source metadata. Missing days are not inferred as absence; current placement/team membership is used.
+
+## Employee submissions (2026-11-25)
+
+Employees can add a PDF/JPG/PNG up to 5 MB in **My profile → Documents**. Submissions remain pending until another
+scoped HR reviewer verifies or rejects them. Employees see review status/reasons and can submit a corrected copy.
+An existing verified copy stays current while its replacement waits; pending employee evidence does not satisfy
+consent checks. HR reviews through the employee's Documents tab; employees cannot verify/delete/restore submissions.
+Family/nominee requests and the report/import/biometric stages are tracked in BACKLOG item 32; they are not yet built.
 
 ## Getting started
 
