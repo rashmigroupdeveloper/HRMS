@@ -14,6 +14,11 @@ export function findOpenLock(year: number, month: number, db: DbClient = prisma)
   return db.attendanceMonthLock.findFirst({ where: { year, month, unlockedAt: null }, select: lockSelect })
 }
 
+// Every month locked now, with when it was locked (for payroll: is a run's whole period locked, and since when)
+export function listOpenLocks(db: DbClient = prisma) {
+  return db.attendanceMonthLock.findMany({ where: { unlockedAt: null }, select: { year: true, month: true, lockedAt: true } })
+}
+
 export function countOpenLocks(db: DbClient = prisma) {
   return db.attendanceMonthLock.count({ where: { unlockedAt: null } })
 }

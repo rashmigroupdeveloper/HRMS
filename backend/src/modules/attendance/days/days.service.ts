@@ -88,7 +88,8 @@ export function dayStatusOf(first: DayStatus, second: DayStatus): DayStatus {
 export type Half = 'FIRST' | 'SECOND'
 // `code`: shown on the muster (CL, OD...); `label`: on the day ("Casual leave", "On duty")
 // (HOLIDAY: an on-application holiday taken - its approved leave makes the half a holiday, 2026-11-24)
-export type DayCover = { employeeId: number; date: Date; half: Half; status: 'LEAVE' | 'PRESENT' | 'ON_DUTY' | 'HOLIDAY'; code: string; label: string }
+// (`paid`: whether the half is paid - false only for leave of a type without pay; payroll reads it, 2026-11-27)
+export type DayCover = { employeeId: number; date: Date; half: Half; status: 'LEAVE' | 'PRESENT' | 'ON_DUTY' | 'HOLIDAY'; code: string; label: string; paid: boolean }
 // The leave module gives its approved leave (and, when asked, the leave still waiting for approval) as covers - it
 // registers this when it loads (attendance never imports leave: leave depends on attendance)
 export type LeaveCoverSource = (employeeIds: number[], from: Date, to: Date, options: { pending: boolean }) => Promise<DayCover[]>
@@ -134,8 +135,8 @@ export function halvesOf(from: Date, to: Date, startHalf: Half, endHalf: Half) {
 }
 
 const REQUEST_COVER = {
-  MISSED_PUNCH: { status: 'PRESENT', code: 'P', label: 'Regularized (missed punch)' },
-  ON_DUTY: { status: 'ON_DUTY', code: 'OD', label: 'On duty' },
+  MISSED_PUNCH: { status: 'PRESENT', code: 'P', label: 'Regularized (missed punch)', paid: true },
+  ON_DUTY: { status: 'ON_DUTY', code: 'OD', label: 'On duty', paid: true },
 } as const
 
 // Approved leave and approved regularization / on-duty requests over from..to (`pending`: also those still waiting), per
@@ -239,6 +240,31 @@ export async function firstOpenDayFrom(from: Date) {
     .filter((to) => to >= from)
     .sort((a, b) => b.getTime() - a.getTime())[0]
   return lastLockedEnd ? addDays(lastLockedEnd, 1) : from
+}
+
+// --- for payroll (stage 3, 2026-11-27) ---
+
+// The days of these employees from..to as they are worked out: each half's status and, for a half on leave, the leave
+// type's code and whether it is paid (null: the day says "leave" but no approved leave covers that half). A day that was
+// never worked out has no entry - payroll lists it, it never guesses. Meant for a locked attendance month.
+export type PayrollHalf = { status: DayStatus; leave: { code: string; paid: boolean } | null }
+export type PayrollDay = { employeeId: number; date: Date; first: PayrollHalf; second: PayrollHalf }
+export async function listForPayroll(employeeIds: number[], from: Date, to: Date): Promise<PayrollDay[]> {
+  const out: PayrollDay[] = []
+  // in batches: the leave source reads a limited number of applications at a time
+  for (let i = 0; i < employeeIds.length; i += 100) {
+    const ids = employeeIds.slice(i, i + 100)
+    const [rows, covers] = await Promise.all([daysRepository.listHalves(ids, from, to), loadCovers(ids, from, to)])
+    for (const row of rows) {
+      const dayCovers = covers.get(`${row.employeeId}:${dayKey(row.date)}`) ?? []
+      const halfOf = (status: DayStatus, half: Half): PayrollHalf => {
+        const cover = status === 'LEAVE' ? dayCovers.find((c) => c.half === half && c.status === 'LEAVE') : undefined
+        return { status, leave: cover ? { code: cover.code, paid: cover.paid } : null }
+      }
+      out.push({ employeeId: row.employeeId, date: row.date, first: halfOf(row.firstHalf, 'FIRST'), second: halfOf(row.secondHalf, 'SECOND') })
+    }
+  }
+  return out
 }
 
 // --- who may see whom ---

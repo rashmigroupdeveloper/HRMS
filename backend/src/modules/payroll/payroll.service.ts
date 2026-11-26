@@ -7,6 +7,7 @@ import { attendanceService } from '#modules/attendance'
 import { companiesService } from '#modules/organization'
 import { employeesService } from '#modules/employees'
 import * as payrollRepository from './payroll.repository.js'
+import * as daysService from './days/days.service.js'
 import * as inputsService from './inputs/inputs.service.js'
 import * as peopleService from './people/people.service.js'
 import * as peopleRepository from './people/people.repository.js'
@@ -21,19 +22,22 @@ export async function getSetup(viewer: CurrentUser, { payMonth }: { payMonth: Da
 export async function listRuns(viewer: CurrentUser, input: ListInput) {
   assertAccess(viewer.access, 'PAYROLL', 'READ')
   const result = await prisma.$transaction(tx => payrollRepository.list(wholeCompanyScopeOf(viewer, 'PAYROLL'), input, tx), { isolationLevel: 'RepeatableRead' })
-  return { ...result, items: result.items.map(({ createdById: _created, updatedById: _updated, peopleRefreshedById: _refreshed, _count, ...item }) => ({ ...item, people: _count.employees })) }
+  return { ...result, items: result.items.map(({ createdById: _created, updatedById: _updated, peopleRefreshedById: _refreshed, computedById: _computed, _count, ...item }) => ({ ...item, people: _count.employees })) }
 }
 
 export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
   assertAccess(viewer.access, 'PAYROLL', 'READ')
   const run = await payrollRepository.find(id, wholeCompanyScopeOf(viewer, 'PAYROLL'))
   if (!run) throw new ORPCError('NOT_FOUND', { message: 'No payroll run found' })
-  const [person, counts, inputs] = await Promise.all([
-    employeesService.lookupPeople([run.createdById, run.updatedById, run.peopleRefreshedById]),
+  const [person, counts, inputs, lock, days] = await Promise.all([
+    employeesService.lookupPeople([run.createdById, run.updatedById, run.peopleRefreshedById, run.computedById]),
     peopleRepository.countPeople(run.id),
     inputsService.countInputs(run.id),
+    daysService.lockStateOf(run),
+    // stage 3: how many people have unpaid days, and how many need a look - null until the days are worked out
+    run.computedAt ? peopleService.dayCountsOf(run.id) : null,
   ])
-  const { createdById, updatedById, peopleRefreshedById, ...safe } = run
+  const { createdById, updatedById, peopleRefreshedById, computedById, ...safe } = run
   const period = peopleService.payPeriodOf(run)
   return {
     ...safe,
@@ -42,6 +46,11 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
     createdBy: person(createdById),
     updatedBy: person(updatedById),
     peopleRefreshedBy: person(peopleRefreshedById),
+    computedBy: person(computedById),
+    attendanceLocked: lock.attendanceLocked,
+    daysOutdated: lock.daysOutdated,
+    peopleWithUnpaidDays: days?.unpaidDays ?? null,
+    peopleToCheck: days?.toCheck ?? null,
     people: counts.people,
     peopleWithoutSalary: counts.withoutSalary,
     inputs,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPeople, daysIn, payPeriodOf } from './people.service.js'
+import { buildPeople, daysIn, payPeriodOf, totalsOf } from './people.service.js'
 
 // Who is in a pay run and the stretches of days with one salary and one placement (payroll stage 2) - made-up data.
 
@@ -107,6 +107,30 @@ describe('pay run people and segments', () => {
       ['2092-03-11', '2092-03-31', 100, 10],
     ])
     expect(buildPeople(COMPANY, from, to, [person({ salaries: [] })])[0]?.segments[0]).toMatchObject({ annualCtc: null, lines: [] })
+  })
+
+  it('a person\'s days are added up in days, a half counting 0.5 (stage 3)', () => {
+    const totals = totalsOf([
+      { firstHalf: 'PAID', secondHalf: 'PAID', firstStatus: 'PRESENT', secondStatus: 'PRESENT', days: 24 },
+      { firstHalf: 'PAID', secondHalf: 'PAID', firstStatus: 'WEEKLY_OFF', secondStatus: 'WEEKLY_OFF', days: 4 },
+      // an absent Saturday: half a day
+      { firstHalf: 'UNPAID', secondHalf: 'PAID', firstStatus: 'ABSENT', secondStatus: 'WEEKLY_OFF', days: 1 },
+      { firstHalf: 'UNPAID', secondHalf: 'UNPAID', firstStatus: 'LEAVE', secondStatus: 'LEAVE', days: 1 },
+      { firstHalf: 'UNCLEAR', secondHalf: 'UNCLEAR', firstStatus: null, secondStatus: null, days: 1 },
+    ])
+    expect(totals).toEqual({ paidDays: 28.5, unpaidDays: 1.5, unclearDays: 1, allAbsent: false })
+  })
+
+  it('"absent throughout": absent on every working half and never present, on duty, on leave or with a punch', () => {
+    const off = { firstHalf: 'PAID', secondHalf: 'PAID', firstStatus: 'WEEKLY_OFF', secondStatus: 'WEEKLY_OFF', days: 4 } as const
+    const absent = { firstHalf: 'UNPAID', secondHalf: 'UNPAID', firstStatus: 'ABSENT', secondStatus: 'ABSENT', days: 25 } as const
+    expect(totalsOf([off, absent])).toMatchObject({ paidDays: 4, unpaidDays: 25, allAbsent: true })
+    // one missed punch shows they do punch; so does one half of leave
+    expect(totalsOf([off, absent, { firstHalf: 'UNPAID', secondHalf: 'UNPAID', firstStatus: 'MISSED_PUNCH', secondStatus: 'MISSED_PUNCH', days: 1 }]).allAbsent).toBe(false)
+    expect(totalsOf([off, absent, { firstHalf: 'PAID', secondHalf: 'UNPAID', firstStatus: 'LEAVE', secondStatus: 'ABSENT', days: 1 }]).allAbsent).toBe(false)
+    // nothing but off days, or nothing worked out at all, is not "absent"
+    expect(totalsOf([off]).allAbsent).toBe(false)
+    expect(totalsOf([]).allAbsent).toBe(false)
   })
 
   it('a salary starting after the period is ignored; the one in force on the 1st applies', () => {

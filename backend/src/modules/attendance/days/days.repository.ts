@@ -175,6 +175,16 @@ export function listDays(employeeIds: number[], from: Date, to: Date, db: DbClie
   return db.attendanceDay.findMany({ where: { employeeId: { in: employeeIds }, date: { gte: from, lte: to } }, orderBy: { date: 'asc' }, select: daySelect })
 }
 
+// Only the two halves of these employees' days from..to - what a pay run copies (payroll stage 3, 2026-11-27)
+// data access: the payroll service chose the employees - the people of one run it found with whole-company Payroll scope
+export function listHalves(employeeIds: number[], from: Date, to: Date, db: DbClient = prisma) {
+  return db.attendanceDay.findMany({
+    where: { employeeId: { in: employeeIds }, date: { gte: from, lte: to } },
+    orderBy: [{ employeeId: 'asc' }, { date: 'asc' }],
+    select: { employeeId: true, date: true, firstHalf: true, secondHalf: true },
+  })
+}
+
 // Approved regularization / on-duty requests over from..to (`pending`: also those waiting) - what covers the days besides
 // the punches (2026-11-22)
 export function listRegularizations(employeeIds: number[], from: Date, to: Date, pending: boolean, db: DbClient = prisma) {

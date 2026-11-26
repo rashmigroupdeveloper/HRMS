@@ -8,26 +8,74 @@ import { Button } from '@/components/ui/button'
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EMPLOYMENT_TYPE, SALARY_REASON, WORKFORCE } from '@/lib/choices'
 import { orpc } from '@/lib/orpc'
-import { formatDate, formatMoney } from '@/lib/utils'
+import { cn, formatDate, formatMoney } from '@/lib/utils'
 import { InputDrawer } from './InputDrawer'
-import { SALARY_HIDDEN_NOTE } from './payroll-labels'
+import { ALL_ABSENT_NOTE, DAYS_LEGEND, DAYS_NOT_WORKED_OUT, DAY_TOTAL_LABELS, SALARY_HIDDEN_NOTE, STATUS_CODE, dayCount } from './payroll-labels'
 
-// One person of a run: each stretch of days with its placement and the salary copied for it (read only - the salary
-// changes through job changes; the copy follows on the next refresh)
+type Status = keyof typeof STATUS_CODE
+type PayClass = 'PAID' | 'UNPAID' | 'UNCLEAR'
+type Day = { date: Date; firstHalf: PayClass; secondHalf: PayClass; firstStatus: Status | null; secondStatus: Status | null; firstLeaveCode: string | null; secondLeaveCode: string | null }
+
+// what attendance said of a half: its code, a leave half by its type ("CL"), nothing known as "?"
+const codeOf = (status: Status | null, leaveCode: string | null) => (status === null ? '?' : status === 'LEAVE' ? (leaveCode ?? '?') : STATUS_CODE[status])
+const CLASS_WORD = { PAID: 'paid', UNPAID: 'unpaid', UNCLEAR: 'to check' } as const
+
+// One person's days in a stretch, as the run took them from attendance: the day of the month over its code; red when a
+// half is unpaid, amber when a half is not known
+export function DayStrip({ days }: { days: Day[] }) {
+  return (
+    <ul aria-label="Days" className="flex flex-wrap gap-1">
+      {days.map((day) => {
+        const first = codeOf(day.firstStatus, day.firstLeaveCode)
+        const second = codeOf(day.secondStatus, day.secondLeaveCode)
+        const classes = [day.firstHalf, day.secondHalf]
+        return (
+          <li
+            key={day.date.getTime()}
+            title={`${formatDate(day.date)}: first half ${CLASS_WORD[day.firstHalf]}, second half ${CLASS_WORD[day.secondHalf]}`}
+            className={cn(
+              'flex h-10 min-w-10 flex-col items-center justify-center rounded-lg px-1 text-[11px] leading-tight tabular-nums',
+              classes.includes('UNCLEAR') ? 'bg-warning/15 text-warning-ink' : classes.includes('UNPAID') ? 'bg-destructive/10 text-negative-ink' : 'bg-surface-2/50',
+            )}
+          >
+            <span className="text-[10px] opacity-70">{day.date.getUTCDate()}</span>
+            <span className="font-medium">{first === second ? first : `${first}/${second}`}</span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+// One person of a run: their paid and unpaid days as taken from the locked attendance (stage 3), and each stretch of
+// days with its placement and the salary copied for it (read only - the salary changes through job changes, the days in
+// attendance; the copy follows on the next refresh / working out)
 export function PersonDetails({ runId, personId, canChange, close }: { runId: number; personId: number; canChange: boolean; close: () => void }) {
   const query = useQuery(orpc.payroll.people.get.queryOptions({ input: { runId, personId } }))
   const [adding, setAdding] = useState(false)
   const p = query.data
+  const totals = p?.dayTotals ? [p.dayTotals.paidDays, p.dayTotals.unpaidDays, p.dayTotals.unclearDays] : null
   return (
     <>
       <FormDialog onOpenChange={close} className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{p ? `${p.name || p.employeeCode} · ${p.employeeCode}` : 'Person in the run'}</DialogTitle>
-          <DialogDescription>The salary and placement copied for each stretch of days in the pay period.</DialogDescription>
+          <DialogDescription>Their days as taken from attendance, and the salary and placement copied for each stretch of days in the pay period.</DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-3 overflow-y-auto">
           {query.isPending ? <PersonDetailsSkeleton /> : p ? (
             <>
+              {totals ? (
+                <dl className="grid grid-cols-3 gap-2 text-xs">
+                  {DAY_TOTAL_LABELS.map((label, i) => (
+                    <div key={label} className="rounded-xl bg-surface-2/40 px-3 py-1.5">
+                      <dt className="text-muted-foreground">{label}</dt>
+                      <dd className={cn('text-sm font-medium tabular-nums', i === 1 && totals[i]! > 0 && 'text-negative-ink', i === 2 && totals[i]! > 0 && 'text-warning-ink')}>{dayCount(totals[i]!)} {totals[i] === 1 ? 'day' : 'days'}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : p.segments.length > 0 && <p className="text-xs text-muted-foreground">{DAYS_NOT_WORKED_OUT}</p>}
+              {p.dayTotals?.allAbsent && <p className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning-ink">{ALL_ABSENT_NOTE}</p>}
               {p.salaryHidden && <p className="text-xs text-muted-foreground">{SALARY_HIDDEN_NOTE}</p>}
               {p.segments.length === 0 && <p className="text-sm text-muted-foreground">No days in this pay period any more (they left or moved before it). They stay in the run because inputs were entered for them.</p>}
               {p.segments.map((s) => (
@@ -42,6 +90,7 @@ export function PersonDetails({ runId, personId, canChange, close }: { runId: nu
                     <div><dt className="text-muted-foreground">Cost centre</dt><dd>{s.costCenter ? `${s.costCenter.code} · ${s.costCenter.name}` : '—'}</dd></div>
                     <div><dt className="text-muted-foreground">Type</dt><dd>{EMPLOYMENT_TYPE[s.employmentType]} · {WORKFORCE[s.workforceCategory]}</dd></div>
                   </dl>
+                  {p.days && <DayStrip days={p.days.filter((d) => d.date >= s.fromDate && d.date <= s.toDate)} />}
                   {!s.hasSalary ? (
                     <p className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning-ink">No salary in force on these days - add one through a job change, then refresh the run.</p>
                   ) : s.salary ? (
@@ -64,6 +113,7 @@ export function PersonDetails({ runId, personId, canChange, close }: { runId: nu
                   ) : null}
                 </div>
               ))}
+              {p.days && p.days.length > 0 && <p className="text-[11px] text-muted-foreground">{DAYS_LEGEND}</p>}
             </>
           ) : <FormError error={query.error} />}
         </div>

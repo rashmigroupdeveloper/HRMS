@@ -89,6 +89,12 @@ model PayrollRun {
   // SKIP_MODELS); this column is, so every refresh is recorded on the run.
   peopleRefreshedAt   DateTime? @map("people_refreshed_at") @db.Timestamptz(3)
   peopleRefreshedById Int?      @map("people_refreshed_by_id")
+  // When and by whom the days (PayrollRunDay) were last taken from the locked attendance (stage 3, approved 2026-11-27) -
+  // empty until then, and emptied again when the people copy is refreshed (the days are then worked out again). The
+  // screen sends back the value it saw. The day rows are not in the change history; this column is, so every time the
+  // days are worked out is recorded on the run.
+  computedAt          DateTime? @map("computed_at") @db.Timestamptz(3)
+  computedById        Int?      @map("computed_by_id")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById Int @map("created_by_id")
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -135,6 +141,8 @@ model PayrollRunEmployee {
   employee Employee                  @relation(fields: [employeeId], references: [id], onDelete: Restrict)
   segments PayrollRunSalarySegment[]
   inputs   PayrollInput[]
+  // each day of theirs in the run's period, paid or not (stage 3)
+  days     PayrollRunDay[]
 
   @@unique([payrollRunId, employeeId])
   @@index([employeeId])
@@ -229,4 +237,52 @@ model PayrollInput {
   @@index([payrollRunEmployeeId])
   @@index([salaryComponentId])
   @@map("payroll_inputs")
+}
+
+// --- Stage 3, the days (approved by the user 2026-11-27): which days each person is paid for ---
+// The money (what a day is worth, rounding, which components are cut) waits for a greytHR salary register to agree the
+// rules against (BACKLOG item 31) - nothing here holds an amount.
+
+// What a half day is for pay. UNCLEAR is never guessed into paid or unpaid: it is listed for HR.
+enum PayClass {
+  PAID
+  UNPAID
+  // attendance has no day for it, or the half is "on leave" with no approved leave found
+  UNCLEAR
+
+  @@map("pay_class")
+}
+
+// One day of one person in a pay run: whether each half is paid, and what attendance said. The run's own COPY of the
+// locked attendance - an attendance month can be opened again after a run is paid, and the run must still show what it
+// paid for. Only the days the person is in the company (inside their segments) have a row. Rebuilt by the system each
+// time the days are worked out, so it is kept out of the change history like attendance days (core/audit SKIP_MODELS -
+// approved 2026-11-27); PayrollRun.computedAt / ById record each time.
+// The rule (payroll/days/days.service.ts) follows attendance half by half, with no rule of its own on top: present, on
+// duty, weekly off, holiday and paid leave are paid; absent, missed punch and leave without pay are unpaid. So an absent
+// Saturday (first half worked, second half off) costs half a day (the user, 2026-11-27), as leave counts it.
+model PayrollRunDay {
+  id                   Int        @id @default(autoincrement())
+  payrollRunEmployeeId Int        @map("payroll_run_employee_id")
+  // a day of the run's period
+  date                 DateTime   @db.Date
+  // the pay class of each half - the payable days of stage 3 are counted from these
+  firstHalf            PayClass   @map("first_half")
+  secondHalf           PayClass   @map("second_half")
+  // what attendance said of each half when the days were taken (why it is paid or not; shown per day and on the later
+  // register) - empty: attendance had no day
+  firstStatus          DayStatus? @map("first_status")
+  secondStatus         DayStatus? @map("second_status")
+  // the leave type's code when the half is on leave ("CL", "LWP") - copied: a type can be renamed
+  firstLeaveCode       String?    @map("first_leave_code")
+  secondLeaveCode      String?    @map("second_leave_code")
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById          Int        @map("created_by_id")
+  updatedAt            DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById          Int        @map("updated_by_id")
+
+  runEmployee PayrollRunEmployee @relation(fields: [payrollRunEmployeeId], references: [id], onDelete: Cascade)
+
+  @@unique([payrollRunEmployeeId, date])
+  @@map("payroll_run_days")
 }

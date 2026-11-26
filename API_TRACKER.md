@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 301**
+**Total APIs: 302**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -381,13 +381,14 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 292 | `payroll.list` | Payroll: View | Scoped company/month draft runs and matching pagination totals |
 | 293 | `payroll.get` | Payroll: View covering whole company | Run header, pay and attendance periods, people / inputs counts, last refresh |
 | 294 | `payroll.create` | Payroll: Edit covering whole company | Create a regular monthly India draft and copy its people and salaries |
-| 295 | `payroll.people.list` | Payroll: View covering whole company | The run's people: days, stretches, flags; salary figures only with Salary: View |
-| 296 | `payroll.people.get` | Payroll: View covering whole company | One person's copied stretches, placement and (with Salary: View) salary lines |
+| 295 | `payroll.people.list` | Payroll: View covering whole company | The run's people: days (in the run, paid, unpaid, to check), stretches, flags; salary figures only with Salary: View |
+| 296 | `payroll.people.get` | Payroll: View covering whole company | One person's copied stretches, placement, each day as taken from attendance and (with Salary: View) salary lines |
 | 297 | `payroll.people.refresh` | Payroll: Edit covering whole company | Rebuild a draft's people and salary copy from the employee records |
 | 298 | `payroll.inputs.list` | Payroll: View covering whole company | The run's monthly inputs, searchable and paged |
 | 299 | `payroll.inputs.create` | Payroll: Edit covering whole company | Type one input (incentive, canteen...) for a person of a draft run |
 | 300 | `payroll.inputs.update` | Payroll: Edit covering whole company | Change an input of a draft run |
 | 301 | `payroll.inputs.delete` | Payroll: Edit covering whole company | Remove an input of a draft run |
+| 302 | `payroll.days.compute` | Payroll: Edit covering whole company | Take a draft run's days (paid / unpaid / unclear halves) from the locked attendance |
 
 ---
 
@@ -4374,8 +4375,9 @@ and can include two events per employee. No existing API provides that contract.
 - **Input:** required year integer 2000–2100; optional positive companyId; page integer 1–100000 (default 1), pageSize
   integer 1–100 (default 25); strict object.
 - **Returns:** `{ items: [{ id, company: { id, code, name }, payMonth, attendanceFrom, attendanceTo, status,
-  peopleRefreshedAt, people, createdAt, updatedAt }], total }` - `people`: how many people the run holds (stage 2).
-  Current status DRAFT only.
+  peopleRefreshedAt, computedAt, people, createdAt, updatedAt }], total }` - `people`: how many people the run holds
+  (stage 2); `computedAt`: when its days were last taken from attendance, null = not yet (stage 3). Current status
+  DRAFT only.
 - **Does:** lists newest month then ID, bounded pagination; existing runs remain readable when a company is retired
   or its India flag later changes. No raw actor IDs, employee population, financial totals or calculations.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST for invalid filters.
@@ -4390,8 +4392,13 @@ and can include two events per employee. No existing API provides that contract.
   attendanceTo today, kept as their own fields because the rule lives in one function, `payPeriodOf`), `people`,
   `peopleWithoutSalary` (people with days that have no salary in force),
   `inputs`, `peopleRefreshedAt`, `canChange` (a draft and Payroll Edit over the whole company), `salaryHidden` (no Salary
-  View over the whole company), and createdBy / updatedBy / peopleRefreshedBy resolved through lookupPeople (code /
-  name; System when actor 0), no raw actor IDs. Attendance dates are the captured historical dates.
+  View over the whole company), and createdBy / updatedBy / peopleRefreshedBy / computedBy resolved through lookupPeople
+  (code / name; System when actor 0), no raw actor IDs. Attendance dates are the captured historical dates.
+  Stage 3 (2026-11-27): `computedAt` (when the days were last taken from attendance; null = not yet),
+  `attendanceLocked` (every day of the pay period lies in a locked attendance month now - a shared setting, not anyone's
+  attendance), `daysOutdated` (the days were taken, and attendance is now open or was locked again afterwards),
+  `peopleWithUnpaidDays` and `peopleToCheck` (people with unclear days or absent throughout) - both null until the days
+  are worked out.
 - **Does:** read-only run header detail for `/manage/payroll/:id`.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
 
@@ -4420,12 +4427,18 @@ and can include two events per employee. No existing API provides that contract.
   over the whole company as well (`levelOver(viewer, SALARY, company)`; the user, 2026-11-26) - otherwise they are null
   and `salaryHidden` is true. No team or HOD fallback.
 - **Input:** `{ runId: positive int, search?: string (max 100; code or name), flag?: 'NO_SALARY' | 'CHANGED' |
-  'HAS_INPUTS' | 'NOT_IN_PERIOD', page (1-100000, default 1), pageSize (1-200, default 50) }`; strict.
+  'HAS_INPUTS' | 'NOT_IN_PERIOD' | 'UNPAID_DAYS' | 'UNCLEAR_DAYS' | 'ALL_ABSENT', page (1-100000, default 1), pageSize
+  (1-200, default 50) }`; strict.
 - **Returns:** `{ items: [{ id (the person in the run), employeeCode (as in this company in the period), name, days,
-  from, to, segments, inputs, annualCtc | null, monthlyGross | null, flags: { noSalary, changed, hasInputs, notInPeriod }
-  }], total, counts: { all, noSalary, changed, hasInputs, notInPeriod }, salaryHidden }`. Sorted by code.
+  paidDays | null, unpaidDays | null, unclearDays | null (in days, a half = 0.5; null until the days are worked out),
+  from, to, segments, inputs, annualCtc | null, monthlyGross | null, flags: { noSalary, changed, hasInputs, notInPeriod,
+  unpaidDays, unclearDays, allAbsent } }], total, counts: { all, noSalary, changed, hasInputs, notInPeriod, unpaidDays,
+  unclearDays, allAbsent }, salaryHidden, daysWorkedOut }`. Sorted by code.
 - **Does:** lists who the run pays and, per person, how many days, how many stretches (a mid-period salary or placement
-  change makes two), days with no salary, inputs, and people kept only because they have inputs.
+  change makes two), days with no salary, inputs, and people kept only because they have inputs. Stage 3 (2026-11-27):
+  the paid, unpaid and unclear days from the run's own day rows (the days are not money - no salary access needed);
+  `allAbsent` = absent on every working half and never present, on duty, on leave or with a punch - most likely someone
+  who does not punch, listed to be checked.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
 
 ### `payroll.people.get`
@@ -4437,8 +4450,11 @@ and can include two events per employee. No existing API provides that contract.
 - **Returns:** `{ id, employeeCode, name, salaryHidden, segments: [{ id, fromDate, toDate, days, employmentType,
   workforceCategory, plant, department, costCenter | null, hasSalary, salary: { annualCtc, currency, effectiveFrom,
   reason, monthlyGross, lines: [{ component: { id, name, code, kind }, monthlyAmount }] } | null, employeeSalaryId |
-  null }] }`.
-- **Does:** shows the copy the run holds for one person: each stretch of days with its placement and salary.
+  null }], days: [{ date, firstHalf, secondHalf ('PAID' | 'UNPAID' | 'UNCLEAR'), firstStatus, secondStatus (what
+  attendance said; null = attendance had no day), firstLeaveCode, secondLeaveCode }] | null, dayTotals: { paidDays,
+  unpaidDays, unclearDays, allAbsent } | null }` - `days` / `dayTotals` null until the days are worked out.
+- **Does:** shows the copy the run holds for one person: each stretch of days with its placement and salary, and
+  (stage 3, 2026-11-27) each day as the run took it from the locked attendance.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
 
 ### `payroll.people.refresh`
@@ -4454,7 +4470,9 @@ and can include two events per employee. No existing API provides that contract.
   A person is in when the job timeline places them in the company on at least one day of the pay period between their
   joining and leaving dates (every employment type, consultants included). Their days are cut at every salary change and
   every job-timeline change of plant, department, cost centre, employment type or category; days in another company are
-  left out. People who no longer belong are removed unless they have inputs (they stay, with no days). Records the refresh
+  left out. People who no longer belong are removed unless they have inputs (they stay, with no days). The days taken
+  from attendance (stage 3) belong to the old stretches: they are removed and `computedAt` emptied - worked out again
+  with `payroll.days.compute`. Records the refresh
   on the run (`peopleRefreshedAt` / `ById` - in the change history); the copy rows themselves are not recorded
   (`core/audit` SKIP_MODELS, decided 2026-11-26).
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT if the run is not a draft or was refreshed by
@@ -4502,3 +4520,25 @@ and can include two events per employee. No existing API provides that contract.
 - **Returns:** `{ id }`.
 - **Does:** removes an input while the run is DRAFT; the removal stays in the change history.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT if the run is not a draft.
+
+### `payroll.days.compute`
+- **HTTP:** `POST /api/rpc/payroll/days/compute` · **Code:** `backend/src/modules/payroll/days/`
+- **Access:** Payroll WRITE on the active role, plus `assertWholeSlice` for the run's company.
+- **Scope:** run found with whole-company Payroll scope (outside range / partial rows = NOT_FOUND); whole-company View
+  only = FORBIDDEN. The people are those of the run; their attendance days are read through
+  `attendanceService.listPayrollDays` for exactly those employees (documented `// data access:` reads - the run was
+  found with whole-company Payroll scope first). Attendance access is not needed: the days are the run's own copy. No
+  team or HOD fallback.
+- **Input:** `{ runId: positive int, expectedComputedAt: Date | null }` - the time the screen showed the days were last
+  worked out (null = never); strict.
+- **Returns:** `{ people, days (rows written), peopleWithUnpaidDays, peopleWithUnclearDays }`.
+- **Does:** stage 3, the days (approved 2026-11-27). In one transaction, while the run is DRAFT and every day of its pay
+  period lies in a locked attendance month: replaces the run's day rows (`PayrollRunDay`) - one per person and day inside
+  their stretches - with each half classed from attendance: PAID (present, on duty, weekly off, holiday, leave of a paid
+  type), UNPAID (absent, missed punch, leave of a type without pay) or UNCLEAR (attendance has no day, or a leave half
+  with no approved leave found - never guessed), with attendance's status and the leave type's code. Payroll adds no
+  rule of its own: an absent Saturday (half working day) is half a day unpaid; an off day between absences stays paid.
+  Records it on the run (`computedAt` / `ById` - in the change history); the day rows themselves are not recorded
+  (rebuilt each time). No amounts: what a day is worth waits for the rules agreed against a greytHR register.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT if the run is not a draft, the attendance period
+  is not locked, or the days were worked out by someone else in the meantime.

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams, useSearchParams } from 'react-router'
-import { ArrowLeft, RefreshCw } from 'lucide-react'
+import { ArrowLeft, CalendarCheck, RefreshCw } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
@@ -14,11 +14,12 @@ import { orpc } from '@/lib/orpc'
 import { formatDate, formatDoneBy } from '@/lib/utils'
 import { RunInputs } from './components/RunInputs'
 import { RunPeople } from './components/RunPeople'
-import { RUN_FACT_LABELS, RUN_TABS, RUN_TILE_LABELS, SALARY_HIDDEN_NOTE, monthLabel } from './components/payroll-labels'
+import { COMPUTE_LABEL, NOT_LOCKED_NOTE, OUTDATED_NOTE, REFRESH_LABEL, RUN_FACT_LABELS, RUN_TABS, RUN_TILE_LABELS, SALARY_HIDDEN_NOTE, monthLabel } from './components/payroll-labels'
 
-// One pay run (payroll stage 2): its people with the salary in force on each day of the month (a copy, refreshed from
-// the employee records while it is a draft) and the month's inputs. Payroll: View over the whole company; changes need
-// Payroll: Edit over the whole company. Salary figures also need Salary: View over the whole company.
+// One pay run: its people with the salary in force on each day of the pay period (a copy, refreshed from the employee
+// records while it is a draft), the month's inputs (stage 2) and each person's paid and unpaid days, taken from the
+// locked attendance with "Work out days" (stage 3). Payroll: View over the whole company; changes need Payroll: Edit
+// over the whole company. Salary figures also need Salary: View over the whole company.
 export function PayrollRunPage() {
   const { id: rawId } = useParams()
   const id = Number(rawId)
@@ -29,16 +30,21 @@ export function PayrollRunPage() {
   const { ready, can } = useAccess()
   const queryClient = useQueryClient()
   const run = useQuery({ ...orpc.payroll.get.queryOptions({ input: { id } }), enabled: valid })
+  const reload = () => void queryClient.invalidateQueries({ queryKey: orpc.payroll.key() })
   const refresh = useMutation({
     ...orpc.payroll.people.refresh.mutationOptions(),
     onSuccess: () => {
       setRefreshing(false)
-      void queryClient.invalidateQueries({ queryKey: orpc.payroll.key() })
+      reload()
     },
   })
+  // on a refusal too: "someone worked it out in the meantime" needs the newer run on the screen
+  const compute = useMutation({ ...orpc.payroll.days.compute.mutationOptions(), onSettled: reload })
   const r = run.data
-  const facts = r ? [`${formatDate(r.payFrom)} – ${formatDate(r.payTo)}`, formatDoneBy(r.peopleRefreshedAt, r.peopleRefreshedBy)] : []
-  const tiles = r ? [r.people, r.peopleWithoutSalary, r.inputs] : []
+  const facts = r ? [`${formatDate(r.payFrom)} – ${formatDate(r.payTo)}`, formatDoneBy(r.peopleRefreshedAt, r.peopleRefreshedBy), r.computedAt ? formatDoneBy(r.computedAt, r.computedBy) : 'Not yet'] : []
+  const tiles = r ? [r.people, r.peopleWithoutSalary, r.inputs, r.peopleWithUnpaidDays ?? '—', r.peopleToCheck ?? '—'] : []
+  // which tiles turn amber when they are not zero: people without a salary, people to check
+  const warns = [false, true, false, false, true]
 
   return (
     <div className="space-y-4">
@@ -47,7 +53,7 @@ export function PayrollRunPage() {
       </Link>
       {!valid && <p role="alert" className="text-sm text-negative-ink">This is not a payroll run address.</p>}
       <FormError error={run.error} />
-      {valid && run.isPending && <PayrollRunHeaderSkeleton refresh={ready && can('PAYROLL', 'WRITE')} />}
+      {valid && run.isPending && <PayrollRunHeaderSkeleton actions={ready && can('PAYROLL', 'WRITE')} />}
       {r && (
         <header className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -56,13 +62,18 @@ export function PayrollRunPage() {
               <Pill tone="neutral">Draft</Pill>
             </div>
             {r.canChange && (
-              <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" onClick={() => setRefreshing(true)}>
-                <RefreshCw className="size-4" aria-hidden />Refresh from employee records
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button className="min-h-9 gap-1.5 rounded-full" disabled={!r.attendanceLocked || compute.isPending} onClick={() => compute.mutate({ runId: id, expectedComputedAt: r.computedAt })}>
+                  <CalendarCheck className="size-4" aria-hidden />{compute.isPending ? 'Working out…' : COMPUTE_LABEL}
+                </Button>
+                <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" onClick={() => setRefreshing(true)}>
+                  <RefreshCw className="size-4" aria-hidden />{REFRESH_LABEL}
+                </Button>
+              </div>
             )}
           </div>
           <p className="text-sm text-muted-foreground">{r.company.name}</p>
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
             {RUN_FACT_LABELS.map((label, i) => (
               <div key={label} className="min-w-0">
                 <dt className="text-xs text-muted-foreground">{label}</dt>
@@ -70,17 +81,19 @@ export function PayrollRunPage() {
               </div>
             ))}
           </dl>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
             {RUN_TILE_LABELS.map((label, i) => (
               <div key={label} className="rounded-2xl bg-card px-3 py-2 shadow-card">
                 <p className="text-xs text-muted-foreground">{label}</p>
-                <p className={`text-lg font-medium tabular-nums ${i === 1 && tiles[i] ? 'text-warning-ink' : ''}`}>{tiles[i]}</p>
+                <p className={`text-lg font-medium tabular-nums ${warns[i] && typeof tiles[i] === 'number' && tiles[i] > 0 ? 'text-warning-ink' : ''}`}>{tiles[i]}</p>
               </div>
             ))}
           </div>
+          {r.daysOutdated ? <p role="status" className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning-ink">{OUTDATED_NOTE}</p> : !r.attendanceLocked && !r.computedAt && <p className="text-xs text-muted-foreground">{NOT_LOCKED_NOTE}</p>}
           {r.salaryHidden && <p className="text-xs text-muted-foreground">{SALARY_HIDDEN_NOTE}</p>}
         </header>
       )}
+      <FormError error={compute.error} />
       {valid && !run.error && (
         <Tabs value={tab} onValueChange={(value) => setParams((old) => { const next = new URLSearchParams(old); next.set('tab', String(value)); return next }, { replace: true })}>
           <PillTabsList aria-label="Payroll run sections">
@@ -93,7 +106,7 @@ export function PayrollRunPage() {
       {refreshing && r && (
         <ConfirmDialog
           title="Refresh from employee records?"
-          description="The people and their salaries are copied again from the employee records as they are now. People who no longer belong to this month are removed, unless they have inputs. Inputs are kept."
+          description={`The people and their salaries are copied again from the employee records as they are now. People who no longer belong to this pay period are removed, unless they have inputs. Inputs are kept.${r.computedAt ? ' The days taken from attendance are removed - work them out again afterwards.' : ''}`}
           confirm={refresh.isPending ? 'Refreshing…' : 'Refresh'}
           pending={refresh.isPending}
           onConfirm={() => refresh.mutate({ runId: id, expectedRefreshedAt: r.peopleRefreshedAt }, { onError: () => setRefreshing(false) })}

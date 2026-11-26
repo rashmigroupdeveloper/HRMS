@@ -20,7 +20,8 @@ one at a time, each planned with the user before it is built (the old HRMS is in
 3. **Regularization / OD** - fixing a missed punch, on-duty outside the office - **done (2026-11-22, with leave)**; what
    is left is item 29
 4. **Payroll** - the month-end salary from attendance and leave - **in progress: stages 1 (draft runs) and 2 (people,
-   salary copy, inputs) built 2026-11-26; stage 3 (days and gross) next**
+   salary copy, inputs) built 2026-11-26; stage 3: the days built 2026-11-27, the amounts wait for a greytHR salary
+   register**
 5. **Probation / confirmation** - intern -> probation, probation -> confirmed, with or without a salary hike
 6. **Promotion and increments** - a promotion with a hike, or a hike alone (salary revisions) - **done through job
    changes and the approval service (2026-11-20)**; what is left is item 24
@@ -804,11 +805,41 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
     on the guard - e.g. refuse the change while it would leave a gap or overlap after a company's latest run, or a
     one-time bridging period - before the first real run is paid.
   - [ ] Is every company on the same cycle? The start day is one setting for the whole group today.
+- **Stage 3, the days - built 2026-11-27** (the user approved `PayrollRunDay` and `PayrollRun.computedAt / ById`, with
+  the day rows out of the change history): "Work out days" (`payroll.days.compute`) copies each person's days from the
+  LOCKED attendance into the run - each half paid, unpaid or unclear, with what attendance said; paid / unpaid days on
+  the people list, each day on a person's view; the header says when attendance was opened or locked again afterwards.
+  Refreshing the people removes the days. **Decided by the user 2026-11-27:**
+  - Payroll follows attendance half by half with no rule of its own: present, on duty, weekly off, holiday and paid
+    leave are paid; absent, missed punch and leave without pay are unpaid; no "sandwich" rule (an off day between
+    absences stays paid). An absent Saturday (half working day) costs half a day, as leave counts it.
+  - A day attendance never worked out, or a leave half with no approved leave found, is "unclear": listed, never
+    guessed.
+  - The money part waits for a greytHR salary register: `private/` holds only CTC sheets, the employee master and
+    punches.
+  **Still open:**
+  - [ ] **A greytHR salary register in `private/`** - best the 26 Feb to 25 Mar month (28 days) with at least one
+    person with loss of pay - to read: what a day's pay is divided by (the period's days, 30 or 26), which components
+    are cut for loss of pay, how the lines and the net are rounded. Then propose the results table, the dated rule
+    settings and the component's "cut for loss of pay" switch, and build the earned amounts and gross.
+  - [ ] **People who do not punch** (the user, 2026-11-27: mark them in attendance). In HR's 11-day punch file of October
+    2026 about a third of the active employees have no punch at all (the file may not cover every site).
+    Attendance marks a working day without punches absent, so payroll would pay them nothing. **Needs:** a per-employee
+    "attendance not tracked" marker in the attendance module (counted present on working days unless on leave) - the
+    field, who sets it and from which date to be proposed to the user - and HR's list of who does not punch. Until then
+    payroll lists them as "Absent throughout" under "To check".
+  - [ ] **The late rule's absent half** (the Nth late of a month makes a half absent) is an absent half in attendance,
+    so the run shows it unpaid like any absence. Whether that penalty may reach pay is NOT decided: the law lets only
+    the time actually missed be cut without the fine procedure (plan, "Payable days"; question for the CA). To settle
+    before any amount is cut - if it may not, attendance must tell payroll which absent halves come from the late rule.
+  - [ ] Unclear days block nothing yet; whether a run with unclear days may be approved is settled with stage 5.
+  - [ ] The run's days are taken 100 employees at a time, because the leave reader stops at 2,000 applications - fine
+    for one month; to revisit if a period can ever be longer.
 - [ ] Remaining pay-run lifecycle: lock inputs, compute, issues, review,
   independent approval through the shared approval service, finalize, mark paid, return to draft/reopen and reconciliation.
-- [ ] Employee run inputs: uploads, calculated items, payable days/LOP, component proration and backdated salary
-  arrears (typed one-off earnings / deductions and component codes: stage 2). Gross flags and LOP treatment need
-  agreement.
+- [ ] Employee run inputs: uploads, calculated items, component proration and backdated salary arrears (typed one-off
+  earnings / deductions and component codes: stage 2; payable and unpaid days: stage 3, built 2026-11-27). Gross flags
+  and the amount cut for an unpaid day need agreement against a register.
 - [ ] Salary holds and releases, with the effect on calculation/payment defined.
 - [ ] Payslips and own-payslip downloads; run output bundles; bank payment files, SAP GL/JV mapping/exports and variance reports.
 - [ ] PF/EPS/EDLI, ESIC, PT and LWF calculations; effective statutory parameters/rates and PT slabs; ECR, ESIC return,

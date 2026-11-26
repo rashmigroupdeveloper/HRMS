@@ -8,6 +8,7 @@ import * as holidayListsService from './holiday-lists/holiday-lists.service.js'
 import * as punchesService from './punches/punches.service.js'
 import * as locksService from './locks/locks.service.js'
 import { hasAccess } from '#core/auth/access'
+import type { DbClient } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { employeesService, hodsService } from '#modules/employees'
 import { today } from '#shared/utils/dates'
@@ -159,3 +160,17 @@ export async function exportSetup(viewer: CurrentUser,input:z.infer<typeof expor
 
 // Company payroll headers snapshot this period; managing the group-wide attendance lock remains separate.
 export { getPeriod as getPayrollPeriod } from './locks/locks.service.js'
+
+// --- For payroll, stage 3 (2026-11-27 - payroll depends on attendance, never the other way) ---
+
+// Whether a pay run's whole period is locked, and since when
+export function payrollLockOf(from: Date, to: Date, db?: DbClient) {
+  return locksService.lockOfDays(from, to, db)
+}
+
+// The worked-out days a pay run copies: each half's status, and the leave type (with paid or not) of a half on leave.
+// The caller chose the employees (the people of one run it found with whole-company Payroll scope).
+export type { PayrollDay, PayrollHalf } from './days/days.service.js'
+export function listPayrollDays(employeeIds: number[], from: Date, to: Date) {
+  return daysService.listForPayroll(employeeIds, from, to)
+}

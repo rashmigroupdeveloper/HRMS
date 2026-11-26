@@ -13,12 +13,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { orpc } from '@/lib/orpc'
 import { cn, formatDate, formatMoney } from '@/lib/utils'
 import { PersonDetails } from './PersonDetails'
-import { PEOPLE_COLUMNS, PEOPLE_FLAGS, PEOPLE_WIDTHS } from './payroll-labels'
+import { PEOPLE_COLUMNS, PEOPLE_FLAGS, PEOPLE_WIDTHS, dayCount } from './payroll-labels'
 
 const PAGE = 50
 type Flag = Exclude<(typeof PEOPLE_FLAGS)[number]['value'], ''>
+type Counts = { noSalary: number; changed: number; hasInputs: number; notInPeriod: number; unpaidDays: number; unclearDays: number; allAbsent: number }
 
-// The people of a run: who is paid, for how many days, with what salary (if the viewer may see salaries)
+// The people of a run: who is paid, for how many days - in the run, paid and unpaid once the days are worked out from
+// the locked attendance (stage 3) - and with what salary (if the viewer may see salaries)
 export function RunPeople({ runId, canChange }: { runId: number; canChange: boolean }) {
   const [search, setSearch] = useState('')
   const [flag, setFlag] = useState<Flag | ''>('')
@@ -55,7 +57,7 @@ export function RunPeople({ runId, canChange }: { runId: number; canChange: bool
         <EmptyState className="py-6" title={data.counts.all ? 'Nobody matches' : 'Nobody is in this run'} hint={data.counts.all ? 'Try another name or filter.' : 'Nobody worked for this company in the pay period by the job timeline. Refresh after adding employees.'} />
       ) : (
         <div className={cn('overflow-x-auto transition-opacity', stale && 'opacity-50')}>
-          <Table aria-label="People in the run" className="min-w-[720px] table-fixed text-[13px]">
+          <Table aria-label="People in the run" className="min-w-[820px] table-fixed text-[13px]">
             <TableHeader>
               <TableRow>{PEOPLE_COLUMNS.map((h, i) => <TableHead key={h} style={{ width: PEOPLE_WIDTHS[i] }} className="h-8 px-2 text-xs">{h}</TableHead>)}</TableRow>
             </TableHeader>
@@ -67,10 +69,14 @@ export function RunPeople({ runId, canChange }: { runId: number; canChange: bool
                     <p className="text-xs text-muted-foreground">{p.employeeCode}</p>
                   </TableCell>
                   <TableCell className="px-2 py-1.5 tabular-nums">{p.days}</TableCell>
+                  <TableCell className="px-2 py-1.5 tabular-nums">{p.paidDays === null ? '—' : dayCount(p.paidDays)}</TableCell>
+                  <TableCell className={cn('px-2 py-1.5 tabular-nums', !!p.unpaidDays && 'font-medium text-negative-ink')}>{p.unpaidDays === null ? '—' : dayCount(p.unpaidDays)}</TableCell>
                   <TableCell className="px-2 py-1.5 text-xs tabular-nums">{p.from && p.to ? `${formatDate(p.from)} – ${formatDate(p.to)}` : '—'}</TableCell>
                   <TableCell className="px-2 py-1.5 tabular-nums">{data.salaryHidden ? <span className="text-xs text-muted-foreground">Hidden</span> : p.monthlyGross !== null ? formatMoney(p.monthlyGross, 'INR') : '—'}</TableCell>
                   <TableCell className="px-2 py-1.5">
                     <div className="flex flex-wrap gap-1">
+                      {p.flags.allAbsent && <Pill tone="warning">Absent throughout</Pill>}
+                      {p.flags.unclearDays && <Pill tone="warning">Check {dayCount(p.unclearDays ?? 0)} {p.unclearDays === 1 ? 'day' : 'days'}</Pill>}
                       {p.flags.noSalary && <Pill tone="warning">No salary</Pill>}
                       {p.flags.notInPeriod && <Pill tone="warning">Not in the period</Pill>}
                       {p.flags.changed && <Pill tone="neutral">Changed</Pill>}
@@ -97,6 +103,6 @@ export function RunPeople({ runId, canChange }: { runId: number; canChange: bool
   )
 }
 
-function countOf(counts: { noSalary: number; changed: number; hasInputs: number; notInPeriod: number }, flag: Flag) {
-  return { NO_SALARY: counts.noSalary, CHANGED: counts.changed, HAS_INPUTS: counts.hasInputs, NOT_IN_PERIOD: counts.notInPeriod }[flag]
+function countOf(counts: Counts, flag: Flag) {
+  return { NO_SALARY: counts.noSalary, CHANGED: counts.changed, HAS_INPUTS: counts.hasInputs, NOT_IN_PERIOD: counts.notInPeriod, UNPAID_DAYS: counts.unpaidDays, UNCLEAR_DAYS: counts.unclearDays, ALL_ABSENT: counts.allAbsent }[flag]
 }

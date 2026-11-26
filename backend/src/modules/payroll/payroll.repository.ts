@@ -2,7 +2,7 @@ import { prisma, createdBy, updatedBy, type ActorId, type DbClient } from '#core
 import { scopeWhere, type DataScope } from '#core/auth/scope'
 import type { ListInput } from './payroll.schema.js'
 
-const select = { id: true, company: { select: { id: true, code: true, name: true } }, payMonth: true, attendanceFrom: true, attendanceTo: true, status: true, peopleRefreshedAt: true, peopleRefreshedById: true, createdAt: true, createdById: true, updatedAt: true, updatedById: true } as const
+const select = { id: true, company: { select: { id: true, code: true, name: true } }, payMonth: true, attendanceFrom: true, attendanceTo: true, status: true, peopleRefreshedAt: true, peopleRefreshedById: true, computedAt: true, computedById: true, createdAt: true, createdById: true, updatedAt: true, updatedById: true } as const
 
 // The service supplies wholeCompanyScopeOf: narrower plant/department rows never authorize a whole-company run.
 export async function list(scope: DataScope, input: ListInput, db: DbClient = prisma) {
@@ -25,7 +25,14 @@ export function findMonth(companyId: number, payMonth: Date, db: DbClient = pris
 }
 
 // Records that the run's people and salary copy was rebuilt now, by this actor (stage 2) - this is what the change
-// history keeps of a refresh; the copy rows themselves are not recorded
+// history keeps of a refresh; the copy rows themselves are not recorded. The days (stage 3) hang on the people, so they
+// are no longer worked out: computedAt / ById are emptied with it
 export function markRefreshed(id: number, actorId: ActorId, db: DbClient = prisma) {
-  return db.payrollRun.update({ where: { id }, data: { peopleRefreshedAt: new Date(), peopleRefreshedById: actorId, ...updatedBy(actorId) }, select: { peopleRefreshedAt: true } })
+  return db.payrollRun.update({ where: { id }, data: { peopleRefreshedAt: new Date(), peopleRefreshedById: actorId, computedAt: null, computedById: null, ...updatedBy(actorId) }, select: { peopleRefreshedAt: true } })
+}
+
+// Records that the run's days were taken from attendance now, by this actor (stage 3) - what the change history keeps
+// of it; the day rows themselves are not recorded
+export function markComputed(id: number, actorId: ActorId, db: DbClient = prisma) {
+  return db.payrollRun.update({ where: { id }, data: { computedAt: new Date(), computedById: actorId, ...updatedBy(actorId) }, select: { computedAt: true } })
 }

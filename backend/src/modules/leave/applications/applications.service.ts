@@ -477,7 +477,7 @@ attendanceService.registerLeaveCovers(async (employeeIds, from, to, { pending })
     halvesOfLeave(r)
       .filter(({ date }) => date >= from && date <= to)
       // (a holiday taken from a type only on its holiday dates makes the half a holiday - 2026-11-24)
-      .map(({ date, half }) => ({ employeeId: r.employeeId, date, half, status: r.leaveType.holidaysOnly ? ('HOLIDAY' as const) : ('LEAVE' as const), code: r.leaveType.code, label: r.leaveType.name })),
+      .map(({ date, half }) => ({ employeeId: r.employeeId, date, half, status: r.leaveType.holidaysOnly ? ('HOLIDAY' as const) : ('LEAVE' as const), code: r.leaveType.code, label: r.leaveType.name, paid: r.leaveType.isPaid })),
   )
 })
 

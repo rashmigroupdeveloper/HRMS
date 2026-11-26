@@ -3,7 +3,7 @@ import { prisma } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { employeesService } from '#modules/employees'
 import { today } from '#shared/utils/dates'
-import { addDays } from '#shared/utils/time'
+import { addDays, eachDay } from '#shared/utils/time'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as daysService from '../days/days.service.js'
@@ -103,6 +103,23 @@ export async function setCycleStart(viewer: CurrentUser, { cycleStartDay }: z.in
   assertGroupWide(viewer, 'ATTENDANCE_SETUP', 'The attendance month')
   if (await locksRepository.countOpenLocks()) throw new ORPCError('CONFLICT', { message: 'Open the locked months again first - changing the start day moves their days' })
   return prisma.$transaction((tx) => locksRepository.setCycleStartDay(cycleStartDay, viewer.employeeId, tx))
+}
+
+// Whether every day of from..to lies in a locked attendance month, and when the latest of those locks was made - a pay
+// run takes its days only from a locked period, and a lock made after it did means attendance was opened and may have
+// changed in between (payroll stage 3, 2026-11-27). Day by day, so it also holds for a period captured under an earlier
+// start day.
+export async function lockOfDays(from: Date, to: Date, db?: import('#core/db/prisma').DbClient) {
+  const [startDay, locks] = await Promise.all([locksRepository.findCycleStartDay(db), locksRepository.listOpenLocks(db)])
+  const lockedAtOf = new Map(locks.map((l) => [`${l.year}-${l.month}`, l.lockedAt]))
+  let lockedAt: Date | null = null
+  for (const day of eachDay(from, to)) {
+    const { year, month } = daysService.cycleOf(day, startDay)
+    const at = lockedAtOf.get(`${year}-${month}`)
+    if (!at) return { locked: false, lockedAt: null }
+    if (!lockedAt || at > lockedAt) lockedAt = at
+  }
+  return { locked: lockedAt !== null, lockedAt }
 }
 
 // Payroll captures the current attendance window without receiving attendance records or lock-management access.
