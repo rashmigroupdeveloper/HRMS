@@ -19,7 +19,8 @@ one at a time, each planned with the user before it is built (the old HRMS is in
    attendance's) - **done (2026-11-22, built while the user was away, after the old HRMS's rules)**; what is left is item 29
 3. **Regularization / OD** - fixing a missed punch, on-duty outside the office - **done (2026-11-22, with leave)**; what
    is left is item 29
-4. **Payroll** - the month-end salary from attendance and leave - **in progress: Stage 1 draft runs built 2026-11-26; calculation remains next**
+4. **Payroll** - the month-end salary from attendance and leave - **in progress: stages 1 (draft runs) and 2 (people,
+   salary copy, inputs) built 2026-11-26; stage 3 (days and gross) next**
 5. **Probation / confirmation** - intern -> probation, probation -> confirmed, with or without a salary hike
 6. **Promotion and increments** - a promotion with a hike, or a hike alone (salary revisions) - **done through job
    changes and the approval service (2026-11-20)**; what is left is item 24
@@ -743,20 +744,56 @@ to cherry-pick or proof that the old implementation works. Recheck both branches
    layouts. Run all section 6 checks; update the API tracker and every affected rule/doc. Delete completed backlog
    tasks and their duplicate references together; preserve intentional exclusions until the decision changes.
 
-#### Payroll, statutory and income tax — Stage 1 built; subsequent stages deferred
+#### Payroll, statutory and income tax — Stages 1 and 2 built; later stages planned
 
 **Reference:** `backend/src/modules/payroll-core/`, `payroll-outputs/`, `tds/`; related screens in
 `frontend/src/pages/payroll/` and `tax/`. **Needs:** agreed pay groups/cycles, attendance and leave inputs, statutory
 policy, sample reconciled payslips/registers and approved schema. See items 11, 18, 19, 23, 24 and 29.
 
+**The payroll plan (2026-11-26) - read before coding any payroll stage.** Kept on the user's machine, outside the repo
+(where it should live in the repo is still open):
+- `C:\Users\Prateek Kumar Singh\Desktop\HRMS-payroll-coding-plan.md` - **the coding plan / handover**: rules for every
+  stage, stage 2 in full (tables, APIs, pages, tests), stages 3-7 with their gates (answers needed first) and blockers.
+  Everything in it is proposed until the user approves each table.
+- `C:\Users\Prateek Kumar Singh\Desktop\HRMS-payroll-plan.html` - the business logic and the decisions list;
+  `HRMS-payroll-cases.html` - the case catalogue (every situation payroll must handle, with its building block);
+  `HRMS-payroll-research\` - the research notes and the plan sources (`plan-src\`).
+
+**Stage 2 decisions (the user, 2026-11-26):**
+- Approved: the first table, `PayrollRunEmployee` (one row per person in a run), as written in the coding plan.
+- Salary amounts inside a run are shown only with `SALARY` View covering the whole company as well as Payroll View;
+  Payroll alone shows people, days and inputs but not the salaries (also in CLAUDE.md section 4).
+- Monthly inputs are entered and changed only by someone with Payroll Edit covering the whole company; a plant-level
+  HR person sends their figures to them (also in CLAUDE.md section 4).
+- Everyone on the company's rolls is in its run - trainees, apprentices and consultants too. How a consultant's pay is
+  taxed (salary slabs, or a flat rate on professional fees) is a question for the CA at stage 4.
+- Rows the system rebuilds on every refresh (the people / salary copy) stay out of the change history, as attendance
+  days do (`SKIP_MODELS` in `core/audit/capture.ts`); each refresh is recorded on the run (who, when, how many people),
+  and human decisions (inputs and everything after) stay recorded. The user left it to "what is best"; CLAUDE.md
+  section 3 "Change history is automatic" now names this exception (built with stage 2).
+- [later] **Hidden pay list** (the user, 2026-11-26): no salary is treated as confidential beyond the access areas for
+  now - everyone is an employee with a salary, seen only by those with access. Later, if needed: a list of employees
+  whose pay only named people can see; everyone added to it is hidden from the other payroll users. **Needs:** the
+  user to ask for it, and a design of who manages the list and how it combines with the whole-company rule.
+
 - **Stage 1 built 2026-11-26:** approved PayrollRun model and dedicated PAYROLL area; regular monthly India
   company/month drafts, captured attendance window, unique company/month, audited creation, scoped list/count/detail
   and `/manage/payroll`. Requires one grant covering the whole company; no plant/department stitching or team fallback.
   Setup changes between preview/create cause a conflict. Captured dates do not move with later cycle changes.
-- [ ] Remaining pay-run lifecycle: employee population/salary snapshots and inputs, lock inputs, compute, issues, review,
+- **Stage 2 built 2026-11-26** (the user approved the four tables and two columns): PayrollRunEmployee,
+  PayrollRunSalarySegment, PayrollRunSalaryLine (the copy, kept out of the change history), PayrollInput;
+  SalaryComponent `code` (optional until HR fills every component, then to be made required) and `enteredMonthly`;
+  PayrollRun `peopleRefreshedAt / ById`. APIs `payroll.people.list / get / refresh`, `payroll.inputs.list / create /
+  update / delete`; `/manage/payroll/:id` with People and Inputs. **Still open from stage 2:** Excel upload of inputs
+  (waits for HR's list of monthly items; preview-then-save like the employee import, item 32.5); making `code` required;
+  the pay period is the calendar month until the 26th-25th reading is agreed (`payPeriodOf`); employees with no
+  job-timeline row are silently left out of a run - a list of them for HR (or a check that the backfill script has run)
+  is not built yet (run `npm run backfill-job-records -w backend` on any database with older employees).
+- [ ] Remaining pay-run lifecycle: lock inputs, compute, issues, review,
   independent approval through the shared approval service, finalize, mark paid, return to draft/reopen and reconciliation.
-- [ ] Employee run inputs: one-off earnings/deductions, uploads, calculated items, payable days/LOP, component
-  proration and backdated salary arrears. Salary components' codes/gross flags and LOP treatment need agreement.
+- [ ] Employee run inputs: uploads, calculated items, payable days/LOP, component proration and backdated salary
+  arrears (typed one-off earnings / deductions and component codes: stage 2). Gross flags and LOP treatment need
+  agreement.
 - [ ] Salary holds and releases, with the effect on calculation/payment defined.
 - [ ] Payslips and own-payslip downloads; run output bundles; bank payment files, SAP GL/JV mapping/exports and variance reports.
 - [ ] PF/EPS/EDLI, ESIC, PT and LWF calculations; effective statutory parameters/rates and PT slabs; ECR, ESIC return,

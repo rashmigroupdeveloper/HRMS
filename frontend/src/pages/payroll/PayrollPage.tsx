@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
@@ -13,7 +13,6 @@ import { useAccess } from '@/hooks/useAccess'
 import { orpc } from '@/lib/orpc'
 import { formatDate, todayDay, toDateInput } from '@/lib/utils'
 import { NewPayrollRun } from './components/NewPayrollRun'
-import { PayrollRunDialog } from './components/PayrollRunDialog'
 import { PAYROLL_NOTE } from './components/payroll-labels'
 
 export function PayrollPage() {
@@ -27,6 +26,7 @@ export function PayrollPage() {
   const valid = /^\d{4}$/.test(rawYear) && Number(rawYear) >= 2000 && Number(rawYear) <= 2100 && (!rawCompany || positive(rawCompany)) && positive(rawPage) && Number(rawPage) <= 100000
   const year = valid ? Number(rawYear) : now.getUTCFullYear(), page = valid ? Number(rawPage) : 1
   const [creating, setCreating] = useState(false)
+  const navigate = useNavigate()
   const setup = useQuery({ ...orpc.payroll.setup.queryOptions({ input: { payMonth: new Date(`${initialMonth}-01T00:00:00Z`) } }), enabled: ready && can('PAYROLL') })
   const query = useQuery({ ...orpc.payroll.list.queryOptions({ input: { year, companyId: rawCompany && positive(rawCompany) ? Number(rawCompany) : undefined, page, pageSize: 25 } }), enabled: valid && ready && can('PAYROLL') })
   const data = query.data
@@ -39,10 +39,10 @@ export function PayrollPage() {
       {!valid && <p role="alert" className="text-sm text-negative-ink">Choose a year from 2000 to 2100 and valid company/page filters.</p>}
       <FormError error={setup.error ?? query.error} />
       {valid && query.isPending && <PayrollRunsSkeleton />}
-      {valid && data && (data.total === 0 ? <div className="py-6"><p className="font-medium">No payroll runs for these filters</p><p className="mt-1 text-sm text-muted-foreground">Try another year or company. Runs require Payroll access covering the whole company.</p></div> : <><div className="divide-y">{data.items.map(r => <div key={r.id} className="grid min-h-24 items-center gap-2 py-3 sm:grid-cols-[1fr_1fr_auto]"><div className="min-w-0"><button className="min-h-9 text-left font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring" onClick={() => change('run', String(r.id))}>{new Intl.DateTimeFormat('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(r.payMonth)}</button><p className="break-words text-sm text-muted-foreground">{r.company.code} · {r.company.name}</p></div><div><p className="text-xs text-muted-foreground">Attendance period</p><p className="text-sm tabular-nums">{formatDate(r.attendanceFrom)} – {formatDate(r.attendanceTo)}</p></div><Pill className="justify-self-start" tone="neutral">Draft</Pill></div>)}</div>
+      {valid && data && (data.total === 0 ? <div className="py-6"><p className="font-medium">No payroll runs for these filters</p><p className="mt-1 text-sm text-muted-foreground">Try another year or company. Runs require Payroll access covering the whole company.</p></div> : <><div className="divide-y">{data.items.map(r => <div key={r.id} className="grid min-h-24 items-center gap-2 py-3 sm:grid-cols-[1fr_1fr_auto]"><div className="min-w-0"><Link className="inline-flex min-h-9 items-center text-left font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring" to={`/manage/payroll/${r.id}`}>{new Intl.DateTimeFormat('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(r.payMonth)}</Link><p className="break-words text-sm text-muted-foreground">{r.company.code} · {r.company.name}</p></div><div><p className="text-xs text-muted-foreground">Attendance period</p><p className="text-sm tabular-nums">{formatDate(r.attendanceFrom)} – {formatDate(r.attendanceTo)}</p><p className="text-xs text-muted-foreground tabular-nums">{r.people} {r.people === 1 ? 'person' : 'people'}</p></div><Pill className="justify-self-start" tone="neutral">Draft</Pill></div>)}</div>
       <nav aria-label="Payroll run pages" className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground"><span>{data.total} {data.total === 1 ? 'run' : 'runs'} · page {page}</span><div className="flex gap-1"><Button size="sm" variant="secondary" className="min-h-9 rounded-full" disabled={page <= 1 || query.isFetching} onClick={() => change('page', String(page - 1))}><ChevronLeft aria-hidden />Previous</Button><Button size="sm" variant="secondary" className="min-h-9 rounded-full" disabled={page * 25 >= data.total || query.isFetching} onClick={() => change('page', String(page + 1))}>Next<ChevronRight aria-hidden /></Button></div></nav>{!data.items.length && <Button variant="secondary" onClick={() => change('page', '1')}>First page</Button>}</>)}
     </section>
-    {creating && <NewPayrollRun initialMonth={initialMonth} close={() => setCreating(false)} created={id => { setCreating(false); change('run', String(id)) }} />}
-    {params.get('run') && positive(params.get('run')!) && <PayrollRunDialog id={Number(params.get('run'))} close={() => change('run', '')} />}
+    {creating && <NewPayrollRun initialMonth={initialMonth} close={() => setCreating(false)} created={id => { setCreating(false); navigate(`/manage/payroll/${id}`) }} />}
+    {params.get('run') && positive(params.get('run')!) && <Navigate replace to={`/manage/payroll/${params.get('run')}`} />}
   </div>
 }

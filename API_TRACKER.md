@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 294**
+**Total APIs: 301**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -379,8 +379,15 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 290 | `dailyMovementReports.settings.save` | Active Super Admin only | Save the schedule and HR Head role; delivery stays disabled |
 | 291 | `payroll.setup` | Payroll: View | Eligible whole-company India payroll choices and current attendance window |
 | 292 | `payroll.list` | Payroll: View | Scoped company/month draft runs and matching pagination totals |
-| 293 | `payroll.get` | Payroll: View covering whole company | Draft header, captured dates and creator |
-| 294 | `payroll.create` | Payroll: Edit covering whole company | Create a regular monthly India draft with reviewed attendance dates |
+| 293 | `payroll.get` | Payroll: View covering whole company | Run header, pay and attendance periods, people / inputs counts, last refresh |
+| 294 | `payroll.create` | Payroll: Edit covering whole company | Create a regular monthly India draft and copy its people and salaries |
+| 295 | `payroll.people.list` | Payroll: View covering whole company | The run's people: days, stretches, flags; salary figures only with Salary: View |
+| 296 | `payroll.people.get` | Payroll: View covering whole company | One person's copied stretches, placement and (with Salary: View) salary lines |
+| 297 | `payroll.people.refresh` | Payroll: Edit covering whole company | Rebuild a draft's people and salary copy from the employee records |
+| 298 | `payroll.inputs.list` | Payroll: View covering whole company | The run's monthly inputs, searchable and paged |
+| 299 | `payroll.inputs.create` | Payroll: Edit covering whole company | Type one input (incentive, canteen...) for a person of a draft run |
+| 300 | `payroll.inputs.update` | Payroll: Edit covering whole company | Change an input of a draft run |
+| 301 | `payroll.inputs.delete` | Payroll: Edit covering whole company | Remove an input of a draft run |
 
 ---
 
@@ -2590,7 +2597,9 @@ site can be used by several companies.
 - **Access:** any logged-in employee; `includeInactive: true` needs Organization: View.
 - **Scope:** not limited by data access (one list for every company).
 - **Input (optional):** `{ includeInactive?: boolean }`
-- **Returns:** `[{ id, name, kind, displayOrder, isActive }]` in breakup order (`displayOrder`, then name). `kind`:
+- **Returns:** `[{ id, name, code, kind, enteredMonthly, displayOrder, isActive }]` in breakup order (`displayOrder`,
+  then name). `code`: short upper-case code or null (payroll stage 2); `enteredMonthly`: typed each month in payroll,
+  never a breakup line (payroll stage 2). `kind`:
   `EARNING` (adds up to the Monthly Gross), `EMPLOYER_CONTRIBUTION` (PF / ESI / gratuity paid on top - part of the
   CTC, not of the gross) or `DEDUCTION` (taken out of the monthly pay by payroll - never a line of a salary breakup;
   2026-11-24).
@@ -2603,21 +2612,26 @@ site can be used by several companies.
 - **HTTP:** `POST /api/rpc/organization/salaryComponents/create` · **Code:** `backend/src/modules/organization/salary-components/`
 - **Access:** Organization: Edit.
 - **Scope:** shared by every company - needs Organization Edit for **all companies** (`403`).
-- **Input:** `{ name: string (1-100, unique), kind: 'EARNING' | 'EMPLOYER_CONTRIBUTION' | 'DEDUCTION', displayOrder: number (0-999) }`
+- **Input:** `{ name: string (1-100, unique), kind: 'EARNING' | 'EMPLOYER_CONTRIBUTION' | 'DEDUCTION', displayOrder: number
+  (0-999), code?: string | null (capital letters, digits and _, starting with a letter, at most 30; unique),
+  enteredMonthly?: boolean (default false) }`
 - **Returns:** the new component.
-- **Errors:** `400` invalid input · `409 CONFLICT` name already exists.
+- **Errors:** `400` invalid input, or `enteredMonthly` on an employer contribution · `409 CONFLICT` name or code already
+  exists.
 
 ### `organization.salaryComponents.update`
 - **HTTP:** `POST /api/rpc/organization/salaryComponents/update` · **Code:** `backend/src/modules/organization/salary-components/`
 - **Access:** Organization: Edit.
 - **Scope:** shared by every company - needs Organization Edit for **all companies** (`403`).
-- **Input:** `{ id: number, name?, kind?, displayOrder?, isActive?: boolean }` (rules as `create`)
+- **Input:** `{ id: number, name?, kind?, displayOrder?, isActive?: boolean, code?: string | null, enteredMonthly?:
+  boolean }` (rules as `create`)
 - **Returns:** the component.
 - **What it does:** changes, or retires / re-activates a component. A retired one stays on the offers that use it but
   cannot be added to an offer. A component cannot change between `DEDUCTION` and the other two kinds (2026-11-24) - the
-  earnings and employer contributions sit on salary breakups, a deduction never does.
-- **Errors:** `400` invalid input, or `kind` changed to / from `DEDUCTION` · `404 NOT_FOUND` unknown id · `409 CONFLICT`
-  name already used.
+  earnings and employer contributions sit on salary breakups, a deduction never does. For the same reason
+  `enteredMonthly` can be switched only on a deduction; an earning keeps what it was added with (payroll stage 2).
+- **Errors:** `400` invalid input, `kind` changed to / from `DEDUCTION`, or `enteredMonthly` changed on an earning / set
+  on an employer contribution · `404 NOT_FOUND` unknown id · `409 CONFLICT` name or code already used.
 
 ### `organization.salaryStructures.list`
 - **HTTP:** `POST /api/rpc/organization/salaryStructures/list` · **Code:** `backend/src/modules/organization/salary-structures/`
@@ -4358,8 +4372,9 @@ and can include two events per employee. No existing API provides that contract.
   company selection returns zero, never broadens. No own-team or HOD fallback for financial company runs.
 - **Input:** required year integer 2000–2100; optional positive companyId; page integer 1–100000 (default 1), pageSize
   integer 1–100 (default 25); strict object.
-- **Returns:** `{ items: [{ id, company: { id, code, name }, payMonth, attendanceFrom, attendanceTo, status, createdAt,
-  updatedAt }], total }`. Current status DRAFT only.
+- **Returns:** `{ items: [{ id, company: { id, code, name }, payMonth, attendanceFrom, attendanceTo, status,
+  peopleRefreshedAt, people, createdAt, updatedAt }], total }` - `people`: how many people the run holds (stage 2).
+  Current status DRAFT only.
 - **Does:** lists newest month then ID, bounded pagination; existing runs remain readable when a company is retired
   or its India flag later changes. No raw actor IDs, employee population, financial totals or calculations.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST for invalid filters.
@@ -4369,9 +4384,12 @@ and can include two events per employee. No existing API provides that contract.
 - **Access:** Payroll READ on the active role covering the entire run company.
 - **Scope:** same whole-company scope applied inside the ID query; outside range/missing run = NOT_FOUND.
 - **Input:** `{ id: positive integer }`, strict object.
-- **Returns:** list header fields plus createdBy/updatedBy resolved through lookupPeople (code/name; System when actor
-  0), no raw actor IDs. Attendance dates are the captured historical dates, not recalculated from today's settings.
-- **Does:** read-only draft header detail.
+- **Returns:** list header fields plus `payFrom` / `payTo` (the days the run pays - the calendar pay month until the
+  26th-25th reading is agreed), `people`, `peopleWithoutSalary` (people with days that have no salary in force),
+  `inputs`, `peopleRefreshedAt`, `canChange` (a draft and Payroll Edit over the whole company), `salaryHidden` (no Salary
+  View over the whole company), and createdBy / updatedBy / peopleRefreshedBy resolved through lookupPeople (code /
+  name; System when actor 0), no raw actor IDs. Attendance dates are the captured historical dates.
+- **Does:** read-only run header detail for `/manage/payroll/:id`.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
 
 ### `payroll.create`
@@ -4384,6 +4402,98 @@ and can include two events per employee. No existing API provides that contract.
 - **Returns:** `{ id }`.
 - **Does:** transaction validates active India payroll company, rereads current attendance dates via attendance service,
   compares the reviewed window, then creates DRAFT with session actor. Stored dates come from the server. Company/month
-  database uniqueness prevents duplicate/racing submissions. No input locking, computation, money, approvals or payments.
+  database uniqueness prevents duplicate/racing submissions. In the same transaction (stage 2, 2026-11-26) it copies
+  the run's people and their salary stretches - see `payroll.people.refresh` for the rules. No computation, money
+  calculation, approvals or payments.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST for input/inactive/non-India company; CONFLICT for a changed
   attendance preview or duplicate company/month (central Prisma mapping).
+
+### `payroll.people.list`
+- **HTTP:** `POST /api/rpc/payroll/people/list` · **Code:** `backend/src/modules/payroll/people/`
+- **Access:** Payroll READ on the active role.
+- **Scope:** the run is found with `wholeCompanyScopeOf(viewer, PAYROLL)` first (outside range / partial rows =
+  NOT_FOUND); people rows are reached only through the run. Salary figures (annualCtc, monthlyGross) need Salary View
+  over the whole company as well (`levelOver(viewer, SALARY, company)`; the user, 2026-11-26) - otherwise they are null
+  and `salaryHidden` is true. No team or HOD fallback.
+- **Input:** `{ runId: positive int, search?: string (max 100; code or name), flag?: 'NO_SALARY' | 'CHANGED' |
+  'HAS_INPUTS' | 'NOT_IN_PERIOD', page (1-100000, default 1), pageSize (1-200, default 50) }`; strict.
+- **Returns:** `{ items: [{ id (the person in the run), employeeCode (as in this company in the period), name, days,
+  from, to, segments, inputs, annualCtc | null, monthlyGross | null, flags: { noSalary, changed, hasInputs, notInPeriod }
+  }], total, counts: { all, noSalary, changed, hasInputs, notInPeriod }, salaryHidden }`. Sorted by code.
+- **Does:** lists who the run pays and, per person, how many days, how many stretches (a mid-month salary or placement
+  change makes two), days with no salary, inputs, and people kept only because they have inputs.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
+
+### `payroll.people.get`
+- **HTTP:** `POST /api/rpc/payroll/people/get` · **Code:** `backend/src/modules/payroll/people/`
+- **Access:** Payroll READ on the active role.
+- **Scope:** run found with whole-company Payroll scope; the person must belong to that run (otherwise NOT_FOUND).
+  Salary figures need Salary View over the whole company as for `payroll.people.list`.
+- **Input:** `{ runId: positive int, personId: positive int }`; strict.
+- **Returns:** `{ id, employeeCode, name, salaryHidden, segments: [{ id, fromDate, toDate, days, employmentType,
+  workforceCategory, plant, department, costCenter | null, hasSalary, salary: { annualCtc, currency, effectiveFrom,
+  reason, monthlyGross, lines: [{ component: { id, name, code, kind }, monthlyAmount }] } | null, employeeSalaryId |
+  null }] }`.
+- **Does:** shows the copy the run holds for one person: each stretch of days with its placement and salary.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
+
+### `payroll.people.refresh`
+- **HTTP:** `POST /api/rpc/payroll/people/refresh` · **Code:** `backend/src/modules/payroll/people/`
+- **Access:** Payroll WRITE on the active role, plus `assertWholeSlice` for the run's company.
+- **Scope:** run found with whole-company Payroll scope (outside = NOT_FOUND); whole-company View only = FORBIDDEN. The
+  people are read with `employeesService.listForPayrollRun` by the job timeline's company (a documented
+  `// data access:` exception: today's placement does not say who worked for the company in the month).
+- **Input:** `{ runId: positive int, expectedRefreshedAt: Date | null }` - the refresh time the screen showed; strict.
+- **Returns:** `{ people }` - how many people the copy now holds with days in the period.
+- **Does:** in one transaction, while the run is DRAFT: rebuilds the copy from the employee records as they are now.
+  A person is in when the job timeline places them in the company on at least one day of the pay period between their
+  joining and leaving dates (every employment type, consultants included). Their days are cut at every salary change and
+  every job-timeline change of plant, department, cost centre, employment type or category; days in another company are
+  left out. People who no longer belong are removed unless they have inputs (they stay, with no days). Records the refresh
+  on the run (`peopleRefreshedAt` / `ById` - in the change history); the copy rows themselves are not recorded
+  (`core/audit` SKIP_MODELS, decided 2026-11-26).
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT if the run is not a draft or was refreshed by
+  someone else since the screen loaded.
+
+### `payroll.inputs.list`
+- **HTTP:** `POST /api/rpc/payroll/inputs/list` · **Code:** `backend/src/modules/payroll/inputs/`
+- **Access:** Payroll READ on the active role.
+- **Scope:** run found with whole-company Payroll scope; inputs reached only through the run.
+- **Input:** `{ runId, personId?, salaryComponentId?, search? (code or name, max 100), page (default 1), pageSize
+  (1-200, default 50) }`; strict.
+- **Returns:** `{ items: [{ id, amount, note, createdAt, updatedAt, person: { id, employeeCode, name }, salaryComponent:
+  { id, name, code, kind }, createdBy, updatedBy }], total }` - newest first; people as `{ employeeCode, name }`.
+- **Does:** lists the month's typed inputs. Amounts are not salaries, so no Salary View is needed.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
+
+### `payroll.inputs.create`
+- **HTTP:** `POST /api/rpc/payroll/inputs/create` · **Code:** `backend/src/modules/payroll/inputs/`
+- **Access:** Payroll WRITE on the active role, plus `assertWholeSlice` for the run's company (a plant-level HR person
+  sends their figures to someone with the whole company - the user, 2026-11-26).
+- **Scope:** run found with whole-company Payroll scope; the person must belong to the run; never for one's own record
+  (FORBIDDEN).
+- **Input:** `{ runId, personId, salaryComponentId, amount: number (> 0, at most 1 crore, 2 decimals), note: string
+  (2-500) }`; strict.
+- **Returns:** `{ id, duplicate }` - `duplicate`: the person already had this component with this amount (a warning).
+- **Does:** while the run is DRAFT, saves an amount for this month for a component marked "entered monthly" (its kind
+  says earning or deduction). Recorded in the change history.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST for invalid input, an inactive component or one not
+  entered monthly; CONFLICT if the run is not a draft.
+
+### `payroll.inputs.update`
+- **HTTP:** `POST /api/rpc/payroll/inputs/update` · **Code:** `backend/src/modules/payroll/inputs/`
+- **Access:** as `payroll.inputs.create`.
+- **Scope:** as `payroll.inputs.create`; the input must belong to the run (otherwise NOT_FOUND).
+- **Input:** `{ runId, id, salaryComponentId?, amount?, note? }` (rules as create); strict.
+- **Returns:** `{ id, duplicate }`.
+- **Does:** changes an input while the run is DRAFT.
+- **Errors:** as `payroll.inputs.create`.
+
+### `payroll.inputs.delete`
+- **HTTP:** `POST /api/rpc/payroll/inputs/delete` · **Code:** `backend/src/modules/payroll/inputs/`
+- **Access:** as `payroll.inputs.create`.
+- **Scope:** as `payroll.inputs.create`; the input must belong to the run.
+- **Input:** `{ runId, id }`; strict.
+- **Returns:** `{ id }`.
+- **Does:** removes an input while the run is DRAFT; the removal stays in the change history.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT if the run is not a draft.

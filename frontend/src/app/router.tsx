@@ -1,4 +1,5 @@
 import { PayrollPage } from '@/pages/payroll/PayrollPage'
+import { PayrollRunPage } from '@/pages/payroll/PayrollRunPage'
 import { AttendanceReportsPage } from '@/pages/attendance/AttendanceReportsPage'
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -65,6 +66,8 @@ import { MyDepartmentPage } from '@/pages/my-department/MyDepartmentPage'
 //     /manage/attendance-setup     - Attendance setup: View
 //     /manage/team-leave           - Leave: View (and one's team)
 //     /manage/payroll              - Payroll: View - whole-company monthly drafts; creation needs whole-company Edit
+//     /manage/payroll/:id          - one run: its people + salary copy and the month's inputs (Payroll: View; changes Edit;
+//                                    salary figures also need Salary: View over the whole company)
 //     /manage/pay-career           - raising job / salary changes, the change register
 //     /manage/approvals            - the role's steps and the requests raised for others
 //     /manage/organization         - Organization: View, or HOD appointments: View (the Department heads tab only)
@@ -112,7 +115,7 @@ export const router = createBrowserRouter([
             element: <RequirePortal portal="manage" />,
             children: [
               { index: true, element: <ManageHomePage /> },
-              { element: <RequireAccess area="PAYROLL" />, children: [{ path: 'payroll', element: <PayrollPage /> }] },
+              { element: <RequireAccess area="PAYROLL" />, children: [{ path: 'payroll', element: <PayrollPage /> }, { path: 'payroll/:id', element: <PayrollRunPage /> }] },
               { path: 'employees', element: <PeoplePage /> },
               { path: 'employees/:employeeCode', element: <EmployeeProfilePage /> },
               { path: 'joining-tasks', element: <JoiningTasksPage /> },

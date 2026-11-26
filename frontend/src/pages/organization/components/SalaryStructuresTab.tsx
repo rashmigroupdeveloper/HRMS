@@ -170,7 +170,7 @@ function StructureDrawer({ structure, onDone }: { structure?: Structure; onDone:
   const [exampleCtc, setExampleCtc] = useState('300000')
   const components = useQuery(orpc.organization.salaryComponents.list.queryOptions())
   // earnings and employer contributions only - a deduction is never part of a breakup; plus any retired one it still uses
-  const usable: Pick<Component, 'id' | 'name' | 'kind'>[] = (components.data ?? []).filter((c) => c.kind !== 'DEDUCTION')
+  const usable: Pick<Component, 'id' | 'name' | 'kind'>[] = (components.data ?? []).filter((c) => c.kind !== 'DEDUCTION' && !c.enteredMonthly)
   for (const l of structure?.lines ?? []) if (!usable.some((c) => c.id === l.salaryComponentId)) usable.push(l.salaryComponent)
 
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }))

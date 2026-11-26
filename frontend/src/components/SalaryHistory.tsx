@@ -2,23 +2,14 @@ import { useQuery } from '@tanstack/react-query'
 import { TrendingUp } from 'lucide-react'
 import { useState } from 'react'
 import { Pill } from '@/components/Pill'
-import { type client, orpc } from '@/lib/orpc'
+import { SALARY_REASON } from '@/lib/choices'
+import { orpc } from '@/lib/orpc'
 import { cn, errorMessage, formatDate, formatMoney } from '@/lib/utils'
 import { InfoCard } from './ProfileCards'
 
 // The salary history on the profile's Salary tab (the user, 2026-11-20): every salary from its day, latest first - why it
 // changed (the joining, an increment, a promotion, a correction...), the fixed CTC and its change from the one before, who
 // approved it; open one for its monthly breakup. Seen by the employee themselves and Employee · Salary: View.
-
-type Row = Awaited<ReturnType<typeof client.employees.salaryHistory>>[number]
-const REASON: Record<Row['reason'], string> = {
-  JOINING: 'Joining',
-  INCREMENT: 'Increment',
-  PROMOTION: 'Promotion',
-  CONFIRMATION: 'Confirmation',
-  CORRECTION: 'Correction',
-  OTHER: 'Other',
-}
 
 export function SalaryHistory({ employeeCode }: { employeeCode: string }) {
   const history = useQuery(orpc.employees.salaryHistory.queryOptions({ input: { employeeCode } }))
@@ -36,7 +27,7 @@ export function SalaryHistory({ employeeCode }: { employeeCode: string }) {
               <span className="w-24 text-xs text-muted-foreground tabular-nums">{formatDate(row.effectiveFrom)}</span>
               <span className="font-medium tabular-nums">{formatMoney(row.annualCtc, row.currency)}</span>
               {row.changePercent !== null && <Pill tone={row.changePercent >= 0 ? 'positive' : 'negative'}>{`${row.changePercent > 0 ? '+' : ''}${row.changePercent}%`}</Pill>}
-              <span className="text-xs text-muted-foreground">{REASON[row.reason]}</span>
+              <span className="text-xs text-muted-foreground">{SALARY_REASON[row.reason]}</span>
               {row.inForce && <Pill tone="gold">In force</Pill>}
               {row.upcoming && <Pill tone="info">From a later day</Pill>}
               {row.approvedBy && <span className="ml-auto text-xs text-muted-foreground">approved by {row.approvedBy.name}</span>}

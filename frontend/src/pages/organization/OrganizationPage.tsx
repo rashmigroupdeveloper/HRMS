@@ -731,7 +731,7 @@ export function OrganizationPage() {
           <MasterSection
             title="Salary components" exportSection="salaryComponents"
             singular="salary component"
-            about="A line of the salary breakup in offer letters, or a deduction on the payslip."
+            about="A line of the salary breakup in offer letters, an item entered each month in payroll, or a deduction on the payslip."
             canChange={canChange}
             shared
             rows={salaryComponents.data ?? []}
@@ -739,13 +739,13 @@ export function OrganizationPage() {
             // as the offer letter's breakup prints them: earnings first, each group in its order; deductions last
             sort={(a, b) => SALARY_KIND_GROUP[a.kind].order - SALARY_KIND_GROUP[b.kind].order || a.displayOrder - b.displayOrder}
             groupBy={(s) => ({ key: s.kind, label: SALARY_KIND_GROUP[s.kind].label })}
-            searchText={(s) => `${s.name} ${SALARY_KIND[s.kind]}`}
+            searchText={(s) => `${s.name} ${s.code ?? ''} ${SALARY_KIND[s.kind]}`}
             preview={(v) => ({
               lead: <OrderBadge value={v.displayOrder || '?'} title="Order" />,
               title: v.name ?? '',
-              subtitle: SALARY_KIND[v.kind as SalaryKind],
+              subtitle: [SALARY_KIND[v.kind as SalaryKind], v.enteredMonthly === 'yes' ? 'Entered each month' : '', v.code ?? ''].filter(Boolean).join(' · '),
             })}
-            item={(s) => ({ lead: <OrderBadge value={s.displayOrder} title="Order in the breakup" />, title: s.name })}
+            item={(s) => ({ lead: <OrderBadge value={s.displayOrder} title="Order in the breakup" />, title: s.name, subtitle: [s.code, s.enteredMonthly ? 'Entered each month in payroll' : ''].filter(Boolean).join(' · ') || undefined })}
             fields={[
               { name: 'name', label: 'Name', required: true, placeholder: 'e.g. Special Allowance', hint: 'As printed in the salary breakup of the offer letter, or on the payslip' },
               {
@@ -756,10 +756,28 @@ export function OrganizationPage() {
                 hint: 'Earnings add up to the Monthly Gross; employer contributions are paid on top (part of the CTC)',
               },
               { name: 'displayOrder', label: 'Order', required: true, digitsOnly: 3, placeholder: 'e.g. 65', hint: 'Position in the breakup - lower comes first' },
+              { name: 'code', label: 'Code', upperCase: true, clearable: true, placeholder: 'e.g. BASIC', hint: 'Short code for Excel files and the payroll register - capital letters, digits and _' },
+              {
+                name: 'enteredMonthly',
+                label: 'How it is filled',
+                required: true,
+                defaultValue: 'no',
+                options: [
+                  { value: 'no', label: 'From the salary breakup' },
+                  { value: 'yes', label: 'Entered each month in payroll' },
+                ],
+                hint: 'Entered each month: an incentive, a canteen recovery... - never part of a salary breakup. An earning keeps what it was added with.',
+              },
             ]}
-            toValues={(s) => ({ name: s.name, kind: s.kind, displayOrder: String(s.displayOrder) })}
+            toValues={(s) => ({ name: s.name, kind: s.kind, displayOrder: String(s.displayOrder), code: s.code ?? '', enteredMonthly: s.enteredMonthly ? 'yes' : 'no' })}
             create={(v) =>
-              client.organization.salaryComponents.create({ name: v.name!.trim(), kind: v.kind as SalaryKind, displayOrder: Number(v.displayOrder) })
+              client.organization.salaryComponents.create({
+                name: v.name!.trim(),
+                kind: v.kind as SalaryKind,
+                displayOrder: Number(v.displayOrder),
+                code: v.code?.trim() ? v.code.trim() : null,
+                enteredMonthly: v.enteredMonthly === 'yes',
+              })
             }
             update={(id, c, isActive) =>
               client.organization.salaryComponents.update({
@@ -767,6 +785,8 @@ export function OrganizationPage() {
                 name: opt(c.name ?? ''),
                 kind: (c.kind || undefined) as SalaryKind | undefined,
                 displayOrder: num(c.displayOrder),
+                ...(c.code !== undefined && { code: c.code.trim() ? c.code.trim() : null }),
+                ...(c.enteredMonthly !== undefined && { enteredMonthly: c.enteredMonthly === 'yes' }),
                 isActive,
               })
             }

@@ -7,6 +7,9 @@ import { attendanceService } from '#modules/attendance'
 import { companiesService } from '#modules/organization'
 import { employeesService } from '#modules/employees'
 import * as payrollRepository from './payroll.repository.js'
+import * as inputsService from './inputs/inputs.service.js'
+import * as peopleService from './people/people.service.js'
+import * as peopleRepository from './people/people.repository.js'
 import type { CreateInput, ListInput } from './payroll.schema.js'
 
 export async function getSetup(viewer: CurrentUser, { payMonth }: { payMonth: Date }) {
@@ -18,16 +21,33 @@ export async function getSetup(viewer: CurrentUser, { payMonth }: { payMonth: Da
 export async function listRuns(viewer: CurrentUser, input: ListInput) {
   assertAccess(viewer.access, 'PAYROLL', 'READ')
   const result = await prisma.$transaction(tx => payrollRepository.list(wholeCompanyScopeOf(viewer, 'PAYROLL'), input, tx), { isolationLevel: 'RepeatableRead' })
-  return { ...result, items: result.items.map(({ createdById: _created, updatedById: _updated, ...item }) => item) }
+  return { ...result, items: result.items.map(({ createdById: _created, updatedById: _updated, peopleRefreshedById: _refreshed, _count, ...item }) => ({ ...item, people: _count.employees })) }
 }
 
 export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
   assertAccess(viewer.access, 'PAYROLL', 'READ')
   const run = await payrollRepository.find(id, wholeCompanyScopeOf(viewer, 'PAYROLL'))
   if (!run) throw new ORPCError('NOT_FOUND', { message: 'No payroll run found' })
-  const person = await employeesService.lookupPeople([run.createdById, run.updatedById])
-  const { createdById, updatedById, ...safe } = run
-  return { ...safe, createdBy: person(createdById), updatedBy: person(updatedById) }
+  const [person, counts, inputs] = await Promise.all([
+    employeesService.lookupPeople([run.createdById, run.updatedById, run.peopleRefreshedById]),
+    peopleRepository.countPeople(run.id),
+    inputsService.countInputs(run.id),
+  ])
+  const { createdById, updatedById, peopleRefreshedById, ...safe } = run
+  const period = peopleService.payPeriodOf(run)
+  return {
+    ...safe,
+    payFrom: period.from,
+    payTo: period.to,
+    createdBy: person(createdById),
+    updatedBy: person(updatedById),
+    peopleRefreshedBy: person(peopleRefreshedById),
+    people: counts.people,
+    peopleWithoutSalary: counts.withoutSalary,
+    inputs,
+    canChange: run.status === 'DRAFT' && levelOver(viewer, 'PAYROLL', { companyId: run.company.id, plantId: null, departmentId: null }) === 'WRITE',
+    salaryHidden: !peopleService.seesSalaries(viewer, run.company.id),
+  }
 }
 
 export async function createRun(viewer: CurrentUser, input: CreateInput) {
@@ -41,7 +61,10 @@ export async function createRun(viewer: CurrentUser, input: CreateInput) {
     const period = await attendanceService.getPayrollPeriod(input.payMonth.getUTCFullYear(), input.payMonth.getUTCMonth() + 1, tx)
     if (period.from.getTime() !== input.expectedAttendanceFrom.getTime() || period.to.getTime() !== input.expectedAttendanceTo.getTime()) throw new ORPCError('CONFLICT', { message: 'The attendance cycle changed. Close and reopen New payroll run to review its dates.' })
     if (await payrollRepository.findMonth(input.companyId, input.payMonth, tx)) throw new ORPCError('CONFLICT', { message: 'A payroll run already exists for this company and month. Open it from Payroll runs.' })
-    return payrollRepository.create({ companyId: input.companyId, payMonth: input.payMonth, attendanceFrom: period.from, attendanceTo: period.to }, viewer.employeeId, tx)
-  })
+    const created = await payrollRepository.create({ companyId: input.companyId, payMonth: input.payMonth, attendanceFrom: period.from, attendanceTo: period.to }, viewer.employeeId, tx)
+    // stage 2: the people and their salary copy, in the same transaction
+    await peopleService.rebuildCopy({ id: created.id, companyId: input.companyId, payMonth: created.payMonth, attendanceFrom: created.attendanceFrom, attendanceTo: created.attendanceTo }, viewer.employeeId, tx)
+    return created
+  }, { timeout: 120_000 })
   return { id: run.id }
 }

@@ -219,6 +219,16 @@ export const EMPLOYMENT_TYPE: Record<Profile['employmentType'], string> = {
 
 export const WORKFORCE: Record<Profile['workforceCategory'], string> = { WHITE_COLLAR: 'White collar (staff)', BLUE_COLLAR: 'Blue collar (worker)' }
 
+// Why a salary row exists - the salary history and a pay run's salary copy (payroll)
+export const SALARY_REASON: Record<Awaited<ReturnType<typeof client.employees.salaryHistory>>[number]['reason'], string> = {
+  JOINING: 'Joining',
+  INCREMENT: 'Increment',
+  PROMOTION: 'Promotion',
+  CONFIRMATION: 'Confirmation',
+  CORRECTION: 'Correction',
+  OTHER: 'Other',
+}
+
 // What kind of change a job-timeline entry is (2026-11-19)
 type JobChangeKind = Awaited<ReturnType<typeof client.employees.jobHistory.list>>[number]['kind']
 export const JOB_CHANGE_KIND: Record<JobChangeKind, string> = {

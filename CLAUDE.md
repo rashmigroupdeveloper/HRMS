@@ -216,6 +216,9 @@ frontend/src/
   transaction opened with `prisma.$transaction`) is recorded in `audit_logs` by `core/audit` - never write audit rows
   by hand, and never change data with raw SQL (`$executeRaw`), which would not be recorded. A new table is recorded
   without any extra code; a new secret column must end in `Encrypted`, `Hash` or `Token` so its values are hidden.
+  Rows the system rebuilds wholesale from other records are left out (`SKIP_MODELS` in `core/audit/capture.ts`):
+  attendance days, and a pay run's people / salary copy (payroll stage 2, decided 2026-11-26 - each refresh is recorded
+  on the run instead). People's decisions are never left out; adding a model there needs the user's approval.
 - **Stored files - findable without the database** (decided 2026-11-13). Every file in file storage (uploads,
   generated PDFs, images) is named so that, if the database is lost, a person can still tell from the folder and file
   name whose file it is and what it is. The key is `<area>/<owner>/<what>/<date>_<random>.<ext>`:
@@ -277,9 +280,16 @@ frontend/src/
   an employee's `SALARY` profile access. Each run covers one whole company: View needs one active-role row covering
   every plant/department; creation needs Edit for that whole company. Partial rows are never stitched together, and
   reporting-tree/HOD access does not extend to payroll runs. Use `wholeCompanyScopeOf` for list/count/detail and
-  `assertWholeSlice` for creation. Stage 1 creates only regular monthly India drafts, unique per company/pay month;
-  attendance dates are captured from the shared attendance cycle. Employee inputs, calculations, deductions, approval
-  and payment wait for their approved stages; no independent approval lifecycle is built into payroll.
+  `assertWholeSlice` for creation and every change inside a run. Stage 1 creates only regular monthly India drafts,
+  unique per company/pay month; attendance dates are captured from the shared attendance cycle. Stage 2 (built
+  2026-11-26, `payroll/people/`, `payroll/inputs/`) copies each run's people and the salary in force on each day and
+  takes the month's inputs; calculations, deductions, approval and payment wait for their approved stages; no
+  independent approval lifecycle is built into payroll.
+  **Decided for stage 2 (the user, 2026-11-26):** monthly inputs are entered and changed only by someone with Payroll
+  Edit covering the whole company - a plant-level HR person sends their figures to them; salary amounts inside a run
+  (the salary copy and its lines) are shown only to a viewer who also has `SALARY` View covering the whole company
+  (`seesSalaries` in `payroll/people/people.service.ts`) - Payroll alone shows the people, days and inputs but not the
+  salaries; everyone on the company's rolls is in its run, consultants included. The coding plan is in BACKLOG item 31.
 - **Employee document submissions (approved 2026-11-25):** an authenticated employee may upload only to their own
   record without HR Edit access. Files start pending, cannot satisfy evidence checks until HR verifies them, and do
   not replace a verified current copy while pending. Existing scoped HR management and sensitive-type access remain;

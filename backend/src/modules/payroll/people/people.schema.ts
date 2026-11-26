@@ -1,0 +1,25 @@
+import { z } from 'zod'
+
+const id = z.number().int().positive()
+
+// What the people list can be narrowed to (payroll stage 2)
+export const PEOPLE_FLAGS = ['NO_SALARY', 'CHANGED', 'HAS_INPUTS', 'NOT_IN_PERIOD'] as const
+
+export const peopleListInput = z
+  .object({
+    runId: id,
+    // employee code or name, any part
+    search: z.string().trim().max(100).optional(),
+    flag: z.enum(PEOPLE_FLAGS).optional(),
+    page: z.number().int().min(1).max(100000).default(1),
+    pageSize: z.number().int().min(1).max(200).default(50),
+  })
+  .strict()
+
+export const personInput = z.object({ runId: id, personId: id }).strict()
+
+// The screen sends back the refresh time it showed (null = never refreshed), so a stale screen cannot rebuild over a
+// newer copy
+export const refreshInput = z.object({ runId: id, expectedRefreshedAt: z.date().nullable() }).strict()
+
+export type PeopleListInput = z.infer<typeof peopleListInput>

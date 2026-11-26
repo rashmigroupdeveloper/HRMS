@@ -412,6 +412,48 @@ export function replaceSalary(id: number, data: Omit<SalaryInput, 'effectiveFrom
   })
 }
 
+// --- For a pay run (payroll stage 2, 2026-11-26) ---
+
+// Everyone who worked for the company on at least one day of [from, to] by the job timeline (whatever their placement
+// or status today), with what a pay run copies: their job-timeline rows and salaries up to `to` (the earlier ones too, to
+// know what was in force on `from`). Filtered by the timeline's company, which scopeWhere cannot express.
+// data access: one company's pay run - the payroll service checked Payroll access covering the whole company first
+export async function listForPayrollRun(companyId: number, from: Date, to: Date, db: DbClient = prisma) {
+  const rows = await db.employee.findMany({
+    where: {
+      dateOfJoining: { lte: to },
+      OR: [{ dateOfLeaving: null }, { dateOfLeaving: { gte: from } }],
+      jobRecords: { some: { companyId, effectiveFrom: { lte: to } } },
+    },
+    orderBy: { id: 'asc' },
+    select: {
+      id: true,
+      dateOfJoining: true,
+      dateOfLeaving: true,
+      jobRecords: {
+        where: { effectiveFrom: { lte: to } },
+        orderBy: { effectiveFrom: 'asc' },
+        select: {
+          effectiveFrom: true,
+          companyId: true,
+          employeeCode: true,
+          plantId: true,
+          departmentId: true,
+          costCenterId: true,
+          employmentType: true,
+          workforceCategory: true,
+        },
+      },
+      salaries: {
+        where: { effectiveFrom: { lte: to } },
+        orderBy: { effectiveFrom: 'asc' },
+        select: { id: true, effectiveFrom: true, annualCtc: true, currency: true, lines: { select: { salaryComponentId: true, monthlyAmount: true } } },
+      },
+    },
+  })
+  return rows.map((row) => ({ ...row, salaries: row.salaries.map((salary) => ({ ...salary, lines: linesAsNumbers(salary.lines) })) }))
+}
+
 // The salary that applies today (the newest one already in effect), with its monthly breakup in the components'
 // order, or null - confidential: only for the employee and SALARY READ (checked in the service)
 export async function findCurrentSalary(employeeId: number, db: DbClient = prisma) {

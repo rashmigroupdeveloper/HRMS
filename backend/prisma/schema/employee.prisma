@@ -145,6 +145,8 @@ model Employee {
   backgroundChecks  BackgroundCheck[]
   // Salary from a date on - the first is the offer's, copied on the joining day (payroll.prisma)
   salaries          EmployeeSalary[]
+  // the pay runs they are in (stage 2)
+  payrollRuns       PayrollRunEmployee[]
   // Letters issued to the employee (appointment, confirmation, experience, relieving - letters.prisma)
   letters           EmployeeLetter[]
   // The tasks other teams do when the employee joins (onboarding.prisma)

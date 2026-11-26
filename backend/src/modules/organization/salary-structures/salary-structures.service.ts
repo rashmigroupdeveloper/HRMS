@@ -166,6 +166,7 @@ async function checkLines(lines: StructureLineInput[], basicComponentId: number 
     const component = components.get(line.salaryComponentId)
     if (!component) throw bad('The structure uses a salary component that is not active')
     if (component.kind === 'DEDUCTION') throw bad(`${component.name} is a deduction - it is never part of a salary breakup`)
+    if (component.enteredMonthly) throw bad(`${component.name} is entered each month in payroll - it is never part of a salary breakup`)
     const isBalance = line.method === 'BALANCE'
     if (!isBalance && (line.value === null || line.value === undefined)) throw bad(`Give a value for ${component.name}`)
     if (PERCENT_METHODS.includes(line.method) && (line.value ?? 0) > 100) throw bad(`${component.name}: a percentage is at most 100`)

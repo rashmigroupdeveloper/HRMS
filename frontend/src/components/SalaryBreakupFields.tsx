@@ -12,7 +12,7 @@ import type { client } from '@/lib/orpc'
 // paisa (2026-11-24 - the backend checks it too).
 
 type SalaryComponent = Awaited<ReturnType<typeof client.organization.salaryComponents.list>>[number]
-type Line = { id: number; name: string; kind: SalaryComponent['kind'] }
+type Line = { id: number; name: string; kind: SalaryComponent['kind']; enteredMonthly?: boolean }
 
 const amount = (value: string | undefined) => (value && AMOUNT_PATTERN.test(value) ? Number(value) : 0)
 // what a box keeps of what is typed: digits and one decimal point with at most 2 decimals
@@ -46,8 +46,9 @@ export function SalaryBreakupFields({
 }) {
   // a line with an entry shows - even one HR emptied to type again, or just added; the ones the calculation left out do not
   const shown = (c: Line) => !hideEmpty || values[c.id] !== undefined
-  const hidden = components.filter((c) => c.kind !== 'DEDUCTION' && !shown(c))
-  const earnings = components.filter((c) => c.kind === 'EARNING' && shown(c))
+  const hidden = components.filter((c) => c.kind !== 'DEDUCTION' && !c.enteredMonthly && !shown(c))
+  // an earning entered each month in payroll (Incentive) is never a breakup line (payroll stage 2)
+  const earnings = components.filter((c) => c.kind === 'EARNING' && !c.enteredMonthly && shown(c))
   const employer = components.filter((c) => c.kind === 'EMPLOYER_CONTRIBUTION' && shown(c))
   const sum = (lines: Line[]) => sumMoney(lines.map((c) => amount(values[c.id])))
   const gross = sum(earnings)

@@ -140,6 +140,8 @@ model Department {
   jobRecords EmployeeJobRecord[]
   // job changes asking for it
   jobChanges JobChangeRequest[]
+  // pay-run segments placed here (stage 2)
+  payrollSegments PayrollRunSalarySegment[]
 
   @@map("departments")
 }
@@ -244,6 +246,8 @@ model Plant {
   jobChanges JobChangeRequest[]
   // its default holiday list (2026-11-24)
   defaultHolidayList PlantDefaultHolidayList?
+  // pay-run segments placed here (stage 2)
+  payrollSegments PayrollRunSalarySegment[]
 
   @@unique([companyId, plantCode])
   // lets an employee / candidate point to (plant, company), so their plant is always one of their own company
@@ -340,6 +344,8 @@ model CostCenter {
   jobRecords EmployeeJobRecord[]
   // job changes asking for it
   jobChanges JobChangeRequest[]
+  // pay-run segments booked to it (stage 2)
+  payrollSegments PayrollRunSalarySegment[]
 
   @@unique([companyId, code])
   @@index([plantId])
@@ -358,6 +364,12 @@ model SalaryComponent {
   kind         SalaryComponentKind
   // Order of the lines in the breakup (lower first)
   displayOrder Int                 @map("display_order") @db.SmallInt
+  // Short UPPER CASE code (BASIC, CANTEEN) for Excel headers, statutory files and the register (payroll stage 2,
+  // approved 2026-11-26). Optional until HR has given every component one on the Organization page; made required then.
+  code         String?             @unique
+  // Typed for a month as a payroll input (Incentive, Canteen Recovery) - never a line of an offer / salary / structure
+  // breakup (payroll stage 2, approved 2026-11-26). The employer contributions stay breakup lines.
+  enteredMonthly Boolean           @default(false) @map("entered_monthly")
   isActive     Boolean             @default(true) @map("is_active")
   createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById  Int                 @map("created_by_id")
@@ -371,6 +383,9 @@ model SalaryComponent {
   // how salary structures calculate it (2026-11-24)
   structureLines      SalaryStructureLine[]
   basicForStructures  SalaryStructure[]
+  // pay runs: salary lines copied into them and inputs typed with it (stage 2)
+  payrollLines        PayrollRunSalaryLine[]
+  payrollInputs       PayrollInput[]
 
   @@map("salary_components")
 }

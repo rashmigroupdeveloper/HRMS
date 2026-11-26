@@ -976,6 +976,13 @@ export async function salaryHistory(viewer: CurrentUser, employeeCode: string) {
   })
 }
 
+// Who worked for a company in a pay run's period, with their job-timeline rows and salaries up to its end (payroll stage
+// 2) - no viewer check: the payroll service checks Payroll access covering the whole company before calling.
+export function listForPayrollRun(companyId: number, from: Date, to: Date, db?: DbClient) {
+  return employeesRepository.listForPayrollRun(companyId, from, to, db)
+}
+export type PayrollRunSource = Awaited<ReturnType<typeof listForPayrollRun>>[number]
+
 // The employee's salaries, the latest first, for the job-change rules (modules/job-changes) - no viewer check
 export function listSalaries(employeeId: number, db?: DbClient) {
   return employeesRepository.listSalaries(employeeId, db)
