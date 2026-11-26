@@ -17,11 +17,11 @@ export function PayrollRunHeaderSkeleton({ label = 'Loading payroll run', refres
       </div>
       {/* the company's name */}
       <Skeleton className="h-5 w-56 max-w-full" />
-      <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
         {RUN_FACT_LABELS.map((text) => (
           <div key={text} className="min-w-0">
             <dt className="text-xs text-muted-foreground">{text}</dt>
-            <dd><Skeleton className="mt-1 h-5 w-48 max-w-full" /></dd>
+            <dd><Skeleton className="my-0.5 h-4 w-48 max-w-full" /></dd>
           </div>
         ))}
       </dl>

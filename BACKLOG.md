@@ -786,9 +786,24 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
   PayrollRun `peopleRefreshedAt / ById`. APIs `payroll.people.list / get / refresh`, `payroll.inputs.list / create /
   update / delete`; `/manage/payroll/:id` with People and Inputs. **Still open from stage 2:** Excel upload of inputs
   (waits for HR's list of monthly items; preview-then-save like the employee import, item 32.5); making `code` required;
-  the pay period is the calendar month until the 26th-25th reading is agreed (`payPeriodOf`); employees with no
+  employees with no
   job-timeline row are silently left out of a run - a list of them for HR (or a check that the backfill script has run)
   is not built yet (run `npm run backfill-job-records -w backend` on any database with older employees).
+- **Pay period (2026-11-27).** The user: "keep the payment day dynamic so we can change the month later currently in company we are using 26 to 25 cycle".
+  Built as: a run pays the attendance cycle of its pay month, as captured on the run - 26th to 25th today ("March" =
+  26 Feb - 25 Mar) - not the calendar month. The start day stays the setting in Attendance setup, so it can be changed
+  later; runs created afterwards follow it, a run already created keeps its dates (`payPeriodOf`; the run page shows
+  one "Pay period"). Draft runs created before this change hold a calendar-month copy until "Refresh from employee
+  records" is pressed.
+  **Confirmed by the user the same day ("yes 26 to 25 is correct"):** salary is for 26th-25th, not for the calendar
+  month with the days after the 25th paid as present (the old HRMS's way). So an increment from the 1st splits the
+  run (6 days at the old salary + 25 at the new) and a joiner on the 27th is first paid in next month's run.
+  **Still open:**
+  - [ ] **Changing the start day between two runs** can leave days that no run pays (26 -> 1: 26th to month end) or
+    days paid twice (1 -> 26). Today only a locked attendance month refuses the change. **Needs:** the user's decision
+    on the guard - e.g. refuse the change while it would leave a gap or overlap after a company's latest run, or a
+    one-time bridging period - before the first real run is paid.
+  - [ ] Is every company on the same cycle? The start day is one setting for the whole group today.
 - [ ] Remaining pay-run lifecycle: lock inputs, compute, issues, review,
   independent approval through the shared approval service, finalize, mark paid, return to draft/reopen and reconciliation.
 - [ ] Employee run inputs: uploads, calculated items, payable days/LOP, component proration and backdated salary
@@ -810,8 +825,9 @@ F&F, annual/tax outputs and parallel-run cutover. Propose each later model/field
 
 **Important differences from main:** new has group-wide attendance locks and two-half attendance facts. Main's
 company locks, SQL triggers, separate approval lifecycle, rupee rounding and post-cutoff assumed-presence policy are
-not copied. Agree denominator/cutoff treatment, component proration and rounding against reconciled samples before
-calculation. Current statutory eligibility/rates must be verified at that stage; no old rates are seeded now.
+not copied. The cut-off treatment follows the user's instruction of 2026-11-27 (a run pays its attendance cycle - see
+"Pay period" above, confirmed the same day). Agree the denominator, component proration and rounding against
+reconciled samples before calculation. Current statutory eligibility/rates must be verified at that stage; no old rates are seeded now.
 
 - **PRESENT:** salary structures/calculation, dated employee salary/history and individual approved revisions,
   promotions and transfers. Reuse Organization, employees and job-changes; these are not missing payroll modules.

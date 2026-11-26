@@ -39,9 +39,28 @@ const segments = (source: ReturnType<typeof person>) =>
   buildPeople(COMPANY, from, to, [source])[0]?.segments.map((s) => [s.fromDate.toISOString().slice(0, 10), s.toDate.toISOString().slice(0, 10), s.employeeSalaryId, s.plantId])
 
 describe('pay run people and segments', () => {
-  it('the period is the calendar pay month until the cut-off is decided', () => {
-    expect(payPeriodOf({ payMonth: d('2092-02-01'), attendanceFrom: d('2092-01-26'), attendanceTo: d('2092-02-25') })).toEqual({ from: d('2092-02-01'), to: d('2092-02-29') })
+  it('the period is the attendance cycle captured on the run - whatever its start day (the user, 2026-11-27)', () => {
+    // start day 26: "February" pays 26 Jan - 25 Feb
+    expect(payPeriodOf({ attendanceFrom: d('2092-01-26'), attendanceTo: d('2092-02-25') })).toEqual({ from: d('2092-01-26'), to: d('2092-02-25') })
+    // start day 1: the calendar month
+    expect(payPeriodOf({ attendanceFrom: d('2092-02-01'), attendanceTo: d('2092-02-29') })).toEqual({ from: d('2092-02-01'), to: d('2092-02-29') })
     expect(daysIn(d('2092-03-01'), d('2092-03-31'))).toBe(31)
+    expect(daysIn(d('2092-01-26'), d('2092-02-25'))).toBe(31)
+    expect(daysIn(d('2092-02-26'), d('2092-03-25'))).toBe(29)
+  })
+
+  it('a period from the 26th to the 25th: an increment from the 1st splits it; a joiner on the 26th waits for the next run', () => {
+    const cycle = (source: ReturnType<typeof person>) =>
+      buildPeople(COMPANY, d('2092-01-26'), d('2092-02-25'), [source])[0]?.segments.map((s) => [s.fromDate.toISOString().slice(0, 10), s.toDate.toISOString().slice(0, 10), s.employeeSalaryId])
+    expect(cycle(person())).toEqual([['2092-01-26', '2092-02-25', 100]])
+    expect(cycle(person({ salaries: [salary(100, '2090-01-01', 480000), salary(101, '2092-02-01', 528000)] }))).toEqual([
+      ['2092-01-26', '2092-01-31', 100],
+      ['2092-02-01', '2092-02-25', 101],
+    ])
+    // joined on 26 Feb - the first day of the next period
+    expect(cycle(person({ dateOfJoining: d('2092-02-26'), jobRecords: [job('2092-02-26')], salaries: [salary(100, '2092-02-26', 480000)] }))).toBeUndefined()
+    // left on 26 Jan - one day in this period
+    expect(cycle(person({ dateOfLeaving: d('2092-01-26') }))).toEqual([['2092-01-26', '2092-01-26', 100]])
   })
 
   it('a full month with one salary is one segment', () => {

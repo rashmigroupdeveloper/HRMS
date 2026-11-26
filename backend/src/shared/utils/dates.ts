@@ -11,6 +11,12 @@ export function today(now: Date = new Date()): Date {
   return new Date(Date.UTC(india.getUTCFullYear(), india.getUTCMonth(), india.getUTCDate()))
 }
 
+// The moment a calendar day (a UTC-midnight Date) starts in India - to compare a moment (createdAt, decidedAt) with a
+// chosen day: 27 Nov starts at 26 Nov 18:30 UTC. Calendar dates (@db.Date) are compared as they are, never with this.
+export function indiaDayStart(day: Date): Date {
+  return new Date(day.getTime() - IST_OFFSET_MS)
+}
+
 // Full years from a birth date to a day (default today) - a person's age
 export function yearsOld(birth: Date, on: Date = today()): number {
   let years = on.getUTCFullYear() - birth.getUTCFullYear()

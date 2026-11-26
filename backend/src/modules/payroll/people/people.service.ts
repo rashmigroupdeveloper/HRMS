@@ -23,13 +23,14 @@ export const daysIn = (from: Date, to: Date) => Math.round((to.getTime() - from.
 
 // --- The run's period ---
 
-// The days a run pays. Until HR settles how the 26th-25th attendance cycle maps to the salary month (BACKLOG item 31:
-// agreed against reconciled greytHR samples), it is the calendar pay month; the other reading would return
-// run.attendanceFrom..attendanceTo - only this function would change, not the tables.
-export function payPeriodOf(run: { payMonth: Date; attendanceFrom: Date; attendanceTo: Date }) {
-  const from = run.payMonth
-  const to = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth() + 1, 0))
-  return { from, to }
+// The days a run pays (decided by the user, 2026-11-27: salary is for 26th to 25th, not the calendar month, and the
+// start day must stay changeable - replaces "the calendar month until the cut-off is agreed"): the attendance
+// cycle of its pay month, as captured on the run when it was created - with the company's start day of 26, "March" pays
+// 26 Feb - 25 Mar. The start day is a setting (Attendance setup, attendance.locks.setCycleStart), never a number in code:
+// changing it moves the runs created afterwards, and a run already created keeps its own dates. Every reader of a run's
+// period goes through this one function, so a different rule would change only here, not the tables.
+export function payPeriodOf(run: { attendanceFrom: Date; attendanceTo: Date }) {
+  return { from: run.attendanceFrom, to: run.attendanceTo }
 }
 
 // --- Who is in the run, and their segments (pure - unit tested) ---
@@ -59,7 +60,7 @@ const sameSegment = (a: { job: JobRow; salary: SalaryRow | undefined }, b: { job
 // The people a company pays in [from, to] and, for each, the stretches of days with one salary and one placement.
 // A person is in when the job timeline places them in the company on at least one day between their joining and leaving
 // dates (both included). The days are cut at every salary change and every job-timeline change; stretches in another
-// company (a transfer in the month) are left out - that company's run pays them. Next to each other with nothing copied
+// company (a transfer in the period) are left out - that company's run pays them. Next to each other with nothing copied
 // changed (e.g. only the manager changed) they stay one segment.
 export function buildPeople(companyId: number, from: Date, to: Date, sources: Source[]): PersonRow[] {
   const people: PersonRow[] = []
@@ -107,7 +108,7 @@ export function buildPeople(companyId: number, from: Date, to: Date, sources: So
 
 // Rebuilds the run's people and salary copy from the employee records, inside the caller's transaction. People who no
 // longer belong are removed - except those with inputs, who stay (with no days) so their inputs are not lost.
-export async function rebuildCopy(run: { id: number; companyId: number; payMonth: Date; attendanceFrom: Date; attendanceTo: Date }, actorId: ActorId, tx: DbClient) {
+export async function rebuildCopy(run: { id: number; companyId: number; attendanceFrom: Date; attendanceTo: Date }, actorId: ActorId, tx: DbClient) {
   const { from, to } = payPeriodOf(run)
   const people = buildPeople(run.companyId, from, to, await employeesService.listForPayrollRun(run.companyId, from, to, tx))
   const belong = new Set(people.map((p) => p.employeeId))
@@ -229,7 +230,7 @@ export async function refresh(viewer: CurrentUser, { runId, expectedRefreshedAt 
       if ((run.peopleRefreshedAt?.getTime() ?? null) !== seen) {
         throw new ORPCError('CONFLICT', { message: 'Someone refreshed this run in the meantime - reload it to see the latest people' })
       }
-      const { people } = await rebuildCopy({ id: run.id, companyId: run.company.id, payMonth: run.payMonth, attendanceFrom: run.attendanceFrom, attendanceTo: run.attendanceTo }, viewer.employeeId, tx)
+      const { people } = await rebuildCopy({ id: run.id, companyId: run.company.id, attendanceFrom: run.attendanceFrom, attendanceTo: run.attendanceTo }, viewer.employeeId, tx)
       return { people }
     },
     { timeout: 120_000 },

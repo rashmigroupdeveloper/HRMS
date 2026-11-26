@@ -281,7 +281,11 @@ frontend/src/
   every plant/department; creation needs Edit for that whole company. Partial rows are never stitched together, and
   reporting-tree/HOD access does not extend to payroll runs. Use `wholeCompanyScopeOf` for list/count/detail and
   `assertWholeSlice` for creation and every change inside a run. Stage 1 creates only regular monthly India drafts,
-  unique per company/pay month; attendance dates are captured from the shared attendance cycle. Stage 2 (built
+  unique per company/pay month; attendance dates are captured from the shared attendance cycle. **The days a run pays
+  are those captured dates** (decided by the user, 2026-11-27: salary is for 26th to 25th, not the calendar month, and
+  the start day stays changeable): the attendance cycle of the pay month, read
+  only through `payPeriodOf` (`payroll/people/people.service.ts`); the start day is the Attendance setup setting, never a
+  day or "calendar month" written in payroll code, and a run already created keeps its dates. Stage 2 (built
   2026-11-26, `payroll/people/`, `payroll/inputs/`) copies each run's people and the salary in force on each day and
   takes the month's inputs; calculations, deductions, approval and payment wait for their approved stages; no
   independent approval lifecycle is built into payroll.

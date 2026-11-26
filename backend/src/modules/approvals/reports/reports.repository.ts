@@ -1,5 +1,6 @@
 import { scopeWhere, type DataScope } from '#core/auth/scope'
 import { prisma, type DbClient, type Prisma } from '#core/db/prisma'
+import { indiaDayStart } from '#shared/utils/dates'
 import type { z } from 'zod'
 import type { reportFilter } from './reports.schema.js'
 
@@ -43,7 +44,9 @@ function whereFor(input: z.infer<typeof reportFilter>, scope: ReportScope): Pris
     ...(input.status === 'HELD' ? [{ status: 'PENDING' as const, heldAt: { not: null } }] : input.status ? [
       { status: input.status, ...(input.status === 'PENDING' ? { heldAt: null } : {}) },
     ] : []),
-    ...(input.dateBy === 'RAISED' ? [{ createdAt: { gte: from, lt: until } }] : [{ OR: [
+    // "Raised" compares a moment with the chosen days, so the days are India's (2026-11-27: with UTC days a request
+    // raised between 00:00 and 05:30 India time showed under the day before); work dates are calendar dates as they are
+    ...(input.dateBy === 'RAISED' ? [{ createdAt: { gte: indiaDayStart(from), lt: indiaDayStart(until) } }] : [{ OR: [
       { leave: span }, { leaveCancel: span }, { regularization: span },
       { compOffClaim: { workDate: { gte: from, lt: until } } }, { shiftChange: { date: { gte: from, lt: until } } },
     ] }]),

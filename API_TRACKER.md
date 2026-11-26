@@ -3332,7 +3332,7 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **Scope:** shared by every company (`403` otherwise).
 - **Input:** `{ cycleStartDay (1-28; 1 = the calendar month) }`
 - **Returns:** `{ cycleStartDay }`.
-- **What it does:** the day an attendance month starts (`attendance_settings`, seeded 26 for RML - "November" = 26 Oct - 25 Nov); the muster, the month views, the late count and the lock follow it.
+- **What it does:** the day an attendance month starts (`attendance_settings`, seeded 26 for RML - "November" = 26 Oct - 25 Nov); the muster, the month views, the late count and the lock follow it. Payroll runs created afterwards pay the new cycle (2026-11-27); a run already created keeps the dates it captured. It does not yet check that the last and the next pay run meet without a gap or an overlap (BACKLOG item 31).
 - **Errors:** `400` · `403` · `409` a month is locked (its days would move).
 
 ### `attendance.holidays.list`
@@ -4257,7 +4257,7 @@ leave year is the calendar year.
 - **HTTP:** `POST /api/rpc/approvals/report` · **Code:** `backend/src/modules/approvals/reports/`
 - **Access:** logged-in employee. TEAM/DEPARTMENT are relationship views. ALL needs Leave or Attendance View; each feature still uses its own area/data scope.
 - **Scope:** TEAM uses the current reporting tree's explicit employee IDs with SYSTEM_SCOPE; DEPARTMENT the current HOD department employee IDs with SYSTEM_SCOPE, excluding oneself. A manager / HOD so sees every step, approver and remark of their people's leave and attendance requests, even on chains they are not on - wider than `approvals.get`; approved by the user 2026-11-24. ALL: LEAVE and COMP_OFF use Leave View data access; REGULARIZATION and SHIFT_CHANGE use Attendance View data access. Each branch applies scopeWhere inside its own employee predicate, then all date/search/kind/status filters are ANDed. Having one area's access never grants the other. Current relationships/placement apply to historical requests. No job or salary/confidential request data.
-- **Input:** `{ scope?: 'TEAM'|'DEPARTMENT'|'ALL', from: Date, to: Date, dateBy?: 'WORK_DATES'|'RAISED', kind?, status?, search?, page?, pageSize? }`. Scope defaults TEAM; dateBy defaults WORK_DATES. Inclusive UTC calendar dates, ordered and at most 366 days apart. WORK_DATES matches overlapping leave/regularisation spans, comp-off work date or shift-change date; RAISED matches request creation day. Kind: LEAVE, LEAVE_CANCEL, REGULARIZATION (missed punch), ON_DUTY, COMP_OFF or SHIFT_CHANGE. Status: PENDING (waiting, excludes held), HELD (pending plus heldAt), APPROVED, REJECTED, CANCELLED (withdrawn) or EXPIRED. Omitted kind/status = every supported type/status. Search trimmed max 100 characters: every word matches employee code or name. Page positive integer default 1; pageSize 1–100 default 25.
+- **Input:** `{ scope?: 'TEAM'|'DEPARTMENT'|'ALL', from: Date, to: Date, dateBy?: 'WORK_DATES'|'RAISED', kind?, status?, search?, page?, pageSize? }`. Scope defaults TEAM; dateBy defaults WORK_DATES. Inclusive UTC calendar dates, ordered and at most 366 days apart. WORK_DATES matches overlapping leave/regularisation spans, comp-off work date or shift-change date; RAISED matches the India calendar day the request was raised on (00:00-24:00 India time - fixed 2026-11-27: it compared with UTC days, so a request raised before 05:30 showed under the day before). Kind: LEAVE, LEAVE_CANCEL, REGULARIZATION (missed punch), ON_DUTY, COMP_OFF or SHIFT_CHANGE. Status: PENDING (waiting, excludes held), HELD (pending plus heldAt), APPROVED, REJECTED, CANCELLED (withdrawn) or EXPIRED. Omitted kind/status = every supported type/status. Search trimmed max 100 characters: every word matches employee code or name. Page positive integer default 1; pageSize 1–100 default 25.
 - **Returns:** `{ total, items, page, pageSize }`. Items: id, employeeCode/name, company/department, kind label, request summary, from/to/portion/days where available, complete source reason, sourceAvailable, raisedAt/raisedBy, status label (Held separate), currentStep (only while not held), heldReason, closedAt, withdrawalReason and decisions `{step,status,at,by,comment,automatic}[]`. Actor names use the existing lookup service. No encrypted/private employee fields. Newest raised first, ID descending as tie-breaker. Count and page use a repeatable-read snapshot; an oversized page number is clamped to the last page.
 - **What it does:** one browsable report of current team's or HOD department's leave, leave cancellations, missed-punch regularisations, OD, comp-off and shift changes across waiting and completed outcomes, independent of whether a step currently waits for this viewer. The Approvals Team requests tab starts with this month's work/leave dates, stores filters/page in the URL and exports through `approvals.export` mode team. Table previews expand in place; export always contains full stored text and all matching pages.
 - **Source boundaries:** reads the original domain records through explicit approval-request relations, with no duplicated message store. When an older source link no longer exists (e.g. a cancellation superseded by a later cancellation), dates/message cannot be reconstructed: RAISED can show it with sourceAvailable false and the retained summary; WORK_DATES requires a linked source with dates. Missing details are labelled, never invented. Approval remarks are stored step comments, not messages sent outside HRMS.
@@ -4361,7 +4361,8 @@ and can include two events per employee. No existing API provides that contract.
 - **Input:** `{ payMonth: Date }`, UTC midnight, first of month, years 2000–2100; strict object.
 - **Returns:** `{ companies: [{ id, code, name, canCreate }], attendanceFrom, attendanceTo }`; canCreate requires
   Payroll WRITE for the whole company. No bank, statutory, salary or employee data is exposed.
-- **Does:** supplies the company picker and current attendance window for regular monthly India payroll drafts.
+- **Does:** supplies the company picker and current attendance window for regular monthly India payroll drafts - the
+  window is the pay period the new run will have (2026-11-27).
 - **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST for invalid month.
 
 ### `payroll.list`
@@ -4384,8 +4385,10 @@ and can include two events per employee. No existing API provides that contract.
 - **Access:** Payroll READ on the active role covering the entire run company.
 - **Scope:** same whole-company scope applied inside the ID query; outside range/missing run = NOT_FOUND.
 - **Input:** `{ id: positive integer }`, strict object.
-- **Returns:** list header fields plus `payFrom` / `payTo` (the days the run pays - the calendar pay month until the
-  26th-25th reading is agreed), `people`, `peopleWithoutSalary` (people with days that have no salary in force),
+- **Returns:** list header fields plus `payFrom` / `payTo` (the days the run pays: the attendance cycle of its pay
+  month as captured on the run - 26th to 25th with the start day of 26; the user, 2026-11-27. Equal to attendanceFrom /
+  attendanceTo today, kept as their own fields because the rule lives in one function, `payPeriodOf`), `people`,
+  `peopleWithoutSalary` (people with days that have no salary in force),
   `inputs`, `peopleRefreshedAt`, `canChange` (a draft and Payroll Edit over the whole company), `salaryHidden` (no Salary
   View over the whole company), and createdBy / updatedBy / peopleRefreshedBy resolved through lookupPeople (code /
   name; System when actor 0), no raw actor IDs. Attendance dates are the captured historical dates.
@@ -4403,7 +4406,8 @@ and can include two events per employee. No existing API provides that contract.
 - **Does:** transaction validates active India payroll company, rereads current attendance dates via attendance service,
   compares the reviewed window, then creates DRAFT with session actor. Stored dates come from the server. Company/month
   database uniqueness prevents duplicate/racing submissions. In the same transaction (stage 2, 2026-11-26) it copies
-  the run's people and their salary stretches - see `payroll.people.refresh` for the rules. No computation, money
+  the run's people and their salary stretches - see `payroll.people.refresh` for the rules. The captured attendance
+  dates are the run's pay period (2026-11-27) and never move with a later change of the cycle. No computation, money
   calculation, approvals or payments.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST for input/inactive/non-India company; CONFLICT for a changed
   attendance preview or duplicate company/month (central Prisma mapping).
@@ -4420,7 +4424,7 @@ and can include two events per employee. No existing API provides that contract.
 - **Returns:** `{ items: [{ id (the person in the run), employeeCode (as in this company in the period), name, days,
   from, to, segments, inputs, annualCtc | null, monthlyGross | null, flags: { noSalary, changed, hasInputs, notInPeriod }
   }], total, counts: { all, noSalary, changed, hasInputs, notInPeriod }, salaryHidden }`. Sorted by code.
-- **Does:** lists who the run pays and, per person, how many days, how many stretches (a mid-month salary or placement
+- **Does:** lists who the run pays and, per person, how many days, how many stretches (a mid-period salary or placement
   change makes two), days with no salary, inputs, and people kept only because they have inputs.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
 
@@ -4442,10 +4446,11 @@ and can include two events per employee. No existing API provides that contract.
 - **Access:** Payroll WRITE on the active role, plus `assertWholeSlice` for the run's company.
 - **Scope:** run found with whole-company Payroll scope (outside = NOT_FOUND); whole-company View only = FORBIDDEN. The
   people are read with `employeesService.listForPayrollRun` by the job timeline's company (a documented
-  `// data access:` exception: today's placement does not say who worked for the company in the month).
+  `// data access:` exception: today's placement does not say who worked for the company in the pay period).
 - **Input:** `{ runId: positive int, expectedRefreshedAt: Date | null }` - the refresh time the screen showed; strict.
 - **Returns:** `{ people }` - how many people the copy now holds with days in the period.
 - **Does:** in one transaction, while the run is DRAFT: rebuilds the copy from the employee records as they are now.
+  The pay period is the attendance cycle captured on the run (26th to 25th with the start day of 26; 2026-11-27).
   A person is in when the job timeline places them in the company on at least one day of the pay period between their
   joining and leaving dates (every employment type, consultants included). Their days are cut at every salary change and
   every job-timeline change of plant, department, cost centre, employment type or category; days in another company are

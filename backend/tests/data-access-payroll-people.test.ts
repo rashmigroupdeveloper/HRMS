@@ -5,15 +5,18 @@ import { companiesService, salaryComponentsService } from '#modules/organization
 import { employeesService } from '#modules/employees'
 import * as peopleService from '../src/modules/payroll/people/people.service.js'
 import * as inputsService from '../src/modules/payroll/inputs/inputs.service.js'
+import { daysIn } from '../src/modules/payroll/people/people.service.js'
 import { createCompany, createEmployee, createPlant } from './helpers/organization.js'
 import { row, userWith } from './helpers/users.js'
 
 // Payroll stage 2 (approved 2026-11-26): who is in a run, the salary copy, monthly inputs - and whose records they are.
-// Made-up figures only.
+// The days a run pays are the attendance cycle of its pay month (the user, 2026-11-27), so every date here is worked out
+// from that period - the test holds whatever start day the test database has. Made-up figures only.
 
 const admin = userWith({ id: 0, employeeCode: 'SYSTEM' }, [], { isSuperAdmin: true })
 const payMonth = new Date(Date.UTC(2092, 2, 1))
 const tag = Math.random().toString(36).slice(2, 7).toUpperCase()
+const addDays = (date: Date, days: number) => new Date(date.getTime() + days * 86_400_000)
 type Level = 'READ' | 'WRITE'
 const payroll = (companyId: number | null, level: Level = 'WRITE', plantId: number | null = null, extra: { SALARY?: Level } = {}, id = 0) =>
   userWith({ id, employeeCode: 'PAYTEST' }, [{ access: { PAYROLL: level, ...extra }, rows: [row(companyId, plantId, null, level)] }])
@@ -24,11 +27,10 @@ describe('Payroll stage 2: people, salary copy, inputs', () => {
   let e1: number, e2: number, e3: number, e4: number
   let runA: number, runB: number
   let personE1: number, personE2: number
+  // the run's pay period, and the day e1's increment starts (15 days in)
+  let from: Date, to: Date, increment: Date
 
-  async function runInput(companyId: number) {
-    const setup = await payrollService.getSetup(admin, { payMonth })
-    return { companyId, payMonth, expectedAttendanceFrom: setup.attendanceFrom, expectedAttendanceTo: setup.attendanceTo }
-  }
+  const runInput = (companyId: number) => ({ companyId, payMonth, expectedAttendanceFrom: from, expectedAttendanceTo: to })
   async function giveSalary(employeeId: number, effectiveFrom: Date, annualCtc: number) {
     const monthly = annualCtc / 12
     await prisma.$transaction((tx) =>
@@ -43,6 +45,8 @@ describe('Payroll stage 2: people, salary copy, inputs', () => {
   }
 
   beforeAll(async () => {
+    const setup = await payrollService.getSetup(admin, { payMonth })
+    from = setup.attendanceFrom; to = setup.attendanceTo; increment = addDays(from, 15)
     const companies = await Promise.all([createCompany(), createCompany()])
     a = companies[0].id; b = companies[1].id
     for (const id of [a, b]) await companiesService.updateCompany({ id, isIndiaPayroll: true, pfEstablishmentCode: 'WBCAL0012345', esicEmployerCode: '12345678901234567' }, 0)
@@ -56,11 +60,11 @@ describe('Payroll stage 2: people, salary copy, inputs', () => {
     e3 = (await createEmployee({ companyId: b, plantId: plantB })).id
     e4 = (await createEmployee({ companyId: a, plantId: plantA })).id
     await giveSalary(e1, new Date(Date.UTC(2026, 0, 1)), 480000)
-    await giveSalary(e1, new Date(Date.UTC(2092, 2, 16)), 528000)
+    await giveSalary(e1, increment, 528000)
     await giveSalary(e3, new Date(Date.UTC(2026, 0, 1)), 360000)
     await giveSalary(e4, new Date(Date.UTC(2026, 0, 1)), 300000)
-    runA = (await payrollService.createRun(payroll(a), await runInput(a))).id
-    runB = (await payrollService.createRun(payroll(b), await runInput(b))).id
+    runA = (await payrollService.createRun(payroll(a), runInput(a))).id
+    runB = (await payrollService.createRun(payroll(b), runInput(b))).id
   })
   afterAll(() => prisma.$disconnect())
 
@@ -70,13 +74,17 @@ describe('Payroll stage 2: people, salary copy, inputs', () => {
     const codes = await prisma.employee.findMany({ where: { id: { in: [e1, e2, e3, e4] } }, select: { id: true, employeeCode: true } })
     const code = (id: number) => codes.find((c) => c.id === id)!.employeeCode
     expect(byCode.has(code(e3))).toBe(false)
-    expect(byCode.get(code(e1))).toMatchObject({ days: 31, segments: 2, monthlyGross: 44000, annualCtc: 528000, flags: { changed: true, noSalary: false } })
-    expect(byCode.get(code(e2))).toMatchObject({ days: 31, segments: 1, annualCtc: null, flags: { noSalary: true } })
+    const days = daysIn(from, to)
+    expect(byCode.get(code(e1))).toMatchObject({ days, segments: 2, monthlyGross: 44000, annualCtc: 528000, flags: { changed: true, noSalary: false } })
+    expect(byCode.get(code(e2))).toMatchObject({ days, segments: 1, annualCtc: null, flags: { noSalary: true } })
     expect(list.counts).toMatchObject({ all: 3, noSalary: 1, changed: 1 })
     personE1 = byCode.get(code(e1))!.id
     personE2 = byCode.get(code(e2))!.id
     const run = await payrollService.getRun(admin, { id: runA })
-    expect(run).toMatchObject({ people: 3, peopleWithoutSalary: 1, inputs: 0, canChange: true, payFrom: payMonth })
+    expect(run).toMatchObject({ people: 3, peopleWithoutSalary: 1, inputs: 0, canChange: true })
+    // the run pays the attendance cycle it captured
+    expect([run.payFrom, run.payTo]).toEqual([run.attendanceFrom, run.attendanceTo])
+    expect([run.payFrom, run.payTo]).toEqual([from, to])
     expect(run.peopleRefreshedAt).toBeInstanceOf(Date)
   })
 
@@ -92,7 +100,8 @@ describe('Payroll stage 2: people, salary copy, inputs', () => {
     const plantRole = userWith({ id: 0, employeeCode: 'P' }, [{ access: { PAYROLL: 'READ', SALARY: 'READ' }, rows: [row(a, plantA, null, 'READ')] }])
     await expect(peopleService.getPerson(plantRole, { runId: runA, personId: personE1 })).rejects.toMatchObject({ code: 'NOT_FOUND' })
     const withSalary = await peopleService.getPerson(payroll(a, 'READ', null, { SALARY: 'READ' }), { runId: runA, personId: personE1 })
-    expect(withSalary.segments[0]).toMatchObject({ days: 15, salary: { annualCtc: 480000, monthlyGross: 40000 } })
+    expect(withSalary.segments[0]).toMatchObject({ fromDate: from, days: 15, salary: { annualCtc: 480000, monthlyGross: 40000 } })
+    expect(withSalary.segments[1]).toMatchObject({ fromDate: increment, toDate: to, salary: { annualCtc: 528000, monthlyGross: 44000 } })
   })
 
   it('company A never sees, refreshes or types inputs in company B; plant-level and View-only cannot change', async () => {
@@ -134,7 +143,8 @@ describe('Payroll stage 2: people, salary copy, inputs', () => {
   it('refresh: a stale screen is refused; leavers drop out unless they have inputs', async () => {
     await expect(peopleService.refresh(payroll(a), { runId: runA, expectedRefreshedAt: new Date(Date.UTC(2000, 0, 1)) })).rejects.toMatchObject({ code: 'CONFLICT' })
     await inputsService.createInput(payroll(a), { runId: runA, personId: personE2, salaryComponentId: canteen, amount: 300, note: 'canteen' })
-    const left = new Date(Date.UTC(2092, 1, 20))
+    // left the day before the period starts
+    const left = addDays(from, -1)
     await prisma.employee.updateMany({ where: { id: { in: [e2, e4] } }, data: { dateOfLeaving: left, status: 'EXITED' } })
     const before = await payrollService.getRun(admin, { id: runA })
     const result = await peopleService.refresh(payroll(a), { runId: runA, expectedRefreshedAt: before.peopleRefreshedAt })

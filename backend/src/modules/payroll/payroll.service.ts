@@ -63,7 +63,7 @@ export async function createRun(viewer: CurrentUser, input: CreateInput) {
     if (await payrollRepository.findMonth(input.companyId, input.payMonth, tx)) throw new ORPCError('CONFLICT', { message: 'A payroll run already exists for this company and month. Open it from Payroll runs.' })
     const created = await payrollRepository.create({ companyId: input.companyId, payMonth: input.payMonth, attendanceFrom: period.from, attendanceTo: period.to }, viewer.employeeId, tx)
     // stage 2: the people and their salary copy, in the same transaction
-    await peopleService.rebuildCopy({ id: created.id, companyId: input.companyId, payMonth: created.payMonth, attendanceFrom: created.attendanceFrom, attendanceTo: created.attendanceTo }, viewer.employeeId, tx)
+    await peopleService.rebuildCopy({ id: created.id, companyId: input.companyId, attendanceFrom: created.attendanceFrom, attendanceTo: created.attendanceTo }, viewer.employeeId, tx)
     return created
   }, { timeout: 120_000 })
   return { id: run.id }

@@ -2,7 +2,8 @@
 export const PAYROLL_NOTE = 'Monthly runs per company. A run lists its people with the salary in force on each day, and takes the month\'s inputs. Calculation, deductions, approval and payment follow in later stages.'
 
 // The run page's header facts and tiles
-export const RUN_FACT_LABELS = ['Pay period', 'Attendance period', 'People copied'] as const
+// 'Pay period': the attendance cycle of the pay month, captured on the run (26th to 25th with a start day of 26)
+export const RUN_FACT_LABELS = ['Pay period', 'People copied'] as const
 export const RUN_TILE_LABELS = ['People', 'People without a salary', 'Inputs'] as const
 export const RUN_TABS = [{ value: 'people', label: 'People' }, { value: 'inputs', label: 'Inputs' }] as const
 
@@ -12,7 +13,7 @@ export const PEOPLE_WIDTHS = ['30%', '10%', '22%', '16%', '22%'] as const
 export const PEOPLE_FLAGS = [
   { value: '', label: 'Everyone' },
   { value: 'NO_SALARY', label: 'Days without salary' },
-  { value: 'CHANGED', label: 'Changed in the month' },
+  { value: 'CHANGED', label: 'Changed in the period' },
   { value: 'HAS_INPUTS', label: 'Has inputs' },
   { value: 'NOT_IN_PERIOD', label: 'No longer in the period' },
 ] as const

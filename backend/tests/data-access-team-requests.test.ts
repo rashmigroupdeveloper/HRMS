@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { prisma } from '#core/db/prisma'
+import { IST_OFFSET_MS } from '#shared/utils/dates'
 import { hodsService } from '#modules/employees'
 import * as reports from '../src/modules/approvals/reports/reports.service.js'
 import * as reportsRepository from '../src/modules/approvals/reports/reports.repository.js'
@@ -41,6 +42,20 @@ describe('combined team requests, messages and remarks',()=>{
     const raised=await reports.getReport(manager,{...input(),dateBy:'RAISED'})
     expect(raised.items.map(r=>r.id)).toContain(id)
     expect(raised.items.map(r=>r.id)).not.toContain(fixture.outsideId)
+  })
+  it('"Raised" days are India days: ten past midnight belongs to the new day, ten to midnight to the day before',async()=>{
+    const midnight=fixture.date.getTime()-IST_OFFSET_MS // the moment fixture.date starts in India
+    const yesterday=new Date(fixture.date.getTime()-86400000)
+    const early=await fixture.request(fixture.employee,'REGULARIZATION','PENDING','Raised just after midnight')
+    const late=await fixture.request(fixture.employee,'REGULARIZATION','PENDING','Raised just before midnight')
+    await prisma.approvalRequest.update({where:{id:early},data:{createdAt:new Date(midnight+10*60000)}})
+    await prisma.approvalRequest.update({where:{id:late},data:{createdAt:new Date(midnight-10*60000)}})
+    const raisedOn=async(day:Date)=>(await reports.getReport(manager,{...input(),from:day,to:day,dateBy:'RAISED'})).items.map(r=>r.id)
+    const today=await raisedOn(fixture.date),before=await raisedOn(yesterday)
+    expect(today).toContain(early)
+    expect(today).not.toContain(late)
+    expect(before).toContain(late)
+    expect(before).not.toContain(early)
   })
   it('keeps area-specific role scopes separate from relationships',async()=>{
     const leaveOnly=userWith(fixture.manager,[{access:{LEAVE:'READ'},rows:[row(fixture.company.id,null,null,'READ')]}])

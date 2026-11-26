@@ -52,7 +52,7 @@ export function RunPeople({ runId, canChange }: { runId: number; canChange: bool
       </div>
       <FormError error={query.error} />
       {query.isPending ? <RunPeopleSkeleton /> : data && (data.total === 0 ? (
-        <EmptyState className="py-6" title={data.counts.all ? 'Nobody matches' : 'Nobody is in this run'} hint={data.counts.all ? 'Try another name or filter.' : 'Nobody worked for this company in the pay month by the job timeline. Refresh after adding employees.'} />
+        <EmptyState className="py-6" title={data.counts.all ? 'Nobody matches' : 'Nobody is in this run'} hint={data.counts.all ? 'Try another name or filter.' : 'Nobody worked for this company in the pay period by the job timeline. Refresh after adding employees.'} />
       ) : (
         <div className={cn('overflow-x-auto transition-opacity', stale && 'opacity-50')}>
           <Table aria-label="People in the run" className="min-w-[720px] table-fixed text-[13px]">

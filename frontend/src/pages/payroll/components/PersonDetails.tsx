@@ -23,13 +23,13 @@ export function PersonDetails({ runId, personId, canChange, close }: { runId: nu
       <FormDialog onOpenChange={close} className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{p ? `${p.name || p.employeeCode} · ${p.employeeCode}` : 'Person in the run'}</DialogTitle>
-          <DialogDescription>The salary and placement copied for each stretch of days in the month.</DialogDescription>
+          <DialogDescription>The salary and placement copied for each stretch of days in the pay period.</DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-3 overflow-y-auto">
           {query.isPending ? <PersonDetailsSkeleton /> : p ? (
             <>
               {p.salaryHidden && <p className="text-xs text-muted-foreground">{SALARY_HIDDEN_NOTE}</p>}
-              {p.segments.length === 0 && <p className="text-sm text-muted-foreground">No days in this month any more (they left or moved before it). They stay in the run because inputs were entered for them.</p>}
+              {p.segments.length === 0 && <p className="text-sm text-muted-foreground">No days in this pay period any more (they left or moved before it). They stay in the run because inputs were entered for them.</p>}
               {p.segments.map((s) => (
                 <div key={s.id} className="space-y-2 rounded-2xl border p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">

@@ -37,7 +37,7 @@ export function PayrollRunPage() {
     },
   })
   const r = run.data
-  const facts = r ? [`${formatDate(r.payFrom)} – ${formatDate(r.payTo)}`, `${formatDate(r.attendanceFrom)} – ${formatDate(r.attendanceTo)}`, formatDoneBy(r.peopleRefreshedAt, r.peopleRefreshedBy)] : []
+  const facts = r ? [`${formatDate(r.payFrom)} – ${formatDate(r.payTo)}`, formatDoneBy(r.peopleRefreshedAt, r.peopleRefreshedBy)] : []
   const tiles = r ? [r.people, r.peopleWithoutSalary, r.inputs] : []
 
   return (
@@ -62,7 +62,7 @@ export function PayrollRunPage() {
             )}
           </div>
           <p className="text-sm text-muted-foreground">{r.company.name}</p>
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
             {RUN_FACT_LABELS.map((label, i) => (
               <div key={label} className="min-w-0">
                 <dt className="text-xs text-muted-foreground">{label}</dt>

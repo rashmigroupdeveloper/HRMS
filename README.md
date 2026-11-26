@@ -339,10 +339,12 @@ Create/view regular monthly India payroll **drafts**, one per company/month. The
 companies within full-company access. The attendance window comes from attendance settings (e.g. November = 26 October
 to 25 November) and is saved with the run. If the preview changes before creation, reopen the form and review it.
 Later setting changes do not rewrite saved dates. Retired companies' existing runs remain accessible within scope.
+**The saved window is the run's pay period** (2026-11-27): with the start day of 26 the March run pays 26 February to
+25 March. The start day is changed in Attendance setup (Month lock), not in code; runs created afterwards follow it.
 
 **Stage 2:** creating a draft also copies its people - everyone the job timeline places in the company on at least one
-day of the pay month (consultants included) - with the salary and placement in force on each day; a mid-month increment
-or transfer makes two stretches. Open a run (`/manage/payroll/:id`) for its **People** (days, stretches, days without a
+day of the pay period (consultants included) - with the salary and placement in force on each day; an increment or
+transfer inside the period makes two stretches. Open a run (`/manage/payroll/:id`) for its **People** (days, stretches, days without a
 salary) and **Inputs** (amounts for this month only, e.g. an incentive or a canteen recovery, with a reason). "Refresh
 from employee records" rebuilds the copy while the run is a draft; people with inputs are never dropped. Only someone
 with Payroll Edit over the whole company enters inputs, never for themselves. Salary figures also need **Salary** View
