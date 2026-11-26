@@ -264,7 +264,8 @@ frontend/src/
   role active (`selfServiceProcedure` / `assertSelfService`). Approval steps naming a person (reporting / functional
   manager, HOD, escalation) are decided in self-service only; steps for a role, an area or the "Admin" fallback need that
   role active. Reading one's own record, the reporting tree and the HOD department work in both portals (the role portal's
-  lists show the role's records plus one's own team - the user, 2026-11-25). Code never names a role. A new module adds its area to `AccessArea`
+  employee lists show the role's records plus one's own team - the user, 2026-11-25). Company payroll runs follow the
+  stricter rule below. Code never names a role. A new module adds its area to `AccessArea`
   (`prisma/schema/access.prisma`) and its View / Edit text to `AREA_INFO` (`modules/accounts/roles/roles.service.ts`).
   Reading APIs use READ, changing APIs use WRITE. A rule that depends on the input (e.g. "own record, or EMPLOYEES
   READ") goes in the service with `assertAccess` from `#core/auth/access`.
@@ -272,6 +273,13 @@ frontend/src/
   plant -> department ("all" at any level) at View / Edit, worked out only by `core/auth/scope.ts`; only the active role's
   rows count. Every API that
   reads or changes people's records follows **section 8** - read it before writing or changing any API.
+- **Payroll draft runs (approved 2026-11-26):** `/manage/payroll` uses the dedicated `PAYROLL` area, separate from
+  an employee's `SALARY` profile access. Each run covers one whole company: View needs one active-role row covering
+  every plant/department; creation needs Edit for that whole company. Partial rows are never stitched together, and
+  reporting-tree/HOD access does not extend to payroll runs. Use `wholeCompanyScopeOf` for list/count/detail and
+  `assertWholeSlice` for creation. Stage 1 creates only regular monthly India drafts, unique per company/pay month;
+  attendance dates are captured from the shared attendance cycle. Employee inputs, calculations, deductions, approval
+  and payment wait for their approved stages; no independent approval lifecycle is built into payroll.
 - **Employee document submissions (approved 2026-11-25):** an authenticated employee may upload only to their own
   record without HR Edit access. Files start pending, cannot satisfy evidence checks until HR verifies them, and do
   not replace a verified current copy while pending. Existing scoped HR management and sensitive-type access remain;

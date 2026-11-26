@@ -156,3 +156,6 @@ export async function exportSetup(viewer: CurrentUser,input:z.infer<typeof expor
     }
   }
 }
+
+// Company payroll headers snapshot this period; managing the group-wide attendance lock remains separate.
+export { getPeriod as getPayrollPeriod } from './locks/locks.service.js'

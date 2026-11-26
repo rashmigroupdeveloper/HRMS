@@ -105,6 +105,13 @@ export function scopeOf(viewer: ScopedViewer, area: AccessArea, level: AccessLev
   return makeScope(kept.map(({ companyId, plantId, departmentId }) => ({ companyId, plantId, departmentId })))
 }
 
+// Company-owned records (e.g. a whole-company payroll run) require a single row covering every plant/department.
+// Partial rows are never combined into a whole-company grant.
+export function wholeCompanyScopeOf(viewer: ScopedViewer, area: AccessArea, level: AccessLevel = 'READ'): DataScope {
+  const scope = scopeOf(viewer, area, level)
+  return scope.slices === 'ALL' ? scope : makeScope(scope.slices.filter(slice => slice.plantId === null && slice.departmentId === null))
+}
+
 // Whether a record at this placement is inside the scope
 export function scopeAllows(scope: DataScope, placement: Placement) {
   return scope.slices === 'ALL' || scope.slices.some((slice) => sliceCovers(slice, placement))

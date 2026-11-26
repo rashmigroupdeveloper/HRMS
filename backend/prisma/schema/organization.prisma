@@ -5,6 +5,7 @@
 
 // Legal entity of the group (JF header "Company Name")
 model Company {
+  payrollRuns PayrollRun[]
   id                  Int      @id @default(autoincrement())
   // Short unique code, stored in UPPER CASE (e.g. RML)
   code                String   @unique

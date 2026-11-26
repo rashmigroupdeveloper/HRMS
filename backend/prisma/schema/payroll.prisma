@@ -2,7 +2,7 @@
 // The salary agreed in the offer is copied to the employee on the joining day (decided 2026-11-15) - so the employee's
 // pay does not depend on the candidate record. Revisions (an increment, a promotion's hike, a correction) are asked as
 // job changes and approved (job-changes.prisma, 2026-11-20); each approved one is a row from its day - the salary
-// history. Pay runs and deductions come with the payroll module.
+// history. Draft pay runs are built (2026-11-26); employee inputs, calculations and deductions follow in later stages.
 
 // An employee's salary from a date on: the annual fixed CTC, the performance pay and the monthly breakup (lines).
 // The first one is the offer's (offer letter Annexure-I), effective from the date of joining.
@@ -70,4 +70,32 @@ model EmployeeSalaryLine {
   @@unique([employeeSalaryId, salaryComponentId])
   @@index([salaryComponentId])
   @@map("employee_salary_lines")
+}
+
+// Regular monthly India payroll header, approved 2026-11-26. Captured attendance dates are historical
+// facts, not recalculated from mutable cycle settings. No employee amounts or payment actions in Stage 1.
+model PayrollRun {
+  id Int @id @default(autoincrement())
+  companyId Int @map("company_id")
+  payMonth DateTime @map("pay_month") @db.Date
+  attendanceFrom DateTime @map("attendance_from") @db.Date
+  attendanceTo DateTime @map("attendance_to") @db.Date
+  status PayrollRunStatus @default(DRAFT)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int @map("created_by_id")
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int @map("updated_by_id")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  @@unique([companyId, payMonth])
+  @@index([payMonth, id])
+  @@map("payroll_runs")
+}
+
+// Only drafts exist in Stage 1. Later lifecycle states/actors are proposed with their actual workflows.
+enum PayrollRunStatus {
+  DRAFT
+
+  @@map("payroll_run_status")
 }

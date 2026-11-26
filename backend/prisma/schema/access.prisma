@@ -200,6 +200,8 @@ model UserAccountRoleScope {
 // The parts of the system access is given for. A new module adds its area here (and its label in
 // modules/accounts/roles/roles.service.ts).
 enum AccessArea {
+  // Regular payroll runs; separate from viewing an employee's agreed salary.
+  PAYROLL
   // Candidates: offers, joining forms, documents, background checks, medical, joining confirmation
   ONBOARDING
   // "Employee · Directory & job": find employees and open their profile - job, placement, managers, the job timeline and

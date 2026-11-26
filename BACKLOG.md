@@ -19,7 +19,7 @@ one at a time, each planned with the user before it is built (the old HRMS is in
    attendance's) - **done (2026-11-22, built while the user was away, after the old HRMS's rules)**; what is left is item 29
 3. **Regularization / OD** - fixing a missed punch, on-duty outside the office - **done (2026-11-22, with leave)**; what
    is left is item 29
-4. **Payroll** - the month-end salary from attendance and leave - **next**
+4. **Payroll** - the month-end salary from attendance and leave - **in progress: Stage 1 draft runs built 2026-11-26; calculation remains next**
 5. **Probation / confirmation** - intern -> probation, probation -> confirmed, with or without a salary hike
 6. **Promotion and increments** - a promotion with a hike, or a hike alone (salary revisions) - **done through job
    changes and the approval service (2026-11-20)**; what is left is item 24
@@ -275,7 +275,7 @@ Compared with an employee-profile screen from another HR system (2026-11-14); th
   employees who had already joined were filled in from their offers); the profile's Salary tab shows the salary in
   effect (the employee themselves or the `SALARY` access, 2026-11-15). **Revisions / increments are done** through
   approved job changes (2026-11-20; status corrected 2026-11-24), with a salary row from its effective date.
-  Pay runs and deductions still need the payroll module (item 31).
+  Draft pay runs are built (2026-11-26); employee inputs, calculation and deductions remain in item 31.
 - **Residential status** (resident / non-resident for income tax): decides how tax is deducted from salary, so it
   belongs to the **payroll** module - HR / payroll sets it, not the candidate. **Needs:** the payroll module, and the
   status values as payroll uses them.
@@ -718,7 +718,7 @@ to cherry-pick or proof that the old implementation works. Recheck both branches
 
 #### How to bring a feature from main
 
-1. **Select one coherent slice**, following the existing employee-life roadmap above (payroll is next). Announce it,
+1. **Select one coherent slice**, following the existing employee-life roadmap above (payroll is in progress). Announce it,
    finish it and wait for “continue”. Recording this inventory does not start implementation of every module.
 2. **Read the owning old code without changing branches:**
    `git show 4e87cf2:backend/src/modules/<module>/<file>` and
@@ -743,14 +743,18 @@ to cherry-pick or proof that the old implementation works. Recheck both branches
    layouts. Run all section 6 checks; update the API tracker and every affected rule/doc. Delete completed backlog
    tasks and their duplicate references together; preserve intentional exclusions until the decision changes.
 
-#### Payroll, statutory and income tax — DEFERRED, next core module
+#### Payroll, statutory and income tax — Stage 1 built; subsequent stages deferred
 
 **Reference:** `backend/src/modules/payroll-core/`, `payroll-outputs/`, `tds/`; related screens in
 `frontend/src/pages/payroll/` and `tax/`. **Needs:** agreed pay groups/cycles, attendance and leave inputs, statutory
 policy, sample reconciled payslips/registers and approved schema. See items 11, 18, 19, 23, 24 and 29.
 
-- [ ] Pay-run lifecycle: create/list/detail, lock inputs, compute, issues, review, approve, finalize, mark paid,
-  return to draft/reopen and reconciliation.
+- **Stage 1 built 2026-11-26:** approved PayrollRun model and dedicated PAYROLL area; regular monthly India
+  company/month drafts, captured attendance window, unique company/month, audited creation, scoped list/count/detail
+  and `/manage/payroll`. Requires one grant covering the whole company; no plant/department stitching or team fallback.
+  Setup changes between preview/create cause a conflict. Captured dates do not move with later cycle changes.
+- [ ] Remaining pay-run lifecycle: employee population/salary snapshots and inputs, lock inputs, compute, issues, review,
+  independent approval through the shared approval service, finalize, mark paid, return to draft/reopen and reconciliation.
 - [ ] Employee run inputs: one-off earnings/deductions, uploads, calculated items, payable days/LOP, component
   proration and backdated salary arrears. Salary components' codes/gross flags and LOP treatment need agreement.
 - [ ] Salary holds and releases, with the effect on calculation/payment defined.
@@ -762,6 +766,16 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
 - [ ] Annual bonus true-up, bulk annual-increment simulation/application and retroactive arrears scheduling.
 - [ ] Parallel-run migration: vendor/Protiviti register parsing/import, component-level variance comparison,
   cutover acceptance and historical YTD opening data.
+**Payroll build order approved 2026-11-26:** (1) draft foundation above; (2) employee population, effective salary
+snapshots and monthly inputs; (3) locked attendance, payable days/LOP and gross earnings; (4) statutory/other deductions,
+net and rounding; (5) review/approval/reconciliation/finalization; (6) registers/payslips/bank/payment; (7) arrears, loans,
+F&F, annual/tax outputs and parallel-run cutover. Propose each later model/field before adding it.
+
+**Important differences from main:** new has group-wide attendance locks and two-half attendance facts. Main's
+company locks, SQL triggers, separate approval lifecycle, rupee rounding and post-cutoff assumed-presence policy are
+not copied. Agree denominator/cutoff treatment, component proration and rounding against reconciled samples before
+calculation. Current statutory eligibility/rates must be verified at that stage; no old rates are seeded now.
+
 - **PRESENT:** salary structures/calculation, dated employee salary/history and individual approved revisions,
   promotions and transfers. Reuse Organization, employees and job-changes; these are not missing payroll modules.
 

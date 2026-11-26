@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 290**
+**Total APIs: 294**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -377,6 +377,10 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 288 | `employees.movements.export` | Employee directory & job: View | All matching joining/leaving events as Excel, with review notes |
 | 289 | `dailyMovementReports.settings.get` | Active Super Admin only | Daily movement email configuration and eligible HR Head roles |
 | 290 | `dailyMovementReports.settings.save` | Active Super Admin only | Save the schedule and HR Head role; delivery stays disabled |
+| 291 | `payroll.setup` | Payroll: View | Eligible whole-company India payroll choices and current attendance window |
+| 292 | `payroll.list` | Payroll: View | Scoped company/month draft runs and matching pagination totals |
+| 293 | `payroll.get` | Payroll: View covering whole company | Draft header, captured dates and creator |
+| 294 | `payroll.create` | Payroll: Edit covering whole company | Create a regular monthly India draft with reviewed attendance dates |
 
 ---
 
@@ -4330,3 +4334,56 @@ and can include two events per employee. No existing API provides that contract.
 - **Returns:** saved configuration with the same setting fields as settings.get; updatedAt is the next edit's concurrency token.
 - **Does:** atomically creates/updates id 1 with the logged-in actor and automatic change history. Conditional write rejects stale edits/duplicate first saves. Delivery stays disabled; no scheduler, recipients, mail or outbox are created in this stage. Role deletion is restricted while referenced.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST for invalid input/ineligible role, CONFLICT for a stale edit; central FK error mapping if a role is concurrently removed.
+
+
+## Payroll — Stage 1 (2026-11-26)
+
+### `payroll.setup`
+- **HTTP:** `POST /api/rpc/payroll/setup` · **Code:** `backend/src/modules/payroll/`
+- **Access:** Payroll READ on the active role. Salary/Organization/Attendance access alone is insufficient.
+- **Scope:** only active India payroll companies where a single active-role data-access row covers every plant and
+  department at READ; WRITE also qualifies. Partial rows are never combined. Current attendance period is shared
+  configuration, not employee attendance data.
+- **Input:** `{ payMonth: Date }`, UTC midnight, first of month, years 2000–2100; strict object.
+- **Returns:** `{ companies: [{ id, code, name, canCreate }], attendanceFrom, attendanceTo }`; canCreate requires
+  Payroll WRITE for the whole company. No bank, statutory, salary or employee data is exposed.
+- **Does:** supplies the company picker and current attendance window for regular monthly India payroll drafts.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST for invalid month.
+
+### `payroll.list`
+- **HTTP:** `POST /api/rpc/payroll/list` · **Code:** `backend/src/modules/payroll/`
+- **Access:** Payroll READ on the active role.
+- **Scope:** `wholeCompanyScopeOf(viewer, PAYROLL, READ)` inside the repository's AND conditions; partial plant/department
+  grants see no whole-company runs. Items/counts share scope, filters and repeatable-read transaction. Outside-range
+  company selection returns zero, never broadens. No own-team or HOD fallback for financial company runs.
+- **Input:** required year integer 2000–2100; optional positive companyId; page integer 1–100000 (default 1), pageSize
+  integer 1–100 (default 25); strict object.
+- **Returns:** `{ items: [{ id, company: { id, code, name }, payMonth, attendanceFrom, attendanceTo, status, createdAt,
+  updatedAt }], total }`. Current status DRAFT only.
+- **Does:** lists newest month then ID, bounded pagination; existing runs remain readable when a company is retired
+  or its India flag later changes. No raw actor IDs, employee population, financial totals or calculations.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST for invalid filters.
+
+### `payroll.get`
+- **HTTP:** `POST /api/rpc/payroll/get` · **Code:** `backend/src/modules/payroll/`
+- **Access:** Payroll READ on the active role covering the entire run company.
+- **Scope:** same whole-company scope applied inside the ID query; outside range/missing run = NOT_FOUND.
+- **Input:** `{ id: positive integer }`, strict object.
+- **Returns:** list header fields plus createdBy/updatedBy resolved through lookupPeople (code/name; System when actor
+  0), no raw actor IDs. Attendance dates are the captured historical dates, not recalculated from today's settings.
+- **Does:** read-only draft header detail.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
+
+### `payroll.create`
+- **HTTP:** `POST /api/rpc/payroll/create` · **Code:** `backend/src/modules/payroll/`
+- **Access:** Payroll WRITE on the active role, plus `assertWholeSlice` for the company.
+- **Scope:** checks whole-company visibility before company lookup (outside range/partial-only grants = NOT_FOUND);
+  whole-company View with insufficient Edit = FORBIDDEN. Never grants access through Salary/Organization or a team.
+- **Input:** required companyId positive integer, payMonth as setup; expectedAttendanceFrom/expectedAttendanceTo Date
+  values from the reviewed setup response. Strict object rejects status, actor IDs and stored attendance dates.
+- **Returns:** `{ id }`.
+- **Does:** transaction validates active India payroll company, rereads current attendance dates via attendance service,
+  compares the reviewed window, then creates DRAFT with session actor. Stored dates come from the server. Company/month
+  database uniqueness prevents duplicate/racing submissions. No input locking, computation, money, approvals or payments.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST for input/inactive/non-India company; CONFLICT for a changed
+  attendance preview or duplicate company/month (central Prisma mapping).

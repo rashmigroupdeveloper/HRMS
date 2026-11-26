@@ -104,3 +104,9 @@ export async function setCycleStart(viewer: CurrentUser, { cycleStartDay }: z.in
   if (await locksRepository.countOpenLocks()) throw new ORPCError('CONFLICT', { message: 'Open the locked months again first - changing the start day moves their days' })
   return prisma.$transaction((tx) => locksRepository.setCycleStartDay(cycleStartDay, viewer.employeeId, tx))
 }
+
+// Payroll captures the current attendance window without receiving attendance records or lock-management access.
+export async function getPeriod(year: number, month: number, db?: import('#core/db/prisma').DbClient) {
+  const startDay = await locksRepository.findCycleStartDay(db)
+  return rangeOf(year, month, startDay)
+}

@@ -53,7 +53,7 @@ HRMS_NEW/
 │  │  │  ├─ onboarding.prisma   Candidate (offer -> joining day), CandidateSalaryLine, OfferLetter (sent letters + online
 │  │  │  │                      answer), OfferNumberSequence, CandidateDocument, BackgroundCheck,
 │  │  │                      CandidateSession (the candidate's sign-in to their joining-form page)
-│  │  │  ├─ payroll.prisma     EmployeeSalary, EmployeeSalaryLine (the salary from a date on - the first is the offer's,
+│  │  │  ├─ payroll.prisma     PayrollRun + EmployeeSalary/EmployeeSalaryLine (the salary from a date on - the first is the offer's,
 │  │  │  │                      copied on the joining day)
 │  │  │  └─ letters.prisma      LetterTemplate (the wording + letterhead of an offer letter, edited by HR), LetterheadImage
 │  │  │                          (every uploaded header / footer / stamp - kept, reusable by several templates)
@@ -105,6 +105,7 @@ HRMS_NEW/
 │     │  │                      page: accept / decline online with a one-time code) portal/ (the candidate's own
 │     │  │                      joining-form page: sign-in with link + code, fill, upload, sign online)
 │     │  │                      printed-forms/ (HR's paper forms printed filled in from the joining form)
+│     │  ├─ payroll/            regular monthly company drafts; employee inputs/calculations follow in later stages
 │     │  ├─ daily-movement-reports/ group-wide email schedule and HR Head role settings; delivery follows later
 │     │  └─ employees/          directory (+ Excel export), profile, "Add employee" / "Edit details", reporting manager,
 │     │     │                           creating the employee on the joining day, codes from the company's series
@@ -146,7 +147,8 @@ HRMS_NEW/
 Everyone signs in to **Employee self-service** (`/ess/...`): one's own attendance, leave, pay & career, profile and
 requests, plus one's team and HOD department (team attendance and leave, the steps named to them on Approvals). Picking a
 role in the account menu opens the **role portal** (`/manage/...`): the role's pages, its approval steps and the requests
-raised for others; its lists show the role's records plus one's own team. One's own actions (leave, comp-off,
+raised for others; its employee lists show the role's records plus one's own team. Payroll runs require explicit
+whole-company Payroll access and have no team/HOD fallback. One's own actions (leave, comp-off,
 regularizations, shift changes, own documents) are refused there. Each browser tab keeps its own choice; a page of the
 other portal shows a switch screen and comes back to it, and the old addresses redirect.
 
@@ -323,3 +325,19 @@ const create = useMutation(orpc.departments.create.mutationOptions())
 ```
 
 Dates and files work as-is: a `Date` returned by the backend arrives in the browser as a `Date`.
+
+## Payroll — Stage 1 (2026-11-26)
+
+`/manage/payroll` is in the role portal under Payroll. Give the role the dedicated **Payroll** View/Edit area and
+data access covering a whole company (every plant/department). Salary-profile access does not imply Payroll access.
+Partial rows never combine into a whole-company grant; group-wide access can cover all companies. Existing roles
+receive no automatic grant; the built-in Super Admin includes the new area.
+
+Create/view regular monthly India payroll **drafts**, one per company/month. The company picker offers active India
+companies within full-company access. The attendance window comes from attendance settings (e.g. November = 26 October
+to 25 November) and is saved with the run. If the preview changes before creation, reopen the form and review it.
+Later setting changes do not rewrite saved dates. Retired companies' existing runs remain accessible within scope.
+
+No employee amounts, deduction processing, input locking, approval, payslip or payment action exists in this stage.
+Those follow the staged plan in BACKLOG.md, with each new model/field agreed before migration. Apply the generated
+`20261126041754_payroll_run_foundation` migration through the project's reviewed migration chain before app use.

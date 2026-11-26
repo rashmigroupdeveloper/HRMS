@@ -14,6 +14,7 @@ import type { createRoleInput, updateRoleInput } from './roles.schema.js'
 
 // What each area means - shown on the "Roles & access" page next to the View / Edit choice.
 export const AREA_INFO: Record<AccessArea, { label: string; read: string; write: string }> = {
+  PAYROLL: { label: 'Payroll', read: 'View draft payroll runs for companies covered in full', write: 'Also create regular monthly draft runs for companies covered in full; calculation and payment follow later' },
   ONBOARDING: {
     label: 'Onboarding',
     read: 'See candidates, offers, joining forms, documents, background checks and medical results',
@@ -204,6 +205,7 @@ const AREA_ORDER: AccessArea[] = [
   'EMPLOYEE_IDS_BANK',
   'EMPLOYEE_DOCUMENTS',
   'SALARY',
+  'PAYROLL',
   'MEDICAL',
   'ORGANIZATION',
   'HOD_APPOINTMENTS',
