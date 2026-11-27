@@ -41,18 +41,19 @@ export function CardTitle({ title, sub, action }: { title: string; sub?: ReactNo
   )
 }
 
-// Big light numbers beside the greeting: a tiny icon, the number, a short label - each a link to its page
+// The headline numbers beside the greeting (compact, 2026-11-27 - the user: the header took too much space): a tiny
+// icon, the number, a short label under it - each a link to its page
 export type Headline = { icon: LucideIcon; label: string; value: ReactNode; to: string; hint?: string }
 export function HeadlineStats({ stats, loading }: { stats: Headline[]; loading?: boolean }) {
   return (
-    <ul className="flex flex-wrap items-end gap-x-6 gap-y-3 sm:gap-x-8">
+    <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:gap-x-6">
       {stats.map(({ icon: Icon, label, value, to, hint }) => (
         <li key={label}>
-          <Link to={to} title={hint} className="group flex items-end gap-2 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <span aria-hidden className="mb-1.5 grid size-6 place-items-center rounded-full bg-card text-muted-foreground shadow-card transition-colors group-hover:text-foreground"><Icon className="size-3" /></span>
+          <Link to={to} title={hint} className="group flex items-center gap-2.5 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <span aria-hidden className="hidden size-8 place-items-center rounded-full bg-card text-muted-foreground shadow-card transition-colors group-hover:text-foreground sm:grid"><Icon className="size-3.5" /></span>
             <span>
-              <span className="block text-[38px] leading-none font-light tracking-tight tabular-nums sm:text-[52px]">{loading ? <Skeleton className="my-1 h-8 w-12 rounded sm:h-10" /> : value}</span>
-              <span className="mt-1 block text-xs text-muted-foreground">{label}</span>
+              <span className="block text-[26px] leading-none font-light tracking-tight tabular-nums">{loading ? <Skeleton className="h-6 w-8 rounded" /> : value}</span>
+              <span className="mt-0.5 block text-[11px] text-muted-foreground">{label}</span>
             </span>
           </Link>
         </li>
@@ -61,26 +62,29 @@ export function HeadlineStats({ stats, loading }: { stats: Headline[]; loading?:
   )
 }
 
-// A segmented strip: each part as wide as its share, its label above and its count inside - dark, gold, outline,
-// grey or hatched (Crextio's "Interviews / Hired / Project time / Output" strip). Parts at 0 are left out.
+// A thin segmented bar under the greeting (Crextio's strip, made slim - 2026-11-27): each part as wide as its share,
+// dark / gold / outline / grey / hatched, with a one-line legend of the counts. Parts at 0 are left out.
 export type Segment = { label: string; value: number; tone: 'dark' | 'gold' | 'outline' | 'grey' | 'hatched' }
 const SEGMENT_TONE: Record<Segment['tone'], string> = {
-  dark: 'bg-hero text-hero-foreground',
-  gold: 'bg-gold text-gold-foreground',
-  outline: 'border border-foreground/30 text-foreground',
-  grey: 'bg-foreground/10 text-foreground',
-  hatched: 'home-hatch text-muted-foreground',
+  dark: 'bg-hero',
+  gold: 'bg-gold',
+  outline: 'border border-foreground/40',
+  grey: 'bg-foreground/15',
+  hatched: 'home-hatch',
 }
-export function SegmentStrip({ segments, label }: { segments: Segment[]; label: string }) {
+export function SegmentStrip({ segments, label, caption }: { segments: Segment[]; label: string; caption: ReactNode }) {
   const shown = segments.filter((s) => s.value > 0)
   return (
-    <div role="img" aria-label={`${label}: ${shown.map((s) => `${s.label} ${s.value}`).join(', ')}`} className="flex w-full gap-1.5">
-      {shown.map((s) => (
-        <div key={s.label} className="min-w-[48px]" style={{ flex: `${s.value} 1 0%` }}>
-          <p className="mb-1 truncate text-[11px] text-muted-foreground">{s.label}</p>
-          <div className={cn('home-grow flex h-10 items-center rounded-full px-4 text-sm font-medium tabular-nums', SEGMENT_TONE[s.tone])}>{s.value}</div>
-        </div>
-      ))}
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-xs">
+        <span className="text-muted-foreground">{caption}</span>
+        <ul className="flex flex-wrap gap-x-4 gap-y-1">
+          {shown.map((s) => <li key={s.label} className="inline-flex items-center gap-1.5"><span aria-hidden className={cn('size-2 rounded-full', SEGMENT_TONE[s.tone])} /><span className="tabular-nums">{s.value}</span><span className="text-muted-foreground">{s.label.toLowerCase()}</span></li>)}
+        </ul>
+      </div>
+      <div role="img" aria-label={`${label}: ${shown.map((s) => `${s.label} ${s.value}`).join(', ')}`} className="mt-2 flex h-2 w-full gap-1">
+        {shown.map((s) => <span key={s.label} className={cn('home-grow h-full min-w-2 rounded-full', SEGMENT_TONE[s.tone])} style={{ flex: `${s.value} 1 0%` }} />)}
+      </div>
     </div>
   )
 }

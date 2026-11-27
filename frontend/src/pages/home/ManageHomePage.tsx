@@ -117,20 +117,18 @@ export function ManageHomePage() {
   const s = board.data?.summary
   return (
     <div className="home-dashboard space-y-5">
-      <header className="home-arrive grid min-w-0 items-end gap-x-8 gap-y-4 lg:grid-cols-12">
-        <div className="min-w-0 space-y-4 lg:col-span-7">
-          <div>
+      {/* one compact band, as /ess: greeting and numbers on one row, the people today as a thin bar under them */}
+      <header className="home-arrive space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+          <div className="min-w-0">
             <p className="text-xs text-muted-foreground">{now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'long' })}{role ? ` · ${role}` : ''}</p>
-            <h1 className="mt-0.5 text-[32px] leading-tight font-light tracking-tight sm:text-[42px]">{greeting(now)}{me ? `, ${me.name.split(' ')[0]}` : ''}</h1>
+            <h1 className="text-[26px] leading-tight font-light tracking-tight sm:text-[30px]">{greeting(now)}{me ? `, ${me.name.split(' ')[0]}` : ''}</h1>
           </div>
-          {ready && can('ATTENDANCE') && (s ? (
-            <div className="min-w-0">
-              <p className="mb-2 text-xs text-muted-foreground">People today within your access · {s.total}</p>
-              <SegmentStrip label="People today within your access" segments={[{ label: 'Punched in', value: s.in, tone: 'dark' }, { label: 'On leave', value: s.leave + s.onDuty, tone: 'gold' }, { label: 'Not in yet', value: s.notIn, tone: 'hatched' }, { label: 'Absent', value: s.absent, tone: 'outline' }]} />
-            </div>
-          ) : <HomeStripSkeleton parts={PEOPLE_STRIP} />)}
+          {ready && <HeadlineStats stats={headlines.map((h) => ({ ...h, value: h.value ?? '—' }))} loading={headlines.some((h) => h.value === null)} />}
         </div>
-        <div className="min-w-0 lg:col-span-5 lg:justify-self-end">{ready && <HeadlineStats stats={headlines.map((h) => ({ ...h, value: h.value ?? '—' }))} loading={headlines.some((h) => h.value === null)} />}</div>
+        {ready && can('ATTENDANCE') && (s
+          ? <SegmentStrip label="People today within your access" caption={`People today within your access · ${s.total}`} segments={[{ label: 'Punched in', value: s.in, tone: 'dark' }, { label: 'On leave', value: s.leave + s.onDuty, tone: 'gold' }, { label: 'Not in yet', value: s.notIn, tone: 'hatched' }, { label: 'Absent', value: s.absent, tone: 'outline' }]} />
+          : <HomeStripSkeleton parts={PEOPLE_STRIP} />)}
       </header>
       <FormError error={overview.error} />
       {!ready ? <ManageWorkspaceSkeleton label="Loading your role's pages" /> : (

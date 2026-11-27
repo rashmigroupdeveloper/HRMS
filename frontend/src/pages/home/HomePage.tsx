@@ -104,15 +104,17 @@ export function HomePage() {
     ...(requests.data && !anyRequests ? [{ label: 'No requests raised', to: '/ess/approvals?tab=mine' }] : []),
   ]
   return <div className="home-dashboard space-y-5">
-    <header className="home-arrive grid min-w-0 items-end gap-x-8 gap-y-4 lg:grid-cols-12">
-      <div className="min-w-0 space-y-4 lg:col-span-7">
-        <div>
+    {/* one compact band (the user, 2026-11-27: the header took too much space): greeting and numbers on one row, the
+        attendance month as a thin bar under them */}
+    <header className="home-arrive space-y-3">
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+        <div className="min-w-0">
           <p className="text-xs text-muted-foreground">{now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'long' })} · {SELF_SERVICE_NAME}</p>
-          <h1 className="mt-0.5 text-[32px] leading-tight font-light tracking-tight sm:text-[42px]">{greeting(now)}{me ? `, ${me.name.split(' ')[0]}` : ''}</h1>
+          <h1 className="text-[26px] leading-tight font-light tracking-tight sm:text-[30px]">{greeting(now)}{me ? `, ${me.name.split(' ')[0]}` : ''}</h1>
         </div>
-        {!overview.isError && <HomeMonthStrip overview={o} />}
+        <HeadlineStats stats={headlines.map((h) => ({ ...h, value: h.value ?? '—' }))} loading={loadingHeadlines} />
       </div>
-      <div className="min-w-0 lg:col-span-5 lg:justify-self-end"><HeadlineStats stats={headlines.map((h) => ({ ...h, value: h.value ?? '—' }))} loading={loadingHeadlines} /></div>
+      {!overview.isError && <HomeMonthStrip overview={o} />}
     </header>
     {overview.isError && <section className="home-panel p-4"><h2 className="text-lg font-light">Attendance</h2><FormError error={overview.error} /><Link to="/ess/attendance" className="flex min-h-9 items-center text-sm underline underline-offset-4">Open attendance to retry</Link></section>}
     <div className="grid min-w-0 grid-flow-row-dense gap-4 md:grid-cols-2 xl:grid-cols-4">

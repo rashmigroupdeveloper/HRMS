@@ -51,19 +51,16 @@ export function HomeWeekSkeleton() {
   )
 }
 
-// The attendance month's strip under the greeting: its part names real, the parts as grey pills
+// The thin strip under the greeting (the attendance month on /ess, the people today on /manage): its part names real
+// in the legend, the bar and counts grey
 export function HomeStripSkeleton({ parts = MONTH_STRIP }: { parts?: readonly string[] }) {
   return (
     <div role="status" aria-label="Loading the strip" className="min-w-0">
-      <Skeleton className="mb-2 h-3 w-56 rounded" />
-      <div className="flex w-full gap-1.5">
-        {parts.map((label, i) => (
-          <div key={label} className="min-w-[52px]" style={{ flex: `${[6, 1, 1, 2, 10][i] ?? 2} 1 0%` }}>
-            <p className="mb-1 truncate text-[11px] text-muted-foreground">{label}</p>
-            <Skeleton className="h-10 rounded-full" />
-          </div>
-        ))}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-xs">
+        <Skeleton className="h-3 w-56 rounded" />
+        <div className="flex flex-wrap gap-x-4 gap-y-1">{parts.map((label) => <span key={label} className="inline-flex items-center gap-1.5"><Skeleton className="size-2 rounded-full" /><Skeleton className="h-3 w-4 rounded" /><span className="text-muted-foreground">{label.toLowerCase()}</span></span>)}</div>
       </div>
+      <Skeleton className="mt-2 h-2 w-full rounded-full" />
     </div>
   )
 }
