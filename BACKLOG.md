@@ -667,14 +667,6 @@ region (on the work location), the work location's address, lay offs, and the jo
   days block the lock).
 - **Ask HR:** see "Questions to settle with HR" (the real leave types and days, 30 days back for a regularization; comp-off:
   8 h / 4 h, 30 days to claim and 90 days to use - the old HRMS's numbers, the user chose them for now).
-- [ ] **The leave-credit step is slow for one employee, and its tests time out (found 2026-11-27).** `creditDue(asOf,
-  { employeeIds })` (`leave/balances/balances.service.ts`) still adds up every employee's balance for each leave type
-  with a carry-forward limit (`sumTypeForEveryone`) and keeps only the asked employees afterwards, and makes one write
-  per type and month. In the test database (never wiped: hundreds of leave types by now) one call takes 8 to 13
-  seconds, so `tests/comp-off.test.ts` ("a Sunday worked ... expiring 90 days later") and two `tests/leave.test.ts`
-  cases reach the 30-second limit, first when two test runs share the machine. **Needs:** the year-end sum limited to
-  the asked employees in the query (the repository takes the ids), and the monthly credits written in one go per run -
-  then the tests' own limits can stay. Not a rule change.
 
 ### 30. Bugs found in the code review of 2026-11-23
 A read-through of every module built so far. **Fixed the same day:** editing a role now checks the holders' data access (and
@@ -1183,3 +1175,14 @@ is proposed before its migration per CLAUDE.md section 2.
 Verification for each slice: outside-company/plant/department reads and writes, own-vs-other records, active-role
 isolation, stale/replayed/concurrent requests, invalid rows/files, true Excel scope/totals, UI loading/empty/error at
 1440/390, audit attribution and all CLAUDE.md section 6 commands. Do not mark later stages built because this plan exists.
+
+### 33. Mobile app with Capacitor - later (the user, 2026-11-27)
+- **Why it waits:** the user chose to leave it for later after the research of 2026-11-27 (nothing installed).
+- **What was found:** Capacitor 8 (iOS 15+, Android 7+). Push notifications are the main gain - a Firebase project, an
+  Apple Developer account and APNs key, a device-token table per employee and a sender on approval / leave / payroll
+  events. Home-screen widgets need native code (SwiftUI WidgetKit, Kotlin App Widget) per widget; bridge plugins only pass
+  data. Live Activities / Android Live Updates do not fit while punches arrive by upload (they need the Kent machines'
+  automatic feed, item 19), and approvals are ordinary alerts.
+- **Needs first:** token sign-in for the app (the httpOnly SameSite=Strict session cookie does not reach a bundled app or
+  a widget), CORS for the app's origin, the user's approval of the new libraries, and an App Store / Play plan (Apple 4.2:
+  more than a repackaged website).

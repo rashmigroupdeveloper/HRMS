@@ -298,6 +298,7 @@ export function compOffToExpire(rows: CompOffRow[], asOf: Date) {
 
 // Credits every month due up to `asOf` and lapses every year ended (only these employees, if given - tests). Safe to run
 // any number of times: a month / year is done once per employee and type.
+const CREDIT_BATCH = 5000
 export async function creditDue(asOf: Date = today(), only?: { employeeIds: number[] }) {
   const types = (await typesService.allTypes()).filter((t) => t.isPaid)
   let credited = 0
@@ -305,6 +306,12 @@ export async function creditDue(asOf: Date = today(), only?: { employeeIds: numb
   // the monthly credits: every 1st from the month its credit rules credit from (the user, 2026-11-23 - was every month
   // since the type was added, so a credit switched on later, or a type widened, credited those months at once), up to asOf
   const peopleOn = new Map<string, Person[]>()
+  // The rows are gathered and written a few thousand at a time (2026-11-27: one write per type and month made hundreds of
+  // writes, each with its change-history lock, even when every credit was already there)
+  const credits: balancesRepository.NewEntry[] = []
+  const flush = async (all = false) => {
+    if (credits.length && (all || credits.length >= CREDIT_BATCH)) credited += await balancesRepository.addEntries(credits.splice(0), SYSTEM_ACTOR)
+  }
   // not for a retired type: its days can no longer be applied for (2026-11-23: retired types kept being credited)
   for (const type of types.filter((t) => t.creditPerMonth > 0 && t.isActive)) {
     for (let day = type.creditsFrom; day <= asOf; day = addMonths(day, 1)) {
@@ -315,30 +322,32 @@ export async function creditDue(asOf: Date = today(), only?: { employeeIds: numb
       // the service needed (creditAfterMonths from the date of joining) done by this 1st - so the first credit is the 1st
       // after it, and a joiner's own month is never part-credited (old HRMS)
       const due = peopleOn.get(month)!.filter((p) => p.status !== 'EXITED' && addMonths(p.dateOfJoining, type.creditAfterMonths) <= day && leaveService.typeAppliesTo(type, p))
-      credited += await balancesRepository.addEntries(
-        due.map((p) => ({ employeeId: p.id, leaveTypeId: type.id, kind: 'CREDIT' as const, days: type.creditPerMonth, effectiveDate: day, period: month })),
-        SYSTEM_ACTOR,
-      )
+      // (one at a time - spreading a whole group's employees into push can pass JavaScript's limit on arguments)
+      for (const p of due) credits.push({ employeeId: p.id, leaveTypeId: type.id, kind: 'CREDIT', days: type.creditPerMonth, effectiveDate: day, period: month })
+      await flush()
     }
   }
+  await flush(true)
   // then the year end: every year ended since the type was added - after the credits, so a December credit caught up
   // late (the job was not running on 1 December) is in the balance that lapses (2026-11-23: it was added after the lapse
-  // and never lapsed); January's credits are dated in the new year and do not count
-  for (const type of types.filter((t) => t.maxCarryForward !== null)) {
-    for (let year = type.createdAt.getUTCFullYear(); Date.UTC(year + 1, 0, 1) <= asOf.getTime(); year++) {
-      const yearEnd = new Date(Date.UTC(year, 11, 31))
-      const balances = (await balancesRepository.sumTypeForEveryone(type.id, yearEnd, new Date(Date.UTC(year + 1, 0, 1)))).filter((b) => !only || only.employeeIds.includes(b.employeeId))
-      // leave of the new year approved in the old one (applied in December for January) was checked against the whole
-      // balance - it is paid from the old year's days first, and only what is left above the carry-forward lapses (the
-      // user, 2026-11-23: before, those days lapsed too and the balance went below zero)
-      const lapsing = (b: (typeof balances)[number]) => round2(b.days + b.takenLater - type.maxCarryForward!)
-      lapsed += await balancesRepository.addEntries(
-        balances
-          .filter((b) => lapsing(b) > 0)
-          .map((b) => ({ employeeId: b.employeeId, leaveTypeId: type.id, kind: 'LAPSE' as const, days: -lapsing(b), effectiveDate: yearEnd, period: String(year) })),
-        SYSTEM_ACTOR,
-      )
-    }
+  // and never lapsed); January's credits are dated in the new year and do not count. A year at a time for every type
+  // added by then (2026-11-27 - was a type at a time): a year's lapse is written before the next year is summed, as before
+  const carrying = types.filter((t) => t.maxCarryForward !== null)
+  const firstYear = carrying.length ? Math.min(...carrying.map((t) => t.createdAt.getUTCFullYear())) : Number.POSITIVE_INFINITY
+  for (let year = firstYear; Date.UTC(year + 1, 0, 1) <= asOf.getTime(); year++) {
+    const typeOf = new Map(carrying.filter((t) => t.createdAt.getUTCFullYear() <= year).map((t) => [t.id, t]))
+    const yearEnd = new Date(Date.UTC(year, 11, 31))
+    const balances = await balancesRepository.sumAtYearEnd([...typeOf.keys()], yearEnd, new Date(Date.UTC(year + 1, 0, 1)), only?.employeeIds)
+    // leave of the new year approved in the old one (applied in December for January) was checked against the whole
+    // balance - it is paid from the old year's days first, and only what is left above the carry-forward lapses (the
+    // user, 2026-11-23: before, those days lapsed too and the balance went below zero)
+    const lapsing = (b: (typeof balances)[number]) => round2(b.days + b.takenLater - typeOf.get(b.leaveTypeId)!.maxCarryForward!)
+    lapsed += await balancesRepository.addEntries(
+      balances
+        .filter((b) => lapsing(b) > 0)
+        .map((b) => ({ employeeId: b.employeeId, leaveTypeId: b.leaveTypeId, kind: 'LAPSE' as const, days: -lapsing(b), effectiveDate: yearEnd, period: String(year) })),
+      SYSTEM_ACTOR,
+    )
   }
   // comp-off not used before it expired - each day, so it lapses the day after it expires. Once a day per employee
   // (period "exp:<day>" - 2026-11-23, the review: two runs at the same moment both wrote the same expiry); a second run
@@ -346,7 +355,7 @@ export async function creditDue(asOf: Date = today(), only?: { employeeIds: numb
   let expired = 0
   const compOff = types.find((t) => t.isCompOff)
   if (compOff) {
-    const rows = (await balancesRepository.listCompOffRows(compOff.id)).filter((r) => !only || only.employeeIds.includes(r.employeeId))
+    const rows = await balancesRepository.listCompOffRows(compOff.id, only?.employeeIds)
     const byEmployee = new Map<number, CompOffRow[]>()
     for (const r of rows) byEmployee.set(r.employeeId, [...(byEmployee.get(r.employeeId) ?? []), { kind: r.kind, days: r.days.toNumber(), effectiveDate: r.effectiveDate, expiresOn: r.expiresOn, applicationId: r.applicationId }])
     expired = await balancesRepository.addEntries(
