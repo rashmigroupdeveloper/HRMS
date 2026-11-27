@@ -1,12 +1,13 @@
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { segment, SEGMENTS } from '@/pages/attendance/components/labels'
+import { REACH, segment, SEGMENTS } from '@/pages/attendance/components/labels'
 import { DayBoardSkeleton } from './DayBoardSkeleton'
 
 // Loading placeholder for the Team attendance page below its title, while it works out which views the viewer has: the
-// views' switch (bars - they depend on the team sizes), then the day board.
-export function TeamAttendanceSkeleton({ label = 'Loading' }: { label?: string }) {
+// views' switch (bars - they depend on the team sizes), then the day board. `team`: the team view is the one opening (its
+// "Direct reports / Everyone under me" switch shows).
+export function TeamAttendanceSkeleton({ label = 'Loading', team = false }: { label?: string; team?: boolean }) {
   return (
     <div role="status" aria-label={label} className="space-y-3">
       <div className={SEGMENTS}>
@@ -16,13 +17,13 @@ export function TeamAttendanceSkeleton({ label = 'Loading' }: { label?: string }
           </span>
         ))}
       </div>
-      <BoardSkeleton />
+      <BoardSkeleton team={team} />
     </div>
   )
 }
 
 // PeopleView's card with its day board (change both together)
-function BoardSkeleton() {
+function BoardSkeleton({ team }: { team: boolean }) {
   return (
     <section className="space-y-3 rounded-3xl bg-card p-4 shadow-card sm:p-5">
       <div className="flex flex-wrap items-center gap-2">
@@ -30,6 +31,15 @@ function BoardSkeleton() {
           <span className={segment(true)}>Day board</span>
           <span className={segment(false)}>Month muster</span>
         </div>
+        {team && (
+          <div className={SEGMENTS}>
+            {REACH.map(([value, label], i) => (
+              <span key={value} className={segment(i === 0)}>
+                {label}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
           <div className="relative col-span-2">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />

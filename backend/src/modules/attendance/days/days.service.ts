@@ -11,7 +11,7 @@ import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import type { peopleFilterSchema } from '../attendance.schema.js'
 import * as daysRepository from './days.repository.js'
-import type { boardInput, correctDayInput, dayPunchesInput, employeeMonthInput, musterInput, removeCorrectionInput } from './days.schema.js'
+import type { boardInput, correctDayInput, dayPunchesInput, employeeMonthInput, exportBoardInput, exportMusterInput, musterInput, removeCorrectionInput } from './days.schema.js'
 
 // Each employee's days (attendance, 2026-11-16).
 // Which shift applies on a day: a holiday of the holiday list the employee follows that day (2026-11-24 - was by company /
@@ -896,7 +896,15 @@ export async function getEmployeeMonth(viewer: CurrentUser, { employeeCode, year
 }
 
 // The day's board: everyone in the scope on that date - in / late / not in yet / absent / off - with the counts
-export async function getBoard(viewer: CurrentUser, { date, ...filter }: z.infer<typeof boardInput>) {
+// One page of the people when both are given (the day board, the muster - 2026-11-27); everyone otherwise
+function pageOf<T>(all: T[], page: number | undefined, pageSize: number | undefined) {
+  if (page === undefined || pageSize === undefined) return all
+  return all.slice((page - 1) * pageSize, page * pageSize)
+}
+
+// The day board. The summary always counts everyone in the scope; `items` is one page of them when `page` / `pageSize`
+// are given (`total`: everyone)
+export async function getBoard(viewer: CurrentUser, { date, page, pageSize, ...filter }: z.infer<typeof boardInput>) {
   const people = await peopleInScope(viewer, filter, date, date)
   const ids = people.map((p) => p.id)
   const [rows, corrections, plans, covers] = await Promise.all([
@@ -934,7 +942,8 @@ export async function getBoard(viewer: CurrentUser, { date, ...filter }: z.infer
   return {
     date,
     isToday,
-    items,
+    items: pageOf(items, page, pageSize),
+    total: items.length,
     summary: {
       total: items.length,
       in: count((i) => i.punchCount > 0 && i.planned === 'WORK'),
@@ -950,9 +959,11 @@ export async function getBoard(viewer: CurrentUser, { date, ...filter }: z.infer
 }
 
 // The monthly muster: every employee in the scope x every day of the month (a code per day), with the totals
-export async function getMuster(viewer: CurrentUser, { year, month, ...filter }: z.infer<typeof musterInput>) {
+// (one page of the people when `page` / `pageSize` are given - only their days are worked out; `total`: everyone)
+export async function getMuster(viewer: CurrentUser, { year, month, page, pageSize, ...filter }: z.infer<typeof musterInput>) {
   const { from, to, locked } = await monthRange(year, month)
-  const people = await peopleInScope(viewer, filter, from, to)
+  const everyone = await peopleInScope(viewer, filter, from, to)
+  const people = pageOf(everyone, page, pageSize)
   const ids = people.map((p) => p.id)
   const [rows, corrections, plans, covers] = await Promise.all([
     daysRepository.listDays(ids, from, to),
@@ -970,6 +981,7 @@ export async function getMuster(viewer: CurrentUser, { year, month, ...filter }:
     to,
     locked,
     days,
+    total: everyone.length,
     rows: people.map((person) => {
       const views = days.map((day) => {
         const key = `${person.id}:${dayKey(day)}`
@@ -998,7 +1010,7 @@ export async function getMuster(viewer: CurrentUser, { year, month, ...filter }:
 }
 
 // The muster as an Excel file
-export async function exportMuster(viewer: CurrentUser, input: z.infer<typeof musterInput>) {
+export async function exportMuster(viewer: CurrentUser, input: z.infer<typeof exportMusterInput>) {
   const muster = await getMuster(viewer, input)
   const dayColumns = muster.days.map((d, i) => ({ header: String(d.getUTCDate()), key: `d${i}`, width: 5 }))
   const bytes = await writeReport([
@@ -1115,7 +1127,7 @@ export async function exportMonth(viewer: CurrentUser, input: z.infer<typeof exp
   ])], { title: `Attendance · ${data.employee.name}`, preparedBy: `${viewer.name} (${viewer.employeeCode})`, coverage: 'The visible employee and selected attendance cycle, using the same access and relationship checks as the month page.', filters: [{ label: 'Employee code', value: data.employee.employeeCode }, { label: 'Period', value: `${data.from.toISOString().slice(0, 10)} to ${data.to.toISOString().slice(0, 10)}` }, { label: 'Month locked', value: data.locked ? 'Yes' : 'No' }] }, `attendance-${data.employee.employeeCode}-${data.year}-${String(data.month).padStart(2, '0')}`)
 }
 
-export async function exportBoard(viewer: CurrentUser, input: z.infer<typeof boardInput>) {
+export async function exportBoard(viewer: CurrentUser, input: z.infer<typeof exportBoardInput>) {
   const data = await getBoard(viewer, input)
   return reportFile([reportSheet('Day board', data.items, [
     { header: 'Employee code', value: r => r.employeeCode, text: true }, { header: 'Employee', value: r => r.name, width: 30 },

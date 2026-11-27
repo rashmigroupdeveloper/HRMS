@@ -8,9 +8,15 @@ export const myMonthInput = monthSchema
 
 export const employeeMonthInput = monthSchema.extend({ employeeCode: employeeCodeSchema })
 
-export const boardInput = peopleFilterSchema.extend({ date: z.date() })
+// One page of the people (the user, 2026-11-27: thousands of rows at once): `page` from 1 with `pageSize` people a page;
+// without them, everyone (the home pages' boards). The exports always take everyone.
+const pageShape = { page: z.number().int().min(1).optional(), pageSize: z.number().int().min(1).max(200).optional() }
 
-export const musterInput = peopleFilterSchema.extend(monthSchema.shape)
+export const exportBoardInput = peopleFilterSchema.extend({ date: z.date() })
+export const boardInput = exportBoardInput.extend(pageShape)
+
+export const exportMusterInput = peopleFilterSchema.extend(monthSchema.shape)
+export const musterInput = exportMusterInput.extend(pageShape)
 
 // A half's status - never "half day" (that is the day overall), never "leave" (2026-11-22: leave is taken only by an
 // approved application, which debits the balance - HR's correction would not)

@@ -10,7 +10,8 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { JOB_CHANGE_KIND } from '@/lib/choices'
 import { client, orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
-import { ChangeList, Pager } from './ChangeList'
+import { Pager } from '@/components/Pager'
+import { ChangeList } from './ChangeList'
 
 // "Change register" on Pay & career (/pay-career?view=register; the Job changes page of 2026-11-20, a sidebar item since
 // 2026-11-21 - Employees: View): every promotion, transfer, salary revision... asked for the employees inside the viewer's

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { EmptyState } from '@/components/EmptyState'
 import { FormDrawer } from '@/components/FormDrawer'
 import { FormError } from '@/components/FormError'
+import { Pager } from '@/components/Pager'
 import { Pill } from '@/components/Pill'
 import { DayBoardSkeleton } from '@/components/skeletons/attendance/DayBoardSkeleton'
 import { MonthSkeleton } from '@/components/skeletons/attendance/MonthSkeleton'
@@ -15,23 +16,32 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { client, orpc } from '@/lib/orpc'
 import { cn, formatDate, fromDateInput, toDateInput, todayDay } from '@/lib/utils'
-import { BOARD_STATE, cycleRange, HALF_STATUSES, type HalfStatus, hours, type MonthDay, MUSTER_TOTALS, segment, SEGMENTS, STATUS, splitFill, statusOfCode } from './labels'
+import { BOARD_STATE, cycleRange, REACH, type Reach, HALF_STATUSES, type HalfStatus, hours, type MonthDay, MUSTER_TOTALS, segment, SEGMENTS, STATUS, splitFill, statusOfCode } from './labels'
 import { useAttendanceMonth, useCycleStartDay } from './useAttendanceMonth'
 import { MonthCalendar, MonthPicker, MonthTotals } from './MonthCalendar'
 
 type Scope = 'TEAM' | 'DEPARTMENT' | 'ALL'
+// people a page on the day board and the muster (the user, 2026-11-27 - thousands of rows at once before)
+const PAGE_SIZE = 50
 
 // The people of a scope - the viewer's team, the employees whose HOD they are, or everyone (Attendance: View): the day's
-// board or the month's muster;
+// board or the month's muster, a page at a time;
 // a person opens their month (HR corrects a day there).
 export function PeopleView({ scope, canEdit }: { scope: Scope; canEdit: boolean }) {
   const [view, setView] = useState<'board' | 'muster'>('board')
   const [search, setSearch] = useState('')
   const [companyId, setCompanyId] = useState('')
+  // the team view starts with the direct reports (as the People directory's "My team")
+  const [reach, setReach] = useState<Reach>('DIRECT')
   const companies = useQuery({ ...orpc.organization.companies.list.queryOptions(), enabled: scope === 'ALL' })
   const [person, setPerson] = useState<string | null>(null)
   const [date, setDate] = useState(toDateInput(todayDay()))
-  const filter = { scope, search: search.trim() || undefined, companyIds: companyId ? [Number(companyId)] : undefined }
+  const filter: Filter = { scope: scope === 'TEAM' ? reach : scope, search: search.trim() || undefined, companyIds: companyId ? [Number(companyId)] : undefined }
+  // back to the first page whenever the list changes (another view, scope, search, company or day)
+  const listKey = JSON.stringify([view, filter, view === 'board' ? date : null])
+  const [paging, setPaging] = useState({ key: listKey, page: 1 })
+  const page = paging.key === listKey ? paging.page : 1
+  const setPage = (p: number) => setPaging({ key: listKey, page: p })
   const moveDay = (step: number) => setDate(toDateInput(new Date(fromDateInput(date)!.getTime() + step * 86_400_000)))
 
   return (
@@ -49,6 +59,15 @@ export function PeopleView({ scope, canEdit }: { scope: Scope; canEdit: boolean 
             </button>
           ))}
         </div>
+        {scope === 'TEAM' && (
+          <div className={SEGMENTS} role="group" aria-label="Whose attendance">
+            {REACH.map(([value, label]) => (
+              <button key={value} type="button" aria-pressed={reach === value} onClick={() => setReach(value)} className={segment(reach === value)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         {/* a phone: the search on a line of its own, the company and the day in two equal columns under it */}
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
           <div className="relative col-span-2">
@@ -78,16 +97,21 @@ export function PeopleView({ scope, canEdit }: { scope: Scope; canEdit: boolean 
           )}
         </div>
       </div>
-      {view === 'board' ? <DayBoard filter={filter} date={date} onOpen={setPerson} /> : <Muster filter={filter} onOpen={setPerson} />}
+      {view === 'board' ? (
+        <DayBoard filter={filter} date={date} page={page} onPage={setPage} onOpen={setPerson} />
+      ) : (
+        <Muster filter={filter} page={page} onPage={setPage} onOpen={setPerson} />
+      )}
       {person && <PersonMonth employeeCode={person} canEdit={canEdit} onClose={() => setPerson(null)} />}
     </section>
   )
 }
 
-type Filter = { scope: Scope; search?: string; companyIds?: number[] }
+type Filter = { scope: Exclude<Scope, 'TEAM'> | Reach; search?: string; companyIds?: number[] }
+type Paging = { page: number; onPage: (page: number) => void }
 
-function DayBoard({ filter, date, onOpen }: { filter: Filter; date: string; onOpen: (code: string) => void }) {
-  const board = useQuery({ ...orpc.attendance.days.board.queryOptions({ input: { ...filter, date: fromDateInput(date)! } }), placeholderData: keepPreviousData })
+function DayBoard({ filter, date, page, onPage, onOpen }: { filter: Filter; date: string; onOpen: (code: string) => void } & Paging) {
+  const board = useQuery({ ...orpc.attendance.days.board.queryOptions({ input: { ...filter, date: fromDateInput(date)!, page, pageSize: PAGE_SIZE } }), placeholderData: keepPreviousData })
   const s = board.data?.summary
   // the day's totals as one plain line (they are not filters) - a zero is muted
   const counts: [number, string][] = s ? [[s.in, 'in'], [s.late, 'late'], ...(board.data?.isToday ? [[s.notIn, 'not in yet'] as [number, string]] : []), [s.absent, 'absent'], [s.leave, 'on leave'], [s.onDuty, 'on duty'], [s.off, 'off']] : []
@@ -157,13 +181,14 @@ function DayBoard({ filter, date, onOpen }: { filter: Filter; date: string; onOp
           </Table>
         </div>
       )}
+      <Pager page={page} pages={Math.ceil((board.data?.total ?? 0) / PAGE_SIZE)} onPage={onPage} />
     </div>
   )
 }
 
-function Muster({ filter, onOpen }: { filter: Filter; onOpen: (code: string) => void }) {
+function Muster({ filter, page, onPage, onOpen }: { filter: Filter; onOpen: (code: string) => void } & Paging) {
   const [ym, setYm] = useState(useAttendanceMonth())
-  const muster = useQuery({ ...orpc.attendance.days.muster.queryOptions({ input: { ...filter, ...ym } }), placeholderData: keepPreviousData })
+  const muster = useQuery({ ...orpc.attendance.days.muster.queryOptions({ input: { ...filter, ...ym, page, pageSize: PAGE_SIZE } }), placeholderData: keepPreviousData })
   // the attendance month's days before the muster answers (its skeleton's day columns)
   const range = cycleRange(ym.year, ym.month, useCycleStartDay())
   // (a code that is no status is a leave type's - CL, SL... 2026-11-22)
@@ -171,7 +196,10 @@ function Muster({ filter, onOpen }: { filter: Filter; onOpen: (code: string) => 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <MonthPicker year={ym.year} month={ym.month} onChange={(year, month) => setYm({ year, month })} range={muster.data ?? range} locked={muster.data?.locked} />
+        <MonthPicker year={ym.year} month={ym.month} onChange={(year, month) => {
+            setYm({ year, month })
+            onPage(1)
+          }} range={muster.data ?? range} locked={muster.data?.locked} />
         <ExportButton load={() => client.attendance.days.exportMuster({ ...filter, ...ym })} disabled={!muster.data?.rows.length} />
       </div>
 
@@ -243,6 +271,7 @@ function Muster({ filter, onOpen }: { filter: Filter; onOpen: (code: string) => 
           </table>
         </div>
       )}
+      <Pager page={page} pages={Math.ceil((muster.data?.total ?? 0) / PAGE_SIZE)} onPage={onPage} />
       <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-foreground/70">
         {/* a half day shows as its two halves (P/A) - the muster has no HD code since 2026-11-22 */}
         {Object.values(STATUS)

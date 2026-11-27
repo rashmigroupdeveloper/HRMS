@@ -77,4 +77,20 @@ describe('the day board for a day to come', () => {
     expect(board.summary.absent).toBe(0)
     expect(board.summary.notIn).toBe(board.items.length)
   })
+
+  // the user, 2026-11-27: Team attendance showed thousands of rows at once
+  it('gives one page of the people, the summary and total counting everyone', async () => {
+    const companyId = (await createCompany()).id
+    const plantId = (await createPlant(companyId)).id
+    for (let i = 0; i < 3; i++) await createEmployee({ companyId, plantId })
+    const viewer = userWith({ id: 0, employeeCode: 'PAGER' }, [{ access: { ATTENDANCE: 'READ' }, rows: [row(companyId, null, null, 'READ')] }])
+    const all = await daysService.getBoard(viewer, { scope: 'ALL', companyIds: [companyId], date: day })
+    const second = await daysService.getBoard(viewer, { scope: 'ALL', companyIds: [companyId], date: day, page: 2, pageSize: 2 })
+    expect(second.total).toBe(3)
+    expect(second.summary.total).toBe(3)
+    expect(second.items.map((i) => i.employeeCode)).toEqual([all.items[2]!.employeeCode])
+    const muster = await daysService.getMuster(viewer, { scope: 'ALL', companyIds: [companyId], year: 2026, month: 1, page: 1, pageSize: 2 })
+    expect(muster.total).toBe(3)
+    expect(muster.rows.map((r) => r.employeeCode)).toEqual(all.items.slice(0, 2).map((i) => i.employeeCode))
+  })
 })

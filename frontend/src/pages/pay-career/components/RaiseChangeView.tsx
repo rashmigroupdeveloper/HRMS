@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button'
 import { useAccess } from '@/hooks/useAccess'
 import { orpc } from '@/lib/orpc'
 import { cn } from '@/lib/utils'
-import { ChangeList, Pager } from './ChangeList'
+import { Pager } from '@/components/Pager'
+import { ChangeList } from './ChangeList'
 import { RequestChangeStart } from './RequestChangeStart'
 
 // "Raise a change" on Pay & career (/pay-career?view=raise - the user, 2026-11-21): for those with "Request job

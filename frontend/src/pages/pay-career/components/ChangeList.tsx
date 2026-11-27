@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { JobChangeKindTile, JobChangeStatusPill } from '@/components/JobChangeDetails'
 import { Pill } from '@/components/Pill'
-import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { client } from '@/lib/orpc'
 import { cn, formatDate, initialsOf, relativeDay } from '@/lib/utils'
@@ -99,24 +98,6 @@ export function ChangeList({ items, onOpen, linkEmployee = true }: { items: Chan
         ))}
       </ul>
     </>
-  )
-}
-
-// Previous / next under a list
-export function Pager({ page, pages, onPage }: { page: number; pages: number; onPage: (page: number) => void }) {
-  if (pages <= 1) return null
-  return (
-    <div className="flex items-center justify-end gap-2 text-sm">
-      <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-        Previous
-      </Button>
-      <span className="text-muted-foreground tabular-nums">
-        {page} / {pages}
-      </span>
-      <Button variant="secondary" size="sm" disabled={page >= pages} onClick={() => onPage(page + 1)}>
-        Next
-      </Button>
-    </div>
   )
 }
 

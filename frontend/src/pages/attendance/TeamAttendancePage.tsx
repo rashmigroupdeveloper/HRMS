@@ -41,7 +41,7 @@ export function TeamAttendancePage() {
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground max-sm:hidden">{subtitle}</p>
       </header>
       <FormError error={overview.error} />
-      {!o && !overview.error && <TeamAttendanceSkeleton label="Loading team attendance" />}
+      {!o && !overview.error && <TeamAttendanceSkeleton label="Loading team attendance" team={(asked ?? 'team') === 'team'} />}
       {o && view && (
         <div className="space-y-3">
           {views.length > 1 && (

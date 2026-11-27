@@ -140,6 +140,14 @@ export function cycleRange(year: number, month: number, startDay: number) {
 
 // A second-level switch inside a tab (day board / month muster, a pattern's weeks in the setup's forms): a small grey segmented control whose
 // open chip is cream - never dark, that is the page's own tab bar. One line; it scrolls sideways when it does not fit.
+// The team view's switch (2026-11-27): only those who report to the viewer directly, or everyone under them in the
+// reporting tree (PeopleView and its skeleton)
+export type Reach = 'DIRECT' | 'TEAM'
+export const REACH: [Reach, string][] = [
+  ['DIRECT', 'Direct reports'],
+  ['TEAM', 'Everyone under me'],
+]
+
 export const SEGMENTS = 'flex w-fit max-w-full gap-0.5 overflow-x-auto rounded-full bg-surface-2 p-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 export const segment = (active: boolean) =>
   cn('flex-none rounded-full px-3 py-2.5 text-xs leading-4 font-medium whitespace-nowrap sm:py-1.5', active ? 'bg-card text-foreground shadow-card' : 'text-muted-foreground hover:text-foreground')
