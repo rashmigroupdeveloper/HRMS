@@ -2,7 +2,7 @@ import { prisma, createdBy, updatedBy, type ActorId, type DbClient } from '#core
 import { scopeWhere, type DataScope } from '#core/auth/scope'
 import type { ListInput } from './payroll.schema.js'
 
-const select = { id: true, company: { select: { id: true, code: true, name: true } }, payMonth: true, attendanceFrom: true, attendanceTo: true, status: true, peopleRefreshedAt: true, peopleRefreshedById: true, computedAt: true, computedById: true, approvalRequestId: true, finalisedAt: true, finalisedById: true, createdAt: true, createdById: true, updatedAt: true, updatedById: true } as const
+const select = { id: true, company: { select: { id: true, code: true, name: true } }, payMonth: true, attendanceFrom: true, attendanceTo: true, status: true, peopleRefreshedAt: true, peopleRefreshedById: true, computedAt: true, computedById: true, approvalRequestId: true, finalisedAt: true, finalisedById: true, payslipsReleasedAt: true, payslipsReleasedById: true, payslipTemplate: { select: { id: true, name: true } }, createdAt: true, createdById: true, updatedAt: true, updatedById: true } as const
 
 // The service supplies wholeCompanyScopeOf: narrower plant/department rows never authorize a whole-company run.
 export async function list(scope: DataScope, input: ListInput, db: DbClient = prisma) {

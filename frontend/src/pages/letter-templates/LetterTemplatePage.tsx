@@ -42,6 +42,26 @@ const NEW_LETTER: LetterDocument = {
   ],
 }
 
+// A new payslip template (payroll stage 6) starts as the company's payslip: title, the employee's details, earnings and
+// deductions, net pay in figures and words, leave, and the "system generated" note - HR changes any of it
+const field = (name: string, marks?: { type: 'bold' | 'italic' }[]) => ({ type: 'field', attrs: { name }, ...(marks && { marks }) })
+const NEW_PAYSLIP: LetterDocument = {
+  type: 'doc',
+  content: [
+    { type: 'paragraph', attrs: { textAlign: 'center' }, content: [{ type: 'text', text: 'Payslip for the month of ', marks: [{ type: 'bold' }] }, field('pay_month', [{ type: 'bold' }])] },
+    { type: 'paragraph', attrs: { textAlign: 'center' }, content: [field('company'), { type: 'hardBreak' }, field('company_address')] },
+    { type: 'letterBlock', attrs: { name: 'employee_details' } },
+    { type: 'letterBlock', attrs: { name: 'pay_table' } },
+    {
+      type: 'paragraph',
+      attrs: { textAlign: 'left' },
+      content: [{ type: 'text', text: 'Net pay for the month: ', marks: [{ type: 'bold' }] }, field('net_pay', [{ type: 'bold' }]), { type: 'hardBreak' }, { type: 'text', text: '(', marks: [{ type: 'italic' }] }, field('net_pay_words', [{ type: 'italic' }]), { type: 'text', text: ')', marks: [{ type: 'italic' }] }],
+    },
+    { type: 'letterBlock', attrs: { name: 'leave_table' } },
+    { type: 'paragraph', attrs: { textAlign: 'center' }, content: [{ type: 'text', text: 'This is a system generated payslip and does not require signature.' }] },
+  ],
+}
+
 type Lists = Pick<TemplateRow, 'placeholders' | 'blocks'>
 
 export function LetterTemplatePage() {
@@ -97,7 +117,7 @@ function TemplateForm({ template, kind, lists, back }: { template: Template | 'n
   const [start, setStart] = useState(() => ({ name: isNew ? '' : template.name, joiningType: isNew ? '' : (template.joiningType ?? '') }))
   const [startDoc, setStartDoc] = useState<string | null>(null)
   const [values, setValues] = useState(start)
-  const [doc, setDoc] = useState<JSONContent>(() => (isNew ? NEW_LETTER : template.body) as JSONContent)
+  const [doc, setDoc] = useState<JSONContent>(() => (isNew ? (kind === 'PAYSLIP' ? NEW_PAYSLIP : NEW_LETTER) : template.body) as JSONContent)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [previewing, setPreviewing] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -273,7 +293,8 @@ function TemplateForm({ template, kind, lists, back }: { template: Template | 'n
                 onChange={(e) => setValues((v) => ({ ...v, name: e.target.value }))}
               />
             </div>
-            <div className="space-y-1.5">
+            {/* (a payslip is picked when releasing a pay run's payslips - no joining type) */}
+            {kind !== 'PAYSLIP' && <div className="space-y-1.5">
               <Label htmlFor="tpl-type">
                 Suggested for
               </Label>
@@ -291,11 +312,12 @@ function TemplateForm({ template, kind, lists, back }: { template: Template | 'n
                   </NativeSelectOption>
                 ))}
               </NativeSelect>
-            </div>
+            </div>}
             <div className="border-t pt-4">
               <LetterheadImages
                 templateId={isNew ? null : template.id}
                 imageIds={imageIds}
+                optional={kind === 'PAYSLIP'}
                 canChange={canChange}
                 onPick={(field, imageId) => setPicked((current) => ({ ...current, [field]: imageId }))}
               />

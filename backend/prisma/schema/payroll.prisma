@@ -103,6 +103,12 @@ model PayrollRun {
   // arrears in a later run, stage 7)
   finalisedAt         DateTime? @map("finalised_at") @db.Timestamptz(3)
   finalisedById       Int?      @map("finalised_by_id")
+  // Stage 6 (approved by the user 2026-11-27): the payslips - when and by whom they were released to the employees, and
+  // the payslip template (Letter templates, kind PAYSLIP) they are made with; set together, once, on a FINALISED run. A
+  // background job then makes and stores each person's payslip (Payslip); an employee sees theirs once it is made.
+  payslipTemplateId    Int?      @map("payslip_template_id")
+  payslipsReleasedAt   DateTime? @map("payslips_released_at") @db.Timestamptz(3)
+  payslipsReleasedById Int?      @map("payslips_released_by_id")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById Int @map("created_by_id")
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -112,9 +118,11 @@ model PayrollRun {
   // the people it pays (stage 2)
   employees PayrollRunEmployee[]
   approvalRequest ApprovalRequest? @relation(fields: [approvalRequestId], references: [id], onDelete: Restrict)
+  payslipTemplate LetterTemplate?  @relation(fields: [payslipTemplateId], references: [id], onDelete: Restrict)
 
   @@unique([companyId, payMonth])
   @@index([payMonth, id])
+  @@index([payslipTemplateId])
   @@map("payroll_runs")
 }
 
@@ -165,6 +173,8 @@ model PayrollRunEmployee {
   lines    PayrollRunLine[]
   // the warnings about them acknowledged before sending (stage 5)
   acknowledgements PayrollRunAcknowledgement[]
+  // their payslip, once the run's payslips are released and the job has made it (stage 6)
+  payslip  Payslip?
 
   @@unique([payrollRunId, employeeId])
   @@index([employeeId])
@@ -597,4 +607,25 @@ model PayrollSetting {
   updatedById        Int      @map("updated_by_id")
 
   @@map("payroll_settings")
+}
+
+// --- Stage 6 (approved by the user 2026-11-27): payslips ---
+// One person's payslip of a pay run: the PDF made from the run's payslip template after the payslips were released,
+// stored in file storage (employees/<code>/PAYSLIP-<pay month>/<date>_<random>.pdf). Made by the background job (System)
+// and never changed - what the employee got stays what they see, even when the template or their details change later.
+// It carries the full bank account number and PAN (the user's choice, 2026-11-27), so it is shown only to the employee and
+// to viewers with Payroll View and Salary View over the whole company. Moved with the employee's other files when their
+// code changes.
+model Payslip {
+  id                   Int      @id @default(autoincrement())
+  payrollRunEmployeeId Int      @unique @map("payroll_run_employee_id")
+  storageKey           String   @unique @map("storage_key")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById          Int      @map("created_by_id")
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById          Int      @map("updated_by_id")
+
+  runEmployee PayrollRunEmployee @relation(fields: [payrollRunEmployeeId], references: [id], onDelete: Restrict)
+
+  @@map("payslips")
 }

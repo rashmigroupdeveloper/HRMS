@@ -51,7 +51,7 @@ import { MyDepartmentPage } from '@/pages/my-department/MyDepartmentPage'
 //     /ess/attendance      - one's own attendance; /ess/team-attendance, /ess/attendance-reports - one's reporting tree
 //                            and HOD department (nobody to see: back to /ess/attendance)
 //     /ess/leave           - one's own leave; /ess/holidays - one's holiday list's holidays; /ess/team-leave - one's team's
-//     /ess/pay-career      - one's own job and salary
+//     /ess/pay-career      - one's own job and salary; ?view=payslips one's own payslips (payroll stage 6)
 //     /ess/employees       - the directory + org chart
 //     /ess/my-department   - the employees whose HOD they are (none: an empty page)
 //     /ess/approvals       - the steps named to them (manager, HOD) and their own requests

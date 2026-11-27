@@ -1,7 +1,7 @@
 import { ORPCError } from '@orpc/server'
 import { assertAccess } from '#core/auth/access'
 import { assertWholeSlice, levelOver, wholeCompanyScopeOf } from '#core/auth/scope'
-import { prisma } from '#core/db/prisma'
+import { prisma, type ActorId, type DbClient } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { approvalsService } from '#modules/approvals'
 import { attendanceService } from '#modules/attendance'
@@ -14,6 +14,7 @@ import * as daysService from './days/days.service.js'
 import * as inputsService from './inputs/inputs.service.js'
 import * as peopleService from './people/people.service.js'
 import * as peopleRepository from './people/people.repository.js'
+import * as payslipsService from './payslips/payslips.service.js'
 import type { CreateInput, ListInput, SendInput } from './payroll.schema.js'
 
 const companySlice = (companyId: number) => ({ companyId, plantId: null, departmentId: null })
@@ -53,7 +54,10 @@ export async function getSetup(viewer: CurrentUser, { payMonth }: { payMonth: Da
 export async function listRuns(viewer: CurrentUser, input: ListInput) {
   assertAccess(viewer.access, 'PAYROLL', 'READ')
   const result = await prisma.$transaction(tx => payrollRepository.list(wholeCompanyScopeOf(viewer, 'PAYROLL'), input, tx), { isolationLevel: 'RepeatableRead' })
-  return { ...result, items: result.items.map(({ createdById: _created, updatedById: _updated, peopleRefreshedById: _refreshed, computedById: _computed, finalisedById: _finalised, _count, ...item }) => ({ ...item, people: _count.employees })) }
+  return {
+    ...result,
+    items: result.items.map(({ createdById: _created, updatedById: _updated, peopleRefreshedById: _refreshed, computedById: _computed, finalisedById: _finalised, payslipsReleasedById: _released, payslipTemplate: _template, _count, ...item }) => ({ ...item, people: _count.employees })),
+  }
 }
 
 export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
@@ -62,7 +66,7 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
   if (!run) throw new ORPCError('NOT_FOUND', { message: 'No payroll run found' })
   const showSalary = peopleService.seesSalaries(viewer, run.company.id)
   const draft = run.status === 'DRAFT'
-  const [counts, inputs, lock, pay, approval, openWarnings] = await Promise.all([
+  const [counts, inputs, lock, pay, approval, openWarnings, payslips] = await Promise.all([
     peopleRepository.countPeople(run.id),
     inputsService.countInputs(run.id),
     daysService.lockStateOf(run),
@@ -72,9 +76,11 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
     run.approvalRequestId ? approvalsService.statusOf([run.approvalRequestId]).then((m) => m.get(run.approvalRequestId!) ?? null) : null,
     // stage 5: warnings not acknowledged yet - worked out while it is a draft only
     draft && run.computedAt ? checksService.openWarningsCount({ id: run.id, companyId: run.company.id, payMonth: run.payMonth, attendanceFrom: run.attendanceFrom, attendanceTo: run.attendanceTo }) : 0,
+    // stage 6: where its payslips stand (a final run)
+    payslipsService.statusOf(viewer, run),
   ])
-  const person = await employeesService.lookupPeople([run.createdById, run.updatedById, run.peopleRefreshedById, run.computedById, run.finalisedById, approval?.requestedById])
-  const { createdById, updatedById, peopleRefreshedById, computedById, finalisedById, ...safe } = run
+  const person = await employeesService.lookupPeople([run.createdById, run.updatedById, run.peopleRefreshedById, run.computedById, run.finalisedById, run.payslipsReleasedById, approval?.requestedById])
+  const { createdById, updatedById, peopleRefreshedById, computedById, finalisedById, payslipsReleasedById, payslipsReleasedAt: _releasedAt, payslipTemplate: _template, ...safe } = run
   const period = peopleService.payPeriodOf(run)
   const canChange = draft && levelOver(viewer, 'PAYROLL', companySlice(run.company.id)) === 'WRITE'
   // what stops it from being sent (stage 5): in words, for the page
@@ -122,7 +128,15 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
     openWarnings,
     blockers,
     canSend: canChange && blockers.length === 0,
+    // stage 6: the payslips of a final run - released when, by whom, with which template; how many are made; the
+    // templates to release them with (for someone who may) - null until the run is final
+    payslips: payslips ? { ...payslips, releasedBy: person(payslipsReleasedById) } : null,
   }
+}
+
+// A company transfer gives the employee a new code (job changes): their payslips move to its folder with their other files
+export function movePayslipsToCode(employeeId: number, employeeCode: string, actorId: ActorId, tx: DbClient) {
+  return payslipsService.moveToCode(employeeId, employeeCode, actorId, tx)
 }
 
 // "Send for approval" (stage 5): in one transaction, while the run is a draft - by someone with Payroll Edit over the whole

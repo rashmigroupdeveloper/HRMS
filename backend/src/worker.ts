@@ -8,12 +8,12 @@ import { candidatesJobs } from '#modules/candidates'
 import { jobChangesJobs } from '#modules/job-changes'
 import { joiningTasksJobs } from '#modules/joining-tasks'
 import { leaveJobs } from '#modules/leave'
-// (no jobs of its own: loaded so its approval handler is registered - a pay run's approval time limits run here)
-import '#modules/payroll'
+// (loading it also registers its approval handler - a pay run's approval time limits run here)
+import { payrollJobs } from '#modules/payroll'
 
 // The background worker (phase 5, 2026-11-16): runs every module's scheduled jobs (<module>.jobs.ts). A process of its
 // own next to the API (npm run worker); a second worker is harmless - each job runs once at a time.
-const jobs = [...mailJobs, ...accountsJobs, ...candidatesJobs, ...joiningTasksJobs, ...attendanceJobs, ...leaveJobs, ...approvalsJobs, ...jobChangesJobs]
+const jobs = [...mailJobs, ...accountsJobs, ...candidatesJobs, ...joiningTasksJobs, ...attendanceJobs, ...leaveJobs, ...approvalsJobs, ...jobChangesJobs, ...payrollJobs]
 const stop = await startScheduler(jobs)
 console.log(`Worker ready - ${jobs.length} jobs: ${jobs.map((j) => j.name).join(', ')}`)
 

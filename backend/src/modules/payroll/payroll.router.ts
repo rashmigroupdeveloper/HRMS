@@ -7,6 +7,8 @@ import { checksRouter } from './checks/checks.router.js'
 import { inputsRouter } from './inputs/inputs.router.js'
 import { statutoryRouter } from './statutory/statutory.router.js'
 import { taxOpeningsRouter } from './tax-openings/tax-openings.router.js'
+import { payslipsRouter } from './payslips/payslips.router.js'
+import { registerRouter } from './register/register.router.js'
 
 export const payrollRouter = {
   setup: accessProcedure('PAYROLL', 'READ').input(setupInput).handler(({ context, input }) => payrollService.getSetup(context.user, input)),
@@ -25,4 +27,7 @@ export const payrollRouter = {
   taxOpenings: taxOpeningsRouter,
   // stage 5: the warnings to acknowledge before sending
   checks: checksRouter,
+  // stage 6: payslips (released on a final run; one's own in self-service) and the salary register
+  payslips: payslipsRouter,
+  register: registerRouter,
 }

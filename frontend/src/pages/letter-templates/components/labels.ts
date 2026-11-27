@@ -22,6 +22,7 @@ export const KIND: Record<LetterKind, string> = {
   EXPERIENCE_LETTER: 'Experience letter',
   RELIEVING_LETTER: 'Relieving letter',
   SALARY_CERTIFICATE: 'Salary certificate',
+  PAYSLIP: 'Payslip',
 }
 // What each letter is for (the templates page), in this order
 export const KIND_HINT: Record<LetterKind, string> = {
@@ -32,6 +33,7 @@ export const KIND_HINT: Record<LetterKind, string> = {
   EXPERIENCE_LETTER: 'Issued by HR when the employee leaves.',
   RELIEVING_LETTER: 'Issued by HR on the last working day.',
   SALARY_CERTIFICATE: 'Issued by HR on request - states the salary in effect (e.g. for a bank loan).',
+  PAYSLIP: "Made for everyone in an approved pay run when HR releases its payslips. No letterhead or signature needed - a header image is printed if there is one.",
 }
 export const KIND_ORDER = Object.keys(KIND_HINT) as LetterKind[]
 export const isLetterKind = (value: string | null): value is LetterKind => value !== null && value in KIND

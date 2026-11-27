@@ -6,7 +6,7 @@ import { copyFile, deleteFile, isOldKey, namedOwner, readStoredFile, saveFile, t
 import { employeesService } from '#modules/employees'
 import { cleanFileName, detectFileType } from '#shared/utils/file-type'
 import { today } from '#shared/utils/dates'
-import { sumMoney } from '#shared/utils/money'
+import { rupeesInWords, sumMoney } from '#shared/utils/money'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as letterTemplatesRepository from './letter-templates.repository.js'
@@ -64,6 +64,41 @@ const SALARY_PLACEHOLDERS: Placeholder[] = [
 const SIGNATURE_BLOCK = { name: 'signature', label: "Stamp + signature of the company's signatory" }
 const CTC_BLOCK = { name: 'ctc_table', label: 'Salary breakup table (Annexure-I)' }
 
+// A payslip (payroll stage 6, approved by the user 2026-11-27): HR writes the title, any text and the footer note and
+// places these fields and blocks; the blocks are drawn from the pay run (payslipBlocks, below)
+const PAYSLIP_PLACEHOLDERS: Placeholder[] = [
+  { name: 'pay_month', label: 'Pay month, e.g. "Jun 2026"' },
+  { name: 'pay_period', label: 'Pay period, e.g. "26 May 2026 to 25 Jun 2026"' },
+  { name: 'company', label: 'Company name' },
+  { name: 'company_address', label: 'Company address (its line is left out when there is none)', optional: true },
+  { name: 'name', label: 'Full name' },
+  { name: 'employee_code', label: 'Employee code' },
+  { name: 'designation', label: 'Designation (its line is left out when there is none)', optional: true },
+  { name: 'department', label: 'Department' },
+  { name: 'location', label: 'Work location' },
+  { name: 'joining_date', label: 'Date of joining' },
+  { name: 'leaving_date', label: 'Date of leaving (its line is left out when there is none)', optional: true },
+  { name: 'period_days', label: 'Days in the pay period' },
+  { name: 'paid_days', label: 'Days paid' },
+  { name: 'unpaid_days', label: 'Unpaid days (LOP)' },
+  { name: 'bank_name', label: 'Bank of the salary account (its line is left out when there is none)', optional: true },
+  { name: 'bank_account', label: 'Salary account number - in full (its line is left out when there is none)', optional: true },
+  { name: 'pan', label: 'PAN - in full (its line is left out when there is none)', optional: true },
+  { name: 'uan', label: 'UAN (its line is left out when there is none)', optional: true },
+  { name: 'pf_number', label: 'PF number (its line is left out when there is none)', optional: true },
+  { name: 'esic_number', label: 'ESIC IP number (its line is left out when there is none)', optional: true },
+  { name: 'total_earnings', label: 'Total earnings' },
+  { name: 'total_deductions', label: 'Total deductions' },
+  { name: 'net_pay', label: 'Net pay' },
+  { name: 'net_pay_words', label: 'Net pay in words ("Rupees ... Only")' },
+  { name: 'print_date', label: 'Date the payslip was made' },
+]
+const PAYSLIP_BLOCKS = [
+  { name: 'employee_details', label: "The employee's details (two columns)" },
+  { name: 'pay_table', label: 'Earnings and deductions' },
+  { name: 'leave_table', label: 'Leave: opening, earned, taken, closing' },
+]
+
 export const PLACEHOLDERS: Record<LetterKind, Placeholder[]> = {
   OFFER_LETTER: [
     { name: 'offer_number', label: 'Offer number' },
@@ -118,6 +153,7 @@ export const PLACEHOLDERS: Record<LetterKind, Placeholder[]> = {
   RELIEVING_LETTER: [...EMPLOYEE_PLACEHOLDERS, { name: 'last_working_day', label: 'Last working day (relieved at the close of it)' }],
   // the salary in effect on the letter date (old HRMS, 2026-11-16)
   SALARY_CERTIFICATE: [...EMPLOYEE_PLACEHOLDERS, ...SALARY_PLACEHOLDERS],
+  PAYSLIP: PAYSLIP_PLACEHOLDERS,
 }
 
 // The blocks a letter can show (whole-width parts filled in when the letter is written)
@@ -129,10 +165,15 @@ export const BLOCKS: Record<LetterKind, { name: string; label: string }[]> = {
   EXPERIENCE_LETTER: [SIGNATURE_BLOCK],
   RELIEVING_LETTER: [SIGNATURE_BLOCK],
   SALARY_CERTIFICATE: [CTC_BLOCK, SIGNATURE_BLOCK],
+  // "system generated - no signature" (the company's payslip)
+  PAYSLIP: PAYSLIP_BLOCKS,
 }
 
+// A numbered letter (a payslip has no number)
+export type NumberedLetterKind = Exclude<LetterKind, 'PAYSLIP'>
+
 // The code of each kind in its letter numbers: RML/OFFER/2026/0001, RML/APPT/2026/0001...
-const NUMBER_CODE: Record<LetterKind, string> = {
+const NUMBER_CODE: Record<NumberedLetterKind, string> = {
   OFFER_LETTER: 'OFFER',
   LETTER_OF_INTENT: 'LOI',
   APPOINTMENT_LETTER: 'APPT',
@@ -144,7 +185,7 @@ const NUMBER_CODE: Record<LetterKind, string> = {
 
 // The next number of a letter of this kind for the company: <e-code prefix>/<kind code>/<year>/<running number of the
 // company, kind and year> - one series per kind (2026-11-16). Call it in the transaction that saves the letter.
-export async function nextLetterNumber(company: { id: number; ecodePrefix: string }, kind: LetterKind, actorId: ActorId, db?: DbClient) {
+export async function nextLetterNumber(company: { id: number; ecodePrefix: string }, kind: NumberedLetterKind, actorId: ActorId, db?: DbClient) {
   // India's year (a letter issued on 1 January after midnight IST is the new year's)
   const year = today().getUTCFullYear()
   const next = await letterTemplatesRepository.nextNumber(company.id, kind, year, actorId, db)
@@ -288,12 +329,12 @@ const IMAGE_COLUMN = { HEADER: 'headerImageId', FOOTER: 'footerImageId', SIGNATU
 >
 
 // For the API: the storage keys stay inside - whether each letterhead image is there, the image ids (to show them -
-// `letterTemplates.image`), and `ready` = all three (a letter can be sent from it)
-function withImages<T extends TemplateImages>(template: T) {
+// `letterTemplates.image`), and `ready` = all three (a letter can be sent from it) - a payslip needs none
+function withImages<T extends TemplateImages & { kind: LetterKind }>(template: T) {
   const { headerImageId, footerImageId, signatureImageId, headerImage, footerImage, signatureImage, ...row } = template
   const images = { header: headerImageId !== null, footer: footerImageId !== null, signature: signatureImageId !== null }
   const imageIds = { header: headerImageId, footer: footerImageId, signature: signatureImageId }
-  return { ...row, images, imageIds, ready: images.header && images.footer && images.signature }
+  return { ...row, images, imageIds, ready: template.kind === 'PAYSLIP' || (images.header && images.footer && images.signature) }
 }
 
 async function getTemplateRow(id: number) {
@@ -460,6 +501,11 @@ export async function listTemplatesToSend(kind: LetterKind, joiningType: Joining
   return { templates, suggestedId: suggested?.id ?? null }
 }
 
+// The active payslip templates to release a pay run's payslips with (payroll stage 6) - a payslip needs no letterhead
+export async function listPayslipTemplates() {
+  return (await letterTemplatesRepository.listActive('PAYSLIP')).map(({ id, name }) => ({ id, name }))
+}
+
 // --- Writing a letter ---
 
 // The letterhead images (a missing one is undefined)
@@ -562,6 +608,221 @@ export async function writeLetter(options: {
   return render({ ...options, body: documentOf(template.body), images: letterheadOf(template), requireLetterhead: true })
 }
 
+// --- Payslips (payroll stage 6, approved by the user 2026-11-27) ---
+// Payroll gathers what one person's payslip shows; the template's text and fields and these blocks turn it into the PDF.
+// The bank account number and PAN come in full (the user's choice, 2026-11-27).
+
+export type PayslipData = {
+  company: string
+  companyAddress: string | null
+  // the month the salary is for (its 1st) and the pay period (the attendance cycle the run pays)
+  payMonth: Date
+  payFrom: Date
+  payTo: Date
+  name: string
+  employeeCode: string
+  designation: string | null
+  department: string
+  location: string
+  joiningDate: Date
+  leavingDate: Date | null
+  periodDays: number
+  paidDays: number
+  unpaidDays: number
+  bankName: string | null
+  bankAccount: string | null
+  pan: string | null
+  uan: string | null
+  pfNumber: string | null
+  esicNumber: string | null
+  // what was worked out, in the payslip's order: earnings with the monthly amount of the salary at the period's end (null
+  // for a typed input), and deductions
+  earnings: { name: string; monthly: number | null; amount: number }[]
+  deductions: { name: string; amount: number }[]
+  // paid leave in the period (leave without pay is the unpaid days)
+  leave: { name: string; opening: number; earned: number; taken: number; other: number; closing: number }[]
+  madeOn: Date
+}
+
+const MONTH = new Intl.DateTimeFormat('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+const rupees = (amount: number) => money(amount, 'INR')
+// 30 -> "30", 29.5 -> "29.5"
+const dayCount = (days: number) => String(Math.round(days * 100) / 100)
+
+function payslipTotals(p: PayslipData) {
+  const earned = sumMoney(p.earnings.map((e) => e.amount))
+  const deducted = sumMoney(p.deductions.map((d) => d.amount))
+  return { earned, deducted, net: sumMoney([earned, -deducted]) }
+}
+
+function payslipValues(p: PayslipData): LetterValues {
+  const { earned, deducted, net } = payslipTotals(p)
+  return {
+    pay_month: MONTH.format(p.payMonth),
+    pay_period: `${letterDate(p.payFrom)} to ${letterDate(p.payTo)}`,
+    company: p.company,
+    company_address: p.companyAddress,
+    name: p.name,
+    employee_code: p.employeeCode,
+    designation: p.designation,
+    department: p.department,
+    location: p.location,
+    joining_date: letterDate(p.joiningDate),
+    leaving_date: letterDate(p.leavingDate),
+    period_days: dayCount(p.periodDays),
+    paid_days: dayCount(p.paidDays),
+    unpaid_days: dayCount(p.unpaidDays),
+    bank_name: p.bankName,
+    bank_account: p.bankAccount,
+    pan: p.pan,
+    uan: p.uan,
+    pf_number: p.pfNumber,
+    esic_number: p.esicNumber,
+    total_earnings: rupees(earned),
+    total_deductions: rupees(deducted),
+    net_pay: rupees(net),
+    net_pay_words: rupeesInWords(net),
+    print_date: letterDate(p.madeOn),
+  }
+}
+
+// The three blocks of a payslip
+export function payslipBlocks(p: PayslipData): Record<'employee_details' | 'pay_table' | 'leave_table', PdfTable> {
+  const { earned, deducted } = payslipTotals(p)
+  const dash = (value: string | null | undefined) => value || '-'
+  const left: [string, string][] = [
+    ['Name', p.name],
+    ['Employee code', p.employeeCode],
+    ['Designation', dash(p.designation)],
+    ['Department', p.department],
+    ['Location', p.location],
+    ['Joining date', dash(letterDate(p.joiningDate))],
+    ['Days paid', `${dayCount(p.paidDays)} of ${dayCount(p.periodDays)}`],
+    ['Unpaid days (LOP)', dayCount(p.unpaidDays)],
+  ]
+  const right: [string, string][] = [
+    ['Pay period', `${letterDate(p.payFrom)} to ${letterDate(p.payTo)}`],
+    ['Bank', dash(p.bankName)],
+    ['Account number', dash(p.bankAccount)],
+    ['PAN', dash(p.pan)],
+    ['UAN', dash(p.uan)],
+    ['PF number', dash(p.pfNumber)],
+    ['ESIC number', dash(p.esicNumber)],
+    ['Leaving date', dash(letterDate(p.leavingDate))],
+  ]
+  const head = (text: string, align: PdfCell['align'] = 'left'): PdfCell => ({ text, bold: true, shaded: true, align })
+  const rows = Math.max(p.earnings.length, p.deductions.length)
+  const monthlyTotal = sumMoney(p.earnings.map((e) => e.monthly ?? 0))
+  return {
+    employee_details: {
+      kind: 'table',
+      widths: [92, '*', 92, '*'],
+      rows: left.map(([label, value], i) => [{ text: label, bold: true }, { text: value }, { text: right[i]![0], bold: true }, { text: right[i]![1] }]),
+    },
+    pay_table: {
+      kind: 'table',
+      widths: ['*', 64, 64, '*', 64],
+      rows: [
+        [head('Earnings'), head('Monthly', 'right'), head('Earned', 'right'), head('Deductions'), head('Amount', 'right')],
+        ...Array.from({ length: rows }, (_, i): PdfCell[] => {
+          const e = p.earnings[i]
+          const d = p.deductions[i]
+          return [
+            { text: e?.name ?? '' },
+            { text: e?.monthly !== undefined && e.monthly !== null ? rupees(e.monthly) : '', align: 'right' },
+            { text: e ? rupees(e.amount) : '', align: 'right' },
+            { text: d?.name ?? '' },
+            { text: d ? rupees(d.amount) : '', align: 'right' },
+          ]
+        }),
+        [head('Total earnings'), head(rupees(monthlyTotal), 'right'), head(rupees(earned), 'right'), head('Total deductions'), head(rupees(deducted), 'right')],
+      ],
+    },
+    leave_table: {
+      kind: 'table',
+      widths: ['*', 56, 56, 56, 92, 56],
+      rows: [
+        [head('Leave'), head('Opening', 'right'), head('Earned', 'right'), head('Taken', 'right'), head('Lapsed / adjusted', 'right'), head('Closing', 'right')],
+        ...(p.leave.length
+          ? p.leave.map((l): PdfCell[] => [
+              { text: l.name },
+              ...[l.opening, l.earned, l.taken, l.other, l.closing].map((n): PdfCell => ({ text: dayCount(n), align: 'right' })),
+            ])
+          : [[{ text: 'No leave balances', colSpan: 6, align: 'center' as const }]]),
+      ],
+    },
+  }
+}
+
+// One person's payslip as a PDF, from the payslip template `templateId` (its text and fields, and its header / footer
+// image when it has them - none is needed). BAD_REQUEST: not a payslip template, or retired - unless `released`: the
+// payslips of a run already released with it are still made after it is retired.
+export async function writePayslip(templateId: number, payslip: PayslipData, released = false) {
+  const template = await payslipTemplateRow(templateId, released)
+  return render({
+    kind: 'PAYSLIP',
+    body: documentOf(template.body),
+    values: payslipValues(payslip),
+    blocks: payslipBlocks(payslip),
+    images: letterheadOf(template),
+    requireLetterhead: false,
+    title: `Payslip ${MONTH.format(payslip.payMonth)} - ${payslip.employeeCode}`,
+  })
+}
+
+async function payslipTemplateRow(templateId: number, evenIfRetired = false) {
+  const template = await getTemplateRow(templateId)
+  if ((!template.isActive && !evenIfRetired) || template.kind !== 'PAYSLIP') badRequest(`"${template.name}" cannot be used - pick an active payslip template`)
+  return template
+}
+
+// The template is an active payslip template, or BAD_REQUEST (payroll checks it before releasing)
+export async function assertPayslipTemplate(templateId: number) {
+  const { id, name } = await payslipTemplateRow(templateId)
+  return { id, name }
+}
+
+// Made-up values for the editor and the preview
+const EXAMPLE_PAYSLIP: PayslipData = {
+  company: 'Rashmi Metaliks Limited',
+  companyAddress: '12 Park Street, Kolkata, West Bengal - 700016',
+  payMonth: new Date(Date.UTC(2026, 10, 1)),
+  payFrom: new Date(Date.UTC(2026, 9, 26)),
+  payTo: new Date(Date.UTC(2026, 10, 25)),
+  name: 'Rahul Kumar Sharma',
+  employeeCode: 'RML035384',
+  designation: 'Junior Graduate Engineer',
+  department: 'Production',
+  location: 'Kharagpur',
+  joiningDate: new Date(Date.UTC(2025, 11, 1)),
+  leavingDate: null,
+  periodDays: 31,
+  paidDays: 30,
+  unpaidDays: 1,
+  bankName: 'Example Bank',
+  bankAccount: '123456789012',
+  pan: 'ABCDE1234F',
+  uan: '100000000001',
+  pfNumber: null,
+  esicNumber: null,
+  earnings: [
+    { name: 'Basic', monthly: 21000, amount: 20323 },
+    { name: 'HRA', monthly: 10500, amount: 10161 },
+    { name: 'Special Allowance', monthly: 32970, amount: 31906 },
+    { name: 'Incentive', monthly: null, amount: 2500 },
+  ],
+  deductions: [
+    { name: 'Employee PF', amount: 1800 },
+    { name: 'Professional Tax', amount: 200 },
+    { name: 'Canteen', amount: 650 },
+  ],
+  leave: [
+    { name: 'Earned Leave', opening: 6, earned: 1.25, taken: 0, other: 0, closing: 7.25 },
+    { name: 'Casual Leave', opening: 4, earned: 1, taken: 1, other: 0, closing: 4 },
+  ],
+  madeOn: new Date(Date.UTC(2026, 11, 1)),
+}
+
 function EXAMPLE_EMPLOYEE(letterNumber: string): LetterValues {
   return {
     letter_number: letterNumber,
@@ -643,6 +904,7 @@ const EXAMPLE_VALUES: Record<LetterKind, LetterValues> = {
   EXPERIENCE_LETTER: { ...EXAMPLE_EMPLOYEE('RML/EXP/2029/0001'), last_working_day: '31 Mar 2029' },
   RELIEVING_LETTER: { ...EXAMPLE_EMPLOYEE('RML/REL/2029/0001'), last_working_day: '31 Mar 2029' },
   SALARY_CERTIFICATE: { ...EXAMPLE_EMPLOYEE('RML/SAL/2027/0001'), ...EXAMPLE_SALARY },
+  PAYSLIP: payslipValues(EXAMPLE_PAYSLIP),
 }
 
 const EXAMPLE_LINES: CtcTableInput['lines'] = [
@@ -664,6 +926,7 @@ const EXAMPLE_TABLES: Record<LetterKind, Partial<Record<string, PdfTable>>> = {
   EXPERIENCE_LETTER: {},
   RELIEVING_LETTER: {},
   SALARY_CERTIFICATE: { ctc_table: EXAMPLE_CTC() },
+  PAYSLIP: payslipBlocks(EXAMPLE_PAYSLIP),
 }
 
 // The (possibly unsaved) wording filled with example values, as a PDF

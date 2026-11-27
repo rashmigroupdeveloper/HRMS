@@ -14,7 +14,11 @@ import type { createRoleInput, updateRoleInput } from './roles.schema.js'
 
 // What each area means - shown on the "Roles & access" page next to the View / Edit choice.
 export const AREA_INFO: Record<AccessArea, { label: string; read: string; write: string }> = {
-  PAYROLL: { label: 'Payroll', read: 'View draft payroll runs for companies covered in full', write: 'Also create regular monthly draft runs for companies covered in full; calculation and payment follow later' },
+  PAYROLL: {
+    label: 'Payroll',
+    read: 'See the pay runs of companies covered in full - people, days, inputs, warnings and approval; with Employee · Salary View over the whole company also the amounts, the salary register and payslips (payslips show the full bank account number and PAN)',
+    write: 'Also create runs, enter inputs, work out pay, acknowledge warnings, send runs for approval and release the payslips of an approved run (companies covered in full); and change the statutory rates and settings (all companies)',
+  },
   ONBOARDING: {
     label: 'Onboarding',
     read: 'See candidates, offers, joining forms, documents, background checks and medical results',
@@ -50,8 +54,8 @@ export const AREA_INFO: Record<AccessArea, { label: string; read: string; write:
   },
   LETTER_TEMPLATES: {
     label: 'Letter templates',
-    read: 'See the wording of the letters (offer letter) - creating and sending letters needs no access of its own',
-    write: 'Also change the wording of the letters. Letters already sent never change.',
+    read: 'See the wording of the letters (offer letter, payslip) - creating and sending letters needs no access of its own',
+    write: 'Also change the wording of the letters and the payslip layout. Letters and payslips already made never change.',
   },
   MEDICAL: {
     label: 'Employee · Medical',
@@ -60,7 +64,7 @@ export const AREA_INFO: Record<AccessArea, { label: string; read: string; write:
   },
   SALARY: {
     label: 'Employee · Salary',
-    read: "The Salary tab: employees' salaries - the fixed CTC, performance pay, monthly breakup and history (everyone always sees their own)",
+    read: "The Salary tab: employees' salaries - the fixed CTC, performance pay, monthly breakup and history (everyone always sees their own). With Payroll View over a whole company: the amounts in its pay runs, the salary register and payslips",
     write: 'Nothing more for now - salary changes are asked for with "Request salary changes" and go for approval',
   },
   ATTENDANCE: {

@@ -2,7 +2,7 @@ import { reportFile, reportSheet } from '#core/excel/report'
 import { writeReport } from '#core/excel/report'
 import { hasAccess } from '#core/auth/access'
 import { type DataScope, hasLevelAt, type Placement, scopeAllows, scopeOf } from '#core/auth/scope'
-import { encrypt, fingerprint, last4 } from '#core/crypto/encryption'
+import { decrypt, encrypt, fingerprint, last4 } from '#core/crypto/encryption'
 import { prisma, SYSTEM_ACTOR, type AccessArea, type AccessLevel, type ActorId, type EmployeeStatus, type DbClient, type EmploymentType, type IdentityDocumentType, type MedicalResult, type Prisma } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { companiesService, costCentersService, departmentsService, designationsService, gradesService, plantsService, positionsService, workLocationsService } from '#modules/organization'
@@ -994,6 +994,26 @@ export function listPayrollFacts(employeeIds: number[], to: Date, db?: DbClient)
   return employeesRepository.listPayrollFacts(employeeIds, to, db)
 }
 export type PayrollFacts = Awaited<ReturnType<typeof listPayrollFacts>>[number]
+
+// What each person's payslip prints (payroll stage 6, approved by the user 2026-11-27), with the salary account number and
+// the PAN decrypted IN FULL - the user chose full numbers on the payslip. No viewer check: the payroll service found the
+// run with Payroll and Salary View covering the whole company (or makes the payslips as System after the release).
+export async function listPayslipFacts(employeeIds: number[], to: Date, db?: DbClient) {
+  const rows = await employeesRepository.listPayslipFacts(employeeIds, to, db)
+  return rows.map((row) => ({
+    id: row.id,
+    name: fullName(row),
+    dateOfJoining: row.dateOfJoining,
+    dateOfLeaving: row.dateOfLeaving,
+    designation: row.jobRecords[0]?.designation?.name ?? null,
+    uan: row.statutory?.uan ?? null,
+    pfNumber: row.statutory?.pfNumber ?? null,
+    esicNumber: row.statutory?.esicIpNumber ?? null,
+    bankName: row.bankAccounts[0]?.bankName ?? null,
+    bankAccount: row.bankAccounts[0] ? decrypt(row.bankAccounts[0].accountNumberEncrypted) : null,
+    pan: row.identityDocuments[0] ? decrypt(row.identityDocuments[0].numberEncrypted) : null,
+  }))
+}
 
 // The employee with this code (or a code they had before a company transfer) - code, name and where they are - with no
 // viewer check, or null: payroll checks Payroll access covering the employee's company itself (opening tax figures)

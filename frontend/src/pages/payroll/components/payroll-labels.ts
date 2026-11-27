@@ -16,6 +16,11 @@ export const runState = (r: { status: keyof typeof RUN_STATUS; computedAt: Date 
 export const SEND_LABEL = 'Send for approval'
 export const SEND_NOTE = 'The pay is worked out once more from the records as they are now, then sent along the pay-run approval chain. Nothing in the run can change while it waits; you never approve a run you send.'
 export const FINAL_NOTE = 'Final - nothing in this run changes any more. A correction comes as arrears in a later run.'
+// stage 6: the salary register and payslips
+export const REGISTER_LABEL = 'Salary register'
+export const REGISTER_DRAFT_HINT = 'Excel - marked DRAFT until the run is final'
+export const RELEASE_LABEL = 'Release payslips'
+export const RELEASE_NOTE = 'Each person’s payslip is made with this template within a few minutes, kept, and e-mailed to them as a link to Employee self-service (never attached - it shows the full bank account number and PAN). Released payslips never change. To check one first, open a person and choose Preview payslip.'
 // The warnings (backend PayWarning - change both together): what it is, and why it matters
 export const WARNING = {
   NET_ZERO: ['Net pay is zero', 'Nothing to pay this month'],

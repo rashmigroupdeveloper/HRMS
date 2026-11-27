@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 321**
+**Total APIs: 327**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -408,6 +408,12 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 319 | `payroll.send` | Payroll: Edit covering whole company | Work out a draft run once more and send it for approval |
 | 320 | `payroll.checks.list` | Payroll: View covering whole company | A run's warnings and their acknowledgements |
 | 321 | `payroll.checks.acknowledge` | Payroll: Edit covering whole company | Acknowledge warnings with a comment before sending |
+| 322 | `payroll.register.export` | Payroll + Salary: View covering whole company | A run's salary register as Excel (marked DRAFT until final) |
+| 323 | `payroll.payslips.preview` | Payroll + Salary: View covering whole company | A person's payslip from a final run with a payslip template (PDF, not stored) |
+| 324 | `payroll.payslips.release` | Payroll: Edit covering whole company | Release a final run's payslips with a payslip template |
+| 325 | `payroll.payslips.download` | Payroll + Salary: View covering whole company | A person's payslip as it was made (PDF) |
+| 326 | `payroll.payslips.mine` | Own record | One's own payslips, every released month |
+| 327 | `payroll.payslips.downloadMine` | Own record | One of one's own payslips (PDF) |
 
 ---
 
@@ -2764,8 +2770,8 @@ the text it starts on the next page. Layout: `backend/src/core/pdf/letter-pdf.ts
   signature }, ready, isActive, updatedAt, updatedBy, placeholders: [{ name, label, optional? }], blocks: [{ name,
   label, example }] }]` (without the letter), by kind and name. `images` says which letterhead images the template has
   (booleans), `imageIds` which ones (`null` = none; show one with `letterTemplates.image`); `ready` = all three (offers
-  can be sent with it).
-  `example` is, for a table block (`ctc_table`), the example table the preview PDF prints -
+  can be sent with it) - always true for a `PAYSLIP` template, which needs no letterhead (payroll stage 6, 2026-11-27).
+  `example` is, for a table block (`ctc_table`; a payslip's `employee_details`, `pay_table`, `leave_table`), the example table the preview PDF prints -
   `{ kind: 'table', widths: (points | '*')[], rows: [[{ text, bold?, align?, colSpan?, shaded? }]] }` - so the editor
   can show it on the page; `null` for other blocks.
 - **Errors:** `403 FORBIDDEN`.
@@ -2776,7 +2782,10 @@ the text it starts on the next page. Layout: `backend/src/core/pdf/letter-pdf.ts
 - **Scope:** not limited by data access.
 - **Input:** none
 - **Returns:** `[{ kind, placeholders: [{ name, label, optional? }], blocks: [{ name, label, example }] }]` - every kind
-  of letter with the fields and blocks its templates may use (as in `list`).
+  of letter with the fields and blocks its templates may use (as in `list`). `PAYSLIP` (payroll stage 6, 2026-11-27):
+  the pay month and period, company and address, the employee's details, days, bank account and PAN in full, UAN, PF
+  and ESIC numbers, totals, net pay in figures and words; blocks `employee_details`, `pay_table`, `leave_table` - no
+  signature block.
 - **What it does:** what the editor offers for a new template of a kind (`/letter-templates/new?kind=...`).
 - **Errors:** `403 FORBIDDEN`.
 
@@ -4442,6 +4451,11 @@ and can include two events per employee. No existing API provides that contract.
   sentAt, sentBy, step { stepNo, of, who, late } | null } | null` (its approval request), `finalisedAt`, `finalisedBy`,
   `openWarnings` (not acknowledged - a draft only), `blockers` (what stops sending, in words), `canSend`. `canChange` only
   for a draft; `daysOutdated` only for a draft (a sent or final run keeps what it took).
+  Stage 6 (2026-11-27): `payslips { releasedAt, releasedBy, template { id, name } | null, made, total, canRelease,
+  templates: [{ id, name }] } | null` - null until the run is FINALISED; `made` of `total` (people with pay worked out)
+  payslips made by the job; `canRelease` = not released yet and Payroll Edit over the whole company; `templates` (the
+  active payslip templates, to release or preview with) until the payslips are released, for a viewer who may release
+  them or sees the salaries (Salary View over the whole company - e.g. an approver checking a payslip first).
 - **Does:** read-only run header detail for `/manage/payroll/:id`.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
 
@@ -4828,6 +4842,80 @@ changes); rejected, withdrawn or expired = `DRAFT` again.
   comment); each must apply now (otherwise BAD_REQUEST). Recorded in the change history; a person's acknowledgements are
   removed when their inputs change or a refresh drops them.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT not a draft.
+
+## Payroll stage 6 — salary register and payslips (2026-11-27)
+
+Approved by the user 2026-11-27: payslip templates on Letter templates (kind `PAYSLIP`); released on a FINALISED run with a
+template; made and stored by the background job `payroll.makePayslips` (every minute) as
+`employees/<code>/PAYSLIP-<yyyy-mm>/...`, each employee e-mailed a link to self-service (never the PDF: it shows the full
+bank account number and PAN, the user's choice); made payslips never change and move with the employee's files on a
+company transfer. The register can be downloaded before the run is final, marked DRAFT.
+
+### `payroll.register.export`
+- **HTTP:** `POST /api/rpc/payroll/register/export` · **Code:** `backend/src/modules/payroll/register/`
+- **Access:** Payroll: View, plus Salary View covering the whole company (checked in the service).
+- **Scope:** run found with whole-company Payroll scope (outside = NOT_FOUND); the amounts need Salary View covering the
+  whole company (FORBIDDEN otherwise - a register without its amounts is not given).
+- **Input:** `{ runId: positive int }`; strict.
+- **Returns:** an Excel file `salary-register-<company>-<yyyy-mm>[-DRAFT].xlsx`: sheet "Register" (one row per person in
+  code order: code, name, department, plant, cost centre, work location, days paid / unpaid, each earning, earned gross,
+  each deduction, total deductions, net pay, each employer contribution, employer total, pay status), sheet "Totals" (each
+  component: kind, people, amount) and the review notes. A run not FINALISED: sheets "DRAFT Register" / "DRAFT Totals",
+  the title starts "DRAFT - not final" and the notes give when the pay was worked out.
+- **Does:** a held person's earnings are shown, their deductions and net are not (as on the run page).
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST the pay is not worked out yet.
+
+### `payroll.payslips.preview`
+- **HTTP:** `POST /api/rpc/payroll/payslips/preview` · **Code:** `backend/src/modules/payroll/payslips/`
+- **Access:** Payroll: View, plus Salary View covering the whole company (checked in the service).
+- **Scope:** run found with whole-company Payroll scope (NOT_FOUND outside); Salary View covering the whole company
+  (FORBIDDEN otherwise); the person must be in the run with pay worked out.
+- **Input:** `{ runId, personId (their id in the run), templateId }`, positive ints; strict.
+- **Returns:** a PDF file `Payslip <Mon yyyy> <code> (preview).pdf` - nothing is stored.
+- **Does:** the payslip as it would be made with this active payslip template, from the run's own copy and lines, the
+  days, the employee's records (designation on the period's last day, salary account and PAN in full, UAN, PF / ESIC
+  numbers) and their paid leave in the pay period (`leaveBalancesService.periodLeaveOf`).
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST not an active payslip template; CONFLICT the run is not
+  final.
+
+### `payroll.payslips.release`
+- **HTTP:** `POST /api/rpc/payroll/payslips/release` · **Code:** `backend/src/modules/payroll/payslips/`
+- **Access:** Payroll: Edit, plus `assertWholeSlice` for the run's company.
+- **Scope:** run found with whole-company Payroll scope (NOT_FOUND outside); Edit over the whole company (FORBIDDEN).
+- **Input:** `{ runId, templateId }`, positive ints; strict.
+- **Returns:** `{ released: true }`.
+- **Does:** once, on a FINALISED run: records the template and who released them when (`PayrollRun.payslipTemplateId /
+  payslipsReleasedAt / ById`). The job then makes, stores and e-mails each payslip within minutes (a template retired
+  after the release is still used for that run).
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST not an active payslip template; CONFLICT not final, or
+  already released.
+
+### `payroll.payslips.download`
+- **HTTP:** `POST /api/rpc/payroll/payslips/download` · **Code:** `backend/src/modules/payroll/payslips/`
+- **Access:** Payroll: View, plus Salary View covering the whole company (checked in the service).
+- **Scope:** run found with whole-company Payroll scope (NOT_FOUND outside); Salary View covering the whole company
+  (FORBIDDEN otherwise).
+- **Input:** `{ runId, personId }`, positive ints; strict.
+- **Returns:** the stored PDF `Payslip <Mon yyyy> <code>.pdf` exactly as it was made.
+- **Errors:** UNAUTHORIZED, FORBIDDEN; NOT_FOUND outside the scope, not released, or not made yet.
+
+### `payroll.payslips.mine`
+- **HTTP:** `POST /api/rpc/payroll/payslips/mine` · **Code:** `backend/src/modules/payroll/payslips/`
+- **Access:** any logged-in employee (`authedProcedure`), in either portal.
+- **Scope:** own record - only `context.user.employeeId`'s, never an id from the request.
+- **Input:** none.
+- **Returns:** `[{ personId, id (the payslip - null while it is being made), payMonth, payFrom, payTo, company { code,
+  name }, employeeCode (their code in that run), madeAt }]` - every run whose payslips are released and that paid them,
+  newest month first.
+- **Errors:** UNAUTHORIZED.
+
+### `payroll.payslips.downloadMine`
+- **HTTP:** `POST /api/rpc/payroll/payslips/downloadMine` · **Code:** `backend/src/modules/payroll/payslips/`
+- **Access:** any logged-in employee (`authedProcedure`), in either portal.
+- **Scope:** own record - the payslip must be the logged-in employee's, from a released run (anyone else's: NOT_FOUND).
+- **Input:** `{ id: positive int }` (the payslip); strict.
+- **Returns:** the stored PDF `Payslip <Mon yyyy> <code>.pdf`.
+- **Errors:** UNAUTHORIZED; NOT_FOUND.
 
 ## Attendance — "attendance not tracked" (2026-11-27)
 

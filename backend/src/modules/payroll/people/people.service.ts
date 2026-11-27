@@ -190,8 +190,9 @@ export function totalsOf(groups: HalfGroup[]) {
 }
 export type DayTotals = ReturnType<typeof totalsOf>
 
-// Every person's totals in a run (by the person's id in the run) - nobody has any until the days are worked out
-async function dayTotalsOf(runId: number, db?: DbClient) {
+// Every person's totals in a run (by the person's id in the run) - nobody has any until the days are worked out (also
+// the payslips and the register, stage 6)
+export async function dayTotalsOf(runId: number, db?: DbClient) {
   const byPerson = new Map<number, HalfGroup[]>()
   for (const group of await daysRepository.groupHalves(runId, db)) {
     byPerson.set(group.payrollRunEmployeeId, [...(byPerson.get(group.payrollRunEmployeeId) ?? []), group])

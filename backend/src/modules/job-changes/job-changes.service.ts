@@ -9,6 +9,7 @@ import type { CurrentUser } from '#core/rpc/procedures'
 import { approvalsService } from '#modules/approvals'
 import { employeesSchemas, employeesService, jobHistoryService } from '#modules/employees'
 import { employeeLettersService } from '#modules/employee-letters'
+import { payrollService } from '#modules/payroll'
 import { companiesService, salaryComponentsService } from '#modules/organization'
 import { today } from '#shared/utils/dates'
 import { ORPCError } from '@orpc/server'
@@ -279,6 +280,10 @@ export async function applyNow(id: number, actorId: ActorId) {
           const letters = await employeeLettersService.moveFilesToCode(record.employeeId, result.employeeCode, actorId, tx)
           files.oldKeys.push(...letters.oldKeys)
           files.newKeys.push(...letters.newKeys)
+          // (and the payslips - payroll stage 6)
+          const payslips = await payrollService.movePayslipsToCode(record.employeeId, result.employeeCode, actorId, tx)
+          files.oldKeys.push(...payslips.oldKeys)
+          files.newKeys.push(...payslips.newKeys)
         }
         before = result.before
       }

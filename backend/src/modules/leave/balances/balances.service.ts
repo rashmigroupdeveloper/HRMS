@@ -92,6 +92,58 @@ export async function balancesOf(people: Person[], year: number, types?: LeaveTy
   return result
 }
 
+// --- For a payslip (payroll stage 6, approved by the user 2026-11-27) ---
+
+export type PeriodLeave = {
+  code: string
+  name: string
+  // the balance the day before the period, and at its last day
+  opening: number
+  closing: number
+  // in the period: credited (the monthly credits and comp-off earned), taken (less days given back), and the rest
+  // together - lapsed, comp-off expired, HR's adjustments (opening + earned - taken + other = closing)
+  earned: number
+  taken: number
+  other: number
+}
+
+// Each person's leave in a pay period (both days included), per type with a balance - leave without pay has none (its days
+// are the payslip's unpaid days). A leave counts on its first day, as in the ledger. A type shows when it has a balance or
+// a change in the period. The people are the caller's (payroll: a run's people, its data access checked there).
+export async function periodLeaveOf(employeeIds: number[], from: Date, to: Date): Promise<Map<number, PeriodLeave[]>> {
+  const dayBefore = new Date(from.getTime() - 86_400_000)
+  const [types, before, atEnd, kinds] = await Promise.all([
+    typesService.allTypes(),
+    balancesRepository.sumBalances(employeeIds, dayBefore),
+    balancesRepository.sumBalances(employeeIds, to),
+    balancesRepository.sumByKind(employeeIds, from, to),
+  ])
+  const key = (employeeId: number, typeId: number) => `${employeeId}:${typeId}`
+  const openingOf = new Map(before.map((s) => [key(s.employeeId, s.leaveTypeId), s.days]))
+  const closingOf = new Map(atEnd.map((s) => [key(s.employeeId, s.leaveTypeId), s.days]))
+  const kindOf = new Map(kinds.map((s) => [`${key(s.employeeId, s.leaveTypeId)}:${s.kind}`, s.days]))
+  const result = new Map<number, PeriodLeave[]>()
+  for (const employeeId of employeeIds) {
+    const rows: PeriodLeave[] = []
+    for (const type of types.filter((t) => t.isPaid)) {
+      const k = key(employeeId, type.id)
+      const kind = (name: string) => kindOf.get(`${k}:${name}`) ?? 0
+      const row = {
+        code: type.code,
+        name: type.name,
+        opening: round2(openingOf.get(k) ?? 0),
+        closing: round2(closingOf.get(k) ?? 0),
+        earned: round2(kind('CREDIT') + kind('COMP_OFF')),
+        taken: round2(-(kind('TAKEN') + kind('RETURNED'))),
+        other: round2(kind('LAPSE') + kind('EXPIRED') + kind('ADJUSTMENT')),
+      }
+      if (row.opening || row.closing || row.earned || row.taken || row.other) rows.push(row)
+    }
+    result.set(employeeId, rows)
+  }
+  return result
+}
+
 // What one employee can still ask for of a type (the balance less what waits for approval) - null: no limit (unpaid)
 export async function availableOf(employeeId: number, type: Pick<LeaveType, 'id' | 'isPaid'>) {
   if (!type.isPaid) return null

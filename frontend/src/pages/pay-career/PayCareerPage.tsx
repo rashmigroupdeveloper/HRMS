@@ -6,12 +6,14 @@ import { useAccess } from '@/hooks/useAccess'
 import { usePortal } from '@/hooks/usePortal'
 import { cn } from '@/lib/utils'
 import { ChangeRegisterView } from './components/ChangeRegisterView'
+import { MyPayslipsView } from './components/MyPayslipsView'
 import { OverviewView } from './components/OverviewView'
 import { RaiseChangeView } from './components/RaiseChangeView'
 
 // Pay & career (/pay-career - the user, 2026-11-21; was "Job changes", then "Jobs & salary"): a sidebar of sections - more come later (payslips,
 // tax statements, loans, reimbursements...). The first is everyone's; every other one follows its access area:
 // - Overview: the employee's own job, salary, and the changes asked for them
+// - Payslips (?view=payslips, self-service only - payroll stage 6): one's own payslips once HR releases them
 // - Raise a change (?view=raise): "Request job changes" or "Request salary changes" - ask for others, follow what they asked
 // - Change register (?view=register): Employees: View - every change of the employees inside their data access
 // Two portals (2026-11-25): /ess/pay-career is the Overview alone (no role, so the others never show); /manage/pay-career
@@ -24,6 +26,8 @@ export function PayCareerPage() {
   const [params, setParams] = useSearchParams()
   const sections = [
     { key: 'mine', label: 'Overview', show: portal === 'ess' },
+    // one's own payslips (payroll stage 6) - self-service only
+    { key: 'payslips', label: 'Payslips', show: portal === 'ess' },
     { key: 'raise', label: 'Raise a change', show: can('JOB_CHANGE_REQUEST', 'WRITE') || can('SALARY_CHANGE_REQUEST', 'WRITE') },
     { key: 'register', label: 'Change register', show: can('EMPLOYEES') },
   ].filter((s) => s.show)
@@ -68,6 +72,8 @@ export function PayCareerPage() {
         <section className="min-w-0">
           {view === 'raise' ? (
             <RaiseChangeView />
+          ) : view === 'payslips' ? (
+            <MyPayslipsView />
           ) : view === 'register' ? (
             <ChangeRegisterView />
           ) : portal === 'manage' ? (

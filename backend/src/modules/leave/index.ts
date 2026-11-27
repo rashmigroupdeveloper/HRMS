@@ -4,3 +4,5 @@
 export { leaveRouter } from './leave.router.js'
 // its scheduled jobs (src/worker.ts)
 export { leaveJobs } from './leave.jobs.js'
+// the leave of a pay period for payslips (payroll stage 6) - only periodLeaveOf is meant for other modules
+export * as leaveBalancesService from './balances/balances.service.js'

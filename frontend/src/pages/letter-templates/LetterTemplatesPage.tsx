@@ -95,10 +95,11 @@ export function LetterTemplatesPage() {
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <h3 className="text-base font-medium">{t.name}</h3>
                         <Pill tone={t.isActive ? 'positive' : 'neutral'} className="py-0.5">{t.isActive ? 'Active' : 'Retired'}</Pill>
-                        <Pill tone={t.ready ? 'positive' : 'warning'} className="py-0.5">{t.ready ? 'Letterhead ready' : 'Letterhead missing'}</Pill>
+                        {/* (a payslip needs no letterhead) */}
+                        {t.kind !== 'PAYSLIP' && <Pill tone={t.ready ? 'positive' : 'warning'} className="py-0.5">{t.ready ? 'Letterhead ready' : 'Letterhead missing'}</Pill>}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {t.joiningType ? `Suggested for ${JOINING_TYPE[t.joiningType]}` : 'For any joining type'} · Last changed {formatDoneBy(t.updatedAt, t.updatedBy)}
+                        {t.kind === 'PAYSLIP' ? 'Picked when releasing a pay run’s payslips' : t.joiningType ? `Suggested for ${JOINING_TYPE[t.joiningType]}` : 'For any joining type'} · Last changed {formatDoneBy(t.updatedAt, t.updatedBy)}
                       </p>
                     </div>
                     <div className="flex shrink-0 gap-1">

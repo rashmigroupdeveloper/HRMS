@@ -15,12 +15,14 @@ import { formatDate, formatDateTime, formatDoneBy, formatMoney } from '@/lib/uti
 import { RunChecks } from './components/RunChecks'
 import { RunInputs } from './components/RunInputs'
 import { RunPeople } from './components/RunPeople'
+import { PayslipsLine, RegisterButton } from './components/RunPayslips'
 import { COMPUTE_LABEL, FINAL_NOTE, NOT_LOCKED_NOTE, NO_PF_NOTE, OUTDATED_NOTE, PAY_RULE_NOTE, REFRESH_LABEL, RUN_FACT_LABELS, RUN_STATUS, RUN_TABS, RUN_TILE_LABELS, SALARY_HIDDEN_NOTE, SEND_LABEL, SEND_NOTE, monthLabel } from './components/payroll-labels'
 
 // One pay run: its people with the salary in force on each day of the pay period (a copy, refreshed from the employee
 // records while it is a draft), the month's inputs (stage 2), and "Work out pay" (stage 3): each person's paid and unpaid
 // days from the locked attendance and what they earned, deductions and net (stage 4); Checks and "Send for approval"
-// (stage 5: the approval service decides; approved = final, never to change). Payroll: View over the whole company;
+// (stage 5: the approval service decides; approved = final, never to change); the salary register and, on a final run,
+// releasing the payslips (stage 6). Payroll: View over the whole company;
 // changes need Payroll: Edit over the whole company. Salary figures also need Salary: View over the whole company.
 export function PayrollRunPage() {
   const { id: rawId } = useParams()
@@ -71,24 +73,28 @@ export function PayrollRunPage() {
               <h1 className="text-2xl font-light tracking-tight">{monthLabel(r.payMonth)} · {r.company.code}</h1>
               <Pill tone={r.status === 'FINALISED' ? 'positive' : r.status === 'IN_APPROVAL' ? 'gold' : 'neutral'}>{RUN_STATUS[r.status]}</Pill>
             </div>
-            {r.canChange && (
-              <div className="flex flex-wrap gap-2">
-                <Button className="min-h-9 gap-1.5 rounded-full" disabled={!r.attendanceLocked || compute.isPending} onClick={() => compute.mutate({ runId: id, expectedComputedAt: r.computedAt })}>
-                  <CalendarCheck className="size-4" aria-hidden />{compute.isPending ? 'Working out…' : COMPUTE_LABEL}
+            <div className="flex flex-wrap items-start gap-2">
+              {r.canChange && (
+                <>
+                  <Button className="min-h-9 gap-1.5 rounded-full" disabled={!r.attendanceLocked || compute.isPending} onClick={() => compute.mutate({ runId: id, expectedComputedAt: r.computedAt })}>
+                    <CalendarCheck className="size-4" aria-hidden />{compute.isPending ? 'Working out…' : COMPUTE_LABEL}
+                  </Button>
+                  <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" disabled={!r.canSend} title={r.blockers.join(' · ') || undefined} onClick={() => setSending(true)}>
+                    <Send className="size-4" aria-hidden />{SEND_LABEL}
+                  </Button>
+                  <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" onClick={() => setRefreshing(true)}>
+                    <RefreshCw className="size-4" aria-hidden />{REFRESH_LABEL}
+                  </Button>
+                </>
+              )}
+              {r.status === 'IN_APPROVAL' && r.approval && ready && can('PAYROLL', 'WRITE') && (
+                <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" onClick={() => setWithdrawing(true)}>
+                  <Undo2 className="size-4" aria-hidden />Withdraw
                 </Button>
-                <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" disabled={!r.canSend} title={r.blockers.join(' · ') || undefined} onClick={() => setSending(true)}>
-                  <Send className="size-4" aria-hidden />{SEND_LABEL}
-                </Button>
-                <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" onClick={() => setRefreshing(true)}>
-                  <RefreshCw className="size-4" aria-hidden />{REFRESH_LABEL}
-                </Button>
-              </div>
-            )}
-            {r.status === 'IN_APPROVAL' && r.approval && ready && can('PAYROLL', 'WRITE') && (
-              <Button variant="secondary" className="min-h-9 gap-1.5 rounded-full" onClick={() => setWithdrawing(true)}>
-                <Undo2 className="size-4" aria-hidden />Withdraw
-              </Button>
-            )}
+              )}
+              {/* stage 6: the register - once the pay is worked out, for those who see the salaries */}
+              {r.computedAt && !r.salaryHidden && <RegisterButton runId={id} final={r.status === 'FINALISED'} />}
+            </div>
           </div>
           <p className="text-sm text-muted-foreground">{r.company.name}</p>
           <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
@@ -118,6 +124,7 @@ export function PayrollRunPage() {
               <Link to={`/manage/approvals?request=${r.approval.requestId}`} className="underline underline-offset-4">Open the approval</Link>
             </p>
           )}
+          {r.payslips && <PayslipsLine runId={id} payslips={r.payslips} />}
           {r.status === 'DRAFT' && r.canChange && r.blockers.length > 0 && r.computedAt && <p className="text-xs text-muted-foreground">Before sending: {r.blockers.join(' · ')}.</p>}
           {r.daysOutdated ? <p role="status" className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning-ink">{OUTDATED_NOTE}</p> : !r.attendanceLocked && !r.computedAt && <p className="text-xs text-muted-foreground">{NOT_LOCKED_NOTE}</p>}
           {notWorkedOut > 0 && (

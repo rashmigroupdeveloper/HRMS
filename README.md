@@ -112,7 +112,9 @@ HRMS_NEW/
 │     │  │                      month's amounts), days/ (paid and unpaid days from the locked attendance),
 │     │  │                      calculation/ ("Work out pay"), deductions/ (PF, ESIC, PT, LWF, TDS rules),
 │     │  │                      statutory/ (dated rates and slabs, run settings), tax-openings/ (opening tax
-│     │  │                      figures), checks/ (warnings to acknowledge before sending for approval)
+│     │  │                      figures), checks/ (warnings to acknowledge before sending for approval),
+│     │  │                      register/ (the salary register, Excel), payslips/ (release, make, download;
+│     │  │                      one's own) + payroll.jobs.ts (makes the released payslips)
 │     │  ├─ daily-movement-reports/ group-wide email schedule and HR Head role settings; delivery follows later
 │     │  └─ employees/          directory (+ Excel export), profile, "Add employee" / "Edit details", reporting manager,
 │     │     │                           creating the employee on the joining day, codes from the company's series
@@ -416,7 +418,17 @@ On the last approval the run is **Final** and never changes (a correction comes 
 it is a draft again. **Run settings** on Statutory settings hold the tolerances: whether earlier months' TDS counts draft
 runs (default: finalised only), the big-change % (20) and the EPS warning months (2).
 
-The earnings rule is checked against a greytHR salary register in the parallel run (BACKLOG item 31). Payslips, the bank
-file and payment follow the staged plan in BACKLOG.md, with each new model/field agreed before migration. Apply the
-migrations with `npm run db:migrate` (stage 2: `payroll_stage2_people_inputs`; stage 3: `payroll_stage3_days`,
-`payroll_stage3_amounts`; stage 4: `payroll_stage4_deductions`; stage 5: `payroll_stage5_approval`).
+**Stage 6, salary register and payslips (2026-11-27):** **Salary register** on a run downloads Excel with every person's
+days and amounts and the totals per component (before the run is final it is marked DRAFT). Set up a payslip layout first
+on **Letter templates › Payslip** - a new one starts like HR's greytHR payslip (details, earnings and deductions, net pay in
+words, leave); move, add or remove anything, and add a header image if wanted. On a final run, **Release payslips** with a
+template (open a person and **Preview payslip** to check first): the worker makes each payslip within minutes, keeps it
+(it never changes) and e-mails the employee a link; employees open theirs in **Pay & career › Payslips**. Payslips show the
+full bank account number and PAN, so they are never attached to e-mails. The background worker must be running (`npm run
+worker -w backend`; `npm run dev` starts it).
+
+The earnings rule is checked against a greytHR salary register in the parallel run (BACKLOG item 31). Payment tracking,
+the bank file and statutory files follow the staged plan in BACKLOG.md, with each new model/field agreed before
+migration. Apply the migrations with `npm run db:migrate` (stage 2: `payroll_stage2_people_inputs`; stage 3:
+`payroll_stage3_days`, `payroll_stage3_amounts`; stage 4: `payroll_stage4_deductions`; stage 5: `payroll_stage5_approval`;
+stage 6: `payroll_stage6_payslips`).

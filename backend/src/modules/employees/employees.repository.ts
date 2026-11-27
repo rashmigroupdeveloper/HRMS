@@ -497,6 +497,28 @@ export async function listPayrollFacts(employeeIds: number[], to: Date, db: DbCl
   }))
 }
 
+// What a payslip prints about its people (payroll stage 6, approved by the user 2026-11-27): name, joining / leaving, the
+// designation of the job-timeline row in force on `to`, the salary account's bank and its ENCRYPTED number, the PAN's
+// encrypted number (selected only here - the user chose full numbers on the payslip), UAN, PF number and ESIC IP number.
+// data access: the people of one pay run - the payroll service found the run with whole-company Payroll and Salary scope first
+export function listPayslipFacts(employeeIds: number[], to: Date, db: DbClient = prisma) {
+  return db.employee.findMany({
+    where: { id: { in: employeeIds } },
+    select: {
+      id: true,
+      firstName: true,
+      middleName: true,
+      lastName: true,
+      dateOfJoining: true,
+      dateOfLeaving: true,
+      jobRecords: { where: { effectiveFrom: { lte: to } }, orderBy: { effectiveFrom: 'desc' }, take: 1, select: { designation: { select: { name: true } } } },
+      statutory: { select: { uan: true, pfNumber: true, esicIpNumber: true } },
+      bankAccounts: { where: { isSalaryAccount: true }, take: 1, select: { bankName: true, accountNumberEncrypted: true } },
+      identityDocuments: { where: { type: 'PAN' }, select: { numberEncrypted: true } },
+    },
+  })
+}
+
 // The salary that applies today (the newest one already in effect), with its monthly breakup in the components'
 // order, or null - confidential: only for the employee and SALARY READ (checked in the service)
 export async function findCurrentSalary(employeeId: number, db: DbClient = prisma) {

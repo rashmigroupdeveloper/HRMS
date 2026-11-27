@@ -321,6 +321,17 @@ frontend/src/
   never approves; approved = FINALISED, never changes (corrections as arrears, stage 7); rejected / withdrawn = DRAFT.
   Tolerances are the payroll settings row (`PayrollSetting` - TDS counts finalised runs only by default). Payment waits
   for stage 6.
+  **Stage 6, slice 1 - register and payslips (built 2026-11-27, `payroll/register/`, `payroll/payslips/`, `payroll.jobs.ts`):**
+  the salary register is Excel from the run's own lines (Payroll + Salary View over the whole company), downloadable
+  before the run is final with every sheet marked "DRAFT - not final". Payslips are letter templates of kind `PAYSLIP` on
+  Letter templates (HR changes the layout; the grids are code-drawn blocks; no letterhead or signature needed). Decided by
+  the user: on a FINALISED run someone with Payroll Edit over the whole company releases them with a template; the job
+  `payroll.makePayslips` makes, stores (`employees/<code>/PAYSLIP-<yyyy-mm>/...`) and never changes each one, and e-mails
+  the employee a LINK to self-service (Pay & career › Payslips) - never the PDF, which shows the full bank account number
+  and PAN (the user chose full numbers; decrypted only for the payslip, `employeesService.listPayslipFacts`); someone else's
+  payslip needs Payroll + Salary View over the whole company; the period's leave comes from the leave module
+  (`leaveBalancesService.periodLeaveOf`). Bank files, the SAP entry and the PF / ESIC upload files wait for real sample files
+  from finance - never a layout from memory.
   **Decided for stage 2 (the user, 2026-11-26):** monthly inputs are entered and changed only by someone with Payroll
   Edit covering the whole company - a plant-level HR person sends their figures to them; salary amounts inside a run
   (the salary copy and its lines) are shown only to a viewer who also has `SALARY` View covering the whole company

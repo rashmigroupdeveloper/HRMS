@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { FileText, Plus } from 'lucide-react'
 import { FormDialog, DialogCancel } from '@/components/FormDialog'
 import { FormError } from '@/components/FormError'
 import { PersonDetailsSkeleton } from '@/components/skeletons/payroll/PersonDetailsSkeleton'
 import { Button } from '@/components/ui/button'
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { EMPLOYMENT_TYPE, SALARY_REASON, WORKFORCE } from '@/lib/choices'
-import { orpc } from '@/lib/orpc'
-import { cn, formatDate, formatMoney } from '@/lib/utils'
+import { client, orpc } from '@/lib/orpc'
+import { cn, formatDate, formatMoney, openPdf } from '@/lib/utils'
 import { InputDrawer } from './InputDrawer'
 import { AGAIN_NOTE, ALL_ABSENT_NOTE, DAYS_LEGEND, DAYS_NOT_WORKED_OUT, DAY_TOTAL_LABELS, DEDUCTIONS_TITLE, EMPLOYER_TITLE, HOLD_REASON, PAY_TITLE, SALARY_HIDDEN_NOTE, STATUS_CODE, dayCount } from './payroll-labels'
 
@@ -85,8 +86,16 @@ function PayLines({ title, lines, note, total, muted = false }: { title: string;
 // out)
 export function PersonDetails({ runId, personId, canChange, close }: { runId: number; personId: number; canChange: boolean; close: () => void }) {
   const query = useQuery(orpc.payroll.people.get.queryOptions({ input: { runId, personId } }))
+  // the run (already loaded by the page): whether its payslips are released, and the templates to preview one with
+  const payslips = useQuery(orpc.payroll.get.queryOptions({ input: { id: runId } })).data?.payslips ?? null
   const [adding, setAdding] = useState(false)
+  const [templateId, setTemplateId] = useState<number | null>(null)
+  const [payslipError, setPayslipError] = useState<string | null>(null)
   const p = query.data
+  // stage 6: a final run's payslip - as made (released), or a preview with a payslip template (before the release); only
+  // with the salaries in view and the pay worked out
+  const withPay = !!p && !p.salaryHidden && p.pay?.status === 'WORKED_OUT'
+  const previewWith = templateId ?? payslips?.templates[0]?.id ?? null
   const totals = p?.dayTotals ? [p.dayTotals.paidDays, p.dayTotals.unpaidDays, p.dayTotals.unclearDays] : null
   return (
     <>
@@ -184,7 +193,25 @@ export function PersonDetails({ runId, personId, canChange, close }: { runId: nu
             </>
           ) : <FormError error={query.error} />}
         </div>
+        {payslipError && <p role="alert" className="text-xs text-negative-ink">{payslipError}</p>}
         <DialogFooter>
+          {withPay && payslips?.releasedAt && (
+            <Button variant="secondary" className="gap-1.5" onClick={() => void openPdf(() => client.payroll.payslips.download({ runId, personId }), setPayslipError)}>
+              <FileText className="size-4" aria-hidden />Payslip
+            </Button>
+          )}
+          {withPay && payslips && !payslips.releasedAt && previewWith !== null && (
+            <>
+              {payslips.templates.length > 1 && (
+                <NativeSelect aria-label="Payslip template" className="[&_select]:h-9" value={String(previewWith)} onChange={(e) => setTemplateId(Number(e.target.value))}>
+                  {payslips.templates.map((t) => <NativeSelectOption key={t.id} value={String(t.id)}>{t.name}</NativeSelectOption>)}
+                </NativeSelect>
+              )}
+              <Button variant="secondary" className="gap-1.5" onClick={() => void openPdf(() => client.payroll.payslips.preview({ runId, personId, templateId: previewWith }), setPayslipError)}>
+                <FileText className="size-4" aria-hidden />Preview payslip
+              </Button>
+            </>
+          )}
           {canChange && p && <Button variant="secondary" className="gap-1.5" onClick={() => setAdding(true)}><Plus className="size-4" aria-hidden />Add input</Button>}
           <DialogCancel>Close</DialogCancel>
         </DialogFooter>

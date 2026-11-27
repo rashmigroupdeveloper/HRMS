@@ -31,6 +31,8 @@ model LetterTemplate {
   signatureImage  LetterheadImage? @relation("TemplateSignature", fields: [signatureImageId], references: [id], onDelete: Restrict)
   offerLetters    OfferLetter[]
   employeeLetters EmployeeLetter[]
+  // the pay runs whose payslips were made with it (payroll stage 6)
+  payrollRuns     PayrollRun[]
 
   @@index([kind, joiningType])
   @@index([headerImageId])
@@ -85,6 +87,9 @@ enum LetterKind {
   RELIEVING_LETTER
   // A salary certificate (e.g. for a bank loan) issued by HR - the old HRMS seeded it with the letters above (2026-11-16)
   SALARY_CERTIFICATE
+  // A payslip of a pay run (payroll stage 6, approved by the user 2026-11-27): its own fields and blocks, no letter number,
+  // and no letterhead needed ("system generated - no signature"); HR picks the template when releasing a run's payslips
+  PAYSLIP
 
   @@map("letter_kind")
 }

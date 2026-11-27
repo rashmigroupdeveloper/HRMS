@@ -30,17 +30,22 @@ export function LetterheadImages({
   imageIds,
   canChange,
   onPick,
+  optional = false,
 }: {
   templateId: number | null
   imageIds: ImageIds
   canChange: boolean
   onPick?: (field: Field, imageId: number) => void
+  // a payslip: none of the images is needed (payroll stage 6)
+  optional?: boolean
 }) {
   const ready = imageIds.header !== null && imageIds.footer !== null && imageIds.signature !== null
   return (
     <div className="space-y-3">
       <p className="text-xs font-semibold tracking-[0.08em] text-muted-foreground uppercase">Letterhead</p>
-      {!ready && (
+      {optional ? (
+        <p className="rounded-xl bg-surface-2/60 px-3 py-2 text-xs">A payslip needs no letterhead. A header image (logo, company name) or footer image is printed when there is one; the stamp is not used.</p>
+      ) : !ready && (
         <p className="rounded-xl bg-gold-soft px-3 py-2 text-xs">
           {templateId === null
             ? 'Choose images uploaded before, or create the template first and then upload new ones.'
