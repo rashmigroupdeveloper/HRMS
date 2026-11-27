@@ -97,6 +97,8 @@ model WorkLocation {
   jobRecords EmployeeJobRecord[]
   // job changes asking for it
   jobChanges JobChangeRequest[]
+  // pay-run stretches placed here - the State for professional tax and LWF (payroll stage 4)
+  payrollSegments PayrollRunSalarySegment[]
 
   @@index([regionId])
   @@map("work_locations")
@@ -374,6 +376,15 @@ model SalaryComponent {
   // every day they are in the company whatever the unpaid days (false - an allowance always paid in full). Payroll
   // stage 3, approved by the user 2026-11-27: true for every earning until HR turns it off. Not used for other kinds.
   cutForUnpaidDays Boolean         @default(true) @map("cut_for_unpaid_days")
+  // Earnings: what the payroll deductions are worked out on (payroll stage 4, approved by the user 2026-11-27 - the CA's
+  // answers become ticks, not code). pfWage: counts for PF wages (Basic, DA - EPF Scheme / Social Security Code s.2(88));
+  // esiWage: counts for ESI wages (ESI coverage and contributions); taxable: counts for income tax (salary income).
+  pfWage       Boolean             @default(false) @map("pf_wage")
+  esiWage      Boolean             @default(true) @map("esi_wage")
+  taxable      Boolean             @default(true)
+  // The statutory amount this component carries in a pay run (stage 4): one component per role - employee roles are
+  // deductions, employer roles employer contributions (service). Empty = not a statutory amount.
+  statutoryRole StatutoryRole?     @unique @map("statutory_role")
   isActive     Boolean             @default(true) @map("is_active")
   createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById  Int                 @map("created_by_id")
@@ -402,6 +413,25 @@ enum SalaryComponentKind {
   DEDUCTION
 
   @@map("salary_component_kind")
+}
+
+// Which statutory amount a component carries in a pay run (payroll stage 4, approved 2026-11-27)
+enum StatutoryRole {
+  // deductions from the employee's pay
+  PF_EMPLOYEE
+  ESIC_EMPLOYEE
+  PROFESSIONAL_TAX
+  LWF_EMPLOYEE
+  // also typed in a run (entered monthly) - a typed figure replaces the worked-out one
+  INCOME_TAX
+  // paid by the company on top: the EPF share, the pension (EPS) share, EDLI, ESIC, LWF
+  PF_EMPLOYER
+  EPS
+  EDLI
+  ESIC_EMPLOYER
+  LWF_EMPLOYER
+
+  @@map("statutory_role")
 }
 
 // How an offer's salary breakup is worked out from its CTC, for one type of employee (the user, 2026-11-24 - HR's

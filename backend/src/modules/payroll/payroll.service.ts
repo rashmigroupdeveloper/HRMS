@@ -55,6 +55,12 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
     peopleHeld: pay?.held ?? null,
     peopleToWorkOutAgain: pay?.again ?? null,
     earnedGross: pay?.earnedGross ?? null,
+    // stage 4: the deductions, the net pay and what the company pays on top (salary figures), and how many worked-out
+    // people have no PF
+    deductions: pay?.deductions ?? null,
+    netPay: pay?.netPay ?? null,
+    employerContributions: pay?.employerContributions ?? null,
+    peopleWithoutPf: pay?.withoutPf ?? null,
     people: counts.people,
     peopleWithoutSalary: counts.withoutSalary,
     inputs,

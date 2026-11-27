@@ -15,6 +15,7 @@ import {
   Salutation,
   SocialCategory,
   Sport,
+  TaxRegime,
   WorkforceCategory,
 } from '#core/db/prisma'
 import { countryCodeSchema, emailSchema, idSchema, mobileSchema } from '#shared/schemas/common.schema'
@@ -326,13 +327,18 @@ export const updateOnboardingChecklistInput = z.object({
   inductionDate: z.date().nullable().optional(),
 })
 
-// HR records the numbers given after joining - the UAN and PF member number (EPFO) and the ESIC IP number. Only the
-// fields sent change; null clears one.
+// HR records the numbers given after joining - the UAN and PF member number (EPFO) and the ESIC IP number - and the
+// payroll facts the candidate never answers (payroll stage 4, approved 2026-11-27): PF on full wages, EPS membership, the
+// income-tax regime. Only the fields sent change; null clears a number. Never part of the joining form's statutorySchema,
+// so the candidate's own pages cannot set them.
 export const updateStatutoryNumbersInput = z.object({
   employeeCode: employeeCodeSchema,
   uan: digits(12, 'A UAN').nullable().optional(),
   pfNumber: z.string().trim().toUpperCase().min(1).max(30).nullable().optional(),
   esicIpNumber: digits(10, 'An ESIC IP number').nullable().optional(),
+  pfOnFullWages: z.boolean().optional(),
+  epsMember: z.boolean().optional(),
+  taxRegime: z.enum(TaxRegime).optional(),
 })
 
 // JF §6 educational qualification (employee_qualifications)

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Landmark } from 'lucide-react'
 import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
 import { PayrollDeskSkeleton, PayrollRunsSkeleton } from '@/components/skeletons/payroll/PayrollRunsSkeleton'
@@ -33,7 +33,7 @@ export function PayrollPage() {
   const data = query.data
   const change = (key: string, value: string) => setParams(old => { const next = new URLSearchParams(old); if (value) next.set(key, value); else next.delete(key); if (key !== 'page' && key !== 'run') next.delete('page'); return next }, { replace: true })
   return <div className="home-dashboard space-y-4">
-    <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-3 gap-y-1"><h1 className="text-[28px] font-light tracking-[-0.03em] sm:text-[40px]">Payroll</h1>{ready && can('PAYROLL', 'WRITE') && <Button className="min-h-9 rounded-full" disabled={!setup.data?.companies.some(c => c.canCreate)} title="Requires Payroll Edit covering a whole active India payroll company" onClick={() => setCreating(true)}><Plus aria-hidden />New payroll run</Button>}<p className="col-span-2 max-w-3xl text-sm text-muted-foreground">{PAYROLL_NOTE}</p></header>
+    <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-3 gap-y-1"><h1 className="text-[28px] font-light tracking-[-0.03em] sm:text-[40px]">Payroll</h1><div className="flex flex-wrap justify-end gap-2"><Button variant="secondary" className="min-h-9 rounded-full" nativeButton={false} render={<Link to="/manage/payroll/statutory" />}><Landmark aria-hidden />Statutory settings</Button>{ready && can('PAYROLL', 'WRITE') && <Button className="min-h-9 rounded-full" disabled={!setup.data?.companies.some(c => c.canCreate)} title="Requires Payroll Edit covering a whole active India payroll company" onClick={() => setCreating(true)}><Plus aria-hidden />New payroll run</Button>}</div><p className="col-span-2 max-w-3xl text-sm text-muted-foreground">{PAYROLL_NOTE}</p></header>
     {valid && query.isPending && <PayrollDeskSkeleton />}
     {valid && data && data.items.length > 0 && <PayrollDesk items={data.items} />}
     <section className="home-panel min-w-0 space-y-3 p-4 sm:p-5">

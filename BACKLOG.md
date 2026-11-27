@@ -20,8 +20,8 @@ one at a time, each planned with the user before it is built (the old HRMS is in
 3. **Regularization / OD** - fixing a missed punch, on-duty outside the office - **done (2026-11-22, with leave)**; what
    is left is item 29
 4. **Payroll** - the month-end salary from attendance and leave - **in progress: stages 1 (draft runs) and 2 (people,
-   salary copy, inputs) built 2026-11-26; stage 3 (the days and the earnings) built 2026-11-27; next stage 4
-   (deductions and net pay)**
+   salary copy, inputs) built 2026-11-26; stages 3 (the days and the earnings) and 4 (deductions and net pay) built
+   2026-11-27; next stage 5 (review, approval, finalising)**
 5. **Probation / confirmation** - intern -> probation, probation -> confirmed, with or without a salary hike
 6. **Promotion and increments** - a promotion with a hike, or a hike alone (salary revisions) - **done through job
    changes and the approval service (2026-11-20)**; what is left is item 24
@@ -277,7 +277,7 @@ Compared with an employee-profile screen from another HR system (2026-11-14); th
   employees who had already joined were filled in from their offers); the profile's Salary tab shows the salary in
   effect (the employee themselves or the `SALARY` access, 2026-11-15). **Revisions / increments are done** through
   approved job changes (2026-11-20; status corrected 2026-11-24), with a salary row from its effective date.
-  Draft pay runs, inputs (2026-11-26) and the earnings (2026-11-27) are built; deductions and net pay remain in item 31.
+  Draft pay runs, inputs (2026-11-26), the earnings, deductions and net pay (2026-11-27) are built; approval, payslips and payment remain in item 31.
 - **Residential status** (resident / non-resident for income tax): decides how tax is deducted from salary, so it
   belongs to the **payroll** module - HR / payroll sets it, not the candidate. **Needs:** the payroll module, and the
   status values as payroll uses them.
@@ -759,7 +759,7 @@ to cherry-pick or proof that the old implementation works. Recheck both branches
    layouts. Run all section 6 checks; update the API tracker and every affected rule/doc. Delete completed backlog
    tasks and their duplicate references together; preserve intentional exclusions until the decision changes.
 
-#### Payroll, statutory and income tax — Stages 1 to 3 built; later stages planned
+#### Payroll, statutory and income tax — Stages 1 to 4 built; later stages planned
 
 **Reference:** `backend/src/modules/payroll-core/`, `payroll-outputs/`, `tds/`; related screens in
 `frontend/src/pages/payroll/` and `tax/`. **Needs:** agreed pay groups/cycles, attendance and leave inputs, statutory
@@ -869,6 +869,51 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
   - [ ] Held pay blocks nothing yet; whether a run with held people may be approved is settled with stage 5.
   - [ ] The run's days are taken 100 employees at a time, because the leave reader stops at 2,000 applications - fine
     for one month; to revisit if a period can ever be longer.
+- **Stage 4, deductions and net pay - built 2026-11-27** (the user approved, one by one: `StatutoryRate`,
+  `ProfessionalTaxSlab`, `LabourWelfareRate`, `IncomeTaxSlab`, `TaxOpeningBalance`; `SalaryComponent.pfWage / esiWage /
+  taxable / statutoryRole`; `EmployeeStatutory.pfOnFullWages / epsMember / taxRegime`; `PayrollRunSalarySegment.
+  workLocationId`, `PayrollRunLine.base`, `PayrollRunEmployee.heldFor / heldNote`). "Work out pay" now also works out PF
+  (EPF, EPS, EDLI), ESIC, professional tax, LWF, monthly TDS, typed deductions and the net; Payroll › Statutory settings
+  (`/manage/payroll/statutory`, APIs `payroll.statutory.*`, `payroll.taxOpenings.*`). **Decided by the user 2026-11-27:**
+  rates are data entered from the notifications (nothing seeded - tests use made-up rows); PF on the components marked
+  "PF wages", capped at the ceiling with a per-person "PF on full wages", for those whose statutory details say "PF
+  applicable"; ESIC decided by the salary at the start of each ESIC period; TDS worked out now (new regime, no
+  declarations) or typed; all deductions above half of the wages hold the person; consultants: no ESIC / professional
+  tax / LWF and their TDS typed; apprentices: no ESIC; hold reasons stored on the person. Rules in
+  `payroll/deductions/deductions.service.ts`.
+  **Still open:**
+  - [ ] **The figures themselves**: nobody has entered the real rates and slabs yet - HR / the CA fill Statutory
+    settings from the notifications (PF ceiling 25,000 from 17 Sep 2026, ESIC ceiling, WB professional tax from 1 Oct
+    2026, each State's LWF, the 2026-27 new-regime slabs, standard deduction, rebate, cess - research note 02a lists
+    them marked "Verify"). Until then every run holds everyone with "A rate or slab not in force".
+  - [ ] **Components**: HR adds the deductions and employer contributions that do not exist yet (Employee ESIC, LWF,
+    Income tax - entered each month -, EPS, EDLI, Employer ESIC / LWF) and marks each with its statutory role; ticks
+    "PF wages" on Basic (and DA) and checks the ESI-wage / taxable ticks.
+  - [ ] **Work locations**: every employee's job timeline needs a work location with a State, and drafts made before
+    today copy it only on "Refresh from employee records".
+  - [ ] **CA questions**: PF wages under the Labour Codes (the 50% rule - the two Ministry FAQs differ; today only the
+    ticked components count); whether ESIC tests the ceiling on gross or on Code wages; a consultant's TDS rate; the
+    late-rule half (above). The answers become ticks or settings, not code.
+  - [ ] **TDS v1 limits**: new regime only (old regime and declarations - HRA, 80C, proofs - are stage 7, the old regime
+    is typed meanwhile); no surcharge (above the limit the TDS is typed); a month of the tax year with no figures is
+    counted at the current salary with nothing deducted; the months left stop at a known leaving date; another group
+    company's run in the same tax year counts as income and tax; no rounding of the year's tax to ten rupees (s.288B);
+    perquisites, employer NPS and arrears spread are not handled. **Definitions used** (in `monthlyTds`, to confirm with
+    the CA): a pay month belongs to the tax year of the month the salary is for, not the payment date (March's salary,
+    paid in early April, is in the old tax year); earlier runs of the tax year count with their worked-out lines even
+    while they are drafts (stage 5 will count only finalised runs); opening figures that cover the run's own month
+    replace that month's income; a mid-period company transfer gets TDS, professional tax and LWF in both companies'
+    runs (each worked out on its own days).
+  - [ ] **ESIC v1 limits**: the daily-wage exemption of the employee's share (up to 176 a day) and the employer share
+    waiver for persons with disabilities are not applied; ESI wages are the ticked earnings of the month.
+  - [ ] **Professional tax**: annual-slab States (Manipur, Jharkhand) are entered as monthly slabs; a person who moves
+    State inside a period pays by the State at its end.
+  - [ ] **PF**: the EPS age limit counts the age on the first day of the period (a member turning 58 inside it keeps
+    EPS that month); admin and EDLI-admin charges are the establishment's (stage 6 with the challan); VPF is not built.
+  - [ ] **The half-of-wages rule** holds the person; recovery plans that carry the rest to next month (loans, advances,
+    court orders) come with their own stage.
+  - [ ] Changing a component's ticks, a statutory setting or an employee's payroll facts is not flagged on a draft run;
+    it counts on the next "Work out pay" (stage 5's approval works the run out once more first).
 - [ ] Remaining pay-run lifecycle: lock inputs, compute, issues, review,
   independent approval through the shared approval service, finalize, mark paid, return to draft/reopen and reconciliation.
 - [ ] Employee run inputs: uploads, calculated items and backdated salary arrears (typed one-off earnings / deductions
@@ -876,23 +921,26 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
   2026-11-27 - to be checked against a register).
 - [ ] Salary holds and releases, with the effect on calculation/payment defined.
 - [ ] Payslips and own-payslip downloads; run output bundles; bank payment files, SAP GL/JV mapping/exports and variance reports.
-- [ ] PF/EPS/EDLI, ESIC, PT and LWF calculations; effective statutory parameters/rates and PT slabs; ECR, ESIC return,
-  PTRC and Form D outputs, with current eligibility/rates verified before implementation.
-- [ ] Income tax: employee declarations, proofs and review, regime choice, tax projection/TDS, challans,
-  reconciliation, Form 24Q and Form 16; agree tax residential status (item 11).
+- [ ] ECR, ESIC return, PTRC and Form D outputs from a finalised run (the calculations and dated rates: stage 4, built
+  2026-11-27).
+- [ ] Income tax: employee declarations, proofs and review, the old regime worked out, challans, reconciliation,
+  Form 138 (was 24Q) and Form 130 (was 16); agree tax residential status (item 11). (New-regime monthly TDS and opening
+  figures: stage 4, built 2026-11-27.)
 - [ ] Annual bonus true-up, bulk annual-increment simulation/application and retroactive arrears scheduling.
 - [ ] Parallel-run migration: vendor/Protiviti register parsing/import, component-level variance comparison,
   cutover acceptance and historical YTD opening data.
 **Payroll build order approved 2026-11-26:** (1) draft foundation above; (2) employee population, effective salary
 snapshots and monthly inputs; (3) locked attendance, payable days/LOP and gross earnings; (4) statutory/other deductions,
 net and rounding; (5) review/approval/reconciliation/finalization; (6) registers/payslips/bank/payment; (7) arrears, loans,
-F&F, annual/tax outputs and parallel-run cutover. Propose each later model/field before adding it.
+F&F, annual/tax outputs and parallel-run cutover. Propose each later model/field before adding it. Stages 1-4 are built
+(2026-11-27); stage 5 (review, approval through the approval service, finalising) is next.
 
 **Important differences from main:** new has group-wide attendance locks and two-half attendance facts. Main's
 company locks, SQL triggers, separate approval lifecycle, rupee rounding and post-cutoff assumed-presence policy are
 not copied. The cut-off treatment follows the user's instruction of 2026-11-27 (a run pays its attendance cycle - see
-"Pay period" above, confirmed the same day). Agree the denominator, component proration and rounding against
-reconciled samples before calculation. Current statutory eligibility/rates must be verified at that stage; no old rates are seeded now.
+"Pay period" above, confirmed the same day). The divisor, proration and rounding were decided by the user on 2026-11-27
+(stage 3) and are checked against reconciled greytHR samples in the parallel run. No old rates are seeded: the statutory
+figures are entered on Statutory settings and verified by the CA.
 
 - **PRESENT:** salary structures/calculation, dated employee salary/history and individual approved revisions,
   promotions and transfers. Reuse Organization, employees and job-changes; these are not missing payroll modules.
@@ -1170,8 +1218,9 @@ is proposed before its migration per CLAUDE.md section 2.
    Holidays now use HolidayList/Category/Mode/portion/leaveType and protected taken holidays/month locks; any holiday
    import must call those current services, not an obsolete flat company holiday writer. Start with a reviewed
    holiday template/preview/commit using that model, then salary assignments through salary/job-change rules.
-   Payroll inputs, legacy loans, assets, statutory rates and PT slabs wait for the missing payroll/loan/asset/rate
-   models and agreed templates. Do not store them in generic JSON import rows as a substitute for their owner.
+   Payroll inputs, legacy loans and assets wait for their models and agreed templates; statutory rates, PT slabs and
+   opening tax figures have their models (payroll stage 4, 2026-11-27) and are entered on Statutory settings - an import
+   of opening tax figures from greytHR waits for an agreed template. Do not store them in generic JSON import rows as a substitute for their owner.
    Only when the first two staged adapters need persistence, propose ImportJob + ImportJobRow (actor/domain/file
    key/hash/state/times; row number/validated encrypted payload/errors/target revision), with commit/discard audit,
    revalidation and scope checks at commit, concurrency protection and file retention. Share UX; keep each adapter

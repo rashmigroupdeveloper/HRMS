@@ -101,6 +101,15 @@ model EmployeeStatutory {
   epfWithdrawn             Boolean?    @map("epf_withdrawn")
   epsWithdrawn             Boolean?    @map("eps_withdrawn")
   epsWithdrawnAfterSep2014 Boolean?    @map("eps_withdrawn_after_sep_2014")
+  // --- Payroll (stage 4, approved by the user 2026-11-27) - set by HR, never on the candidate's joining form ---
+  // PF on the whole PF wages, above the wage ceiling (the joint option of employee and employer); otherwise capped
+  pfOnFullWages            Boolean     @default(false) @map("pf_on_full_wages")
+  // in the pension scheme (EPS - Form 11 items 7-12): false for a member who is not (e.g. joined after 1 Sep 2014 above
+  // the ceiling); the EPS age limit stops it anyway
+  epsMember                Boolean     @default(true) @map("eps_member")
+  // the income-tax regime for the current tax year - NEW by default (Income-tax Act 2025 s.202); with OLD a pay run holds
+  // the person until HR types the month's TDS (declarations come in payroll stage 7)
+  taxRegime                TaxRegime   @default(NEW) @map("tax_regime")
 
   // --- ESIC (Form 1) ---
   esicApplicable          Boolean @default(false) @map("esic_applicable")

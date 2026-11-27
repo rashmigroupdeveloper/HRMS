@@ -12,6 +12,7 @@ import {
   type MedicalResult,
   type NewRow,
   type Prisma,
+  type TaxRegime,
   type WorkforceCategory,
 } from '#core/db/prisma'
 
@@ -147,6 +148,10 @@ const profileSelect = {
       epsWithdrawnAfterSep2014: true,
       esicApplicable: true,
       esicIpNumber: true,
+      // payroll facts set by HR (stage 4)
+      pfOnFullWages: true,
+      epsMember: true,
+      taxRegime: true,
       esicBranchOffice: true,
       esicDispensary: true,
       previousEsicIpNumber: true,
@@ -440,6 +445,8 @@ export async function listForPayrollRun(companyId: number, from: Date, to: Date,
           plantId: true,
           departmentId: true,
           costCenterId: true,
+          // the State for professional tax and LWF (payroll stage 4)
+          workLocationId: true,
           employmentType: true,
           workforceCategory: true,
         },
@@ -448,6 +455,32 @@ export async function listForPayrollRun(companyId: number, from: Date, to: Date,
         where: { effectiveFrom: { lte: to } },
         orderBy: { effectiveFrom: 'asc' },
         select: { id: true, effectiveFrom: true, annualCtc: true, currency: true, lines: { select: { salaryComponentId: true, monthlyAmount: true } } },
+      },
+    },
+  })
+  return rows.map((row) => ({ ...row, salaries: row.salaries.map((salary) => ({ ...salary, lines: linesAsNumbers(salary.lines) })) }))
+}
+
+// What a pay run's deductions need to know about its people (payroll stage 4): birth date (the EPS age limit), gender
+// (gendered professional-tax slabs), disability (the higher ESIC ceiling), joining / leaving (ESIC coverage, the TDS
+// months), the payroll facts of their statutory details, and their salaries up to `to` (ESIC coverage is decided by the
+// salary at the start of each ESIC period).
+// data access: the people of one pay run - the payroll service found the run with whole-company Payroll scope first
+export async function listPayrollFacts(employeeIds: number[], to: Date, db: DbClient = prisma) {
+  const rows = await db.employee.findMany({
+    where: { id: { in: employeeIds } },
+    select: {
+      id: true,
+      dateOfBirth: true,
+      gender: true,
+      isPhysicallyDisabled: true,
+      dateOfJoining: true,
+      dateOfLeaving: true,
+      statutory: { select: { pfApplicable: true, pfOnFullWages: true, epsMember: true, taxRegime: true } },
+      salaries: {
+        where: { effectiveFrom: { lte: to } },
+        orderBy: { effectiveFrom: 'asc' },
+        select: { effectiveFrom: true, lines: { select: { salaryComponentId: true, monthlyAmount: true } } },
       },
     },
   })
@@ -688,7 +721,7 @@ export function findStatutoryNumberOwner(number: { uan: string } | { esicIpNumbe
 // Sets the PF / ESIC numbers of an employee (their PF / ESIC row is created if they have none yet)
 export function upsertStatutoryNumbers(
   employeeId: number,
-  numbers: { uan?: string | null; pfNumber?: string | null; esicIpNumber?: string | null },
+  numbers: { uan?: string | null; pfNumber?: string | null; esicIpNumber?: string | null; pfOnFullWages?: boolean; epsMember?: boolean; taxRegime?: TaxRegime },
   actorId: ActorId,
   db: DbClient = prisma,
 ) {
@@ -696,7 +729,7 @@ export function upsertStatutoryNumbers(
     where: { employeeId },
     create: { employeeId, ...numbers, ...createdBy(actorId) },
     update: { ...numbers, ...updatedBy(actorId) },
-    select: { uan: true, pfNumber: true, esicIpNumber: true },
+    select: { uan: true, pfNumber: true, esicIpNumber: true, pfOnFullWages: true, epsMember: true, taxRegime: true },
   })
 }
 

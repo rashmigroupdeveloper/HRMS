@@ -9,6 +9,7 @@ export type SegmentRow = {
   plantId: number
   departmentId: number
   costCenterId: number | null
+  workLocationId: number | null
   employmentType: EmploymentType
   workforceCategory: WorkforceCategory
   employeeSalaryId: number | null
@@ -73,6 +74,8 @@ export async function listPeople(payrollRunId: number, db: DbClient = prisma) {
       id: true,
       employeeId: true,
       employeeCode: true,
+      heldFor: true,
+      heldNote: true,
       _count: { select: { inputs: true } },
       segments: {
         orderBy: { fromDate: 'asc' },
@@ -101,6 +104,8 @@ export async function findPerson(payrollRunId: number, personId: number, db: DbC
       id: true,
       employeeId: true,
       employeeCode: true,
+      heldFor: true,
+      heldNote: true,
       segments: {
         orderBy: { fromDate: 'asc' },
         select: {
@@ -115,6 +120,7 @@ export async function findPerson(payrollRunId: number, personId: number, db: DbC
           plant: { select: { id: true, plantCode: true, name: true } },
           department: { select: { id: true, code: true, name: true } },
           costCenter: { select: { id: true, code: true, name: true } },
+          workLocation: { select: { id: true, name: true, stateCode: true } },
           employeeSalary: { select: { effectiveFrom: true, reason: true } },
           lines: {
             orderBy: [{ salaryComponent: { displayOrder: 'asc' } }, { salaryComponent: { name: 'asc' } }],

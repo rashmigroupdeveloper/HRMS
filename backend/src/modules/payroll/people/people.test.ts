@@ -9,13 +9,14 @@ const OTHER = 2
 const from = d('2092-03-01')
 const to = d('2092-03-31')
 
-const job = (effectiveFrom: string, extra: Partial<{ companyId: number; plantId: number; departmentId: number; costCenterId: number | null; employeeCode: string }> = {}) => ({
+const job = (effectiveFrom: string, extra: Partial<{ companyId: number; plantId: number; departmentId: number; costCenterId: number | null; workLocationId: number | null; employeeCode: string }> = {}) => ({
   effectiveFrom: d(effectiveFrom),
   companyId: COMPANY,
   employeeCode: 'TST001',
   plantId: 10,
   departmentId: 20,
   costCenterId: null,
+  workLocationId: null as number | null,
   employmentType: 'PERMANENT' as const,
   workforceCategory: 'WHITE_COLLAR' as const,
   ...extra,
@@ -93,6 +94,11 @@ describe('pay run people and segments', () => {
     ])
     // a new job-timeline row with the same placement (e.g. only the manager changed) keeps one segment
     expect(segments(person({ jobRecords: [job('2090-01-01'), job('2092-03-10')] }))).toEqual([['2092-03-01', '2092-03-31', 100, 10]])
+  })
+
+  it('a move to another work location mid-month splits it too - its State decides professional tax and LWF (stage 4)', () => {
+    const parts = buildPeople(COMPANY, from, to, [person({ jobRecords: [job('2090-01-01', { workLocationId: 1 }), job('2092-03-20', { workLocationId: 2 })] })])[0]!.segments
+    expect(parts.map((s) => [s.fromDate.toISOString().slice(0, 10), s.workLocationId])).toEqual([['2092-03-01', 1], ['2092-03-20', 2]])
   })
 
   it('a move to another company mid-month: each company pays only its own days, with the code it had', () => {

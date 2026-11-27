@@ -1,6 +1,6 @@
 import { assertGroupWide } from '#core/auth/scope'
 import { assertAccess } from '#core/auth/access'
-import type { ActorId, SalaryComponentKind } from '#core/db/prisma'
+import type { ActorId, SalaryComponentKind, StatutoryRole } from '#core/db/prisma'
 import { ORPCError } from '@orpc/server'
 import { fromPaise, monthlyOf, toPaise } from '#shared/utils/money'
 import type { CurrentUser } from '#core/rpc/procedures'
@@ -54,8 +54,22 @@ function assertEnteredMonthlyFits(kind: SalaryComponentKind, enteredMonthly: boo
   }
 }
 
+// A statutory role fits its kind (payroll stage 4): what the employee pays is a deduction, what the company pays on top an
+// employer contribution; income tax is also typed in a run, so its component is entered monthly - the others never are
+// (a typed PF or PT would bypass the rates)
+const EMPLOYEE_ROLES = new Set<StatutoryRole>(['PF_EMPLOYEE', 'ESIC_EMPLOYEE', 'PROFESSIONAL_TAX', 'LWF_EMPLOYEE', 'INCOME_TAX'])
+function assertRoleFits(kind: SalaryComponentKind, enteredMonthly: boolean, role: StatutoryRole | null | undefined) {
+  if (!role) return
+  const employee = EMPLOYEE_ROLES.has(role)
+  if (employee && kind !== 'DEDUCTION') throw new ORPCError('BAD_REQUEST', { message: 'What the employee pays (PF, ESIC, professional tax, LWF, income tax) is a deduction' })
+  if (!employee && kind !== 'EMPLOYER_CONTRIBUTION') throw new ORPCError('BAD_REQUEST', { message: 'What the company pays on top (its PF, EPS, EDLI, ESIC and LWF shares) is an employer contribution' })
+  if (role === 'INCOME_TAX' && !enteredMonthly) throw new ORPCError('BAD_REQUEST', { message: 'Income tax can also be typed in a pay run - mark it "Entered each month in payroll"' })
+  if (role !== 'INCOME_TAX' && enteredMonthly) throw new ORPCError('BAD_REQUEST', { message: 'A statutory amount other than income tax is worked out from the rates - it is never typed each month' })
+}
+
 export async function createSalaryComponent(input: z.infer<typeof createSalaryComponentInput>, actorId: ActorId) {
   assertEnteredMonthlyFits(input.kind, input.enteredMonthly)
+  assertRoleFits(input.kind, input.enteredMonthly ?? false, input.statutoryRole)
   return salaryComponentsRepository.create(input, actorId)
 }
 
@@ -64,7 +78,7 @@ export async function createSalaryComponent(input: z.infer<typeof createSalaryCo
 // stage 2) can be switched only on a deduction, which is never on a breakup; an earning gets it when it is created
 // (e.g. Incentive) and keeps it. Unknown id -> 404 (mapped centrally).
 export async function updateSalaryComponent({ id, ...changes }: z.infer<typeof updateSalaryComponentInput>, actorId: ActorId) {
-  if (changes.kind !== undefined || changes.enteredMonthly !== undefined) {
+  if (changes.kind !== undefined || changes.enteredMonthly !== undefined || changes.statutoryRole !== undefined) {
     const current = await salaryComponentsRepository.findById(id)
     if (current) {
       const kind = changes.kind ?? current.kind
@@ -76,6 +90,7 @@ export async function updateSalaryComponent({ id, ...changes }: z.infer<typeof u
       if (enteredMonthly !== current.enteredMonthly && kind !== 'DEDUCTION') {
         throw new ORPCError('BAD_REQUEST', { message: 'Whether an earning is entered each month is set when it is added - add a new component instead' })
       }
+      assertRoleFits(kind, enteredMonthly, changes.statutoryRole === undefined ? current.statutoryRole : changes.statutoryRole)
     }
   }
   return salaryComponentsRepository.update(id, changes, actorId)

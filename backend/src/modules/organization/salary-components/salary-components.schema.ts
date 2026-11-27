@@ -1,4 +1,4 @@
-import { SalaryComponentKind } from '#core/db/prisma'
+import { SalaryComponentKind, StatutoryRole } from '#core/db/prisma'
 import { idSchema, nameSchema } from '#shared/schemas/common.schema'
 import { z } from 'zod'
 
@@ -23,6 +23,12 @@ export const createSalaryComponentInput = z.object({
   // an earning of the breakup: cut for a pay run's unpaid days (default) or paid in full for every day in the company
   // (payroll stage 3, approved 2026-11-27) - not used for the other kinds
   cutForUnpaidDays: z.boolean().optional(),
+  // payroll stage 4 (approved 2026-11-27): an earning counts for PF wages / ESI wages / income tax; the statutory amount a
+  // deduction or employer contribution carries in a pay run (one component per role)
+  pfWage: z.boolean().optional(),
+  esiWage: z.boolean().optional(),
+  taxable: z.boolean().optional(),
+  statutoryRole: z.enum(StatutoryRole).nullable().optional(),
 })
 
 export const updateSalaryComponentInput = z.object({
@@ -34,4 +40,8 @@ export const updateSalaryComponentInput = z.object({
   code: codeSchema.nullable().optional(),
   enteredMonthly: z.boolean().optional(),
   cutForUnpaidDays: z.boolean().optional(),
+  pfWage: z.boolean().optional(),
+  esiWage: z.boolean().optional(),
+  taxable: z.boolean().optional(),
+  statutoryRole: z.enum(StatutoryRole).nullable().optional(),
 })

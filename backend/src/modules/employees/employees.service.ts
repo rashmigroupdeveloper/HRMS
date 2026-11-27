@@ -988,6 +988,20 @@ export function listForPayrollRun(companyId: number, from: Date, to: Date, db?: 
 }
 export type PayrollRunSource = Awaited<ReturnType<typeof listForPayrollRun>>[number]
 
+// What a pay run's deductions need to know about its people (payroll stage 4) - no viewer check: the payroll service
+// found the run with Payroll access covering the whole company first
+export function listPayrollFacts(employeeIds: number[], to: Date, db?: DbClient) {
+  return employeesRepository.listPayrollFacts(employeeIds, to, db)
+}
+export type PayrollFacts = Awaited<ReturnType<typeof listPayrollFacts>>[number]
+
+// The employee with this code (or a code they had before a company transfer) - code, name and where they are - with no
+// viewer check, or null: payroll checks Payroll access covering the employee's company itself (opening tax figures)
+export async function findForPayroll(employeeCode: string, db?: DbClient) {
+  const employee = await employeesRepository.findSummaryByCode(employeeCode, db)
+  return employee && { id: employee.id, employeeCode: employee.employeeCode, name: fullName(employee), companyId: employee.companyId }
+}
+
 // The employee's salaries, the latest first, for the job-change rules (modules/job-changes) - no viewer check
 export function listSalaries(employeeId: number, db?: DbClient) {
   return employeesRepository.listSalaries(employeeId, db)

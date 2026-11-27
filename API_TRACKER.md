@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 305**
+**Total APIs: 317**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -388,10 +388,22 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 299 | `payroll.inputs.create` | Payroll: Edit covering whole company | Type one input (incentive, canteen...) for a person of a draft run |
 | 300 | `payroll.inputs.update` | Payroll: Edit covering whole company | Change an input of a draft run |
 | 301 | `payroll.inputs.delete` | Payroll: Edit covering whole company | Remove an input of a draft run |
-| 302 | `payroll.calculation.compute` | Payroll: Edit covering whole company | "Work out pay": a draft run's days from the locked attendance and each person's earnings |
+| 302 | `payroll.calculation.compute` | Payroll: Edit covering whole company | "Work out pay": a draft run's days from the locked attendance, each person's earnings, deductions and employer contributions |
 | 303 | `attendance.exemptions.create` | Attendance setup: Edit covering each employee | Mark employees "attendance not tracked" from a day (they count present without punches) |
 | 304 | `attendance.exemptions.update` | Attendance setup: Edit covering the employee | End a "not tracked" marker on a day (or let it run on), correct its reason |
 | 305 | `attendance.exemptions.delete` | Attendance setup: Edit covering the employee | Remove a "not tracked" marker set by mistake |
+| 306 | `payroll.statutory.list` | Payroll: View | The statutory rates, professional-tax and income-tax slabs, labour welfare fund (one group-wide list) |
+| 307 | `payroll.statutory.saveRate` | Payroll: Edit for every company | Add or change one dated rate or limit |
+| 308 | `payroll.statutory.deleteRate` | Payroll: Edit for every company | Remove a dated rate |
+| 309 | `payroll.statutory.savePtSlabs` | Payroll: Edit for every company | Save the professional-tax slabs of a State from a date |
+| 310 | `payroll.statutory.deletePtSlabs` | Payroll: Edit for every company | Remove a State's slabs from a date |
+| 311 | `payroll.statutory.saveLwf` | Payroll: Edit for every company | Add or change a State's labour welfare fund from a date |
+| 312 | `payroll.statutory.deleteLwf` | Payroll: Edit for every company | Remove a labour welfare fund row |
+| 313 | `payroll.statutory.saveTaxSlabs` | Payroll: Edit for every company | Save the income-tax slabs of a regime and tax year |
+| 314 | `payroll.statutory.deleteTaxSlabs` | Payroll: Edit for every company | Remove the slabs of a regime and tax year |
+| 315 | `payroll.taxOpenings.list` | Payroll: View covering the employee's company | Opening tax figures of a tax year (earned and deducted outside this system) |
+| 316 | `payroll.taxOpenings.save` | Payroll: Edit covering the employee's company | Add or change an employee's opening tax figures |
+| 317 | `payroll.taxOpenings.delete` | Payroll: Edit covering the employee's company | Remove opening tax figures |
 
 ---
 
@@ -634,11 +646,15 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
   | `uan` | string \| null | no | 12 digits (spaces removed); `null` clears it |
   | `pfNumber` | string \| null | no | the PF member number, 1-30 characters, upper-cased; `null` clears it |
   | `esicIpNumber` | string \| null | no | 10 digits; `null` clears it |
+  | `pfOnFullWages` | boolean | no | payroll stage 4: PF above the wage ceiling (joint option) |
+  | `epsMember` | boolean | no | payroll stage 4: in the pension scheme (EPS) |
+  | `taxRegime` | `'NEW' \| 'OLD'` | no | payroll stage 4: the income-tax regime for the current tax year (OLD: HR types the monthly TDS) |
 
-- **Returns:** `{ uan, pfNumber, esicIpNumber }` as saved.
+- **Returns:** `{ uan, pfNumber, esicIpNumber, pfOnFullWages, epsMember, taxRegime }` as saved.
 - **What it does:** records the numbers given after joining - a first-job joiner gets a UAN and PF member number only
   once the company registers them with EPFO, and an ESIC IP number from ESIC. Only the fields sent change; the
-  employee's PF / ESIC row is created if they have none yet. Recorded as changed by this HR person.
+  employee's PF / ESIC row is created if they have none yet. Recorded as changed by this HR person. The three payroll
+  facts (2026-11-27) are never part of the joining form's statutory answers, so the candidate's own pages cannot set them.
 - **Errors:** `400` invalid input · `403` without Employees: Edit · `404 NOT_FOUND` unknown employee code · `409
   CONFLICT` "This UAN / ESIC IP number already belongs to employee X".
 
@@ -2601,10 +2617,12 @@ site can be used by several companies.
 - **Access:** any logged-in employee; `includeInactive: true` needs Organization: View.
 - **Scope:** not limited by data access (one list for every company).
 - **Input (optional):** `{ includeInactive?: boolean }`
-- **Returns:** `[{ id, name, code, kind, enteredMonthly, cutForUnpaidDays, displayOrder, isActive }]` in breakup order
+- **Returns:** `[{ id, name, code, kind, enteredMonthly, cutForUnpaidDays, pfWage, esiWage, taxable, statutoryRole, displayOrder, isActive }]` in breakup order
   (`displayOrder`, then name). `code`: short upper-case code or null (payroll stage 2); `enteredMonthly`: typed each
   month in payroll, never a breakup line (payroll stage 2); `cutForUnpaidDays`: an earning of the breakup is cut for a
-  pay run's unpaid days (true) or paid in full for every day in the company (payroll stage 3). `kind`:
+  pay run's unpaid days (true) or paid in full for every day in the company (payroll stage 3); `pfWage` / `esiWage` /
+  `taxable`: an earning counts for PF wages / ESI wages / income tax, `statutoryRole`: the statutory amount a deduction or
+  employer contribution carries in a pay run, one component per role (payroll stage 4). `kind`:
   `EARNING` (adds up to the Monthly Gross), `EMPLOYER_CONTRIBUTION` (PF / ESI / gratuity paid on top - part of the
   CTC, not of the gross) or `DEDUCTION` (taken out of the monthly pay by payroll - never a line of a salary breakup;
   2026-11-24).
@@ -2620,18 +2638,21 @@ site can be used by several companies.
 - **Input:** `{ name: string (1-100, unique), kind: 'EARNING' | 'EMPLOYER_CONTRIBUTION' | 'DEDUCTION', displayOrder: number
   (0-999), code?: string | null (capital letters, digits and _, starting with a letter, at most 30; unique),
   enteredMonthly?: boolean (default false), cutForUnpaidDays?: boolean (default true; only used for earnings of the
-  breakup) }`
+  breakup), pfWage?: boolean (default false), esiWage?: boolean (default true), taxable?: boolean (default true),
+  statutoryRole?: 'PF_EMPLOYEE' | 'ESIC_EMPLOYEE' | 'PROFESSIONAL_TAX' | 'LWF_EMPLOYEE' | 'INCOME_TAX' | 'PF_EMPLOYER' | 'EPS'
+  | 'EDLI' | 'ESIC_EMPLOYER' | 'LWF_EMPLOYER' | null (unique) }`
 - **Returns:** the new component.
-- **Errors:** `400` invalid input, or `enteredMonthly` on an employer contribution · `409 CONFLICT` name or code already
-  exists.
+- **Errors:** `400` invalid input, `enteredMonthly` on an employer contribution, or a statutory role that does not fit
+  (employee roles are deductions, employer roles employer contributions; income tax is entered monthly, the others never
+  are) · `409 CONFLICT` name, code or statutory role already used.
 
 ### `organization.salaryComponents.update`
 - **HTTP:** `POST /api/rpc/organization/salaryComponents/update` · **Code:** `backend/src/modules/organization/salary-components/`
 - **Access:** Organization: Edit.
 - **Scope:** shared by every company - needs Organization Edit for **all companies** (`403`).
 - **Input:** `{ id: number, name?, kind?, displayOrder?, isActive?: boolean, code?: string | null, enteredMonthly?:
-  boolean, cutForUnpaidDays?: boolean }` (rules as `create`; a changed `cutForUnpaidDays` counts in a draft pay run the
-  next time its pay is worked out)
+  boolean, cutForUnpaidDays?: boolean, pfWage?, esiWage?, taxable?, statutoryRole? }` (rules as `create`; a change counts
+  in a draft pay run the next time its pay is worked out)
 - **Returns:** the component.
 - **What it does:** changes, or retires / re-activates a component. A retired one stays on the offers that use it but
   cannot be added to an offer. A component cannot change between `DEDUCTION` and the other two kinds (2026-11-24) - the
@@ -4407,6 +4428,8 @@ and can include two events per employee. No existing API provides that contract.
   out), `peopleHeld` (pay held - see `payroll.people.list`), `peopleToWorkOutAgain` (their inputs changed after the pay
   was worked out) and `earnedGross` (what everyone earned in the period - a salary figure, null when `salaryHidden`) -
   all null until the pay is worked out (stage 3 money, 2026-11-27). `computedAt` is when the pay was last worked out.
+  Stage 4 (2026-11-27): `deductions`, `netPay` and `employerContributions` (salary figures, null when `salaryHidden`)
+  and `peopleWithoutPf` (worked-out people with no PF - their statutory details do not say "PF applicable").
 - **Does:** read-only run header detail for `/manage/payroll/:id`.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
 
@@ -4435,22 +4458,25 @@ and can include two events per employee. No existing API provides that contract.
   over the whole company as well (`levelOver(viewer, SALARY, company)`; the user, 2026-11-26) - otherwise they are null
   and `salaryHidden` is true. No team or HOD fallback.
 - **Input:** `{ runId: positive int, search?: string (max 100; code or name), flag?: 'NO_SALARY' | 'CHANGED' |
-  'HAS_INPUTS' | 'NOT_IN_PERIOD' | 'UNPAID_DAYS' | 'UNCLEAR_DAYS' | 'ALL_ABSENT' | 'PAY_NOT_WORKED_OUT', page (1-100000, default 1), pageSize
+  'HAS_INPUTS' | 'NOT_IN_PERIOD' | 'UNPAID_DAYS' | 'UNCLEAR_DAYS' | 'ALL_ABSENT' | 'PAY_NOT_WORKED_OUT' | 'NO_PF', page (1-100000, default 1), pageSize
   (1-200, default 50) }`; strict.
 - **Returns:** `{ items: [{ id (the person in the run), employeeCode (as in this company in the period), name, days,
   paidDays | null, unpaidDays | null, unclearDays | null (in days, a half = 0.5; null until the days are worked out),
   from, to, segments, inputs, annualCtc | null, monthlyGross | null, payStatus: 'WORKED_OUT' | 'HELD' | 'AGAIN' | null,
-  heldFor: ('NOT_IN_PERIOD' | 'NO_SALARY' | 'OTHER_CURRENCY' | 'DAYS_MISSING')[], earnedGross | null, flags: { noSalary,
-  changed, hasInputs, notInPeriod, unpaidDays, unclearDays, allAbsent, payNotWorkedOut } }], total, counts: { all,
-  noSalary, changed, hasInputs, notInPeriod, unpaidDays, unclearDays, allAbsent, payNotWorkedOut }, salaryHidden,
-  daysWorkedOut }`. Sorted by code. `payStatus` null until the pay is worked out; `AGAIN` = their inputs changed since.
+  heldFor: ('NOT_IN_PERIOD' | 'NO_SALARY' | 'OTHER_CURRENCY' | 'DAYS_MISSING' | 'NO_WORK_LOCATION' | 'NO_RATE' |
+  'NO_COMPONENT' | 'OVER_HALF' | 'TAX_TO_TYPE')[], heldNote | null, earnedGross | null, deductions | null, netPay | null,
+  flags: { noSalary, changed, hasInputs, notInPeriod, unpaidDays, unclearDays, allAbsent, payNotWorkedOut, noPf } }],
+  total, counts: { all, noSalary, changed, hasInputs, notInPeriod, unpaidDays, unclearDays, allAbsent, payNotWorkedOut,
+  noPf }, salaryHidden, daysWorkedOut }`. Sorted by code. `payStatus` null until the pay is worked out; `AGAIN` = their inputs changed since.
 - **Does:** lists who the run pays and, per person, how many days, how many stretches (a mid-period salary or placement
   change makes two), days with no salary, inputs, and people kept only because they have inputs. Stage 3 (2026-11-27):
   the paid, unpaid and unclear days from the run's own day rows (the days are not money - no salary access needed);
   `allAbsent` = absent on every working half and never present, on duty, on leave or with a punch - most likely someone
   who does not punch, listed to be checked. Stage 3 money (2026-11-27): whether each person's pay is worked out, why it
   is held (no days in the period, days without a salary, a salary in another currency, days missing in attendance -
-  never guessed) and their earned gross (the sum of their earning lines).
+  never guessed) and their earned gross (the sum of their earning lines). Stage 4: the reasons and their detail are stored
+  by "Work out pay" (`PayrollRunEmployee.heldFor / heldNote`); deductions and net pay (salary figures); `noPf` - pay
+  worked out with no PF.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
 
 ### `payroll.people.get`
@@ -4464,12 +4490,13 @@ and can include two events per employee. No existing API provides that contract.
   reason, monthlyGross, lines: [{ component: { id, name, code, kind }, monthlyAmount }] } | null, employeeSalaryId |
   null }], days: [{ date, firstHalf, secondHalf ('PAID' | 'UNPAID' | 'UNCLEAR'), firstStatus, secondStatus (what
   attendance said; null = attendance had no day), firstLeaveCode, secondLeaveCode }] | null, dayTotals: { paidDays,
-  unpaidDays, unclearDays, allAbsent } | null, pay: { status: 'WORKED_OUT' | 'HELD' | 'AGAIN', heldFor, periodDays, lines:
-  [{ component: { id, name, code, kind, enteredMonthly, cutForUnpaidDays }, amount, fromInput }] | null, earnedGross |
-  null } | null }` - `days` / `dayTotals` / `pay` null until the pay is worked out; `pay.lines` and `earnedGross` are
+  unpaidDays, unclearDays, allAbsent } | null, pay: { status: 'WORKED_OUT' | 'HELD' | 'AGAIN', heldFor, heldNote, periodDays,
+  lines: [{ component: { id, name, code, kind, enteredMonthly, cutForUnpaidDays, statutoryRole }, amount, base, fromInput }]
+  | null, earnedGross | null, deductions | null, netPay | null, employerContributions | null } | null }` - `days` / `dayTotals` / `pay` null until the pay is worked out; `pay.lines` and `earnedGross` are
   salary figures (null without Salary View over the whole company), the status and reasons are shown to every viewer.
 - **Does:** shows the copy the run holds for one person: each stretch of days with its placement and salary, and
-  (stage 3, 2026-11-27) each day as the run took it from the locked attendance and what they earned.
+  (stage 3, 2026-11-27) each day as the run took it from the locked attendance and what they earned; (stage 4) what is
+  deducted and what the company pays on top, each with what it was worked out on (`base`), and the net pay.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST.
 
 ### `payroll.people.refresh`
@@ -4514,10 +4541,11 @@ and can include two events per employee. No existing API provides that contract.
   (2-500) }`; strict.
 - **Returns:** `{ id, duplicate }` - `duplicate`: the person already had this component with this amount (a warning).
 - **Does:** while the run is DRAFT, saves an amount for this month for a component marked "entered monthly" (its kind
-  says earning or deduction). Recorded in the change history. The pay worked out for that person is removed (stage 3):
-  they show as "work out again" until `payroll.calculation.compute` runs once more.
-- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST for invalid input, an inactive component or one not
-  entered monthly; CONFLICT if the run is not a draft.
+  says earning or deduction). Recorded in the change history. The pay worked out for that person, and why they were
+  held, are removed (stages 3-4): they show as "work out again" until `payroll.calculation.compute` runs once more. Of
+  the statutory components only income tax is typed - it replaces the worked-out TDS (stage 4).
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND; BAD_REQUEST for invalid input, an inactive component, one not
+  entered monthly, or a statutory component other than income tax; CONFLICT if the run is not a draft.
 
 ### `payroll.inputs.update`
 - **HTTP:** `POST /api/rpc/payroll/inputs/update` · **Code:** `backend/src/modules/payroll/inputs/`
@@ -4551,7 +4579,10 @@ and can include two events per employee. No existing API provides that contract.
 - **Input:** `{ runId: positive int, expectedComputedAt: Date | null }` - the time the screen showed the pay was last
   worked out (null = never); strict.
 - **Returns:** `{ people, days (day rows written), peopleWithUnpaidDays, peopleWithUnclearDays, peopleHeld }` - counts
-  only; the amounts are read with `payroll.people.list / get` under the salary rule.
+  only; the amounts are read with `payroll.people.list / get` under the salary rule. Also read for the deductions
+  (stage 4): the statutory settings, the people's payroll facts (`employeesService.listPayrollFacts`), their opening tax
+  figures and their earlier runs of the tax year in any company of the group (their own income tax - documented
+  `// data access:` reads).
 - **Does:** "Work out pay" - stage 3 (approved 2026-11-27). In one transaction, while the run is DRAFT and every day of its pay
   period lies in a locked attendance month: replaces the run's day rows (`PayrollRunDay`) - one per person and day inside
   their stretches - with each half classed from attendance: PAID (present, on duty, weekly off, holiday, leave of a paid
@@ -4563,12 +4594,164 @@ and can include two events per employee. No existing API provides that contract.
   2026-11-27 (to be checked against a greytHR register in the parallel run): a day is worth the monthly amount / the
   days of the pay period; an earning marked "cut for unpaid days" is paid for the paid halves, any other for every half
   in the company; per component the stretches are added up and rounded once, to the nearest rupee; earning inputs are
-  paid as typed. Deduction inputs and the breakup's employer contributions wait for stage 4. A person whose pay cannot
-  be worked out (no days in the period, days without a salary, a salary in another currency, days missing in
-  attendance) gets no lines - held and listed, never guessed. Records it on the run (`computedAt` / `ById` - in the
+  paid as typed. Then (stage 4, approved 2026-11-27) the deductions and employer contributions from the earnings and the
+  dated statutory settings (`payroll/deductions/deductions.service.ts`): PF on the earnings marked "PF wages" up to the
+  ceiling (full wages with the joint option) for people whose statutory details say "PF applicable" - the employer's
+  share split into EPS (members under the age limit) and EPF, EDLI on the capped wages; ESIC when the ESI wages of the
+  salary at the start of the ESIC period (1 April / 1 October, or the joining day) were within the ceiling, each share
+  rounded up; professional tax by the slab of the work location's State and LWF in its months; TDS new regime - the
+  year's tax on the projected taxable salary (opening figures, earlier runs, this month, the months left; standard
+  deduction, rebate with marginal relief, cess) less what was deducted, over the months left, or a typed income-tax
+  input; typed deductions as typed. No ESIC / professional tax / LWF for consultants (TDS typed), no ESIC for
+  apprentices. A person whose pay cannot be worked out (no days in the period, days without a salary, a salary in
+  another currency, days missing in attendance; no work location, a rate or slab not in force, no component for a
+  statutory amount, the old regime / a consultant / income above the surcharge limit without a typed TDS, deductions
+  above half of the wages) gets no lines - held with the reasons and a note (`PayrollRunEmployee.heldFor / heldNote`),
+  never guessed. Records it on the run (`computedAt` / `ById` - in the
   change history); the day and result rows themselves are not recorded (rebuilt each time, `core/audit` SKIP_MODELS).
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT if the run is not a draft, the attendance period
   is not locked, or the pay was worked out by someone else in the meantime.
+
+## Payroll — Stage 4, statutory settings and opening tax figures (2026-11-27)
+
+The rates, ceilings and slabs every pay run's deductions are worked out with (approved by the user 2026-11-27: rates are
+data - entered from the official notifications, nothing seeded; a figure not in force holds the person, never a zero).
+The deductions themselves are worked out by `payroll.calculation.compute` and read with `payroll.people.list / get`.
+
+### `payroll.statutory.list`
+- **HTTP:** `POST /api/rpc/payroll/statutory/list` · **Code:** `backend/src/modules/payroll/statutory/`
+- **Access:** Payroll: View.
+- **Scope:** not limited by data access - one list for every company (rates and slabs, no people's records).
+- **Input:** none.
+- **Returns:** `{ rates: [{ id, parameter, effectiveFrom, value, reference, updatedAt, updatedBy }], ptSets: [{ stateCode,
+  effectiveFrom, reference, updatedAt, slabs: [{ gender, wagesFrom, wagesTo, amount, specialMonth, specialAmount }] }], lwf:
+  [{ id, stateCode, effectiveFrom, employeeAmount, employerAmount, months, reference, updatedAt, updatedBy }], taxSets: [{
+  regime, taxYearFrom, reference, updatedAt, slabs: [{ incomeFrom, incomeTo, ratePercent }] }], canChange }` - `canChange`:
+  Payroll Edit for every company.
+- **Does:** the statutory settings page (`/manage/payroll/statutory`).
+- **Errors:** UNAUTHORIZED, FORBIDDEN.
+
+### `payroll.statutory.saveRate`
+- **HTTP:** `POST /api/rpc/payroll/statutory/saveRate` · **Code:** `backend/src/modules/payroll/statutory/`
+- **Access:** Payroll: Edit, for every company (`assertGroupWide`).
+- **Scope:** not limited by data access - group-wide settings (Edit for all companies, otherwise FORBIDDEN).
+- **Input:** `{ id?: positive int (a change), parameter: 'PF_EMPLOYEE_RATE' | 'PF_EMPLOYER_RATE' | 'EPS_RATE' | 'EDLI_RATE' |
+  'PF_WAGE_CEILING' | 'EPS_AGE_LIMIT' | 'ESIC_EMPLOYEE_RATE' | 'ESIC_EMPLOYER_RATE' | 'ESIC_WAGE_CEILING' |
+  'ESIC_WAGE_CEILING_DISABLED' | 'TAX_STANDARD_DEDUCTION' | 'TAX_REBATE_INCOME_LIMIT' | 'TAX_REBATE_MAX' | 'TAX_CESS_RATE' |
+  'TAX_SURCHARGE_FROM', effectiveFrom: a day, value: number >= 0 (4 decimals), reference: string 3-300 }`; strict.
+- **Returns:** `{ id }`.
+- **Does:** saves one dated value. A rate in percent is at most 100; the EPS age limit is whole years; income-tax values
+  start on 1 April. A change inside a pay period is split by days when pay is worked out. Recorded in the change history.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST; NOT_FOUND unknown id; CONFLICT the same rate from the same day.
+
+### `payroll.statutory.deleteRate`
+- **HTTP:** `POST /api/rpc/payroll/statutory/deleteRate` · **Code:** `backend/src/modules/payroll/statutory/`
+- **Access:** as `payroll.statutory.saveRate`.
+- **Scope:** as `payroll.statutory.saveRate`.
+- **Input:** `{ id: positive int }`; strict.
+- **Returns:** `{ id }`.
+- **Does:** removes a dated value (kept in the change history); draft runs use what is in force when worked out next.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND.
+
+### `payroll.statutory.savePtSlabs`
+- **HTTP:** `POST /api/rpc/payroll/statutory/savePtSlabs` · **Code:** `backend/src/modules/payroll/statutory/`
+- **Access:** as `payroll.statutory.saveRate`.
+- **Scope:** as `payroll.statutory.saveRate`.
+- **Input:** `{ stateCode: 2 letters (upper-cased), effectiveFrom: a day, reference: string 3-300, slabs: 1-30 of { gender:
+  'MALE' | 'FEMALE' | 'TRANSGENDER' | null, wagesFrom: whole rupees, wagesTo: whole rupees | null, amount: whole rupees,
+  specialMonth: 1-12 | null, specialAmount: whole rupees | null (both or neither) }, replaces?: { stateCode, effectiveFrom }
+  (the set being edited, when its State or day changes) }`; strict.
+- **Returns:** `{ stateCode, effectiveFrom }`.
+- **Does:** replaces the State's slabs from that day in one transaction. For each gender (and for everyone) the slabs
+  start at 0, follow on without gaps or overlaps and the last has no upper limit. A State without professional tax gets a
+  nil slab. Recorded in the change history.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST (input, gaps or overlaps).
+
+### `payroll.statutory.deletePtSlabs`
+- **HTTP:** `POST /api/rpc/payroll/statutory/deletePtSlabs` · **Code:** `backend/src/modules/payroll/statutory/`
+- **Access:** as `payroll.statutory.saveRate`.
+- **Scope:** as `payroll.statutory.saveRate`.
+- **Input:** `{ stateCode, effectiveFrom }`; strict.
+- **Returns:** `{ count }`.
+- **Does:** removes the State's slabs from that day.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST; NOT_FOUND no such set.
+
+### `payroll.statutory.saveLwf`
+- **HTTP:** `POST /api/rpc/payroll/statutory/saveLwf` · **Code:** `backend/src/modules/payroll/statutory/`
+- **Access:** as `payroll.statutory.saveRate`.
+- **Scope:** as `payroll.statutory.saveRate`.
+- **Input:** `{ id?, stateCode: 2 letters, effectiveFrom: a day, employeeAmount: 0-10 lakh (2 decimals), employerAmount:
+  likewise, months: up to 12 of 1-12 (empty = every month), reference: string 3-300 }`; strict.
+- **Returns:** `{ id }`.
+- **Does:** saves a State's labour welfare fund from a day (deducted in the pay months listed). A State without the fund
+  gets a nil row. Recorded in the change history.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST; NOT_FOUND unknown id; CONFLICT the same State from the same day.
+
+### `payroll.statutory.deleteLwf`
+- **HTTP:** `POST /api/rpc/payroll/statutory/deleteLwf` · **Code:** `backend/src/modules/payroll/statutory/`
+- **Access:** as `payroll.statutory.saveRate`.
+- **Scope:** as `payroll.statutory.saveRate`.
+- **Input:** `{ id: positive int }`; strict.
+- **Returns:** `{ id }`.
+- **Does:** removes a labour welfare fund row.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND.
+
+### `payroll.statutory.saveTaxSlabs`
+- **HTTP:** `POST /api/rpc/payroll/statutory/saveTaxSlabs` · **Code:** `backend/src/modules/payroll/statutory/`
+- **Access:** as `payroll.statutory.saveRate`.
+- **Scope:** as `payroll.statutory.saveRate`.
+- **Input:** `{ regime: 'NEW' | 'OLD', taxYearFrom: 1 April, reference: string 3-300, slabs: 1-20 of { incomeFrom: whole
+  rupees, incomeTo: whole rupees | null, ratePercent: 0-100 (2 decimals) }, replaces?: { regime, taxYearFrom } }`; strict.
+- **Returns:** `{ regime, taxYearFrom }`.
+- **Does:** replaces the slabs of a regime for a tax year. They start at 0, each where the one before ends, the last has
+  no upper limit. Only the new regime is worked out today (the old one is typed). Recorded in the change history.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST.
+
+### `payroll.statutory.deleteTaxSlabs`
+- **HTTP:** `POST /api/rpc/payroll/statutory/deleteTaxSlabs` · **Code:** `backend/src/modules/payroll/statutory/`
+- **Access:** as `payroll.statutory.saveRate`.
+- **Scope:** as `payroll.statutory.saveRate`.
+- **Input:** `{ regime, taxYearFrom }`; strict.
+- **Returns:** `{ count }`.
+- **Does:** removes the slabs of a regime for a tax year.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST; NOT_FOUND no such set.
+
+### `payroll.taxOpenings.list`
+- **HTTP:** `POST /api/rpc/payroll/taxOpenings/list` · **Code:** `backend/src/modules/payroll/tax-openings/`
+- **Access:** Payroll: View.
+- **Scope:** people's records - rows whose employee's company is inside the viewer's whole-company Payroll scope
+  (`wholeCompanyScopeOf`, as pay runs: a plant-level row never counts), applied in the query. The amounts are salary
+  figures: shown only with Salary View covering the employee's company as well (otherwise null, `amountsHidden`, and the
+  row cannot be changed).
+- **Input:** `{ taxYearFrom: 1 April, companyId?, search? (code or name, max 100), page (default 1), pageSize (1-200,
+  default 50) }`; strict.
+- **Returns:** `{ items: [{ id, taxYearFrom, throughPayMonth, taxableIncome | null, taxDeducted | null, amountsHidden, note,
+  updatedAt, employee: { employeeCode, name }, updatedBy, canChange }], total }` - by employee code.
+- **Does:** what employees earned and had deducted as income tax earlier in the tax year outside this system (greytHR
+  before the go-live, a previous employer - Form 122); the monthly TDS spreads the rest of the year's tax over the months
+  left.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, BAD_REQUEST.
+
+### `payroll.taxOpenings.save`
+- **HTTP:** `POST /api/rpc/payroll/taxOpenings/save` · **Code:** `backend/src/modules/payroll/tax-openings/`
+- **Access:** Payroll: Edit.
+- **Scope:** the employee's company must be inside the viewer's whole-company Payroll scope (otherwise NOT_FOUND), at Edit
+  (View only: FORBIDDEN); never one's own record (FORBIDDEN).
+- **Input:** `{ id? (a change), employeeCode, taxYearFrom: 1 April, throughPayMonth: the first day of a month inside the
+  tax year, taxableIncome: whole rupees, taxDeducted: whole rupees, note?: string up to 500 | null }`; strict.
+- **Returns:** `{ id }`.
+- **Does:** saves one employee's opening figures for a tax year (one row per employee and tax year; a change keeps its
+  employee and tax year). Pay runs of later months in this system are added on top. Recorded in the change history.
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT figures for that employee and tax year exist.
+
+### `payroll.taxOpenings.delete`
+- **HTTP:** `POST /api/rpc/payroll/taxOpenings/delete` · **Code:** `backend/src/modules/payroll/tax-openings/`
+- **Access:** as `payroll.taxOpenings.save`.
+- **Scope:** as `payroll.taxOpenings.save`.
+- **Input:** `{ id: positive int }`; strict.
+- **Returns:** `{ id }`.
+- **Does:** removes opening figures (kept in the change history).
+- **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND.
 
 ## Attendance — "attendance not tracked" (2026-11-27)
 

@@ -300,8 +300,19 @@ frontend/src/
   (`SalaryComponent.cutForUnpaidDays`); each worked-out line is rounded once to the nearest rupee; inputs are paid as
   typed. The rule lives in one place (`payroll/calculation/calculation.service.ts`) and is checked against a greytHR
   salary register in the parallel run (BACKLOG item 31). Earned amounts are salary figures (`seesSalaries`, below).
-  Deductions, approval and payment wait for their approved stages; no independent approval lifecycle is built into
-  payroll.
+  **Stage 4, deductions and net pay (built 2026-11-27, `payroll/deductions/`, `payroll/statutory/`,
+  `payroll/tax-openings/`): rates are data** - every statutory rate, ceiling and slab is a dated row on Payroll ›
+  Statutory settings (Payroll Edit for every company, `assertGroupWide`), entered from the notification, never seeded or
+  written in code; a figure not in force, a missing work location / component / birth date, the old tax regime or a
+  consultant without a typed TDS, or deductions above half of the wages HOLD the person (stored with the reason,
+  `PayrollRunEmployee.heldFor`) - never a zero. Decided by the user: PF on the components marked "PF wages" up to the
+  ceiling (per-person "PF on full wages"), for those whose statutory details say "PF applicable"; ESIC decided by the
+  salary at the start of each ESIC period; professional tax and LWF by the work location's State; monthly TDS worked out
+  (new regime, no declarations - those come in stage 7) or typed; no ESIC / professional tax / LWF for consultants (TDS
+  typed), no ESIC for apprentices. Deductions and net are salary figures too (and the hold notes every Payroll viewer
+  sees never carry an amount); opening tax figures follow whole-company Payroll scope by the employee's company, their
+  amounts shown only with Salary View covering it as well. Approval and payment wait for their approved stages; no independent approval
+  lifecycle is built into payroll.
   **Decided for stage 2 (the user, 2026-11-26):** monthly inputs are entered and changed only by someone with Payroll
   Edit covering the whole company - a plant-level HR person sends their figures to them; salary amounts inside a run
   (the salary copy and its lines) are shown only to a viewer who also has `SALARY` View covering the whole company

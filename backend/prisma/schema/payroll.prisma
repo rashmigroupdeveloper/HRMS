@@ -2,7 +2,8 @@
 // The salary agreed in the offer is copied to the employee on the joining day (decided 2026-11-15) - so the employee's
 // pay does not depend on the candidate record. Revisions (an increment, a promotion's hike, a correction) are asked as
 // job changes and approved (job-changes.prisma, 2026-11-20); each approved one is a row from its day - the salary
-// history. Draft pay runs are built (2026-11-26); employee inputs, calculations and deductions follow in later stages.
+// history. Pay runs (2026-11-26) take inputs and work out the days, earnings, deductions and net pay (stages 2-4,
+// 2026-11-27); approval, payslips and payment follow in later stages.
 
 // An employee's salary from a date on: the annual fixed CTC, the performance pay and the monthly breakup (lines).
 // The first one is the offer's (offer letter Annexure-I), effective from the date of joining.
@@ -132,6 +133,11 @@ model PayrollRunEmployee {
   // The code they had in this company in the period. Copied: a company transfer gives a new code and the job timeline's
   // latest row can be corrected. Printed on the register, payslip and bank file.
   employeeCode String   @map("employee_code")
+  // Why their pay could not be worked out the last time "Work out pay" ran (stage 4, approved 2026-11-27) - empty when
+  // it was; emptied with their lines when their inputs change. heldNote: the detail for HR ("No PF wage ceiling in
+  // force on 26 Feb 2027").
+  heldFor      PayHold[] @default([]) @map("held_for")
+  heldNote     String?   @map("held_note")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById  Int      @map("created_by_id")
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -160,11 +166,14 @@ model PayrollRunSalarySegment {
   fromDate             DateTime          @map("from_date") @db.Date
   toDate               DateTime          @map("to_date") @db.Date
   // --- the placement, copied from the job timeline ---
-  // decides the State for professional tax and LWF (stage 4)
+  // the plant the salary cost is posted to (stage 6); the State for professional tax and LWF comes from workLocationId
   plantId              Int               @map("plant_id")
   departmentId         Int               @map("department_id")
   // the accounting entry (stage 6); optional on the employee today
   costCenterId         Int?              @map("cost_center_id")
+  // where they work, copied from the job timeline: its State decides professional tax and LWF (stage 4, approved
+  // 2026-11-27 - the stretch at the period's end counts); empty = the person is held
+  workLocationId       Int?              @map("work_location_id")
   // eligibility rules (PF, ESIC, bonus, overtime) in later stages
   employmentType       EmploymentType    @map("employment_type")
   workforceCategory    WorkforceCategory @map("workforce_category")
@@ -184,6 +193,7 @@ model PayrollRunSalarySegment {
   plant          Plant                  @relation(fields: [plantId], references: [id], onDelete: Restrict)
   department     Department             @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   costCenter     CostCenter?            @relation(fields: [costCenterId], references: [id], onDelete: Restrict)
+  workLocation   WorkLocation?          @relation(fields: [workLocationId], references: [id], onDelete: Restrict)
   employeeSalary EmployeeSalary?        @relation(fields: [employeeSalaryId], references: [id], onDelete: SetNull)
   lines          PayrollRunSalaryLine[]
 
@@ -191,6 +201,7 @@ model PayrollRunSalarySegment {
   @@index([plantId])
   @@index([departmentId])
   @@index([costCenterId])
+  @@index([workLocationId])
   @@index([employeeSalaryId])
   @@map("payroll_run_salary_segments")
 }
@@ -303,6 +314,10 @@ model PayrollRunLine {
   salaryComponentId    Int      @map("salary_component_id")
   // to the paisa: a worked-out line is rounded to the rupee, an input keeps what was typed
   amount               Decimal  @db.Decimal(12, 2)
+  // what a deduction or employer contribution was worked out on (stage 4, approved 2026-11-27): the PF / EPS / EDLI
+  // wages, the ESI wages, the gross for professional tax, the projected taxable income for TDS - printed on the register
+  // and the PF return (ECR); empty for earnings and typed amounts
+  base                 Decimal? @db.Decimal(12, 2)
   createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById          Int      @map("created_by_id")
   updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -314,4 +329,177 @@ model PayrollRunLine {
   @@unique([payrollRunEmployeeId, salaryComponentId])
   @@index([salaryComponentId])
   @@map("payroll_run_lines")
+}
+
+// Why a person's pay is held in a run (stage 3 and 4) - never guessed, listed for HR
+enum PayHold {
+  // no days in the pay period any more (kept in the run only for their inputs)
+  NOT_IN_PERIOD
+  // days with no salary in force
+  NO_SALARY
+  // a salary in another currency than INR - an India run does not pay it
+  OTHER_CURRENCY
+  // days attendance has no answer for (records changed after the lock)
+  DAYS_MISSING
+  // a stretch with no work location - its State decides professional tax and LWF
+  NO_WORK_LOCATION
+  // a statutory rate or slab not in force (or the person's date of birth / gender a slab needs is missing)
+  NO_RATE
+  // a statutory amount with no salary component carrying it (Organization › Salary components)
+  NO_COMPONENT
+  // all deductions together above half of the wages (Code on Wages s.18)
+  OVER_HALF
+  // income tax needs a typed figure: old regime, a consultant, or income above the surcharge limit
+  TAX_TO_TYPE
+
+  @@map("pay_hold")
+}
+
+// --- Stage 4 (approved by the user 2026-11-27): deductions, employer contributions and net pay ---
+// Rates are data (coding plan rule 5): every statutory rate, ceiling and slab is a dated row entered on Payroll ›
+// Statutory settings by someone with Payroll Edit for every company, with the notification it comes from - nothing is
+// seeded or written in code, and tests make up their own rows. A missing row never counts as zero: the person is held.
+
+// One dated value of a statutory rate or limit (one list for the group). A change inside a pay period is split by
+// days - e.g. the PF wage ceiling of 17 Sep 2026: the days before at the old ceiling, the days after at the new; the
+// income-tax values go by tax year (the value in force on 1 April).
+model StatutoryRate {
+  id            Int                @id @default(autoincrement())
+  parameter     StatutoryParameter
+  effectiveFrom DateTime           @map("effective_from") @db.Date
+  // a percentage (12, 8.33, 0.75), an amount in rupees (25,000 a month; 75,000 a year) or years (58), as the
+  // parameter says
+  value         Decimal            @db.Decimal(12, 4)
+  // the notification or section it comes from, e.g. "S.O. 5109(E), 17 Sep 2026" - for the CA's check
+  reference     String
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int                @map("created_by_id")
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int                @map("updated_by_id")
+
+  @@unique([parameter, effectiveFrom])
+  @@map("statutory_rates")
+}
+
+enum StatutoryParameter {
+  // EPF / EPS / EDLI: percent of the PF wages; the wage ceiling in rupees a month; the EPS age limit in years
+  PF_EMPLOYEE_RATE
+  PF_EMPLOYER_RATE
+  EPS_RATE
+  EDLI_RATE
+  PF_WAGE_CEILING
+  EPS_AGE_LIMIT
+  // ESIC: percent of the ESI wages; the coverage ceilings in rupees a month (persons with disabilities: higher)
+  ESIC_EMPLOYEE_RATE
+  ESIC_EMPLOYER_RATE
+  ESIC_WAGE_CEILING
+  ESIC_WAGE_CEILING_DISABLED
+  // income tax, new regime, by tax year: rupees a year; the cess in percent; above the surcharge limit TDS is typed
+  TAX_STANDARD_DEDUCTION
+  TAX_REBATE_INCOME_LIMIT
+  TAX_REBATE_MAX
+  TAX_CESS_RATE
+  TAX_SURCHARGE_FROM
+
+  @@map("statutory_parameter")
+}
+
+// Professional tax of a State from a date: the month's tax by the month's earned gross. A State with no professional
+// tax gets one nil slab (from 0, no upper limit, amount 0); a State with no slab at all holds its people.
+model ProfessionalTaxSlab {
+  id            Int      @id @default(autoincrement())
+  // the work location's State, as WorkLocation.stateCode (e.g. WB)
+  stateCode     String   @map("state_code") @db.Char(2)
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  // only for this gender (Maharashtra's slab for women); empty = everyone else
+  gender        Gender?
+  // the month's earned gross from .. to, whole rupees, both included; to empty = no upper limit
+  wagesFrom     Int      @map("wages_from")
+  wagesTo       Int?     @map("wages_to")
+  // the month's tax, whole rupees
+  amount        Int
+  // a pay month (1-12) with another amount, to reach the yearly cap (Karnataka, Maharashtra: February 300)
+  specialMonth  Int?     @map("special_month") @db.SmallInt
+  specialAmount Int?     @map("special_amount")
+  reference     String
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById   Int      @map("created_by_id")
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById   Int      @map("updated_by_id")
+
+  @@index([stateCode, effectiveFrom])
+  @@map("professional_tax_slabs")
+}
+
+// Labour welfare fund of a State from a date: the employee's and the employer's amount, deducted in the pay months
+// listed (West Bengal: June and December). A State with no fund gets a nil row (0 and 0); no row at all holds its people.
+model LabourWelfareRate {
+  id             Int      @id @default(autoincrement())
+  stateCode      String   @map("state_code") @db.Char(2)
+  effectiveFrom  DateTime @map("effective_from") @db.Date
+  employeeAmount Decimal  @map("employee_amount") @db.Decimal(8, 2)
+  employerAmount Decimal  @map("employer_amount") @db.Decimal(8, 2)
+  // the pay months (1-12) it is deducted in; empty = every month
+  months         Int[]    @db.SmallInt
+  reference      String
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById    Int      @map("created_by_id")
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById    Int      @map("updated_by_id")
+
+  @@unique([stateCode, effectiveFrom])
+  @@map("labour_welfare_rates")
+}
+
+// The income-tax rate of a regime for a tax year (from 1 April) on the taxable income between from and to
+model IncomeTaxSlab {
+  id          Int       @id @default(autoincrement())
+  regime      TaxRegime
+  taxYearFrom DateTime  @map("tax_year_from") @db.Date
+  // whole rupees a year; to empty = no upper limit
+  incomeFrom  Int       @map("income_from")
+  incomeTo    Int?      @map("income_to")
+  ratePercent Decimal   @map("rate_percent") @db.Decimal(5, 2)
+  reference   String
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int       @map("created_by_id")
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int       @map("updated_by_id")
+
+  @@unique([regime, taxYearFrom, incomeFrom])
+  @@map("income_tax_slabs")
+}
+
+// Income-tax regime (Income-tax Act 2025 s.202: NEW by default; OLD by the employee's choice)
+enum TaxRegime {
+  NEW
+  OLD
+
+  @@map("tax_regime")
+}
+
+// What an employee earned and had deducted as income tax earlier in a tax year, outside this system (greytHR before the
+// go-live, or a previous employer - Form 122): the monthly TDS spreads the rest of the year's tax over the months left.
+// Entered by someone with Payroll Edit covering the employee's company, never for themselves.
+model TaxOpeningBalance {
+  id              Int      @id @default(autoincrement())
+  employeeId      Int      @map("employee_id")
+  // 1 April of the tax year
+  taxYearFrom     DateTime @map("tax_year_from") @db.Date
+  // the figures cover the tax year up to and including this pay month (the first day of the month) - runs of later pay
+  // months in this system are added on top
+  throughPayMonth DateTime @map("through_pay_month") @db.Date
+  // whole rupees
+  taxableIncome   Int      @map("taxable_income")
+  taxDeducted     Int      @map("tax_deducted")
+  note            String?
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById     Int      @map("created_by_id")
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById     Int      @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, taxYearFrom])
+  @@map("tax_opening_balances")
 }

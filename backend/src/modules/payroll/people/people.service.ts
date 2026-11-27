@@ -1,7 +1,7 @@
 import { ORPCError } from '@orpc/server'
 import { assertAccess } from '#core/auth/access'
 import { assertWholeSlice, levelOver, wholeCompanyScopeOf } from '#core/auth/scope'
-import { prisma, type ActorId, type DayStatus, type DbClient, type PayClass } from '#core/db/prisma'
+import { prisma, type ActorId, type DayStatus, type DbClient, type PayClass, type PayHold } from '#core/db/prisma'
 import type { CurrentUser } from '#core/rpc/procedures'
 import { employeesService } from '#modules/employees'
 import { fromPaise, toPaise } from '#shared/utils/money'
@@ -56,6 +56,7 @@ const sameSegment = (a: { job: JobRow; salary: SalaryRow | undefined }, b: { job
   a.job.plantId === b.job.plantId &&
   a.job.departmentId === b.job.departmentId &&
   a.job.costCenterId === b.job.costCenterId &&
+  a.job.workLocationId === b.job.workLocationId &&
   a.job.employmentType === b.job.employmentType &&
   a.job.workforceCategory === b.job.workforceCategory
 
@@ -94,6 +95,7 @@ export function buildPeople(companyId: number, from: Date, to: Date, sources: So
       plantId: p.job.plantId,
       departmentId: p.job.departmentId,
       costCenterId: p.job.costCenterId,
+      workLocationId: p.job.workLocationId,
       employmentType: p.job.employmentType,
       workforceCategory: p.job.workforceCategory,
       employeeSalaryId: p.salary?.id ?? null,
@@ -119,7 +121,7 @@ export async function rebuildCopy(run: { id: number; companyId: number; attendan
   const dropIds = (await peopleRepository.listMembers(run.id, tx)).filter((m) => !belong.has(m.employeeId) && m._count.inputs === 0).map((m) => m.id)
   await peopleRepository.replaceCopy(run.id, people, dropIds, actorId, tx)
   await daysRepository.clearDays(run.id, tx)
-  await calculationRepository.clearLines(run.id, tx)
+  await calculationRepository.clearLines(run.id, actorId, tx)
   await payrollRepository.markRefreshed(run.id, actorId, tx)
   return { people: people.length }
 }
@@ -149,6 +151,9 @@ export async function draftRunFor(viewer: CurrentUser, runId: number, what: stri
 export function seesSalaries(viewer: CurrentUser, companyId: number) {
   return levelOver(viewer, 'SALARY', companySlice(companyId)) !== undefined
 }
+
+// amounts added up in whole paise (a missing one counts as nothing)
+const total = (amounts: (number | null)[]) => fromPaise(amounts.reduce<number>((sum, a) => sum + toPaise(a ?? 0), 0))
 
 const grossOf = (lines: { kind: string; monthlyAmount: number }[]) =>
   fromPaise(lines.filter((l) => l.kind === 'EARNING').reduce((sum, l) => sum + toPaise(l.monthlyAmount), 0))
@@ -191,17 +196,17 @@ async function dayTotalsOf(runId: number, db?: DbClient) {
   return new Map([...byPerson].map(([id, groups]) => [id, totalsOf(groups)]))
 }
 
-// --- Whether a person's pay can be worked out (stage 3, 2026-11-27) ---
+// --- Whether a person's pay can be worked out (stages 3 and 4, 2026-11-27) ---
 
-// Why a person's pay is held - never guessed, listed for HR (pure - unit tested):
+// Why stage 3 holds a person's pay - never guessed, listed for HR (pure - unit tested; stage 4 adds its own reasons):
 // - NOT_IN_PERIOD: no days in the pay period any more (kept in the run only for their inputs);
 // - NO_SALARY: days with no salary in force;
 // - OTHER_CURRENCY: a salary in another currency than INR - an India run does not pay it;
 // - DAYS_MISSING: days attendance has no answer for ("unclear" halves - only when records change after the lock, e.g.
 //   a joiner added later with a joining date in a locked month; locking the month again works their days out).
-export type HoldReason = 'NOT_IN_PERIOD' | 'NO_SALARY' | 'OTHER_CURRENCY' | 'DAYS_MISSING'
-export function holdReasonsOf(segments: { annualCtc: number | null; currency: string | null }[], unclearDays: number): HoldReason[] {
-  const reasons: HoldReason[] = []
+// "Work out pay" stores the reasons on the person (PayrollRunEmployee.heldFor / heldNote); the lists read them back.
+export function holdReasonsOf(segments: { annualCtc: number | null; currency: string | null }[], unclearDays: number): PayHold[] {
+  const reasons: PayHold[] = []
   if (!segments.length) reasons.push('NOT_IN_PERIOD')
   if (segments.some((s) => s.annualCtc === null)) reasons.push('NO_SALARY')
   if (segments.some((s) => s.currency !== null && s.currency !== 'INR')) reasons.push('OTHER_CURRENCY')
@@ -209,31 +214,30 @@ export function holdReasonsOf(segments: { annualCtc: number | null; currency: st
   return reasons
 }
 
-// WORKED_OUT: earnings worked out; HELD: cannot be (holdReasonsOf); AGAIN: their inputs changed after the pay was worked
-// out (the change removed their lines) - press "Work out pay" again
+// WORKED_OUT: pay worked out; HELD: it could not be (the stored reasons); AGAIN: their inputs changed after the pay was
+// worked out (the change removed their lines and reasons) - press "Work out pay" again
 export type PayStatus = 'WORKED_OUT' | 'HELD' | 'AGAIN'
-type PayState = { status: PayStatus; heldFor: HoldReason[]; earned: number | null }
+type PayState = { status: PayStatus; heldFor: PayHold[]; heldNote: string | null; earned: number | null; deducted: number | null; net: number | null; employer: number | null }
 
-// Every person's pay state in a worked-out run, from their segments, day totals and earning lines
-async function payStatesOf(runId: number, people: { id: number; segments: { annualCtc: number | null; currency: string | null }[] }[], dayTotals: Map<number, DayTotals>, db?: DbClient) {
-  const earnings = await calculationRepository.earningsByPerson(runId, db)
-  return new Map<number, PayState>(
-    people.map((p) => {
-      const heldFor = holdReasonsOf(p.segments, dayTotals.get(p.id)?.unclearDays ?? 0)
-      const earned = earnings.get(p.id)
-      const status: PayStatus = heldFor.length ? 'HELD' : earned ? 'WORKED_OUT' : 'AGAIN'
-      return [p.id, { status, heldFor, earned: status === 'WORKED_OUT' ? earned!.amount : null }]
-    }),
-  )
+const stateOf = (heldFor: PayHold[], heldNote: string | null, totals: { lines: number; earned: number; deducted: number; employer: number } | undefined): PayState => {
+  const status: PayStatus = heldFor.length ? 'HELD' : totals?.lines ? 'WORKED_OUT' : 'AGAIN'
+  if (status !== 'WORKED_OUT') return { status, heldFor, heldNote, earned: null, deducted: null, net: null, employer: null }
+  return { status, heldFor, heldNote, earned: totals!.earned, deducted: totals!.deducted, net: fromPaise(toPaise(totals!.earned) - toPaise(totals!.deducted)), employer: totals!.employer }
+}
+
+// Every person's pay state in a worked-out run, from their stored reasons and their lines
+async function payStatesOf(runId: number, people: { id: number; heldFor: PayHold[]; heldNote: string | null }[], db?: DbClient) {
+  const totals = await calculationRepository.totalsByPerson(runId, db)
+  return new Map<number, PayState>(people.map((p) => [p.id, stateOf(p.heldFor, p.heldNote, totals.get(p.id))]))
 }
 
 // For the run's header: how many people have unpaid days, how many need a look (unclear days, absent throughout, or
-// pay not worked out), how many have their pay held or to work out again, and the earned gross (null when the viewer
-// may not see salaries) - null as a whole until the pay is worked out
+// pay not worked out), how many have their pay held or to work out again, and the totals - earned gross, deductions,
+// net pay, employer contributions (null when the viewer may not see salaries) - null as a whole until worked out
 export async function runCountsOf(run: { id: number; computedAt: Date | null }, showSalary: boolean, db?: DbClient) {
   if (!run.computedAt) return null
-  const [dayTotals, people] = await Promise.all([dayTotalsOf(run.id, db), peopleRepository.listPeople(run.id, db)])
-  const pay = await payStatesOf(run.id, people, dayTotals, db)
+  const [dayTotals, people, inPf] = await Promise.all([dayTotalsOf(run.id, db), peopleRepository.listPeople(run.id, db), calculationRepository.peopleWithRole(run.id, 'PF_EMPLOYEE', db)])
+  const pay = await payStatesOf(run.id, people, db)
   const zero = { paidDays: 0, unpaidDays: 0, unclearDays: 0, allAbsent: false }
   const states = people.map((p) => ({ days: dayTotals.get(p.id) ?? zero, pay: pay.get(p.id)! }))
   return {
@@ -241,7 +245,13 @@ export async function runCountsOf(run: { id: number; computedAt: Date | null }, 
     toCheck: states.filter((s) => s.days.unclearDays > 0 || s.days.allAbsent || s.pay.status !== 'WORKED_OUT').length,
     held: states.filter((s) => s.pay.status === 'HELD').length,
     again: states.filter((s) => s.pay.status === 'AGAIN').length,
-    earnedGross: showSalary ? fromPaise(states.reduce((sum, s) => sum + toPaise(s.pay.earned ?? 0), 0)) : null,
+    earnedGross: showSalary ? total(states.map((s) => s.pay.earned)) : null,
+    deductions: showSalary ? total(states.map((s) => s.pay.deducted)) : null,
+    netPay: showSalary ? total(states.map((s) => s.pay.net)) : null,
+    employerContributions: showSalary ? total(states.map((s) => s.pay.employer)) : null,
+    // stage 4: PF is worked out only for people whose statutory details say "PF applicable" - how many worked-out people
+    // have none, so a missing tick is not a silent zero
+    withoutPf: people.filter((p) => pay.get(p.id)!.status === 'WORKED_OUT' && !inPf.has(p.id)).length,
   }
 }
 
@@ -250,7 +260,11 @@ export async function listPeople(viewer: CurrentUser, input: PeopleListInput) {
   const showSalary = seesSalaries(viewer, run.company.id)
   const computed = run.computedAt !== null
   const [rows, dayTotals] = await Promise.all([peopleRepository.listPeople(run.id), computed ? dayTotalsOf(run.id) : null])
-  const [person, pay] = await Promise.all([employeesService.lookupPeople(rows.map((r) => r.employeeId)), dayTotals ? payStatesOf(run.id, rows, dayTotals) : null])
+  const [person, pay, inPf] = await Promise.all([
+    employeesService.lookupPeople(rows.map((r) => r.employeeId)),
+    dayTotals ? payStatesOf(run.id, rows) : null,
+    dayTotals ? calculationRepository.peopleWithRole(run.id, 'PF_EMPLOYEE') : null,
+  ])
   const all = rows.map((row) => {
     const latest = row.segments.at(-1)
     // (worked out, but someone with no days in the period has no rows: zeros)
@@ -266,6 +280,8 @@ export async function listPeople(viewer: CurrentUser, input: PeopleListInput) {
       allAbsent: !!days && days.allAbsent,
       // stage 3: pay worked out but not for this person (held, or their inputs changed since)
       payNotWorkedOut: !!state && state.status !== 'WORKED_OUT',
+      // stage 4: pay worked out with no PF (their statutory details do not say "PF applicable")
+      noPf: !!state && state.status === 'WORKED_OUT' && !inPf?.has(row.id),
     }
     return {
       id: row.id,
@@ -282,11 +298,14 @@ export async function listPeople(viewer: CurrentUser, input: PeopleListInput) {
       inputs: row._count.inputs,
       annualCtc: showSalary ? (latest?.annualCtc ?? null) : null,
       monthlyGross: showSalary && latest && latest.annualCtc !== null ? grossOf(latest.lines) : null,
-      // stage 3: whether the pay is worked out (null until "Work out pay"), why it is held, and what they earned in the
-      // period (a salary figure: null when hidden or not worked out)
+      // stages 3-4: whether the pay is worked out (null until "Work out pay"), why it is held, what they earned in the
+      // period and their net pay (salary figures: null when hidden or not worked out)
       payStatus: state?.status ?? null,
       heldFor: state?.heldFor ?? [],
+      heldNote: state?.heldNote ?? null,
       earnedGross: showSalary ? (state?.earned ?? null) : null,
+      deductions: showSalary ? (state?.deducted ?? null) : null,
+      netPay: showSalary ? (state?.net ?? null) : null,
       flags,
     }
   })
@@ -300,8 +319,9 @@ export async function listPeople(viewer: CurrentUser, input: PeopleListInput) {
     unclearDays: all.filter((p) => p.flags.unclearDays).length,
     allAbsent: all.filter((p) => p.flags.allAbsent).length,
     payNotWorkedOut: all.filter((p) => p.flags.payNotWorkedOut).length,
+    noPf: all.filter((p) => p.flags.noPf).length,
   }
-  const flagKey = { NO_SALARY: 'noSalary', CHANGED: 'changed', HAS_INPUTS: 'hasInputs', NOT_IN_PERIOD: 'notInPeriod', UNPAID_DAYS: 'unpaidDays', UNCLEAR_DAYS: 'unclearDays', ALL_ABSENT: 'allAbsent', PAY_NOT_WORKED_OUT: 'payNotWorkedOut' } as const
+  const flagKey = { NO_SALARY: 'noSalary', CHANGED: 'changed', HAS_INPUTS: 'hasInputs', NOT_IN_PERIOD: 'notInPeriod', UNPAID_DAYS: 'unpaidDays', UNCLEAR_DAYS: 'unclearDays', ALL_ABSENT: 'allAbsent', PAY_NOT_WORKED_OUT: 'payNotWorkedOut', NO_PF: 'noPf' } as const
   const text = input.search?.toLowerCase()
   const matching = all.filter(
     (p) => (!input.flag || p.flags[flagKey[input.flag]]) && (!text || p.employeeCode.toLowerCase().includes(text) || p.name.toLowerCase().includes(text)),
@@ -321,17 +341,21 @@ export async function getPerson(viewer: CurrentUser, { runId, personId }: { runI
     run.computedAt ? calculationRepository.listPersonLines(row.id) : null,
   ])
   const dayTotals = days ? totalsOf(days.map((d) => ({ ...d, days: 1 }))) : null
-  // stage 3: the pay worked out for them - null until "Work out pay"; the amounts are salary figures (hidden without
+  // stages 3-4: the pay worked out for them - null until "Work out pay"; the amounts are salary figures (hidden without
   // Salary View over the whole company), whether it is worked out and why not is shown to every Payroll viewer
-  const heldFor = dayTotals ? holdReasonsOf(row.segments, dayTotals.unclearDays) : []
-  const earnings = lines?.filter((l) => l.component.kind === 'EARNING') ?? []
-  const pay = lines && dayTotals
+  const sumOf = (kind: string) => fromPaise((lines ?? []).filter((l) => l.component.kind === kind).reduce((sum, l) => sum + toPaise(l.amount), 0))
+  const state = lines && dayTotals ? stateOf(row.heldFor, row.heldNote, { lines: lines.filter((l) => l.component.kind === 'EARNING').length, earned: sumOf('EARNING'), deducted: sumOf('DEDUCTION'), employer: sumOf('EMPLOYER_CONTRIBUTION') }) : null
+  const pay = state
     ? {
-        status: (heldFor.length ? 'HELD' : earnings.length ? 'WORKED_OUT' : 'AGAIN') as PayStatus,
-        heldFor,
+        status: state.status,
+        heldFor: state.heldFor,
+        heldNote: state.heldNote,
         periodDays: daysIn(payPeriodOf(run).from, payPeriodOf(run).to),
-        lines: showSalary ? lines.map((l) => ({ ...l, fromInput: l.component.enteredMonthly })) : null,
-        earnedGross: showSalary && earnings.length ? fromPaise(earnings.reduce((sum, l) => sum + toPaise(l.amount), 0)) : null,
+        lines: showSalary ? lines!.map((l) => ({ ...l, fromInput: l.component.enteredMonthly })) : null,
+        earnedGross: showSalary ? state.earned : null,
+        deductions: showSalary ? state.deducted : null,
+        netPay: showSalary ? state.net : null,
+        employerContributions: showSalary ? state.employer : null,
       }
     : null
   return {

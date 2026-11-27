@@ -3,8 +3,8 @@ import { z } from 'zod'
 const id = z.number().int().positive()
 
 // What the people list can be narrowed to (payroll stage 2; stage 3: unpaid days, days to look at, absent throughout,
-// pay not worked out)
-export const PEOPLE_FLAGS = ['NO_SALARY', 'CHANGED', 'HAS_INPUTS', 'NOT_IN_PERIOD', 'UNPAID_DAYS', 'UNCLEAR_DAYS', 'ALL_ABSENT', 'PAY_NOT_WORKED_OUT'] as const
+// pay not worked out; stage 4: no PF)
+export const PEOPLE_FLAGS = ['NO_SALARY', 'CHANGED', 'HAS_INPUTS', 'NOT_IN_PERIOD', 'UNPAID_DAYS', 'UNCLEAR_DAYS', 'ALL_ABSENT', 'PAY_NOT_WORKED_OUT', 'NO_PF'] as const
 
 export const peopleListInput = z
   .object({

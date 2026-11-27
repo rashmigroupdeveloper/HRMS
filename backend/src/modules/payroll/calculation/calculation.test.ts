@@ -21,8 +21,8 @@ const PERIOD = 28
 const addDays = (date: Date, n: number) => new Date(date.getTime() + n * 86_400_000)
 type Line = PaySource['segments'][number]['lines'][number]
 const earning = (salaryComponentId: number, monthlyAmount: number, cutForUnpaidDays = true): Line => ({ salaryComponentId, monthlyAmount, kind: 'EARNING', cutForUnpaidDays })
-const segment = (fromDate: string, toDate: string, lines: Line[], annualCtc: number | null = 600000, currency: string | null = 'INR') => ({ fromDate: d(fromDate), toDate: d(toDate), annualCtc, currency, lines })
-const person = (segments: PaySource['segments'], inputs: PaySource['inputs'] = []): PaySource => ({ id: 1, segments, inputs })
+const segment = (fromDate: string, toDate: string, lines: Line[], annualCtc: number | null = 600000, currency: string | null = 'INR') => ({ fromDate: d(fromDate), toDate: d(toDate), annualCtc, currency, lines, employmentType: 'PERMANENT' as const, workLocationId: null })
+const person = (segments: PaySource['segments'], inputs: PaySource['inputs'] = []): PaySource => ({ id: 1, employeeId: 1, segments, inputs })
 // every day from..to, paid unless `classOf(i)` says otherwise (i = 0 on the first day)
 const days = (from: string, to: string, classOf: (i: number) => [PayClass, PayClass] = () => ['PAID', 'PAID']) => {
   const out: { date: Date; firstHalf: PayClass; secondHalf: PayClass }[] = []

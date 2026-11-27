@@ -19,6 +19,8 @@ async function monthlyComponent(id: number) {
   const component = (await salaryComponentsService.listSalaryComponents()).find((c) => c.id === id)
   if (!component) throw new ORPCError('BAD_REQUEST', { message: 'Choose an active salary component' })
   if (!component.enteredMonthly) throw new ORPCError('BAD_REQUEST', { message: `${component.name} comes from the salary - only components entered each month can be typed here` })
+  // (stage 4: of the statutory amounts only income tax is typed - it replaces the worked-out TDS)
+  if (component.statutoryRole && component.statutoryRole !== 'INCOME_TAX') throw new ORPCError('BAD_REQUEST', { message: `${component.name} is worked out from the statutory rates - it is not typed` })
   return component
 }
 
@@ -50,7 +52,7 @@ export async function createInput(viewer: CurrentUser, input: { runId: number; p
     await monthlyComponent(input.salaryComponentId)
     const duplicate = await inputsRepository.hasSame(member.id, input.salaryComponentId, input.amount, null, tx)
     const { id } = await inputsRepository.create({ personId: member.id, salaryComponentId: input.salaryComponentId, amount: input.amount, note: input.note }, viewer.employeeId, tx)
-    await calculationRepository.clearPersonLines(member.id, tx)
+    await calculationRepository.clearPersonLines(member.id, viewer.employeeId, tx)
     return { id, duplicate }
   })
 }
@@ -67,7 +69,7 @@ export async function updateInput(viewer: CurrentUser, { runId, id, ...changes }
     const duplicate = await inputsRepository.hasSame(current.runEmployee.id, componentId, amount, id, tx)
     await inputsRepository.update(id, changes, viewer.employeeId, tx)
     // (a new note alone changes no amount)
-    if (changes.salaryComponentId !== undefined || changes.amount !== undefined) await calculationRepository.clearPersonLines(current.runEmployee.id, tx)
+    if (changes.salaryComponentId !== undefined || changes.amount !== undefined) await calculationRepository.clearPersonLines(current.runEmployee.id, viewer.employeeId, tx)
     return { id, duplicate }
   })
 }
@@ -79,7 +81,7 @@ export async function deleteInput(viewer: CurrentUser, { runId, id }: { runId: n
     if (!current) throw new ORPCError('NOT_FOUND', { message: 'No such input in this payroll run' })
     assertNotOwn(viewer, current.runEmployee.employeeId)
     await inputsRepository.deleteInput(id, tx)
-    await calculationRepository.clearPersonLines(current.runEmployee.id, tx)
+    await calculationRepository.clearPersonLines(current.runEmployee.id, viewer.employeeId, tx)
     return { id }
   })
 }

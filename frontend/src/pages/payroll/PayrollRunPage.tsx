@@ -14,7 +14,7 @@ import { orpc } from '@/lib/orpc'
 import { formatDate, formatDoneBy, formatMoney } from '@/lib/utils'
 import { RunInputs } from './components/RunInputs'
 import { RunPeople } from './components/RunPeople'
-import { COMPUTE_LABEL, NOT_LOCKED_NOTE, OUTDATED_NOTE, PAY_RULE_NOTE, REFRESH_LABEL, RUN_FACT_LABELS, RUN_TABS, RUN_TILE_LABELS, SALARY_HIDDEN_NOTE, monthLabel } from './components/payroll-labels'
+import { COMPUTE_LABEL, NOT_LOCKED_NOTE, NO_PF_NOTE, OUTDATED_NOTE, PAY_RULE_NOTE, REFRESH_LABEL, RUN_FACT_LABELS, RUN_TABS, RUN_TILE_LABELS, SALARY_HIDDEN_NOTE, monthLabel } from './components/payroll-labels'
 
 // One pay run: its people with the salary in force on each day of the pay period (a copy, refreshed from the employee
 // records while it is a draft), the month's inputs (stage 2), and "Work out pay" (stage 3): each person's paid and unpaid
@@ -43,9 +43,10 @@ export function PayrollRunPage() {
   const r = run.data
   const facts = r ? [`${formatDate(r.payFrom)} – ${formatDate(r.payTo)}`, formatDoneBy(r.peopleRefreshedAt, r.peopleRefreshedBy), r.computedAt ? formatDoneBy(r.computedAt, r.computedBy) : 'Not yet'] : []
   const gross = r ? (r.salaryHidden ? 'Hidden' : r.earnedGross === null ? '—' : formatMoney(r.earnedGross, 'INR')) : ''
-  const tiles = r ? [r.people, r.peopleWithoutSalary, r.inputs, r.peopleWithUnpaidDays ?? '—', r.peopleToCheck ?? '—', gross] : []
+  const net = r ? (r.salaryHidden ? 'Hidden' : r.netPay === null ? '—' : formatMoney(r.netPay, 'INR')) : ''
+  const tiles = r ? [r.people, r.peopleWithoutSalary, r.inputs, r.peopleWithUnpaidDays ?? '—', r.peopleToCheck ?? '—', gross, net] : []
   // which tiles turn amber when they are not zero: people without a salary, people to check
-  const warns = [false, true, false, false, true, false]
+  const warns = [false, true, false, false, true, false, false]
   const notWorkedOut = r ? (r.peopleHeld ?? 0) + (r.peopleToWorkOutAgain ?? 0) : 0
 
   return (
@@ -83,9 +84,10 @@ export function PayrollRunPage() {
               </div>
             ))}
           </dl>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
             {RUN_TILE_LABELS.map((label, i) => (
-              <div key={label} className="min-w-0 rounded-2xl bg-card px-3 py-2 shadow-card">
+              // (the net pay, last, takes the whole row on a phone - two tiles a row leave it alone)
+              <div key={label} className={`min-w-0 rounded-2xl bg-card px-3 py-2 shadow-card ${i === RUN_TILE_LABELS.length - 1 ? 'col-span-2 sm:col-span-1' : ''}`}>
                 <p className="text-xs text-muted-foreground">{label}</p>
                 <p className={`truncate text-lg font-medium tabular-nums ${warns[i] && typeof tiles[i] === 'number' && tiles[i] > 0 ? 'text-warning-ink' : ''} ${tiles[i] === 'Hidden' ? 'text-sm font-normal text-muted-foreground' : ''}`}>{tiles[i]}</p>
               </div>
@@ -97,6 +99,7 @@ export function PayrollRunPage() {
               Pay not worked out for {notWorkedOut} {notWorkedOut === 1 ? 'person' : 'people'}: {[r.peopleHeld ? `${r.peopleHeld} held (no salary, days missing…)` : '', r.peopleToWorkOutAgain ? `${r.peopleToWorkOutAgain} to work out again (inputs changed)` : ''].filter(Boolean).join(', ')}. Choose “Pay not worked out” under Show to see who.
             </p>
           )}
+          {!!r.peopleWithoutPf && <p className="text-xs text-muted-foreground">{r.peopleWithoutPf} {r.peopleWithoutPf === 1 ? 'person' : 'people'} {NO_PF_NOTE}</p>}
           {r.computedAt && <p className="text-xs text-muted-foreground">{PAY_RULE_NOTE}</p>}
           {r.salaryHidden && <p className="text-xs text-muted-foreground">{SALARY_HIDDEN_NOTE}</p>}
         </header>

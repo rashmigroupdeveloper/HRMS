@@ -4,6 +4,8 @@ import { setupInput, listInput, getInput, createInput } from './payroll.schema.j
 import { peopleRouter } from './people/people.router.js'
 import { calculationRouter } from './calculation/calculation.router.js'
 import { inputsRouter } from './inputs/inputs.router.js'
+import { statutoryRouter } from './statutory/statutory.router.js'
+import { taxOpeningsRouter } from './tax-openings/tax-openings.router.js'
 
 export const payrollRouter = {
   setup: accessProcedure('PAYROLL', 'READ').input(setupInput).handler(({ context, input }) => payrollService.getSetup(context.user, input)),
@@ -15,4 +17,7 @@ export const payrollRouter = {
   inputs: inputsRouter,
   // stage 3: "Work out pay" - the days from the locked attendance and the earnings worked out from them
   calculation: calculationRouter,
+  // stage 4: the statutory rates and slabs, and opening tax figures
+  statutory: statutoryRouter,
+  taxOpenings: taxOpeningsRouter,
 }

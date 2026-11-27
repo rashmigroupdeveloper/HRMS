@@ -9,6 +9,7 @@ import * as inputsService from '../src/modules/payroll/inputs/inputs.service.js'
 import * as peopleService from '../src/modules/payroll/people/people.service.js'
 import { daysIn } from '../src/modules/payroll/people/people.service.js'
 import { createCompany, createEmployee, createPlant } from './helpers/organization.js'
+import { madeUpSettings, placeAt, workLocationIn } from './helpers/payroll.js'
 import { row, userWith } from './helpers/users.js'
 
 // Payroll stage 3, the money (approved by the user 2026-11-27): what "Work out pay" earns each person, who may see the
@@ -73,6 +74,12 @@ describe('Payroll stage 3: the pay worked out', () => {
         ),
       )
     }
+    // stage 4 needs settings and a work location: made-up ones that deduct nothing here (no PF member, salaries above
+    // the made-up ESIC ceiling, nil professional tax and LWF, 0% tax) - the deductions are tested in
+    // data-access-payroll-deductions.test.ts
+    await madeUpSettings(2093, 'ZP')
+    const location = await workLocationIn('ZP')
+    for (const employeeId of [e1, e2, e3]) await placeAt(employeeId, location.id)
     // e1 absent one whole day; e2 and e3 present
     await attend(e1, (i) => (i === 2 ? ['ABSENT', 'ABSENT'] : ['PRESENT', 'PRESENT']))
     await attend(e2, () => ['PRESENT', 'PRESENT'])
@@ -103,7 +110,9 @@ describe('Payroll stage 3: the pay worked out', () => {
     expect(one.pay).toMatchObject({ status: 'WORKED_OUT', heldFor: [], periodDays: days, earnedGross: basicEarned + 14000 })
     expect(one.pay!.lines!.map((l) => [l.component.id, l.amount, l.fromInput])).toEqual([[basic, basicEarned, false], [allowance, 14000, false]])
     const two = await personOf(withSalary(), p2)
-    expect(two.pay).toMatchObject({ status: 'HELD', heldFor: ['NO_SALARY'], lines: [], earnedGross: null })
+    expect(two.pay).toMatchObject({ status: 'HELD', heldFor: ['NO_SALARY'], lines: [], earnedGross: null, netPay: null })
+    // nothing deducted here: the net is the earned gross
+    expect(one.pay).toMatchObject({ deductions: 0, netPay: basicEarned + 14000 })
 
     const list = await peopleService.listPeople(withSalary(), { runId: runA, page: 1, pageSize: 50 })
     expect(list.items.find((p) => p.id === p1)).toMatchObject({ payStatus: 'WORKED_OUT', earnedGross: basicEarned + 14000, flags: { payNotWorkedOut: false } })

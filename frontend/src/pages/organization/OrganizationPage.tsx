@@ -35,6 +35,20 @@ const regionChoices = (values: Record<string, string>) => ((values.countryCode ?
 type PlantRow = Awaited<ReturnType<typeof client.organization.plants.list>>[number]
 type SalaryKind = Awaited<ReturnType<typeof client.organization.salaryComponents.list>>[number]['kind']
 const SALARY_KIND: Record<SalaryKind, string> = { EARNING: 'Earning', EMPLOYER_CONTRIBUTION: 'Employer contribution', DEDUCTION: 'Deduction' }
+// the statutory amount a component carries in a pay run (backend StatutoryRole - change both together)
+type StatutoryRoleKey = NonNullable<Awaited<ReturnType<typeof client.organization.salaryComponents.list>>[number]['statutoryRole']>
+const STATUTORY_ROLE: Record<StatutoryRoleKey, string> = {
+  PF_EMPLOYEE: 'Employee PF (deduction)',
+  ESIC_EMPLOYEE: 'Employee ESIC (deduction)',
+  PROFESSIONAL_TAX: 'Professional tax (deduction)',
+  LWF_EMPLOYEE: 'Employee LWF (deduction)',
+  INCOME_TAX: 'Income tax / TDS (deduction, entered each month)',
+  PF_EMPLOYER: 'Employer PF - EPF share (employer)',
+  EPS: 'Employer pension - EPS (employer)',
+  EDLI: 'EDLI (employer)',
+  ESIC_EMPLOYER: 'Employer ESIC (employer)',
+  LWF_EMPLOYER: 'Employer LWF (employer)',
+}
 // The groups on the page, in this order (as the breakup prints them, then the payslip's deductions - 2026-11-24)
 const SALARY_KIND_GROUP: Record<SalaryKind, { order: number; label: string }> = {
   EARNING: { order: 1, label: 'Earnings - add up to the Monthly Gross' },
@@ -745,7 +759,7 @@ export function OrganizationPage() {
               title: v.name ?? '',
               subtitle: [SALARY_KIND[v.kind as SalaryKind], v.enteredMonthly === 'yes' ? 'Entered each month' : '', v.kind === 'EARNING' && v.enteredMonthly !== 'yes' && v.cutForUnpaidDays === 'no' ? 'Paid in full for unpaid days' : '', v.code ?? ''].filter(Boolean).join(' · '),
             })}
-            item={(s) => ({ lead: <OrderBadge value={s.displayOrder} title="Order in the breakup" />, title: s.name, subtitle: [s.code, s.enteredMonthly ? 'Entered each month in payroll' : '', s.kind === 'EARNING' && !s.enteredMonthly && !s.cutForUnpaidDays ? 'Paid in full for unpaid days' : ''].filter(Boolean).join(' · ') || undefined })}
+            item={(s) => ({ lead: <OrderBadge value={s.displayOrder} title="Order in the breakup" />, title: s.name, subtitle: [s.code, s.enteredMonthly ? 'Entered each month in payroll' : '', s.kind === 'EARNING' && !s.enteredMonthly && !s.cutForUnpaidDays ? 'Paid in full for unpaid days' : '', s.kind === 'EARNING' && s.pfWage ? 'PF wage' : '', s.statutoryRole ? STATUTORY_ROLE[s.statutoryRole] : ''].filter(Boolean).join(' · ') || undefined })}
             fields={[
               { name: 'name', label: 'Name', required: true, placeholder: 'e.g. Special Allowance', hint: 'As printed in the salary breakup of the offer letter, or on the payslip' },
               {
@@ -781,8 +795,20 @@ export function OrganizationPage() {
                 hint: 'In payroll, a day is worth the monthly amount ÷ the days of the pay period. “Paid in full”: paid for every day in the company, unpaid days or not.',
                 showWhen: (v) => v.kind === 'EARNING' && v.enteredMonthly !== 'yes',
               },
+              // payroll stage 4 (the user, 2026-11-27): what the deductions are worked out on - your CA's answers as ticks
+              { name: 'pfWage', label: 'PF wages', required: true, defaultValue: 'no', options: [{ value: 'yes', label: 'Counts for PF wages' }, { value: 'no', label: 'Not a PF wage' }], hint: 'Basic and DA count for PF (your CA confirms the wage rules)', showWhen: (v) => v.kind === 'EARNING' },
+              { name: 'esiWage', label: 'ESI wages', required: true, defaultValue: 'yes', options: [{ value: 'yes', label: 'Counts for ESI wages' }, { value: 'no', label: 'Not an ESI wage' }], showWhen: (v) => v.kind === 'EARNING' },
+              { name: 'taxable', label: 'Income tax', required: true, defaultValue: 'yes', options: [{ value: 'yes', label: 'Taxable' }, { value: 'no', label: 'Not taxable' }], showWhen: (v) => v.kind === 'EARNING' },
+              {
+                name: 'statutoryRole',
+                label: 'Statutory amount',
+                clearable: true,
+                options: [{ value: '', label: 'None' }, ...Object.entries(STATUTORY_ROLE).map(([value, label]) => ({ value, label }))],
+                hint: 'The amount payroll works out into this component - one component each. What the employee pays is a deduction (income tax is also entered each month); what the company pays, an employer contribution.',
+                showWhen: (v) => v.kind !== 'EARNING',
+              },
             ]}
-            toValues={(s) => ({ name: s.name, kind: s.kind, displayOrder: String(s.displayOrder), code: s.code ?? '', enteredMonthly: s.enteredMonthly ? 'yes' : 'no', cutForUnpaidDays: s.cutForUnpaidDays ? 'yes' : 'no' })}
+            toValues={(s) => ({ name: s.name, kind: s.kind, displayOrder: String(s.displayOrder), code: s.code ?? '', enteredMonthly: s.enteredMonthly ? 'yes' : 'no', cutForUnpaidDays: s.cutForUnpaidDays ? 'yes' : 'no', pfWage: s.pfWage ? 'yes' : 'no', esiWage: s.esiWage ? 'yes' : 'no', taxable: s.taxable ? 'yes' : 'no', statutoryRole: s.statutoryRole ?? '' })}
             create={(v) =>
               client.organization.salaryComponents.create({
                 name: v.name!.trim(),
@@ -791,6 +817,10 @@ export function OrganizationPage() {
                 code: v.code?.trim() ? v.code.trim() : null,
                 enteredMonthly: v.enteredMonthly === 'yes',
                 cutForUnpaidDays: v.cutForUnpaidDays !== 'no',
+                pfWage: v.pfWage === 'yes',
+                esiWage: v.esiWage !== 'no',
+                taxable: v.taxable !== 'no',
+                statutoryRole: v.kind !== 'EARNING' && v.statutoryRole ? (v.statutoryRole as StatutoryRoleKey) : null,
               })
             }
             update={(id, c, isActive) =>
@@ -802,6 +832,10 @@ export function OrganizationPage() {
                 ...(c.code !== undefined && { code: c.code.trim() ? c.code.trim() : null }),
                 ...(c.enteredMonthly !== undefined && { enteredMonthly: c.enteredMonthly === 'yes' }),
                 ...(c.cutForUnpaidDays !== undefined && { cutForUnpaidDays: c.cutForUnpaidDays === 'yes' }),
+                ...(c.pfWage !== undefined && { pfWage: c.pfWage === 'yes' }),
+                ...(c.esiWage !== undefined && { esiWage: c.esiWage === 'yes' }),
+                ...(c.taxable !== undefined && { taxable: c.taxable === 'yes' }),
+                ...(c.statutoryRole !== undefined && { statutoryRole: c.statutoryRole ? (c.statutoryRole as StatutoryRoleKey) : null }),
                 isActive,
               })
             }

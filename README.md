@@ -110,7 +110,8 @@ HRMS_NEW/
 │     │  │                      printed-forms/ (HR's paper forms printed filled in from the joining form)
 │     │  ├─ payroll/            regular monthly company drafts; people/ (who is in a run + salary copy), inputs/ (the
 │     │  │                      month's amounts), days/ (paid and unpaid days from the locked attendance),
-│     │  │                      calculation/ ("Work out pay": the earnings); deductions follow in later stages
+│     │  │                      calculation/ ("Work out pay"), deductions/ (PF, ESIC, PT, LWF, TDS rules),
+│     │  │                      statutory/ (dated rates and slabs), tax-openings/ (opening tax figures)
 │     │  ├─ daily-movement-reports/ group-wide email schedule and HR Head role settings; delivery follows later
 │     │  └─ employees/          directory (+ Excel export), profile, "Add employee" / "Edit details", reporting manager,
 │     │     │                           creating the employee on the joining day, codes from the company's series
@@ -388,7 +389,21 @@ under "To check" (most likely they do not punch - mark them **Not tracked** on A
 the month is open: from that day they count present on their working days, whatever the punches say; leave, off days and
 HR's corrections stay. Needs Attendance setup: Edit covering the employee; migration `attendance_not_tracked`).
 
-The earnings rule is checked against a greytHR salary register in the parallel run (BACKLOG item 31). Deductions and
-net pay, input locking, approval, payslips and payment follow the staged plan in BACKLOG.md, with each new model/field
-agreed before migration. Apply the migrations with `npm run db:migrate` (stage 2: `payroll_stage2_people_inputs`;
-stage 3: `payroll_stage3_days`, `payroll_stage3_amounts`).
+**Stage 4, deductions and net pay (2026-11-27):** **Payroll › Statutory settings** (`/manage/payroll/statutory`) holds
+every rate, ceiling and slab as a dated row with its notification - PF, EPS, EDLI and ESIC rates and ceilings, the
+professional-tax slabs and labour welfare fund of each State, the new-regime income-tax slabs, standard deduction,
+rebate and cess - plus each employee's **opening tax figures** (earned and deducted earlier in the tax year outside this
+system). Nothing is filled in for you: enter them from the official notifications (Payroll Edit for every company) and
+have the CA check them. Then **Work out pay** also works out PF (on the salary components ticked "PF wages", up to the
+ceiling - or on full wages where the employee's PF details say so - for employees whose statutory details say "PF
+applicable"), ESIC (when the salary at the start of the ESIC period was within the ceiling), professional tax and LWF
+(by the State of the work location), the month's TDS (new regime; HR types it for the old regime or a consultant) and
+the typed deductions, and shows the net. Anyone whose pay cannot be worked out - no work location, a rate not in
+force, a statutory component not set, deductions over half of the wages - is held with the reason. Mark the components
+on Organization › Salary components (PF wages, ESI wages, taxable; the statutory amount a deduction carries) and the PF
+facts and tax regime on the employee's "PF, ESIC and payroll" details.
+
+The earnings rule is checked against a greytHR salary register in the parallel run (BACKLOG item 31). Input locking,
+approval, payslips and payment follow the staged plan in BACKLOG.md, with each new model/field agreed before migration.
+Apply the migrations with `npm run db:migrate` (stage 2: `payroll_stage2_people_inputs`; stage 3: `payroll_stage3_days`,
+`payroll_stage3_amounts`; stage 4: `payroll_stage4_deductions`).

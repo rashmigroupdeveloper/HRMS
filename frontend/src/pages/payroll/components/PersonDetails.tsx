@@ -10,7 +10,7 @@ import { EMPLOYMENT_TYPE, SALARY_REASON, WORKFORCE } from '@/lib/choices'
 import { orpc } from '@/lib/orpc'
 import { cn, formatDate, formatMoney } from '@/lib/utils'
 import { InputDrawer } from './InputDrawer'
-import { AGAIN_NOTE, ALL_ABSENT_NOTE, DAYS_LEGEND, DAYS_NOT_WORKED_OUT, DAY_TOTAL_LABELS, HOLD_REASON, PAY_TITLE, SALARY_HIDDEN_NOTE, STATUS_CODE, dayCount } from './payroll-labels'
+import { AGAIN_NOTE, ALL_ABSENT_NOTE, DAYS_LEGEND, DAYS_NOT_WORKED_OUT, DAY_TOTAL_LABELS, DEDUCTIONS_TITLE, EMPLOYER_TITLE, HOLD_REASON, PAY_TITLE, SALARY_HIDDEN_NOTE, STATUS_CODE, dayCount } from './payroll-labels'
 
 type Status = keyof typeof STATUS_CODE
 type PayClass = 'PAID' | 'UNPAID' | 'UNCLEAR'
@@ -47,9 +47,42 @@ export function DayStrip({ days }: { days: Day[] }) {
   )
 }
 
-// One person of a run: their paid and unpaid days as taken from the locked attendance and what they earned (stage 3),
-// and each stretch of days with its placement and the salary copied for it (read only - the salary changes through job
-// changes, the days in attendance; the copy follows on the next refresh / working out)
+type PayLine = { component: { id: number; name: string; kind: string; cutForUnpaidDays: boolean }; amount: number; base: number | null; fromInput: boolean }
+
+// A group of a person's pay lines - each with what it was worked out on ("on 15,000": the PF / ESI wages, the gross) -
+// and their total
+function PayLines({ title, lines, note, total, muted = false }: { title: string; lines: PayLine[]; note: (line: PayLine) => string | null; total: [string, number | null]; muted?: boolean }) {
+  return (
+    <div className={cn('rounded-xl bg-surface-2/40 p-2 text-xs', muted && 'text-muted-foreground')}>
+      <p className="mb-1 text-muted-foreground">{title}</p>
+      {lines.length ? (
+        <table className="w-full tabular-nums">
+          <tbody>
+            {lines.map((l) => {
+              const hint = note(l)
+              return (
+                <tr key={l.component.id}>
+                  <td className="py-0.5">
+                    {l.component.name}
+                    {hint && <span className="text-[11px] text-muted-foreground"> ({hint})</span>}
+                    {l.base !== null && <span className="text-[11px] text-muted-foreground"> on {formatMoney(l.base, 'INR')}</span>}
+                  </td>
+                  <td className="py-0.5 text-right">{formatMoney(l.amount, 'INR')}</td>
+                </tr>
+              )
+            })}
+            <tr className="border-t font-medium"><td className="py-1">{total[0]}</td><td className="py-1 text-right">{formatMoney(total[1] ?? 0, 'INR')}</td></tr>
+          </tbody>
+        </table>
+      ) : <p className="py-0.5">None</p>}
+    </div>
+  )
+}
+
+// One person of a run: their paid and unpaid days as taken from the locked attendance, what they earned, what is
+// deducted and their net pay (stages 3-4), and each stretch of days with its placement and the salary copied for it (read
+// only - the salary changes through job changes, the days in attendance; the copy follows on the next refresh / working
+// out)
 export function PersonDetails({ runId, personId, canChange, close }: { runId: number; personId: number; canChange: boolean; close: () => void }) {
   const query = useQuery(orpc.payroll.people.get.queryOptions({ input: { runId, personId } }))
   const [adding, setAdding] = useState(false)
@@ -60,7 +93,7 @@ export function PersonDetails({ runId, personId, canChange, close }: { runId: nu
       <FormDialog onOpenChange={close} className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{p ? `${p.name || p.employeeCode} · ${p.employeeCode}` : 'Person in the run'}</DialogTitle>
-          <DialogDescription>Their days as taken from attendance, what they earned, and the salary and placement copied for each stretch of days in the pay period.</DialogDescription>
+          <DialogDescription>Their days as taken from attendance, their pay worked out from them, and the salary and placement copied for each stretch of days in the pay period.</DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-3 overflow-y-auto">
           {query.isPending ? <PersonDetailsSkeleton /> : p ? (
@@ -77,26 +110,27 @@ export function PersonDetails({ runId, personId, canChange, close }: { runId: nu
               ) : p.segments.length > 0 && <p className="text-xs text-muted-foreground">{DAYS_NOT_WORKED_OUT}</p>}
               {p.pay && p.pay.status !== 'WORKED_OUT' && (
                 <p className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning-ink">
-                  {p.pay.status === 'AGAIN' ? AGAIN_NOTE : `Pay held: ${p.pay.heldFor.map((reason) => HOLD_REASON[reason]).join('; ')}.`}
+                  {p.pay.status === 'AGAIN' ? AGAIN_NOTE : <><span className="font-medium">Pay held - {p.pay.heldFor.map((reason) => HOLD_REASON[reason]).join(', ')}.</span>{p.pay.heldNote && <> {p.pay.heldNote}.</>}</>}
                 </p>
               )}
               {p.pay?.status === 'WORKED_OUT' && p.pay.lines && (
-                <div className="rounded-xl bg-surface-2/40 p-2 text-xs">
-                  <p className="mb-1 text-muted-foreground">{PAY_TITLE} · {p.pay.periodDays} days</p>
-                  <table className="w-full tabular-nums">
-                    <tbody>
-                      {p.pay.lines.filter((l) => l.component.kind === 'EARNING').map((l) => (
-                        <tr key={l.component.id}>
-                          <td className="py-0.5">
-                            {l.component.name}
-                            {l.fromInput ? <span className="text-[11px] text-muted-foreground"> (input)</span> : !l.component.cutForUnpaidDays && <span className="text-[11px] text-muted-foreground"> (not cut for unpaid days)</span>}
-                          </td>
-                          <td className="py-0.5 text-right">{formatMoney(l.amount, 'INR')}</td>
-                        </tr>
-                      ))}
-                      <tr className="border-t font-medium"><td className="py-1">Earned gross</td><td className="py-1 text-right">{formatMoney(p.pay.earnedGross ?? 0, 'INR')}</td></tr>
-                    </tbody>
-                  </table>
+                <div className="space-y-2">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <PayLines
+                      title={`${PAY_TITLE} · ${p.pay.periodDays} days`}
+                      lines={p.pay.lines.filter((l) => l.component.kind === 'EARNING')}
+                      note={(l) => (l.fromInput ? 'input' : !l.component.cutForUnpaidDays ? 'not cut for unpaid days' : null)}
+                      total={['Earned gross', p.pay.earnedGross]}
+                    />
+                    <div className="space-y-2">
+                      <PayLines title={DEDUCTIONS_TITLE} lines={p.pay.lines.filter((l) => l.component.kind === 'DEDUCTION')} note={(l) => (l.fromInput ? 'input' : null)} total={['Total deducted', p.pay.deductions]} />
+                      <PayLines title={EMPLOYER_TITLE} lines={p.pay.lines.filter((l) => l.component.kind === 'EMPLOYER_CONTRIBUTION')} note={() => null} total={['Total', p.pay.employerContributions]} muted />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-hero px-3 py-2 text-hero-foreground">
+                    <span className="text-sm">Net pay</span>
+                    <span className="text-lg font-medium tabular-nums">{formatMoney(p.pay.netPay ?? 0, 'INR')}</span>
+                  </div>
                 </div>
               )}
               {p.dayTotals?.allAbsent && <p className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning-ink">{ALL_ABSENT_NOTE}</p>}

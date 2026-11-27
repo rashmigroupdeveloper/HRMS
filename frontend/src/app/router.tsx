@@ -1,5 +1,6 @@
 import { PayrollPage } from '@/pages/payroll/PayrollPage'
 import { PayrollRunPage } from '@/pages/payroll/PayrollRunPage'
+import { StatutoryPage } from '@/pages/payroll/StatutoryPage'
 import { AttendanceReportsPage } from '@/pages/attendance/AttendanceReportsPage'
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -68,6 +69,8 @@ import { MyDepartmentPage } from '@/pages/my-department/MyDepartmentPage'
 //     /manage/payroll              - Payroll: View - whole-company monthly drafts; creation needs whole-company Edit
 //     /manage/payroll/:id          - one run: its people + salary copy and the month's inputs (Payroll: View; changes Edit;
 //                                    salary figures also need Salary: View over the whole company)
+//     /manage/payroll/statutory    - the statutory rates and slabs (Payroll: View; changes Payroll Edit for every company)
+//                                    and opening tax figures (whole-company Payroll scope)
 //     /manage/pay-career           - raising job / salary changes, the change register
 //     /manage/approvals            - the role's steps and the requests raised for others
 //     /manage/organization         - Organization: View, or HOD appointments: View (the Department heads tab only)
@@ -115,7 +118,7 @@ export const router = createBrowserRouter([
             element: <RequirePortal portal="manage" />,
             children: [
               { index: true, element: <ManageHomePage /> },
-              { element: <RequireAccess area="PAYROLL" />, children: [{ path: 'payroll', element: <PayrollPage /> }, { path: 'payroll/:id', element: <PayrollRunPage /> }] },
+              { element: <RequireAccess area="PAYROLL" />, children: [{ path: 'payroll', element: <PayrollPage /> }, { path: 'payroll/statutory', element: <StatutoryPage /> }, { path: 'payroll/:id', element: <PayrollRunPage /> }] },
               { path: 'employees', element: <PeoplePage /> },
               { path: 'employees/:employeeCode', element: <EmployeeProfilePage /> },
               { path: 'joining-tasks', element: <JoiningTasksPage /> },

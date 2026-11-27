@@ -806,6 +806,9 @@ function Statutory({ s, onEditNumbers }: { s: NonNullable<EmployeeProfile['statu
           rows={[
             ['UAN', s.uan && <span key="uan" className="tabular-nums">{s.uan}</span>],
             ['PF member number', s.pfNumber],
+            // payroll facts set by HR (stage 4)
+            ['PF on full wages / in EPS', `${yesNo(s.pfOnFullWages ?? false)} / ${yesNo(s.epsMember ?? true)}`],
+            ['Income-tax regime', s.taxRegime === 'OLD' ? 'Old (TDS typed by HR)' : 'New'],
             ['Relative on EPF', EPF_RELATIVE[s.epfRelative]],
             ['Mobile registered with Aadhaar', s.aadhaarMobile],
             ['International worker', yesNo(s.isInternationalWorker)],

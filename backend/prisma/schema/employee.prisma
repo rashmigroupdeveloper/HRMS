@@ -147,6 +147,8 @@ model Employee {
   salaries          EmployeeSalary[]
   // the pay runs they are in (stage 2)
   payrollRuns       PayrollRunEmployee[]
+  // income tax paid earlier in a tax year outside this system (payroll stage 4)
+  taxOpeningBalances TaxOpeningBalance[]
   // Letters issued to the employee (appointment, confirmation, experience, relieving - letters.prisma)
   letters           EmployeeLetter[]
   // The tasks other teams do when the employee joins (onboarding.prisma)
