@@ -136,6 +136,8 @@ export async function exportSetup(viewer: CurrentUser,input:z.infer<typeof expor
       {header:'Next pattern',value:r=>r.next?.pattern?.name},{header:'Next from',date:true,value:r=>r.next?.from},
       {header:'Holiday list',value:r=>r.holidayList.holidayList?.name??'None'},{header:'Holiday list since',date:true,value:r=>r.holidayList.since},
       {header:'Next holiday list',value:r=>r.holidayList.next?.holidayList.name},{header:'Next holiday list from',date:true,value:r=>r.holidayList.next?.from},
+      {header:'Attendance not tracked',value:r=>r.notTracked?(r.notTracked.current?'Yes':'From a later day'):''},{header:'Not tracked from',date:true,value:r=>r.notTracked?.fromDate},
+      {header:'Not tracked until',date:true,value:r=>r.notTracked?.toDate},{header:'Not tracked - reason',width:40,value:r=>r.notTracked?.reason},
     ])
     case 'locks':return file('Month locks',(await locksService.listMonths(viewer,input.year!)).months,[
       {header:'Month',value:r=>r.name},{header:'From',date:true,value:r=>r.from},{header:'To',date:true,value:r=>r.to},

@@ -67,6 +67,9 @@ export const listSchedulesInput = z
     policyId: idSchema.optional(),
     // those following this holiday list today (null: those without a list - 2026-11-24)
     holidayListId: idSchema.nullable().optional(),
+    // true: only those whose attendance is not tracked today (or marked from a later day); false: only the others
+    // (2026-11-27)
+    notTracked: z.boolean().optional(),
   })
   .optional()
 

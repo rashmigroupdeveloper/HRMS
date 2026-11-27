@@ -8,6 +8,7 @@ import { today } from '#shared/utils/dates'
 import { ORPCError } from '@orpc/server'
 import type { z } from 'zod'
 import * as daysService from '../days/days.service.js'
+import * as exemptionsService from '../exemptions/exemptions.service.js'
 import * as holidayListsService from '../holiday-lists/holiday-lists.service.js'
 import * as policiesService from '../policies/policies.service.js'
 import * as shiftsRepository from './shifts.repository.js'
@@ -191,12 +192,14 @@ export async function listSchedules(viewer: CurrentUser, filter: NonNullable<z.i
     from: day,
     to: day,
   })
-  const [assignments, patterns, policies, holidayLists] = await Promise.all([
+  const [assignments, patterns, policies, holidayLists, markers] = await Promise.all([
     shiftsRepository.listAssignments(people.map((p) => p.id), new Date(Date.UTC(2200, 0, 1))),
     shiftsRepository.listPatterns(true).then(toPatterns),
     policiesService.listPolicies(viewer, true),
     // the holiday list each follows (2026-11-24)
     holidayListsService.listsOn(people.map((p) => p.id), day),
+    // whose attendance is not tracked (2026-11-27)
+    exemptionsService.markersOn(people.map((p) => p.id), day),
   ])
   const patternOf = new Map(patterns.map((p) => [p.id, p]))
   const policyOf = new Map(policies.map((p) => [p.id, p]))
@@ -229,13 +232,17 @@ export async function listSchedules(viewer: CurrentUser, filter: NonNullable<z.i
       next: next ? { from: next.effectiveFrom, pattern: name(patternOf.get(next.patternId)) } : null,
       // the holiday list followed today (null: none - no holidays), since when, and a change already set for later
       holidayList: holidayLists.get(person.id)!,
+      // "attendance not tracked" (2026-11-27): the marker in force today, or (`current` false) the next one to start;
+      // null: their attendance is tracked by punches
+      notTracked: markers.get(person.id) ?? null,
     }
   })
   return rows.filter(
     (r) =>
       (!filter.patternId || r.pattern?.id === filter.patternId) &&
       (!filter.policyId || r.policy?.id === filter.policyId) &&
-      (filter.holidayListId === undefined || (r.holidayList.holidayList?.id ?? null) === filter.holidayListId),
+      (filter.holidayListId === undefined || (r.holidayList.holidayList?.id ?? null) === filter.holidayListId) &&
+      (filter.notTracked === undefined || (r.notTracked !== null) === filter.notTracked),
   )
 }
 

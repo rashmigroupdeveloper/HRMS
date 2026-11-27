@@ -343,7 +343,9 @@ function CorrectDay({ employeeCode, day, onDirty }: { employeeCode: string; day:
     </NativeSelect>
   )
   return (
-    <div className="space-y-2 rounded-2xl bg-card p-3">
+    // a light card inside the dark day panel: its own text colour, or the heading, dropdowns and buttons inherit the
+    // panel's light text and vanish
+    <div className="space-y-2 rounded-2xl bg-card p-3 text-card-foreground">
       <p className="text-xs font-medium">Correct this day (HR)</p>
       <div className="flex flex-wrap items-center gap-2">
         {halfSelect('First half', first, setFirst)}

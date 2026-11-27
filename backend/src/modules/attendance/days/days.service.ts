@@ -230,6 +230,21 @@ export async function assertNothingLockedFrom(from: Date) {
   }
 }
 
+// Refuses a change to every day from `from` to `to` (null: with no end) when a locked attendance month lies in that
+// stretch - its days would change under the lock (the "attendance not tracked" marker, 2026-11-27). By months, so a
+// stretch of years is checked without walking its days.
+export async function assertNothingLockedIn(from: Date, to: Date | null) {
+  const lock = await loadLockState()
+  const locked = [...lock.locked]
+    .map((key) => key.split('-').map(Number) as [number, number])
+    .map(([year, month]) => ({ year, month, ...cycleRange(year, month, lock.startDay) }))
+    .filter((m) => m.to >= from && (to === null || m.from <= to))
+    .sort((a, b) => a.from.getTime() - b.from.getTime())[0]
+  if (locked) {
+    throw new ORPCError('CONFLICT', { message: `${monthName(locked.year, locked.month)} is a locked attendance month - keep the change outside it, or open it again first` })
+  }
+}
+
 // The first day from `from` on that a change reaching every later day may start on: the day after the last locked
 // attendance month on or after `from` (none: `from` itself) - giving the plants' default holiday lists (2026-11-24)
 export async function firstOpenDayFrom(from: Date) {
@@ -562,6 +577,23 @@ function computeDay(day: Date, plan: Plan, punches: Date[], timeZone: string) {
 }
 type Computed = ReturnType<typeof computeDay>
 
+// "Attendance not tracked" (the user, 2026-11-27): someone who does not punch. On a day of theirs the working halves
+// count present whatever the punches say - no punch is not absent, one punch is not a missed punch, and nothing is late
+// or early (so the late rule never cuts them). A weekly off, a holiday and the off half of a half day stay what they
+// are; approved leave / on duty and HR's correction of the day are put on top by `finish`, as on any day.
+// (the month view shows this note calmly, not as a penalty: the same text is NOT_TRACKED_DAY_NOTE in the frontend's
+// attendance labels.ts - change both together)
+export const NOT_TRACKED_NOTE = 'Attendance not tracked - counted present'
+function countPresent(c: Computed, plan: Plan) {
+  if (plan.kind !== 'WORK') return
+  if (isWorkingHalf(plan, 'FIRST')) c.auto.first = 'PRESENT'
+  if (isWorkingHalf(plan, 'SECOND')) c.auto.second = 'PRESENT'
+  c.lateMinutes = 0
+  c.earlyMinutes = 0
+  c.notes.length = 0
+  c.notes.push(NOT_TRACKED_NOTE)
+}
+
 // The day as kept: HR's correction of a half wins over approved leave / requests, which win over the punches and the
 // rules; the day overall from the two halves
 function finish(employeeId: number, c: Computed, correction: Correction | undefined, covers: DayCover[]): daysRepository.DayRow {
@@ -652,10 +684,12 @@ async function recomputeBatch(tx: DbClient, batch: number[], from: Date, last: D
     if (!people.length) return
     const ids = people.map((p) => p.id)
     const plans = await loadPlans(people, addDays(from, -1), addDays(last, 1))
-    const [punches, corrections, covers] = await Promise.all([
+    const [punches, corrections, covers, exemptions] = await Promise.all([
       daysRepository.listPunches(ids, new Date(from.getTime() - 2 * DAY_MS), new Date(last.getTime() + 3 * DAY_MS)),
       daysRepository.listCorrections(ids, from, last),
       loadCovers(ids, from, last),
+      // whose attendance is not tracked on which days (2026-11-27)
+      daysRepository.listExemptions(ids, from, last),
     ])
     for (const person of people) {
       const start = person.dateOfJoining > from ? person.dateOfJoining : from
@@ -666,15 +700,21 @@ async function recomputeBatch(tx: DbClient, batch: number[], from: Date, last: D
         const own = punches.filter((p) => p.employeeId === person.id).map((p) => p.punchedAt)
         const byDay = punchesByDay(own, eachDay(addDays(start, -1), addDays(end, 1)), plan, person.timezone)
         const correctionOf = new Map(corrections.filter((c) => c.employeeId === person.id).map((c) => [dayKey(c.date), { firstHalf: c.firstHalf, secondHalf: c.secondHalf }]))
+        const untracked = exemptions.filter((e) => e.employeeId === person.id)
+        const notTracked = (day: Date) => untracked.some((e) => e.fromDate <= day && (!e.toDate || e.toDate >= day))
         const computed: { date: Date; plan: Plan; computed: Computed; covers: DayCover[] }[] = []
         for (const day of eachDay(start, end)) {
           const key = dayKey(day)
           const dayPlan = plan.get(key)!
           const dayPunches = byDay.get(key) ?? []
           const dayCovers = workingCovers(dayPlan, covers.get(`${person.id}:${key}`))
-          // today: only once someone has punched (or it is not a working day, or HR set it, or leave / a request covers it)
-          if (day.getTime() === now.getTime() && !dayPunches.length && dayPlan.kind === 'WORK' && !correctionOf.has(key) && !dayCovers.length) continue
-          computed.push({ date: day, plan: dayPlan, computed: computeDay(day, dayPlan, dayPunches, person.timezone), covers: dayCovers })
+          const free = notTracked(day)
+          // today: only once someone has punched (or it is not a working day, or HR set it, or leave / a request covers it,
+          // or their attendance is not tracked - they count present without a punch)
+          if (day.getTime() === now.getTime() && !dayPunches.length && dayPlan.kind === 'WORK' && !correctionOf.has(key) && !dayCovers.length && !free) continue
+          const result = computeDay(day, dayPlan, dayPunches, person.timezone)
+          if (free) countPresent(result, dayPlan)
+          computed.push({ date: day, plan: dayPlan, computed: result, covers: dayCovers })
         }
         applyLatePenalty(computed, state.startDay)
         for (const c of computed) if (!isLockedDay(c.date, state)) rows.push(finish(person.id, c.computed, correctionOf.get(dayKey(c.date)), c.covers))

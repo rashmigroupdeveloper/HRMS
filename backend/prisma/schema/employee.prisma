@@ -166,6 +166,8 @@ model Employee {
   punches                Punch[]
   attendanceDays         AttendanceDay[]
   attendanceCorrections  AttendanceCorrection[]
+  // the stretches their attendance is not tracked by punches (2026-11-27)
+  attendanceExemptions   AttendanceExemption[]
   // Lay offs, each from a day until they rejoin
   layoffs                EmployeeLayoff[]
   // The job timeline: their job details from a day on (and, below, the entries naming them as a manager)

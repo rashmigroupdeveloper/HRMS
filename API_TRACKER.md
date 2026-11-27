@@ -83,7 +83,7 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 
 **Excel review reports (2026-11-24):** Data exports use the shared report writer. Actual column headings remain on row 1; code/text and date formats remain usable for Excel/import workflows. Reports add a separate **Review notes** sheet with preparer, UTC export time, coverage, filter context, per-sheet row counts, reviewer/date/outcome and remarks. Data sheets use A4 landscape printing, repeated row headings, repeated identifier columns A:B for wide reports, page numbers and reviewer/date footers. Very wide sheets print across pages at 85% rather than shrinking all columns to unreadable text. Narrow sheets fit one page wide. Printouts are manual review aids: exporting or marking the sheet does not approve requests or change HRMS records. Import templates remain unchanged. All report endpoints return an `.xlsx` File.
 
-**Total APIs: 302**
+**Total APIs: 305**
 
 | # | API | Access | What it does |
 |---|---|---|---|
@@ -389,6 +389,9 @@ sign-outs are recorded too. The entries are hash-chained, so a row altered in th
 | 300 | `payroll.inputs.update` | Payroll: Edit covering whole company | Change an input of a draft run |
 | 301 | `payroll.inputs.delete` | Payroll: Edit covering whole company | Remove an input of a draft run |
 | 302 | `payroll.days.compute` | Payroll: Edit covering whole company | Take a draft run's days (paid / unpaid / unclear halves) from the locked attendance |
+| 303 | `attendance.exemptions.create` | Attendance setup: Edit covering each employee | Mark employees "attendance not tracked" from a day (they count present without punches) |
+| 304 | `attendance.exemptions.update` | Attendance setup: Edit covering the employee | End a "not tracked" marker on a day (or let it run on), correct its reason |
+| 305 | `attendance.exemptions.delete` | Attendance setup: Edit covering the employee | Remove a "not tracked" marker set by mistake |
 
 ---
 
@@ -3231,8 +3234,8 @@ come with payroll; leave and on-duty / missed-punch requests with their modules.
 - **HTTP:** `POST /api/rpc/attendance/shifts/schedules` · **Code:** `backend/src/modules/attendance/shifts/`
 - **Access:** Attendance setup: View.
 - **Scope:** the employees inside the viewer's Attendance setup View data access (`scopeOf` - employed today).
-- **Input:** `{ search? (name or code), companyIds?, plantIds?, departmentIds?, costCenterIds? (each a list of ids - any of them), patternId?, policyId?, holidayListId? (null = those without a list - 2026-11-24) }` (optional)
-- **Returns:** `[{ employee {employeeCode, name, company (code), plant (code + name), department, costCenter (code), workLocation}, pattern {id, name} | null, patternIsDefault (never given a schedule), policy {id, name} | null, policyIsDefault (the schedule names none), since (the schedule's start; null = never given one), next {from, pattern} | null (a change already set for later), holidayList { holidayList {id, name} | null (none = no holidays), since, next {from, holidayList} | null } (2026-11-24) }]` by employee code - `patternId` / `policyId` keep those following it (the default one included).
+- **Input:** `{ search? (name or code), companyIds?, plantIds?, departmentIds?, costCenterIds? (each a list of ids - any of them), patternId?, policyId?, holidayListId? (null = those without a list - 2026-11-24), notTracked? (true = only those marked "attendance not tracked" today or from a later day; false = only the others - 2026-11-27) }` (optional)
+- **Returns:** `[{ employee {employeeCode, name, company (code), plant (code + name), department, costCenter (code), workLocation}, pattern {id, name} | null, patternIsDefault (never given a schedule), policy {id, name} | null, policyIsDefault (the schedule names none), since (the schedule's start; null = never given one), next {from, pattern} | null (a change already set for later), holidayList { holidayList {id, name} | null (none = no holidays), since, next {from, holidayList} | null } (2026-11-24), notTracked { id, fromDate, toDate | null, reason, current } | null (2026-11-27: the "attendance not tracked" marker in force today, or - `current` false - the next one to start; null = tracked by punches) }]` by employee code - `patternId` / `policyId` keep those following it (the default one included).
 - **What it does:** who follows what (the user, 2026-11-23: "which employee got what schedule pattern and what policy") - the Schedules part of Attendance setup.
 - **Errors:** `403`.
 
@@ -4168,7 +4171,7 @@ leave year is the calendar year.
 - **HTTP:** `POST /api/rpc/attendance/exportSetup` · **Code:** `backend/src/modules/attendance/`
 - **Access:** Attendance setup: View; locks additionally group-wide Edit.
 - **Scope:** Shared shifts/patterns/policies/holidays and ingestion metadata match their existing readers and are not restricted by employee data access. Schedules use Attendance setup View data access. Locks call the existing group-wide Edit reader.
-- **Input:** `{ section, year?, schedules?, holidayListId? }`: shifts/patterns/policies/holidays/punches/schedules/locks. Year integer 2020-2100, required for holidays/locks. Schedules optional same filters as `attendance.shifts.schedules` (search, company/plant/department/cost-center ID arrays, patternId, policyId, holidayListId). `holidayListId` (holidays, 2026-11-25): only that list's holidays - the page's list filter; named in the file's details.
+- **Input:** `{ section, year?, schedules?, holidayListId? }`: shifts/patterns/policies/holidays/punches/schedules/locks. Year integer 2020-2100, required for holidays/locks. Schedules optional same filters as `attendance.shifts.schedules` (search, company/plant/department/cost-center ID arrays, patternId, policyId, holidayListId, notTracked); the schedules sheet also has each employee's "attendance not tracked" marker (from, until, reason - 2026-11-27). `holidayListId` (holidays, 2026-11-25): only that list's holidays - the page's list filter; named in the file's details.
 - **Returns:** Excel File with report data and Review notes. Selected setup section: current effective definitions including retired records and labelled upcoming timings, cycle/default changes and policy rules; selected-year holidays/month locks; scoped current employee schedules; or latest 30 uploads plus unmatched codes in separate sheets. Does not export raw matched biometric punches.
 - **What it does:** generates a review/print workbook through the existing authorized service readers and shared report writer; exporting has no write or approval side effects.
 - **Errors:** `400 BAD_REQUEST` invalid input/range or documented export size limit; `401` no session; `403` insufficient access; `404` for an inaccessible employee where the underlying reader uses not-found semantics. Same additional reader errors as the corresponding list.
@@ -4542,3 +4545,47 @@ and can include two events per employee. No existing API provides that contract.
   (rebuilt each time). No amounts: what a day is worth waits for the rules agreed against a greytHR register.
 - **Errors:** UNAUTHORIZED, FORBIDDEN, NOT_FOUND, BAD_REQUEST; CONFLICT if the run is not a draft, the attendance period
   is not locked, or the days were worked out by someone else in the meantime.
+
+## Attendance — "attendance not tracked" (2026-11-27)
+
+Who is marked is read with the Schedules list: `attendance.shifts.schedules` (`notTracked` on each row, and its filter).
+
+### `attendance.exemptions.create`
+- **HTTP:** `POST /api/rpc/attendance/exemptions/create` · **Code:** `backend/src/modules/attendance/exemptions/`
+- **Access:** Attendance setup: Edit (the user, 2026-11-27: on Schedules, with the other per-person settings).
+- **Scope:** every employee named must be inside the caller's Attendance setup data access - each one is checked
+  (`assertAttendanceEdit`): outside the View range `404`, View only `403`; nothing is saved for anyone when one fails.
+- **Input:** `{ employeeCodes: string[] (1-2000), fromDate: Date, toDate?: Date | null (null / left out = until ended; never before fromDate), reason: string (3-300) }`; strict.
+- **Returns:** `{ marked, unchanged }` - `unchanged`: those already not tracked on every one of those days.
+- **What it does:** "attendance not tracked" (approved by the user 2026-11-27, for payroll): from `fromDate` each of
+  these employees counts PRESENT on the working halves of their days whatever the punches say - no punch is not absent,
+  one punch is not a missed punch, nothing is late or early (the late rule never cuts them); the day's note says so.
+  Weekly offs, holidays and the off half of a half day stay; approved leave / on duty still shows; HR's correction of a
+  day still wins. One person's markers never overlap: someone already marked for only some of the days is refused. The
+  days already worked out from `fromDate` (up to today) are worked out again at once; months never worked out stay so.
+  Kept in the change history.
+- **Errors:** `400` unknown employee code, last day before the first; `403`; `404`; `409` a locked attendance month
+  lies in the stretch (open it first), or someone already has a marker over part of it.
+
+### `attendance.exemptions.update`
+- **HTTP:** `POST /api/rpc/attendance/exemptions/update` · **Code:** `backend/src/modules/attendance/exemptions/`
+- **Access:** Attendance setup: Edit.
+- **Scope:** the marker's employee must be inside the caller's Attendance setup data access (outside the View range
+  `404`, View only `403`).
+- **Input:** `{ id, toDate: Date | null (null = until ended), reason?: string (3-300) }`; strict. The first day does not
+  change - a marker that started on the wrong day is removed and set again.
+- **Returns:** `{ id }`.
+- **What it does:** ends the marker on a day (when the person starts to punch), or lets it run on again, and corrects
+  its reason. Only the days between the old and the new last day change; they are worked out again.
+- **Errors:** `400` last day before the first; `403`; `404`; `409` a locked attendance month lies in the days that
+  change, or making it longer would run into another marker of the same person.
+
+### `attendance.exemptions.delete`
+- **HTTP:** `POST /api/rpc/attendance/exemptions/delete` · **Code:** `backend/src/modules/attendance/exemptions/`
+- **Access:** Attendance setup: Edit.
+- **Scope:** as `attendance.exemptions.update`.
+- **Input:** `{ id }`; strict.
+- **Returns:** `{ id }`.
+- **What it does:** removes a marker set by mistake: all its days are worked out from the punches again (a working day
+  without a punch becomes absent). The removal stays in the change history.
+- **Errors:** `403`; `404`; `409` a locked attendance month lies in its days.

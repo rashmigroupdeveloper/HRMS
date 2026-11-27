@@ -518,7 +518,8 @@ model AttendanceDay {
   workedMinutes Int       @map("worked_minutes") @db.SmallInt
   lateMinutes   Int       @map("late_minutes") @db.SmallInt
   earlyMinutes  Int       @map("early_minutes") @db.SmallInt
-  // why a policy rule made a half absent, e.g. "3rd late this month - first half absent" (2026-11-22)
+  // why a policy rule made a half absent, e.g. "3rd late this month - first half absent" (2026-11-22) - or that the day
+  // counts present because the attendance is not tracked (2026-11-27)
   note          String?
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById   Int       @map("created_by_id")
@@ -589,6 +590,34 @@ model RegularizationRequest {
   @@index([employeeId, fromDate])
   @@index([status])
   @@map("regularization_requests")
+}
+
+// "Attendance not tracked" (approved by the user 2026-11-27, for payroll): someone who does not punch - senior
+// management, field staff, a site without a machine. Without it attendance marks every working day absent and payroll
+// would pay nothing (about a third of the employees have no punch in HR's punch file). From fromDate to toDate (empty:
+// until it is ended) a working half of theirs counts PRESENT whatever the punches say; weekly offs and holidays stay,
+// approved leave / on duty still shows, and HR's correction of a day still wins. Dated, so a locked month never changes
+// when someone starts or stops punching. Set on Attendance setup > Schedules by Attendance setup Edit covering the
+// employee (the user, 2026-11-27), one person or many at once. One person's stretches never overlap (checked in the
+// service). A person's decision: kept in the change history.
+model AttendanceExemption {
+  id          Int       @id @default(autoincrement())
+  employeeId  Int       @map("employee_id")
+  // the first day it counts
+  fromDate    DateTime  @map("from_date") @db.Date
+  // the last day it counts (empty: until ended)
+  toDate      DateTime? @map("to_date") @db.Date
+  // why this person's attendance is not tracked - required (shown on Schedules)
+  reason      String
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById Int       @map("created_by_id")
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById Int       @map("updated_by_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, fromDate])
+  @@map("attendance_exemptions")
 }
 
 // HR's correction of a day's status, with the reason (in the change history). Removing it returns the day to what the

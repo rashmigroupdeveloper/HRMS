@@ -145,6 +145,12 @@ export const segment = (active: boolean) =>
   cn('flex-none rounded-full px-3 py-2.5 text-xs leading-4 font-medium whitespace-nowrap sm:py-1.5', active ? 'bg-card text-foreground shadow-card' : 'text-muted-foreground hover:text-foreground')
 
 // The setup's filters as soft pills - a search and dropdowns on a grey ground, no border (the redesign, 2026-11-25)
+// The note of a day that counts present because the person's attendance is not tracked - the same text as the
+// backend's NOT_TRACKED_NOTE (attendance days.service.ts): change both together. The month view shows it calmly, not in
+// the amber box of a rule that cost a half day.
+export const NOT_TRACKED_DAY_NOTE = 'Attendance not tracked - counted present'
+// "Attendance not tracked" (2026-11-27): what the marker does - under both of its drawers
+export const NOT_TRACKED_NOTE = 'They count present on their working days, whatever the punches say. Leave, on duty, weekly offs, holidays and HR\'s corrections stay as they are. Days already worked out are worked out again; a locked month is not changed.'
 export const FILTER_SEARCH = 'h-9 rounded-full border-transparent bg-surface-2 pl-9 shadow-none focus-visible:bg-card'
 export const FILTER_SELECT = '[&_select]:h-9 [&_select]:rounded-full [&_select]:border-transparent [&_select]:bg-surface-2 [&_select]:pl-3.5 [&_select]:hover:bg-surface-2/70'
 

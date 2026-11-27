@@ -71,7 +71,7 @@ export const AREA_INFO: Record<AccessArea, { label: string; read: string; write:
   ATTENDANCE_SETUP: {
     label: 'Attendance setup',
     read: 'See the attendance setup: punch uploads and unmatched codes, shifts and policies (retired ones too), roster changes, holidays (with the holiday lists and categories) and roster patterns',
-    write: 'Also change them: shifts, policies, default shifts (and rotations), roster changes, holidays, holiday lists (and plants\' default lists), holiday categories and roster patterns, upload and link punches, lock and unlock the attendance month',
+    write: 'Also change them: shifts, policies, default shifts (and rotations), roster changes, holidays, holiday lists (and plants\' default lists), holiday categories and roster patterns, mark employees whose attendance is not tracked (they count present without punches), upload and link punches, lock and unlock the attendance month',
   },
   LEAVE: {
     label: 'Leave',

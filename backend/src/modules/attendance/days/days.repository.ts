@@ -175,6 +175,16 @@ export function listDays(employeeIds: number[], from: Date, to: Date, db: DbClie
   return db.attendanceDay.findMany({ where: { employeeId: { in: employeeIds }, date: { gte: from, lte: to } }, orderBy: { date: 'asc' }, select: daySelect })
 }
 
+// The stretches these employees' attendance is not tracked by punches ("attendance not tracked", 2026-11-27) that
+// touch from..to
+// data access: the day calculation asks for the employees it works out - it chose them
+export function listExemptions(employeeIds: number[], from: Date, to: Date, db: DbClient = prisma) {
+  return db.attendanceExemption.findMany({
+    where: { employeeId: { in: employeeIds }, fromDate: { lte: to }, OR: [{ toDate: null }, { toDate: { gte: from } }] },
+    select: { employeeId: true, fromDate: true, toDate: true },
+  })
+}
+
 // Only the two halves of these employees' days from..to - what a pay run copies (payroll stage 3, 2026-11-27)
 // data access: the payroll service chose the employees - the people of one run it found with whole-company Payroll scope
 export function listHalves(employeeIds: number[], from: Date, to: Date, db: DbClient = prisma) {

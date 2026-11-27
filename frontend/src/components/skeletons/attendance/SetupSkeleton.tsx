@@ -256,8 +256,8 @@ export function PolicyRowsSkeleton({ rows = 2 }: { rows?: number }) {
 }
 
 // The rows of Schedules while they load, inside its real table (its real headings stay): the tick box, the initial, a
-// name, code and place, the pattern, the policy, the holiday list, since, next change, the Change icon (change both
-// together - SetupView's Schedules)
+// name, code and place, the pattern, the policy, attendance (tracked or not), the holiday list, since, next change, the
+// Change icon (change both together - SetupView's Schedules)
 export function ScheduleRowsSkeleton({ rows = 6, change = false }: { rows?: number; change?: boolean }) {
   return (
     <>
@@ -285,6 +285,9 @@ export function ScheduleRowsSkeleton({ rows = 6, change = false }: { rows?: numb
           </TableCell>
           <TableCell>
             <Skeleton className="h-3.5 w-20 rounded-full" />
+          </TableCell>
+          <TableCell className="hidden md:table-cell">
+            <Skeleton className="h-3.5 w-16 rounded-full" />
           </TableCell>
           <TableCell className="hidden sm:table-cell">
             <Skeleton className="h-3.5 w-24 rounded-full" />

@@ -7,7 +7,7 @@ import { PunchesSkeleton } from '@/components/skeletons/attendance/PunchesSkelet
 import { Button } from '@/components/ui/button'
 import { orpc } from '@/lib/orpc'
 import { cn, formatDoneBy, todayDay } from '@/lib/utils'
-import { coversText, dayMark, dayName, hours, MONTHS, MONTH_BARS, type Month, type MonthDay, sameDay, STATUS, TOTAL_LABELS, WEEKDAYS, splitFill } from './labels'
+import { coversText, dayMark, dayName, hours, MONTHS, MONTH_BARS, type Month, type MonthDay, NOT_TRACKED_DAY_NOTE, sameDay, STATUS, TOTAL_LABELS, WEEKDAYS, splitFill } from './labels'
 
 // One employee's month as a calendar (Monday-first weeks): each day's status, in / out times and shift; the totals above.
 // The chosen day's details (the shift and its times, in / out, worked, late / early, every punch and its machine, HR's
@@ -228,7 +228,7 @@ export function MonthCalendar({ data, actions }: { data: Month; actions?: (day: 
               // a weekly off or a holiday - by the day's status, or (a day not worked out yet) by the plan
               const kind = day.status ?? (day.employed ? day.planned : null)
               const off = kind === 'WEEKLY_OFF' || kind === 'HOLIDAY'
-              // the day's mark, always in the same corner: the status, or the planned off / holiday
+              // the day's mark, always in the middle of the cell: the status, or the planned off / holiday
               // a day to come on approved leave / on duty shows it (2026-11-22)
               const ahead = !status && !off && day.employed ? day.covers.find((c) => c.status !== 'PRESENT') : undefined
               const mark = atWork ? 'In' : status || ahead ? dayMark(day) : kind === 'WEEKLY_OFF' ? 'WO' : kind === 'HOLIDAY' ? 'H' : null
@@ -250,7 +250,7 @@ export function MonthCalendar({ data, actions }: { data: Month; actions?: (day: 
                   onClick={() => pick(day.date)}
                   style={split ? { background: split } : undefined}
                   className={cn(
-                    'relative flex min-h-12 min-w-0 cursor-pointer flex-col items-stretch overflow-hidden rounded-lg p-1 text-left text-xs transition-shadow hover:shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-16 sm:rounded-xl sm:px-2 sm:py-1.5',
+                    'relative flex min-h-12 min-w-0 cursor-pointer flex-col items-stretch overflow-hidden rounded-lg p-1 text-left text-xs transition-shadow hover:shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/60 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-18 sm:rounded-xl sm:px-2 sm:py-1.5',
                     atWork
                       ? 'bg-positive/10 text-positive-ink'
                       : split
@@ -266,33 +266,35 @@ export function MonthCalendar({ data, actions }: { data: Month; actions?: (day: 
                             : 'bg-surface-2/70',
                   )}
                 >
-                  <span className="flex min-w-0 flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <span className="flex items-center gap-1">
-                      <span
-                        className={cn(
-                          'grid h-6 shrink-0 place-items-center text-sm font-semibold tabular-nums',
-                          isOpen ? 'w-6 rounded-full bg-gold text-gold-foreground' : isToday ? 'w-6 rounded-full bg-hero text-hero-foreground' : (off || noResult) && 'font-medium text-muted-foreground',
-                        )}
-                      >
-                        {day.date.getUTCDate()}
-                      </span>
-                      {(day.date.getUTCDate() === 1 || day === data.days[0]) && <span className="text-xs font-normal text-muted-foreground">{day.date.toLocaleDateString('en-IN', { timeZone: 'UTC', month: 'short' })}</span>}
+                  {/* three rows (2026-11-27): the date (and month) top left with HR's pencil in the corner, the mark in the
+                      middle, the times / holiday / shift centred at the bottom */}
+                  <span className={cn('flex min-w-0 items-center gap-1', day.correction && 'pr-3.5')}>
+                    <span
+                      className={cn(
+                        'grid h-6 shrink-0 place-items-center text-sm font-semibold tabular-nums',
+                        isOpen ? 'w-6 rounded-full bg-gold text-gold-foreground' : isToday ? 'w-6 rounded-full bg-hero text-hero-foreground' : (off || noResult) && 'font-medium text-muted-foreground',
+                      )}
+                    >
+                      {day.date.getUTCDate()}
                     </span>
+                    {(day.date.getUTCDate() === 1 || day === data.days[0]) && <span className="truncate text-xs font-normal text-muted-foreground">{day.date.toLocaleDateString('en-IN', { timeZone: 'UTC', month: 'short' })}</span>}
+                  </span>
+                  {day.correction && (
+                    <span title="Corrected by HR" className="absolute top-1.5 right-1 sm:top-2 sm:right-2">
+                      <Pencil aria-label="Corrected by HR" className="size-3" />
+                    </span>
+                  )}
+                  <span className="flex min-w-0 flex-1 items-center justify-center gap-1">
                     {mark && (
-                      <span className="flex items-center gap-1 font-semibold">
+                      <>
+                        <span className="font-semibold sm:text-sm">{mark}</span>
                         {day.lateMinutes > 0 && <span className="hidden font-medium text-negative-ink sm:inline">+{day.lateMinutes}m</span>}
-                        {mark}
                         {day.lateMinutes > 0 && <span aria-hidden className="size-1.5 rounded-full bg-destructive sm:hidden" />}
-                        {day.correction && (
-                          <span title="Corrected by HR">
-                            <Pencil aria-label="Corrected by HR" className="size-3" />
-                          </span>
-                        )}
-                      </span>
+                      </>
                     )}
                     {!mark && shiftCode && <span className="truncate text-foreground/70 sm:hidden">{shiftCode}</span>}
                   </span>
-                  {line && <span className={cn('mt-auto hidden truncate tabular-nums sm:block', !times && !day.holiday && 'text-foreground/70')}>{line}</span>}
+                  {line && <span className={cn('hidden truncate text-center tabular-nums sm:block', !times && !day.holiday && 'text-foreground/70')}>{line}</span>}
                 </button>
               )
             })}
@@ -430,8 +432,9 @@ function DayDetails({ day, employeeCode, actions }: { day: MonthDay; employeeCod
         </div>
       )}
 
-      {/* why a policy rule made a half absent, e.g. "3rd late this month - first half absent" */}
-      {day.note && <p className="rounded-xl bg-warning/20 px-3 py-2 text-xs text-hero-foreground">{day.note}</p>}
+      {/* why a policy rule made a half absent, e.g. "3rd late this month - first half absent" - amber; that the day counts
+          present because their attendance is not tracked (2026-11-27) - calm, it is no penalty */}
+      {day.note && <p className={cn('rounded-xl px-3 py-2 text-xs', day.note === NOT_TRACKED_DAY_NOTE ? 'bg-hero-foreground/10 text-hero-foreground/80' : 'bg-warning/20 text-hero-foreground')}>{day.note}</p>}
       {day.correction && (
         <p className="rounded-xl bg-hero-foreground/5 px-3 py-2 text-xs">
           Corrected:{' '}

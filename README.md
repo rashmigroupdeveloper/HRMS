@@ -96,7 +96,8 @@ HRMS_NEW/
 │     │  │                      (named lists, plants' defaults, who follows which from when) holiday-categories/ punches/ (machine
 │     │  │                      uploads, unmatched codes) days/ (each day worked out, month, board, muster, corrections)
 │     │  │                      rosters/ shift-changes/ (employee -> manager -> HR) regularizations/ (missed punch / on
-│     │  │                      duty requests, through approval); reports/ (scoped detail/exceptions and raw-punch Excel); attendance.jobs.ts (nightly close)
+│     │  │                      duty requests, through approval); exemptions/ ("attendance not tracked": who counts
+│     │  │                      present without punches, set on Schedules); reports/ (scoped detail/exceptions and raw-punch Excel); attendance.jobs.ts (nightly close)
 │     │  ├─ leave/              sub-folders: types/ (leave types and their rules) balances/ (the ledger: monthly credits,
 │     │  │                      year-end lapse, HR's adjustments, the register) applications/ (apply, withdraw, cancel -
 │     │  │                      through approval; its leave on the attendance days); leave.jobs.ts (credits)
@@ -359,7 +360,9 @@ weekly off, holiday, paid leave), unpaid (absent, missed punch, leave without pa
 day, or a leave half with no approved leave). The people table shows days in the run, paid and unpaid; a person's view
 shows each day. The run keeps this copy even if attendance is opened again later, and says so when it was. Refreshing
 the people removes the days - work them out again. People absent on every working day with no punch at all are listed
-under "To check" (most likely they do not punch - their attendance must be corrected before the lock).
+under "To check" (most likely they do not punch - mark them **Not tracked** on Attendance setup › Schedules while
+the month is open: from that day they count present on their working days, whatever the punches say; leave, off days and
+HR's corrections stay. Needs Attendance setup: Edit covering the employee; migration `attendance_not_tracked`).
 
 No amount is calculated yet: what a day is worth, rounding and which components are cut for loss of pay are agreed
 against a greytHR salary register first (BACKLOG item 31). Deduction processing, input locking, approval, payslips and

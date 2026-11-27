@@ -69,25 +69,29 @@ export function MonthSkeleton({ year, month, range, label, actions }: { year?: n
                   <div
                     key={date.toISOString()}
                     className={cn(
-                      'flex min-h-12 min-w-0 flex-col items-stretch overflow-hidden rounded-lg p-1 text-xs sm:min-h-16 sm:rounded-xl sm:px-2 sm:py-1.5',
+                      'flex min-h-12 min-w-0 flex-col items-stretch overflow-hidden rounded-lg p-1 text-xs sm:min-h-18 sm:rounded-xl sm:px-2 sm:py-1.5',
                       isToday && 'ring-2 ring-foreground ring-inset',
                       noResult ? 'u-hatch bg-surface-2/60' : 'bg-surface-2/45',
                     )}
                   >
-                    <span className="flex items-center gap-1">
+                    <span className="flex min-w-0 items-center gap-1">
                       <span
                         className={cn(
-                          'grid h-6 place-items-center text-sm font-medium text-muted-foreground tabular-nums',
+                          'grid h-6 shrink-0 place-items-center text-sm font-medium text-muted-foreground tabular-nums',
                           isToday && 'w-6 rounded-full bg-gold font-semibold text-gold-foreground',
                         )}
                       >
                         {day}
                       </span>
-                      {(day === 1 || date.getTime() === first.getTime()) && <span className="text-xs font-normal text-muted-foreground">{date.toLocaleDateString('en-IN', { timeZone: 'UTC', month: 'short' })}</span>}
+                      {(day === 1 || date.getTime() === first.getTime()) && <span className="truncate text-xs font-normal text-muted-foreground">{date.toLocaleDateString('en-IN', { timeZone: 'UTC', month: 'short' })}</span>}
                     </span>
-                    {/* the mark (under the number on a phone) and the times line */}
-                    <Skeleton className="mt-1 h-2.5 w-6 rounded-full sm:hidden" />
-                    <Skeleton className="mt-auto hidden h-3 w-3/4 rounded-full sm:block" />
+                    {/* the mark in the middle and the times line centred at the bottom, as MonthCalendar's cell (change both together) */}
+                    <span className="flex flex-1 items-center justify-center">
+                      <Skeleton className="h-3 w-6 rounded-full" />
+                    </span>
+                    <span className="hidden h-4 items-center justify-center sm:flex">
+                      <Skeleton className="h-3 w-3/4 rounded-full" />
+                    </span>
                   </div>
                 )
               })}

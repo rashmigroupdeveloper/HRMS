@@ -27,6 +27,7 @@ import { cn, formatDate, formatDoneBy, fromDateInput, toDateInput, todayDay } fr
 import { FILTER_SEARCH, FILTER_SELECT, segment, SEGMENTS, SETUP_ICONS, SETUP_PARTS, UPLOAD_HINT, UPLOAD_SUMMARY, UPLOAD_TITLE, type Shift, WEEKDAYS } from './labels'
 import { AppliesFrom, UpcomingPill } from './AppliesFrom'
 import { HolidayListDrawer, type HolidayListStart } from './HolidayListDrawer'
+import { NotTrackedChangeDrawer, NotTrackedDrawer, type NotTrackedMarker } from './NotTrackedDrawer'
 import { HolidayListsSetup } from './HolidayListsSetup'
 import { HolidaysSetup } from './HolidaysSetup'
 import { MonthLockSetup } from './MonthLockSetup'
@@ -457,8 +458,13 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
   const [policyId, setPolicyId] = useState('')
   // the holiday list followed ('none': those without one - 2026-11-24)
   const [holidayListId, setHolidayListId] = useState('')
+  // whose attendance is not tracked ('no': those marked; 'yes': those tracked by punches - 2026-11-27)
+  const [tracked, setTracked] = useState('')
   const [editing, setEditing] = useState<ScheduleStart | null>(null)
   const [givingList, setGivingList] = useState<HolidayListStart | null>(null)
+  // marking people "attendance not tracked" (null: closed), and changing one person's marker
+  const [marking, setMarking] = useState<PickedEmployee[] | null>(null)
+  const [changing, setChanging] = useState<{ person: PickedEmployee; marker: NotTrackedMarker } | null>(null)
   // the ticked employees (code -> name), kept while the filters change
   const [ticked, setTicked] = useState<Map<string, string>>(new Map())
   const patterns = useQuery(orpc.attendance.shifts.patterns.list.queryOptions({ input: { includeInactive: true } }))
@@ -478,6 +484,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
     ...(patternId && { patternId: Number(patternId) }),
     ...(policyId && { policyId: Number(policyId) }),
     ...(holidayListId && { holidayListId: holidayListId === 'none' ? null : Number(holidayListId) }),
+    ...(tracked && { notTracked: tracked === 'no' }),
   }
   const rows = useQuery(orpc.attendance.shifts.schedules.queryOptions({ input: filters }))
   const shown = rows.data ?? []
@@ -499,7 +506,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
       else next.delete(code)
       return next
     })
-  const filtered = !!(search.trim() || companyId || plantId || departmentId || costCenterId || patternId || policyId || holidayListId)
+  const filtered = !!(search.trim() || companyId || plantId || departmentId || costCenterId || patternId || policyId || holidayListId || tracked)
   const clearFilters = () => {
     setSearch('')
     setCompanyId('')
@@ -509,6 +516,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
     setPatternId('')
     setPolicyId('')
     setHolidayListId('')
+    setTracked('')
   }
   return (
     <SetupCard
@@ -516,12 +524,15 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
       title="Schedules"
       count={rows.data?.length}
       summary="Each employee's pattern, policy and holiday list today"
-      hint="Each employee's schedule pattern, attendance policy and holiday list today - “default” where none was given (the ★ pattern, the default policy; no holiday list = no holidays) - since when, and a change already set for later. A new schedule or list runs from its date until changed again; for a schedule, days already passed from that date are worked out again. The roster is only for rare one-off changes."
+      hint="Each employee's schedule pattern, attendance policy and holiday list today - “default” where none was given (the ★ pattern, the default policy; no holiday list = no holidays) - since when, and a change already set for later. A new schedule or list runs from its date until changed again; for a schedule, days already passed from that date are worked out again. The roster is only for rare one-off changes. “Not tracked” marks someone who does not punch: they count present on their working days."
       action={
         <div className="flex flex-wrap items-center gap-2">
           <ExportButton disabled={!rows.data?.length || rows.isFetching} load={() => client.attendance.exportSetup({ section: 'schedules', schedules: filters })} />
           {canEdit && (
           <>
+            <Button variant="secondary" size="sm" onClick={() => setMarking([])}>
+              <Plus /> Mark not tracked
+            </Button>
             <Button variant="secondary" size="sm" onClick={() => setGivingList({ people: [], holidayListId: '' })}>
               <Plus /> Give a holiday list
             </Button>
@@ -615,6 +626,11 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
             </NativeSelectOption>
           ))}
         </NativeSelect>
+        <NativeSelect aria-label="Attendance tracked or not" className={FILTER_SELECT} value={tracked} onChange={(e) => setTracked(e.target.value)}>
+          <NativeSelectOption value="">Tracked or not</NativeSelectOption>
+          <NativeSelectOption value="no">Not tracked</NativeSelectOption>
+          <NativeSelectOption value="yes">Tracked by punches</NativeSelectOption>
+        </NativeSelect>
         {filtered && (
           <Button variant="ghost" size="sm" onClick={clearFilters}>
             Clear filters
@@ -630,6 +646,9 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
           <span className="flex-1" />
           <Button variant="ghost" size="sm" onClick={() => setTicked(new Map())}>
             Untick all
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setMarking([...ticked].map(([employeeCode, name]) => ({ employeeCode, name })))}>
+            <Pencil /> Mark not tracked
           </Button>
           <Button variant="secondary" size="sm" onClick={() => setGivingList({ people: [...ticked].map(([employeeCode, name]) => ({ employeeCode, name })), holidayListId: '' })}>
             <Pencil /> Change their holiday list
@@ -665,6 +684,7 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
                 <TableHead>Employee</TableHead>
                 <TableHead>Schedule pattern</TableHead>
                 <TableHead>Policy</TableHead>
+                <TableHead className="hidden md:table-cell">Attendance</TableHead>
                 <TableHead className="hidden sm:table-cell">Holiday list</TableHead>
                 <TableHead className="hidden sm:table-cell">Since</TableHead>
                 <TableHead className="hidden md:table-cell">Next change</TableHead>
@@ -704,6 +724,25 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
                   <TableCell>
                     {r.policy?.name ?? '—'}
                     {r.policyIsDefault && <span className="ml-1.5 text-xs text-muted-foreground">default</span>}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {r.notTracked ? (
+                      <button
+                        type="button"
+                        disabled={!canEdit}
+                        aria-label={`Attendance of ${r.employee.name}: not tracked${canEdit ? ' - change' : ''}`}
+                        title={r.notTracked.reason}
+                        className="text-left enabled:cursor-pointer enabled:hover:opacity-80 focus-visible:outline-2 focus-visible:outline-ring"
+                        onClick={() => setChanging({ person: { employeeCode: r.employee.employeeCode, name: r.employee.name }, marker: r.notTracked! })}
+                      >
+                        <Pill tone="info">Not tracked</Pill>
+                        <span className="mt-0.5 block text-xs text-muted-foreground tabular-nums">
+                          {!r.notTracked.current ? `from ${formatDate(r.notTracked.fromDate)}` : r.notTracked.toDate ? `until ${formatDate(r.notTracked.toDate)}` : `since ${formatDate(r.notTracked.fromDate)}`}
+                        </span>
+                      </button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">By punches</span>
+                    )}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     {r.holidayList.holidayList ? r.holidayList.holidayList.name : <span className="text-warning-ink">None</span>}
@@ -748,6 +787,15 @@ function Schedules({ canEdit }: { canEdit: boolean }) {
           onSaved={() => givingList.people.length > 1 && setTicked(new Map())}
         />
       )}
+      {marking && (
+        <NotTrackedDrawer
+          people={marking}
+          onClose={() => setMarking(null)}
+          // saved for everyone ticked: untick them
+          onSaved={() => marking.length > 1 && setTicked(new Map())}
+        />
+      )}
+      {changing && <NotTrackedChangeDrawer person={changing.person} marker={changing.marker} onClose={() => setChanging(null)} />}
       {editing && (
         <ScheduleDrawer
           start={editing}

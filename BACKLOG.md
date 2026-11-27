@@ -822,12 +822,19 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
     person with loss of pay - to read: what a day's pay is divided by (the period's days, 30 or 26), which components
     are cut for loss of pay, how the lines and the net are rounded. Then propose the results table, the dated rule
     settings and the component's "cut for loss of pay" switch, and build the earned amounts and gross.
-  - [ ] **People who do not punch** (the user, 2026-11-27: mark them in attendance). In HR's 11-day punch file of October
-    2026 about a third of the active employees have no punch at all (the file may not cover every site).
-    Attendance marks a working day without punches absent, so payroll would pay them nothing. **Needs:** a per-employee
-    "attendance not tracked" marker in the attendance module (counted present on working days unless on leave) - the
-    field, who sets it and from which date to be proposed to the user - and HR's list of who does not punch. Until then
-    payroll lists them as "Absent throughout" under "To check".
+  - **People who do not punch - built 2026-11-27** (the user approved the `AttendanceExemption` table and chose
+    Schedules with Attendance setup Edit): "Not tracked" on Attendance setup > Schedules - one person or everyone ticked,
+    from a day, with a last day or until ended, with a reason. A marked person counts present on working days whatever
+    the punches say; leave, on duty, off days and HR's corrections stay; a locked month never changes
+    (`attendance.exemptions.*`, the rule in `attendance/days/days.service.ts` - countPresent). Payroll needs no rule of
+    its own: it still lists anyone absent on every working day as "Absent throughout" under "To check".
+    - [ ] **HR's list of who does not punch**, per company (about a third of the active employees have no punch in
+      HR's 11-day punch file of October 2026; the file may not cover every site). They are marked on Schedules - filter
+      by plant or department and tick all, or paste the employee codes - while the attendance month is still open.
+    - [ ] Only the marker in force (or the next to start) shows on Schedules; one that has ended is seen only in the
+      change history and on its days' notes. A per-employee history, if HR asks for it.
+    - [ ] On a phone the Schedules table hides the "Attendance" column (as it hides the holiday list); the "Not
+      tracked" filter still works.
   - [ ] **The late rule's absent half** (the Nth late of a month makes a half absent) is an absent half in attendance,
     so the run shows it unpaid like any absence. Whether that penalty may reach pay is NOT decided: the law lets only
     the time actually missed be cut without the fine procedure (plan, "Payable days"; question for the CA). To settle

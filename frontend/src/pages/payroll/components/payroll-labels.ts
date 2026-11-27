@@ -34,7 +34,7 @@ export const STATUS_CODE = { PRESENT: 'P', HALF_DAY: 'HD', ABSENT: 'A', WEEKLY_O
 export const DAY_TOTAL_LABELS = ['Paid', 'Unpaid', 'To check'] as const
 export const DAYS_LEGEND = 'P present · A absent · MP missed punch · WO weekly off · H holiday · OD on duty · leave by its type · ? not known. Two codes: first half / second half.'
 export const DAYS_NOT_WORKED_OUT = 'The days are not worked out yet.'
-export const ALL_ABSENT_NOTE = 'Absent on every working day, with no punch, leave or duty at all. If this person does not punch, their attendance must be corrected before the month is locked.'
+export const ALL_ABSENT_NOTE = 'Absent on every working day, with no punch, leave or duty at all. If this person does not punch, mark them “Not tracked” on Attendance setup › Schedules (the attendance month must be open), then lock the month and work out the days again.'
 
 export const SALARY_HIDDEN_NOTE = 'Salary figures need Salary access for the whole company as well as Payroll.'
 export const monthLabel = (date: Date) => new Intl.DateTimeFormat('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date)
