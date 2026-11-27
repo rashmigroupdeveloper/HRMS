@@ -6,6 +6,7 @@ import { Pill } from '@/components/Pill'
 import { HomeMovementsSkeleton } from '@/components/skeletons/home/HomeWidgetsSkeleton'
 import { orpc } from '@/lib/orpc'
 import { todayDay } from '@/lib/utils'
+import { TILE } from './HomeParts'
 import { MOVEMENTS_NOTE, MOVEMENTS_TITLE, MOVEMENT_TILES, addDays, daysBetween, inDays, shortDay } from './home-labels'
 
 // Joiners and leavers on the role portal's home (2026-11-27, from main's HR dashboard "joiners / exits this month") - for
@@ -19,9 +20,9 @@ export function HomeMovements() {
   const pending = month.isPending || coming.isPending
   const tiles = month.data ? [month.data.summary.joiners, month.data.summary.leavers] : []
   return (
-    <section className="home-panel min-w-0 p-4 sm:p-5">
+    <section className={TILE}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-light tracking-tight">{MOVEMENTS_TITLE}</h2>
+        <h2 className="text-xl leading-tight font-light tracking-tight">{MOVEMENTS_TITLE}</h2>
         <Link to="/manage/employees?view=movements" aria-label="Open joiners and leavers" className="grid size-9 place-items-center rounded-full bg-surface-2 outline-none hover:bg-surface-2/70 focus-visible:ring-2 focus-visible:ring-ring"><ArrowUpRight aria-hidden className="size-4" /></Link>
       </div>
       <FormError error={month.error ?? coming.error} />
@@ -39,7 +40,7 @@ export function HomeMovements() {
           <h3 className="mt-3 text-sm font-medium">Next 30 days{coming.data ? ` · ${coming.data.summary.joiners} joining, ${coming.data.summary.leavers} leaving` : ''}</h3>
           {coming.data?.items.length === 0 && <p className="py-2 text-sm text-muted-foreground">Nobody joins or leaves in the next 30 days.</p>}
           <ul className="divide-y divide-border/60">
-            {coming.data?.items.map((m) => (
+            {coming.data?.items.slice(0, 2).map((m) => (
               <li key={`${m.employeeCode}-${m.kind}`} className="flex min-h-12 items-center justify-between gap-3 py-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{m.name}</p>
@@ -49,7 +50,7 @@ export function HomeMovements() {
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-muted-foreground">{MOVEMENTS_NOTE}</p>
+          <p className="mt-auto truncate pt-2 text-[11px] text-muted-foreground" title={MOVEMENTS_NOTE}>{MOVEMENTS_NOTE}</p>
         </>
       )}
     </section>

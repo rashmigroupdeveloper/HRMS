@@ -26,18 +26,20 @@ export function CycleDesk({ overview, date }: { overview: Overview; date: Date }
   const monthName = new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' })
   const board = useQuery({ ...orpc.attendance.days.board.queryOptions({ input: { scope, date } }), refetchInterval: 120_000 })
   const summary = board.data?.summary
-  const counts = summary ? [summary.in, summary.leave, summary.notIn] : []
+  const onLeave = summary ? summary.leave + summary.onDuty : 0
+  const counts = summary ? [summary.in, onLeave, summary.notIn] : []
   const finding = summary
     ? [summary.notIn ? `${summary.notIn} not in yet` : null, summary.absent ? `${summary.absent} absent` : null, summary.late ? `${summary.late} late` : null].filter(Boolean).join(' · ')
     : ''
-  const weight = summary ? Math.max(summary.total, summary.in + summary.leave + summary.notIn, 1) : 1
   const parts = summary
     ? [
         { label: 'Punched in', value: summary.in, className: 'bg-gold' },
-        { label: 'On leave', value: summary.leave, className: 'bg-hero-foreground/75' },
+        { label: 'On leave', value: onLeave, className: 'bg-hero-foreground/75' },
         { label: 'Not in yet', value: summary.notIn, className: 'bg-hero-foreground/35' },
+        { label: 'Absent', value: summary.absent, className: 'bg-hero-foreground/15' },
       ].filter((part) => part.value > 0)
     : []
+  const weight = parts.reduce((sum, part) => sum + part.value, 0) || 1
   return (
     <section className="home-panel home-panel-dark u-grain min-w-0 overflow-hidden p-4 text-hero-foreground sm:p-5">
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
@@ -66,7 +68,7 @@ export function CycleDesk({ overview, date }: { overview: Overview; date: Date }
         <div
           className="mt-4 flex h-2.5 overflow-hidden rounded-full bg-hero-foreground/10"
           role="img"
-          aria-label={`${summary!.in} punched in, ${summary!.leave} on leave, ${summary!.notIn} not in yet, of ${summary!.total}.`}
+          aria-label={`${summary!.in} punched in, ${onLeave} on leave, ${summary!.notIn} not in yet, ${summary!.absent} absent, of ${summary!.total}.`}
         >
           {parts.map((part, i) => (
             <span key={part.label} className={`home-grow h-full ${part.className}`} style={{ width: `${(part.value / weight) * 100}%`, animationDelay: `${i * 80}ms` }} />

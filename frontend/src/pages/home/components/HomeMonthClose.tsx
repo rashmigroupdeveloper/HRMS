@@ -5,6 +5,7 @@ import { Pill } from '@/components/Pill'
 import { HomeMonthCloseSkeleton } from '@/components/skeletons/home/HomeWidgetsSkeleton'
 import { formatDate, toDateInput, todayDay } from '@/lib/utils'
 import type { Overview } from '@/pages/attendance/components/labels'
+import { TILE } from './HomeParts'
 import { LiveCount } from './LiveCount'
 import { useMonthClose } from './useMonthClose'
 import { MONTH_CLOSE_COUNTS, MONTH_CLOSE_TITLE, daysBetween, inDays } from './home-labels'
@@ -22,9 +23,9 @@ export function HomeMonthClose({ overview }: { overview: Overview | undefined })
     ? [`/manage/attendance-reports?scope=ALL&mode=EXCEPTIONS&exception=MISSED_PUNCH&from=${toDateInput(focus.from)}&to=${toDateInput(focus.to)}`, '/manage/approvals', '/manage/attendance-setup?part=punches']
     : []
   return (
-    <section className="home-panel min-w-0 p-4 sm:p-5">
+    <section className={TILE}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-light tracking-tight">{MONTH_CLOSE_TITLE}</h2>
+        <h2 className="text-xl leading-tight font-light tracking-tight">{MONTH_CLOSE_TITLE}</h2>
         <Link to="/manage/attendance-setup?part=lock" aria-label="Open the month lock" className="grid size-9 place-items-center rounded-full bg-surface-2 outline-none hover:bg-surface-2/70 focus-visible:ring-2 focus-visible:ring-ring"><ArrowUpRight aria-hidden className="size-4" /></Link>
       </div>
       <FormError error={error} />

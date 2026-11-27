@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { Building2, CalendarCog, CircleAlert, FileText, Fingerprint, History, Inbox, ListChecks, ShieldCheck, UserPlus, Users, Workflow } from 'lucide-react'
-import { Fragment, type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { FormError } from '@/components/FormError'
-import { CycleDeskSkeleton, HomeAttendanceSkeleton, HomeRoleSkeleton } from '@/components/skeletons/home/HomePanelsSkeleton'
-import { HomeStripSkeleton } from '@/components/skeletons/home/HomeWidgetsSkeleton'
+import { CycleDeskSkeleton, HomeAttendanceSkeleton } from '@/components/skeletons/home/HomePanelsSkeleton'
 import { ManageWorkspaceSkeleton } from '@/components/skeletons/home/ManageWorkspaceSkeleton'
 import { useAccess } from '@/hooks/useAccess'
 import { orpc } from '@/lib/orpc'
-import { todayDay } from '@/lib/utils'
+import { cn, todayDay } from '@/lib/utils'
 import { HomeAttendance } from './components/HomeAttendance'
 import { CycleDesk } from './components/CycleDesk'
 import { HomeAwayWeek } from './components/HomeAwayWeek'
@@ -18,8 +18,7 @@ import { HomeJoiningWork, HomePreJoining } from './components/HomeOnboarding'
 import { HomeDecisions, HomeMyRequests } from './components/HomeRequests'
 import { greeting } from './components/greeting'
 import { QuickLink, type Shortcut } from './components/QuickLink'
-import { CardTitle, HeadlineStats, SegmentStrip } from './components/HomeParts'
-import { PEOPLE_STRIP } from './components/home-labels'
+import { AllClear, CardTitle, HeadlineStats, TILE } from './components/HomeParts'
 import { useMonthClose } from './components/useMonthClose'
 import { usePayrollRuns } from './components/usePayrollRuns'
 
@@ -28,10 +27,11 @@ import { usePayrollRuns } from './components/usePayrollRuns'
 // numbers (the attendance month to close, payroll runs, joiners & leavers, who is away) and its pages - each shown only
 // with the access its reader needs (a role switch reloads the page with the new role's). One's own attendance, leave and
 // details are on Employee self-service's home (/ess), never here.
-// Redesigned 2026-11-27 like /ess (the user): big headline numbers from the role's access, the people today in the role's
-// access as a strip under the greeting, and what needs the person first - decisions waiting, a month over and not locked,
-// a pay month without a run - while calm cards follow and "nothing waiting" becomes a slim row at the bottom.
-// The attendance cycle (the start day from Attendance setup, with who is in today) sits under that header.
+// 2026-11-27 (the user), as /ess: big headline numbers from the role's access, then the attendance cycle (the start day
+// from Attendance setup) as the one reading of who is in today. Under that, ONE regular grid of tiles of one height
+// (one or two columns wide, four to a row), most urgent first - decisions waiting, a month over and not locked, a pay
+// month without a run, open joining tasks - and a calm line of checks for what needs nothing; the role's pages complete
+// the last row. The people tile is the names worth a look.
 export function ManageHomePage() {
   const { me, can, coversGroup, ready } = useAccess()
   const [now] = useState(() => new Date())
@@ -43,26 +43,34 @@ export function ManageHomePage() {
   const hasPeople = !!o && (o.canSeeAll || o.teamSize > 0 || o.departmentSize > 0)
   const joining = can('JOINING_TASKS') || can('ONBOARDING')
   const locks = coversGroup('ATTENDANCE_SETUP')
-  // the readers behind the numbers - the same queries the cards below read (shared, so nothing loads twice)
+  const canPayroll = can('PAYROLL')
+  // the readers behind the numbers and the order - the same queries the tiles read (shared, so nothing loads twice)
   const toDecide = useQuery({ ...orpc.approvals.listToDecide.queryOptions(), enabled: ready })
+  const raised = useQuery({ ...orpc.approvals.listMine.queryOptions(), enabled: ready })
   const board = useQuery({ ...orpc.attendance.days.board.queryOptions({ input: { scope: 'ALL', date } }), enabled: ready && can('ATTENDANCE') })
   const tasks = useQuery({ ...orpc.joiningTasks.list.queryOptions({ input: { scope: 'ALL', status: 'OPEN' } }), enabled: ready && joining })
+  const offers = useQuery({ ...orpc.candidates.list.queryOptions({ input: { status: 'ACCEPTED' } }), enabled: ready && isHR })
   const first = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1))
   const movements = useQuery({ ...orpc.employees.movements.list.queryOptions({ input: { from: first, to: date, pageSize: 1 } }), enabled: ready && can('EMPLOYEES') })
   const month = useMonthClose(o, ready && locks)
-  const canPayroll = can('PAYROLL')
   const payroll = usePayrollRuns(o, ready && canPayroll)
-  // what this browser saw last (decisions waiting, a month to lock, a pay run missing), so the loading state draws the
-  // order that will load - a per-browser convenience only; the answers always come from the readers (2026-11-27)
+  const openTasks = tasks.data ? tasks.data.teams.reduce((n, t) => n + t.open, 0) : null
+  // what this browser saw last, so the loading state draws the order that will load - a per-browser convenience only;
+  // the answers always come from the readers (2026-11-27)
   const [remembered] = useState(readRemembered)
+  const decisionsWaiting = toDecide.data ? toDecide.data.length > 0 : remembered.decisions
   const monthUrgent = month.pending ? remembered.month : !!month.overdue
   const payrollUrgent = payroll.pending ? remembered.payroll : payroll.dueMissing
+  const anyRaised = raised.data ? raised.data.length > 0 : remembered.raised
+  const anyOffers = offers.data ? offers.data.length > 0 : remembered.offers
   useEffect(() => {
-    if (toDecide.data && (!locks || !month.pending) && (!canPayroll || !payroll.pending)) remember({ decisions: toDecide.data.length > 0, month: !!month.overdue, payroll: payroll.dueMissing })
-  }, [toDecide.data, locks, month.pending, month.overdue, payroll.pending, payroll.dueMissing, canPayroll])
+    if (toDecide.data && raised.data && (!locks || !month.pending) && (!canPayroll || !payroll.pending) && (!isHR || offers.data)) {
+      remember({ decisions: toDecide.data.length > 0, month: !!month.overdue, payroll: payroll.dueMissing, raised: raised.data.length > 0, offers: (offers.data?.length ?? 0) > 0 })
+    }
+  }, [toDecide.data, raised.data, locks, month.pending, month.overdue, canPayroll, payroll.pending, payroll.dueMissing, isHR, offers.data])
   const headlines = [
     { icon: Inbox, label: 'Decisions waiting', value: toDecide.data?.length ?? null, to: '/manage/approvals' },
-    ...(joining ? [{ icon: ListChecks, label: 'Open joining tasks', value: tasks.data ? tasks.data.teams.reduce((n, t) => n + t.open, 0) : null, to: '/manage/joining-tasks?tab=all' }] : []),
+    ...(joining ? [{ icon: ListChecks, label: 'Open joining tasks', value: openTasks, to: '/manage/joining-tasks?tab=all' }] : []),
     ...(can('ATTENDANCE')
       ? [{ icon: Fingerprint, label: 'Punched in today', value: board.data?.summary.in ?? null, to: '/manage/team-attendance?view=all' }]
       : locks ? [{ icon: CircleAlert, label: 'Missed punches', value: month.checklist?.missedPunches ?? null, to: '/manage/attendance-setup?part=lock' }] : []),
@@ -79,77 +87,87 @@ export function ManageHomePage() {
     ...(can('APPROVAL_CHAINS') ? [{ to: '/manage/approval-chains', icon: Workflow, title: 'Approval rules', text: 'Who approves what' }] : []),
     ...(can('CHANGE_HISTORY') ? [{ to: '/manage/change-history', icon: History, title: 'Change history', text: 'Who changed what' }] : []),
   ]
-  const workspace = (
-    <section className="home-panel min-w-0 p-4 sm:p-5">
-      <CardTitle title="Your role's pages" />
-      {work.length > 0 ? (
-        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 md:grid-cols-3 xl:grid-cols-5">{work.map((item) => <QuickLink key={item.to} {...item} />)}</div>
-      ) : (
-        <p className="mt-2 text-sm text-muted-foreground">This role gives no set-up pages - its approvals and people are above.</p>
-      )}
-    </section>
-  )
-  // the right column: joining work for HR, otherwise the people today (the role's data access and one's own team)
-  const focus = isHR ? <><HomeJoiningWork /><HomePreJoining /><HomeMyRequests /></> : overview.isPending ? <HomeRoleSkeleton dark /> : hasPeople ? <HomeAttendance overview={o!} date={date} dark /> : <HomeMyRequests />
-  // the role's number cards, each with how much it needs the person now
-  const numberCards = [
-    ...(locks ? [{ key: 'month', score: monthUrgent ? 35 : 8, node: <HomeMonthClose overview={o} /> }] : []),
-    ...(can('PAYROLL') ? [{ key: 'payroll', score: payrollUrgent ? 25 : 6, node: <HomePayroll overview={o} /> }] : []),
-    ...(can('EMPLOYEES') ? [{ key: 'movements', score: 4, node: <HomeMovements /> }] : []),
-    ...(can('LEAVE') ? [{ key: 'away', score: 3, node: <HomeAwayWeek /> }] : []),
-  ].sort((x, y) => y.score - x.score)
-  const urgent = numberCards.filter((c) => c.score >= 20)
-  const calm = numberCards.filter((c) => c.score < 20)
-  const grid = (list: typeof numberCards) => <div className="grid min-w-0 items-start gap-3 sm:grid-cols-2">{list.map((c) => <Fragment key={c.key}>{c.node}</Fragment>)}</div>
-  const waiting = toDecide.data ? toDecide.data.length > 0 : remembered.decisions
+  // the tiles, most urgent first. One dark tile: the joining work for HR, otherwise the people today.
   const late = toDecide.data?.some((r) => r.step?.late) ?? false
-  // the main column, most urgent first (a stable sort keeps the rest in this order)
-  const cards: { key: string; score: number; node: ReactNode }[] = [
-    { key: 'decisions', score: waiting ? (late ? 50 : 40) : 1, node: <HomeDecisions light /> },
-    ...(urgent.length ? [{ key: 'urgent', score: 30, node: grid(urgent) }] : []),
-    // HR's people today in the role's access (light - the dark column is the joining work)
-    ...(isHR && (overview.isPending || hasPeople) ? [{ key: 'people', score: 15, node: overview.isPending ? <section className="home-panel min-w-0 p-4 sm:p-5"><h2 className="text-xl font-light tracking-tight">People today</h2><HomeAttendanceSkeleton /></section> : <HomeAttendance overview={o!} date={date} /> }] : []),
-    ...(calm.length ? [{ key: 'calm', score: 10, node: grid(calm) }] : []),
-    ...(!isHR && hasPeople ? [{ key: 'requests', score: 5, node: <HomeMyRequests /> }] : []),
+  const peopleTile = overview.isPending
+    ? <section className={cn(TILE, !isHR && 'home-panel-dark home-people-dark text-hero-foreground')}><h2 className="text-xl leading-tight font-light tracking-tight">People today</h2><HomeAttendanceSkeleton dark={!isHR} figures={false} /></section>
+    : <HomeAttendance overview={o!} date={date} dark={!isHR} figures={false} />
+  const tiles: { key: string; score: number; span: 1 | 2; node: ReactNode }[] = [
+    ...(decisionsWaiting ? [{ key: 'decisions', score: late ? 50 : 40, span: 2 as const, node: <HomeDecisions light /> }] : []),
+    ...(locks ? [{ key: 'month', score: monthUrgent ? 35 : 8, span: 1 as const, node: <HomeMonthClose overview={o} /> }] : []),
+    ...(joining && openTasks !== 0 ? [{ key: 'joining', score: 28, span: 1 as const, node: <HomeJoiningWork /> }] : []),
+    ...(canPayroll ? [{ key: 'payroll', score: payrollUrgent ? 26 : 6, span: 1 as const, node: <HomePayroll overview={o} /> }] : []),
+    ...(overview.isPending || hasPeople ? [{ key: 'people', score: 15, span: 1 as const, node: peopleTile }] : []),
+    ...(isHR && anyOffers ? [{ key: 'offers', score: 7, span: 1 as const, node: <HomePreJoining /> }] : []),
+    ...(anyRaised ? [{ key: 'raised', score: 5, span: 1 as const, node: <HomeMyRequests /> }] : []),
+    ...(can('EMPLOYEES') ? [{ key: 'movements', score: 4, span: 1 as const, node: <HomeMovements /> }] : []),
+    ...(can('LEAVE') ? [{ key: 'away', score: 3, span: 2 as const, node: <HomeAwayWeek /> }] : []),
   ].sort((x, y) => y.score - x.score)
-  const s = board.data?.summary
+  // the role's pages complete the last row (four columns wide, two from md), so the grid ends square
+  const used = tiles.reduce((n, t) => n + t.span, 0)
+  const pagesSpan = (4 - (used % 4)) as 1 | 2 | 3 | 4
+  const pagesSpanMd = used % 2 === 0 ? 2 : 1
+  // what needs nothing: a check in the calm line instead of a tile
+  const clear = [
+    ...(toDecide.data && !decisionsWaiting ? [{ label: 'No decisions waiting', to: '/manage/approvals' }] : []),
+    ...(joining && openTasks === 0 ? [{ label: 'No open joining tasks', to: '/manage/joining-tasks?tab=all' }] : []),
+    ...(isHR && offers.data && !anyOffers ? [{ label: 'No accepted offers waiting to join', to: '/manage/onboarding' }] : []),
+    ...(raised.data && !anyRaised ? [{ label: 'Nothing raised for others', to: '/manage/approvals?tab=mine' }] : []),
+  ]
   return (
-    <div className="home-dashboard space-y-4">
-      <header className="home-arrive grid min-w-0 items-end gap-x-8 gap-y-5 pb-2 lg:grid-cols-12">
-        <div className="min-w-0 space-y-5 lg:col-span-7">
-          <div>
+    <div className="home-dashboard space-y-5">
+      {/* one compact band, as /ess: greeting and numbers on one row; who is in today is the cycle under this */}
+      <header className="home-arrive space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+          <div className="min-w-0">
             <p className="text-xs text-muted-foreground">{now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'long' })}{role ? ` · ${role}` : ''}</p>
-            <h1 className="mt-1 text-[32px] leading-tight font-light tracking-tight sm:text-[44px]">{greeting(now)}{me ? `, ${me.name.split(' ')[0]}` : ''}</h1>
+            <h1 className="text-[26px] leading-tight font-light tracking-tight sm:text-[30px]">{greeting(now)}{me ? `, ${me.name.split(' ')[0]}` : ''}</h1>
           </div>
-          {ready && can('ATTENDANCE') && (s ? (
-            <div className="min-w-0">
-              <p className="mb-2 text-xs text-muted-foreground">People today within your access · {s.total}</p>
-              <SegmentStrip label="People today within your access" segments={[{ label: 'Punched in', value: s.in, tone: 'dark' }, { label: 'On leave', value: s.leave + s.onDuty, tone: 'gold' }, { label: 'Not in yet', value: s.notIn, tone: 'hatched' }, { label: 'Absent', value: s.absent, tone: 'outline' }]} />
-            </div>
-          ) : <HomeStripSkeleton parts={PEOPLE_STRIP} />)}
+          {ready && <HeadlineStats stats={headlines.map((h) => ({ ...h, value: h.value ?? '—' }))} loading={headlines.some((h) => h.value === null)} />}
         </div>
-        <div className="min-w-0 lg:col-span-5 lg:justify-self-end">{ready && <HeadlineStats stats={headlines.map((h) => ({ ...h, value: h.value ?? '—' }))} loading={headlines.some((h) => h.value === null)} />}</div>
       </header>
       {can('ATTENDANCE') && overview.isPending && <CycleDeskSkeleton />}
       {can('ATTENDANCE') && hasPeople && o && <CycleDesk overview={o} date={date} />}
       <FormError error={overview.error} />
-      <div className="grid min-w-0 items-start gap-3 lg:grid-cols-12">
-        <div className="min-w-0 space-y-3 lg:col-span-8">{ready ? cards.map((c) => <Fragment key={c.key}>{c.node}</Fragment>) : <ManageWorkspaceSkeleton label="Loading your role's pages" />}</div>
-        <div className="min-w-0 space-y-3 lg:col-span-4">{ready ? focus : <HomeRoleSkeleton dark />}</div>
-      </div>
-      {ready && workspace}
+      {!ready ? <ManageWorkspaceSkeleton label="Loading your role's pages" /> : (
+        <div className="grid min-w-0 grid-flow-row-dense gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {tiles.map((t) => <div key={t.key} className={cn('home-tile min-w-0', t.span === 2 && 'md:col-span-2')}>{t.node}</div>)}
+          <div className={cn('min-w-0', pagesSpan < 4 && 'home-tile', MD_SPAN[pagesSpanMd], XL_SPAN[pagesSpan])}>
+            <RolePages work={work} span={pagesSpan} />
+          </div>
+        </div>
+      )}
+      {ready && <AllClear items={clear} />}
     </div>
   )
 }
 
+// (literal class names, so the stylesheet keeps them)
+const MD_SPAN: Record<1 | 2, string> = { 1: 'md:col-span-1', 2: 'md:col-span-2' }
+const XL_SPAN: Record<1 | 2 | 3 | 4, string> = { 1: 'xl:col-span-1', 2: 'xl:col-span-2', 3: 'xl:col-span-3', 4: 'xl:col-span-4' }
+const PAGE_COLUMNS: Record<1 | 2 | 3 | 4, string> = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-2 sm:grid-cols-3', 4: 'grid-cols-2 md:grid-cols-3 xl:grid-cols-5' }
+
+// the role's set-up pages: a plain list in one column, shortcuts with a line each when wider
+function RolePages({ work, span }: { work: Shortcut[]; span: 1 | 2 | 3 | 4 }) {
+  return (
+    <section className={TILE}>
+      <CardTitle title="Your role's pages" />
+      {work.length === 0 && <p className="mt-2 text-sm text-muted-foreground">This role gives no set-up pages - its approvals and people are above.</p>}
+      {span === 1
+        ? <ul className="mt-2 divide-y divide-border/60 overflow-y-auto">{work.map(({ to, icon: Icon, title }) => <li key={to}><Link to={to} className="flex min-h-10 items-center gap-2.5 rounded-lg text-sm outline-none hover:bg-surface-2/60 focus-visible:ring-2 focus-visible:ring-ring"><Icon aria-hidden className="size-4 text-muted-foreground" />{title}</Link></li>)}</ul>
+        : <div className={cn('mt-1 grid gap-x-4', PAGE_COLUMNS[span])}>{work.map((item) => <QuickLink key={item.to} {...item} />)}</div>}
+    </section>
+  )
+}
+
 const REMEMBER_KEY = 'hrms.manage.layout'
-type Remembered = { decisions: boolean; month: boolean; payroll: boolean }
+type Remembered = { decisions: boolean; month: boolean; payroll: boolean; raised: boolean; offers: boolean }
 function readRemembered(): Remembered {
   try {
     const v = JSON.parse(window.localStorage.getItem(REMEMBER_KEY) ?? '{}') as Partial<Remembered>
-    return { decisions: v.decisions !== false, month: v.month === true, payroll: v.payroll === true }
+    return { decisions: v.decisions !== false, month: v.month === true, payroll: v.payroll === true, raised: v.raised !== false, offers: v.offers === true }
   } catch {
-    return { decisions: true, month: false, payroll: false }
+    return { decisions: true, month: false, payroll: false, raised: true, offers: false }
   }
 }
 function remember(value: Remembered) {

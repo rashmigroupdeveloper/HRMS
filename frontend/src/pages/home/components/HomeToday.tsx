@@ -1,6 +1,6 @@
 import { Pill, type Tone } from '@/components/Pill'
 import { hours, NOT_TRACKED_DAY_NOTE, type Overview, STATUS } from '@/pages/attendance/components/labels'
-import { CardTitle, CornerLink } from './HomeParts'
+import { CardTitle, CornerLink, TILE } from './HomeParts'
 import { MY_DAY_NOTE, MY_DAY_TILES, shortDay, span } from './home-labels'
 import { useNow } from './useNow'
 
@@ -54,9 +54,10 @@ export function HomeToday({ overview }: { overview: Overview }) {
     ['Late', t.lateMinutes > 0 ? `${t.lateMinutes}m` : '—'],
   ] as const
   return (
-    <section className="home-panel flex min-w-0 flex-col p-4 sm:p-5">
-      <CardTitle title="Today" sub={shortDay(t.date)} action={<div className="flex items-center gap-2"><Pill tone={top.tone}>{top.label}</Pill><CornerLink to="/ess/attendance" label="Open my attendance" /></div>} />
-      <div className="mt-3 flex flex-1 items-center gap-5">
+    <section className={TILE}>
+      {/* the status pill only when the ring does not already say it ("not in yet") */}
+      <CardTitle title="Today" sub={shortDay(t.date)} action={<div className="flex items-center gap-2">{(off || t.inAt) && <Pill tone={top.tone}>{top.label}</Pill>}<CornerLink to="/ess/attendance" label="Open my attendance" /></div>} />
+      <div className="mt-2 flex flex-1 items-center gap-4">
         <div className="relative size-32 shrink-0">
           <svg viewBox="0 0 128 128" className="size-full -rotate-90" aria-hidden>
             <circle cx="64" cy="64" r={R} fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="1.2 5.6" className="text-foreground/25" />
@@ -64,19 +65,19 @@ export function HomeToday({ overview }: { overview: Overview }) {
           </svg>
           <div className="absolute inset-0 grid place-content-center text-center">
             <span className="text-[28px] leading-none font-light tabular-nums">{off ? off.big : (t.inAt ?? '—')}</span>
-            <span className="mt-1 max-w-24 truncate text-xs text-muted-foreground">{off ? off.small : t.inAt ? MY_DAY_TILES[0] : 'not in yet'}</span>
+            <span className="mt-1 max-w-20 truncate text-[11px] text-muted-foreground">{off ? off.small : t.inAt ? MY_DAY_TILES[0] : 'not in yet'}</span>
           </div>
         </div>
         <dl className="min-w-0 flex-1 divide-y divide-border/60">
           {facts.map(([label, value]) => (
             <div key={label} className="flex items-baseline justify-between gap-3 py-2">
               <dt className="text-xs text-muted-foreground">{label}</dt>
-              <dd className={`text-lg font-light tabular-nums ${label === 'Late' && t.lateMinutes > 0 ? 'text-warning-ink' : ''}`}>{value}</dd>
+              <dd className={`text-base font-light tabular-nums ${label === 'Late' && t.lateMinutes > 0 ? 'text-warning-ink' : ''}`}>{value}</dd>
             </div>
           ))}
         </dl>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">
+      <p className="mt-auto truncate pt-2 text-xs text-muted-foreground">
         {shift ? <><span className="text-foreground">{t.shift?.name ?? 'Shift'} {shift.start} – {shift.end}</span> · shift {where}</> : t.planned === 'WORK' && t.holidayHalf && t.holiday ? `${t.holiday}: half day off` : MY_DAY_NOTE}
       </p>
     </section>

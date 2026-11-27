@@ -14,10 +14,5 @@ export function HomeMonthStrip({ overview }: { overview: Overview | undefined })
   const toCome = month.days.filter((d) => d.employed && d.date > overview.today.date).length
   const values = [t.present + t.onDuty, t.leave, t.absent + t.missedPunch, t.weeklyOff + t.holiday, toCome]
   const tones: Segment['tone'][] = ['dark', 'gold', 'outline', 'grey', 'hatched']
-  return (
-    <div className="min-w-0">
-      <p className="mb-2 text-xs text-muted-foreground">Your attendance month · {shortDay(month.from)} – {shortDay(month.to)}</p>
-      <SegmentStrip label="Your attendance month in days" segments={MONTH_STRIP.map((label, i) => ({ label, value: values[i]!, tone: tones[i]! }))} />
-    </div>
-  )
+  return <SegmentStrip label="Your attendance month in days" caption={`Your attendance month · ${shortDay(month.from)} – ${shortDay(month.to)}`} segments={MONTH_STRIP.map((label, i) => ({ label, value: values[i]!, tone: tones[i]! }))} />
 }

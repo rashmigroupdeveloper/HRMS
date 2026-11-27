@@ -5,7 +5,7 @@ import { HomeHolidaysSkeleton } from '@/components/skeletons/home/HomeWidgetsSke
 import { orpc } from '@/lib/orpc'
 import { todayDay } from '@/lib/utils'
 import { HOLIDAY_PORTION, toneOf } from '@/pages/attendance/components/labels'
-import { CardTitle, CornerLink } from './HomeParts'
+import { CardTitle, CornerLink, TILE } from './HomeParts'
 import { HOLIDAYS_TITLE, daysBetween, inDays, shortDay } from './home-labels'
 
 // The next holidays of the list the employee follows (2026-11-27): the next one large - how many days away - and the two
@@ -23,16 +23,16 @@ export function HomeHolidays() {
   const [next, ...after] = coming
   const noList = thisYear.data && !thisYear.data.holidayList && !nextYear.data?.holidayList
   return (
-    <section className="home-panel min-w-0 p-4 sm:p-5">
+    <section className={TILE}>
       <CardTitle title={HOLIDAYS_TITLE} sub="From the holiday list you follow" action={<CornerLink to="/ess/holidays" label="Open all holidays" />} />
       <FormError error={thisYear.error ?? nextYear.error} />
       {pending && <HomeHolidaysSkeleton />}
       {!pending && noList && <p className="py-3 text-sm text-muted-foreground">You follow no holiday list yet - HR gives one with your plant.</p>}
       {!pending && !noList && !next && <p className="py-3 text-sm text-muted-foreground">No more holidays on your list this year.</p>}
       {next && (
-        <div className="mt-3 rounded-2xl bg-surface-2/60 p-3">
+        <div className="mt-2.5 rounded-2xl bg-surface-2/60 px-3 py-2.5">
           <p className="text-xs text-muted-foreground">Next · {shortDay(next.date)}</p>
-          <p className="mt-0.5 text-xl font-light leading-snug">{next.name}</p>
+          <p className="mt-0.5 truncate text-lg leading-snug font-light">{next.name}</p>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
             <span className="font-medium tabular-nums">{inDays(daysBetween(today, next.date))}</span>
             {next.portion !== 'FULL_DAY' && <span className="text-xs text-muted-foreground">{HOLIDAY_PORTION[next.portion]}</span>}
@@ -44,7 +44,7 @@ export function HomeHolidays() {
       {after.length > 0 && (
         <ul className="mt-1 divide-y divide-border/60">
           {after.map((h) => (
-            <li key={`${h.id}-${h.date.toISOString()}`} className="flex min-h-12 items-center justify-between gap-3 py-2">
+            <li key={`${h.id}-${h.date.toISOString()}`} className="flex min-h-10 items-center justify-between gap-3 py-1.5">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{h.name}</p>
                 <p className="text-xs text-muted-foreground">{shortDay(h.date)}{h.mode === 'ON_APPLICATION' ? ' · on application' : ''}</p>
