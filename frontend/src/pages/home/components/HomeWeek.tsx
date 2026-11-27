@@ -2,7 +2,7 @@ import { FormError } from '@/components/FormError'
 import { HomeWeekBarsSkeleton } from '@/components/skeletons/home/HomeWidgetsSkeleton'
 import { cn } from '@/lib/utils'
 import { hours, type Overview, STATUS } from '@/pages/attendance/components/labels'
-import { CardTitle, CornerLink } from './HomeParts'
+import { CardTitle, CornerLink, TILE } from './HomeParts'
 import { WEEKDAY_SHORT, weekOf } from './home-labels'
 import { useMyDays } from './useMyDays'
 
@@ -27,10 +27,10 @@ export function HomeWeek({ overview }: { overview: Overview }) {
   const total = days.reduce((n, d) => n + d.minutes, 0)
   const worked = days.filter((d) => d.minutes > 0).length
   return (
-    <section className="home-panel flex min-w-0 flex-col p-4 sm:p-5">
+    <section className={TILE}>
       <CardTitle title="My week" action={<CornerLink to="/ess/attendance" label="Open my attendance" />} />
-      <div className="mt-2 flex items-end gap-3">
-        <span className="text-[44px] leading-none font-light tabular-nums">{my.pending ? '—' : (total / 60).toFixed(1)}<span className="ml-1 text-2xl">h</span></span>
+      <div className="mt-1 flex items-end gap-3">
+        <span className="text-[42px] leading-none font-light tabular-nums">{my.pending ? '—' : (total / 60).toFixed(1)}<span className="ml-1 text-xl">h</span></span>
         <span className="pb-1 text-xs leading-tight text-muted-foreground">Worked this week{worked > 0 && <><br />{hours(Math.round(total / worked))} a day</>}</span>
       </div>
       <FormError error={my.error} />
@@ -44,7 +44,7 @@ export function HomeWeek({ overview }: { overview: Overview }) {
             const height = d.minutes ? Math.max(10, Math.min(100, (d.minutes / FULL) * 100)) : d.inNow ? 14 : d.status === 'LEAVE' ? 45 : off || d.future ? 22 : short ? 10 : 6
             return (
               <div key={i} className="flex flex-col items-center gap-1.5">
-                <div className="relative flex h-28 w-full items-end justify-center">
+                <div className="relative flex h-24 w-full items-end justify-center">
                   {d.isToday && d.minutes > 0 && <span className="absolute left-1/2 -translate-x-1/2 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap text-gold-foreground tabular-nums" style={{ bottom: `calc(${height}% + 6px)` }}>{hours(d.minutes)}</span>}
                   <span
                     title={`${WEEKDAY_SHORT[i]}: ${d.future ? 'to come' : d.minutes ? hours(d.minutes) : d.status ? STATUS[d.status].label : off ? 'off' : 'not worked out yet'}`}

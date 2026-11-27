@@ -4,7 +4,7 @@ import { FormError } from '@/components/FormError'
 import { HomeToFixSkeleton } from '@/components/skeletons/home/HomeWidgetsSkeleton'
 import { cn, toDateInput } from '@/lib/utils'
 import type { Overview } from '@/pages/attendance/components/labels'
-import { CornerLink } from './HomeParts'
+import { CornerLink, TILE } from './HomeParts'
 import { TO_FIX_TITLE, shortDay } from './home-labels'
 import { problemOf, useToFix } from './useToFix'
 
@@ -24,45 +24,38 @@ export function HomeToFix({ overview, dark = false }: { overview: Overview | und
       <CornerLink to="/ess/attendance" label="Open my attendance" />
     </section>
   )
+  // a tile of the home's grid: three days, the rest counted in the footer
   return (
-    <section className={cn('home-panel min-w-0 p-4 sm:p-5', dark && 'home-panel-dark home-people-dark text-hero-foreground')}>
+    <section className={cn(TILE, dark && 'home-panel-dark home-people-dark text-hero-foreground')}>
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-light tracking-tight">{TO_FIX_TITLE}</h2>
-          <p className={cn('mt-0.5 text-xs', muted)}>Your last 30 days, before the month locks</p>
+        <div className="min-w-0">
+          <h2 className="text-xl leading-tight font-light tracking-tight">{TO_FIX_TITLE}</h2>
+          <p className={cn('mt-0.5 truncate text-xs', muted)}>Last 30 days, before the lock</p>
         </div>
-        {!fix.pending && <span className="text-[44px] leading-none font-light tabular-nums">{fix.days.length}</span>}
+        {!fix.pending && <span className="text-[40px] leading-none font-light tabular-nums">{fix.days.length}</span>}
       </div>
       <FormError error={fix.error} />
       {fix.pending && <HomeToFixSkeleton />}
-      {!fix.pending && fix.days.length === 0 && (
-        <div className="mt-4 flex items-center gap-3">
-          <span className={cn('grid size-10 shrink-0 place-items-center rounded-full', dark ? 'bg-gold text-gold-foreground' : 'bg-positive/15 text-positive-ink')}><Check aria-hidden className="size-5" /></span>
-          <p className="text-sm">Every working day is in order.</p>
-        </div>
-      )}
-      <ul className="mt-3 space-y-1">
-        {fix.days.slice(0, 4).map((d) => {
+      <ul className="mt-2 space-y-0.5">
+        {fix.days.slice(0, 3).map((d) => {
           const missed = problemOf(d) === 'MISSED_PUNCH'
           const Icon = missed ? Fingerprint : UserX
           return (
             <li key={d.date.toISOString()}>
-              <Link to={`/ess/attendance?regularize=${toDateInput(d.date)}`} className={cn('group flex min-h-14 items-center gap-3 rounded-2xl py-1.5 outline-none focus-visible:ring-2', dark ? 'hover:bg-hero-foreground/5 focus-visible:ring-gold' : 'hover:bg-surface-2/60 focus-visible:ring-ring')}>
-                <span className={cn('grid size-10 shrink-0 place-items-center rounded-full', dark ? 'bg-hero-foreground text-hero' : 'bg-surface-2')}><Icon aria-hidden className="size-4" /></span>
+              <Link to={`/ess/attendance?regularize=${toDateInput(d.date)}`} className={cn('group flex min-h-12 items-center gap-3 rounded-xl py-1 outline-none focus-visible:ring-2', dark ? 'hover:bg-hero-foreground/5 focus-visible:ring-gold' : 'hover:bg-surface-2/60 focus-visible:ring-ring')}>
+                <span className={cn('grid size-9 shrink-0 place-items-center rounded-full', dark ? 'bg-hero-foreground text-hero' : 'bg-surface-2')}><Icon aria-hidden className="size-3.5" /></span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium">{shortDay(d.date)} · {missed ? 'Missed punch' : 'Absent'}</span>
-                  <span className={cn('block text-xs', muted)}>{missed ? 'Ask to correct the punch' : 'Ask to correct it, or apply for leave'}</span>
+                  <span className="block truncate text-sm font-medium">{shortDay(d.date)}</span>
+                  <span className={cn('block truncate text-xs', muted)}>{missed ? 'Missed punch · ask to correct' : 'Absent · correct or apply leave'}</span>
                 </span>
-                <span aria-hidden className={cn('size-2.5 shrink-0 rounded-full', missed ? 'bg-gold' : 'bg-destructive')} />
-                <ArrowRight aria-hidden className="size-4 shrink-0 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
+                <span aria-hidden className={cn('size-2 shrink-0 rounded-full', missed ? 'bg-gold' : 'bg-destructive')} />
+                <ArrowRight aria-hidden className="size-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none" />
               </Link>
             </li>
           )
         })}
       </ul>
-      <div className={cn('mt-3 border-t pt-3', dark ? 'border-hero-foreground/15' : 'border-border/60')}>
-        <Link to="/ess/attendance" className="home-cta flex min-h-9 items-center gap-1.5 text-sm font-medium">{fix.days.length > 4 ? `${fix.days.length - 4} more in My attendance` : 'Open my attendance'} <ArrowRight aria-hidden className="size-4" /></Link>
-      </div>
+      <Link to="/ess/attendance" className={cn('home-cta mt-auto flex min-h-8 items-center gap-1.5 border-t pt-2 text-xs font-medium', dark ? 'border-hero-foreground/15' : 'border-border/60')}>{fix.days.length > 3 ? `${fix.days.length - 3} more in My attendance` : 'Open my attendance'} <ArrowRight aria-hidden className="size-3.5" /></Link>
     </section>
   )
 }

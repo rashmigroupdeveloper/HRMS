@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { usePortal } from '@/hooks/usePortal'
 import { orpc } from '@/lib/orpc'
 import { cn, todayDay } from '@/lib/utils'
+import { TILE } from './HomeParts'
 import { AWAY_LEGEND, AWAY_TITLE, WEEKDAY_SHORT, weekOf } from './home-labels'
 
 // Who is away this week (2026-11-27, from main's manager dashboard "On leave this week", drawn as a week): one row per
@@ -17,7 +18,7 @@ import { AWAY_LEGEND, AWAY_TITLE, WEEKDAY_SHORT, weekOf } from './home-labels'
 // View access in the role portal (the same views as Team leave).
 type Scope = 'DIRECT' | 'TEAM' | 'DEPARTMENT' | 'ALL'
 const VIEW: Record<Scope, string> = { DIRECT: 'team', TEAM: 'team', DEPARTMENT: 'department', ALL: 'all' }
-const ROWS = 6
+const ROWS = 4
 
 // `directReports`: the self-service home - only those who report to the viewer directly (the user, 2026-11-27)
 export function HomeAwayWeek({ directReports }: { directReports?: number }) {
@@ -47,9 +48,9 @@ export function HomeAwayWeek({ directReports }: { directReports?: number }) {
   const awayToday = rows.filter(([, r]) => r.days[todayIndex]).length
   const pending = (!direct && overview.isPending) || leave.isPending
   return (
-    <section className="home-panel min-w-0 p-4 sm:p-5">
+    <section className={TILE}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-light tracking-tight">{AWAY_TITLE}</h2>
+        <h2 className="text-xl leading-tight font-light tracking-tight">{AWAY_TITLE}</h2>
         {scopes.length > 1 && (
           <NativeSelect aria-label="Away this week scope" value={scope} onChange={(e) => setSelected(e.target.value as Scope)} className="[&_select]:rounded-full">
             {scopes.map(([value, label]) => <NativeSelectOption key={value} value={value}>{label}</NativeSelectOption>)}
@@ -62,7 +63,7 @@ export function HomeAwayWeek({ directReports }: { directReports?: number }) {
       <FormError error={overview.error ?? leave.error} />
       {pending && <HomeAwayWeekSkeleton />}
       {rows.length > 0 && (
-        <table className="mt-3 w-full table-fixed border-separate border-spacing-y-1 text-sm">
+        <table className="mt-2 w-full table-fixed border-separate border-spacing-y-1 text-sm">
           <thead>
             <tr>
               <th scope="col" className="w-28 text-left text-xs font-normal text-muted-foreground sm:w-36"><span className="sr-only">Employee</span></th>
@@ -77,7 +78,7 @@ export function HomeAwayWeek({ directReports }: { directReports?: number }) {
                   <td key={i} className="px-0.5">
                     <span
                       title={`${WEEKDAY_SHORT[i]}: ${state === 'APPROVED' ? 'approved leave' : state === 'PENDING' ? 'leave waiting for approval' : 'not away'}`}
-                      className={cn('mx-auto block h-6 max-w-10 rounded-md', state === 'APPROVED' ? AWAY_LEGEND[0].swatch : state === 'PENDING' ? AWAY_LEGEND[1].swatch : 'bg-surface-2/50')}
+                      className={cn('mx-auto block h-5 max-w-10 rounded-md', state === 'APPROVED' ? AWAY_LEGEND[0].swatch : state === 'PENDING' ? AWAY_LEGEND[1].swatch : 'bg-surface-2/50')}
                     />
                   </td>
                 ))}
@@ -86,8 +87,8 @@ export function HomeAwayWeek({ directReports }: { directReports?: number }) {
           </tbody>
         </table>
       )}
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-border/60 pt-3">
-        <Link to={to(`/team-leave?view=${VIEW[scope ?? 'TEAM']}`)} className="home-cta flex min-h-9 items-center gap-1.5 text-sm font-medium">
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-border/60 pt-2 text-xs">
+        <Link to={to(`/team-leave?view=${VIEW[scope ?? 'TEAM']}`)} className="home-cta flex min-h-8 items-center gap-1.5 font-medium">
           {rows.length > ROWS ? `All ${rows.length} in Team leave` : 'Open team leave'} <ArrowRight aria-hidden className="size-4" />
         </Link>
         <p className="flex gap-3 text-xs text-muted-foreground">

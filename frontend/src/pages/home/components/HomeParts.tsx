@@ -1,13 +1,18 @@
-import { ArrowUpRight, type LucideIcon } from 'lucide-react'
+import { ArrowUpRight, Check, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
-// The home pages' small building blocks (2026-11-27, the redesign after Crextio's composition - crextio-ref/NOTES.md):
-// light titles with a round ↗ link, big light headline numbers with a tiny icon, and a segmented strip.
+// The home pages' small building blocks (2026-11-27, after Crextio's composition - crextio-ref/NOTES.md): light titles
+// with a round arrow link, big light headline numbers with a tiny icon, a segmented strip, the calm "all clear" line, and
+// the class every tile of the self-service grid shares (one height, footer at the bottom).
 
-// The round ↗ button at a card's top right - opens the card's page
+// every card of the home's tile grid: content as a column so a footer sits at the bottom (`mt-auto`); the grid cell
+// (.home-tile) gives every tile the same height from md up, so the rows stay regular
+export const TILE = 'home-panel flex h-full min-w-0 flex-col overflow-hidden p-5'
+
+// The round arrow button at a card's top right - opens the card's page
 export function CornerLink({ to, label, dark = false }: { to: string; label: string; dark?: boolean }) {
   return (
     <Link
@@ -18,18 +23,18 @@ export function CornerLink({ to, label, dark = false }: { to: string; label: str
         dark ? 'bg-hero-foreground/10 hover:bg-hero-foreground/20 focus-visible:ring-gold' : 'bg-surface-2 hover:bg-surface-2/70 focus-visible:ring-ring',
       )}
     >
-      <ArrowUpRight aria-hidden className="size-4" />
+      <ArrowUpRight aria-hidden className="size-3.5" />
     </Link>
   )
 }
 
-// A card's title row: a light title (and an optional line under it) with the ↗ link or another action on the right
+// A card's title row: a light title (and an optional line under it) with the arrow link or another action on the right
 export function CardTitle({ title, sub, action }: { title: string; sub?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <h2 className="text-xl font-light tracking-tight">{title}</h2>
-        {sub && <div className="mt-0.5 text-xs text-muted-foreground">{sub}</div>}
+        <h2 className="text-xl leading-tight font-light tracking-tight">{title}</h2>
+        {sub && <div className="mt-0.5 truncate text-xs text-muted-foreground">{sub}</div>}
       </div>
       {action}
     </div>
@@ -40,13 +45,13 @@ export function CardTitle({ title, sub, action }: { title: string; sub?: ReactNo
 export type Headline = { icon: LucideIcon; label: string; value: ReactNode; to: string; hint?: string }
 export function HeadlineStats({ stats, loading }: { stats: Headline[]; loading?: boolean }) {
   return (
-    <ul className="flex flex-wrap items-end gap-x-5 gap-y-3 sm:gap-x-9">
+    <ul className="flex flex-wrap items-end gap-x-6 gap-y-3 sm:gap-x-8">
       {stats.map(({ icon: Icon, label, value, to, hint }) => (
         <li key={label}>
           <Link to={to} title={hint} className="group flex items-end gap-2 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <span aria-hidden className="mb-2 grid size-7 place-items-center rounded-full bg-card text-muted-foreground shadow-card transition-colors group-hover:text-foreground"><Icon className="size-3.5" /></span>
+            <span aria-hidden className="mb-1.5 grid size-6 place-items-center rounded-full bg-card text-muted-foreground shadow-card transition-colors group-hover:text-foreground"><Icon className="size-3" /></span>
             <span>
-              <span className="block text-[38px] leading-none font-light tracking-tight tabular-nums sm:text-[56px]">{loading ? <Skeleton className="my-1 h-10 w-14 rounded sm:h-12" /> : value}</span>
+              <span className="block text-[38px] leading-none font-light tracking-tight tabular-nums sm:text-[52px]">{loading ? <Skeleton className="my-1 h-8 w-12 rounded sm:h-10" /> : value}</span>
               <span className="mt-1 block text-xs text-muted-foreground">{label}</span>
             </span>
           </Link>
@@ -71,11 +76,28 @@ export function SegmentStrip({ segments, label }: { segments: Segment[]; label: 
   return (
     <div role="img" aria-label={`${label}: ${shown.map((s) => `${s.label} ${s.value}`).join(', ')}`} className="flex w-full gap-1.5">
       {shown.map((s) => (
-        <div key={s.label} className="min-w-[52px]" style={{ flex: `${s.value} 1 0%` }}>
-          <p className="mb-1.5 truncate text-xs text-muted-foreground">{s.label}</p>
-          <div className={cn('home-grow flex h-11 items-center rounded-full px-4 text-sm font-medium tabular-nums', SEGMENT_TONE[s.tone])}>{s.value}</div>
+        <div key={s.label} className="min-w-[48px]" style={{ flex: `${s.value} 1 0%` }}>
+          <p className="mb-1 truncate text-[11px] text-muted-foreground">{s.label}</p>
+          <div className={cn('home-grow flex h-10 items-center rounded-full px-4 text-sm font-medium tabular-nums', SEGMENT_TONE[s.tone])}>{s.value}</div>
         </div>
       ))}
     </div>
+  )
+}
+
+// The calm line under the grid (the user, 2026-11-27): what needs nothing gets a small check here instead of a card
+export function AllClear({ items }: { items: { label: string; to: string }[] }) {
+  if (!items.length) return null
+  return (
+    <ul aria-label="All clear" className="flex flex-wrap items-center gap-x-5 gap-y-1 px-1 text-xs text-muted-foreground">
+      {items.map((item) => (
+        <li key={item.label}>
+          <Link to={item.to} className="inline-flex min-h-8 items-center gap-1.5 rounded-full outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+            <span aria-hidden className="grid size-4 place-items-center rounded-full bg-positive/15 text-positive-ink"><Check className="size-2.5" /></span>
+            {item.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
   )
 }

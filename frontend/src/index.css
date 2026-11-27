@@ -633,6 +633,8 @@
   to { scale: 1 1; }
 }
 .home-rise { transform-origin: bottom; animation: home-rise 650ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+/* the self-service home's tile grid (2026-11-27): every tile one height from md up, so the rows stay regular */
+@media (min-width: 768px) { .home-tile { height: 316px; } }
 .home-corner svg { transition: translate 200ms cubic-bezier(0.32, 0.72, 0, 1); }
 .home-corner:hover svg, .home-corner:focus-visible svg { translate: 2px -2px; }
 @media (prefers-reduced-motion: reduce) {
