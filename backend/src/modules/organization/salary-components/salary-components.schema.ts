@@ -20,6 +20,9 @@ export const createSalaryComponentInput = z.object({
   code: codeSchema.nullable().optional(),
   // typed for a month in payroll (an incentive, a canteen recovery) - never a line of a salary breakup
   enteredMonthly: z.boolean().optional(),
+  // an earning of the breakup: cut for a pay run's unpaid days (default) or paid in full for every day in the company
+  // (payroll stage 3, approved 2026-11-27) - not used for the other kinds
+  cutForUnpaidDays: z.boolean().optional(),
 })
 
 export const updateSalaryComponentInput = z.object({
@@ -30,4 +33,5 @@ export const updateSalaryComponentInput = z.object({
   isActive: z.boolean().optional(),
   code: codeSchema.nullable().optional(),
   enteredMonthly: z.boolean().optional(),
+  cutForUnpaidDays: z.boolean().optional(),
 })

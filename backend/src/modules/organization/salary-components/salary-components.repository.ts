@@ -1,6 +1,6 @@
 import { prisma, type DbClient, type Prisma, createdBy, updatedBy, type ActorId, type NewRow } from '#core/db/prisma'
 
-const salaryComponentSelect = { id: true, name: true, code: true, kind: true, enteredMonthly: true, displayOrder: true, isActive: true } satisfies Prisma.SalaryComponentSelect
+const salaryComponentSelect = { id: true, name: true, code: true, kind: true, enteredMonthly: true, cutForUnpaidDays: true, displayOrder: true, isActive: true } satisfies Prisma.SalaryComponentSelect
 
 export function list(includeInactive: boolean, db: DbClient = prisma) {
   return db.salaryComponent.findMany({

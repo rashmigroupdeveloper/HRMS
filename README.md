@@ -109,8 +109,8 @@ HRMS_NEW/
 │     │  │                      joining-form page: sign-in with link + code, fill, upload, sign online)
 │     │  │                      printed-forms/ (HR's paper forms printed filled in from the joining form)
 │     │  ├─ payroll/            regular monthly company drafts; people/ (who is in a run + salary copy), inputs/ (the
-│     │  │                      month's amounts), days/ (paid and unpaid days from the locked attendance); the
-│     │  │                      amounts follow in later stages
+│     │  │                      month's amounts), days/ (paid and unpaid days from the locked attendance),
+│     │  │                      calculation/ ("Work out pay": the earnings); deductions follow in later stages
 │     │  ├─ daily-movement-reports/ group-wide email schedule and HR Head role settings; delivery follows later
 │     │  └─ employees/          directory (+ Excel export), profile, "Add employee" / "Edit details", reporting manager,
 │     │     │                           creating the employee on the joining day, codes from the company's series
@@ -371,17 +371,24 @@ with Payroll Edit over the whole company enters inputs, never for themselves. Sa
 over the whole company. Items typed each month are salary components marked "Entered each month in payroll" on
 Organization › Salary components (they never appear in a salary breakup); components also get a short code there.
 
-**Stage 3, the days (2026-11-27):** once the attendance month of the pay period is locked (Attendance setup › Month
-lock), **Work out days** on the run page copies each person's days into the run: every half is paid (present, on duty,
-weekly off, holiday, paid leave), unpaid (absent, missed punch, leave without pay) or "to check" (attendance has no
-day, or a leave half with no approved leave). The people table shows days in the run, paid and unpaid; a person's view
-shows each day. The run keeps this copy even if attendance is opened again later, and says so when it was. Refreshing
-the people removes the days - work them out again. People absent on every working day with no punch at all are listed
+**Stage 3, the days and the earnings (2026-11-27):** once the attendance month of the pay period is locked (Attendance
+setup › Month lock), **Work out pay** on the run page copies each person's days into the run: every half is paid
+(present, on duty, weekly off, holiday, paid leave), unpaid (absent, missed punch, leave without pay - and a half the
+late rule made absent, unless regularized) or "to check" (attendance has no day, or a leave half with no approved
+leave). From those days it works out what each person earned: a day is worth the monthly amount ÷ the days of the pay
+period, each line rounded to the nearest rupee; an earning is cut for unpaid days unless its salary component is set
+to "Paid in full" (Organization › Salary components); inputs are paid as typed. Someone whose pay cannot be worked out
+(no salary on some days, days missing in attendance, another currency) is held and listed under "Pay not worked out" -
+never guessed. Changing a person's inputs afterwards marks them "Work out again". The people table shows days in the
+run, paid, unpaid and earned; a person's view shows each day and each earned line. Earned amounts are salary figures
+(Salary View over the whole company). The run keeps this copy even if attendance is opened again later, and says so
+when it was. Refreshing the people removes the days and the pay - work it out again. People absent on every working
+day with no punch at all are listed
 under "To check" (most likely they do not punch - mark them **Not tracked** on Attendance setup › Schedules while
 the month is open: from that day they count present on their working days, whatever the punches say; leave, off days and
 HR's corrections stay. Needs Attendance setup: Edit covering the employee; migration `attendance_not_tracked`).
 
-No amount is calculated yet: what a day is worth, rounding and which components are cut for loss of pay are agreed
-against a greytHR salary register first (BACKLOG item 31). Deduction processing, input locking, approval, payslips and
-payment follow the staged plan in BACKLOG.md, with each new model/field agreed before migration. Apply the migrations
-with `npm run db:migrate` (stage 2: `payroll_stage2_people_inputs`; stage 3: `payroll_stage3_days`).
+The earnings rule is checked against a greytHR salary register in the parallel run (BACKLOG item 31). Deductions and
+net pay, input locking, approval, payslips and payment follow the staged plan in BACKLOG.md, with each new model/field
+agreed before migration. Apply the migrations with `npm run db:migrate` (stage 2: `payroll_stage2_people_inputs`;
+stage 3: `payroll_stage3_days`, `payroll_stage3_amounts`).

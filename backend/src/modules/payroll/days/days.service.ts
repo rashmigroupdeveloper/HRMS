@@ -1,18 +1,15 @@
 import { ORPCError } from '@orpc/server'
-import { prisma, type DayStatus, type DbClient, type PayClass } from '#core/db/prisma'
-import type { CurrentUser } from '#core/rpc/procedures'
+import type { ActorId, DayStatus, DbClient, PayClass } from '#core/db/prisma'
 import { attendanceService } from '#modules/attendance'
 import { formatDate } from '#shared/utils/dates'
 import { dayKey, eachDay } from '#shared/utils/time'
-import * as payrollRepository from '../payroll.repository.js'
 import * as peopleService from '../people/people.service.js'
 import * as daysRepository from './days.repository.js'
-import type { ComputeInput } from './days.schema.js'
 
 // Payroll stage 3, the days (approved 2026-11-27): which days each person of a run is paid for. The run takes its OWN
 // copy of the locked attendance - one row per person and day, each half paid, unpaid or unclear, with what attendance
-// said - because an attendance month can be opened again after a run is paid. Nothing here is money: what a day is
-// worth, rounding and which components are cut wait for a greytHR salary register to agree against (BACKLOG item 31).
+// said - because an attendance month can be opened again after a run is paid. The money worked out from these days is
+// in payroll/calculation; "Work out pay" takes the days and works out the amounts in one step.
 
 // --- The rule (pure - unit tested) ---
 // Payroll follows attendance half by half and adds no rule of its own (the user, 2026-11-27):
@@ -22,7 +19,8 @@ import type { ComputeInput } from './days.schema.js'
 //   guessed into paid or unpaid.
 // So an absent Saturday (first half worked, second half off) costs half a day, as leave counts it, and an off day
 // between two absences stays paid (no "sandwich" rule). A half the late rule made absent is an absent half here like
-// any other - whether that penalty may reach pay is still open (BACKLOG item 31), to settle before any amount is cut.
+// any other, so it costs pay unless it is regularized or corrected before the lock (the user, 2026-11-27 - how many
+// lates cost a half is the attendance policy's "late cut every N" setting; 1 = every late after the grace).
 
 const PAID = new Set<DayStatus>(['PRESENT', 'ON_DUTY', 'WEEKLY_OFF', 'HOLIDAY'])
 const UNPAID = new Set<DayStatus>(['ABSENT', 'MISSED_PUNCH'])
@@ -76,33 +74,22 @@ export async function lockStateOf(run: { attendanceFrom: Date; attendanceTo: Dat
   }
 }
 
-// --- Working the days out, from the API ---
+// --- Taking the days, for "Work out pay" (payroll/calculation) ---
 
-// Takes the run's days from attendance again: every person's days in their segments, replacing what the run held. Only
-// while the run is a draft, only from a period that is locked in attendance (its days no longer change), only by
-// someone with Payroll Edit over the whole company.
-export async function compute(viewer: CurrentUser, { runId, expectedComputedAt }: ComputeInput) {
-  return prisma.$transaction(
-    async (tx) => {
-      const run = await peopleService.draftRunFor(viewer, runId, 'Working out a payroll run', tx)
-      if ((run.computedAt?.getTime() ?? null) !== (expectedComputedAt?.getTime() ?? null)) {
-        throw new ORPCError('CONFLICT', { message: 'Someone worked out this run in the meantime - reload it to see the latest days' })
-      }
-      const { from, to } = peopleService.payPeriodOf(run)
-      const lock = await attendanceService.payrollLockOf(from, to, tx)
-      if (!lock.locked) {
-        throw new ORPCError('CONFLICT', {
-          message: `Attendance from ${formatDate(from)} to ${formatDate(to)} is not locked yet - lock the attendance month first (Attendance setup, Month lock), then work out the days`,
-        })
-      }
-      const people = await daysRepository.listSpans(run.id, tx)
-      const attendance = await attendanceService.listPayrollDays(people.map((p) => p.employeeId), from, to)
-      const rows = buildDays(people, attendance)
-      await daysRepository.replaceDays(run.id, rows, viewer.employeeId, tx)
-      await payrollRepository.markComputed(run.id, viewer.employeeId, tx)
-      const has = (payClass: PayClass) => new Set(rows.filter((r) => r.firstHalf === payClass || r.secondHalf === payClass).map((r) => r.payrollRunEmployeeId)).size
-      return { people: people.length, days: rows.length, peopleWithUnpaidDays: has('UNPAID'), peopleWithUnclearDays: has('UNCLEAR') }
-    },
-    { timeout: 120_000 },
-  )
+// Takes the run's days from attendance again, inside the caller's transaction: every person's days in their segments,
+// replacing what the run held. Only from a period that is locked in attendance (its days no longer change) - the caller
+// has checked the run is a draft the viewer may change. Returns the rows written.
+export async function takeDays(run: { id: number; attendanceFrom: Date; attendanceTo: Date }, actorId: ActorId, tx: DbClient) {
+  const { from, to } = peopleService.payPeriodOf(run)
+  const lock = await attendanceService.payrollLockOf(from, to, tx)
+  if (!lock.locked) {
+    throw new ORPCError('CONFLICT', {
+      message: `Attendance from ${formatDate(from)} to ${formatDate(to)} is not locked yet - lock the attendance month first (Attendance setup, Month lock), then work out the pay`,
+    })
+  }
+  const people = await daysRepository.listSpans(run.id, tx)
+  const attendance = await attendanceService.listPayrollDays(people.map((p) => p.employeeId), from, to)
+  const rows = buildDays(people, attendance)
+  await daysRepository.replaceDays(run.id, rows, actorId, tx)
+  return rows
 }

@@ -29,13 +29,14 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
   assertAccess(viewer.access, 'PAYROLL', 'READ')
   const run = await payrollRepository.find(id, wholeCompanyScopeOf(viewer, 'PAYROLL'))
   if (!run) throw new ORPCError('NOT_FOUND', { message: 'No payroll run found' })
-  const [person, counts, inputs, lock, days] = await Promise.all([
+  const showSalary = peopleService.seesSalaries(viewer, run.company.id)
+  const [person, counts, inputs, lock, pay] = await Promise.all([
     employeesService.lookupPeople([run.createdById, run.updatedById, run.peopleRefreshedById, run.computedById]),
     peopleRepository.countPeople(run.id),
     inputsService.countInputs(run.id),
     daysService.lockStateOf(run),
-    // stage 3: how many people have unpaid days, and how many need a look - null until the days are worked out
-    run.computedAt ? peopleService.dayCountsOf(run.id) : null,
+    // stage 3: unpaid days, people to look at, pay held or to work out again, the earned gross - null until worked out
+    peopleService.runCountsOf(run, showSalary),
   ])
   const { createdById, updatedById, peopleRefreshedById, computedById, ...safe } = run
   const period = peopleService.payPeriodOf(run)
@@ -49,13 +50,16 @@ export async function getRun(viewer: CurrentUser, { id }: { id: number }) {
     computedBy: person(computedById),
     attendanceLocked: lock.attendanceLocked,
     daysOutdated: lock.daysOutdated,
-    peopleWithUnpaidDays: days?.unpaidDays ?? null,
-    peopleToCheck: days?.toCheck ?? null,
+    peopleWithUnpaidDays: pay?.unpaidDays ?? null,
+    peopleToCheck: pay?.toCheck ?? null,
+    peopleHeld: pay?.held ?? null,
+    peopleToWorkOutAgain: pay?.again ?? null,
+    earnedGross: pay?.earnedGross ?? null,
     people: counts.people,
     peopleWithoutSalary: counts.withoutSalary,
     inputs,
     canChange: run.status === 'DRAFT' && levelOver(viewer, 'PAYROLL', { companyId: run.company.id, plantId: null, departmentId: null }) === 'WRITE',
-    salaryHidden: !peopleService.seesSalaries(viewer, run.company.id),
+    salaryHidden: !showSalary,
   }
 }
 

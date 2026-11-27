@@ -30,9 +30,9 @@ export function PayrollRunHeaderSkeleton({ label = 'Loading payroll run', action
           </div>
         ))}
       </dl>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
         {RUN_TILE_LABELS.map((text) => (
-          <div key={text} className="rounded-2xl bg-card px-3 py-2 shadow-card">
+          <div key={text} className="min-w-0 rounded-2xl bg-card px-3 py-2 shadow-card">
             <p className="text-xs text-muted-foreground">{text}</p>
             <Skeleton className="mt-1 h-6 w-12" />
           </div>

@@ -2,7 +2,7 @@ import { accessProcedure } from '#core/rpc/procedures'
 import * as payrollService from './payroll.service.js'
 import { setupInput, listInput, getInput, createInput } from './payroll.schema.js'
 import { peopleRouter } from './people/people.router.js'
-import { daysRouter } from './days/days.router.js'
+import { calculationRouter } from './calculation/calculation.router.js'
 import { inputsRouter } from './inputs/inputs.router.js'
 
 export const payrollRouter = {
@@ -13,6 +13,6 @@ export const payrollRouter = {
   // stage 2: who is in a run and their salary copy; the month's inputs
   people: peopleRouter,
   inputs: inputsRouter,
-  // stage 3: the days, taken from the locked attendance
-  days: daysRouter,
+  // stage 3: "Work out pay" - the days from the locked attendance and the earnings worked out from them
+  calculation: calculationRouter,
 }

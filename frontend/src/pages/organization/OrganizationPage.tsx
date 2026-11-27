@@ -743,9 +743,9 @@ export function OrganizationPage() {
             preview={(v) => ({
               lead: <OrderBadge value={v.displayOrder || '?'} title="Order" />,
               title: v.name ?? '',
-              subtitle: [SALARY_KIND[v.kind as SalaryKind], v.enteredMonthly === 'yes' ? 'Entered each month' : '', v.code ?? ''].filter(Boolean).join(' · '),
+              subtitle: [SALARY_KIND[v.kind as SalaryKind], v.enteredMonthly === 'yes' ? 'Entered each month' : '', v.kind === 'EARNING' && v.enteredMonthly !== 'yes' && v.cutForUnpaidDays === 'no' ? 'Paid in full for unpaid days' : '', v.code ?? ''].filter(Boolean).join(' · '),
             })}
-            item={(s) => ({ lead: <OrderBadge value={s.displayOrder} title="Order in the breakup" />, title: s.name, subtitle: [s.code, s.enteredMonthly ? 'Entered each month in payroll' : ''].filter(Boolean).join(' · ') || undefined })}
+            item={(s) => ({ lead: <OrderBadge value={s.displayOrder} title="Order in the breakup" />, title: s.name, subtitle: [s.code, s.enteredMonthly ? 'Entered each month in payroll' : '', s.kind === 'EARNING' && !s.enteredMonthly && !s.cutForUnpaidDays ? 'Paid in full for unpaid days' : ''].filter(Boolean).join(' · ') || undefined })}
             fields={[
               { name: 'name', label: 'Name', required: true, placeholder: 'e.g. Special Allowance', hint: 'As printed in the salary breakup of the offer letter, or on the payslip' },
               {
@@ -768,8 +768,21 @@ export function OrganizationPage() {
                 ],
                 hint: 'Entered each month: an incentive, a canteen recovery... - never part of a salary breakup. An earning keeps what it was added with.',
               },
+              {
+                // payroll stage 3 (the user, 2026-11-27): only an earning of the salary breakup is cut for unpaid days
+                name: 'cutForUnpaidDays',
+                label: 'For unpaid days',
+                required: true,
+                defaultValue: 'yes',
+                options: [
+                  { value: 'yes', label: 'Cut for unpaid days' },
+                  { value: 'no', label: 'Paid in full' },
+                ],
+                hint: 'In payroll, a day is worth the monthly amount ÷ the days of the pay period. “Paid in full”: paid for every day in the company, unpaid days or not.',
+                showWhen: (v) => v.kind === 'EARNING' && v.enteredMonthly !== 'yes',
+              },
             ]}
-            toValues={(s) => ({ name: s.name, kind: s.kind, displayOrder: String(s.displayOrder), code: s.code ?? '', enteredMonthly: s.enteredMonthly ? 'yes' : 'no' })}
+            toValues={(s) => ({ name: s.name, kind: s.kind, displayOrder: String(s.displayOrder), code: s.code ?? '', enteredMonthly: s.enteredMonthly ? 'yes' : 'no', cutForUnpaidDays: s.cutForUnpaidDays ? 'yes' : 'no' })}
             create={(v) =>
               client.organization.salaryComponents.create({
                 name: v.name!.trim(),
@@ -777,6 +790,7 @@ export function OrganizationPage() {
                 displayOrder: Number(v.displayOrder),
                 code: v.code?.trim() ? v.code.trim() : null,
                 enteredMonthly: v.enteredMonthly === 'yes',
+                cutForUnpaidDays: v.cutForUnpaidDays !== 'no',
               })
             }
             update={(id, c, isActive) =>
@@ -787,6 +801,7 @@ export function OrganizationPage() {
                 displayOrder: num(c.displayOrder),
                 ...(c.code !== undefined && { code: c.code.trim() ? c.code.trim() : null }),
                 ...(c.enteredMonthly !== undefined && { enteredMonthly: c.enteredMonthly === 'yes' }),
+                ...(c.cutForUnpaidDays !== undefined && { cutForUnpaidDays: c.cutForUnpaidDays === 'yes' }),
                 isActive,
               })
             }

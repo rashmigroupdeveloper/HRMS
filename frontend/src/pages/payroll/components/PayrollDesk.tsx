@@ -15,7 +15,8 @@ type Run = {
 }
 
 // The payroll page's first reading: the latest pay month on this page, where today sits in its captured
-// attendance cycle, and which of those companies still need their days taken from the locked attendance.
+// attendance cycle, and which of those companies still need their pay worked out ("Work out pay" - days from the
+// locked attendance and the earnings, stage 3).
 export function PayrollDesk({ items }: { items: Run[] }) {
   const latest = items[0]?.payMonth
   if (!latest) return null
@@ -35,7 +36,7 @@ export function PayrollDesk({ items }: { items: Run[] }) {
         </div>
         <div className="min-w-0">
           <p className={`text-[2.5rem] font-light tabular-nums leading-none ${waiting.length ? 'text-gold' : ''}`}>{waiting.length}</p>
-          <p className="mt-2 text-sm text-hero-foreground/80">{waiting.length === 1 ? 'company still to take days' : 'companies still to take days'}</p>
+          <p className="mt-2 text-sm text-hero-foreground/80">{waiting.length === 1 ? 'company still to work out pay' : 'companies still to work out pay'}</p>
         </div>
       </div>
       {shared ? <CycleRuler from={first.attendanceFrom} to={first.attendanceTo} today={todayDay()} /> : <p className="mt-4 text-sm text-hero-foreground/80">These runs do not share one pay period. Each row below has its own dates.</p>}
@@ -45,14 +46,14 @@ export function PayrollDesk({ items }: { items: Run[] }) {
             <li key={run.id}>
               <Link to={`/manage/payroll/${run.id}`} className="home-cta flex min-h-11 items-center justify-between gap-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-gold">
                 <span className="min-w-0 truncate">{run.company.code} · {run.company.name}</span>
-                <span className="flex shrink-0 items-center gap-1.5 text-gold">Take days <ArrowRight aria-hidden className="size-4" /></span>
+                <span className="flex shrink-0 items-center gap-1.5 text-gold">Work out pay <ArrowRight aria-hidden className="size-4" /></span>
               </Link>
             </li>
           ))}
         </ul>
       )}
       {waiting.length > 3 && <p className="mt-2 text-xs text-hero-foreground/80">and {waiting.length - 3} more on this page</p>}
-      {waiting.length === 0 && <p className="mt-4 text-sm text-hero-foreground/80">Days are taken for every company on this page.</p>}
+      {waiting.length === 0 && <p className="mt-4 text-sm text-hero-foreground/80">Pay is worked out for every company on this page.</p>}
     </section>
   )
 }

@@ -1,8 +1,8 @@
 import { Skeleton } from '@/components/ui/skeleton'
-import { DAY_TOTAL_LABELS } from '@/pages/payroll/components/payroll-labels'
+import { DAY_TOTAL_LABELS, PAY_TITLE } from '@/pages/payroll/components/payroll-labels'
 
-// One person of a run while their details load - same blocks as PersonDetails: the day totals, then each stretch with
-// its placement, days and salary (change both together)
+// One person of a run while their details load - same blocks as PersonDetails: the day totals, what they earned, then
+// each stretch with its placement, days and salary (change both together)
 export function PersonDetailsSkeleton({ label = 'Loading person' }: { label?: string }) {
   return (
     <div role="status" aria-label={label} className="space-y-3">
@@ -14,6 +14,11 @@ export function PersonDetailsSkeleton({ label = 'Loading person' }: { label?: st
           </div>
         ))}
       </dl>
+      <div className="rounded-xl bg-surface-2/40 p-2 text-xs">
+        <p className="mb-1 text-muted-foreground">{PAY_TITLE}</p>
+        {[0, 1, 2].map((n) => <div key={n} className="flex justify-between py-0.5"><Skeleton className="h-4 w-28" /><Skeleton className="h-4 w-16" /></div>)}
+        <div className="mt-0.5 flex justify-between border-t py-1"><span className="font-medium">Earned gross</span><Skeleton className="h-4 w-20" /></div>
+      </div>
       {[0, 1].map((i) => (
         <div key={i} className="space-y-2 rounded-2xl border p-3">
           <div className="flex items-center justify-between gap-2"><Skeleton className="h-5 w-40" /><Skeleton className="h-4 w-14" /></div>

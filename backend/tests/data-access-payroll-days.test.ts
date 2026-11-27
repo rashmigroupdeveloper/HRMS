@@ -4,15 +4,15 @@ import { attendanceService } from '#modules/attendance'
 import { payrollService } from '#modules/payroll'
 import { companiesService } from '#modules/organization'
 import * as locksRepository from '../src/modules/attendance/locks/locks.repository.js'
-import * as daysService from '../src/modules/payroll/days/days.service.js'
+import * as calculationService from '../src/modules/payroll/calculation/calculation.service.js'
 import * as peopleService from '../src/modules/payroll/people/people.service.js'
 import { daysIn } from '../src/modules/payroll/people/people.service.js'
 import { createCompany, createEmployee, createPlant } from './helpers/organization.js'
 import { asAsync } from './helpers/spies.js'
 import { row, userWith } from './helpers/users.js'
 
-// Payroll stage 3, the days (approved 2026-11-27): a run takes its days from the locked attendance - whose runs, and
-// what each half becomes. Every date is worked out from the run's period, so the test holds whatever start day the
+// Payroll stage 3, the days (approved 2026-11-27): "Work out pay" takes a run's days from the locked attendance - whose
+// runs, and what each half becomes (the amounts: data-access-payroll-pay.test.ts). Every date is worked out from the run's period, so the test holds whatever start day the
 // test database has. The attendance month of a far-off year cannot be locked for real (it is not over), so the lock's
 // answer is put in its place where a locked period is needed. Made-up data only.
 
@@ -95,23 +95,24 @@ describe('Payroll stage 3: the days of a run', () => {
     const before = await list()
     expect(before.daysWorkedOut).toBe(false)
     expect(before.items.every((p) => p.paidDays === null && p.unpaidDays === null && p.unclearDays === null)).toBe(true)
-    await expect(daysService.compute(payroll(a), { runId: runA, expectedComputedAt: null })).rejects.toMatchObject({ code: 'CONFLICT' })
+    await expect(calculationService.compute(payroll(a), { runId: runA, expectedComputedAt: null })).rejects.toMatchObject({ code: 'CONFLICT' })
     expect(await prisma.payrollRunDay.count({ where: { runEmployee: { payrollRunId: runA } } })).toBe(0)
   })
 
   it('company A never works out company B; plant-level and View-only cannot; a stale screen is refused', async () => {
     locked()
-    await expect(daysService.compute(payroll(a), { runId: runB, expectedComputedAt: null })).rejects.toMatchObject({ code: 'NOT_FOUND' })
-    await expect(daysService.compute(payroll(a, 'WRITE', plantA), { runId: runA, expectedComputedAt: null })).rejects.toMatchObject({ code: 'NOT_FOUND' })
-    await expect(daysService.compute(payroll(a, 'READ'), { runId: runA, expectedComputedAt: null })).rejects.toMatchObject({ code: 'FORBIDDEN' })
-    await expect(daysService.compute(payroll(a), { runId: runA, expectedComputedAt: new Date(Date.UTC(2000, 0, 1)) })).rejects.toMatchObject({ code: 'CONFLICT' })
+    await expect(calculationService.compute(payroll(a), { runId: runB, expectedComputedAt: null })).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(calculationService.compute(payroll(a, 'WRITE', plantA), { runId: runA, expectedComputedAt: null })).rejects.toMatchObject({ code: 'NOT_FOUND' })
+    await expect(calculationService.compute(payroll(a, 'READ'), { runId: runA, expectedComputedAt: null })).rejects.toMatchObject({ code: 'FORBIDDEN' })
+    await expect(calculationService.compute(payroll(a), { runId: runA, expectedComputedAt: new Date(Date.UTC(2000, 0, 1)) })).rejects.toMatchObject({ code: 'CONFLICT' })
     expect(await computedAt(runA)).toBeNull()
   })
 
   it('takes each person\'s days from attendance, half by half - and never guesses', async () => {
     locked()
-    const result = await daysService.compute(payroll(a), { runId: runA, expectedComputedAt: null })
-    expect(result).toEqual({ people: 3, days: days * 3, peopleWithUnpaidDays: 2, peopleWithUnclearDays: 2 })
+    const result = await calculationService.compute(payroll(a), { runId: runA, expectedComputedAt: null })
+    // (none of them has a salary: everyone's pay is held)
+    expect(result).toEqual({ people: 3, days: days * 3, peopleWithUnpaidDays: 2, peopleWithUnclearDays: 2, peopleHeld: 3 })
     const people = await list()
     expect(people.daysWorkedOut).toBe(true)
     const of = (employeeId: number) => people.items.find((p) => p.id === person.get(employeeId))!
@@ -156,7 +157,7 @@ describe('Payroll stage 3: the days of a run', () => {
     const first = await computedAt(runA)
     // attendance was corrected under an opened lock: the absent day became present
     await prisma.attendanceDay.updateMany({ where: { employeeId: e1, date: addDays(from, 2) }, data: { status: 'PRESENT', firstHalf: 'PRESENT', secondHalf: 'PRESENT' } })
-    await daysService.compute(payroll(a), { runId: runA, expectedComputedAt: first })
+    await calculationService.compute(payroll(a), { runId: runA, expectedComputedAt: first })
     const again = (await list()).items.find((p) => p.id === person.get(e1))!
     expect(again).toMatchObject({ paidDays: days - 2.5, unpaidDays: 2, unclearDays: 0.5 })
     expect(await prisma.payrollRunDay.count({ where: { runEmployee: { payrollRunId: runA } } })).toBe(days * 3)

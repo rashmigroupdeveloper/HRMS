@@ -14,7 +14,7 @@ export function PayrollDeskSkeleton() {
         </div>
         <div>
           <Skeleton className="h-12 w-16 rounded bg-hero-foreground/10" />
-          <p className="mt-2 text-sm text-hero-foreground/80">companies still to take days</p>
+          <p className="mt-2 text-sm text-hero-foreground/80">companies still to work out pay</p>
         </div>
       </div>
       <Skeleton className="mt-5 h-1.5 w-full rounded-full bg-hero-foreground/10" />

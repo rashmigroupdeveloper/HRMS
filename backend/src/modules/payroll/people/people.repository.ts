@@ -81,6 +81,7 @@ export async function listPeople(payrollRunId: number, db: DbClient = prisma) {
           toDate: true,
           employeeSalaryId: true,
           annualCtc: true,
+          currency: true,
           lines: { select: { monthlyAmount: true, salaryComponent: { select: { kind: true } } } },
         },
       },

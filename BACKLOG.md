@@ -20,8 +20,8 @@ one at a time, each planned with the user before it is built (the old HRMS is in
 3. **Regularization / OD** - fixing a missed punch, on-duty outside the office - **done (2026-11-22, with leave)**; what
    is left is item 29
 4. **Payroll** - the month-end salary from attendance and leave - **in progress: stages 1 (draft runs) and 2 (people,
-   salary copy, inputs) built 2026-11-26; stage 3: the days built 2026-11-27, the amounts wait for a greytHR salary
-   register**
+   salary copy, inputs) built 2026-11-26; stage 3 (the days and the earnings) built 2026-11-27; next stage 4
+   (deductions and net pay)**
 5. **Probation / confirmation** - intern -> probation, probation -> confirmed, with or without a salary hike
 6. **Promotion and increments** - a promotion with a hike, or a hike alone (salary revisions) - **done through job
    changes and the approval service (2026-11-20)**; what is left is item 24
@@ -277,7 +277,7 @@ Compared with an employee-profile screen from another HR system (2026-11-14); th
   employees who had already joined were filled in from their offers); the profile's Salary tab shows the salary in
   effect (the employee themselves or the `SALARY` access, 2026-11-15). **Revisions / increments are done** through
   approved job changes (2026-11-20; status corrected 2026-11-24), with a salary row from its effective date.
-  Draft pay runs are built (2026-11-26); employee inputs, calculation and deductions remain in item 31.
+  Draft pay runs, inputs (2026-11-26) and the earnings (2026-11-27) are built; deductions and net pay remain in item 31.
 - **Residential status** (resident / non-resident for income tax): decides how tax is deducted from salary, so it
   belongs to the **payroll** module - HR / payroll sets it, not the candidate. **Needs:** the payroll module, and the
   status values as payroll uses them.
@@ -759,7 +759,7 @@ to cherry-pick or proof that the old implementation works. Recheck both branches
    layouts. Run all section 6 checks; update the API tracker and every affected rule/doc. Delete completed backlog
    tasks and their duplicate references together; preserve intentional exclusions until the decision changes.
 
-#### Payroll, statutory and income tax — Stages 1 and 2 built; later stages planned
+#### Payroll, statutory and income tax — Stages 1 to 3 built; later stages planned
 
 **Reference:** `backend/src/modules/payroll-core/`, `payroll-outputs/`, `tds/`; related screens in
 `frontend/src/pages/payroll/` and `tax/`. **Needs:** agreed pay groups/cycles, attendance and leave inputs, statutory
@@ -819,23 +819,38 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
     on the guard - e.g. refuse the change while it would leave a gap or overlap after a company's latest run, or a
     one-time bridging period - before the first real run is paid.
   - [ ] Is every company on the same cycle? The start day is one setting for the whole group today.
-- **Stage 3, the days - built 2026-11-27** (the user approved `PayrollRunDay` and `PayrollRun.computedAt / ById`, with
-  the day rows out of the change history): "Work out days" (`payroll.days.compute`) copies each person's days from the
-  LOCKED attendance into the run - each half paid, unpaid or unclear, with what attendance said; paid / unpaid days on
-  the people list, each day on a person's view; the header says when attendance was opened or locked again afterwards.
-  Refreshing the people removes the days. **Decided by the user 2026-11-27:**
+- **Stage 3, the days and the earnings - built 2026-11-27** (the user approved `PayrollRunDay`, `PayrollRun.computedAt /
+  ById`, `PayrollRunLine` and `SalaryComponent.cutForUnpaidDays`, with the day and result rows out of the change
+  history): "Work out pay" (`payroll.calculation.compute`) copies each person's days from the LOCKED attendance into the
+  run - each half paid, unpaid or unclear, with what attendance said - and works out each earning from them; paid /
+  unpaid days and the earned gross on the people list, each day and each earned line on a person's view; the header
+  says when attendance was opened or locked again afterwards. Refreshing the people removes the days and the pay;
+  changing a person's inputs marks them "work out again". **Decided by the user 2026-11-27:**
   - Payroll follows attendance half by half with no rule of its own: present, on duty, weekly off, holiday and paid
     leave are paid; absent, missed punch and leave without pay are unpaid; no "sandwich" rule (an off day between
     absences stays paid). An absent Saturday (half working day) costs half a day, as leave counts it.
   - A day attendance never worked out, or a leave half with no approved leave found, is "unclear": listed, never
-    guessed.
-  - The money part waits for a greytHR salary register: `private/` holds only CTC sheets, the employee master and
-    punches.
+    guessed - that person's pay is held ("days missing in attendance"). The user: payroll starts after the attendance
+    lock, so this should not happen; it can only if records change after the lock (see below).
+  - **The money rule** (asked without a greytHR register, so it is checked against one in the parallel run): a day is
+    worth the monthly amount / the days of the pay period (28 to 31); an earning is cut for unpaid days unless its
+    component is set to "Paid in full" (`cutForUnpaidDays`, on for every earning); each worked-out line is rounded to
+    the nearest rupee (50 paise up), once per component after adding up the stretches; inputs are paid as typed. The
+    rule is code in one place (`payroll/calculation/calculation.service.ts`) - no dated setting (the user chose "rule
+    in code for now").
+  - **The late rule's absent half costs pay** like any absence unless it is regularized or corrected before the lock
+    (the user: "money will be deducted if that attendance is not regularized or corrected"; in the company even one
+    late may cost a half - the attendance policy's "late cut every N" setting, 1 = every late after the grace).
   **Still open:**
   - [ ] **A greytHR salary register in `private/`** - best the 26 Feb to 25 Mar month (28 days) with at least one
-    person with loss of pay - to read: what a day's pay is divided by (the period's days, 30 or 26), which components
-    are cut for loss of pay, how the lines and the net are rounded. Then propose the results table, the dated rule
-    settings and the component's "cut for loss of pay" switch, and build the earned amounts and gross.
+    person with loss of pay - to check the rule above line by line (the divisor, which components are cut, rounding).
+    If it differs, change `workOutPay` / `nearestRupee`, or propose a dated setting then.
+  - [ ] **A joining or leaving date inside a locked attendance month** is not refused today (employees, onboarding, job
+    changes): such a person has days missing in attendance and their pay is held until the month is opened and locked
+    again. The user expects nothing to change after the lock - a guard needs the user's decision (refuse, or warn).
+  - [ ] Changing a component's "cut for unpaid days" or a salary after the pay was worked out is not flagged on the run
+    (an input change is); the pay follows on the next "Work out pay". Stage 5's approval works it out once more first.
+  - [ ] A salary in another currency than INR is held in an India run - an overseas payroll is not planned yet.
   - **People who do not punch - built 2026-11-27** (the user approved the `AttendanceExemption` table and chose
     Schedules with Attendance setup Edit): "Not tracked" on Attendance setup > Schedules - one person or everyone ticked,
     from a day, with a last day or until ended, with a reason. A marked person counts present on working days whatever
@@ -849,18 +864,16 @@ policy, sample reconciled payslips/registers and approved schema. See items 11, 
       change history and on its days' notes. A per-employee history, if HR asks for it.
     - [ ] On a phone the Schedules table hides the "Attendance" column (as it hides the holiday list); the "Not
       tracked" filter still works.
-  - [ ] **The late rule's absent half** (the Nth late of a month makes a half absent) is an absent half in attendance,
-    so the run shows it unpaid like any absence. Whether that penalty may reach pay is NOT decided: the law lets only
-    the time actually missed be cut without the fine procedure (plan, "Payable days"; question for the CA). To settle
-    before any amount is cut - if it may not, attendance must tell payroll which absent halves come from the late rule.
-  - [ ] Unclear days block nothing yet; whether a run with unclear days may be approved is settled with stage 5.
+  - [ ] **The late rule and the wage law** (told to the user 2026-11-27): the law lets only the time actually missed be
+    cut without the fine procedure (plan, "Payable days"). The user decided the half is cut; worth confirming with the CA.
+  - [ ] Held pay blocks nothing yet; whether a run with held people may be approved is settled with stage 5.
   - [ ] The run's days are taken 100 employees at a time, because the leave reader stops at 2,000 applications - fine
     for one month; to revisit if a period can ever be longer.
 - [ ] Remaining pay-run lifecycle: lock inputs, compute, issues, review,
   independent approval through the shared approval service, finalize, mark paid, return to draft/reopen and reconciliation.
-- [ ] Employee run inputs: uploads, calculated items, component proration and backdated salary arrears (typed one-off
-  earnings / deductions and component codes: stage 2; payable and unpaid days: stage 3, built 2026-11-27). Gross flags
-  and the amount cut for an unpaid day need agreement against a register.
+- [ ] Employee run inputs: uploads, calculated items and backdated salary arrears (typed one-off earnings / deductions
+  and component codes: stage 2; payable and unpaid days, component proration and the earned gross: stage 3, built
+  2026-11-27 - to be checked against a register).
 - [ ] Salary holds and releases, with the effect on calculation/payment defined.
 - [ ] Payslips and own-payslip downloads; run output bundles; bank payment files, SAP GL/JV mapping/exports and variance reports.
 - [ ] PF/EPS/EDLI, ESIC, PT and LWF calculations; effective statutory parameters/rates and PT slabs; ECR, ESIC return,

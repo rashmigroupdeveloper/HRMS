@@ -1,22 +1,34 @@
 // Texts shared by the payroll pages and their skeletons - change both together.
-export const PAYROLL_NOTE = 'Monthly runs per company. A run lists its people with the salary in force on each day, takes the month\'s inputs, and takes each person\'s paid and unpaid days from the locked attendance. The amounts, deductions, approval and payment follow in later stages.'
+export const PAYROLL_NOTE = 'Monthly runs per company. A run lists its people with the salary in force on each day, takes the month\'s inputs, and works out each person\'s pay: the paid and unpaid days from the locked attendance and what they earned. Deductions, net pay, approval and payment follow in later stages.'
 export const PAYROLL_DESK_TITLE = 'This pay period'
 
 // The run page's header facts and tiles
 // 'Pay period': the attendance cycle of the pay month, captured on the run (26th to 25th with a start day of 26)
-export const RUN_FACT_LABELS = ['Pay period', 'People copied', 'Days worked out'] as const
-export const RUN_TILE_LABELS = ['People', 'Without a salary', 'Inputs', 'With unpaid days', 'To check'] as const
+export const RUN_FACT_LABELS = ['Pay period', 'People copied', 'Pay worked out'] as const
+export const RUN_TILE_LABELS = ['People', 'Without a salary', 'Inputs', 'With unpaid days', 'To check', 'Earned gross'] as const
 export const RUN_TABS = [{ value: 'people', label: 'People' }, { value: 'inputs', label: 'Inputs' }] as const
 export const REFRESH_LABEL = 'Refresh from employee records'
-export const COMPUTE_LABEL = 'Work out days'
-export const NOT_LOCKED_NOTE = 'Attendance for this pay period is not locked yet. Lock the month in Attendance setup › Month lock; then the days can be worked out.'
-export const OUTDATED_NOTE = 'Attendance was opened or locked again after these days were taken. Work out the days again.'
+export const COMPUTE_LABEL = 'Work out pay'
+export const NOT_LOCKED_NOTE = 'Attendance for this pay period is not locked yet. Lock the month in Attendance setup › Month lock; then the pay can be worked out.'
+export const OUTDATED_NOTE = 'Attendance was opened or locked again after the pay was worked out. Work out pay again.'
+// the rule (backend payroll/calculation, decided by the user 2026-11-27 - change both together)
+export const PAY_RULE_NOTE = 'A day is worth the monthly amount ÷ the days of the pay period; each line is rounded to the nearest rupee.'
+// why a person's pay is not worked out (backend people.service holdReasonsOf - change both together)
+export const HOLD_REASON = {
+  NOT_IN_PERIOD: 'No days in this pay period',
+  NO_SALARY: 'Days without a salary',
+  OTHER_CURRENCY: 'Salary in another currency',
+  DAYS_MISSING: 'Days missing in attendance - open the attendance month, lock it again, then work out pay',
+} as const
+export const AGAIN_NOTE = 'Their inputs changed after the pay was worked out. Work out pay again.'
+export const PAY_TITLE = 'Earned in the pay period'
 
 // The people table
-export const PEOPLE_COLUMNS = ['Employee', 'Days', 'Paid', 'Unpaid', 'In the run', 'Monthly gross', 'Notes'] as const
-export const PEOPLE_WIDTHS = ['25%', '7%', '7%', '8%', '20%', '13%', '20%'] as const
+export const PEOPLE_COLUMNS = ['Employee', 'Days', 'Paid', 'Unpaid', 'In the run', 'Monthly gross', 'Earned', 'Notes'] as const
+export const PEOPLE_WIDTHS = ['21%', '6%', '6%', '7%', '18%', '11%', '11%', '20%'] as const
 export const PEOPLE_FLAGS = [
   { value: '', label: 'Everyone' },
+  { value: 'PAY_NOT_WORKED_OUT', label: 'Pay not worked out' },
   { value: 'UNPAID_DAYS', label: 'With unpaid days' },
   { value: 'UNCLEAR_DAYS', label: 'Days to check' },
   { value: 'ALL_ABSENT', label: 'Absent throughout' },
@@ -34,8 +46,8 @@ export const INPUT_WIDTHS = ['20%', '15%', '11%', '26%', '20%', '8%'] as const
 export const STATUS_CODE = { PRESENT: 'P', HALF_DAY: 'HD', ABSENT: 'A', WEEKLY_OFF: 'WO', HOLIDAY: 'H', MISSED_PUNCH: 'MP', LEAVE: 'L', ON_DUTY: 'OD' } as const
 export const DAY_TOTAL_LABELS = ['Paid', 'Unpaid', 'To check'] as const
 export const DAYS_LEGEND = 'P present · A absent · MP missed punch · WO weekly off · H holiday · OD on duty · leave by its type · ? not known. Two codes: first half / second half.'
-export const DAYS_NOT_WORKED_OUT = 'The days are not worked out yet.'
-export const ALL_ABSENT_NOTE = 'Absent on every working day, with no punch, leave or duty at all. If this person does not punch, mark them “Not tracked” on Attendance setup › Schedules (the attendance month must be open), then lock the month and work out the days again.'
+export const DAYS_NOT_WORKED_OUT = 'The pay is not worked out yet.'
+export const ALL_ABSENT_NOTE = 'Absent on every working day, with no punch, leave or duty at all. If this person does not punch, mark them “Not tracked” on Attendance setup › Schedules (the attendance month must be open), then lock the month and work out pay again.'
 
 export const SALARY_HIDDEN_NOTE = 'Salary figures need Salary access for the whole company as well as Payroll.'
 export const monthLabel = (date: Date) => new Intl.DateTimeFormat('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date)

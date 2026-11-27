@@ -218,8 +218,9 @@ frontend/src/
   without any extra code; a new secret column must end in `Encrypted`, `Hash` or `Token` so its values are hidden.
   Rows the system rebuilds wholesale from other records are left out (`SKIP_MODELS` in `core/audit/capture.ts`):
   attendance days, a pay run's people / salary copy (payroll stage 2, decided 2026-11-26 - each refresh is recorded
-  on the run instead) and a pay run's days (stage 3, approved 2026-11-27 - its copy of the locked attendance; each
-  working-out is recorded on the run). People's decisions are never left out; adding a model there needs the user's approval.
+  on the run instead) and a pay run's days and worked-out lines (stage 3, approved 2026-11-27 - its copy of the locked
+  attendance and the amounts worked out from it; each working-out is recorded on the run). People's decisions are never
+  left out; adding a model there needs the user's approval.
 - **Stored files - findable without the database** (decided 2026-11-13). Every file in file storage (uploads,
   generated PDFs, images) is named so that, if the database is lost, a person can still tell from the folder and file
   name whose file it is and what it is. The key is `<area>/<owner>/<what>/<date>_<random>.<ext>`:
@@ -288,14 +289,19 @@ frontend/src/
   only through `payPeriodOf` (`payroll/people/people.service.ts`); the start day is the Attendance setup setting, never a
   day or "calendar month" written in payroll code, and a run already created keeps its dates. Stage 2 (built
   2026-11-26, `payroll/people/`, `payroll/inputs/`) copies each run's people and the salary in force on each day and
-  takes the month's inputs. Stage 3, the days (built 2026-11-27, `payroll/days/`): a run takes its OWN copy of each
-  person's days from the LOCKED attendance (`payroll.days.compute`), reading attendance only through
-  `attendanceService` (`listPayrollDays`, `payrollLockOf`), and follows it half by half with no rule of its own -
-  present, on duty, weekly off, holiday and paid leave are paid; absent, missed punch and leave without pay are unpaid;
-  an absent Saturday is half a day; what attendance does not say is "unclear" and listed, never guessed (the user,
-  2026-11-27). The amounts (divisor, rounding, which components are cut) wait for a greytHR salary register (BACKLOG
-  item 31); deductions, approval and payment wait for their approved stages; no independent approval lifecycle is built
-  into payroll.
+  takes the month's inputs. Stage 3 (built 2026-11-27, `payroll/days/`, `payroll/calculation/`): "Work out pay"
+  (`payroll.calculation.compute`) takes the run's OWN copy of each person's days from the LOCKED attendance, reading
+  attendance only through `attendanceService` (`listPayrollDays`, `payrollLockOf`), and follows it half by half with no
+  rule of its own - present, on duty, weekly off, holiday and paid leave are paid; absent, missed punch and leave without
+  pay are unpaid (a half the late rule made absent too, unless regularized or corrected); an absent Saturday is half a
+  day; what attendance does not say is "unclear", and that person's pay is held and listed, never guessed (the user,
+  2026-11-27). **The money rule (decided by the user, 2026-11-27):** a day is worth the monthly amount / the days of the
+  pay period; an earning is cut for unpaid days unless its component is marked "paid in full"
+  (`SalaryComponent.cutForUnpaidDays`); each worked-out line is rounded once to the nearest rupee; inputs are paid as
+  typed. The rule lives in one place (`payroll/calculation/calculation.service.ts`) and is checked against a greytHR
+  salary register in the parallel run (BACKLOG item 31). Earned amounts are salary figures (`seesSalaries`, below).
+  Deductions, approval and payment wait for their approved stages; no independent approval lifecycle is built into
+  payroll.
   **Decided for stage 2 (the user, 2026-11-26):** monthly inputs are entered and changed only by someone with Payroll
   Edit covering the whole company - a plant-level HR person sends their figures to them; salary amounts inside a run
   (the salary copy and its lines) are shown only to a viewer who also has `SALARY` View covering the whole company

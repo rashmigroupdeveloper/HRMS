@@ -11,15 +11,15 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { useAccess } from '@/hooks/useAccess'
 import { orpc } from '@/lib/orpc'
-import { formatDate, formatDoneBy } from '@/lib/utils'
+import { formatDate, formatDoneBy, formatMoney } from '@/lib/utils'
 import { RunInputs } from './components/RunInputs'
 import { RunPeople } from './components/RunPeople'
-import { COMPUTE_LABEL, NOT_LOCKED_NOTE, OUTDATED_NOTE, REFRESH_LABEL, RUN_FACT_LABELS, RUN_TABS, RUN_TILE_LABELS, SALARY_HIDDEN_NOTE, monthLabel } from './components/payroll-labels'
+import { COMPUTE_LABEL, NOT_LOCKED_NOTE, OUTDATED_NOTE, PAY_RULE_NOTE, REFRESH_LABEL, RUN_FACT_LABELS, RUN_TABS, RUN_TILE_LABELS, SALARY_HIDDEN_NOTE, monthLabel } from './components/payroll-labels'
 
 // One pay run: its people with the salary in force on each day of the pay period (a copy, refreshed from the employee
-// records while it is a draft), the month's inputs (stage 2) and each person's paid and unpaid days, taken from the
-// locked attendance with "Work out days" (stage 3). Payroll: View over the whole company; changes need Payroll: Edit
-// over the whole company. Salary figures also need Salary: View over the whole company.
+// records while it is a draft), the month's inputs (stage 2), and "Work out pay" (stage 3): each person's paid and unpaid
+// days from the locked attendance and what they earned. Payroll: View over the whole company; changes need Payroll:
+// Edit over the whole company. Salary figures (the earned gross too) also need Salary: View over the whole company.
 export function PayrollRunPage() {
   const { id: rawId } = useParams()
   const id = Number(rawId)
@@ -39,12 +39,14 @@ export function PayrollRunPage() {
     },
   })
   // on a refusal too: "someone worked it out in the meantime" needs the newer run on the screen
-  const compute = useMutation({ ...orpc.payroll.days.compute.mutationOptions(), onSettled: reload })
+  const compute = useMutation({ ...orpc.payroll.calculation.compute.mutationOptions(), onSettled: reload })
   const r = run.data
   const facts = r ? [`${formatDate(r.payFrom)} – ${formatDate(r.payTo)}`, formatDoneBy(r.peopleRefreshedAt, r.peopleRefreshedBy), r.computedAt ? formatDoneBy(r.computedAt, r.computedBy) : 'Not yet'] : []
-  const tiles = r ? [r.people, r.peopleWithoutSalary, r.inputs, r.peopleWithUnpaidDays ?? '—', r.peopleToCheck ?? '—'] : []
+  const gross = r ? (r.salaryHidden ? 'Hidden' : r.earnedGross === null ? '—' : formatMoney(r.earnedGross, 'INR')) : ''
+  const tiles = r ? [r.people, r.peopleWithoutSalary, r.inputs, r.peopleWithUnpaidDays ?? '—', r.peopleToCheck ?? '—', gross] : []
   // which tiles turn amber when they are not zero: people without a salary, people to check
-  const warns = [false, true, false, false, true]
+  const warns = [false, true, false, false, true, false]
+  const notWorkedOut = r ? (r.peopleHeld ?? 0) + (r.peopleToWorkOutAgain ?? 0) : 0
 
   return (
     <div className="space-y-4">
@@ -81,15 +83,21 @@ export function PayrollRunPage() {
               </div>
             ))}
           </dl>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-6">
             {RUN_TILE_LABELS.map((label, i) => (
-              <div key={label} className="rounded-2xl bg-card px-3 py-2 shadow-card">
+              <div key={label} className="min-w-0 rounded-2xl bg-card px-3 py-2 shadow-card">
                 <p className="text-xs text-muted-foreground">{label}</p>
-                <p className={`text-lg font-medium tabular-nums ${warns[i] && typeof tiles[i] === 'number' && tiles[i] > 0 ? 'text-warning-ink' : ''}`}>{tiles[i]}</p>
+                <p className={`truncate text-lg font-medium tabular-nums ${warns[i] && typeof tiles[i] === 'number' && tiles[i] > 0 ? 'text-warning-ink' : ''} ${tiles[i] === 'Hidden' ? 'text-sm font-normal text-muted-foreground' : ''}`}>{tiles[i]}</p>
               </div>
             ))}
           </div>
           {r.daysOutdated ? <p role="status" className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning-ink">{OUTDATED_NOTE}</p> : !r.attendanceLocked && !r.computedAt && <p className="text-xs text-muted-foreground">{NOT_LOCKED_NOTE}</p>}
+          {notWorkedOut > 0 && (
+            <p role="status" className="rounded-xl bg-warning/10 px-3 py-2 text-xs text-warning-ink">
+              Pay not worked out for {notWorkedOut} {notWorkedOut === 1 ? 'person' : 'people'}: {[r.peopleHeld ? `${r.peopleHeld} held (no salary, days missing…)` : '', r.peopleToWorkOutAgain ? `${r.peopleToWorkOutAgain} to work out again (inputs changed)` : ''].filter(Boolean).join(', ')}. Choose “Pay not worked out” under Show to see who.
+            </p>
+          )}
+          {r.computedAt && <p className="text-xs text-muted-foreground">{PAY_RULE_NOTE}</p>}
           {r.salaryHidden && <p className="text-xs text-muted-foreground">{SALARY_HIDDEN_NOTE}</p>}
         </header>
       )}
@@ -106,7 +114,7 @@ export function PayrollRunPage() {
       {refreshing && r && (
         <ConfirmDialog
           title="Refresh from employee records?"
-          description={`The people and their salaries are copied again from the employee records as they are now. People who no longer belong to this pay period are removed, unless they have inputs. Inputs are kept.${r.computedAt ? ' The days taken from attendance are removed - work them out again afterwards.' : ''}`}
+          description={`The people and their salaries are copied again from the employee records as they are now. People who no longer belong to this pay period are removed, unless they have inputs. Inputs are kept.${r.computedAt ? ' The pay worked out (days and amounts) is removed - work out pay again afterwards.' : ''}`}
           confirm={refresh.isPending ? 'Refreshing…' : 'Refresh'}
           pending={refresh.isPending}
           onConfirm={() => refresh.mutate({ runId: id, expectedRefreshedAt: r.peopleRefreshedAt }, { onError: () => setRefreshing(false) })}

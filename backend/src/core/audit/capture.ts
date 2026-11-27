@@ -18,11 +18,11 @@ import { currentAuditRequest } from './request.js'
 // punches: raw machine data - their upload is recorded; attendance_days: worked out again and again from the punches -
 // HR's corrections are recorded; the pay run's people / salary copy: rebuilt from the employee records on every refresh -
 // the refresh itself is recorded on payroll_runs, and payroll inputs are recorded - decided 2026-11-26; the pay run's
-// days: the run's copy of the locked attendance, rebuilt each time the days are worked out - recorded on payroll_runs
-// (computedAt / ById) - approved 2026-11-27)
+// days and its worked-out lines: the run's copy of the locked attendance and the amounts worked out from it, rebuilt each
+// time the pay is worked out - recorded on payroll_runs (computedAt / ById) - approved 2026-11-27)
 const SKIP_MODELS = new Set([
   'AuditLog', 'Session', 'CandidateSession', 'JobRun', 'MailRetry', 'Punch', 'AttendanceDay',
-  'PayrollRunEmployee', 'PayrollRunSalarySegment', 'PayrollRunSalaryLine', 'PayrollRunDay',
+  'PayrollRunEmployee', 'PayrollRunSalarySegment', 'PayrollRunSalaryLine', 'PayrollRunDay', 'PayrollRunLine',
 ])
 const WRITES = new Set(['create', 'createMany', 'createManyAndReturn', 'update', 'updateMany', 'updateManyAndReturn', 'upsert', 'delete', 'deleteMany'])
 // every row has them; who / when is the history row itself

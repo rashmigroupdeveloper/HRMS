@@ -89,10 +89,10 @@ model PayrollRun {
   // SKIP_MODELS); this column is, so every refresh is recorded on the run.
   peopleRefreshedAt   DateTime? @map("people_refreshed_at") @db.Timestamptz(3)
   peopleRefreshedById Int?      @map("people_refreshed_by_id")
-  // When and by whom the days (PayrollRunDay) were last taken from the locked attendance (stage 3, approved 2026-11-27) -
-  // empty until then, and emptied again when the people copy is refreshed (the days are then worked out again). The
-  // screen sends back the value it saw. The day rows are not in the change history; this column is, so every time the
-  // days are worked out is recorded on the run.
+  // When and by whom the pay was last worked out ("Work out pay", stage 3, approved 2026-11-27): the days (PayrollRunDay)
+  // taken from the locked attendance and the amounts (PayrollRunLine) worked out from them - empty until then, and
+  // emptied again when the people copy is refreshed (the pay is then worked out again). The screen sends back the value it
+  // saw. The day and result rows are not in the change history; this column is, so every time is recorded on the run.
   computedAt          DateTime? @map("computed_at") @db.Timestamptz(3)
   computedById        Int?      @map("computed_by_id")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -143,6 +143,8 @@ model PayrollRunEmployee {
   inputs   PayrollInput[]
   // each day of theirs in the run's period, paid or not (stage 3)
   days     PayrollRunDay[]
+  // what the run worked out for them, per component (stage 3)
+  lines    PayrollRunLine[]
 
   @@unique([payrollRunId, employeeId])
   @@index([employeeId])
@@ -239,9 +241,10 @@ model PayrollInput {
   @@map("payroll_inputs")
 }
 
-// --- Stage 3, the days (approved by the user 2026-11-27): which days each person is paid for ---
-// The money (what a day is worth, rounding, which components are cut) waits for a greytHR salary register to agree the
-// rules against (BACKLOG item 31) - nothing here holds an amount.
+// --- Stage 3 (approved by the user 2026-11-27): which days each person is paid for, and what they earned ---
+// The money rule (the user, 2026-11-27 - to be checked against a greytHR salary register in the parallel run, BACKLOG
+// item 31): a day is worth the monthly amount / the days of the pay period; each worked-out line is rounded to the
+// rupee; a component is cut for unpaid days unless it is marked otherwise (SalaryComponent.cutForUnpaidDays).
 
 // What a half day is for pay. UNCLEAR is never guessed into paid or unpaid: it is listed for HR.
 enum PayClass {
@@ -285,4 +288,30 @@ model PayrollRunDay {
 
   @@unique([payrollRunEmployeeId, date])
   @@map("payroll_run_days")
+}
+
+// What a pay run worked out for one person and one component (approved by the user 2026-11-27): stage 3 writes the
+// earnings - each earning of the salary copy for the days paid, and the earning inputs typed for the month - and stage 4
+// adds the deductions and the employer contributions to the same table (never below zero: a migration CHECK). A person whose pay cannot be worked
+// out (no salary on some days, days missing in attendance...) has no rows: they are listed, never guessed. Rebuilt by the
+// system each time the pay is worked out, so kept out of the change history like the run's days (core/audit SKIP_MODELS -
+// approved 2026-11-27); PayrollRun.computedAt / ById record each time. A change to the person's inputs removes their
+// rows, so the run shows that their pay must be worked out again.
+model PayrollRunLine {
+  id                   Int      @id @default(autoincrement())
+  payrollRunEmployeeId Int      @map("payroll_run_employee_id")
+  salaryComponentId    Int      @map("salary_component_id")
+  // to the paisa: a worked-out line is rounded to the rupee, an input keeps what was typed
+  amount               Decimal  @db.Decimal(12, 2)
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdById          Int      @map("created_by_id")
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById          Int      @map("updated_by_id")
+
+  runEmployee     PayrollRunEmployee @relation(fields: [payrollRunEmployeeId], references: [id], onDelete: Cascade)
+  salaryComponent SalaryComponent    @relation(fields: [salaryComponentId], references: [id], onDelete: Restrict)
+
+  @@unique([payrollRunEmployeeId, salaryComponentId])
+  @@index([salaryComponentId])
+  @@map("payroll_run_lines")
 }

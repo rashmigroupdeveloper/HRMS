@@ -370,6 +370,10 @@ model SalaryComponent {
   // Typed for a month as a payroll input (Incentive, Canteen Recovery) - never a line of an offer / salary / structure
   // breakup (payroll stage 2, approved 2026-11-26). The employer contributions stay breakup lines.
   enteredMonthly Boolean           @default(false) @map("entered_monthly")
+  // Earnings from the salary breakup: cut in proportion to the person's unpaid days in a pay run (true), or paid for
+  // every day they are in the company whatever the unpaid days (false - an allowance always paid in full). Payroll
+  // stage 3, approved by the user 2026-11-27: true for every earning until HR turns it off. Not used for other kinds.
+  cutForUnpaidDays Boolean         @default(true) @map("cut_for_unpaid_days")
   isActive     Boolean             @default(true) @map("is_active")
   createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
   createdById  Int                 @map("created_by_id")
@@ -386,6 +390,8 @@ model SalaryComponent {
   // pay runs: salary lines copied into them and inputs typed with it (stage 2)
   payrollLines        PayrollRunSalaryLine[]
   payrollInputs       PayrollInput[]
+  // what pay runs worked out with it (stage 3)
+  payrollResults      PayrollRunLine[]
 
   @@map("salary_components")
 }
