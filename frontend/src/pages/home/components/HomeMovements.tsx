@@ -21,7 +21,7 @@ export function HomeMovements() {
   return (
     <section className="home-panel min-w-0 p-4 sm:p-5">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-medium tracking-tight">{MOVEMENTS_TITLE}</h2>
+        <h2 className="text-xl font-light tracking-tight">{MOVEMENTS_TITLE}</h2>
         <Link to="/manage/employees?view=movements" aria-label="Open joiners and leavers" className="grid size-9 place-items-center rounded-full bg-surface-2 outline-none hover:bg-surface-2/70 focus-visible:ring-2 focus-visible:ring-ring"><ArrowUpRight aria-hidden className="size-4" /></Link>
       </div>
       <FormError error={month.error ?? coming.error} />

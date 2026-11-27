@@ -335,6 +335,8 @@ Compared with an employee-profile screen from another HR system (2026-11-14); th
   urgency, People today refreshing every 2 minutes; role home: attendance month to close, payroll runs (status only, no
   amounts), joiners & leavers, away this week - each gated by the access of its reader. One API change:
   `attendance.overview` `today.shiftHours`. Punches still arrive by upload, so nothing claims live presence.
+  **Redesigned 2026-11-27 (the user: "boring, not professional" - follow crextio-ref):** headline numbers, month strip,
+  Today ring, My week bars, light titles with round links, slim empty states. The role home's header keeps its old form.
 - **Still deferred:** broader HR workload trends, executive trends and device-health panels (they need the Kent
   machines' automatic feed, item 19); a team attendance dot grid over several days (needs a bounded multi-day board read, not the whole
   muster for an Attendance View scope).

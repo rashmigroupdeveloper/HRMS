@@ -33,7 +33,7 @@ export function HomePayroll({ overview }: { overview: Overview | undefined }) {
   return (
     <section className="home-panel min-w-0 p-4 sm:p-5">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-medium tracking-tight">{PAYROLL_TITLE}</h2>
+        <h2 className="text-xl font-light tracking-tight">{PAYROLL_TITLE}</h2>
         <Link to="/manage/payroll" aria-label="Open payroll" className="grid size-9 place-items-center rounded-full bg-surface-2 outline-none hover:bg-surface-2/70 focus-visible:ring-2 focus-visible:ring-ring"><ArrowUpRight aria-hidden className="size-4" /></Link>
       </div>
       <div className="mt-1 text-xs text-muted-foreground">{pending ? <Skeleton className="inline-block h-3 w-44 rounded" /> : latest ? `${monthLabel(latest)} · draft runs by company` : 'Monthly draft runs by company'}</div>

@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight } from 'lucide-react'
-import { Link } from 'react-router'
 import { FormError } from '@/components/FormError'
 import { Pill } from '@/components/Pill'
 import { HomeHolidaysSkeleton } from '@/components/skeletons/home/HomeWidgetsSkeleton'
 import { orpc } from '@/lib/orpc'
 import { todayDay } from '@/lib/utils'
 import { HOLIDAY_PORTION, toneOf } from '@/pages/attendance/components/labels'
+import { CardTitle, CornerLink } from './HomeParts'
 import { HOLIDAYS_TITLE, daysBetween, inDays, shortDay } from './home-labels'
 
 // The next holidays of the list the employee follows (2026-11-27): the next one large - how many days away - and the two
@@ -25,10 +24,7 @@ export function HomeHolidays() {
   const noList = thisYear.data && !thisYear.data.holidayList && !nextYear.data?.holidayList
   return (
     <section className="home-panel min-w-0 p-4 sm:p-5">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-lg font-medium tracking-tight">{HOLIDAYS_TITLE}</h2>
-        <Link to="/ess/holidays" className="flex min-h-9 items-center gap-1 text-sm underline underline-offset-4">All holidays <ArrowRight aria-hidden className="size-3.5" /></Link>
-      </div>
+      <CardTitle title={HOLIDAYS_TITLE} sub="From the holiday list you follow" action={<CornerLink to="/ess/holidays" label="Open all holidays" />} />
       <FormError error={thisYear.error ?? nextYear.error} />
       {pending && <HomeHolidaysSkeleton />}
       {!pending && noList && <p className="py-3 text-sm text-muted-foreground">You follow no holiday list yet - HR gives one with your plant.</p>}

@@ -6,6 +6,10 @@ export const MY_DAY_NOTE = 'Punches arrive with each machine upload.'
 export const TO_FIX_TITLE = 'Needs your attention'
 
 export const HOLIDAYS_TITLE = 'Coming holidays'
+// People today's split bar and its legend, in this order
+export const PEOPLE_LEGEND = ['in', 'on leave', 'not in yet'] as const
+// the attendance month's strip under the greeting, in this order (the skeleton draws the same parts)
+export const MONTH_STRIP = ['Present', 'Leave', 'Absent or missed', 'Off days', 'Still to come'] as const
 
 export const AWAY_TITLE = 'Away this week'
 export const AWAY_LEGEND = [

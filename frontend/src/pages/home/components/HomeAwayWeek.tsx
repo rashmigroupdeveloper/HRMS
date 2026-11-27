@@ -47,7 +47,7 @@ export function HomeAwayWeek() {
   return (
     <section className="home-panel min-w-0 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-medium tracking-tight">{AWAY_TITLE}</h2>
+        <h2 className="text-xl font-light tracking-tight">{AWAY_TITLE}</h2>
         {scopes.length > 1 && (
           <NativeSelect aria-label="Away this week scope" value={scope} onChange={(e) => setSelected(e.target.value as Scope)} className="[&_select]:rounded-full">
             {scopes.map(([value, label]) => <NativeSelectOption key={value} value={value}>{label}</NativeSelectOption>)}

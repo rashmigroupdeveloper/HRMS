@@ -1,53 +1,80 @@
 import { Skeleton } from '@/components/ui/skeleton'
-import { MONTH_CLOSE_COUNTS, MOVEMENT_TILES, MY_DAY_NOTE, MY_DAY_TILES, WEEKDAY_SHORT } from '@/pages/home/components/home-labels'
+import { MONTH_CLOSE_COUNTS, MONTH_STRIP, MOVEMENT_TILES, MY_DAY_TILES, WEEKDAY_SHORT } from '@/pages/home/components/home-labels'
 
 // The home widgets' bodies while they load (2026-11-27) - each widget keeps its real title and links; these draw its
 // rows, tiles and grid in the same places, with the fixed labels real and only the values as bars.
 
-// HomeMyDay's card before attendance.overview answers (the page's first read)
-export function HomeMyDaySkeleton() {
+// HomeToday's card before attendance.overview answers (the page's first read): the title, the ring, the facts beside it
+export function HomeTodaySkeleton() {
   return (
-    <section role="status" aria-label="Loading your day" className="home-panel min-w-0 p-4 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-medium tracking-tight">My day</h2>
-          <Skeleton className="mt-1.5 h-3 w-24 rounded" />
-        </div>
-        <Skeleton className="h-6 w-20 rounded-full" />
+    <section role="status" aria-label="Loading your day" className="home-panel flex min-w-0 flex-col p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div><h2 className="text-xl font-light tracking-tight">Today</h2><Skeleton className="mt-1.5 h-3 w-20 rounded" /></div>
+        <div className="flex items-center gap-2"><Skeleton className="h-6 w-16 rounded-full" /><span className="size-9 rounded-full bg-surface-2" /></div>
       </div>
-      <dl className="mt-3 grid grid-cols-3 gap-2">
-        {MY_DAY_TILES.map((label) => (
-          <div key={label} className="rounded-2xl bg-surface-2/60 px-3 py-2.5">
-            <dt className="text-xs text-muted-foreground">{label}</dt>
-            <dd className="mt-1.5"><Skeleton className="h-6 w-14 rounded" /></dd>
-          </div>
-        ))}
-      </dl>
-      <div className="mt-4">
-        <div className="flex justify-between"><Skeleton className="h-3 w-32 rounded" /><Skeleton className="h-3 w-24 rounded" /></div>
-        <Skeleton className="mt-2 h-2 w-full rounded-full" />
+      <div className="mt-3 flex flex-1 items-center gap-5">
+        <div className="grid size-32 shrink-0 place-items-center rounded-full border-2 border-dotted border-foreground/15"><Skeleton className="h-7 w-16 rounded" /></div>
+        <dl className="min-w-0 flex-1 divide-y divide-border/60">
+          {[MY_DAY_TILES[1], MY_DAY_TILES[2], 'Late'].map((label) => (
+            <div key={label} className="flex items-baseline justify-between gap-3 py-2"><dt className="text-xs text-muted-foreground">{label}</dt><dd><Skeleton className="h-5 w-12 rounded" /></dd></div>
+          ))}
+        </dl>
       </div>
-      <Skeleton className="mt-3 h-4 w-40 rounded" />
-      <div className="mt-4 border-t border-border/60 pt-3">
-        <h3 className="text-sm font-medium">Needs your attention</h3>
-        <HomeToFixSkeleton />
-      </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-border/60 pt-3">
-        <p className="flex min-h-9 items-center text-sm font-medium">Open my attendance</p>
-        <p className="text-xs text-muted-foreground">{MY_DAY_NOTE}</p>
-      </div>
+      <Skeleton className="mt-3 h-3 w-48 rounded" />
     </section>
   )
 }
 
-// "Needs your attention": two day rows
+// "My week": the bars of seven days (also inside HomeWeek while the days load)
+export function HomeWeekBarsSkeleton() {
+  return (
+    <div role="status" aria-label="Loading your week" className="mt-auto grid grid-cols-7 items-end gap-1 pt-4">
+      {WEEKDAY_SHORT.map((d, i) => (
+        <div key={d} className="flex flex-col items-center gap-1.5">
+          <div className="flex h-28 w-full items-end justify-center"><Skeleton className="w-2 rounded-full" style={{ height: `${[70, 82, 64, 90, 40, 22, 22][i]}%` }} /></div>
+          <span className="size-1.5 rounded-full bg-foreground/15" />
+          <span className="text-xs text-muted-foreground">{d[0]}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+// the whole "My week" card before attendance.overview answers
+export function HomeWeekSkeleton() {
+  return (
+    <section className="home-panel flex min-w-0 flex-col p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3"><h2 className="text-xl font-light tracking-tight">My week</h2><span className="size-9 rounded-full bg-surface-2" /></div>
+      <div className="mt-2 flex items-end gap-3"><Skeleton className="h-11 w-24 rounded" /><span className="pb-1 text-xs text-muted-foreground">Worked this week</span></div>
+      <HomeWeekBarsSkeleton />
+    </section>
+  )
+}
+
+// The attendance month's strip under the greeting: its part names real, the parts as grey pills
+export function HomeStripSkeleton() {
+  return (
+    <div role="status" aria-label="Loading your attendance month" className="min-w-0">
+      <Skeleton className="mb-2 h-3 w-56 rounded" />
+      <div className="flex w-full gap-1.5">
+        {MONTH_STRIP.map((label, i) => (
+          <div key={label} className="min-w-[52px]" style={{ flex: `${[6, 1, 1, 2, 10][i]} 1 0%` }}>
+            <p className="mb-1.5 truncate text-xs text-muted-foreground">{label}</p>
+            <Skeleton className="h-11 rounded-full" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// "Needs your attention": two day rows (an icon chip, the day, the hint)
 export function HomeToFixSkeleton() {
   return (
-    <div role="status" aria-label="Loading the days to fix" className="divide-y divide-border/60">
+    <div role="status" aria-label="Loading the days to fix" className="mt-3 space-y-1">
       {Array.from({ length: 2 }, (_, i) => (
-        <div key={i} className="flex min-h-14 items-center justify-between gap-3 py-2">
-          <div className="space-y-1.5"><Skeleton className="h-3.5 w-24 rounded" /><Skeleton className="h-3 w-40 rounded" /></div>
-          <Skeleton className="h-6 w-24 rounded-full" />
+        <div key={i} className="flex min-h-14 items-center gap-3 py-1.5">
+          <Skeleton className="size-10 shrink-0 rounded-full" />
+          <div className="flex-1 space-y-1.5"><Skeleton className="h-3.5 w-36 rounded" /><Skeleton className="h-3 w-44 rounded" /></div>
         </div>
       ))}
     </div>
