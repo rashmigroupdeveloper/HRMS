@@ -330,7 +330,14 @@ Compared with an employee-profile screen from another HR system (2026-11-14); th
   **Polished 2026-11-25:** consistent wide work column / charcoal role focus, compact rows and empty states,
   grouped personal tools and matching light/dark loading panels. Uses existing APIs, with no schema changes or
   role-name checks.
-- **Still deferred:** broader HR workload trends, payroll console, executive trends and device-health panels.
+  **Widgets 2026-11-27 (the user asked to bring main's useful dashboard parts):** self-service "My day" (first in / last
+  out / worked, shift line, days of the last 30 to fix), coming holidays, away this week (team / HOD department), decision
+  urgency, People today refreshing every 2 minutes; role home: attendance month to close, payroll runs (status only, no
+  amounts), joiners & leavers, away this week - each gated by the access of its reader. One API change:
+  `attendance.overview` `today.shiftHours`. Punches still arrive by upload, so nothing claims live presence.
+- **Still deferred:** broader HR workload trends, executive trends and device-health panels (they need the Kent
+  machines' automatic feed, item 19); a team attendance dot grid over several days (needs a bounded multi-day board read, not the whole
+  muster for an Attendance View scope).
   **Needs:** agreed metrics and the owning source modules; payroll/KPI/device values must not be invented.
 
 ### 17. Directory: saved views per browser
@@ -660,6 +667,14 @@ region (on the work location), the work location's address, lay offs, and the jo
   days block the lock).
 - **Ask HR:** see "Questions to settle with HR" (the real leave types and days, 30 days back for a regularization; comp-off:
   8 h / 4 h, 30 days to claim and 90 days to use - the old HRMS's numbers, the user chose them for now).
+- [ ] **The leave-credit step is slow for one employee, and its tests time out (found 2026-11-27).** `creditDue(asOf,
+  { employeeIds })` (`leave/balances/balances.service.ts`) still adds up every employee's balance for each leave type
+  with a carry-forward limit (`sumTypeForEveryone`) and keeps only the asked employees afterwards, and makes one write
+  per type and month. In the test database (never wiped: hundreds of leave types by now) one call takes 8 to 13
+  seconds, so `tests/comp-off.test.ts` ("a Sunday worked ... expiring 90 days later") and two `tests/leave.test.ts`
+  cases reach the 30-second limit, first when two test runs share the machine. **Needs:** the year-end sum limited to
+  the asked employees in the query (the repository takes the ids), and the monthly credits written in one go per run -
+  then the tests' own limits can stay. Not a rule change.
 
 ### 30. Bugs found in the code review of 2026-11-23
 A read-through of every module built so far. **Fixed the same day:** editing a role now checks the holders' data access (and
@@ -1024,6 +1039,7 @@ See items 3, 15 and 18.
 - **PRESENT (2026-11-24, selected by the user):** daily-work Home with decisions/request drill-down, own leave and
   attendance, recent requests, manager/HOD/Attendance View People today, scope selector and Reports & Excel links (item 16).
   Home separates employee, manager, HR joining-work/pre-joining and administration priorities using active capabilities.
+  2026-11-27: role-home attendance-month, payroll-run and joiners & leavers cards, and self-service "My day" (item 16).
 - **PRESENT (Stage 1, 2026-11-24):** attendance detail, retained raw punches and exceptions at `/attendance-reports`,
   with calendar-date/place/person/status/exception filters, scoped summaries, paging, night-shift drill-down and full
   matching Excel exports up to 20,000 attendance days. No schema changes; current placement and stored-day limitations

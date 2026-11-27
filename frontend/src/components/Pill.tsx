@@ -14,7 +14,7 @@ const TONES: Record<Tone, string> = {
 
 export function Pill({ tone, children, className }: { tone: Tone; children: React.ReactNode; className?: string }) {
   return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap', TONES[tone], className)}>
+    <span data-slot="pill" className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap', TONES[tone], className)}>
       <span aria-hidden className="size-1.5 rounded-full bg-current opacity-70" />
       {children}
     </span>

@@ -864,14 +864,22 @@ async function monthOf(person: Person, year: number, month: number) {
 
 // One employee's day (the home page's "today")
 export async function getDayOf(person: Person, date: Date) {
-  const [rows, corrections, plans, covers] = await Promise.all([
+  const [rows, corrections, plans, covers, exemptions] = await Promise.all([
     daysRepository.listDays([person.id], date, date),
     daysRepository.listCorrections([person.id], date, date),
     loadPlans([person], date, date),
     loadCovers([person.id], date, date),
+    daysRepository.listExemptions([person.id], date, date),
   ])
-  const { correction, ...view } = dayView(date, person, plans.get(person.id)?.get(dayKey(date)), rows[0], corrections[0], covers.get(`${person.id}:${dayKey(date)}`))
-  return { ...view, corrected: !!correction }
+  const plan = plans.get(person.id)?.get(dayKey(date))
+  const { correction, ...view } = dayView(date, person, plan, rows[0], corrections[0], covers.get(`${person.id}:${dayKey(date)}`))
+  // when the day's working part runs (the home page's day card, 2026-11-27): a night shift ends the next day, a day of one
+  // half only runs to / from its split - as the punches are judged (spanOf); null on a weekly off or holiday
+  const span = plan?.kind === 'WORK' ? spanOf(date, plan.shift, person.timezone, partOf(plan)) : null
+  const shiftHours = span && { start: clockOf(span.start, person.timezone), end: clockOf(span.end, person.timezone), startsAt: span.start, endsAt: span.end }
+  // their attendance is not tracked on this day (2026-11-27) - known before the day is worked out, so the day card never
+  // tells someone who does not punch that no punch has arrived
+  return { ...view, corrected: !!correction, shiftHours, notTracked: exemptions.length > 0 }
 }
 
 export async function getMyMonth(viewer: CurrentUser, { year, month }: { year: number; month: number }) {

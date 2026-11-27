@@ -596,4 +596,30 @@
   color: var(--hero-foreground);
   border-color: color-mix(in oklch, var(--hero-foreground) 25%, transparent);
 }
+.home-people-dark [data-slot="pill"] { background: color-mix(in oklch, var(--hero-foreground) 12%, transparent); color: var(--hero-foreground); }
 .home-people-dark [data-slot="skeleton"] { background: color-mix(in oklch, var(--hero-foreground) 10%, transparent); }
+
+/* Home widgets' motion (2026-11-27) - only where it tells something, never decoration: a number that just changed on a
+   refresh glows once (home-changed), a bar grows to its value when the data arrives (home-grow), the "now" marker on the
+   shift line slides as time passes (home-slide), and the dot of a list that refreshes itself breathes (home-live).
+   Reduced motion: the values simply appear. */
+@keyframes home-changed {
+  from { background-color: color-mix(in oklch, var(--gold) 55%, transparent); }
+  to { background-color: transparent; }
+}
+.home-changed { animation: home-changed 1.8s ease-out; border-radius: 6px; }
+@keyframes home-grow {
+  from { scale: 0 1; }
+  to { scale: 1 1; }
+}
+.home-grow { transform-origin: left; animation: home-grow 650ms cubic-bezier(0.32, 0.72, 0, 1) both; }
+.home-slide { transition: left 900ms cubic-bezier(0.32, 0.72, 0, 1); }
+@keyframes home-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.home-live { animation: home-live 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .home-changed, .home-grow, .home-live { animation: none; }
+  .home-slide { transition: none; }
+}

@@ -8,7 +8,8 @@ import { MonthSkeleton } from '@/components/skeletons/attendance/MonthSkeleton'
 import { AttendanceRequestsSkeleton } from '@/components/skeletons/attendance/AttendanceRequestsSkeleton'
 import { Button } from '@/components/ui/button'
 import { client, orpc } from '@/lib/orpc'
-import { formatDate, todayDay } from '@/lib/utils'
+import { useSearchParams } from 'react-router'
+import { formatDate, fromDateInput, todayDay } from '@/lib/utils'
 import { compOffDays, cycleRange, type MonthDay, REQUEST_STATUS, type Regularization } from './labels'
 import { useAttendanceMonth, useCycleStartDay } from './useAttendanceMonth'
 import { MonthCalendar, MonthPicker, MonthTotals } from './MonthCalendar'
@@ -34,7 +35,17 @@ export function MyAttendance() {
   const [asking, setAsking] = useState<{ date?: Date } | null>(null)
   const regularizations = useQuery(orpc.attendance.regularizations.mine.queryOptions())
   const withdraw = useMutation(orpc.attendance.regularizations.cancel.mutationOptions({ onSuccess: () => void queryClient.invalidateQueries({ queryKey: orpc.attendance.key() }) }))
-  const [regularizing, setRegularizing] = useState<{ date?: Date } | null>(null)
+  // ?regularize=2026-11-27 (the home page's "Fix this day" - 2026-11-27) opens the request for that day; closing it drops
+  // the address part, so a reload does not open it again
+  const [params, setParams] = useSearchParams()
+  const [regularizing, setRegularizing] = useState<{ date?: Date } | null>(() => {
+    const asked = fromDateInput(params.get('regularize') ?? '')
+    return asked && !Number.isNaN(asked.getTime()) ? { date: asked } : null
+  })
+  const closeRegularizing = () => {
+    setRegularizing(null)
+    if (params.has('regularize')) setParams((p) => { p.delete('regularize'); return p }, { replace: true })
+  }
   // comp-off (2026-11-22): a weekly off / holiday already over (up to 30 days back) worked at least 4 hours
   const [claiming, setClaiming] = useState<MonthDay | null>(null)
   // the days already claimed (waiting or approved) - one claim per day; a claim reloads these (leave.*)
@@ -207,7 +218,7 @@ export function MyAttendance() {
       </div>
       {asking && <ShiftChangeDialog initialDate={asking.date} onClose={() => setAsking(null)} onSent={sent} />}
       {claiming && <CompOffDialog day={claiming} onClose={() => setClaiming(null)} onSent={sent} />}
-      {regularizing && <RegularizationDialog initialDate={regularizing.date} onClose={() => setRegularizing(null)} onSent={sent} />}
+      {regularizing && <RegularizationDialog initialDate={regularizing.date} onClose={closeRegularizing} onSent={sent} />}
     </div>
   )
 }
